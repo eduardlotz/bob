@@ -1,10 +1,47 @@
-import { FullScreen, ContentWidth, FillRow, FillColumn } from "@/layout";
+import { useInput } from "@/hooks/useInput";
+import {
+  FullScreen,
+  ContentWidth,
+  FillRow,
+  FillColumn,
+  HugRow,
+} from "@/layout";
 import { Logo } from "@/layout/atoms";
+import { LockIcon } from "@/layout/icons";
 import { BottomText, H2 } from "@/layout/text";
+import { MiniForm, PasswordField } from "@/molecules/form";
 import Head from "next/head";
+import { useState } from "react";
+import { Toaster, toast } from "sonner";
 import styled from "styled-components";
 
 export default function Home() {
+  const password = useInput("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  const openPasswordField = () => {
+    setShowPassword(true);
+  };
+
+  const checkPassword = async (e: React.ChangeEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (password.value === "") return;
+
+    const response = await fetch("/api/portfolio", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ password: password.value }),
+    });
+
+    if (response.ok) toast.success("Richtiges Password");
+    else toast.error("Falsches Password");
+
+    console.log("response", response);
+  };
+
   return (
     <>
       <Head>
@@ -13,6 +50,9 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
+
+      <Toaster position="bottom-center" />
+
       <FullScreen>
         <NavigationWrapper>
           <ContentWidth>
@@ -29,24 +69,35 @@ export default function Home() {
                 Hallöchen, ich bin Eddie. <br />
                 Brillenschlange, Designer und Entwickler 🥸
               </H2>
-              <H2>
-                Der Rest der Seite befindet sich leider noch in Arbeit, bis
-                dahin kannst du dir aber mein Portfolio anschauen.
-              </H2>
+              <H2>Hier ist leider noch Baustelle.</H2>
             </FillColumn>
 
-            <ButtonContainer>
-              <LinkButton href="/documents/portfolio.pdf">
-                Portfolio öffnen
-              </LinkButton>
-            </ButtonContainer>
+            <PortfolioContainer>
+              {showPassword ? (
+                <HugRow $gap="10px">
+                  <LockIcon color="#121212" />
+                  <MiniForm onSubmit={checkPassword}>
+                    <PasswordField
+                      value={password.value}
+                      onChange={password.setValue}
+                      placeholder="Passwort eingeben"
+                    />
+                  </MiniForm>
+                </HugRow>
+              ) : (
+                <Button onClick={openPasswordField}>
+                  <LockIcon color="#ffffff" />
+                  Portfolio
+                </Button>
+              )}
+            </PortfolioContainer>
 
             <BottomInfoWrapper>
               <BottomText>
-                Im Laufe der Zeit soll diese Website dient als Ort dienen, an
-                dem ich meine Gedanken und Ideen auf eine kreative Weise teilen
-                kann. Es wird meine persönliche Sammlung von Gedanken, Ideen,
-                Notizen und Inspirationen.
+                Im Laufe der Zeit soll diese Website als Ort dienen, an dem ich
+                meine Gedanken und Ideen auf eine kreative Weise teilen kann. Es
+                wird meine persönliche Sammlung von Ideen, Notizen und
+                Inspirationen.
               </BottomText>
             </BottomInfoWrapper>
           </ContentWidth>
@@ -69,7 +120,7 @@ const ContentWrapper = styled(FillColumn)`
   padding: 16px;
 `;
 
-const ButtonContainer = styled(FillRow)`
+const PortfolioContainer = styled(FillRow)`
   align-items: center;
   justify-content: center;
   padding: 54px;
