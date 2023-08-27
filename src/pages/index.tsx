@@ -59,7 +59,7 @@ export default function Home() {
   };
 
   const downloadPortfolio = async () => {
-    const response = await fetch("/api/portfolio/password", {
+    const response = await fetch("/api/portfolio/download", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
