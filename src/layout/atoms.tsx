@@ -73,3 +73,38 @@ export const IconButton = styled(motion.button)`
     }
   }
 `;
+
+export const Button = styled(motion.button)`
+  display: flex;
+  padding: 12px 20px;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+
+  border-radius: 50px;
+  background: #121212;
+
+  color: #fff;
+  text-align: center;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+
+  box-shadow: 0px 0px 0px 0px #000;
+  transition: box-shadow 0.35s cubic-bezier(0.2, 0.8, 0.2, 0.8);
+  cursor: pointer;
+
+  &:hover {
+    box-shadow: 0px 0px 0px 4px #000;
+  }
+`;
+
+export const RoundIconButton = styled(Button)`
+  height: 44px;
+  width: 44px;
+  padding: 0;
+  z-index: 5;
+`;

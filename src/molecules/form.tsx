@@ -1,3 +1,4 @@
+import { MotionVariants } from "@/styles/motion";
 import { motion } from "framer-motion";
 import { InputHTMLAttributes } from "react";
 import styled from "styled-components";
@@ -19,11 +20,16 @@ export const PasswordField = ({
       placeholder={placeholder}
       onChange={onChange}
       type="password"
+      variants={MotionVariants.SpringScale}
+      animate="animate"
+      exit="exit"
+      initial="initial"
+      layout="position"
     />
   );
 };
 
-const PasswordInput = styled.input`
+const PasswordInput = styled(motion.input)`
   display: flex;
   height: 44px;
   padding: 12px 20px;
@@ -31,6 +37,7 @@ const PasswordInput = styled.input`
   justify-content: center;
   align-items: center;
   gap: 10px;
+  z-index: 10;
 
   border-radius: 50px;
   background: #fff;
@@ -57,4 +64,10 @@ export const MiniForm = styled(motion.form)`
   width: 100%;
   position: relative;
   overflow: none;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
 `;

@@ -13,12 +13,23 @@ import {
   FillColumn,
   HugRow,
 } from "@/layout";
-import { IconButton, Logo, MotionWrapper } from "@/layout/atoms";
-import { CheckmarkIcon, DownloadIcon, LockIcon } from "@/layout/icons";
+import {
+  Button,
+  IconButton,
+  Logo,
+  MotionWrapper,
+  RoundIconButton,
+} from "@/layout/atoms";
+import {
+  ArrowRightIcon,
+  CheckmarkIcon,
+  DownloadIcon,
+  LockIcon,
+} from "@/layout/icons";
 import { BottomText, H2, UppercaseText } from "@/layout/text";
 import { MiniForm, PasswordField } from "@/molecules/form";
 import { MotionVariants } from "@/styles/motion";
-import { motion } from "framer-motion";
+import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 
 export default function Home() {
   const password = useInput("");
@@ -60,7 +71,7 @@ export default function Home() {
       const blob = await response.blob();
       download(blob, "portfolio.pdf", "application/pdf");
 
-      toast.success("portfolio.pdf wurde heruntergeladen");
+      toast.success("Portfolio wurde heruntergeladen.");
       setDownloaded(true);
     } else toast.error("Ein Fehler ist aufgetreten.");
   };
@@ -134,19 +145,29 @@ export default function Home() {
                 <DownloadSuccess />
               ) : showPassword ? (
                 <HugRow $gap="10px">
-                  <LockIcon color="#121212" />
-                  <MiniForm
-                    onSubmit={checkPassword}
-                    variants={MotionVariants.SpringScale}
-                    animate="animate"
-                    exit="exit"
-                    initial="initial"
-                  >
+                  <MotionWrapper layout="position">
+                    <LockIcon color="#121212" />
+                  </MotionWrapper>
+                  <MiniForm onSubmit={checkPassword}>
                     <PasswordField
                       value={password.value}
                       onChange={password.setValue}
                       placeholder="Passwort eingeben"
                     />
+                    <AnimatePresence mode="popLayout">
+                      {password.value.length > 0 && (
+                        <RoundIconButton
+                          type="submit"
+                          variants={MotionVariants.SlideIn}
+                          animate="animate"
+                          exit="exit"
+                          initial="initial"
+                          layout="position"
+                        >
+                          <ArrowRightIcon />
+                        </RoundIconButton>
+                      )}
+                    </AnimatePresence>
                   </MiniForm>
                 </HugRow>
               ) : (
@@ -172,7 +193,8 @@ export default function Home() {
               <BottomText>
                 Im Laufe der Zeit soll diese Website als Ort dienen, an dem ich
                 meine Gedanken und Ideen auf eine kreative Weise teilen kann.
-                Meine persönliche Sammlung von Ideen, Notizen und Inspirationen.
+                Meine persönliche Sammlung von Experimenten, Notizen und
+                Inspirationen.
               </BottomText>
             </BottomInfoWrapper>
           </ContentWidth>
@@ -202,34 +224,6 @@ const PortfolioContainer = styled(FillRow)`
   border-radius: 30px;
   background: #f6f6f6;
   margin-top: 80px;
-`;
-
-const Button = styled(motion.button)`
-  display: flex;
-  padding: 12px 20px;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-
-  border-radius: 50px;
-  background: #121212;
-
-  color: #fff;
-  text-align: center;
-  font-size: 14px;
-  font-style: normal;
-  font-weight: 500;
-  line-height: normal;
-  letter-spacing: 1.4px;
-  text-transform: uppercase;
-
-  box-shadow: 0px 0px 0px 0px #000;
-  transition: box-shadow 0.35s cubic-bezier(0.2, 0.8, 0.2, 0.8);
-  cursor: pointer;
-
-  &:hover {
-    box-shadow: 0px 0px 0px 4px #000;
-  }
 `;
 
 const BottomInfoWrapper = styled(FillRow)`

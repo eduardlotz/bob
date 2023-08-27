@@ -1,13 +1,15 @@
 export namespace MotionVariants {
-  export const FadeInOut = {
+  export const SlideIn = {
     initial: {
       opacity: 0,
+      x: -40,
       transition: {
         duration: 0.15,
         ease: "circOut",
       },
     },
     animate: {
+      x: 0,
       opacity: 1,
       transition: {
         duration: 0.15,
@@ -15,10 +17,11 @@ export namespace MotionVariants {
       },
     },
     exit: {
+      x: -40,
       opacity: 0,
       transition: {
-        duration: 0.1,
-        ease: "circIn",
+        duration: 0.15,
+        ease: "circOut",
       },
     },
   };
