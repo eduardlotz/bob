@@ -53,6 +53,10 @@ const PasswordInput = styled(motion.input)`
 
   transition: border-color 0.25s ease-out;
 
+  &::placeholder {
+    color: #12121248;
+  }
+
   &:focus {
     border-color: #121212;
     outline: none;
