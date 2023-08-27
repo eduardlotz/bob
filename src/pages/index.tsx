@@ -30,7 +30,7 @@ import {
 import { BottomText, H2, UppercaseText } from "@/layout/text";
 import { MiniForm, PasswordField } from "@/molecules/form";
 import { MotionVariants } from "@/styles/motion";
-import { motion } from "framer-motion";
+import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import { useLoading } from "@/hooks/useLoading";
 
 export default function Home() {
@@ -153,25 +153,26 @@ export default function Home() {
                   <MotionIconWrapper layout="position">
                     <LockIcon color="#121212" />
                   </MotionIconWrapper>
-                  <MiniForm onSubmit={checkPassword}>
+                  <MiniForm onSubmit={checkPassword} layout="position">
                     <PasswordField
                       value={password.value}
                       onChange={password.setValue}
                       placeholder="Passwort eingeben"
                     />
-                    {password.value.length > 0 && (
-                      <RoundIconButton
-                        type="submit"
-                        variants={MotionVariants.SlideIn}
-                        animate="animate"
-                        exit="exit"
-                        initial="initial"
-                        layout="position"
-                        key="submit-button"
-                      >
-                        {isLoading ? <LoadingSpinner /> : <ArrowRightIcon />}
-                      </RoundIconButton>
-                    )}
+                    <AnimatePresence mode="popLayout">
+                      {password.value.length > 0 && (
+                        <RoundIconButton
+                          type="submit"
+                          variants={MotionVariants.SlideIn}
+                          animate="animate"
+                          exit="exit"
+                          initial="initial"
+                          key="submit-button"
+                        >
+                          {isLoading ? <LoadingSpinner /> : <ArrowRightIcon />}
+                        </RoundIconButton>
+                      )}
+                    </AnimatePresence>
                   </MiniForm>
                 </HugColumn>
               ) : isLoading ? (
