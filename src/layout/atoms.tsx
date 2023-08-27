@@ -46,6 +46,7 @@ export const MotionWrapper = styled(motion.div)`
   width: fit-content;
   height: fit-content;
   margin: 0;
+  overflow: none;
 `;
 
 export const IconButton = styled(motion.button)`

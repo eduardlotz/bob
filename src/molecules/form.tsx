@@ -56,4 +56,5 @@ const PasswordInput = styled.input`
 export const MiniForm = styled(motion.form)`
   width: 100%;
   position: relative;
+  overflow: none;
 `;

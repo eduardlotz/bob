@@ -14,14 +14,16 @@ import {
   HugRow,
 } from "@/layout";
 import { IconButton, Logo, MotionWrapper } from "@/layout/atoms";
-import { LockIcon } from "@/layout/icons";
+import { CheckmarkIcon, LockIcon } from "@/layout/icons";
 import { BottomText, H2 } from "@/layout/text";
 import { MiniForm, PasswordField } from "@/molecules/form";
 import { MotionVariants } from "@/styles/motion";
+import { motion } from "framer-motion";
 
 export default function Home() {
   const password = useInput("");
   const [showPassword, setShowPassword] = useState(false);
+  const [downloaded, setDownloaded] = useState(false);
 
   const openPasswordField = () => {
     setShowPassword(true);
@@ -48,11 +50,24 @@ export default function Home() {
       const blob = await response.blob();
       download(blob, "portfolio.pdf", "application/pdf");
 
-      toast.success("Aber nicht weitergeben 👀");
-    } else toast.error("Du darfst nicht.");
+      toast.success("Feedback ist immer willkommen 🙏");
+      setDownloaded(true);
+    } else toast.error("Falsches Passwort. 😭");
 
     console.log("response", response);
   };
+
+  const DownloadSuccess = () => (
+    <IconButton
+      variants={MotionVariants.SpringScale}
+      animate="animate"
+      exit="exit"
+      initial="initial"
+      onClick={() => setDownloaded(false)}
+    >
+      <CheckmarkIcon />
+    </IconButton>
+  );
 
   return (
     <>
@@ -63,13 +78,19 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <Toaster position="bottom-right" />
+      <Toaster position="top-right" />
 
       <FullScreen>
         <NavigationWrapper>
           <ContentWidth>
             <FillRow $align="center" $justify="flex-start">
-              <IconLink href="/">
+              <IconLink
+                href="/"
+                variants={MotionVariants.SpringScale}
+                animate="animate"
+                exit="exit"
+                initial="initial"
+              >
                 <Logo />
               </IconLink>
             </FillRow>
@@ -79,20 +100,37 @@ export default function Home() {
         <ContentWrapper>
           <ContentWidth>
             <FillColumn $gap="32px" $justify="flex-start" $align="flex-start">
-              <H2>
+              <H2
+                variants={MotionVariants.SlideUp}
+                animate="animate"
+                exit="exit"
+                initial="initial"
+              >
                 Hallöchen, ich bin Eddie. <br />
                 Brillenschlange, Designer und Entwickler 🥸
               </H2>
-              <H2>
-                Hier ist leider noch Baustelle. <br />
-                Bisher gibt es nur mein Portfolio zu sehen.
+              <H2
+                variants={MotionVariants.SlideUp}
+                animate="animate"
+                exit="exit"
+                initial="initial"
+                custom={2}
+              >
+                Mit dem richtigen Passwort kannst du mein Portfolio
+                herunterladen, ansonsten ist hier noch Baustelle.
               </H2>
             </FillColumn>
 
             <PortfolioContainer>
-              {showPassword ? (
+              {downloaded ? (
+                <DownloadSuccess />
+              ) : showPassword ? (
                 <HugRow $gap="10px">
-                  <IconButton layoutId="lock-icon" onClick={closePasswordField}>
+                  <IconButton
+                    layoutId="lock-icon"
+                    transition={{ type: "spring", stiffness: 100 }}
+                    onClick={closePasswordField}
+                  >
                     <LockIcon color="#121212" />
                   </IconButton>
                   <MiniForm
@@ -110,8 +148,17 @@ export default function Home() {
                   </MiniForm>
                 </HugRow>
               ) : (
-                <Button onClick={openPasswordField}>
-                  <MotionWrapper layoutId="lock-icon">
+                <Button
+                  onClick={openPasswordField}
+                  variants={MotionVariants.SpringScaleReversed}
+                  animate="animate"
+                  exit="exit"
+                  initial="initial"
+                >
+                  <MotionWrapper
+                    layoutId="lock-icon"
+                    transition={{ type: "spring", stiffness: 100 }}
+                  >
                     <LockIcon color="#ffffff" />
                   </MotionWrapper>
                   Portfolio herunterladen
@@ -119,7 +166,12 @@ export default function Home() {
               )}
             </PortfolioContainer>
 
-            <BottomInfoWrapper>
+            <BottomInfoWrapper
+              variants={MotionVariants.SlideUp}
+              animate="animate"
+              exit="exit"
+              initial="initial"
+            >
               <BottomText>
                 Im Laufe der Zeit soll diese Website als Ort dienen, an dem ich
                 meine Gedanken und Ideen auf eine kreative Weise teilen kann.
@@ -156,7 +208,7 @@ const PortfolioContainer = styled(FillRow)`
   margin-top: 80px;
 `;
 
-const Button = styled.button`
+const Button = styled(motion.button)`
   display: flex;
   padding: 12px 20px;
   justify-content: center;
@@ -167,7 +219,7 @@ const Button = styled.button`
   background: #121212;
 
   color: #fff;
-  text-align: right;
+  text-align: center;
   font-size: 14px;
   font-style: normal;
   font-weight: 500;
@@ -218,6 +270,6 @@ const LinkButton = styled.a`
   }
 `;
 
-const IconLink = styled(Link)`
+const IconLink = styled(motion(Link))`
   text-decoration: none;
 `;

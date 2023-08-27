@@ -1,6 +1,7 @@
+import { motion } from "framer-motion";
 import styled from "styled-components";
 
-export const H2 = styled.h2`
+export const H2 = styled(motion.h2)`
   color: #000;
   font-size: 26px;
   font-style: normal;
@@ -12,7 +13,7 @@ export const H2 = styled.h2`
   max-width: width: 740px;
 `;
 
-export const BottomText = styled.p`
+export const BottomText = styled(motion.p)`
   color: rgba(0, 0, 0, 0.5);
   font-size: 14px;
   font-style: normal;
