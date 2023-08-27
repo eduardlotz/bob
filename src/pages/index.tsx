@@ -37,7 +37,7 @@ export default function Home() {
   const password = useInput("");
   const [showPassword, setShowPassword] = useState(true);
   const [downloaded, setDownloaded] = useState(false);
-  const { isLoading, startLoading, stopLoading } = useLoading();
+  const { isLoading, startLoading, stopLoading } = useLoading(true);
 
   const checkPassword = async (e: React.ChangeEvent<HTMLFormElement>) => {
     e.preventDefault();

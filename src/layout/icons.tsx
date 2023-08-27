@@ -97,15 +97,20 @@ export const LoadingSpinner = styled(motion.span)<{ color?: string }>`
       #0000 #0000;
     border-radius: 50%;
 
-    animation: transform 2s cubic-bezier(0.2, 0.5, 0.2, 0.6) infinite;
-    transform: rotate(180deg);
-    transform: translate(-2px, -2px);
+    animation: rotate 2s cubic-bezier(0.2, 0.5, 0.2, 0.6) infinite;
+    transform: rotate(-260deg);
+    transform-origin: center;
   }
 
   @keyframes rotate {
+    0% {
+      transform: rotate(-260deg);
+    }
     50% {
-      transform: rotate(115deg);
-      transform: translate(2px 2px);
+      transform: rotate(-200deg);
+    }
+    100% {
+      transform: rotate(-260deg);
     }
   }
 `;
