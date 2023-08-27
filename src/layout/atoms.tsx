@@ -1,3 +1,6 @@
+import { motion } from "framer-motion";
+import styled from "styled-components";
+
 export const Logo = () => {
   return (
     <svg
@@ -34,3 +37,38 @@ export const Logo = () => {
     </svg>
   );
 };
+
+export const MotionWrapper = styled(motion.div)`
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  height: fit-content;
+  margin: 0;
+`;
+
+export const IconButton = styled(motion.button)`
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  height: fit-content;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+
+  > * {
+    transition: scale 0.35s cubic-bezier(0.2, 0.8, 0.2, 0.8);
+  }
+
+  &:hover {
+    cursor: pointer;
+    > * {
+      scale: 1.14;
+    }
+  }
+`;

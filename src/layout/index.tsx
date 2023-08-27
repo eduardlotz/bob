@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import styled from "styled-components";
 
 export const FullScreen = styled.div`
@@ -12,7 +13,7 @@ export const FullScreen = styled.div`
 `;
 
 //MAYDO: extend with generic, fine-tuned and customizable elements
-export const HugRow = styled.div<{
+export const HugRow = styled(motion.div)<{
   $gap?: NumberWithMeasure;
   $align?: string;
   $justify?: string;
@@ -39,7 +40,7 @@ export const HugColumn = styled.div<{
   gap: ${(p) => (p.$gap ? p.$gap : "12px")};
 `;
 
-export const FillRow = styled.div<{
+export const FillRow = styled(motion.div)<{
   $gap?: NumberWithMeasure;
   $align?: string;
   $justify?: string;

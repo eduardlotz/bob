@@ -1,11 +1,59 @@
-import { FullScreen, ContentWidth, FillRow, FillColumn } from "@/layout";
-import { Logo } from "@/layout/atoms";
-import { BottomText, H2 } from "@/layout/text";
+import download from "downloadjs";
 import Head from "next/head";
+import { useState } from "react";
+import { Toaster, toast } from "sonner";
 import Link from "next/link";
 import styled from "styled-components";
 
+import { useInput } from "@/hooks/useInput";
+import {
+  FullScreen,
+  ContentWidth,
+  FillRow,
+  FillColumn,
+  HugRow,
+} from "@/layout";
+import { IconButton, Logo, MotionWrapper } from "@/layout/atoms";
+import { LockIcon } from "@/layout/icons";
+import { BottomText, H2 } from "@/layout/text";
+import { MiniForm, PasswordField } from "@/molecules/form";
+import { MotionVariants } from "@/styles/motion";
+
 export default function Home() {
+  const password = useInput("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  const openPasswordField = () => {
+    setShowPassword(true);
+  };
+
+  const closePasswordField = () => {
+    setShowPassword(false);
+  };
+
+  const checkPassword = async (e: React.ChangeEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (password.value === "") return;
+
+    const response = await fetch("/api/portfolio", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ password: password.value }),
+    });
+
+    if (response.ok) {
+      const blob = await response.blob();
+      download(blob, "portfolio.pdf", "application/pdf");
+
+      toast.success("Aber nicht weitergeben 👀");
+    } else toast.error("Du darfst nicht.");
+
+    console.log("response", response);
+  };
+
   return (
     <>
       <Head>
@@ -14,6 +62,9 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
+
+      <Toaster position="bottom-right" />
+
       <FullScreen>
         <NavigationWrapper>
           <ContentWidth>
@@ -33,23 +84,47 @@ export default function Home() {
                 Brillenschlange, Designer und Entwickler 🥸
               </H2>
               <H2>
-                Der Rest der Seite befindet sich leider noch in Arbeit, bis
-                dahin kannst du dir aber mein Portfolio anschauen.
+                Hier ist leider noch Baustelle. <br />
+                Bisher gibt es nur mein Portfolio zu sehen.
               </H2>
             </FillColumn>
 
-            <ButtonContainer>
-              <LinkButton href="/documents/portfolio.pdf">
-                Portfolio öffnen
-              </LinkButton>
-            </ButtonContainer>
+            <PortfolioContainer>
+              {showPassword ? (
+                <HugRow $gap="10px">
+                  <IconButton layoutId="lock-icon" onClick={closePasswordField}>
+                    <LockIcon color="#121212" />
+                  </IconButton>
+                  <MiniForm
+                    onSubmit={checkPassword}
+                    variants={MotionVariants.SpringScale}
+                    animate="animate"
+                    exit="exit"
+                    initial="initial"
+                  >
+                    <PasswordField
+                      value={password.value}
+                      onChange={password.setValue}
+                      placeholder="Passwort eingeben"
+                    />
+                  </MiniForm>
+                </HugRow>
+              ) : (
+                <Button onClick={openPasswordField}>
+                  <MotionWrapper layoutId="lock-icon">
+                    <LockIcon color="#ffffff" />
+                  </MotionWrapper>
+                  Portfolio herunterladen
+                </Button>
+              )}
+            </PortfolioContainer>
 
             <BottomInfoWrapper>
               <BottomText>
-                Im Laufe der Zeit soll diese Website dient als Ort dienen, an
-                dem ich meine Gedanken und Ideen auf eine kreative Weise teilen
-                kann. Es wird meine persönliche Sammlung von Gedanken, Ideen,
-                Notizen und Inspirationen.
+                Im Laufe der Zeit soll diese Website als Ort dienen, an dem ich
+                meine Gedanken und Ideen auf eine kreative Weise teilen kann.
+                <br />
+                Meine persönliche Sammlung von Ideen, Notizen und Inspirationen.
               </BottomText>
             </BottomInfoWrapper>
           </ContentWidth>
@@ -72,7 +147,7 @@ const ContentWrapper = styled(FillColumn)`
   padding: 16px;
 `;
 
-const ButtonContainer = styled(FillRow)`
+const PortfolioContainer = styled(FillRow)`
   align-items: center;
   justify-content: center;
   padding: 54px;
@@ -99,6 +174,14 @@ const Button = styled.button`
   line-height: normal;
   letter-spacing: 1.4px;
   text-transform: uppercase;
+
+  box-shadow: 0px 0px 0px 0px #000;
+  transition: box-shadow 0.35s cubic-bezier(0.2, 0.8, 0.2, 0.8);
+  cursor: pointer;
+
+  &:hover {
+    box-shadow: 0px 0px 0px 4px #000;
+  }
 `;
 
 const BottomInfoWrapper = styled(FillRow)`
