@@ -1,3 +1,9 @@
+import download from "downloadjs";
+import Head from "next/head";
+import { useState } from "react";
+import { Toaster, toast } from "sonner";
+import styled from "styled-components";
+
 import { useInput } from "@/hooks/useInput";
 import {
   FullScreen,
@@ -10,10 +16,6 @@ import { Logo } from "@/layout/atoms";
 import { LockIcon } from "@/layout/icons";
 import { BottomText, H2 } from "@/layout/text";
 import { MiniForm, PasswordField } from "@/molecules/form";
-import Head from "next/head";
-import { useState } from "react";
-import { Toaster, toast } from "sonner";
-import styled from "styled-components";
 
 export default function Home() {
   const password = useInput("");
@@ -36,8 +38,12 @@ export default function Home() {
       body: JSON.stringify({ password: password.value }),
     });
 
-    if (response.ok) toast.success("Richtiges Password");
-    else toast.error("Falsches Password");
+    if (response.ok) {
+      const blob = await response.blob();
+      download(blob, "portfolio.pdf", "application/pdf");
+
+      toast.success("Aber nicht weitergeben 👀");
+    } else toast.error("Du darfst nicht.");
 
     console.log("response", response);
   };
