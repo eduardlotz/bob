@@ -2,6 +2,7 @@ import download from "downloadjs";
 import Head from "next/head";
 import { useState } from "react";
 import { Toaster, toast } from "sonner";
+import Link from "next/link";
 import styled from "styled-components";
 
 import { useInput } from "@/hooks/useInput";
@@ -68,7 +69,9 @@ export default function Home() {
         <NavigationWrapper>
           <ContentWidth>
             <FillRow $align="center" $justify="flex-start">
-              <Logo />
+              <IconLink href="/">
+                <Logo />
+              </IconLink>
             </FillRow>
           </ContentWidth>
         </NavigationWrapper>
@@ -149,7 +152,7 @@ const PortfolioContainer = styled(FillRow)`
   justify-content: center;
   padding: 54px;
   border-radius: 30px;
-  background: rgba(18, 18, 18, 0.04);
+  background: #f6f6f6;
   margin-top: 80px;
 `;
 
@@ -204,5 +207,17 @@ const LinkButton = styled.a`
   line-height: normal;
   letter-spacing: 1.4px;
   text-transform: uppercase;
+  text-decoration: none;
+
+  box-shadow: 0px 0px 0px 0px #000;
+  transition: box-shadow 0.35s cubic-bezier(0.2, 0.8, 0.2, 0.8);
+  cursor: pointer;
+
+  &:hover {
+    box-shadow: 0px 0px 0px 4px #000;
+  }
+`;
+
+const IconLink = styled(Link)`
   text-decoration: none;
 `;
