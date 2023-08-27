@@ -18,7 +18,10 @@ export default (req: NextApiRequest, res: NextApiResponse) => {
 
     res.setHeader("Content-Length", stat.size);
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", "attachment; filename=portfolio.pdf");
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=eduard_lotz_portfolio.pdf"
+    );
 
     const fileContents = fs.readFileSync(filePath);
 
