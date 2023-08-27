@@ -49,6 +49,15 @@ export const MotionWrapper = styled(motion.div)`
   overflow: none;
 `;
 
+export const MotionIconWrapper = styled(motion.span)`
+  position: relative;
+
+  width: fit-content;
+  height: fit-content;
+  margin: 0;
+  overflow: none;
+`;
+
 export const IconButton = styled(motion.button)`
   position: relative;
   display: flex;
@@ -94,7 +103,10 @@ export const Button = styled(motion.button)`
   text-transform: uppercase;
 
   box-shadow: 0px 0px 0px 0px #000;
-  transition: box-shadow 0.35s cubic-bezier(0.2, 0.8, 0.2, 0.8);
+  transition: 0.35s cubic-bezier(0.2, 0.8, 0.2, 0.8);
+  transition-property: box-shadow width;
+  will-change: box-shadow width;
+
   cursor: pointer;
 
   &:hover {

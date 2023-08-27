@@ -15,8 +15,8 @@ import {
 } from "@/layout";
 import {
   Button,
-  IconButton,
   Logo,
+  MotionIconWrapper,
   MotionWrapper,
   RoundIconButton,
 } from "@/layout/atoms";
@@ -24,24 +24,24 @@ import {
   ArrowRightIcon,
   CheckmarkIcon,
   DownloadIcon,
+  LoadingSpinner,
   LockIcon,
 } from "@/layout/icons";
 import { BottomText, H2, UppercaseText } from "@/layout/text";
 import { MiniForm, PasswordField } from "@/molecules/form";
 import { MotionVariants } from "@/styles/motion";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
+import { useLoading } from "@/hooks/useLoading";
 
 export default function Home() {
   const password = useInput("");
   const [showPassword, setShowPassword] = useState(true);
   const [downloaded, setDownloaded] = useState(false);
-
-  const openPasswordField = () => {
-    setShowPassword(true);
-  };
+  const { isLoading, startLoading, stopLoading } = useLoading();
 
   const checkPassword = async (e: React.ChangeEvent<HTMLFormElement>) => {
     e.preventDefault();
+    startLoading();
 
     if (password.value === "") return;
 
@@ -53,12 +53,12 @@ export default function Home() {
       body: JSON.stringify({ password: password.value }),
     });
 
-    if (response.ok) {
-      setShowPassword(false);
-    } else toast.error("Falsches Passwort 😭");
+    response.ok ? setShowPassword(false) : toast.error("Falsches Passwort 😭");
+    stopLoading();
   };
 
   const downloadPortfolio = async () => {
+    startLoading();
     const response = await fetch("/api/portfolio/download", {
       method: "POST",
       headers: {
@@ -73,7 +73,8 @@ export default function Home() {
 
       toast.success("Portfolio wurde heruntergeladen.");
       setDownloaded(true);
-    } else toast.error("Ein Fehler ist aufgetreten.");
+    } else toast.error("Interner Fehler aufgetreten.");
+    stopLoading();
   };
 
   const DownloadSuccess = () => (
@@ -126,7 +127,7 @@ export default function Home() {
                 initial="initial"
               >
                 Hallöchen, ich bin Eddie. <br />
-                Brillenschlange, Designer und Entwickler 🥸
+                Brillenschlange, Designer und Entwickler. 🥸
               </H2>
               <H2
                 variants={MotionVariants.SlideUp}
@@ -140,14 +141,20 @@ export default function Home() {
               </H2>
             </FillColumn>
 
-            <PortfolioContainer>
+            <PortfolioContainer layout>
               {downloaded ? (
                 <DownloadSuccess />
               ) : showPassword ? (
                 <HugRow $gap="10px">
-                  <MotionWrapper layout="position">
+                  <MotionIconWrapper
+                    layout="position"
+                    variants={MotionVariants.SpringScale}
+                    animate="animate"
+                    exit="exit"
+                    initial="initial"
+                  >
                     <LockIcon color="#121212" />
-                  </MotionWrapper>
+                  </MotionIconWrapper>
                   <MiniForm onSubmit={checkPassword}>
                     <PasswordField
                       value={password.value}
@@ -163,13 +170,16 @@ export default function Home() {
                           exit="exit"
                           initial="initial"
                           layout="position"
+                          key="submit-button"
                         >
-                          <ArrowRightIcon />
+                          {isLoading ? <LoadingSpinner /> : <ArrowRightIcon />}
                         </RoundIconButton>
                       )}
                     </AnimatePresence>
                   </MiniForm>
                 </HugRow>
+              ) : isLoading ? (
+                <LoadingSpinner color="#121212" />
               ) : (
                 <Button
                   onClick={downloadPortfolio}

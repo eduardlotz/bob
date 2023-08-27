@@ -1,10 +1,13 @@
+import { motion } from "framer-motion";
+import styled from "styled-components";
+
 interface IconProps {
   color?: string;
 }
 
 export const LockIcon = ({ color }: IconProps) => (
   <svg
-    xmlns="http://www.w3.org/2000/svg"
+    xmlns="http://www.w3.org/2000/motion.svg"
     width="20"
     height="20"
     fill="none"
@@ -71,3 +74,38 @@ export const ArrowRightIcon = ({ color }: IconProps) => (
     />
   </svg>
 );
+
+export const LoadingSpinner = styled(motion.span)<{ color?: string }>`
+  width: 24px;
+  height: 24px;
+  position: relative;
+  overflow: hidden;
+
+  &:before {
+    content: "";
+    width: 80%;
+    height: 80%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
+
+    border: 3px solid #0000;
+    border-color: ${(p) => (p.color ? `${p.color} ${p.color}` : "#fff #fff")}
+      #0000 #0000;
+    border-radius: 50%;
+
+    animation: rotate 2s cubic-bezier(0.2, 0.5, 0.2, 0.6) infinite;
+    rotate: 180deg;
+    translate: -2px, -2px;
+  }
+
+  @keyframes rotate {
+    50% {
+      translate: 2px 2px;
+      rotate: 115deg;
+    }
+  }
+`;

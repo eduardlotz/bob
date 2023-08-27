@@ -8,7 +8,11 @@ export default (req: NextApiRequest, res: NextApiResponse) => {
   const valid = password === process.env.PORTFOLIO_PASSWORD;
 
   if (valid) {
-    const filePath = path.join(process.cwd(), "private", "portfolio.pdf");
+    const filePath = path.join(
+      process.cwd(),
+      "private",
+      "eduard_lotz_portfolio.pdf"
+    );
 
     if (!fs.existsSync(filePath)) {
       res.status(500).send("Datei nicht gefunden");

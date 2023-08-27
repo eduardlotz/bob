@@ -3,26 +3,17 @@ export namespace MotionVariants {
     initial: {
       opacity: 0,
       x: -40,
-      transition: {
-        duration: 0.15,
-        ease: "circOut",
-      },
+      transition: { type: "spring", duration: 0.4, bounce: 0.2 },
     },
     animate: {
       x: 0,
       opacity: 1,
-      transition: {
-        duration: 0.15,
-        ease: "circOut",
-      },
+      transition: { type: "spring", duration: 0.4, bounce: 0.2 },
     },
     exit: {
       x: -40,
       opacity: 0,
-      transition: {
-        duration: 0.15,
-        ease: "circOut",
-      },
+      transition: { type: "spring", duration: 0.4, bounce: 0.2 },
     },
   };
   export const SlideUp = {
