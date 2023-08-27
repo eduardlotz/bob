@@ -14,23 +14,19 @@ import {
   HugRow,
 } from "@/layout";
 import { IconButton, Logo, MotionWrapper } from "@/layout/atoms";
-import { CheckmarkIcon, LockIcon } from "@/layout/icons";
-import { BottomText, H2 } from "@/layout/text";
+import { CheckmarkIcon, DownloadIcon, LockIcon } from "@/layout/icons";
+import { BottomText, H2, UppercaseText } from "@/layout/text";
 import { MiniForm, PasswordField } from "@/molecules/form";
 import { MotionVariants } from "@/styles/motion";
 import { motion } from "framer-motion";
 
 export default function Home() {
   const password = useInput("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(true);
   const [downloaded, setDownloaded] = useState(false);
 
   const openPasswordField = () => {
     setShowPassword(true);
-  };
-
-  const closePasswordField = () => {
-    setShowPassword(false);
   };
 
   const checkPassword = async (e: React.ChangeEvent<HTMLFormElement>) => {
@@ -38,7 +34,21 @@ export default function Home() {
 
     if (password.value === "") return;
 
-    const response = await fetch("/api/portfolio", {
+    const response = await fetch("/api/portfolio/password", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ password: password.value }),
+    });
+
+    if (response.ok) {
+      setShowPassword(false);
+    } else toast.error("Falsches Passwort 😭");
+  };
+
+  const downloadPortfolio = async () => {
+    const response = await fetch("/api/portfolio/password", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -50,23 +60,21 @@ export default function Home() {
       const blob = await response.blob();
       download(blob, "portfolio.pdf", "application/pdf");
 
-      toast.success("Feedback ist immer willkommen 🙏");
+      toast.success("portfolio.pdf wurde heruntergeladen");
       setDownloaded(true);
-    } else toast.error("Falsches Passwort. 😭");
-
-    console.log("response", response);
+    } else toast.error("Ein Fehler ist aufgetreten.");
   };
 
   const DownloadSuccess = () => (
-    <IconButton
+    <HugRow
       variants={MotionVariants.SpringScale}
       animate="animate"
       exit="exit"
       initial="initial"
-      onClick={() => setDownloaded(false)}
     >
       <CheckmarkIcon />
-    </IconButton>
+      <UppercaseText>download erfolgreich</UppercaseText>
+    </HugRow>
   );
 
   return (
@@ -117,7 +125,7 @@ export default function Home() {
                 custom={2}
               >
                 Mit dem richtigen Passwort kannst du mein Portfolio
-                herunterladen, ansonsten ist hier noch Baustelle.
+                herunterladen, ansonsten ist hier noch Baustelle. 🚧
               </H2>
             </FillColumn>
 
@@ -126,13 +134,7 @@ export default function Home() {
                 <DownloadSuccess />
               ) : showPassword ? (
                 <HugRow $gap="10px">
-                  <IconButton
-                    layoutId="lock-icon"
-                    transition={{ type: "spring", stiffness: 100 }}
-                    onClick={closePasswordField}
-                  >
-                    <LockIcon color="#121212" />
-                  </IconButton>
+                  <LockIcon color="#121212" />
                   <MiniForm
                     onSubmit={checkPassword}
                     variants={MotionVariants.SpringScale}
@@ -149,18 +151,13 @@ export default function Home() {
                 </HugRow>
               ) : (
                 <Button
-                  onClick={openPasswordField}
+                  onClick={downloadPortfolio}
                   variants={MotionVariants.SpringScaleReversed}
                   animate="animate"
                   exit="exit"
                   initial="initial"
                 >
-                  <MotionWrapper
-                    layoutId="lock-icon"
-                    transition={{ type: "spring", stiffness: 100 }}
-                  >
-                    <LockIcon color="#ffffff" />
-                  </MotionWrapper>
+                  <DownloadIcon />
                   Portfolio herunterladen
                 </Button>
               )}
@@ -175,7 +172,6 @@ export default function Home() {
               <BottomText>
                 Im Laufe der Zeit soll diese Website als Ort dienen, an dem ich
                 meine Gedanken und Ideen auf eine kreative Weise teilen kann.
-                <br />
                 Meine persönliche Sammlung von Ideen, Notizen und Inspirationen.
               </BottomText>
             </BottomInfoWrapper>
@@ -202,7 +198,7 @@ const ContentWrapper = styled(FillColumn)`
 const PortfolioContainer = styled(FillRow)`
   align-items: center;
   justify-content: center;
-  padding: 54px;
+  padding: 54px 24px;
   border-radius: 30px;
   background: #f6f6f6;
   margin-top: 80px;
