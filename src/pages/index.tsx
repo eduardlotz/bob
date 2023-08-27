@@ -12,12 +12,12 @@ import {
   FillRow,
   FillColumn,
   HugRow,
+  HugColumn,
 } from "@/layout";
 import {
   Button,
   Logo,
   MotionIconWrapper,
-  MotionWrapper,
   RoundIconButton,
 } from "@/layout/atoms";
 import {
@@ -30,7 +30,7 @@ import {
 import { BottomText, H2, UppercaseText } from "@/layout/text";
 import { MiniForm, PasswordField } from "@/molecules/form";
 import { MotionVariants } from "@/styles/motion";
-import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { useLoading } from "@/hooks/useLoading";
 
 export default function Home() {
@@ -53,7 +53,11 @@ export default function Home() {
       body: JSON.stringify({ password: password.value }),
     });
 
-    response.ok ? setShowPassword(false) : toast.error("Falsches Passwort 😭");
+    if (response.ok) setShowPassword(false);
+    else {
+      password.setError("Falsches Passwort");
+      toast.error("Falsches Passwort 😭");
+    }
     stopLoading();
   };
 
@@ -145,14 +149,8 @@ export default function Home() {
               {downloaded ? (
                 <DownloadSuccess />
               ) : showPassword ? (
-                <HugRow $gap="10px">
-                  <MotionIconWrapper
-                    layout="position"
-                    variants={MotionVariants.SpringScale}
-                    animate="animate"
-                    exit="exit"
-                    initial="initial"
-                  >
+                <HugColumn $gap="16px" $align="center" $justify="center">
+                  <MotionIconWrapper layout="position">
                     <LockIcon color="#121212" />
                   </MotionIconWrapper>
                   <MiniForm onSubmit={checkPassword}>
@@ -161,23 +159,21 @@ export default function Home() {
                       onChange={password.setValue}
                       placeholder="Passwort eingeben"
                     />
-                    <AnimatePresence mode="popLayout">
-                      {password.value.length > 0 && (
-                        <RoundIconButton
-                          type="submit"
-                          variants={MotionVariants.SlideIn}
-                          animate="animate"
-                          exit="exit"
-                          initial="initial"
-                          layout="position"
-                          key="submit-button"
-                        >
-                          {isLoading ? <LoadingSpinner /> : <ArrowRightIcon />}
-                        </RoundIconButton>
-                      )}
-                    </AnimatePresence>
+                    {password.value.length > 0 && (
+                      <RoundIconButton
+                        type="submit"
+                        variants={MotionVariants.SlideIn}
+                        animate="animate"
+                        exit="exit"
+                        initial="initial"
+                        layout="position"
+                        key="submit-button"
+                      >
+                        {isLoading ? <LoadingSpinner /> : <ArrowRightIcon />}
+                      </RoundIconButton>
+                    )}
                   </MiniForm>
-                </HugRow>
+                </HugColumn>
               ) : isLoading ? (
                 <LoadingSpinner color="#121212" />
               ) : (

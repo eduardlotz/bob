@@ -1,6 +1,5 @@
 import { MotionVariants } from "@/styles/motion";
 import { motion } from "framer-motion";
-import { InputHTMLAttributes } from "react";
 import styled from "styled-components";
 
 interface PasswordFieldProps {
@@ -20,11 +19,11 @@ export const PasswordField = ({
       placeholder={placeholder}
       onChange={onChange}
       type="password"
-      variants={MotionVariants.SpringScale}
+      layout="position"
+      variants={MotionVariants.SpringScaleReversed}
       animate="animate"
       exit="exit"
       initial="initial"
-      layout="position"
     />
   );
 };

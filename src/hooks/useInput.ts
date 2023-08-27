@@ -2,7 +2,7 @@ import { ChangeEvent, useState } from "react";
 
 export const useInput = <T>(initalValue: string) => {
   const [value, setValue_] = useState(initalValue);
-  const [error, setError] = useState<string[]>();
+  const [error, setError] = useState<string>();
 
   const hasChanged = () => value !== initalValue;
 

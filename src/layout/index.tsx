@@ -31,10 +31,12 @@ export const HugRow = styled(motion.div)<{
 export const HugColumn = styled.div<{
   $gap?: NumberWithMeasure;
   $align?: string;
+  $justify?: string;
 }>`
   display: flex;
   flex-direction: column;
   align-items: ${(p) => (p.$align ? p.$align : "flex-start")};
+  justify-content: ${(p) => (p.$justify ? p.$justify : "space-between")};
 
   padding: 0;
   gap: ${(p) => (p.$gap ? p.$gap : "12px")};
