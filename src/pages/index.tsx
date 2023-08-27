@@ -12,10 +12,11 @@ import {
   FillColumn,
   HugRow,
 } from "@/layout";
-import { Logo } from "@/layout/atoms";
+import { IconButton, Logo, MotionWrapper } from "@/layout/atoms";
 import { LockIcon } from "@/layout/icons";
 import { BottomText, H2 } from "@/layout/text";
 import { MiniForm, PasswordField } from "@/molecules/form";
+import { MotionVariants } from "@/styles/motion";
 
 export default function Home() {
   const password = useInput("");
@@ -23,6 +24,10 @@ export default function Home() {
 
   const openPasswordField = () => {
     setShowPassword(true);
+  };
+
+  const closePasswordField = () => {
+    setShowPassword(false);
   };
 
   const checkPassword = async (e: React.ChangeEvent<HTMLFormElement>) => {
@@ -57,7 +62,7 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <Toaster position="bottom-center" />
+      <Toaster position="bottom-right" />
 
       <FullScreen>
         <NavigationWrapper>
@@ -75,14 +80,25 @@ export default function Home() {
                 Hallöchen, ich bin Eddie. <br />
                 Brillenschlange, Designer und Entwickler 🥸
               </H2>
-              <H2>Hier ist leider noch Baustelle.</H2>
+              <H2>
+                Hier ist leider noch Baustelle. <br />
+                Bisher gibt es nur mein Portfolio zu sehen.
+              </H2>
             </FillColumn>
 
             <PortfolioContainer>
               {showPassword ? (
                 <HugRow $gap="10px">
-                  <LockIcon color="#121212" />
-                  <MiniForm onSubmit={checkPassword}>
+                  <IconButton layoutId="lock-icon" onClick={closePasswordField}>
+                    <LockIcon color="#121212" />
+                  </IconButton>
+                  <MiniForm
+                    onSubmit={checkPassword}
+                    variants={MotionVariants.SpringScale}
+                    animate="animate"
+                    exit="exit"
+                    initial="initial"
+                  >
                     <PasswordField
                       value={password.value}
                       onChange={password.setValue}
@@ -92,8 +108,10 @@ export default function Home() {
                 </HugRow>
               ) : (
                 <Button onClick={openPasswordField}>
-                  <LockIcon color="#ffffff" />
-                  Portfolio
+                  <MotionWrapper layoutId="lock-icon">
+                    <LockIcon color="#ffffff" />
+                  </MotionWrapper>
+                  Portfolio herunterladen
                 </Button>
               )}
             </PortfolioContainer>
@@ -101,9 +119,9 @@ export default function Home() {
             <BottomInfoWrapper>
               <BottomText>
                 Im Laufe der Zeit soll diese Website als Ort dienen, an dem ich
-                meine Gedanken und Ideen auf eine kreative Weise teilen kann. Es
-                wird meine persönliche Sammlung von Ideen, Notizen und
-                Inspirationen.
+                meine Gedanken und Ideen auf eine kreative Weise teilen kann.
+                <br />
+                Meine persönliche Sammlung von Ideen, Notizen und Inspirationen.
               </BottomText>
             </BottomInfoWrapper>
           </ContentWidth>
@@ -153,6 +171,14 @@ const Button = styled.button`
   line-height: normal;
   letter-spacing: 1.4px;
   text-transform: uppercase;
+
+  box-shadow: 0px 0px 0px 0px #000;
+  transition: box-shadow 0.35s cubic-bezier(0.2, 0.8, 0.2, 0.8);
+  cursor: pointer;
+
+  &:hover {
+    box-shadow: 0px 0px 0px 4px #000;
+  }
 `;
 
 const BottomInfoWrapper = styled(FillRow)`

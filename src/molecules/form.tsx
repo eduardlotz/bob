@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { InputHTMLAttributes } from "react";
 import styled from "styled-components";
 
@@ -52,7 +53,7 @@ const PasswordInput = styled.input`
   }
 `;
 
-export const MiniForm = styled.form`
+export const MiniForm = styled(motion.form)`
   width: 100%;
   position: relative;
 `;
