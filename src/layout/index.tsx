@@ -28,7 +28,7 @@ export const HugRow = styled(motion.div)<{
   flex-wrap: ${(p) => p.$wrap && "wrap"};
 `;
 
-export const HugColumn = styled.div<{
+export const HugColumn = styled(motion.div)<{
   $gap?: NumberWithMeasure;
   $align?: string;
   $justify?: string;
@@ -56,7 +56,7 @@ export const FillRow = styled(motion.div)<{
   max-width: 100%;
 
   padding: ${(p) => (p.$padding ? p.$padding : "0px")};
-  gap: ${(p) => (p.$gap ? p.$gap : "auto")};
+  gap: ${(p) => (p.$gap ? p.$gap : "0")};
   flex-wrap: ${(p) => p.$wrap && "wrap"};
 `;
 
