@@ -1,37 +1,42 @@
 import { motion } from "framer-motion";
 import styled from "styled-components";
+import { FillRow, HugRow } from ".";
 
 export const Logo = () => {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="70"
-      height="50"
+      width="80"
+      height="56"
       fill="none"
-      viewBox="0 0 70 50"
+      viewBox="0 0 80 56"
     >
-      <g clipPath="url(#clip0_2404_508)">
+      <g clipPath="url(#clip0_2458_55)">
         <path
           stroke="#121212"
-          strokeWidth="2"
-          d="M15.055 36.958c6.34.827 12.76-3.228 13.035-10.22.736-6.795-3.85-12.733-10.384-13.195-6.596-.64-12.453 3.845-12.987 10.193-.914 7.076 3.942 12.387 10.336 13.222zM41.078 40.356c6.34.828 12.761-3.228 13.036-10.22.736-6.795-3.85-12.732-10.385-13.194-6.595-.64-12.453 3.844-12.987 10.192-.913 7.076 3.942 12.387 10.336 13.222z"
+          strokeWidth="2.24"
+          d="M17.662 41.393c7.1.928 14.293-3.614 14.6-11.446.824-7.61-4.312-14.26-11.631-14.778-7.387-.716-13.947 4.306-14.545 11.416C5.062 34.51 10.5 40.458 17.662 41.393zM46.807 45.2c7.101.927 14.293-3.615 14.6-11.447.824-7.61-4.311-14.26-11.63-14.777-7.387-.717-13.948 4.305-14.546 11.415-1.023 7.925 4.415 13.873 11.576 14.809z"
         ></path>
         <path
           fill="#121212"
           fillRule="evenodd"
-          d="M52.99 31.723c.691-1.049 3.433-4.569 6.145-7.201 1.375-1.335 2.638-2.338 3.566-2.735.473-.203.672-.167.706-.155.002 0 .012.002.036.033.032.043.094.146.148.359.137.538.68.869 1.214.74a.986.986 0 00.72-1.209c-.207-.812-.662-1.523-1.48-1.812-.742-.262-1.516-.073-2.15.2-1.288.55-2.772 1.783-4.16 3.129-1.65 1.603-3.31 3.517-4.554 5.06.03.626.01 1.266-.063 1.916a10.715 10.715 0 01-.212 1.785.987.987 0 00.084-.11zM26.517 29.744a.974.974 0 00.32-.305c1.03-1.562 3.666-1.51 4.606.657.066.151.164.279.283.378a12.448 12.448 0 01.001-3.161 4.677 4.677 0 00-4.635-.6 10.362 10.362 0 01-.575 3.03z"
+          d="M60.148 35.531c.775-1.175 3.846-5.117 6.883-8.065 1.54-1.495 2.955-2.619 3.994-3.064.53-.227.753-.186.79-.173h.001c.002 0 .013.002.04.037.037.048.105.163.166.402.153.602.762.973 1.36.828.598-.145.959-.75.806-1.353-.231-.91-.741-1.707-1.659-2.03-.83-.293-1.697-.081-2.407.223-1.442.618-3.105 1.998-4.658 3.506-1.85 1.795-3.707 3.938-5.1 5.667.032.7.01 1.418-.07 2.145a12.017 12.017 0 01-.239 2c.033-.039.065-.08.093-.123zM30.5 33.314a1.09 1.09 0 00.358-.341c1.153-1.75 4.106-1.69 5.159.736.073.17.183.312.316.423a13.943 13.943 0 01.002-3.54 5.238 5.238 0 00-5.192-.672 11.605 11.605 0 01-.644 3.394z"
           clipRule="evenodd"
         ></path>
         <path
           stroke="#121212"
           strokeLinecap="round"
-          strokeWidth="2"
-          d="M29.26 33.797c-2.85 3.099-7.256 12.351.188 10.076M16.34 8.661c2.035-1.866 7.015-1.804 9.164 1.945M49.24 13.663c-1.55-2.334-6.396-3.555-9.332-.47"
+          strokeWidth="2.24"
+          d="M33.571 37.853c-3.192 3.47-8.126 13.834.211 11.285M19.102 9.7c2.278-2.09 7.856-2.02 10.263 2.18M55.95 15.303c-1.736-2.615-7.164-3.982-10.453-.527"
         ></path>
       </g>
       <defs>
-        <clipPath id="clip0_2404_508">
-          <path fill="#fff" d="M0 0H70V50H0z"></path>
+        <clipPath id="clip0_2458_55">
+          <path
+            fill="#fff"
+            d="M0 0H78.4V56H0z"
+            transform="translate(.8)"
+          ></path>
         </clipPath>
       </defs>
     </svg>
@@ -49,12 +54,14 @@ export const MotionWrapper = styled(motion.div)`
   overflow: none;
 `;
 
-export const MotionIconWrapper = styled(motion.span)`
+export const MotionIconWrapper = styled(FillRow)`
   position: relative;
 
-  width: fit-content;
   height: fit-content;
+  width: fit-content;
   margin: 0;
+  gap: 8px;
+
   overflow: none;
 `;
 
@@ -66,33 +73,53 @@ export const IconButton = styled(motion.button)`
   width: fit-content;
   height: fit-content;
   margin: 0;
-  padding: 0;
+  padding: 12px;
   border: 0;
   outline: 0;
-  background: transparent;
 
+  border-radius: 50px;
+  background-color: rgba(18, 18, 18, 0.05);
+  color: #121212;
+
+  transition: background-color 0.35s cubic-bezier(0.2, 0.8, 0.2, 0.8);
   > * {
     transition: scale 0.35s cubic-bezier(0.2, 0.8, 0.2, 0.8);
   }
 
   &:hover {
     cursor: pointer;
+    background-color: rgba(18, 18, 18, 0.08);
+
     > * {
       scale: 1.14;
     }
   }
+
+  &:active {
+    cursor: pointer;
+    background-color: rgba(18, 18, 18, 0.1);
+
+    > * {
+      scale: 1;
+    }
+  }
 `;
 
-export const Button = styled(motion.button)`
+export const Button = styled(motion.button)<{
+  variant?: "primary" | "secondary";
+}>`
   display: flex;
-  padding: 12px 20px;
+  display: flex;
+  width: 310px;
+  /* max-width: 100%; */
+  padding: 20px 30px;
   justify-content: center;
   align-items: center;
   gap: 10px;
 
   border-radius: 50px;
-  background: #121212;
 
+  background: #121212;
   color: #fff;
   text-align: center;
   font-size: 14px;
@@ -111,6 +138,10 @@ export const Button = styled(motion.button)`
 
   &:hover {
     box-shadow: 0px 0px 0px 4px #000;
+  }
+
+  &:active {
+    box-shadow: 0px 0px 0px 0px #000;
   }
 `;
 

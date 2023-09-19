@@ -1,18 +1,21 @@
 export namespace MotionVariants {
   export const SlideIn = {
     initial: {
-      opacity: 0,
       x: -40,
+      opacity: 0,
+
       transition: { type: "spring", duration: 0.4, bounce: 0.2 },
     },
     animate: {
       x: 0,
       opacity: 1,
+
       transition: { type: "spring", duration: 0.4, bounce: 0.2 },
     },
     exit: {
       x: -40,
       opacity: 0,
+
       transition: { type: "spring", duration: 0.4, bounce: 0.2 },
     },
   };
@@ -20,13 +23,20 @@ export namespace MotionVariants {
     initial: {
       y: 20,
       opacity: 0,
+      filter: "blur(6px)",
       transition: { type: "spring", duration: 0.8, bounce: 0.3 },
     },
-    exit: { y: -20, opacity: 0, transition: { type: "spring", duration: 0.5 } },
+    exit: {
+      y: -20,
+      opacity: 0,
+      filter: "blur(6px)",
+      transition: { type: "spring", duration: 0.5 },
+    },
     animate: (custom = 0) => ({
       y: 0,
       opacity: 1,
-      transition: { type: "spring", duration: 0.5, delay: custom * 0.05 },
+      filter: "blur(0px)",
+      transition: { type: "spring", duration: 0.5, delay: custom * 0.1 },
     }),
   };
   export const SpringScale = {

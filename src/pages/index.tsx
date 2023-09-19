@@ -1,6 +1,6 @@
 import download from "downloadjs";
 import Head from "next/head";
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import { Toaster, toast } from "sonner";
 import Link from "next/link";
 import styled from "styled-components";
@@ -14,20 +14,14 @@ import {
   HugRow,
   HugColumn,
 } from "@/layout";
+import { Button, IconButton, Logo, MotionIconWrapper } from "@/layout/atoms";
 import {
-  Button,
-  Logo,
-  MotionIconWrapper,
-  RoundIconButton,
-} from "@/layout/atoms";
-import {
-  ArrowRightIcon,
+  ArrowLeftIcon,
   CheckmarkIcon,
-  DownloadIcon,
   LoadingSpinner,
   LockIcon,
 } from "@/layout/icons";
-import { BottomText, H2, UppercaseText } from "@/layout/text";
+import { BottomText, H2 } from "@/layout/text";
 import { MiniForm, PasswordField } from "@/molecules/form";
 import { MotionVariants } from "@/styles/motion";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
@@ -35,33 +29,17 @@ import { useLoading } from "@/hooks/useLoading";
 
 export default function Home() {
   const password = useInput("");
-  const [showPassword, setShowPassword] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
   const { isLoading, startLoading, stopLoading } = useLoading();
 
-  const checkPassword = async (e: React.ChangeEvent<HTMLFormElement>) => {
+  const downloadPortfolio = async (e: FormEvent) => {
     e.preventDefault();
-    startLoading();
 
-    if (password.value === "") return;
-
-    const response = await fetch("/api/portfolio/password", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ password: password.value }),
-    });
-
-    if (response.ok) setShowPassword(false);
-    else {
-      password.setError("Falsches Passwort");
-      toast.error("Falsches Passwort 😭");
+    if (password.value === "") {
+      return;
     }
-    stopLoading();
-  };
 
-  const downloadPortfolio = async () => {
     startLoading();
     const response = await fetch("/api/portfolio/download", {
       method: "POST",
@@ -77,7 +55,10 @@ export default function Home() {
 
       toast.success("Portfolio wurde heruntergeladen.");
       setDownloaded(true);
-    } else toast.error("Interner Fehler aufgetreten.");
+    } else {
+      password.setError("Falsches Passwort");
+      toast.error("Falsches Passwort 😭");
+    }
     stopLoading();
   };
 
@@ -87,9 +68,10 @@ export default function Home() {
       animate="animate"
       exit="exit"
       initial="initial"
+      $padding="20px"
+      layout="position"
     >
       <CheckmarkIcon />
-      <UppercaseText>download erfolgreich</UppercaseText>
     </HugRow>
   );
 
@@ -107,7 +89,7 @@ export default function Home() {
       <FullScreen>
         <NavigationWrapper>
           <ContentWidth>
-            <FillRow $align="center" $justify="flex-start">
+            <FillRow $align="center" $justify="center">
               <IconLink
                 href="/"
                 variants={MotionVariants.SpringScale}
@@ -123,72 +105,118 @@ export default function Home() {
 
         <ContentWrapper>
           <ContentWidth>
-            <FillColumn $gap="32px" $justify="flex-start" $align="flex-start">
-              <H2
-                variants={MotionVariants.SlideUp}
-                animate="animate"
-                exit="exit"
-                initial="initial"
-              >
-                Hallöchen, ich bin Eddie. <br />
-                Brillenschlange, Designer und Entwickler. 🥸
-              </H2>
-              <H2
-                variants={MotionVariants.SlideUp}
-                animate="animate"
-                exit="exit"
-                initial="initial"
-                custom={2}
-              >
-                Mit dem richtigen Passwort kannst du mein Portfolio
-                herunterladen, ansonsten ist hier noch Baustelle. 🚧
-              </H2>
-            </FillColumn>
-
-            <PortfolioContainer layout>
-              {downloaded ? (
-                <DownloadSuccess />
-              ) : showPassword ? (
-                <HugColumn $gap="16px" $align="center" $justify="center">
-                  <MotionIconWrapper layout="position">
-                    <LockIcon color="#121212" />
-                  </MotionIconWrapper>
-                  <MiniForm onSubmit={checkPassword} layout="position">
-                    <PasswordField
-                      value={password.value}
-                      onChange={password.setValue}
-                      placeholder="Passwort eingeben"
-                    />
-                    <AnimatePresence mode="popLayout">
-                      {password.value.length > 0 && (
-                        <RoundIconButton
-                          type="submit"
-                          variants={MotionVariants.SlideIn}
-                          animate="animate"
-                          exit="exit"
-                          initial="initial"
-                          key="submit-button"
-                        >
-                          {isLoading ? <LoadingSpinner /> : <ArrowRightIcon />}
-                        </RoundIconButton>
-                      )}
-                    </AnimatePresence>
-                  </MiniForm>
+            <AnimatePresence mode="popLayout">
+              {showPassword ? (
+                <HugColumn
+                  key="portfolio-head"
+                  variants={MotionVariants.SlideUp}
+                  animate="animate"
+                  exit="exit"
+                  initial="initial"
+                  layout="position"
+                >
+                  <IconButton
+                    onClick={() => setShowPassword(false)}
+                    type="button"
+                  >
+                    <ArrowLeftIcon />
+                  </IconButton>
+                  <H2>Mein Design Portfolio.</H2>
                 </HugColumn>
-              ) : isLoading ? (
-                <LoadingSpinner color="#121212" />
               ) : (
-                <Button
-                  onClick={downloadPortfolio}
-                  variants={MotionVariants.SpringScaleReversed}
+                <HugColumn
+                  $gap="0"
+                  $justify="flex-start"
+                  $align="center"
+                  key="landing-hello"
+                  variants={MotionVariants.SlideUp}
                   animate="animate"
                   exit="exit"
                   initial="initial"
                 >
-                  <DownloadIcon />
-                  Portfolio herunterladen
-                </Button>
+                  <H2>Hallöchen.</H2>
+                  <H2 custom={1}>Hier ist leider noch Baustelle.</H2>
+                </HugColumn>
               )}
+            </AnimatePresence>
+
+            <PortfolioContainer
+              layout
+              variants={MotionVariants.SlideUp}
+              animate="animate"
+              exit="exit"
+              initial="initial"
+              custom={2}
+            >
+              <LayoutGroup>
+                {showPassword ? (
+                  <HugColumn $gap="20px" $align="center" $justify="center">
+                    <AnimatePresence mode="popLayout">
+                      {isLoading ? (
+                        <LoadingSpinner
+                          variants={MotionVariants.SpringScaleReversed}
+                          animate="animate"
+                          exit="exit"
+                          initial="initial"
+                          color="#121212"
+                          layout="position"
+                        />
+                      ) : (
+                        <MiniForm
+                          onSubmit={downloadPortfolio}
+                          layout="position"
+                        >
+                          {downloaded ? (
+                            <DownloadSuccess key="download-success" />
+                          ) : (
+                            <PasswordField
+                              value={password.value}
+                              onChange={password.setValue}
+                              placeholder="Passwort eingeben"
+                              key="password-field"
+                            />
+                          )}
+                          <Button
+                            type="submit"
+                            variants={MotionVariants.SpringScaleReversed}
+                            animate="animate"
+                            exit="exit"
+                            initial="initial"
+                            layout="position"
+                          >
+                            {downloaded
+                              ? "nochmal herunterladen"
+                              : "herunterladen"}
+                          </Button>
+                        </MiniForm>
+                      )}
+                    </AnimatePresence>
+                  </HugColumn>
+                ) : (
+                  <HugColumn $align="center" $gap="20px">
+                    <MotionIconWrapper
+                      variants={MotionVariants.SpringScaleReversed}
+                      animate="animate"
+                      exit="exit"
+                      initial="initial"
+                      layout="position"
+                    >
+                      <LockIcon color="#121212" />
+                    </MotionIconWrapper>
+                    <Button
+                      type="button"
+                      onClick={() => setShowPassword(true)}
+                      variants={MotionVariants.SpringScaleReversed}
+                      animate="animate"
+                      exit="exit"
+                      initial="initial"
+                      layout="position"
+                    >
+                      Portfolio
+                    </Button>
+                  </HugColumn>
+                )}
+              </LayoutGroup>
             </PortfolioContainer>
 
             <BottomInfoWrapper
@@ -196,6 +224,7 @@ export default function Home() {
               animate="animate"
               exit="exit"
               initial="initial"
+              custom={6}
             >
               <BottomText>
                 Im Laufe der Zeit soll diese Website als Ort dienen, an dem ich
@@ -213,7 +242,7 @@ export default function Home() {
 
 const NavigationWrapper = styled.div`
   width: 100%;
-  padding: 16px;
+  padding: 40px 16px 0 16px;
 
   display: flex;
   align-items: center;
@@ -222,14 +251,12 @@ const NavigationWrapper = styled.div`
 
 const ContentWrapper = styled(FillColumn)`
   padding: 16px;
+  padding-top: 100px;
 `;
 
 const PortfolioContainer = styled(FillRow)`
   align-items: center;
   justify-content: center;
-  padding: 54px 24px;
-  border-radius: 30px;
-  background: #f6f6f6;
   margin-top: 80px;
 `;
 
