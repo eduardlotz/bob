@@ -62,7 +62,7 @@ export const MotionIconWrapper = styled(FillRow)`
   margin: 0;
   gap: 8px;
 
-  overflow: none;
+  overflow: unset;
 `;
 
 export const IconButton = styled(motion.button)`
@@ -82,6 +82,7 @@ export const IconButton = styled(motion.button)`
   color: #121212;
 
   transition: background-color 0.35s cubic-bezier(0.2, 0.8, 0.2, 0.8);
+
   > * {
     transition: scale 0.35s cubic-bezier(0.2, 0.8, 0.2, 0.8);
   }
@@ -131,8 +132,9 @@ export const Button = styled(motion.button)<{
 
   box-shadow: 0px 0px 0px 0px #000;
   transition: 0.35s cubic-bezier(0.2, 0.8, 0.2, 0.8);
-  transition-property: box-shadow width;
-  will-change: box-shadow width;
+  transition-property: box-shadow;
+  will-change: box-shadow transform filter;
+  overflow: hidden;
 
   cursor: pointer;
 
