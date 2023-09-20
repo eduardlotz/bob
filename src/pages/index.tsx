@@ -14,18 +14,26 @@ import {
   HugRow,
   HugColumn,
 } from "@/layout";
-import { Button, IconButton, Logo, MotionIconWrapper } from "@/layout/atoms";
+import {
+  Button,
+  IconButton,
+  Logo,
+  MotionIconWrapper,
+  MotionWrapper,
+} from "@/layout/atoms";
 import {
   ArrowLeftIcon,
   CheckmarkIcon,
   LoadingSpinner,
   LockIcon,
+  UnlockedIcon,
 } from "@/layout/icons";
 import { BottomText, H2 } from "@/layout/text";
 import { MiniForm, PasswordField } from "@/molecules/form";
 import { MotionVariants } from "@/styles/motion";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
 import { useLoading } from "@/hooks/useLoading";
+import { minDelay } from "@/utils/simulate";
 
 export default function Home() {
   const password = useInput("");
@@ -41,20 +49,23 @@ export default function Home() {
     }
 
     startLoading();
-    const response = await fetch("/api/portfolio/download", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ password: password.value }),
-    });
+    const response = await minDelay(
+      fetch("/api/portfolio/download", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ password: password.value }),
+      }),
+      1000
+    );
 
     if (response.ok) {
       const blob = await response.blob();
       download(blob, "portfolio.pdf", "application/pdf");
 
       toast.success("Portfolio wurde heruntergeladen.");
-      setDownloaded(true);
+      if (!downloaded) setDownloaded(true);
     } else {
       password.setError("Falsches Passwort");
       toast.error("Falsches Passwort 😭");
@@ -151,69 +162,108 @@ export default function Home() {
               <LayoutGroup>
                 {showPassword ? (
                   <HugColumn $gap="20px" $align="center" $justify="center">
-                    <AnimatePresence mode="popLayout">
-                      {isLoading ? (
-                        <LoadingSpinner
-                          variants={MotionVariants.SpringScaleReversed}
-                          animate="animate"
-                          exit="exit"
-                          initial="initial"
-                          color="#121212"
-                          layout="position"
-                        />
+                    <MotionIconWrapper layoutId="lock-icon" layout="position">
+                      {downloaded ? (
+                        <UnlockedIcon color="#121212" />
                       ) : (
-                        <MiniForm
-                          onSubmit={downloadPortfolio}
-                          layout="position"
-                        >
-                          {downloaded ? (
-                            <DownloadSuccess key="download-success" />
-                          ) : (
+                        <LockIcon color="#121212" />
+                      )}
+                    </MotionIconWrapper>
+                    <MiniForm
+                      onSubmit={downloadPortfolio}
+                      variants={MotionVariants.SpringScaleReversed}
+                      animate="animate"
+                      exit="exit"
+                      initial="initial"
+                      layout="position"
+                    >
+                      <AnimatePresence mode="popLayout" initial={false}>
+                        {downloaded ? (
+                          <DownloadSuccess key="download-success" />
+                        ) : (
+                          <MotionWrapper key="password-field">
                             <PasswordField
                               value={password.value}
                               onChange={password.setValue}
                               placeholder="Passwort eingeben"
                               key="password-field"
                             />
+                          </MotionWrapper>
+                        )}
+                      </AnimatePresence>
+                      <Button
+                        type="submit"
+                        layout="position"
+                        disabled={isLoading}
+                      >
+                        <AnimatePresence mode="popLayout">
+                          {isLoading ? (
+                            <LoadingSpinner
+                              variants={MotionVariants.SlideInDown}
+                              animate="animate"
+                              exit="exit"
+                              initial="initial"
+                              color="#ffffff"
+                              key="loading-spinner"
+                            />
+                          ) : downloaded ? (
+                            <MotionWrapper
+                              variants={MotionVariants.SlideInDown}
+                              animate="animate"
+                              exit="exit"
+                              initial="initial"
+                              key="download-again"
+                            >
+                              nochmal herunterladen
+                            </MotionWrapper>
+                          ) : (
+                            <MotionWrapper
+                              variants={MotionVariants.SlideInDown}
+                              animate="animate"
+                              exit="exit"
+                              initial="initial"
+                              key="download-button"
+                            >
+                              herunterladen
+                            </MotionWrapper>
                           )}
-                          <Button
-                            type="submit"
-                            variants={MotionVariants.SpringScaleReversed}
-                            animate="animate"
-                            exit="exit"
-                            initial="initial"
-                            layout="position"
-                          >
-                            {downloaded
-                              ? "nochmal herunterladen"
-                              : "herunterladen"}
-                          </Button>
-                        </MiniForm>
-                      )}
-                    </AnimatePresence>
+                        </AnimatePresence>
+                      </Button>
+                    </MiniForm>
                   </HugColumn>
                 ) : (
-                  <HugColumn $align="center" $gap="20px">
+                  <HugColumn
+                    $align="center"
+                    $gap="20px"
+                    key="start-form"
+                    layout="position"
+                  >
                     <MotionIconWrapper
-                      variants={MotionVariants.SpringScaleReversed}
-                      animate="animate"
-                      exit="exit"
-                      initial="initial"
+                      layoutId="lock-icon"
                       layout="position"
+                      initial={false}
                     >
-                      <LockIcon color="#121212" />
+                      {downloaded ? (
+                        <UnlockedIcon color="#121212" />
+                      ) : (
+                        <LockIcon color="#121212" />
+                      )}
                     </MotionIconWrapper>
-                    <Button
-                      type="button"
-                      onClick={() => setShowPassword(true)}
+                    <MotionIconWrapper
+                      layout="position"
                       variants={MotionVariants.SpringScaleReversed}
+                      initial="initial"
                       animate="animate"
                       exit="exit"
-                      initial="initial"
-                      layout="position"
                     >
-                      Portfolio
-                    </Button>
+                      <Button
+                        layout="position"
+                        type="button"
+                        onClick={() => setShowPassword(true)}
+                      >
+                        Portfolio
+                      </Button>
+                    </MotionIconWrapper>
                   </HugColumn>
                 )}
               </LayoutGroup>
