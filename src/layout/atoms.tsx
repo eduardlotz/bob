@@ -52,9 +52,11 @@ export const MotionWrapper = styled(motion.div)`
   height: fit-content;
   margin: 0;
   overflow: none;
+  max-width: 100%;
 `;
 
 export const MotionIconWrapper = styled(FillRow)`
+  all: inherit;
   position: relative;
 
   height: fit-content;
@@ -112,7 +114,7 @@ export const Button = styled(motion.button)<{
   display: flex;
   display: flex;
   width: 310px;
-  /* max-width: 100%; */
+  max-width: 100%;
   padding: 20px 30px;
   justify-content: center;
   align-items: center;

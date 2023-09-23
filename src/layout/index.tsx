@@ -60,7 +60,7 @@ export const FillRow = styled(motion.div)<{
   flex-wrap: ${(p) => p.$wrap && "wrap"};
 `;
 
-export const FillColumn = styled.div<{
+export const FillColumn = styled(motion.div)<{
   $gap?: NumberWithMeasure;
   $align?: string;
   $justify?: string;
@@ -77,7 +77,7 @@ export const FillColumn = styled.div<{
   max-height: 100%;
 
   padding: ${(p) => (p.$padding ? p.$padding : "0px")};
-  gap: ${(p) => (p.$gap ? p.$gap : "auto")};
+  gap: ${(p) => (p.$gap ? p.$gap : "0px")};
 `;
 
 export const ContentWidth = styled(FillColumn)`

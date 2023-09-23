@@ -32,7 +32,8 @@ const PasswordInput = styled(motion.input)`
   display: flex;
   padding: 16px 30px;
   width: 310px;
-  min-width: 260px;
+  min-width: 180px;
+  max-width: 100%;
   justify-content: center;
   align-items: center;
   gap: 10px;
@@ -87,4 +88,6 @@ export const MiniForm = styled(motion.form)`
   justify-content: center;
 
   gap: 16px;
+
+  max-width: calc(100% 40px);
 `;
