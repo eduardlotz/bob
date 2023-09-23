@@ -14,15 +14,8 @@ import {
   HugRow,
   HugColumn,
 } from "@/layout";
+import { Button, Logo, MotionIconWrapper, MotionWrapper } from "@/layout/atoms";
 import {
-  Button,
-  IconButton,
-  Logo,
-  MotionIconWrapper,
-  MotionWrapper,
-} from "@/layout/atoms";
-import {
-  ArrowLeftIcon,
   CheckmarkIcon,
   LoadingSpinner,
   LockIcon,
@@ -62,13 +55,13 @@ export default function Home() {
 
     if (response.ok) {
       const blob = await response.blob();
-      download(blob, "portfolio.pdf", "application/pdf");
+      download(blob, "eduardl-lotz-design-portfolio.pdf", "application/pdf");
 
-      toast.success("Portfolio wurde heruntergeladen.");
+      toast.success("Portfolio downloaded ✨");
       if (!downloaded) setDownloaded(true);
     } else {
-      password.setError("Falsches Passwort");
-      toast.error("Falsches Passwort 😭");
+      password.setError("Wrong password");
+      toast.error("Wrong password 😭");
     }
     stopLoading();
   };
@@ -116,158 +109,151 @@ export default function Home() {
 
         <ContentWrapper>
           <ContentWidth>
-            <AnimatePresence mode="popLayout">
-              {showPassword ? (
-                <HugColumn
-                  key="portfolio-head"
-                  variants={MotionVariants.SlideUp}
-                  animate="animate"
-                  exit="exit"
-                  initial="initial"
-                  layout="position"
-                >
-                  <IconButton
-                    onClick={() => setShowPassword(false)}
-                    type="button"
-                  >
-                    <ArrowLeftIcon />
-                  </IconButton>
-                  <H2>Mein Design Portfolio.</H2>
-                </HugColumn>
-              ) : (
-                <HugColumn
-                  $gap="0"
-                  $justify="flex-start"
-                  $align="center"
-                  key="landing-hello"
-                  variants={MotionVariants.SlideUp}
-                  animate="animate"
-                  exit="exit"
-                  initial="initial"
-                >
-                  <H2>Hallöchen.</H2>
-                  <H2 custom={1}>Hier ist leider noch Baustelle.</H2>
-                </HugColumn>
-              )}
-            </AnimatePresence>
-
-            <PortfolioContainer
-              layout
-              variants={MotionVariants.SlideUp}
-              animate="animate"
-              exit="exit"
-              initial="initial"
-              custom={2}
-            >
-              <LayoutGroup>
+            <FillColumn>
+              <AnimatePresence mode="popLayout">
                 {showPassword ? (
-                  <HugColumn $gap="20px" $align="center" $justify="center">
-                    <MotionIconWrapper layoutId="lock-icon" layout="position">
-                      {downloaded ? (
-                        <UnlockedIcon color="#121212" />
-                      ) : (
-                        <LockIcon color="#121212" />
-                      )}
-                    </MotionIconWrapper>
-                    <MiniForm
-                      onSubmit={downloadPortfolio}
-                      variants={MotionVariants.SpringScaleReversed}
-                      animate="animate"
-                      exit="exit"
-                      initial="initial"
-                      layout="position"
-                    >
-                      <AnimatePresence mode="popLayout" initial={false}>
+                  <MotionWrapper
+                    key="portfolio-head"
+                    variants={MotionVariants.SlideUp}
+                    animate="animate"
+                    exit="exit"
+                    initial="initial"
+                  >
+                    <H2>My design portfolio.</H2>
+                  </MotionWrapper>
+                ) : (
+                  <HugColumn
+                    $gap="0"
+                    $justify="flex-start"
+                    $align="center"
+                    key="landing-hello"
+                    variants={MotionVariants.SlideUp}
+                    animate="animate"
+                    exit="exit"
+                    initial="initial"
+                  >
+                    <H2>Sorry, this website is not ready yet.</H2>
+                  </HugColumn>
+                )}
+              </AnimatePresence>
+              <PortfolioContainer
+                layout
+                variants={MotionVariants.SlideUp}
+                animate="animate"
+                exit="exit"
+                initial="initial"
+                custom={2}
+              >
+                <LayoutGroup>
+                  {showPassword ? (
+                    <FillColumn $gap="20px" $align="center" $justify="center">
+                      <MotionIconWrapper layoutId="lock-icon" layout="position">
                         {downloaded ? (
-                          <DownloadSuccess key="download-success" />
+                          <UnlockedIcon color="#121212" />
                         ) : (
-                          <MotionWrapper key="password-field">
-                            <PasswordField
-                              value={password.value}
-                              onChange={password.setValue}
-                              placeholder="Passwort eingeben"
-                              key="password-field"
-                            />
-                          </MotionWrapper>
+                          <LockIcon color="#121212" />
                         )}
-                      </AnimatePresence>
-                      <Button
-                        type="submit"
+                      </MotionIconWrapper>
+                      <MiniForm
+                        onSubmit={downloadPortfolio}
+                        variants={MotionVariants.SpringScaleReversed}
+                        animate="animate"
+                        exit="exit"
+                        initial="initial"
                         layout="position"
-                        disabled={isLoading}
                       >
-                        <AnimatePresence mode="popLayout">
-                          {isLoading ? (
-                            <LoadingSpinner
-                              variants={MotionVariants.SlideInDown}
-                              animate="animate"
-                              exit="exit"
-                              initial="initial"
-                              color="#ffffff"
-                              key="loading-spinner"
-                            />
-                          ) : downloaded ? (
-                            <MotionWrapper
-                              variants={MotionVariants.SlideInDown}
-                              animate="animate"
-                              exit="exit"
-                              initial="initial"
-                              key="download-again"
-                            >
-                              nochmal herunterladen
-                            </MotionWrapper>
+                        <AnimatePresence mode="popLayout" initial={false}>
+                          {downloaded ? (
+                            <DownloadSuccess key="download-success" />
                           ) : (
-                            <MotionWrapper
-                              variants={MotionVariants.SlideInDown}
-                              animate="animate"
-                              exit="exit"
-                              initial="initial"
-                              key="download-button"
-                            >
-                              herunterladen
+                            <MotionWrapper key="password-field">
+                              <PasswordField
+                                value={password.value}
+                                onChange={password.setValue}
+                                placeholder="password"
+                                key="password-field"
+                              />
                             </MotionWrapper>
                           )}
                         </AnimatePresence>
-                      </Button>
-                    </MiniForm>
-                  </HugColumn>
-                ) : (
-                  <HugColumn
-                    $align="center"
-                    $gap="20px"
-                    key="start-form"
-                    layout="position"
-                  >
-                    <MotionIconWrapper
-                      layoutId="lock-icon"
+                        <Button
+                          type="submit"
+                          layout="position"
+                          disabled={isLoading}
+                        >
+                          <AnimatePresence mode="popLayout">
+                            {isLoading ? (
+                              <LoadingSpinner
+                                variants={MotionVariants.SlideInDown}
+                                animate="animate"
+                                exit="exit"
+                                initial="initial"
+                                color="#ffffff"
+                                key="loading-spinner"
+                              />
+                            ) : downloaded ? (
+                              <MotionWrapper
+                                variants={MotionVariants.SlideInDown}
+                                animate="animate"
+                                exit="exit"
+                                initial="initial"
+                                key="download-again"
+                              >
+                                download again
+                              </MotionWrapper>
+                            ) : (
+                              <MotionWrapper
+                                variants={MotionVariants.SlideInDown}
+                                animate="animate"
+                                exit="exit"
+                                initial="initial"
+                                key="download-button"
+                              >
+                                download
+                              </MotionWrapper>
+                            )}
+                          </AnimatePresence>
+                        </Button>
+                      </MiniForm>
+                    </FillColumn>
+                  ) : (
+                    <FillColumn
+                      $align="center"
+                      $gap="20px"
+                      key="start-form"
                       layout="position"
-                      initial={false}
                     >
-                      {downloaded ? (
-                        <UnlockedIcon color="#121212" />
-                      ) : (
-                        <LockIcon color="#121212" />
-                      )}
-                    </MotionIconWrapper>
-                    <MotionIconWrapper
-                      layout="position"
-                      variants={MotionVariants.SpringScaleReversed}
-                      initial="initial"
-                      animate="animate"
-                      exit="exit"
-                    >
-                      <Button
+                      <MotionIconWrapper
+                        layoutId="lock-icon"
                         layout="position"
-                        type="button"
-                        onClick={() => setShowPassword(true)}
+                        initial={false}
                       >
-                        Portfolio
-                      </Button>
-                    </MotionIconWrapper>
-                  </HugColumn>
-                )}
-              </LayoutGroup>
-            </PortfolioContainer>
+                        {downloaded ? (
+                          <UnlockedIcon color="#121212" />
+                        ) : (
+                          <LockIcon color="#121212" />
+                        )}
+                      </MotionIconWrapper>
+                      <MotionIconWrapper
+                        layout="position"
+                        variants={MotionVariants.SpringScaleReversed}
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
+                      >
+                        <Button
+                          layout="position"
+                          type="button"
+                          onClick={() => setShowPassword(true)}
+                        >
+                          my portfolio
+                        </Button>
+                      </MotionIconWrapper>
+                    </FillColumn>
+                  )}
+                </LayoutGroup>
+              </PortfolioContainer>
+            </FillColumn>
 
             <BottomInfoWrapper
               variants={MotionVariants.SlideUp}
@@ -277,10 +263,9 @@ export default function Home() {
               custom={6}
             >
               <BottomText>
-                Im Laufe der Zeit soll diese Website als Ort dienen, an dem ich
-                meine Gedanken und Ideen auf eine kreative Weise teilen kann.
-                Meine persönliche Sammlung von Experimenten, Notizen und
-                Inspirationen.
+                Over time, this website will eventually become a place for
+                sharing my thoughts and ideas in a creative way. My personal
+                collection of ideas, notes and inspirations.
               </BottomText>
             </BottomInfoWrapper>
           </ContentWidth>
@@ -307,7 +292,7 @@ const ContentWrapper = styled(FillColumn)`
 const PortfolioContainer = styled(FillRow)`
   align-items: center;
   justify-content: center;
-  margin-top: 80px;
+  margin-top: 40px;
 `;
 
 const BottomInfoWrapper = styled(FillRow)`
