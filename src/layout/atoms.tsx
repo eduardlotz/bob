@@ -112,14 +112,14 @@ export const Button = styled(motion.button)<{
   variant?: "primary" | "secondary";
 }>`
   display: flex;
-  display: flex;
   width: 310px;
   max-width: 100%;
   padding: 20px 30px;
+  height: 58px;
+
   justify-content: center;
   align-items: center;
   gap: 10px;
-
   border-radius: 50px;
 
   background: #121212;
@@ -134,18 +134,17 @@ export const Button = styled(motion.button)<{
 
   box-shadow: 0px 0px 0px 0px #000;
   transition: 0.35s cubic-bezier(0.2, 0.8, 0.2, 0.8);
-  transition-property: box-shadow;
-  will-change: box-shadow transform filter;
+  transition-property: box-shadow height;
   overflow: hidden;
 
   cursor: pointer;
 
   &:hover {
-    box-shadow: 0px 0px 0px 4px #000;
+    box-shadow: 0px 0px 0px 4px #121212;
   }
 
   &:active {
-    box-shadow: 0px 0px 0px 0px #000;
+    box-shadow: 0px 0px 0px 0px #121212;
   }
 `;
 

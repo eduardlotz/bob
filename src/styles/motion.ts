@@ -23,13 +23,31 @@ export namespace MotionVariants {
       y: 20,
       opacity: 0,
       filter: "blur(4px)",
-      transition: { type: "spring", duration: 0.8, bounce: 0.3 },
+      transition: {
+        type: "spring",
+        duration: 0.8,
+        bounce: 0.3,
+        layout: {
+          type: "spring",
+          duration: 0.2,
+          bounce: 0.4,
+        },
+      },
     },
     exit: {
-      y: 20,
+      y: -20,
       opacity: 0,
       filter: "blur(4px)",
-      transition: { type: "spring", duration: 0.8, bounce: 0.3 },
+      transition: {
+        type: "spring",
+        duration: 0.5,
+        bounce: 0.3,
+        layout: {
+          type: "spring",
+          duration: 0.2,
+          bounce: 0.4,
+        },
+      },
     },
     animate: (custom = 0) => ({
       y: 0,
@@ -40,6 +58,11 @@ export namespace MotionVariants {
         duration: 0.6,
         bounce: 0.3,
         delay: custom * 0.02,
+        layout: {
+          type: "spring",
+          duration: 0.2,
+          bounce: 0.4,
+        },
       },
     }),
   };
@@ -83,6 +106,15 @@ export namespace MotionVariants {
       opacity: 1,
       filter: "blur(0px)",
       transition: { type: "spring", duration: 0.6, bounce: 0.4 },
+    },
+  };
+}
+export namespace LayoutTransition {
+  export const quick = {
+    layout: {
+      type: "spring",
+      duration: 0.2,
+      bounce: 0.4,
     },
   };
 }
