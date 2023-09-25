@@ -1,84 +1,15 @@
-import download from "downloadjs";
 import Head from "next/head";
-import { FormEvent, useState } from "react";
-import { Toaster, toast } from "sonner";
 import Link from "next/link";
 import styled from "styled-components";
 
-import { useInput } from "@/hooks/useInput";
-import {
-  FullScreen,
-  ContentWidth,
-  FillRow,
-  FillColumn,
-  HugRow,
-  HugColumn,
-} from "@/layout";
-import { Button, Logo, MotionIconWrapper, MotionWrapper } from "@/layout/atoms";
-import {
-  CheckmarkIcon,
-  LoadingSpinner,
-  LockIcon,
-  UnlockedIcon,
-} from "@/layout/icons";
+import { FillRow, FillColumn, HugColumn } from "@/layout";
+import { MotionIconWrapper } from "@/layout/atoms";
+import { LockIcon } from "@/layout/icons";
 import { BottomText, H2 } from "@/layout/text";
-import { MiniForm, PasswordField } from "@/molecules/form";
 import { MotionVariants } from "@/styles/motion";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
-import { useLoading } from "@/hooks/useLoading";
-import { minDelay } from "@/utils/simulate";
 
 export default function Home() {
-  const password = useInput("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [downloaded, setDownloaded] = useState(false);
-  const { isLoading, startLoading, stopLoading } = useLoading();
-
-  const downloadPortfolio = async (e: FormEvent) => {
-    e.preventDefault();
-
-    if (password.value === "") {
-      return;
-    }
-
-    startLoading();
-    const response = await minDelay(
-      fetch("/api/portfolio/download", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ password: password.value }),
-      }),
-      1000
-    );
-
-    if (response.ok) {
-      const blob = await response.blob();
-      download(blob, "eduardl-lotz-design-portfolio.pdf", "application/pdf");
-
-      toast.success("Portfolio downloaded ✨");
-      if (!downloaded) setDownloaded(true);
-    } else {
-      password.setError("Wrong password");
-      toast.error("Wrong password 😭");
-    }
-    stopLoading();
-  };
-
-  const DownloadSuccess = () => (
-    <HugRow
-      variants={MotionVariants.SpringScale}
-      animate="animate"
-      exit="exit"
-      initial="initial"
-      $padding="20px"
-      layout="position"
-    >
-      <CheckmarkIcon />
-    </HugRow>
-  );
-
   return (
     <>
       <Head>
@@ -88,206 +19,64 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <Toaster position="top-right" />
-
-      <FullScreen>
-        <NavigationWrapper>
-          <ContentWidth>
-            <FillRow $align="center" $justify="center">
-              <IconLink
-                href="/"
-                variants={MotionVariants.SpringScale}
-                animate="animate"
-                exit="exit"
-                initial="initial"
-              >
-                <Logo />
-              </IconLink>
-            </FillRow>
-          </ContentWidth>
-        </NavigationWrapper>
-
-        <ContentWrapper>
-          <ContentWidth>
-            <FillColumn>
-              <AnimatePresence mode="popLayout">
-                {showPassword ? (
-                  <MotionWrapper
-                    key="portfolio-head"
-                    variants={MotionVariants.SlideUp}
-                    animate="animate"
-                    exit="exit"
-                    initial="initial"
-                  >
-                    <H2>My design portfolio.</H2>
-                  </MotionWrapper>
-                ) : (
-                  <HugColumn
-                    $gap="0"
-                    $justify="flex-start"
-                    $align="center"
-                    key="landing-hello"
-                    variants={MotionVariants.SlideUp}
-                    animate="animate"
-                    exit="exit"
-                    initial="initial"
-                  >
-                    <H2>Sorry, this website is not ready yet.</H2>
-                  </HugColumn>
-                )}
-              </AnimatePresence>
-              <PortfolioContainer
-                layout
-                variants={MotionVariants.SlideUp}
-                animate="animate"
-                exit="exit"
-                initial="initial"
-                custom={2}
-              >
-                <LayoutGroup>
-                  {showPassword ? (
-                    <FillColumn $gap="20px" $align="center" $justify="center">
-                      <MotionIconWrapper layoutId="lock-icon" layout="position">
-                        {downloaded ? (
-                          <UnlockedIcon color="#121212" />
-                        ) : (
-                          <LockIcon color="#121212" />
-                        )}
-                      </MotionIconWrapper>
-                      <MiniForm
-                        onSubmit={downloadPortfolio}
-                        variants={MotionVariants.SpringScaleReversed}
-                        animate="animate"
-                        exit="exit"
-                        initial="initial"
-                        layout="position"
-                      >
-                        <AnimatePresence mode="popLayout" initial={false}>
-                          {downloaded ? (
-                            <DownloadSuccess key="download-success" />
-                          ) : (
-                            <MotionWrapper key="password-field">
-                              <PasswordField
-                                value={password.value}
-                                onChange={password.setValue}
-                                placeholder="password"
-                                key="password-field"
-                              />
-                            </MotionWrapper>
-                          )}
-                        </AnimatePresence>
-                        <Button
-                          type="submit"
-                          layout="position"
-                          disabled={isLoading}
-                        >
-                          <AnimatePresence mode="popLayout">
-                            {isLoading ? (
-                              <LoadingSpinner
-                                variants={MotionVariants.SlideInDown}
-                                animate="animate"
-                                exit="exit"
-                                initial="initial"
-                                color="#ffffff"
-                                key="loading-spinner"
-                              />
-                            ) : downloaded ? (
-                              <MotionWrapper
-                                variants={MotionVariants.SlideInDown}
-                                animate="animate"
-                                exit="exit"
-                                initial="initial"
-                                key="download-again"
-                              >
-                                download again
-                              </MotionWrapper>
-                            ) : (
-                              <MotionWrapper
-                                variants={MotionVariants.SlideInDown}
-                                animate="animate"
-                                exit="exit"
-                                initial="initial"
-                                key="download-button"
-                              >
-                                download
-                              </MotionWrapper>
-                            )}
-                          </AnimatePresence>
-                        </Button>
-                      </MiniForm>
-                    </FillColumn>
-                  ) : (
-                    <FillColumn
-                      $align="center"
-                      $gap="20px"
-                      key="start-form"
-                      layout="position"
-                    >
-                      <MotionIconWrapper
-                        layoutId="lock-icon"
-                        layout="position"
-                        initial={false}
-                      >
-                        {downloaded ? (
-                          <UnlockedIcon color="#121212" />
-                        ) : (
-                          <LockIcon color="#121212" />
-                        )}
-                      </MotionIconWrapper>
-                      <MotionIconWrapper
-                        layout="position"
-                        variants={MotionVariants.SpringScaleReversed}
-                        initial="initial"
-                        animate="animate"
-                        exit="exit"
-                      >
-                        <Button
-                          layout="position"
-                          type="button"
-                          onClick={() => setShowPassword(true)}
-                        >
-                          my portfolio
-                        </Button>
-                      </MotionIconWrapper>
-                    </FillColumn>
-                  )}
-                </LayoutGroup>
-              </PortfolioContainer>
-            </FillColumn>
-
-            <BottomInfoWrapper
-              variants={MotionVariants.SlideUp}
-              animate="animate"
-              exit="exit"
-              initial="initial"
-              custom={6}
+      <FillColumn>
+        <AnimatePresence mode="popLayout">
+          <HugColumn
+            $gap="0"
+            $justify="flex-start"
+            $align="center"
+            key="landing-hello"
+            variants={MotionVariants.SlideUp}
+            animate="animate"
+            exit="exit"
+            initial="initial"
+          >
+            <H2>Sorry, this website is not ready yet.</H2>
+          </HugColumn>
+        </AnimatePresence>
+        <PortfolioContainer layout>
+          <LayoutGroup>
+            <FillColumn
+              $align="center"
+              $gap="20px"
+              key="start-form"
+              layout="position"
             >
-              <BottomText>
-                Over time, this website will eventually become a place for
-                sharing my thoughts and ideas in a creative way. My personal
-                collection of ideas, notes and inspirations.
-              </BottomText>
-            </BottomInfoWrapper>
-          </ContentWidth>
-        </ContentWrapper>
-      </FullScreen>
+              <MotionIconWrapper layoutId="lock-icon" layout="position">
+                <LockIcon color="#121212" />
+              </MotionIconWrapper>
+              <MotionIconWrapper
+                layout="position"
+                variants={MotionVariants.SpringScaleReversed}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+              >
+                <LinkButton layout="position" href="/portfolio">
+                  portfolio download
+                </LinkButton>
+              </MotionIconWrapper>
+            </FillColumn>
+          </LayoutGroup>
+        </PortfolioContainer>
+      </FillColumn>
+
+      <BottomInfoWrapper
+        variants={MotionVariants.SlideUp}
+        animate="animate"
+        exit="exit"
+        initial="initial"
+        custom={6}
+      >
+        <BottomText>
+          Over time, this website will eventually become a place for sharing my
+          thoughts and ideas in a creative way. My personal collection of ideas,
+          notes and inspirations.
+        </BottomText>
+      </BottomInfoWrapper>
     </>
   );
 }
-
-const NavigationWrapper = styled.div`
-  width: 100%;
-  padding: 40px 16px 0 16px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const ContentWrapper = styled(FillColumn)`
-  padding: 16px;
-  padding-top: 100px;
-`;
 
 const PortfolioContainer = styled(FillRow)`
   align-items: center;
@@ -300,9 +89,11 @@ const BottomInfoWrapper = styled(FillRow)`
   align-items: flex-end;
 `;
 
-const LinkButton = styled.a`
+const LinkButton = styled(motion(Link))`
   display: flex;
-  padding: 12px 20px;
+  width: 310px;
+  max-width: 100%;
+  padding: 20px 30px;
   justify-content: center;
   align-items: center;
   gap: 10px;
@@ -311,7 +102,7 @@ const LinkButton = styled.a`
   background: #121212;
 
   color: #fff;
-  text-align: right;
+  text-align: center;
   font-size: 14px;
   font-style: normal;
   font-weight: 500;
@@ -320,15 +111,13 @@ const LinkButton = styled.a`
   text-transform: uppercase;
   text-decoration: none;
 
-  box-shadow: 0px 0px 0px 0px #000;
+  box-shadow: 0px 0px 0px 0px #121212;
   transition: box-shadow 0.35s cubic-bezier(0.2, 0.8, 0.2, 0.8);
+  overflow: hidden;
+
   cursor: pointer;
 
   &:hover {
-    box-shadow: 0px 0px 0px 4px #000;
+    box-shadow: 0px 0px 0px 4px #121212;
   }
-`;
-
-const IconLink = styled(motion(Link))`
-  text-decoration: none;
 `;

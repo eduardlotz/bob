@@ -15,7 +15,7 @@ export default (req: NextApiRequest, res: NextApiResponse) => {
     );
 
     if (!fs.existsSync(filePath)) {
-      res.status(500).send("Datei nicht gefunden");
+      res.status(500).send("file not found");
     }
 
     const stat = fs.statSync(filePath);
@@ -30,5 +30,5 @@ export default (req: NextApiRequest, res: NextApiResponse) => {
     const fileContents = fs.readFileSync(filePath);
 
     res.status(200).send(fileContents);
-  } else res.status(403).send("Falsches Passwort");
+  } else res.status(403).send("wrong password");
 };
