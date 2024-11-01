@@ -48,11 +48,11 @@ export default function Home() {
       const blob = await response.blob();
       download(blob, "eduardl-lotz-design-portfolio.pdf", "application/pdf");
 
-      toast.success("Portfolio downloaded ✨");
+      toast.success("Viel Spaß ✨");
       if (!downloaded) setDownloaded(true);
     } else {
-      password.setError("Wrong password");
-      toast.error("Wrong password 😭");
+      password.setError("Falsches Passwort");
+      toast.error("Falsches Passwort 😭");
     }
     stopLoading();
   };
@@ -88,7 +88,7 @@ export default function Home() {
             exit="exit"
             initial="initial"
           >
-            <H2>My design portfolio.</H2>
+            <H2>Mein Portfolio.</H2>
           </MotionWrapper>
         </AnimatePresence>
         <PortfolioContainer layout>
@@ -153,13 +153,7 @@ export default function Home() {
         </PortfolioContainer>
       </FillColumn>
 
-      <BottomInfoWrapper>
-        <BottomText>
-          Over time, this website will eventually become a place for sharing my
-          thoughts and ideas in a creative way. My personal collection of ideas,
-          notes and inspirations.
-        </BottomText>
-      </BottomInfoWrapper>
+      <BottomInfoWrapper></BottomInfoWrapper>
     </>
   );
 }

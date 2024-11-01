@@ -31,7 +31,7 @@ export default function Home() {
             exit="exit"
             initial="initial"
           >
-            <H2>Sorry, this website is not ready yet.</H2>
+            <H2>Sorry, hier ist noch Baustelle 🚧</H2>
           </HugColumn>
         </AnimatePresence>
         <PortfolioContainer layout>
@@ -61,19 +61,7 @@ export default function Home() {
         </PortfolioContainer>
       </FillColumn>
 
-      <BottomInfoWrapper
-        variants={MotionVariants.SlideUp}
-        animate="animate"
-        exit="exit"
-        initial="initial"
-        custom={6}
-      >
-        <BottomText>
-          Over time, this website will eventually become a place for sharing my
-          thoughts and ideas in a creative way. My personal collection of ideas,
-          notes and inspirations.
-        </BottomText>
-      </BottomInfoWrapper>
+      <BottomInfoWrapper></BottomInfoWrapper>
     </>
   );
 }

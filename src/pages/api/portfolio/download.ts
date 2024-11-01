@@ -30,5 +30,5 @@ export default (req: NextApiRequest, res: NextApiResponse) => {
     const fileContents = fs.readFileSync(filePath);
 
     res.status(200).send(fileContents);
-  } else res.status(403).send("wrong password");
+  } else res.status(403).send("falsches passwort");
 };
