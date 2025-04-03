@@ -325,7 +325,7 @@ function Option({
           whileHover={MOTION_VARIANTS.springScaleReversed.hover}
           style={{
             background: hovered ? "#4285F4" : "#2979FF",
-            color: "white",
+            color: href === "#" ? "#7FA6FF" : "white",
             padding: "16px 20px",
             borderRadius: "50px",
             // fontFamily: "Inter, sans-serif",
