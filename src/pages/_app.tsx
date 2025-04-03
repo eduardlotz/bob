@@ -20,22 +20,6 @@ export default function App({ Component, pageProps }: AppProps) {
       <Toaster position="top-right" />
 
       <FullScreen>
-        <NavigationWrapper>
-          <ContentWidth>
-            <FillRow $align="center" $justify="center">
-              <IconLink
-                href="/"
-                variants={MotionVariants.SpringScale}
-                animate="animate"
-                exit="exit"
-                initial="initial"
-              >
-                <Logo />
-              </IconLink>
-            </FillRow>
-          </ContentWidth>
-        </NavigationWrapper>
-
         <ContentWrapper>
           <ContentWidth>
             <Component {...pageProps} />
@@ -47,6 +31,12 @@ export default function App({ Component, pageProps }: AppProps) {
 }
 
 const NavigationWrapper = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+
   width: 100%;
   padding: 40px 16px 0 16px;
 
@@ -58,8 +48,4 @@ const NavigationWrapper = styled.div`
 const ContentWrapper = styled(FillColumn)`
   padding: 16px;
   padding-top: 100px;
-`;
-
-const IconLink = styled(motion(Link))`
-  text-decoration: none;
 `;

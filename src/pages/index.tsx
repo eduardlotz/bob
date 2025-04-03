@@ -2,12 +2,15 @@ import Head from "next/head";
 import Link from "next/link";
 import styled from "styled-components";
 
-import { FillRow, FillColumn, HugColumn } from "@/layout";
-import { MotionIconWrapper } from "@/layout/atoms";
+import { FillRow, FillColumn, HugColumn, ContentWidth } from "@/layout";
+import { IconLink, Logo, MotionIconWrapper } from "@/layout/atoms";
 import { LockIcon } from "@/layout/icons";
 import { BottomText, H2 } from "@/layout/text";
 import { MotionVariants } from "@/styles/motion";
 import { AnimatePresence, LayoutGroup, motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { CameraControls } from "@react-three/drei";
+import { SceneWithLoader } from "@/molecules/SceneWithLoader";
 
 export default function Home() {
   return (
@@ -19,93 +22,41 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <FillColumn>
-        <AnimatePresence mode="popLayout">
-          <HugColumn
-            $gap="0"
-            $justify="flex-start"
-            $align="center"
-            key="landing-hello"
-            variants={MotionVariants.SlideUp}
-            animate="animate"
-            exit="exit"
-            initial="initial"
-          >
-            <H2>Sorry, hier ist noch Baustelle 🚧</H2>
-          </HugColumn>
-        </AnimatePresence>
-        <PortfolioContainer layout>
-          <LayoutGroup>
-            <FillColumn
-              $align="center"
-              $gap="20px"
-              key="start-form"
-              layout="position"
+      {/* <NavigationWrapper>
+        <ContentWidth>
+          <FillRow $align="center" $justify="center">
+            <IconLink
+              href="/"
+              variants={MotionVariants.SpringScale}
+              animate="animate"
+              exit="exit"
+              initial="initial"
+              layoutId="logo"
+              custom={68}
             >
-              <MotionIconWrapper layoutId="lock-icon" layout="position">
-                <LockIcon color="#121212" />
-              </MotionIconWrapper>
-              <MotionIconWrapper
-                layout="position"
-                variants={MotionVariants.SpringScaleReversed}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-              >
-                <LinkButton layout="position" href="/portfolio">
-                  portfolio download
-                </LinkButton>
-              </MotionIconWrapper>
-            </FillColumn>
-          </LayoutGroup>
-        </PortfolioContainer>
-      </FillColumn>
+              <Logo />
+            </IconLink>
+          </FillRow>
+        </ContentWidth>
+      </NavigationWrapper> */}
 
-      <BottomInfoWrapper></BottomInfoWrapper>
+      <AnimatePresence>
+        <SceneWithLoader />
+      </AnimatePresence>
     </>
   );
 }
+const NavigationWrapper = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
 
-const PortfolioContainer = styled(FillRow)`
-  align-items: center;
-  justify-content: center;
-  margin-top: 40px;
-`;
+  width: 100%;
+  padding: 40px 16px 0 16px;
 
-const BottomInfoWrapper = styled(FillRow)`
-  height: 100%;
-  align-items: flex-end;
-`;
-
-const LinkButton = styled(motion(Link))`
   display: flex;
-  width: 310px;
-  max-width: 100%;
-  padding: 20px 30px;
-  justify-content: center;
   align-items: center;
-  gap: 10px;
-
-  border-radius: 50px;
-  background: #121212;
-
-  color: #fff;
-  text-align: center;
-  font-size: 14px;
-  font-style: normal;
-  font-weight: 500;
-  line-height: normal;
-  letter-spacing: 1.4px;
-  text-transform: uppercase;
-  text-decoration: none;
-
-  box-shadow: 0px 0px 0px 0px #121212;
-  transition: box-shadow 0.35s cubic-bezier(0.2, 0.8, 0.2, 0.8);
-  overflow: hidden;
-
-  cursor: pointer;
-
-  &:hover {
-    box-shadow: 0px 0px 0px 4px #121212;
-  }
+  justify-content: center;
 `;
