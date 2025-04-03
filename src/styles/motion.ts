@@ -1,3 +1,5 @@
+import { cubicBezier } from "motion";
+
 export namespace MotionVariants {
   export const SlideInDown = {
     initial: {
@@ -73,7 +75,7 @@ export namespace MotionVariants {
       transition: { type: "spring", duration: 0.4, bounce: 0.4 },
     },
     exit: {
-      scale: 0.8,
+      scale: [1.1, 0.8],
       opacity: 0,
       transition: { type: "spring", duration: 0.4, bounce: 0.4 },
     },
@@ -106,6 +108,21 @@ export namespace MotionVariants {
       opacity: 1,
       filter: "blur(0px)",
       transition: { type: "spring", duration: 0.6, bounce: 0.4 },
+    },
+  };
+  export const Pulse = {
+    initial: {
+      scale: 1,
+      opacity: 1,
+    },
+    animate: {
+      scale: [1, 1.2, 1],
+      opacity: [1, 0.9, 1],
+      transition: {
+        repeat: Infinity,
+        duration: 1.6,
+        cubicBezier: "0.2, 0.8, 0.2, 0.8",
+      },
     },
   };
 }

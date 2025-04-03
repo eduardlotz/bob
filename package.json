@@ -9,22 +9,27 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@types/node": "20.5.6",
-    "@types/react": "18.2.21",
-    "@types/react-dom": "18.2.7",
+    "@react-three/drei": "^10.0.5",
+    "@react-three/fiber": "^9.1.1",
+    "@types/node": "22.14.0",
+    "@types/react": "19.1.0",
+    "@types/react-dom": "19.1.1",
     "downloadjs": "^1.4.7",
-    "eslint": "8.48.0",
-    "eslint-config-next": "13.4.19",
-    "framer-motion": "^10.16.1",
-    "next": "13.4.19",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
-    "sonner": "^0.7.0",
-    "styled-components": "^6.0.7",
-    "styled-reset": "^4.5.1",
-    "typescript": "5.2.2"
+    "eslint": "9.23.0",
+    "eslint-config-next": "15.2.4",
+    "motion": "^12.6.3",
+    "next": "15.2.4",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "sonner": "^2.0.3",
+    "styled-components": "^6.1.17",
+    "styled-reset": "^4.5.2",
+    "three": "^0.175.0",
+    "typescript": "5.8.2"
   },
   "devDependencies": {
-    "@types/downloadjs": "^1.4.3"
-  }
+    "@types/downloadjs": "^1.4.6",
+    "@types/three": "^0.175.0"
+  },
+  "packageManager": "yarn@4.8.0+sha512.85ec3149b1ec48f47c2690e13b29197a8a84b09c2c936cc596dddfb49c517e3bc3b1881ec52b5d35ca4b7c437c3f0daae3a80e39438c93bbcc5fcece2df5f15a"
 }
