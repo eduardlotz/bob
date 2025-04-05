@@ -192,8 +192,8 @@ export function HeadNavigation({
   // Update camera zoom based on showOptions state
   useFrame(() => {
     const cursorPos = new THREE.Vector3(
-      mousePosition.x * 3,
-      mousePosition.y * 3,
+      mousePosition.x * 0.5,
+      mousePosition.y * 0.5,
       0
     );
 

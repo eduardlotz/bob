@@ -33,8 +33,8 @@ export function BlobHead({ onHeadClick }: { onHeadClick: () => void }) {
   // Animation for head movement and blinking
   useFrame(({ clock }) => {
     if (headRef.current) {
-      const maxRotationY = 1;
-      const maxRotationX = 0.5;
+      const maxRotationY = 0.8;
+      const maxRotationX = 0.8;
 
       // Head rotation toward mouse position
       headRef.current.rotation.y = MathUtils.lerp(
@@ -47,11 +47,11 @@ export function BlobHead({ onHeadClick }: { onHeadClick: () => void }) {
         mousePosition.y * maxRotationY,
         0.3
       );
-      // headRef.current.rotation.z = MathUtils.lerp(
-      //   headRef.current.rotation.z,
-      //   -mousePosition.x * maxRotationX,
-      //   0.5
-      // );
+      headRef.current.rotation.z = MathUtils.lerp(
+        headRef.current.rotation.z,
+        -mousePosition.x * maxRotationX,
+        0.2
+      );
 
       // Floating animation
       headRef.current.position.y = Math.sin(clock.getElapsedTime() * 0.5) * 0.1;
