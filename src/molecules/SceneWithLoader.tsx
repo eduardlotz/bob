@@ -1,5 +1,5 @@
 import { FillRow } from "@/layout";
-import { IconLink, Logo } from "@/layout/atoms";
+import { IconLink, Logo, MotionIconWrapper } from "@/layout/atoms";
 import { MotionVariants } from "@/styles/motion";
 import dynamic from "next/dynamic";
 import styled from "styled-components";
@@ -15,15 +15,14 @@ export const SceneWithLoader = dynamic(
     loading: () => (
       <LoadingWrapper>
         <FillRow $align="center" $justify="center">
-          <IconLink
-            href="/"
+          <MotionIconWrapper
             variants={MotionVariants.Pulse}
             animate="animate"
             exit="exit"
             initial="initial"
           >
             <Logo />
-          </IconLink>
+          </MotionIconWrapper>
         </FillRow>
       </LoadingWrapper>
     ),

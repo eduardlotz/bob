@@ -19,7 +19,6 @@ import { MotionVariants } from "@/styles/motion";
 import {
   animate,
   AnimatePresence,
-  LayoutGroup,
   motion,
   useMotionTemplate,
   useMotionValue,
@@ -28,7 +27,7 @@ import {
 import { useLoading } from "@/hooks/useLoading";
 import { minDelay } from "@/utils/simulate";
 import { useRouter } from "next/router";
-import { useSwipeDismiss } from "@/layout/SwipeModal";
+import { useKeyPress } from "@/hooks/useKeyPress";
 
 const inertiaTransition = {
   type: "inertia" as const,
@@ -54,8 +53,8 @@ const CustomToast = styled.div`
   justify-content: center;
   align-items: center;
 
-  border-radius: 50px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  border-radius: 24px;
+  box-shadow: 0 4px 10px 10px rgba(37, 36, 39, 0.08);
   text-align: center;
   font-size: 14px;
   font-style: normal;
@@ -65,13 +64,13 @@ const CustomToast = styled.div`
   text-transform: uppercase;
 
   @media (max-width: 600px) {
-    max-width: 100%;
+    width: 100%;
   }
 `;
 
 const ErrorToast = styled(CustomToast)`
-  background-color: #000000;
-  color: #ffffff;
+  background-color: #121212;
+  color: #f2f2f4;
 `;
 
 export default function Home() {
@@ -98,11 +97,11 @@ export default function Home() {
     setIsVisible(false); // triggers exit animation
   };
 
-  const { motionStyles, dragConstraints, dragEndHandler } = useSwipeDismiss({
-    onClose: closeModal,
-    threshold: 450, // You can adjust the threshold here
+  useKeyPress("Escape", () => {
+    if (isVisible) {
+      closeModal();
+    }
   });
-  // const closeModal = () => router.push("/", undefined, { shallow: true });
 
   const downloadPortfolio = async (e: FormEvent) => {
     e.preventDefault();
@@ -205,88 +204,90 @@ export default function Home() {
                     animate="animate"
                     exit="exit"
                     initial="initial"
+                    layout="position"
                   >
                     <H2>Design Portfolio</H2>
                   </MotionWrapper>
                 </AnimatePresence>
-                <PortfolioContainer layout="size">
-                  <LayoutGroup>
-                    <FillColumn $gap="12px" $align="center" $justify="center">
-                      <MotionIconWrapper
-                        variants={MotionVariants.SlideUp}
-                        animate="animate"
-                        exit="exit"
-                        initial="initial"
-                        layoutId="lock-icon"
-                        layout="position"
-                      >
-                        {downloaded ? (
+                <PortfolioContainer layout>
+                  <FillColumn $gap="12px" $align="center" $justify="center">
+                    <AnimatePresence mode="popLayout">
+                      {downloaded ? (
+                        <MotionIconWrapper
+                          variants={MotionVariants.SlideUp}
+                          animate="animate"
+                          exit="exit"
+                          initial="initial"
+                          layoutId="lock-icon"
+                          layout="position"
+                        >
                           <UnlockedIcon color="#121212" />
-                        ) : (
+                        </MotionIconWrapper>
+                      ) : (
+                        <MotionIconWrapper
+                          variants={MotionVariants.SlideUp}
+                          animate="animate"
+                          exit="exit"
+                          initial="initial"
+                          layoutId="lock-icon"
+                          layout="position"
+                        >
                           <LockIcon color="#121212" />
-                        )}
+                        </MotionIconWrapper>
+                      )}
+                    </AnimatePresence>
 
+                    {!downloaded && <BottomText>Passwortgeschützt</BottomText>}
+
+                    <MiniForm
+                      onSubmit={downloadPortfolio}
+                      variants={MotionVariants.SlideUp}
+                      animate="animate"
+                      exit="exit"
+                      initial="initial"
+                      layout
+                    >
+                      <AnimatePresence mode="popLayout">
                         {!downloaded && (
-                          <BottomText>
-                            Aktuell noch Passwortgeschützt
-                          </BottomText>
+                          <MotionWrapper key="password-field">
+                            <PasswordField
+                              value={password.value}
+                              onChange={password.setValue}
+                              placeholder="********"
+                            />
+                          </MotionWrapper>
                         )}
-                      </MotionIconWrapper>
-
-                      <MiniForm
-                        onSubmit={downloadPortfolio}
-                        variants={MotionVariants.SlideUp}
-                        animate="animate"
-                        exit="exit"
-                        initial="initial"
+                      </AnimatePresence>
+                      <Button
+                        type="submit"
                         layout="position"
+                        disabled={isLoading}
                       >
                         <AnimatePresence mode="popLayout">
-                          {!downloaded && (
-                            <MotionWrapper key="password-field">
-                              <PasswordField
-                                value={password.value}
-                                onChange={password.setValue}
-                                placeholder="********"
-                              />
+                          {isLoading ? (
+                            <LoadingSpinner
+                              variants={MotionVariants.SpringScale}
+                              animate="animate"
+                              exit="exit"
+                              initial="initial"
+                              color="#ffffff"
+                              key="loading-spinner"
+                            />
+                          ) : (
+                            <MotionWrapper
+                              variants={MotionVariants.SpringScale}
+                              animate="animate"
+                              exit="exit"
+                              initial="initial"
+                              key="download-button"
+                            >
+                              {downloaded ? <DownloadSuccess /> : <>download</>}
                             </MotionWrapper>
                           )}
                         </AnimatePresence>
-                        <Button
-                          type="submit"
-                          layout="position"
-                          disabled={isLoading}
-                        >
-                          <AnimatePresence mode="popLayout">
-                            {isLoading ? (
-                              <LoadingSpinner
-                                variants={MotionVariants.SpringScale}
-                                animate="animate"
-                                exit="exit"
-                                initial="initial"
-                                color="#ffffff"
-                                key="loading-spinner"
-                              />
-                            ) : (
-                              <MotionWrapper
-                                variants={MotionVariants.SpringScale}
-                                animate="animate"
-                                exit="exit"
-                                initial="initial"
-                                key="download-button"
-                              >
-                                {downloaded ? (
-                                  <DownloadSuccess />
-                                ) : (
-                                  <>download</>
-                                )}
-                              </MotionWrapper>
-                            )}
-                          </AnimatePresence>
-                        </Button>
-                      </MiniForm>
-                    </FillColumn>
-                  </LayoutGroup>
+                      </Button>
+                    </MiniForm>
+                  </FillColumn>
                 </PortfolioContainer>
               </FillColumn>
             </ModalContent>
@@ -314,7 +315,6 @@ const Backdrop = styled(motion.div)`
   position: fixed;
   inset: 0;
   background: rgba(18, 18, 18, 0.5);
-  /* backdrop-filter: blur(10px); */
   display: flex;
   align-items: center;
   justify-content: center;
