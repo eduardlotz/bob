@@ -9,10 +9,17 @@ import {
 import { Canvas } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
 import { HeadNavigation } from "./HeadNavigation";
+import { useKeyPress } from "@/hooks/useKeyPress";
 
 export const Scene = () => {
   const [showOptions, setShowOptions] = useState(false);
   const cameraControlsRef = useRef<CameraControls>(null!);
+
+  useKeyPress("Escape", () => {
+    if (showOptions) {
+      setShowOptions(false);
+    }
+  });
 
   return (
     <FullScreenCanvas>
@@ -21,8 +28,8 @@ export const Scene = () => {
           ref={cameraControlsRef}
           minPolarAngle={0}
           maxPolarAngle={Math.PI / 1.6}
-          maxDistance={4}
-          minDistance={1.5}
+          maxDistance={10}
+          minDistance={1}
         />
         <ambientLight intensity={2} />
         <PerspectiveCamera makeDefault position={[0, 0, 2]} />

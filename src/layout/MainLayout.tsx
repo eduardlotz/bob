@@ -1,6 +1,4 @@
-// components/MainLayout.tsx
 import { SceneWithLoader } from "@/molecules/SceneWithLoader";
-import { AnimatePresence } from "framer-motion";
 import styled from "styled-components";
 
 export default function MainLayout({ children }: any) {

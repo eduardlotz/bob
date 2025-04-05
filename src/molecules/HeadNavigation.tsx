@@ -8,6 +8,11 @@ import { useRouter } from "next/router";
 import { LockIcon } from "@/layout/icons";
 
 //#region constants
+export const VISIBLE_OPTIONS_CAMERA_ZOOM = 3;
+export const HIDDEN_OPTIONS_CAMERA_ZOOM = 2;
+export const FUNNY_FISHEYE_ZOOM = 1.15;
+export const OPTION_RADIUS_OFFSET = 0.004;
+
 export const MOTION_VARIANTS = {
   slideInDown: {
     initial: {
@@ -168,7 +173,7 @@ export function HeadNavigation({
   cameraControlsRef: React.RefObject<CameraControls>;
 }) {
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [mousePosition, _setMousePosition] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     // Get initial window size
@@ -192,8 +197,8 @@ export function HeadNavigation({
   // Update camera zoom based on showOptions state
   useFrame(() => {
     const cursorPos = new THREE.Vector3(
-      mousePosition.x * 0.5,
-      mousePosition.y * 0.5,
+      mousePosition.x * 0.2,
+      mousePosition.y * 0.2,
       0
     );
 
@@ -201,7 +206,7 @@ export function HeadNavigation({
       cameraControlsRef.current.setLookAt(
         0,
         0,
-        showOptions ? 4 : 2,
+        showOptions ? VISIBLE_OPTIONS_CAMERA_ZOOM : HIDDEN_OPTIONS_CAMERA_ZOOM,
         cursorPos.x,
         cursorPos.y,
         cursorPos.z,
@@ -241,32 +246,40 @@ function OptionsGroup({
   cameraControlsRef: React.RefObject<CameraControls>;
   hideOptions: () => void;
 }) {
-  const radius = 2.5;
   const count = NAV_OPTIONS.length;
 
-  // Center of the screen in 3D space
-  // const screenCenter = new THREE.Vector3(-0.5, 0.2, 0);
   const screenCenter = new THREE.Vector3(0, -0.5, 0);
+
+  // Calculate appropriate radii based on screen dimensions
+  // Use the smaller dimension to ensure elements stay within viewport
+  const minDimension = Math.min(windowWidth, windowHeight);
+  const baseRadius = minDimension / 2;
+
+  // Apply the offset to create an elliptical path if needed
+  const xRadius =
+    windowWidth > windowHeight
+      ? baseRadius * OPTION_RADIUS_OFFSET
+      : baseRadius * (windowWidth / windowHeight) * OPTION_RADIUS_OFFSET;
+
+  const yRadius =
+    windowHeight > windowWidth
+      ? baseRadius * OPTION_RADIUS_OFFSET
+      : baseRadius * (windowHeight / windowWidth) * OPTION_RADIUS_OFFSET;
 
   return (
     <group>
       {NAV_OPTIONS.map((option, index) => {
-        // Calculate position on circle centered in screen
+        // Calculate position on ellipse centered in screen
         const angle = (index / count) * Math.PI * 2;
-        let x = Math.cos(angle) * radius;
-        let y = Math.sin(angle) * radius;
 
-        // Estimate size in 3D units to keep inside bounds
-        const xMax = (windowWidth / windowHeight) * 1.5;
-        const yMax = 1.5;
+        // Adjust starting angle if needed (e.g., to start from top)
+        const adjustedAngle = angle - Math.PI / 2; // Start from top instead of right
 
-        x = Math.max(-xMax, Math.min(x, xMax));
-        y = Math.max(-yMax, Math.min(y, yMax));
+        const x = Math.cos(adjustedAngle) * xRadius;
+        const y = Math.sin(adjustedAngle) * yRadius;
 
-        const basePosition = new THREE.Vector3(x, y, 0);
-
-        // Position relative to screen center
-        const position = basePosition.clone().add(screenCenter);
+        // Create position vector and add screen center offset
+        const position = new THREE.Vector3(x, y, 0).add(screenCenter);
 
         return (
           <Float
@@ -313,10 +326,10 @@ function Option({
 }) {
   const optionRef = useRef<THREE.Group>(null!);
   const [hovered, setHovered] = useState(false);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const router = useRouter();
   const initialPositionRef = useRef(initialPosition.clone());
   const [position, setPosition] = useState(initialPosition.clone());
-  const router = useRouter();
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   // Track mouse for interactive effect
   useEffect(() => {
@@ -337,18 +350,18 @@ function Option({
   useFrame(() => {
     const basePos = initialPositionRef.current;
     const cursorPos = new THREE.Vector3(
-      mousePosition.x * 3,
-      mousePosition.y * 3,
+      mousePosition.x * 2,
+      mousePosition.y * 2,
       0
     );
 
     // Calculate distance to cursor for influence weighting
     const distanceToCursor = basePos.distanceTo(cursorPos);
-    const maxInfluence = 0.4; // Maximum influence factor
+    const maxInfluence = 0.5; // Maximum influence factor
 
     // The closer the cursor, the stronger the influence
     const influenceFactor =
-      Math.max(0, 1 - distanceToCursor / 5) * maxInfluence;
+      Math.max(0, 1 - distanceToCursor / 1) * maxInfluence;
 
     // Calculate new position with subtle cursor following
     const newPos = basePos.clone();
@@ -358,8 +371,7 @@ function Option({
     cameraControlsRef.current.setLookAt(
       0,
       0,
-      4,
-      // newPos.x,
+      VISIBLE_OPTIONS_CAMERA_ZOOM,
       cursorPos.x,
       cursorPos.y,
       cursorPos.z,
@@ -368,9 +380,11 @@ function Option({
 
     // Update position with smooth lerping
     setPosition((prev) => {
-      prev.x = THREE.MathUtils.lerp(prev.x, newPos.x, 0.05);
-      prev.y = THREE.MathUtils.lerp(prev.y, newPos.y, 0.05);
-      return prev;
+      return new THREE.Vector3(
+        THREE.MathUtils.lerp(prev.x, newPos.x, 0.05),
+        THREE.MathUtils.lerp(prev.y, newPos.y, 0.05),
+        0
+      );
     });
 
     // Apply position
