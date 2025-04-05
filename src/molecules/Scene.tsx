@@ -14,21 +14,6 @@ export const Scene = () => {
   const [showOptions, setShowOptions] = useState(false);
   const cameraControlsRef = useRef<CameraControls>(null!);
 
-  // Update camera zoom based on showOptions state
-  useEffect(() => {
-    if (cameraControlsRef.current) {
-      cameraControlsRef.current.setLookAt(
-        0,
-        0,
-        showOptions ? 3 : 1.5,
-        0,
-        0,
-        0,
-        true
-      );
-    }
-  }, [showOptions]);
-
   return (
     <FullScreenCanvas>
       <Fisheye zoom={0}>
@@ -40,11 +25,9 @@ export const Scene = () => {
           minDistance={1.5}
         />
         <ambientLight intensity={2} />
-        <PerspectiveCamera makeDefault position={[0, 0, 1.5]} />
-
+        <PerspectiveCamera makeDefault position={[0, 0, 2]} />
         <directionalLight intensity={1} position={[2, 2, 5]} />
         <Environment preset="city" />
-
         <mesh>
           <sphereGeometry args={[5, 32, 32]} />
           <meshBasicMaterial side={THREE.BackSide}>
@@ -55,10 +38,10 @@ export const Scene = () => {
             />
           </meshBasicMaterial>
         </mesh>
-
         <HeadNavigation
           showOptions={showOptions}
           setShowOptions={setShowOptions}
+          cameraControlsRef={cameraControlsRef} // pass down for portal click
         />
       </Fisheye>
     </FullScreenCanvas>

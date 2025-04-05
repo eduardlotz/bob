@@ -1,4 +1,5 @@
 import { cubicBezier } from "motion";
+import { blur } from "three/tsl";
 
 export namespace MotionVariants {
   export const SlideInDown = {
@@ -24,7 +25,7 @@ export namespace MotionVariants {
     initial: {
       y: 20,
       opacity: 0,
-      filter: "blur(4px)",
+      // filter: "blur(4px)",
       transition: {
         type: "spring",
         duration: 0.8,
@@ -39,7 +40,7 @@ export namespace MotionVariants {
     exit: {
       y: -20,
       opacity: 0,
-      filter: "blur(4px)",
+      // filter: "blur(4px)",
       transition: {
         type: "spring",
         duration: 0.5,
@@ -54,7 +55,7 @@ export namespace MotionVariants {
     animate: (custom = 0) => ({
       y: 0,
       opacity: 1,
-      filter: "blur(0px)",
+      // filter: "blur(0px)",
       transition: {
         type: "spring",
         duration: 0.6,
@@ -92,22 +93,22 @@ export namespace MotionVariants {
   };
   export const SpringScaleReversed = {
     initial: {
-      scale: 0.8,
+      scale: 0.9,
       opacity: 0,
-      filter: "blur(6px)",
-      transition: { type: "spring", duration: 0.6, bounce: 0.4 },
+      filter: "blur(4px)",
+      transition: { type: "spring", mass: 0.5, bounce: 0.4 },
     },
     exit: {
-      scale: 1.2,
+      scale: 0.9,
       opacity: 0,
-      filter: "blur(6px)",
-      transition: { type: "spring", duration: 0.6, bounce: 0.4 },
+      filter: "blur(4px)",
+      transition: { type: "spring", mass: 0.5, bounce: 0.4 },
     },
     animate: {
       scale: 1,
       opacity: 1,
       filter: "blur(0px)",
-      transition: { type: "spring", duration: 0.6, bounce: 0.4 },
+      transition: { type: "spring", mass: 0.5, bounce: 0.4 },
     },
   };
   export const Pulse = {
