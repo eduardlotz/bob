@@ -59,6 +59,7 @@ export const MotionWrapper = styled(motion.div)`
   margin: 0;
   overflow: none;
   max-width: 100%;
+  width: 100%;
 `;
 
 export const MotionIconWrapper = styled(FillRow)`
@@ -118,7 +119,8 @@ export const Button = styled(motion.button)<{
   variant?: "primary" | "secondary";
 }>`
   display: flex;
-  width: 310px;
+  /* min-width: 310px; */
+  width: 100%;
   max-width: 100%;
   padding: 20px 30px;
   height: 58px;

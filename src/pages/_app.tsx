@@ -1,11 +1,8 @@
 import { FullScreen, ContentWidth, FillRow, FillColumn } from "@/layout";
-import { Logo } from "@/layout/atoms";
+import MainLayout from "@/layout/MainLayout";
 import { GlobalStyle } from "@/styles/global";
-import { MotionVariants } from "@/styles/motion";
-import { motion } from "framer-motion";
 import type { AppProps } from "next/app";
 import Head from "next/head";
-import Link from "next/link";
 import { Toaster } from "sonner";
 import styled from "styled-components";
 
@@ -17,14 +14,23 @@ export default function App({ Component, pageProps }: AppProps) {
       </Head>
       <GlobalStyle />
 
-      <Toaster position="top-right" />
+      <Toaster
+        position="top-center"
+        style={
+          {
+            "--width": "320px",
+          } as React.CSSProperties
+        }
+      />
 
       <FullScreen>
-        <ContentWrapper>
-          <ContentWidth>
-            <Component {...pageProps} />
-          </ContentWidth>
-        </ContentWrapper>
+        <MainLayout>
+          <ContentWrapper>
+            <ContentWidth>
+              <Component {...pageProps} />
+            </ContentWidth>
+          </ContentWrapper>
+        </MainLayout>
       </FullScreen>
     </>
   );

@@ -1,15 +1,8 @@
-import {
-  ContentWidth,
-  FillColumn,
-  FillRow,
-  FullScreen,
-  HugRow,
-} from "@/layout";
+import { FillRow } from "@/layout";
 import { IconLink, Logo } from "@/layout/atoms";
 import { MotionVariants } from "@/styles/motion";
 import dynamic from "next/dynamic";
 import styled from "styled-components";
-import { useEffect } from "react";
 import { motion } from "motion/react";
 
 export const SceneWithLoader = dynamic(
