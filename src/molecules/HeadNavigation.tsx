@@ -128,7 +128,7 @@ export const MOTION_VARIANTS = {
     },
     animate: (custom?: number) => ({
       scale: 1,
-      opacity: [0, 1],
+      opacity: 1,
       transition: {
         type: "spring",
         duration: 0.6,
@@ -201,7 +201,6 @@ export function HeadNavigation({
       cameraControlsRef.current.setLookAt(
         0,
         CAMERA_Y_POSITION,
-        // VISIBLE_OPTIONS_CAMERA_ZOOM,
         showOptions ? VISIBLE_OPTIONS_CAMERA_ZOOM : HIDDEN_OPTIONS_CAMERA_ZOOM,
         -targetRotX,
         targetRotY + 2,
@@ -238,6 +237,7 @@ export function HeadNavigation({
         motionPermissionGranted={permissionGranted}
         isMobile={isMobile}
         cameraControlsRef={cameraControlsRef}
+        showOptions={showOptions}
       />
 
       {showOptions && (
