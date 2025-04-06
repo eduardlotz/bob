@@ -1,10 +1,15 @@
 import { useDeviceOrientation } from "@/hooks/useDeviceOrientation";
-import { requestMotionPermission } from "@/utils/permission";
 import { useFrame } from "@react-three/fiber";
 import { useRef, useState, useEffect } from "react";
 import { Group, Mesh, MathUtils } from "three";
 
-export function BlobHead({ onHeadClick }: { onHeadClick: () => void }) {
+export function BlobHead({
+  onHeadClick,
+  motionPermissionGranted: permissionGranted,
+}: {
+  onHeadClick: () => void;
+  motionPermissionGranted: boolean;
+}) {
   const headRef = useRef<Group>(null);
   const leftEyeRef = useRef<Mesh>(null);
   const rightEyeRef = useRef<Mesh>(null);
@@ -13,18 +18,6 @@ export function BlobHead({ onHeadClick }: { onHeadClick: () => void }) {
   const { orientation, acceleration } = useDeviceOrientation();
   const isMobile =
     typeof window !== "undefined" && /Mobi|Android/i.test(navigator.userAgent);
-
-  const [permissionGranted, setPermissionGranted] = useState(false);
-
-  // TODO: show permission modal with explanation before asking for permission
-  useEffect(() => {
-    const askPermission = async () => {
-      const granted = await requestMotionPermission();
-      setPermissionGranted(granted);
-    };
-
-    askPermission();
-  }, []);
 
   // Track mouse position for head rotation
   useEffect(() => {

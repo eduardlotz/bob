@@ -6,6 +6,7 @@ import { motion } from "motion/react";
 import { BlobHead } from "./BlobHead";
 import { useRouter } from "next/router";
 import { LockIcon } from "@/layout/icons";
+import { requestMotionPermission } from "@/utils/permission";
 
 //#region constants
 export const VISIBLE_OPTIONS_CAMERA_ZOOM = 3;
@@ -174,6 +175,17 @@ export function HeadNavigation({
 }) {
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
   const [mousePosition, _setMousePosition] = useState({ x: 0, y: 0 });
+  const [permissionGranted, setPermissionGranted] = useState(false);
+
+  // TODO: show permission modal with explanation before asking for permission
+  useEffect(() => {
+    const askPermission = async () => {
+      const granted = await requestMotionPermission();
+      setPermissionGranted(granted);
+    };
+
+    askPermission();
+  }, []);
 
   useEffect(() => {
     // Get initial window size
@@ -221,7 +233,10 @@ export function HeadNavigation({
 
   return (
     <>
-      <BlobHead onHeadClick={toggleOptions} />
+      <BlobHead
+        onHeadClick={toggleOptions}
+        motionPermissionGranted={permissionGranted}
+      />
 
       {showOptions && (
         <OptionsGroup
