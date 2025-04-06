@@ -6,9 +6,11 @@ import { Group, Mesh, MathUtils } from "three";
 export function BlobHead({
   onHeadClick,
   motionPermissionGranted: permissionGranted,
+  isMobile,
 }: {
   onHeadClick: () => void;
   motionPermissionGranted: boolean;
+  isMobile: boolean;
 }) {
   const headRef = useRef<Group>(null);
   const leftEyeRef = useRef<Mesh>(null);
@@ -16,8 +18,6 @@ export function BlobHead({
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [blinking, setBlinking] = useState(false);
   const { orientation, acceleration } = useDeviceOrientation();
-  const isMobile =
-    typeof window !== "undefined" && /Mobi|Android/i.test(navigator.userAgent);
 
   // Track mouse position for head rotation
   useEffect(() => {
@@ -116,18 +116,21 @@ export function BlobHead({
       // headRef.current.position.y = Math.sin(clock.getElapsedTime() * 0.5) * 0.1;
     }
 
+    //TODO: use delta time
     // Eye blinking
     if (leftEyeRef.current && rightEyeRef.current) {
       const targetScaleY = blinking ? 0.1 : 1;
       leftEyeRef.current.scale.y = MathUtils.lerp(
         leftEyeRef.current.scale.y,
         targetScaleY,
-        1 - Math.exp(-6 * delta)
+        // 1 - Math.exp(-6 * delta)
+        0.3
       );
       rightEyeRef.current.scale.y = MathUtils.lerp(
         rightEyeRef.current.scale.y,
         targetScaleY,
-        1 - Math.exp(-6 * delta)
+        // 1 - Math.exp(-6 * delta)
+        0.3
       );
     }
   });
