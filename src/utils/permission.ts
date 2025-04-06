@@ -1,7 +1,17 @@
+interface DeviceOrientationEventiOS extends DeviceOrientationEvent {
+  requestPermission?: () => Promise<"granted" | "denied">;
+}
+
 export async function requestMotionPermission() {
-  if (typeof DeviceMotionEvent?.requestPermission === "function") {
-    const response = await DeviceMotionEvent.requestPermission();
-    return response === "granted";
+  const requestPermission = (
+    DeviceOrientationEvent as unknown as DeviceOrientationEventiOS
+  ).requestPermission;
+  const iOS = typeof requestPermission === "function";
+  if (iOS) {
+    const response = await requestPermission();
+    if (response === "granted") {
+      return true;
+    } else return false;
   }
-  return true; // Non-iOS or not needed
+  return true;
 }
