@@ -1,3 +1,5 @@
+import { useDeviceOrientation } from "@/hooks/useDeviceOrientation";
+import { requestMotionPermission } from "@/utils/permission";
 import { useFrame } from "@react-three/fiber";
 import { useRef, useState, useEffect } from "react";
 import { Group, Mesh, MathUtils } from "three";
@@ -8,6 +10,21 @@ export function BlobHead({ onHeadClick }: { onHeadClick: () => void }) {
   const rightEyeRef = useRef<Mesh>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [blinking, setBlinking] = useState(false);
+  const { orientation, acceleration } = useDeviceOrientation();
+  const isMobile =
+    typeof window !== "undefined" && /Mobi|Android/i.test(navigator.userAgent);
+
+  const [permissionGranted, setPermissionGranted] = useState(false);
+
+  // TODO: show permission modal with explanation before asking for permission
+  useEffect(() => {
+    const askPermission = async () => {
+      const granted = await requestMotionPermission();
+      setPermissionGranted(granted);
+    };
+
+    askPermission();
+  }, []);
 
   // Track mouse position for head rotation
   useEffect(() => {
@@ -31,30 +48,79 @@ export function BlobHead({ onHeadClick }: { onHeadClick: () => void }) {
   }, []);
 
   // Animation for head movement and blinking
-  useFrame(({ clock }) => {
+  useFrame(({ clock }, delta) => {
     if (headRef.current) {
       const maxRotationY = 0.8;
       const maxRotationX = 0.8;
+      let targetRotX, targetRotY, targetRotZ;
 
-      // Head rotation toward mouse position
+      if (isMobile && orientation && acceleration && permissionGranted) {
+        const accelX = MathUtils.clamp(acceleration.x || 0, -5, 5) / 5; // [-1, 1]
+        const accelY = MathUtils.clamp(acceleration.y || 0, -5, 5) / 5;
+
+        // Normalize orientation beta (front-back tilt) from [-180°, 180°] to [-1, 1]
+        const orientBeta = MathUtils.clamp((orientation.beta ?? 0) / 90, -1, 1);
+        // Normalize orientation gamma (side tilt) from [-90°, 90°] to [-1, 1]
+        const orientGamma = MathUtils.clamp(
+          (orientation.gamma ?? 0) / 90,
+          -1,
+          1
+        );
+
+        // Blend acceleration and orientation for smoother result
+        // Negative accelY means tilting forward (top of phone down)
+        const blendX = accelY * -0.6 + orientBeta * -0.5;
+        const blendY = accelX * 0.6 + orientGamma * 0.4;
+        const blendZ = accelX * -0.3 + orientGamma * -0.3;
+
+        // Default rotation facing user in portrait mode
+        targetRotX = blendX;
+        targetRotY = blendY;
+        targetRotZ = blendZ;
+
+        // Shake-based drag effect — create a "shake offset" that reacts and returns
+        const shakeStrength = 0.5;
+        const shakeOffsetX = MathUtils.clamp(accelX * shakeStrength, -0.4, 0.4);
+        const shakeOffsetY = MathUtils.clamp(accelY * shakeStrength, -0.4, 0.4);
+
+        // Move position toward shake offset plus a tiny breathing motion
+        const floatY = Math.sin(clock.getElapsedTime() * 0.5) * 0.1;
+        headRef.current.position.x = MathUtils.lerp(
+          headRef.current.position.x,
+          shakeOffsetX + orientGamma * 0.2,
+          1 - Math.exp(-2 * delta)
+        );
+        headRef.current.position.y = MathUtils.lerp(
+          headRef.current.position.y,
+          floatY + shakeOffsetY + orientBeta * 0.1,
+          1 - Math.exp(-2 * delta)
+        );
+      } else {
+        // Use mouse position
+        targetRotY = mousePosition.x * maxRotationX;
+        targetRotX = mousePosition.y * maxRotationY;
+        targetRotZ = -mousePosition.x * maxRotationX;
+      }
+
+      // Head rotation
       headRef.current.rotation.y = MathUtils.lerp(
         headRef.current.rotation.y,
-        mousePosition.x * maxRotationX,
-        0.4
+        targetRotY,
+        1 - Math.exp(-4 * delta)
       );
       headRef.current.rotation.x = MathUtils.lerp(
         headRef.current.rotation.x,
-        mousePosition.y * maxRotationY,
-        0.3
+        targetRotX,
+        1 - Math.exp(-4 * delta)
       );
       headRef.current.rotation.z = MathUtils.lerp(
         headRef.current.rotation.z,
-        -mousePosition.x * maxRotationX,
-        0.2
+        targetRotZ,
+        1 - Math.exp(-3 * delta)
       );
 
-      // Floating animation
-      headRef.current.position.y = Math.sin(clock.getElapsedTime() * 0.5) * 0.1;
+      // Prevent overriding the above motion
+      // headRef.current.position.y = Math.sin(clock.getElapsedTime() * 0.5) * 0.1;
     }
 
     // Eye blinking
@@ -63,18 +129,23 @@ export function BlobHead({ onHeadClick }: { onHeadClick: () => void }) {
       leftEyeRef.current.scale.y = MathUtils.lerp(
         leftEyeRef.current.scale.y,
         targetScaleY,
-        0.3
+        1 - Math.exp(-6 * delta)
       );
       rightEyeRef.current.scale.y = MathUtils.lerp(
         rightEyeRef.current.scale.y,
         targetScaleY,
-        0.3
+        1 - Math.exp(-6 * delta)
       );
     }
   });
 
   return (
-    <group ref={headRef} onClick={onHeadClick} castShadow>
+    <group
+      ref={headRef}
+      onClick={onHeadClick}
+      castShadow
+      rotation={[0, Math.PI, 0]}
+    >
       {/* Head */}
       <mesh castShadow>
         <sphereGeometry args={[1, 32, 32]} />
