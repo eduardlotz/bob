@@ -7,6 +7,7 @@ import { BlobHead } from "./BlobHead";
 import { useRouter } from "next/router";
 import { LockIcon } from "@/layout/icons";
 import { requestMotionPermission } from "@/utils/permission";
+import { Button } from "@/layout/atoms";
 
 //#region constants
 export const VISIBLE_OPTIONS_CAMERA_ZOOM = 3;
@@ -176,16 +177,14 @@ export function HeadNavigation({
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
   const [mousePosition, _setMousePosition] = useState({ x: 0, y: 0 });
   const [permissionGranted, setPermissionGranted] = useState(false);
+  const isMobile =
+    typeof window !== "undefined" && /Mobi|Android/i.test(navigator.userAgent);
 
   // TODO: show permission modal with explanation before asking for permission
-  useEffect(() => {
-    const askPermission = async () => {
-      const granted = await requestMotionPermission();
-      setPermissionGranted(granted);
-    };
-
-    askPermission();
-  }, []);
+  const handlePermissionRequest = async () => {
+    const granted = await requestMotionPermission();
+    setPermissionGranted(granted);
+  };
 
   useEffect(() => {
     // Get initial window size
@@ -236,7 +235,27 @@ export function HeadNavigation({
       <BlobHead
         onHeadClick={toggleOptions}
         motionPermissionGranted={permissionGranted}
+        isMobile={isMobile}
       />
+
+      {/* Button to enable device sensors */}
+      {!permissionGranted && isMobile && (
+        <Float floatIntensity={2} floatingRange={[0.05, 0.1]} speed={1.5}>
+          <Html center>
+            <Button
+              style={{
+                transform: "translateY(40dvh)",
+                width: "calc(100% - 20px)",
+                margin: "auto",
+                minWidth: "calc(100% - 20px)",
+              }}
+              onClick={handlePermissionRequest}
+            >
+              Sensoren aktivieren
+            </Button>
+          </Html>
+        </Float>
+      )}
 
       {showOptions && (
         <OptionsGroup
