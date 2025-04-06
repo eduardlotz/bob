@@ -12,7 +12,8 @@ export function useDeviceOrientation() {
     beta: 0,
     gamma: 0,
   });
-  const [acceleration, setAcceleration] = useState({ x: 0, y: 0, z: 0 });
+  const [acceleration, setAcceleration] =
+    useState<DeviceMotionEventAcceleration>({ x: 0, y: 0, z: 0 });
 
   useEffect(() => {
     const handleOrientation = (event: DeviceOrientationEvent) => {

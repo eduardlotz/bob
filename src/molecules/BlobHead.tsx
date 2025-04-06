@@ -1,9 +1,10 @@
 import { useDeviceOrientation } from "@/hooks/useDeviceOrientation";
 import { useFrame } from "@react-three/fiber";
 import { useRef, useState, useEffect } from "react";
-import { Group, Mesh, MathUtils } from "three";
+import { Group, Mesh, MathUtils, Vector3 } from "three";
 import {
   CAMERA_Y_POSITION,
+  HIDDEN_OPTIONS_CAMERA_ZOOM,
   VISIBLE_OPTIONS_CAMERA_ZOOM,
 } from "./HeadNavigation";
 import { CameraControls } from "@react-three/drei";
@@ -16,11 +17,13 @@ export function BlobHead({
   motionPermissionGranted: permissionGranted,
   isMobile,
   cameraControlsRef,
+  showOptions,
 }: {
   onHeadClick: () => void;
   motionPermissionGranted: boolean;
   isMobile: boolean;
   cameraControlsRef: React.RefObject<CameraControls>;
+  showOptions: boolean;
 }) {
   const headRef = useRef<Group>(null!);
   const leftEyeRef = useRef<Mesh>(null!);
@@ -90,13 +93,31 @@ export function BlobHead({
         1 - Math.exp(-2 * delta)
       );
 
-      cameraControlsRef.current.setLookAt(
+      // Calculate direction vector based on target rotations
+      const lookDirection = new Vector3(
+        targetRotX,
+        targetRotY,
+        targetRotZ
+      ).normalize();
+
+      // Define camera position
+      const cameraPosition = new Vector3(
         0,
         CAMERA_Y_POSITION,
-        VISIBLE_OPTIONS_CAMERA_ZOOM,
-        targetRotY * 3,
-        CAMERA_Y_POSITION + targetRotX * 3,
-        0,
+        showOptions ? VISIBLE_OPTIONS_CAMERA_ZOOM : HIDDEN_OPTIONS_CAMERA_ZOOM
+      );
+
+      // Calculate the target by adding the look direction to the camera position
+      const target = cameraPosition.clone().add(lookDirection);
+
+      // Set the camera look-at target using the camera position and new target
+      cameraControlsRef.current.setLookAt(
+        cameraPosition.x,
+        cameraPosition.y,
+        cameraPosition.z,
+        target.x,
+        target.y,
+        target.z,
         true
       );
     } else {
