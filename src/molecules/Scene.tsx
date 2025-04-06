@@ -2,16 +2,20 @@ import * as THREE from "three";
 import {
   Fisheye,
   CameraControls,
-  Environment,
   PerspectiveCamera,
   GradientTexture,
+  Grid,
 } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
 import { HeadNavigation } from "./HeadNavigation";
 import { useKeyPress } from "@/hooks/useKeyPress";
 
-export const Scene = () => {
+export const Scene = ({
+  permissionGranted,
+}: {
+  permissionGranted: boolean;
+}) => {
   const [showOptions, setShowOptions] = useState(false);
   const cameraControlsRef = useRef<CameraControls>(null!);
 
@@ -21,9 +25,24 @@ export const Scene = () => {
     }
   });
 
+  const hideOptionsIfOpen = () => {
+    if (showOptions) {
+      setShowOptions(false);
+    }
+  };
+
   return (
     <FullScreenCanvas>
       <Fisheye zoom={0}>
+        <Grid
+          args={[8, 8]}
+          sectionThickness={2}
+          sectionColor="#E0DEE6"
+          sectionSize={1}
+          cellThickness={0}
+          onClick={hideOptionsIfOpen}
+          fadeDistance={4}
+        />
         <CameraControls
           ref={cameraControlsRef}
           minPolarAngle={0}
@@ -32,14 +51,18 @@ export const Scene = () => {
           minDistance={1}
         />
         <ambientLight intensity={2} />
-        <PerspectiveCamera makeDefault position={[0, 0, 2]} />
-        <directionalLight intensity={1} position={[2, 2, 5]} />
-        <Environment preset="city" />
+        <PerspectiveCamera
+          makeDefault
+          position={[20, 20, 20]}
+          rotateX={Math.PI * 20}
+        />
+        <directionalLight intensity={1.2} position={[2, 4, 5]} />
+        {/* <Environment preset="city" /> */}
         <mesh>
           <sphereGeometry args={[5, 32, 32]} />
           <meshBasicMaterial side={THREE.BackSide}>
             <GradientTexture
-              stops={[0, 1]} // As many stops as you want
+              stops={[0, 0.5, 1]} // As many stops as you want
               colors={["#ffffff", "#C5BDD5", "#85799F"]} // Colors need to match the number of stops
               size={1024} // Size is optional, default = 1024
             />
@@ -49,6 +72,7 @@ export const Scene = () => {
           showOptions={showOptions}
           setShowOptions={setShowOptions}
           cameraControlsRef={cameraControlsRef} // pass down for portal click
+          permissionGranted={permissionGranted}
         />
       </Fisheye>
     </FullScreenCanvas>
@@ -77,6 +101,7 @@ const FullScreenCanvas = ({ children, ...props }: { children: any }) => {
       ref={canvasRef}
       shadows
       flat
+      color="black"
       camera={{ position: [0, 0, isMobile ? 1.5 : 2], fov: 50 }}
       style={{
         width: "100vw",

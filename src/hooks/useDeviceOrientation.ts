@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
 
+export interface DeviceOrientation {
+  alpha: number;
+  beta: number;
+  gamma: number;
+}
+
 export function useDeviceOrientation() {
-  const [orientation, setOrientation] = useState({
+  const [orientation, setOrientation] = useState<DeviceOrientation>({
     alpha: 0,
     beta: 0,
     gamma: 0,

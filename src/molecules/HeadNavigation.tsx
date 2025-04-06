@@ -6,12 +6,14 @@ import { motion } from "motion/react";
 import { BlobHead } from "./BlobHead";
 import { useRouter } from "next/router";
 import { LockIcon } from "@/layout/icons";
-import { requestMotionPermission } from "@/utils/permission";
-import { Button } from "@/layout/atoms";
+import { useDeviceOrientation } from "@/hooks/useDeviceOrientation";
+import { calculateAcceleratedRotation } from "@/utils/math";
 
 //#region constants
-export const VISIBLE_OPTIONS_CAMERA_ZOOM = 3;
-export const HIDDEN_OPTIONS_CAMERA_ZOOM = 2;
+export const CAMERA_Y_POSITION = 2.5;
+
+export const VISIBLE_OPTIONS_CAMERA_ZOOM = 2;
+export const HIDDEN_OPTIONS_CAMERA_ZOOM = 1.75;
 export const FUNNY_FISHEYE_ZOOM = 1.15;
 export const OPTION_RADIUS_OFFSET = 0.004;
 
@@ -109,14 +111,12 @@ export const MOTION_VARIANTS = {
     initial: {
       scale: 0.8,
       opacity: 0,
-      // filter: "blur(6px)",
       transition: { type: "spring", duration: 0.6, bounce: 0.4 },
     },
     exit: {
-      scale: 0.2,
+      scale: 0.8,
       opacity: 0,
-      // filter: "blur(6px)",
-      transition: { type: "spring", duration: 0.6, bounce: 0.4 },
+      transition: { type: "spring", duration: 0.4, bounce: 0.4 },
     },
     hover: {
       scale: 1.05,
@@ -126,31 +126,16 @@ export const MOTION_VARIANTS = {
       scale: 0.9,
       transition: { type: "spring", duration: 0.3, bounce: 0.5 },
     },
-    // animate: {
-    //   scale: 1,
-    //   opacity: 1,
-    //   // filter: "blur(0px)",
-    //   transition: { type: "spring", duration: 0.6, bounce: 0.4 },
-    // },
     animate: (custom?: number) => ({
       scale: 1,
-      opacity: 1,
+      opacity: [0, 1],
       transition: {
         type: "spring",
         duration: 0.6,
-        bounce: 0.4,
+        bounce: 0.6,
         delay: custom ? custom * 0.05 : 0,
       },
     }),
-  },
-};
-export const LAYOUT_TRANSITIONS = {
-  quick: {
-    layout: {
-      type: "spring",
-      duration: 0.2,
-      bounce: 0.4,
-    },
   },
 };
 
@@ -169,22 +154,18 @@ export function HeadNavigation({
   showOptions,
   setShowOptions,
   cameraControlsRef,
+  permissionGranted,
 }: {
   showOptions: boolean;
   setShowOptions: React.Dispatch<React.SetStateAction<boolean>>;
   cameraControlsRef: React.RefObject<CameraControls>;
+  permissionGranted: boolean;
 }) {
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
   const [mousePosition, _setMousePosition] = useState({ x: 0, y: 0 });
-  const [permissionGranted, setPermissionGranted] = useState(false);
+  const { orientation, acceleration } = useDeviceOrientation();
   const isMobile =
     typeof window !== "undefined" && /Mobi|Android/i.test(navigator.userAgent);
-
-  // TODO: show permission modal with explanation before asking for permission
-  const handlePermissionRequest = async () => {
-    const granted = await requestMotionPermission();
-    setPermissionGranted(granted);
-  };
 
   useEffect(() => {
     // Get initial window size
@@ -207,19 +188,39 @@ export function HeadNavigation({
 
   // Update camera zoom based on showOptions state
   useFrame(() => {
-    const cursorPos = new THREE.Vector3(
-      mousePosition.x * 0.2,
-      mousePosition.y * 0.2,
-      0
-    );
+    if (
+      isMobile &&
+      orientation &&
+      acceleration &&
+      permissionGranted
+      // && !showOptions
+    ) {
+      const { targetRotX, targetRotY, targetRotZ } =
+        calculateAcceleratedRotation(acceleration, orientation);
 
-    if (cameraControlsRef.current) {
       cameraControlsRef.current.setLookAt(
         0,
+        CAMERA_Y_POSITION,
+        // VISIBLE_OPTIONS_CAMERA_ZOOM,
+        showOptions ? VISIBLE_OPTIONS_CAMERA_ZOOM : HIDDEN_OPTIONS_CAMERA_ZOOM,
+        -targetRotX,
+        targetRotY + 2,
+        -targetRotZ,
+        true
+      );
+    } else {
+      const cursorPos = new THREE.Vector3(
+        mousePosition.x * 0.2,
+        mousePosition.y * 0.2,
+        0
+      );
+
+      cameraControlsRef.current.setLookAt(
         0,
+        CAMERA_Y_POSITION,
         showOptions ? VISIBLE_OPTIONS_CAMERA_ZOOM : HIDDEN_OPTIONS_CAMERA_ZOOM,
         cursorPos.x,
-        cursorPos.y,
+        cursorPos.y + 2,
         cursorPos.z,
         true
       );
@@ -236,26 +237,8 @@ export function HeadNavigation({
         onHeadClick={toggleOptions}
         motionPermissionGranted={permissionGranted}
         isMobile={isMobile}
+        cameraControlsRef={cameraControlsRef}
       />
-
-      {/* Button to enable device sensors */}
-      {!permissionGranted && isMobile && (
-        <Float floatIntensity={2} floatingRange={[0.05, 0.1]} speed={1.5}>
-          <Html center>
-            <Button
-              style={{
-                transform: "translateY(40dvh)",
-                width: "calc(100% - 20px)",
-                margin: "auto",
-                minWidth: "calc(100% - 20px)",
-              }}
-              onClick={handlePermissionRequest}
-            >
-              Sensoren aktivieren
-            </Button>
-          </Html>
-        </Float>
-      )}
 
       {showOptions && (
         <OptionsGroup
@@ -263,6 +246,7 @@ export function HeadNavigation({
           windowHeight={windowSize.height}
           cameraControlsRef={cameraControlsRef}
           hideOptions={() => setShowOptions(false)}
+          isMobile={isMobile}
         />
       )}
     </>
@@ -274,15 +258,17 @@ function OptionsGroup({
   windowHeight,
   cameraControlsRef,
   hideOptions,
+  isMobile,
 }: {
   windowWidth: number;
   windowHeight: number;
   cameraControlsRef: React.RefObject<CameraControls>;
   hideOptions: () => void;
+  isMobile: boolean;
 }) {
   const count = NAV_OPTIONS.length;
 
-  const screenCenter = new THREE.Vector3(0, -0.5, 0);
+  const screenCenter = new THREE.Vector3(0, 0, 0);
 
   // Calculate appropriate radii based on screen dimensions
   // Use the smaller dimension to ensure elements stay within viewport
@@ -331,6 +317,7 @@ function OptionsGroup({
               windowHeight={windowHeight}
               cameraControlsRef={cameraControlsRef}
               hideOptions={hideOptions}
+              isMobile={isMobile}
             />
           </Float>
         );
@@ -348,6 +335,7 @@ function Option({
   windowHeight,
   cameraControlsRef,
   hideOptions,
+  isMobile,
 }: {
   initialPosition: THREE.Vector3;
   label: string;
@@ -357,6 +345,7 @@ function Option({
   windowHeight: number;
   cameraControlsRef: React.RefObject<CameraControls>;
   hideOptions: () => void;
+  isMobile: boolean;
 }) {
   const optionRef = useRef<THREE.Group>(null!);
   const [hovered, setHovered] = useState(false);
@@ -402,32 +391,33 @@ function Option({
     newPos.x += (-cursorPos.x - basePos.x) * influenceFactor;
     newPos.y += (-cursorPos.y - basePos.y) * influenceFactor;
 
-    cameraControlsRef.current.setLookAt(
-      0,
-      0,
-      VISIBLE_OPTIONS_CAMERA_ZOOM,
-      cursorPos.x,
-      cursorPos.y,
-      cursorPos.z,
-      true
-    );
-
-    // Update position with smooth lerping
-    setPosition((prev) => {
-      return new THREE.Vector3(
-        THREE.MathUtils.lerp(prev.x, newPos.x, 0.05),
-        THREE.MathUtils.lerp(prev.y, newPos.y, 0.05),
-        0
+    if (!isMobile) {
+      cameraControlsRef.current.setLookAt(
+        0,
+        CAMERA_Y_POSITION,
+        VISIBLE_OPTIONS_CAMERA_ZOOM,
+        cursorPos.x,
+        cursorPos.y + 2,
+        cursorPos.z,
+        true
       );
-    });
+      // Update position with smooth lerping
+      setPosition((prev) => {
+        return new THREE.Vector3(
+          THREE.MathUtils.lerp(prev.x, newPos.x, 0.05),
+          THREE.MathUtils.lerp(prev.y, newPos.y, 0.05),
+          0
+        );
+      });
 
-    // Apply position
-    optionRef.current.position.copy(position);
+      // Apply position
+      optionRef.current.position.copy(position);
+    }
   });
 
   return (
     <group ref={optionRef} position={initialPosition}>
-      <Html position={[0, 0, 0]} center>
+      <Html position={[0, 1.5, 0]} center>
         <motion.button
           key={href}
           initial={MOTION_VARIANTS.springScaleReversed.initial}
@@ -457,17 +447,19 @@ function Option({
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
           onClick={() => {
-            cameraControlsRef.current.setLookAt(
-              0,
-              0,
-              4,
-              position.x,
-              position.y,
-              position.z,
-              true
-            );
-            router.push(href, undefined, { shallow: true });
-            hideOptions();
+            if (href !== "#") {
+              cameraControlsRef.current.setLookAt(
+                0,
+                CAMERA_Y_POSITION,
+                4,
+                position.x,
+                position.y + 2,
+                position.z,
+                true
+              );
+              router.push(href, undefined, { shallow: true });
+              hideOptions();
+            }
           }}
         >
           {label}

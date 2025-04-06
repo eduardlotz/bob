@@ -1,5 +1,5 @@
 import { FillRow } from "@/layout";
-import { IconLink, Logo, MotionIconWrapper } from "@/layout/atoms";
+import { Logo, MotionIconWrapper } from "@/layout/atoms";
 import { MotionVariants } from "@/styles/motion";
 import dynamic from "next/dynamic";
 import styled from "styled-components";
@@ -39,8 +39,13 @@ const LoadingWrapper = styled(motion.div)`
   width: 100dvw;
   height: 100dvh;
   padding: 40px 16px 0 16px;
+  background-color: #000000;
 
   display: flex;
   align-items: center;
   justify-content: center;
+
+  svg {
+    color: #ffffff !important;
+  }
 `;
