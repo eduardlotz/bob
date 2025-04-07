@@ -1,15 +1,16 @@
-import * as THREE from "three";
 import {
   Fisheye,
   CameraControls,
   PerspectiveCamera,
-  GradientTexture,
   Grid,
+  Environment,
 } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
 import { HeadNavigation } from "./HeadNavigation";
 import { useKeyPress } from "@/hooks/useKeyPress";
+import { BackgroundPlanet } from "@/3d-objects/BackgroundPlanet";
+import { Physics } from "@react-three/rapier";
 
 export const Scene = ({
   permissionGranted,
@@ -33,48 +34,41 @@ export const Scene = ({
 
   return (
     <FullScreenCanvas>
-      <Fisheye zoom={0}>
-        <Grid
-          args={[8, 8]}
-          sectionThickness={2}
-          sectionColor="#E0DEE6"
-          sectionSize={1}
-          cellThickness={0}
-          onClick={hideOptionsIfOpen}
-          fadeDistance={4}
-        />
-        <CameraControls
-          ref={cameraControlsRef}
-          minPolarAngle={0}
-          maxPolarAngle={Math.PI / 1.6}
-          maxDistance={10}
-          minDistance={1}
-        />
-        <ambientLight intensity={2} />
-        <PerspectiveCamera
-          makeDefault
-          position={[20, 20, 20]}
-          rotateX={Math.PI * 20}
-        />
-        <directionalLight intensity={1.2} position={[2, 4, 5]} />
-        {/* <Environment preset="city" /> */}
-        <mesh>
-          <sphereGeometry args={[5, 32, 32]} />
-          <meshBasicMaterial side={THREE.BackSide}>
-            <GradientTexture
-              stops={[0, 0.5, 1]} // As many stops as you want
-              colors={["#ffffff", "#C5BDD5", "#85799F"]} // Colors need to match the number of stops
-              size={1024} // Size is optional, default = 1024
-            />
-          </meshBasicMaterial>
-        </mesh>
-        <HeadNavigation
-          showOptions={showOptions}
-          setShowOptions={setShowOptions}
-          cameraControlsRef={cameraControlsRef} // pass down for portal click
-          permissionGranted={permissionGranted}
-        />
-      </Fisheye>
+      <Physics>
+        <Fisheye zoom={0}>
+          <Grid
+            args={[8, 8]}
+            sectionThickness={2}
+            sectionColor="#E0DEE6"
+            sectionSize={1}
+            cellThickness={0}
+            onClick={hideOptionsIfOpen}
+            fadeDistance={4}
+          />
+          <CameraControls
+            ref={cameraControlsRef}
+            minPolarAngle={0}
+            maxPolarAngle={Math.PI / 1.6}
+            maxDistance={10}
+            minDistance={1}
+          />
+          <ambientLight intensity={2} />
+          <PerspectiveCamera
+            makeDefault
+            position={[20, 20, 20]}
+            rotateX={Math.PI * 20}
+          />
+          <directionalLight intensity={1.2} position={[2, 4, 5]} />
+          <Environment preset="city" />
+          <BackgroundPlanet />
+          <HeadNavigation
+            showOptions={showOptions}
+            setShowOptions={setShowOptions}
+            cameraControlsRef={cameraControlsRef} // pass down for portal click
+            permissionGranted={permissionGranted}
+          />
+        </Fisheye>
+      </Physics>
     </FullScreenCanvas>
   );
 };
