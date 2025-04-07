@@ -1,7 +1,7 @@
 import { useDeviceOrientation } from "@/hooks/useDeviceOrientation";
 import { useFrame } from "@react-three/fiber";
-import { useRef, useState, useEffect } from "react";
-import { Group, Mesh, MathUtils, Vector3 } from "three";
+import { useRef, useState, useEffect, useMemo } from "react";
+import { Group, Mesh, MathUtils, Vector3, Clock } from "three";
 import {
   CAMERA_Y_POSITION,
   HIDDEN_OPTIONS_CAMERA_ZOOM,
@@ -9,8 +9,11 @@ import {
 } from "./HeadNavigation";
 import { CameraControls } from "@react-three/drei";
 import { calculateAcceleratedRotation } from "@/utils/math";
+import { a, useSpring } from "@react-spring/three";
 
 const HEAD_POSITION_Y = 2;
+const MAX_ROTATION_X = 0.9;
+const MAX_ROTATION_Y = 0.9;
 
 export function BlobHead({
   onHeadClick,
@@ -31,6 +34,24 @@ export function BlobHead({
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [blinking, setBlinking] = useState(false);
   const { orientation, acceleration } = useDeviceOrientation();
+  const [clickTimestamps, setClickTimestamps] = useState<number[]>([]);
+  const [isTipsy, setIsTipsy] = useState(false);
+  const tipsyStartTimeRef = useRef<number | null>(null);
+
+  // Keep a ref to spring api for fine-grained control
+  const [spring, api] = useSpring(() => ({
+    scale: [0, 0, 0], // start invisible
+    config: { tension: 200, friction: 15 },
+  }));
+
+  // Trigger spawn animation once on mount
+  useEffect(() => {
+    api.start({
+      scale: [1.2, 1.2, 1.2],
+      delay: 1500,
+      config: { tension: 300, friction: 10 },
+    });
+  }, []);
 
   // Track mouse position for head rotation
   useEffect(() => {
@@ -53,124 +74,212 @@ export function BlobHead({
     return () => clearInterval(blinkInterval);
   }, []);
 
-  // Animation for head movement and blinking
+  // Animation for head movement and camera positioning
   useFrame(({ clock }, delta) => {
-    const maxRotationY = 0.9;
-    const maxRotationX = 0.9;
-    let targetRotX, targetRotY, targetRotZ;
-
+    // Handle device motion for mobile
     if (isMobile && orientation && acceleration && permissionGranted) {
-      const {
-        targetRotX: blendX,
-        targetRotY: blendY,
-        targetRotZ: blendZ,
-        accelX,
-        accelY,
-        orientGamma,
-        orientBeta,
-      } = calculateAcceleratedRotation(acceleration, orientation);
-
-      // Default rotation facing user in portrait mode
-      targetRotX = blendX;
-      targetRotY = blendY;
-      targetRotZ = blendZ;
-
-      // Shake-based drag effect — create a "shake offset" that reacts and returns
-      const shakeStrength = 0.6;
-      const shakeOffsetX = MathUtils.clamp(accelX * shakeStrength, -0.4, 0.4);
-      const shakeOffsetY = MathUtils.clamp(accelY * shakeStrength, -0.4, 0.4);
-
-      // Move position toward shake offset plus a tiny breathing motion
-      const floatY = Math.sin(clock.getElapsedTime() * 0.5) * 0.1;
-      headRef.current.position.x = MathUtils.lerp(
-        headRef.current.position.x,
-        shakeOffsetX + orientGamma * 0.2,
-        1 - Math.exp(-2 * delta)
-      );
-      headRef.current.position.y = MathUtils.lerp(
-        headRef.current.position.y,
-        floatY + shakeOffsetY + orientBeta * 0.1,
-        1 - Math.exp(-2 * delta)
-      );
-
-      // Calculate direction vector based on target rotations
-      const lookDirection = new Vector3(
-        targetRotX,
-        targetRotY,
-        targetRotZ
-      ).normalize();
-
-      // Define camera position
-      const cameraPosition = new Vector3(
-        0,
-        CAMERA_Y_POSITION,
-        showOptions ? VISIBLE_OPTIONS_CAMERA_ZOOM : HIDDEN_OPTIONS_CAMERA_ZOOM
-      );
-
-      // Calculate the target by adding the look direction to the camera position
-      const target = cameraPosition.clone().add(lookDirection);
-
-      // Set the camera look-at target using the camera position and new target
-      cameraControlsRef.current.setLookAt(
-        cameraPosition.x,
-        cameraPosition.y,
-        cameraPosition.z,
-        target.x,
-        target.y,
-        target.z,
-        true
-      );
+      handleMobileMovement(clock, delta);
     } else {
-      // Use mouse position
-      targetRotY = mousePosition.x * maxRotationX;
-      targetRotX = mousePosition.y * maxRotationY;
-      targetRotZ = -mousePosition.x * maxRotationX;
+      // Handle mouse movement for desktop
+      handleDesktopMovement(clock, delta);
     }
 
-    // Head rotation
-    headRef.current.rotation.y = MathUtils.lerp(
-      headRef.current.rotation.y,
-      targetRotY,
-      1 - Math.exp(-4 * delta)
-    );
-    headRef.current.rotation.x = MathUtils.lerp(
-      headRef.current.rotation.x,
-      targetRotX,
-      1 - Math.exp(-4 * delta)
-    );
-    headRef.current.rotation.z = MathUtils.lerp(
-      headRef.current.rotation.z,
-      targetRotZ,
-      1 - Math.exp(-3 * delta)
-    );
-
-    // Prevent overriding the above motion
-    headRef.current.position.y =
-      Math.sin(clock.getElapsedTime() * 0.5) * 0.1 + HEAD_POSITION_Y;
-
-    //TODO: use delta time
-    // Eye blinking
+    // Common animations regardless of device
+    // Eye blinking animation
     const targetScaleY = blinking ? 0.1 : 1;
     leftEyeRef.current.scale.y = MathUtils.lerp(
       leftEyeRef.current.scale.y,
       targetScaleY,
-      // 1 - Math.exp(-6 * delta)
       0.3
     );
     rightEyeRef.current.scale.y = MathUtils.lerp(
       rightEyeRef.current.scale.y,
       targetScaleY,
-      // 1 - Math.exp(-6 * delta)
       0.3
     );
+
+    // Animate tipsy state
+    if (isTipsy && tipsyStartTimeRef.current) {
+      const elapsed = clock.getElapsedTime() - tipsyStartTimeRef.current / 1000;
+      const wobble = Math.sin(elapsed * 10) * 0.1;
+      headRef.current.rotation.z += wobble * delta;
+
+      leftEyeRef.current.scale.y = MathUtils.lerp(
+        leftEyeRef.current.scale.y,
+        0.2,
+        0.3
+      );
+      rightEyeRef.current.scale.y = MathUtils.lerp(
+        rightEyeRef.current.scale.y,
+        0.2,
+        0.3
+      );
+    }
   });
 
+  // Handle mobile device motion
+  const handleMobileMovement = (clock: Clock, delta: number) => {
+    const {
+      targetRotX,
+      targetRotY,
+      targetRotZ,
+      accelX,
+      accelY,
+      orientGamma,
+      orientBeta,
+    } = calculateAcceleratedRotation(acceleration, orientation);
+
+    // Apply mobile specific head rotation
+    applyHeadRotation(targetRotX, targetRotY, targetRotZ, delta);
+
+    // Apply mobile specific head position (shake effect)
+    applyMobileHeadPosition(
+      clock,
+      delta,
+      accelX,
+      accelY,
+      orientGamma,
+      orientBeta
+    );
+
+    // Set camera look-at for mobile
+    // Using normalized direction vector approach
+    const lookDirection = new Vector3(
+      targetRotX,
+      targetRotY,
+      targetRotZ
+    ).normalize();
+    const cameraPosition = new Vector3(
+      0,
+      CAMERA_Y_POSITION,
+      showOptions ? VISIBLE_OPTIONS_CAMERA_ZOOM : HIDDEN_OPTIONS_CAMERA_ZOOM
+    );
+    const target = cameraPosition.clone().add(lookDirection);
+
+    cameraControlsRef.current.setLookAt(
+      cameraPosition.x,
+      cameraPosition.y,
+      cameraPosition.z,
+      target.x,
+      target.y, // Keep the +2 offset from original code
+      target.z,
+      true
+    );
+  };
+
+  // Handle desktop mouse movement
+  const handleDesktopMovement = (clock: Clock, delta: number) => {
+    // Calculate target rotations based on mouse position
+    const targetRotY = mousePosition.x * MAX_ROTATION_X;
+    const targetRotX = mousePosition.y * MAX_ROTATION_Y;
+    const targetRotZ = -mousePosition.x * MAX_ROTATION_X;
+
+    // Apply desktop specific head rotation
+    applyHeadRotation(targetRotX, targetRotY, targetRotZ, delta);
+
+    // Apply breathing animation for head position
+    const floatY = Math.sin(clock.getElapsedTime() * 0.5) * 0.1;
+    headRef.current.position.y = floatY + HEAD_POSITION_Y;
+
+    // Set camera look-at for desktop
+    const cursorPos = new Vector3(
+      mousePosition.x * 0.2,
+      mousePosition.y * 0.2,
+      0
+    );
+
+    cameraControlsRef.current.setLookAt(
+      0,
+      CAMERA_Y_POSITION,
+      showOptions ? VISIBLE_OPTIONS_CAMERA_ZOOM : HIDDEN_OPTIONS_CAMERA_ZOOM,
+      cursorPos.x,
+      cursorPos.y + 2,
+      cursorPos.z,
+      true
+    );
+  };
+
+  // Common function to apply head rotation
+  const applyHeadRotation = (
+    rotX: number,
+    rotY: number,
+    rotZ: number,
+    delta: number
+  ) => {
+    headRef.current.rotation.y = MathUtils.lerp(
+      headRef.current.rotation.y,
+      rotY,
+      1 - Math.exp(-4 * delta)
+    );
+    headRef.current.rotation.x = MathUtils.lerp(
+      headRef.current.rotation.x,
+      rotX,
+      1 - Math.exp(-4 * delta)
+    );
+    headRef.current.rotation.z = MathUtils.lerp(
+      headRef.current.rotation.z,
+      rotZ,
+      1 - Math.exp(-3 * delta)
+    );
+  };
+
+  // Mobile specific head position with shake effect
+  const applyMobileHeadPosition = (
+    clock: Clock,
+    delta: number,
+    accelX: number,
+    accelY: number,
+    orientGamma: number,
+    orientBeta: number
+  ) => {
+    const shakeStrength = 0.6;
+    const shakeOffsetX = MathUtils.clamp(accelX * shakeStrength, -0.4, 0.4);
+    const shakeOffsetY = MathUtils.clamp(accelY * shakeStrength, -0.4, 0.4);
+
+    // const floatY = Math.sin(clock.getElapsedTime() * 0.5) * 0.1;
+    const floatY = HEAD_POSITION_Y;
+
+    headRef.current.position.x = MathUtils.lerp(
+      headRef.current.position.x,
+      shakeOffsetX + orientGamma * 0.2,
+      1 - Math.exp(-2 * delta)
+    );
+    headRef.current.position.y = MathUtils.lerp(
+      headRef.current.position.y,
+      floatY + shakeOffsetY + orientBeta * 0.2,
+      1 - Math.exp(-2 * delta)
+    );
+  };
+
+  const onClick = () => {
+    const now = Date.now();
+    setClickTimestamps((prev) => {
+      const recent = prev.filter((ts) => now - ts < 800);
+      const updated = [...recent, now];
+      if (updated.length >= 5) {
+        setIsTipsy(true);
+        tipsyStartTimeRef.current = now;
+        setTimeout(() => setIsTipsy(false), 4000);
+        return [];
+      }
+      return updated;
+    });
+
+    onHeadClick();
+    api.start({
+      scale: showOptions ? [1.2, 1.2, 1.2] : [0.7, 0.7, 0.7],
+      config: { tension: 300, friction: 10 },
+    });
+  };
+
   return (
-    <group
+    <a.group
       ref={headRef}
-      onClick={onHeadClick}
+      onClick={onClick}
       castShadow
+      scale={spring.scale}
       rotation={[0, Math.PI, 0]}
+      x
       position={[0, 2, 0]}
     >
       {/* Head */}
@@ -190,6 +299,6 @@ export function BlobHead({
           <meshToonMaterial color="black" />
         </mesh>
       </group>
-    </group>
+    </a.group>
   );
 }
