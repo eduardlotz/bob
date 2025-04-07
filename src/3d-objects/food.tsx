@@ -1,11 +1,11 @@
 import { useGLTF, Hud, Text } from "@react-three/drei";
 import { RigidBody } from "@react-three/rapier";
 import { useRef, useState } from "react";
-import { Mesh } from "three";
+import { BufferGeometry, Material, Mesh } from "three";
 import { degToRad } from "three/src/math/MathUtils.js";
 import { useFrame } from "@react-three/fiber";
 
-export const TestFood = () => {
+const TestFood = () => {
   const initialPositions = [
     { x: -1, y: 2, z: 1 },
     { x: -2, y: 2, z: 1 },
@@ -23,7 +23,7 @@ export const TestFood = () => {
     setBananaCount((prev) => prev + 1);
   };
 
-  const removeBanana = (indexToRemove) => {
+  const removeBanana = (indexToRemove: number) => {
     setBananas((prev) => {
       const updated = prev.filter((_, i) => i !== indexToRemove);
       if (updated.length < 5) {
@@ -76,17 +76,24 @@ function DraggableBanana({
   onThrow,
   onRemove,
   index,
+}: {
+  position: [number, number, number];
+  material: Material;
+  geometry: BufferGeometry;
+  onThrow: () => void;
+  onRemove: (index: number) => void;
+  index: number;
 }) {
   const bodyRef = useRef<any>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  const handlePointerDown = (e) => {
+  const handlePointerDown = (e: { stopPropagation: () => void }) => {
     e.stopPropagation();
     setIsDragging(true);
     bodyRef.current?.setBodyType("kinematicPosition");
   };
 
-  const handlePointerUp = (e) => {
+  const handlePointerUp = (e: { stopPropagation: () => void }) => {
     e.stopPropagation();
     setIsDragging(false);
     bodyRef.current?.setBodyType("dynamic");
