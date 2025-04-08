@@ -25,7 +25,7 @@ export function Star3D({
     const shape = new THREE.Shape();
     const spikes = 5;
     const outerRadius = 1;
-    const innerRadius = 0.5;
+    const innerRadius = 0.6;
     const step = (Math.PI * 2) / (spikes * 2);
 
     shape.moveTo(outerRadius, 0);
@@ -36,9 +36,9 @@ export function Star3D({
     shape.closePath();
 
     const extrudeSettings = {
-      depth: 0.3,
+      depth: 0.4,
       bevelEnabled: true,
-      bevelThickness: 0.05,
+      bevelThickness: 0.1,
       bevelSize: 0.05,
       bevelSegments: 2,
       steps: 1,
@@ -46,21 +46,6 @@ export function Star3D({
 
     const extrudeGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
     const geo = new THREE.BufferGeometry().copy(extrudeGeo);
-
-    // Fake bloated cartoon puff
-    const posAttr = geo.attributes.position;
-    const temp = new THREE.Vector3();
-
-    for (let i = 0; i < posAttr.count; i++) {
-      temp.fromBufferAttribute(posAttr, i);
-      const dist = Math.sqrt(temp.x * temp.x + temp.y * temp.y);
-      const offset =
-        0.06 * Math.cos((temp.z / extrudeSettings.depth) * Math.PI);
-      posAttr.setZ(i, temp.z + offset * (1 - dist));
-    }
-
-    posAttr.needsUpdate = true;
-    geo.computeVertexNormals();
 
     return { geometry: geo };
   }, []);

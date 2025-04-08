@@ -35,10 +35,15 @@ export default function MainLayout({ children }: any) {
                 zIndex: 100,
                 left: 0,
                 right: 0,
-                bottom: "20px",
+                top: "40px",
                 width: "fit-content",
                 margin: "auto",
                 maxWidth: "calc(100% - 20px)",
+                border: "dashed 3px black",
+                fontWeight: 700,
+                fontSize: "1rem",
+                background: "transparent",
+                color: "black",
               }}
               variants={MOTION_VARIANTS.springScaleReversed}
               initial="initial"
