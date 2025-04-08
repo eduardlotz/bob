@@ -2,6 +2,7 @@ import { useDeviceOrientation } from "@/hooks/useDeviceOrientation";
 import { useFrame } from "@react-three/fiber";
 import { useRef, useState, useEffect, useMemo } from "react";
 import { Group, Mesh, MathUtils, Vector3, Clock } from "three";
+import * as THREE from "three";
 import {
   CAMERA_Y_POSITION,
   HIDDEN_OPTIONS_CAMERA_ZOOM,
@@ -10,6 +11,8 @@ import {
 import { CameraControls } from "@react-three/drei";
 import { calculateAcceleratedRotation } from "@/utils/math";
 import { a, useSpring } from "@react-spring/three";
+import { Star3D } from "@/3d-objects/Star3D";
+import { degToRad, radToDeg } from "three/src/math/MathUtils.js";
 
 const HEAD_POSITION_Y = 2;
 const MAX_ROTATION_X = 0.9;
@@ -31,6 +34,7 @@ export function BlobHead({
   const headRef = useRef<Group>(null!);
   const leftEyeRef = useRef<Mesh>(null!);
   const rightEyeRef = useRef<Mesh>(null!);
+  const starRef = useRef<Mesh>(null!);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [blinking, setBlinking] = useState(false);
   const { orientation, acceleration } = useDeviceOrientation();
@@ -101,19 +105,24 @@ export function BlobHead({
     // Animate tipsy state
     if (isTipsy && tipsyStartTimeRef.current) {
       const elapsed = clock.getElapsedTime() - tipsyStartTimeRef.current / 1000;
-      const wobble = Math.sin(elapsed * 10) * 0.1;
+      const wobble = Math.sin(elapsed * 10) * 0.5;
       headRef.current.rotation.z += wobble * delta;
 
       leftEyeRef.current.scale.y = MathUtils.lerp(
         leftEyeRef.current.scale.y,
         0.2,
-        0.3
+        0.5
       );
       rightEyeRef.current.scale.y = MathUtils.lerp(
         rightEyeRef.current.scale.y,
         0.2,
-        0.3
+        0.5
       );
+    }
+
+    if (isTipsy && starRef.current) {
+      starRef.current.rotation.y += delta * 4;
+      starRef.current.rotation.z += delta * 2;
     }
   });
 
@@ -130,7 +139,7 @@ export function BlobHead({
     } = calculateAcceleratedRotation(acceleration, orientation);
 
     // Apply mobile specific head rotation
-    applyHeadRotation(targetRotX, targetRotY, targetRotZ, delta);
+    applyHeadRotation(-targetRotY, -targetRotX, 0, delta);
 
     // Apply mobile specific head position (shake effect)
     applyMobileHeadPosition(
@@ -288,8 +297,23 @@ export function BlobHead({
         <meshToonMaterial color="#ffffff" />
       </mesh>
 
-      {/* Eyes */}
+      {/* Eyes & Brows*/}
       <group position={[0, 0.2, 0.85]}>
+        {/* <mesh
+          position={[-0.3, 0.25, 0]}
+          rotation={[degToRad(145), degToRad(20), degToRad(90)]}
+        >
+          <capsuleGeometry args={[0.03, 0.2, 4]} />
+          <meshToonMaterial color="black" />
+        </mesh>
+        <mesh
+          position={[0.3, 0.25, 0]}
+          rotation={[degToRad(145), degToRad(-20), degToRad(-90)]}
+        >
+          <capsuleGeometry args={[0.03, 0.2, 4]} />
+          <meshToonMaterial color="black" />
+        </mesh> */}
+
         <mesh ref={leftEyeRef} position={[-0.3, 0, 0]}>
           <sphereGeometry args={[0.12, 16, 16]} />
           <meshToonMaterial color="black" />
@@ -299,6 +323,12 @@ export function BlobHead({
           <meshToonMaterial color="black" />
         </mesh>
       </group>
+
+      {/* Spinning Stars */}
+      {isTipsy &&
+        [-0.4, 0, 0.4].map((offset, i) => (
+          <Star3D position={[offset, 1.5 + (i % 2) * 0.1, offset * 0.5]} />
+        ))}
     </a.group>
   );
 }
