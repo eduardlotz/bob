@@ -29,17 +29,7 @@ export default function MainLayout({ children }: any) {
       <Background style={{ height: windowHeight }}>
         <AnimatePresence>
           {!permissionGranted && isMobile && (
-            <Button
-              style={{
-                position: "absolute",
-                zIndex: 100,
-                left: 0,
-                right: 0,
-                bottom: "20px",
-                width: "fit-content",
-                margin: "auto",
-                maxWidth: "calc(100% - 20px)",
-              }}
+            <SensorButton
               variants={MOTION_VARIANTS.springScaleReversed}
               initial="initial"
               animate="animate"
@@ -49,7 +39,7 @@ export default function MainLayout({ children }: any) {
               onClick={handlePermissionRequest}
             >
               Sensoren aktivieren
-            </Button>
+            </SensorButton>
           )}
         </AnimatePresence>
         <SceneWithLoader permissionGranted={permissionGranted} />
@@ -75,4 +65,30 @@ const Background = styled.div`
 const Overlay = styled.div`
   position: relative;
   z-index: 10;
+`;
+
+const SensorButton = styled(Button)`
+  position: absolute;
+  z-index: 100;
+  left: 0;
+  right: 0;
+  bottom: 40px;
+  width: fit-content;
+  margin: auto;
+  max-width: calc(100% - 20px);
+  border: solid 2px #dbdbed;
+  font-weight: 700;
+  font-size: 1rem;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(5px);
+  color: white;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+
+  &:active,
+  &:hover {
+    border: solid 2px #dbdbed;
+    color: white;
+    box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.1);
+  }
 `;
