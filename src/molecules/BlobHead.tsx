@@ -34,6 +34,8 @@ export function BlobHead({
   const headRef = useRef<Group>(null!);
   const leftEyeRef = useRef<Mesh>(null!);
   const rightEyeRef = useRef<Mesh>(null!);
+  const rightBrowRef = useRef<Mesh>(null!);
+  const leftBrowRef = useRef<Mesh>(null!);
   const starRef = useRef<Mesh>(null!);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [blinking, setBlinking] = useState(false);
@@ -113,6 +115,7 @@ export function BlobHead({
         0.2,
         0.5
       );
+
       rightEyeRef.current.scale.y = MathUtils.lerp(
         rightEyeRef.current.scale.y,
         0.2,
@@ -121,7 +124,7 @@ export function BlobHead({
     }
 
     if (isTipsy && starRef.current) {
-      starRef.current.rotation.y += delta * 4;
+      starRef.current.rotation.y += delta * 4 * Math.random();
       starRef.current.rotation.z += delta * 2;
     }
   });
@@ -288,7 +291,6 @@ export function BlobHead({
       castShadow
       scale={spring.scale}
       rotation={[0, Math.PI, 0]}
-      x
       position={[0, 2, 0]}
     >
       {/* Head */}
@@ -299,7 +301,8 @@ export function BlobHead({
 
       {/* Eyes & Brows*/}
       <group position={[0, 0.2, 0.85]}>
-        {/* <mesh
+        <mesh
+          ref={leftBrowRef}
           position={[-0.3, 0.25, 0]}
           rotation={[degToRad(145), degToRad(20), degToRad(90)]}
         >
@@ -307,12 +310,13 @@ export function BlobHead({
           <meshToonMaterial color="black" />
         </mesh>
         <mesh
+          ref={rightBrowRef}
           position={[0.3, 0.25, 0]}
           rotation={[degToRad(145), degToRad(-20), degToRad(-90)]}
         >
           <capsuleGeometry args={[0.03, 0.2, 4]} />
           <meshToonMaterial color="black" />
-        </mesh> */}
+        </mesh>
 
         <mesh ref={leftEyeRef} position={[-0.3, 0, 0]}>
           <sphereGeometry args={[0.12, 16, 16]} />
