@@ -127,12 +127,26 @@ export namespace MotionVariants {
     },
   };
 }
-export namespace LayoutTransition {
+export namespace Transitions {
   export const quick = {
     layout: {
       type: "spring",
       duration: 0.2,
       bounce: 0.4,
     },
+  };
+
+  // inertica means that the animation will continue to move after the drag
+  export const inertiaTransition = {
+    type: "inertia" as const,
+    bounceStiffness: 300,
+    bounceDamping: 40,
+    timeConstant: 300,
+  };
+
+  // static means that the animation will not move after the drag
+  export const staticTransition = {
+    duration: 0.5,
+    ease: [0.32, 0.72, 0, 1],
   };
 }

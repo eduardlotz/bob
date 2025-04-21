@@ -10,7 +10,8 @@ import { useDeviceOrientation } from "@/hooks/useDeviceOrientation";
 import { calculateAcceleratedRotation } from "@/utils/math";
 
 //#region constants
-export const CAMERA_Y_POSITION = 2.5;
+export const CAMERA_Y_POSITION = 2;
+export const CAMERA_FOLLOW_OFFSET = 2;
 
 export const VISIBLE_OPTIONS_CAMERA_ZOOM = 2;
 export const HIDDEN_OPTIONS_CAMERA_ZOOM = 1.75;
@@ -119,8 +120,8 @@ export const MOTION_VARIANTS = {
       transition: { type: "spring", duration: 0.4, bounce: 0.4 },
     },
     hover: {
-      scale: 1.05,
-      transition: { type: "spring", duration: 0.3, bounce: 0.2 },
+      scale: 1.1,
+      transition: { type: "spring", duration: 0.3, bounce: 0.5 },
     },
     tap: {
       scale: 0.9,
@@ -142,7 +143,7 @@ export const MOTION_VARIANTS = {
 // Navigation options
 const NAV_OPTIONS = [
   { label: "Portfolio", href: "/portfolio" },
-  { label: "Über mich", href: "#" },
+  { label: "Über mich", href: "/about" },
   { label: "Kreatives", href: "#" },
   { label: "Technisches", href: "#" },
   { label: "Gästebuch", href: "#" },
@@ -209,8 +210,8 @@ export function HeadNavigation({
       );
     } else {
       const cursorPos = new THREE.Vector3(
-        mousePosition.x * 0.2,
-        mousePosition.y * 0.2,
+        mousePosition.x * CAMERA_FOLLOW_OFFSET * 0.1,
+        mousePosition.y * CAMERA_FOLLOW_OFFSET * 0.1,
         0
       );
 
@@ -219,7 +220,7 @@ export function HeadNavigation({
         CAMERA_Y_POSITION,
         showOptions ? VISIBLE_OPTIONS_CAMERA_ZOOM : HIDDEN_OPTIONS_CAMERA_ZOOM,
         cursorPos.x,
-        cursorPos.y + 2,
+        cursorPos.y + CAMERA_Y_POSITION,
         cursorPos.z,
         true
       );
@@ -373,14 +374,14 @@ function Option({
   useFrame(() => {
     const basePos = initialPositionRef.current;
     const cursorPos = new THREE.Vector3(
-      mousePosition.x * 2,
-      mousePosition.y * 2,
+      mousePosition.x * CAMERA_FOLLOW_OFFSET,
+      mousePosition.y * CAMERA_FOLLOW_OFFSET,
       0
     );
 
     // Calculate distance to cursor for influence weighting
     const distanceToCursor = basePos.distanceTo(cursorPos);
-    const maxInfluence = 0.5; // Maximum influence factor
+    const maxInfluence = 0.2; // Maximum influence factor
 
     // The closer the cursor, the stronger the influence
     const influenceFactor =
@@ -396,16 +397,16 @@ function Option({
         0,
         CAMERA_Y_POSITION,
         VISIBLE_OPTIONS_CAMERA_ZOOM,
-        cursorPos.x,
-        cursorPos.y + 2,
-        cursorPos.z,
+        cursorPos.x * 0.1,
+        cursorPos.y * 0.1 + CAMERA_Y_POSITION,
+        cursorPos.z * 0.1,
         true
       );
       // Update position with smooth lerping
       setPosition((prev) => {
         return new THREE.Vector3(
-          THREE.MathUtils.lerp(prev.x, newPos.x, 0.05),
-          THREE.MathUtils.lerp(prev.y, newPos.y, 0.05),
+          THREE.MathUtils.lerp(prev.x, newPos.x, 0.1),
+          THREE.MathUtils.lerp(prev.y, newPos.y, 0.1),
           0
         );
       });
@@ -458,7 +459,7 @@ function Option({
                 true
               );
               router.push(href, undefined, { shallow: true });
-              hideOptions();
+              // hideOptions();
             }
           }}
         >

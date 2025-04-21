@@ -26,7 +26,7 @@ export const GlobalStyle = createGlobalStyle`
     }
     
     * {
-        font-family: "Plus Jakarta Sans", "Helvetica", sans-serif !important;
+        font-family: "Plus Jakarta Sans", "Helvetica", sans-serif;
     }
 
 `;
