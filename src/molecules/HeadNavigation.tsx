@@ -8,6 +8,7 @@ import { useRouter } from "next/router";
 import { LockIcon } from "@/layout/icons";
 import { useDeviceOrientation } from "@/hooks/useDeviceOrientation";
 import { calculateAcceleratedRotation } from "@/utils/math";
+import { ToonHead } from "./ToonHead";
 
 //#region constants
 export const CAMERA_Y_POSITION = 2.5;
@@ -232,7 +233,15 @@ export function HeadNavigation({
 
   return (
     <>
-      <BlobHead
+      {/* <BlobHead
+        onHeadClick={toggleOptions}
+        motionPermissionGranted={permissionGranted}
+        isMobile={isMobile}
+        cameraControlsRef={cameraControlsRef}
+        showOptions={showOptions}
+      /> */}
+
+      <ToonHead
         onHeadClick={toggleOptions}
         motionPermissionGranted={permissionGranted}
         isMobile={isMobile}
