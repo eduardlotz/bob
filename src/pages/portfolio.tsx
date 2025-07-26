@@ -182,7 +182,7 @@ export default function Home() {
               animate="animate"
               initial="initial"
               exit="exit"
-              transition={staticTransition}
+              transition={{ type: "tween", ...staticTransition }}
               style={{
                 y,
               }}
