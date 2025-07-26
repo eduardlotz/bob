@@ -69,8 +69,9 @@ const CustomToast = styled.div`
 `;
 
 const ErrorToast = styled(CustomToast)`
-  background-color: #121212;
-  color: #f2f2f4;
+  /* background-color: #121212;
+  color: #f2f2f4; */
+  /* border: 2px solid #121212; */
 `;
 
 export default function Home() {
@@ -130,7 +131,7 @@ export default function Home() {
       if (!downloaded) setDownloaded(true);
     } else {
       password.setError("Falsches Passwort");
-      toast.custom((id) => <ErrorToast>Falsch 💀</ErrorToast>);
+      toast.custom((id) => <ErrorToast>Falsch ☹️</ErrorToast>);
     }
     stopLoading();
   };

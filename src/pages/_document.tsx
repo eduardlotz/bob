@@ -22,16 +22,6 @@ function CustomDocument() {
           sizes="16x16"
           href="/favicon-16x16.png"
         />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin=""
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:wght@200..800&display=swap"
-          rel="stylesheet"
-        />
       </Head>
       <body>
         <Main />

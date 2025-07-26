@@ -3,16 +3,16 @@ import styled from "styled-components";
 
 export const H2 = styled(motion.h2)`
   color: #121212;
-  font-size: 2.25rem;
+  font-size: 2.5rem;
   font-style: normal;
   font-weight: 400;
   line-height: 115%;
   letter-spacing: -0.05em;
+  text-align: center;
 
   margin: 0;
   width: clamp(740px, 20vw, 100%);
   max-width: 100%;
-  font-family: "Lora", serif;
 `;
 
 export const BottomText = styled(motion.p)`
@@ -23,8 +23,8 @@ export const BottomText = styled(motion.p)`
   letter-spacing: -0.02em;
   font-weight: 400;
   line-height: 130%;
+  text-align: center;
 
-  font-family: "Lora";
   margin: 0 auto;
   margin-bottom: 16px;
   width: 100%;

@@ -10,13 +10,14 @@ import { useDeviceOrientation } from "@/hooks/useDeviceOrientation";
 import { calculateAcceleratedRotation } from "@/utils/math";
 
 //#region constants
-export const CAMERA_Y_POSITION = 2;
-export const CAMERA_FOLLOW_OFFSET = 2;
+export const CAMERA_Y_POSITION = 0;
+export const CAMERA_FOLLOW_OFFSET = 2.5;
 
-export const VISIBLE_OPTIONS_CAMERA_ZOOM = 2;
+export const VISIBLE_OPTIONS_CAMERA_ZOOM = 10;
 export const HIDDEN_OPTIONS_CAMERA_ZOOM = 1.75;
 export const FUNNY_FISHEYE_ZOOM = 1.15;
 export const OPTION_RADIUS_OFFSET = 0.004;
+export const OPTIONS_BASE_RADIUS_MULTIPLIER = 1.5;
 
 export const MOTION_VARIANTS = {
   slideInDown: {
@@ -143,7 +144,7 @@ export const MOTION_VARIANTS = {
 // Navigation options
 const NAV_OPTIONS = [
   { label: "Portfolio", href: "/portfolio" },
-  { label: "Über mich", href: "/about" },
+  { label: "Über mich", href: "#" },
   { label: "Kreatives", href: "#" },
   { label: "Technisches", href: "#" },
   { label: "Gästebuch", href: "#" },
@@ -201,7 +202,7 @@ export function HeadNavigation({
 
       cameraControlsRef.current.setLookAt(
         0,
-        CAMERA_Y_POSITION,
+        showOptions ? 2 : CAMERA_Y_POSITION,
         showOptions ? VISIBLE_OPTIONS_CAMERA_ZOOM : HIDDEN_OPTIONS_CAMERA_ZOOM,
         -targetRotX,
         targetRotY + 2,
@@ -217,7 +218,7 @@ export function HeadNavigation({
 
       cameraControlsRef.current.setLookAt(
         0,
-        CAMERA_Y_POSITION,
+        showOptions ? 2 : CAMERA_Y_POSITION,
         showOptions ? VISIBLE_OPTIONS_CAMERA_ZOOM : HIDDEN_OPTIONS_CAMERA_ZOOM,
         cursorPos.x,
         cursorPos.y + CAMERA_Y_POSITION,
@@ -269,12 +270,12 @@ function OptionsGroup({
 }) {
   const count = NAV_OPTIONS.length;
 
-  const screenCenter = new THREE.Vector3(0, 0, 0);
+  const screenCenter = new THREE.Vector3(0, -2, 0);
 
   // Calculate appropriate radii based on screen dimensions
   // Use the smaller dimension to ensure elements stay within viewport
   const minDimension = Math.min(windowWidth, windowHeight);
-  const baseRadius = minDimension / 2;
+  const baseRadius = minDimension * OPTIONS_BASE_RADIUS_MULTIPLIER;
 
   // Apply the offset to create an elliptical path if needed
   const xRadius =
@@ -297,7 +298,7 @@ function OptionsGroup({
         const adjustedAngle = angle - Math.PI / 2; // Start from top instead of right
 
         const x = Math.cos(adjustedAngle) * xRadius;
-        const y = Math.sin(adjustedAngle) * yRadius;
+        const y = Math.sin(adjustedAngle) * -yRadius;
 
         // Create position vector and add screen center offset
         const position = new THREE.Vector3(x, y, 0).add(screenCenter);
@@ -381,7 +382,7 @@ function Option({
 
     // Calculate distance to cursor for influence weighting
     const distanceToCursor = basePos.distanceTo(cursorPos);
-    const maxInfluence = 0.2; // Maximum influence factor
+    const maxInfluence = 0.5; // Maximum influence factor
 
     // The closer the cursor, the stronger the influence
     const influenceFactor =
@@ -424,15 +425,14 @@ function Option({
           initial={MOTION_VARIANTS.springScaleReversed.initial}
           animate={MOTION_VARIANTS.springScaleReversed.animate(index)}
           exit={MOTION_VARIANTS.springScaleReversed.exit}
-          whileHover={MOTION_VARIANTS.springScaleReversed.hover}
+          // whileHover={MOTION_VARIANTS.springScaleReversed.hover}
           whileTap={MOTION_VARIANTS.springScaleReversed.tap}
           style={{
             background: hovered ? "#4285F4" : "#2979FF",
             color: href === "#" ? "#7FA6FF" : "white",
             padding: "16px 20px",
             borderRadius: "50px",
-            // fontFamily: "Inter, sans-serif",
-            fontWeight: "500",
+            fontWeight: "400",
             whiteSpace: "nowrap",
             gap: "8px",
             boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
@@ -444,6 +444,7 @@ function Option({
             alignItems: "center",
             transform: "translate(-50%, -50%)",
             fontSize: "22px",
+            letterSpacing: "0.5px",
           }}
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
@@ -452,7 +453,7 @@ function Option({
               cameraControlsRef.current.setLookAt(
                 0,
                 CAMERA_Y_POSITION,
-                4,
+                VISIBLE_OPTIONS_CAMERA_ZOOM,
                 position.x,
                 position.y + 2,
                 position.z,

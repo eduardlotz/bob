@@ -2,7 +2,6 @@ import { useDeviceOrientation } from "@/hooks/useDeviceOrientation";
 import { useFrame } from "@react-three/fiber";
 import { useRef, useState, useEffect, useMemo } from "react";
 import { Group, Mesh, MathUtils, Vector3, Clock } from "three";
-import * as THREE from "three";
 import {
   CAMERA_Y_POSITION,
   HIDDEN_OPTIONS_CAMERA_ZOOM,
@@ -12,9 +11,11 @@ import { CameraControls } from "@react-three/drei";
 import { calculateAcceleratedRotation } from "@/utils/math";
 import { a, useSpring } from "@react-spring/three";
 import { Star3D } from "@/3d-objects/Star3D";
-import { degToRad, radToDeg } from "three/src/math/MathUtils.js";
 
-const HEAD_POSITION_Y = 2;
+// TODO: Move these constants to a shared config file
+// Default head position Y
+
+const HEAD_POSITION_Y = 0;
 const MAX_ROTATION_X = 0.9;
 const MAX_ROTATION_Y = 0.9;
 
@@ -301,7 +302,7 @@ export function BlobHead({
 
       {/* Eyes & Brows*/}
       <group position={[0, 0.2, 0.85]}>
-        <mesh
+        {/* <mesh
           ref={leftBrowRef}
           position={[-0.3, 0.25, 0]}
           rotation={[degToRad(145), degToRad(20), degToRad(90)]}
@@ -316,7 +317,7 @@ export function BlobHead({
         >
           <capsuleGeometry args={[0.03, 0.2, 4]} />
           <meshToonMaterial color="black" />
-        </mesh>
+        </mesh> */}
 
         <mesh ref={leftEyeRef} position={[-0.3, 0, 0]}>
           <sphereGeometry args={[0.12, 16, 16]} />
