@@ -3,27 +3,31 @@ import styled from "styled-components";
 
 export const H2 = styled(motion.h2)`
   color: #121212;
-  text-align: center;
-  font-size: 32px;
+  font-size: 2.5rem;
   font-style: normal;
-  font-weight: 500;
-  line-height: 130%;
-  letter-spacing: -0.64px;
+  font-weight: 400;
+  line-height: 115%;
+  letter-spacing: -0.05em;
+  text-align: center;
 
   margin: 0;
-  max-width: 740px;
+  width: clamp(740px, 20vw, 100%);
+  max-width: 100%;
 `;
 
 export const BottomText = styled(motion.p)`
   color: rgba(0, 0, 0, 0.5);
   font-size: 14px;
   font-style: normal;
-  text-align: center;
-  font-weight: 500;
+  text-align: left;
+  letter-spacing: -0.02em;
+  font-weight: 400;
   line-height: 130%;
-  letter-spacing: -0.28px;
+  text-align: center;
 
   margin: 0 auto;
+  margin-bottom: 16px;
+  width: 100%;
   max-width: 740px;
 `;
 

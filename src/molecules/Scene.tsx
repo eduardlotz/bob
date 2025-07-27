@@ -44,6 +44,7 @@ export const Scene = ({
             cellThickness={0}
             onClick={hideOptionsIfOpen}
             fadeDistance={4}
+            position={[0, -2, 0]}
           />
           <CameraControls
             ref={cameraControlsRef}

@@ -12,7 +12,10 @@ import { calculateAcceleratedRotation } from "@/utils/math";
 import { a, useSpring } from "@react-spring/three";
 import { Star3D } from "@/3d-objects/Star3D";
 
-const HEAD_POSITION_Y = 2;
+// TODO: Move these constants to a shared config file
+// Default head position Y
+
+const HEAD_POSITION_Y = 0;
 const MAX_ROTATION_X = 0.9;
 const MAX_ROTATION_Y = 0.9;
 
@@ -32,6 +35,8 @@ export function BlobHead({
   const headRef = useRef<Group>(null!);
   const leftEyeRef = useRef<Mesh>(null!);
   const rightEyeRef = useRef<Mesh>(null!);
+  const rightBrowRef = useRef<Mesh>(null!);
+  const leftBrowRef = useRef<Mesh>(null!);
   const starRef = useRef<Mesh>(null!);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [blinking, setBlinking] = useState(false);
@@ -111,6 +116,7 @@ export function BlobHead({
         0.2,
         0.5
       );
+
       rightEyeRef.current.scale.y = MathUtils.lerp(
         rightEyeRef.current.scale.y,
         0.2,
@@ -119,7 +125,7 @@ export function BlobHead({
     }
 
     if (isTipsy && starRef.current) {
-      starRef.current.rotation.y += delta * 4;
+      starRef.current.rotation.y += delta * 4 * Math.random();
       starRef.current.rotation.z += delta * 2;
     }
   });
@@ -286,7 +292,6 @@ export function BlobHead({
       castShadow
       scale={spring.scale}
       rotation={[0, Math.PI, 0]}
-      x
       position={[0, 2, 0]}
     >
       {/* Head */}
@@ -298,6 +303,7 @@ export function BlobHead({
       {/* Eyes & Brows*/}
       <group position={[0, 0.2, 0.85]}>
         {/* <mesh
+          ref={leftBrowRef}
           position={[-0.3, 0.25, 0]}
           rotation={[degToRad(145), degToRad(20), degToRad(90)]}
         >
@@ -305,6 +311,7 @@ export function BlobHead({
           <meshToonMaterial color="black" />
         </mesh>
         <mesh
+          ref={rightBrowRef}
           position={[0.3, 0.25, 0]}
           rotation={[degToRad(145), degToRad(-20), degToRad(-90)]}
         >

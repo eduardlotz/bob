@@ -4,6 +4,41 @@ import reset from "styled-reset";
 export const GlobalStyle = createGlobalStyle`
     ${reset}
 
+    @font-face {
+        font-family: "Open Sauce Two";
+        src: url("/fonts/OpenSauceTwo-Regular.woff2") format("woff2");
+        font-weight: 400;
+        font-style: normal;
+    }
+    
+    @font-face {
+        font-family: "Open Sauce Two";
+        src: url("/fonts/OpenSauceTwo-Medium.woff2") format("woff2");
+        font-weight: 500;
+        font-style: normal;
+    }
+    
+    @font-face {
+        font-family: "Open Sauce Two";
+        src: url("/fonts/OpenSauceTwo-SemiBold.woff2") format("woff2");
+        font-weight: 600;
+        font-style: normal;
+    }
+    
+    @font-face {
+        font-family: "Open Sauce Two";
+        src: url("/fonts/OpenSauceTwo-Bold.woff2") format("woff2");
+        font-weight: 700;
+        font-style: normal;
+    }
+    
+    @font-face {
+        font-family: "Open Sauce Two";
+        src: url("/fonts/OpenSauceTwo-Black.woff2") format("woff2");
+        font-weight: 800;
+        font-style: normal;
+    }
+
     html {
         box-sizing: border-box;
         background-color: #000000;
@@ -11,6 +46,7 @@ export const GlobalStyle = createGlobalStyle`
 
     body, root {
         background-color: #000000;
+        font-family: "Open Sauce Two", Helvetica, Arial, sans-serif;
     }
 
     *,
@@ -24,9 +60,4 @@ export const GlobalStyle = createGlobalStyle`
         border: none;
         box-shadow: none;
     }
-    
-    * {
-        font-family: "Plus Jakarta Sans", "Helvetica", sans-serif !important;
-    }
-
 `;

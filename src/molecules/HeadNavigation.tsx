@@ -11,31 +11,33 @@ import { calculateAcceleratedRotation } from "@/utils/math";
 import { ToonHead } from "./ToonHead";
 
 //#region constants
-export const CAMERA_Y_POSITION = 2.5;
+export const CAMERA_Y_POSITION = 0;
+export const CAMERA_FOLLOW_OFFSET = 2.5;
 
-export const VISIBLE_OPTIONS_CAMERA_ZOOM = 2;
+export const VISIBLE_OPTIONS_CAMERA_ZOOM = 10;
 export const HIDDEN_OPTIONS_CAMERA_ZOOM = 1.75;
 export const FUNNY_FISHEYE_ZOOM = 1.15;
 export const OPTION_RADIUS_OFFSET = 0.004;
+export const OPTIONS_BASE_RADIUS_MULTIPLIER = 1.5;
 
 export const MOTION_VARIANTS = {
   slideInDown: {
     initial: {
       y: -40,
       opacity: 0,
-      transition: { type: "spring", duration: 0.4, bounce: 0.2 },
+      transition: { type: "spring" as const, duration: 0.4, bounce: 0.2 },
     },
     animate: {
       y: 0,
       opacity: 1,
 
-      transition: { type: "spring", duration: 0.4, bounce: 0.2 },
+      transition: { type: "spring" as const, duration: 0.4, bounce: 0.2 },
     },
     exit: {
       y: -40,
       opacity: 0,
 
-      transition: { type: "spring", duration: 0.4, bounce: 0.2 },
+      transition: { type: "spring" as const, duration: 0.4, bounce: 0.2 },
     },
   },
   slideUp: {
@@ -44,11 +46,11 @@ export const MOTION_VARIANTS = {
       opacity: 0,
       filter: "blur(4px)",
       transition: {
-        type: "spring",
+        type: "spring" as const,
         duration: 0.8,
         bounce: 0.3,
         layout: {
-          type: "spring",
+          type: "spring" as const,
           duration: 0.2,
           bounce: 0.4,
         },
@@ -59,11 +61,11 @@ export const MOTION_VARIANTS = {
       opacity: 0,
       filter: "blur(4px)",
       transition: {
-        type: "spring",
+        type: "spring" as const,
         duration: 0.5,
         bounce: 0.3,
         layout: {
-          type: "spring",
+          type: "spring" as const,
           duration: 0.2,
           bounce: 0.4,
         },
@@ -74,12 +76,12 @@ export const MOTION_VARIANTS = {
       opacity: 1,
       filter: "blur(0px)",
       transition: {
-        type: "spring",
+        type: "spring" as const,
         duration: 0.6,
         bounce: 0.3,
         delay: custom * 0.02,
         layout: {
-          type: "spring",
+          type: "spring" as const,
           duration: 0.2,
           bounce: 0.4,
         },
@@ -90,18 +92,18 @@ export const MOTION_VARIANTS = {
     initial: {
       scale: 1.2,
       opacity: 0,
-      transition: { type: "spring", duration: 0.4, bounce: 0.4 },
+      transition: { type: "spring" as const, duration: 0.4, bounce: 0.4 },
     },
     exit: {
       scale: 0.8,
       opacity: 0,
-      transition: { type: "spring", duration: 0.4, bounce: 0.4 },
+      transition: { type: "spring" as const, duration: 0.4, bounce: 0.4 },
     },
     animate: (custom?: number) => ({
       scale: 1,
       opacity: 1,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         duration: 0.4,
         bounce: 0.4,
         delay: custom ?? 0 * 0.02,
@@ -112,26 +114,26 @@ export const MOTION_VARIANTS = {
     initial: {
       scale: 0.8,
       opacity: 0,
-      transition: { type: "spring", duration: 0.6, bounce: 0.4 },
+      transition: { type: "spring" as const, duration: 0.6, bounce: 0.4 },
     },
     exit: {
       scale: 0.8,
       opacity: 0,
-      transition: { type: "spring", duration: 0.4, bounce: 0.4 },
+      transition: { type: "spring" as const, duration: 0.4, bounce: 0.4 },
     },
     hover: {
-      scale: 1.05,
-      transition: { type: "spring", duration: 0.3, bounce: 0.2 },
+      scale: 1.1,
+      transition: { type: "spring" as const, duration: 0.3, bounce: 0.5 },
     },
     tap: {
       scale: 0.9,
-      transition: { type: "spring", duration: 0.3, bounce: 0.5 },
+      transition: { type: "spring" as const, duration: 0.3, bounce: 0.5 },
     },
     animate: (custom?: number) => ({
       scale: 1,
       opacity: 1,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         duration: 0.6,
         bounce: 0.6,
         delay: custom ? custom * 0.05 : 0,
@@ -201,7 +203,7 @@ export function HeadNavigation({
 
       cameraControlsRef.current.setLookAt(
         0,
-        CAMERA_Y_POSITION,
+        showOptions ? 2 : CAMERA_Y_POSITION,
         showOptions ? VISIBLE_OPTIONS_CAMERA_ZOOM : HIDDEN_OPTIONS_CAMERA_ZOOM,
         -targetRotX,
         targetRotY + 2,
@@ -210,17 +212,17 @@ export function HeadNavigation({
       );
     } else {
       const cursorPos = new THREE.Vector3(
-        mousePosition.x * 0.2,
-        mousePosition.y * 0.2,
+        mousePosition.x * CAMERA_FOLLOW_OFFSET * 0.1,
+        mousePosition.y * CAMERA_FOLLOW_OFFSET * 0.1,
         0
       );
 
       cameraControlsRef.current.setLookAt(
         0,
-        CAMERA_Y_POSITION,
+        showOptions ? 2 : CAMERA_Y_POSITION,
         showOptions ? VISIBLE_OPTIONS_CAMERA_ZOOM : HIDDEN_OPTIONS_CAMERA_ZOOM,
         cursorPos.x,
-        cursorPos.y + 2,
+        cursorPos.y + CAMERA_Y_POSITION,
         cursorPos.z,
         true
       );
@@ -277,12 +279,12 @@ function OptionsGroup({
 }) {
   const count = NAV_OPTIONS.length;
 
-  const screenCenter = new THREE.Vector3(0, 0, 0);
+  const screenCenter = new THREE.Vector3(0, -2, 0);
 
   // Calculate appropriate radii based on screen dimensions
   // Use the smaller dimension to ensure elements stay within viewport
   const minDimension = Math.min(windowWidth, windowHeight);
-  const baseRadius = minDimension / 2;
+  const baseRadius = minDimension * OPTIONS_BASE_RADIUS_MULTIPLIER;
 
   // Apply the offset to create an elliptical path if needed
   const xRadius =
@@ -305,7 +307,7 @@ function OptionsGroup({
         const adjustedAngle = angle - Math.PI / 2; // Start from top instead of right
 
         const x = Math.cos(adjustedAngle) * xRadius;
-        const y = Math.sin(adjustedAngle) * yRadius;
+        const y = Math.sin(adjustedAngle) * -yRadius;
 
         // Create position vector and add screen center offset
         const position = new THREE.Vector3(x, y, 0).add(screenCenter);
@@ -382,8 +384,8 @@ function Option({
   useFrame(() => {
     const basePos = initialPositionRef.current;
     const cursorPos = new THREE.Vector3(
-      mousePosition.x * 2,
-      mousePosition.y * 2,
+      mousePosition.x * CAMERA_FOLLOW_OFFSET,
+      mousePosition.y * CAMERA_FOLLOW_OFFSET,
       0
     );
 
@@ -405,16 +407,16 @@ function Option({
         0,
         CAMERA_Y_POSITION,
         VISIBLE_OPTIONS_CAMERA_ZOOM,
-        cursorPos.x,
-        cursorPos.y + 2,
-        cursorPos.z,
+        cursorPos.x * 0.1,
+        cursorPos.y * 0.1 + CAMERA_Y_POSITION,
+        cursorPos.z * 0.1,
         true
       );
       // Update position with smooth lerping
       setPosition((prev) => {
         return new THREE.Vector3(
-          THREE.MathUtils.lerp(prev.x, newPos.x, 0.05),
-          THREE.MathUtils.lerp(prev.y, newPos.y, 0.05),
+          THREE.MathUtils.lerp(prev.x, newPos.x, 0.1),
+          THREE.MathUtils.lerp(prev.y, newPos.y, 0.1),
           0
         );
       });
@@ -432,15 +434,14 @@ function Option({
           initial={MOTION_VARIANTS.springScaleReversed.initial}
           animate={MOTION_VARIANTS.springScaleReversed.animate(index)}
           exit={MOTION_VARIANTS.springScaleReversed.exit}
-          whileHover={MOTION_VARIANTS.springScaleReversed.hover}
+          // whileHover={MOTION_VARIANTS.springScaleReversed.hover}
           whileTap={MOTION_VARIANTS.springScaleReversed.tap}
           style={{
             background: hovered ? "#4285F4" : "#2979FF",
             color: href === "#" ? "#7FA6FF" : "white",
             padding: "16px 20px",
             borderRadius: "50px",
-            // fontFamily: "Inter, sans-serif",
-            fontWeight: "500",
+            fontWeight: "400",
             whiteSpace: "nowrap",
             gap: "8px",
             boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
@@ -452,6 +453,7 @@ function Option({
             alignItems: "center",
             transform: "translate(-50%, -50%)",
             fontSize: "22px",
+            letterSpacing: "0.5px",
           }}
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
@@ -460,14 +462,14 @@ function Option({
               cameraControlsRef.current.setLookAt(
                 0,
                 CAMERA_Y_POSITION,
-                4,
+                VISIBLE_OPTIONS_CAMERA_ZOOM,
                 position.x,
                 position.y + 2,
                 position.z,
                 true
               );
               router.push(href, undefined, { shallow: true });
-              hideOptions();
+              // hideOptions();
             }
           }}
         >
