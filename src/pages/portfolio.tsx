@@ -28,6 +28,7 @@ import { useLoading } from "@/hooks/useLoading";
 import { minDelay } from "@/utils/simulate";
 import { useRouter } from "next/router";
 import { useKeyPress } from "@/hooks/useKeyPress";
+import { cubicBezier } from "motion";
 
 const inertiaTransition = {
   type: "inertia" as const,
@@ -39,7 +40,7 @@ const inertiaTransition = {
 const staticTransition = {
   type: "tween" as const,
   duration: 0.5,
-  ease: [0.32, 0.72, 0, 1],
+  ease: cubicBezier(0.32, 0.72, 0, 1),
 };
 
 const CustomToast = styled.div`
