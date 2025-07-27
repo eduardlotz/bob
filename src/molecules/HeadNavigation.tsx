@@ -24,19 +24,19 @@ export const MOTION_VARIANTS = {
     initial: {
       y: -40,
       opacity: 0,
-      transition: { type: "spring", duration: 0.4, bounce: 0.2 },
+      transition: { type: "spring" as const, duration: 0.4, bounce: 0.2 },
     },
     animate: {
       y: 0,
       opacity: 1,
 
-      transition: { type: "spring", duration: 0.4, bounce: 0.2 },
+      transition: { type: "spring" as const, duration: 0.4, bounce: 0.2 },
     },
     exit: {
       y: -40,
       opacity: 0,
 
-      transition: { type: "spring", duration: 0.4, bounce: 0.2 },
+      transition: { type: "spring" as const, duration: 0.4, bounce: 0.2 },
     },
   },
   slideUp: {
@@ -45,11 +45,11 @@ export const MOTION_VARIANTS = {
       opacity: 0,
       filter: "blur(4px)",
       transition: {
-        type: "spring",
+        type: "spring" as const,
         duration: 0.8,
         bounce: 0.3,
         layout: {
-          type: "spring",
+          type: "spring" as const,
           duration: 0.2,
           bounce: 0.4,
         },
@@ -60,11 +60,11 @@ export const MOTION_VARIANTS = {
       opacity: 0,
       filter: "blur(4px)",
       transition: {
-        type: "spring",
+        type: "spring" as const,
         duration: 0.5,
         bounce: 0.3,
         layout: {
-          type: "spring",
+          type: "spring" as const,
           duration: 0.2,
           bounce: 0.4,
         },
@@ -75,12 +75,12 @@ export const MOTION_VARIANTS = {
       opacity: 1,
       filter: "blur(0px)",
       transition: {
-        type: "spring",
+        type: "spring" as const,
         duration: 0.6,
         bounce: 0.3,
         delay: custom * 0.02,
         layout: {
-          type: "spring",
+          type: "spring" as const,
           duration: 0.2,
           bounce: 0.4,
         },
@@ -91,18 +91,18 @@ export const MOTION_VARIANTS = {
     initial: {
       scale: 1.2,
       opacity: 0,
-      transition: { type: "spring", duration: 0.4, bounce: 0.4 },
+      transition: { type: "spring" as const, duration: 0.4, bounce: 0.4 },
     },
     exit: {
       scale: 0.8,
       opacity: 0,
-      transition: { type: "spring", duration: 0.4, bounce: 0.4 },
+      transition: { type: "spring" as const, duration: 0.4, bounce: 0.4 },
     },
     animate: (custom?: number) => ({
       scale: 1,
       opacity: 1,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         duration: 0.4,
         bounce: 0.4,
         delay: custom ?? 0 * 0.02,
@@ -113,26 +113,26 @@ export const MOTION_VARIANTS = {
     initial: {
       scale: 0.8,
       opacity: 0,
-      transition: { type: "spring", duration: 0.6, bounce: 0.4 },
+      transition: { type: "spring" as const, duration: 0.6, bounce: 0.4 },
     },
     exit: {
       scale: 0.8,
       opacity: 0,
-      transition: { type: "spring", duration: 0.4, bounce: 0.4 },
+      transition: { type: "spring" as const, duration: 0.4, bounce: 0.4 },
     },
     hover: {
       scale: 1.1,
-      transition: { type: "spring", duration: 0.3, bounce: 0.5 },
+      transition: { type: "spring" as const, duration: 0.3, bounce: 0.5 },
     },
     tap: {
       scale: 0.9,
-      transition: { type: "spring", duration: 0.3, bounce: 0.5 },
+      transition: { type: "spring" as const, duration: 0.3, bounce: 0.5 },
     },
     animate: (custom?: number) => ({
       scale: 1,
       opacity: 1,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         duration: 0.6,
         bounce: 0.6,
         delay: custom ? custom * 0.05 : 0,
