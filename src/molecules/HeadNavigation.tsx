@@ -544,6 +544,7 @@ function Option({
             fontSize: "22px",
             letterSpacing: "0.5px",
           }}
+          onPointerDown={(e) => e.stopPropagation()}
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
           onClick={() => {

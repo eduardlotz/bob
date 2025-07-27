@@ -163,7 +163,7 @@ export function BlobHead({
     } = calculateAcceleratedRotation(acceleration, orientation);
 
     // Apply mobile specific head rotation
-    applyHeadRotation(-targetRotY, -targetRotX, 0, delta);
+    applyHeadRotation(targetRotY, -targetRotX, 0, delta);
 
     // Apply mobile specific head position (shake effect)
     applyMobileHeadPosition(

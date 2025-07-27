@@ -14,8 +14,10 @@ import { Physics } from "@react-three/rapier";
 
 export const Scene = ({
   permissionGranted,
+  modalIsOpen = false,
 }: {
   permissionGranted: boolean;
+  modalIsOpen?: boolean;
 }) => {
   const [showOptions, setShowOptions] = useState(false);
   const cameraControlsRef = useRef<CameraControls>(null!);
@@ -27,13 +29,13 @@ export const Scene = ({
   });
 
   const hideOptionsIfOpen = () => {
-    if (showOptions) {
+    if (!modalIsOpen && showOptions) {
       setShowOptions(false);
     }
   };
 
   return (
-    <FullScreenCanvas>
+    <FullScreenCanvas onPointerMissed={hideOptionsIfOpen}>
       <Physics>
         <Fisheye zoom={0}>
           <Grid
@@ -42,7 +44,6 @@ export const Scene = ({
             sectionColor="#E0DEE6"
             sectionSize={1}
             cellThickness={0}
-            onClick={hideOptionsIfOpen}
             fadeDistance={4}
             position={[0, -2, 0]}
           />
@@ -74,7 +75,16 @@ export const Scene = ({
   );
 };
 
-const FullScreenCanvas = ({ children, ...props }: { children: any }) => {
+type FullScreenCanvasProps = {
+  children: any;
+  onPointerMissed?: () => void;
+};
+
+const FullScreenCanvas = ({
+  children,
+  onPointerMissed,
+  ...props
+}: FullScreenCanvasProps) => {
   const canvasRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -106,6 +116,7 @@ const FullScreenCanvas = ({ children, ...props }: { children: any }) => {
         left: 0,
         zIndex: 0,
       }}
+      onPointerMissed={onPointerMissed}
       {...props}
     >
       {children}

@@ -322,6 +322,10 @@ const Backdrop = styled(motion.div)`
   align-items: center;
   justify-content: center;
   z-index: 20;
+  overflow: hidden;
+  height: 100dvh;
+  max-height: 100lvh;
+  min-height: 100svh;
 `;
 
 const ModalContent = styled(motion.div)`
