@@ -6,8 +6,11 @@ import { motion } from "motion/react";
 import { BlobHead } from "./BlobHead";
 import { useRouter } from "next/router";
 import { LockIcon } from "@/layout/icons";
-import { useDeviceOrientation } from "@/hooks/useDeviceOrientation";
-import { calculateAcceleratedRotation } from "@/utils/math";
+import {
+  useDeviceOrientation,
+  DeviceOrientation,
+} from "@/hooks/useDeviceOrientation";
+import { calculateAcceleratedRotation, resetCalibration } from "@/utils/math";
 
 //#region constants
 export const CAMERA_Y_POSITION = 0;
@@ -188,28 +191,56 @@ export function HeadNavigation({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  const [isClosing, setIsClosing] = useState(false);
+  const [lastTapTime, setLastTapTime] = useState(0);
+  const [showCalibrationReset, setShowCalibrationReset] = useState(false);
+
+  const toggleOptions = () => {
+    const now = Date.now();
+    const timeSinceLastTap = now - lastTapTime;
+
+    // Double tap detection for calibration reset (mobile only)
+    if (isMobile && timeSinceLastTap < 500 && timeSinceLastTap > 100) {
+      resetCalibration();
+      setLastTapTime(0);
+      setShowCalibrationReset(true);
+      setTimeout(() => setShowCalibrationReset(false), 2000);
+      return;
+    }
+
+    setLastTapTime(now);
+
+    if (showOptions) {
+      setIsClosing(true);
+      // Wait for exit animation to complete before hiding
+      setTimeout(() => {
+        setShowOptions(false);
+        setIsClosing(false);
+      }, 400); // Match the exit animation duration
+    } else {
+      setShowOptions(true);
+    }
+  };
+
   // Update camera zoom based on showOptions state
   useFrame(() => {
-    if (
-      isMobile &&
-      orientation &&
-      acceleration &&
-      permissionGranted
-      // && !showOptions
-    ) {
+    if (isMobile && orientation && acceleration && permissionGranted) {
       const { targetRotX, targetRotY, targetRotZ } =
         calculateAcceleratedRotation(acceleration, orientation);
 
       cameraControlsRef.current.setLookAt(
         0,
-        showOptions ? 2 : CAMERA_Y_POSITION,
-        showOptions ? VISIBLE_OPTIONS_CAMERA_ZOOM : HIDDEN_OPTIONS_CAMERA_ZOOM,
+        showOptions && !isClosing ? 2 : CAMERA_Y_POSITION,
+        showOptions && !isClosing
+          ? VISIBLE_OPTIONS_CAMERA_ZOOM
+          : HIDDEN_OPTIONS_CAMERA_ZOOM,
         -targetRotX,
-        targetRotY + 2,
+        targetRotY + CAMERA_Y_POSITION,
         -targetRotZ,
         true
       );
     } else {
+      // When sensor is not active, use mouse position or default to center
       const cursorPos = new THREE.Vector3(
         mousePosition.x * CAMERA_FOLLOW_OFFSET * 0.1,
         mousePosition.y * CAMERA_FOLLOW_OFFSET * 0.1,
@@ -218,8 +249,10 @@ export function HeadNavigation({
 
       cameraControlsRef.current.setLookAt(
         0,
-        showOptions ? 2 : CAMERA_Y_POSITION,
-        showOptions ? VISIBLE_OPTIONS_CAMERA_ZOOM : HIDDEN_OPTIONS_CAMERA_ZOOM,
+        showOptions && !isClosing ? 2 : CAMERA_Y_POSITION,
+        showOptions && !isClosing
+          ? VISIBLE_OPTIONS_CAMERA_ZOOM
+          : HIDDEN_OPTIONS_CAMERA_ZOOM,
         cursorPos.x,
         cursorPos.y + CAMERA_Y_POSITION,
         cursorPos.z,
@@ -227,10 +260,6 @@ export function HeadNavigation({
       );
     }
   });
-
-  const toggleOptions = () => {
-    setShowOptions((prev) => !prev);
-  };
 
   return (
     <>
@@ -240,6 +269,7 @@ export function HeadNavigation({
         isMobile={isMobile}
         cameraControlsRef={cameraControlsRef}
         showOptions={showOptions}
+        isClosing={isClosing} // NEW: pass isClosing to BlobHead
       />
 
       {showOptions && (
@@ -247,9 +277,40 @@ export function HeadNavigation({
           windowWidth={windowSize.width}
           windowHeight={windowSize.height}
           cameraControlsRef={cameraControlsRef}
-          hideOptions={() => setShowOptions(false)}
+          hideOptions={() => {
+            setIsClosing(true);
+            setTimeout(() => {
+              setShowOptions(false);
+              setIsClosing(false);
+            }, 400);
+          }}
           isMobile={isMobile}
+          isClosing={isClosing}
+          orientation={orientation}
+          acceleration={acceleration}
+          permissionGranted={permissionGranted}
         />
+      )}
+
+      {/* Calibration reset indicator */}
+      {showCalibrationReset && isMobile && (
+        <Html position={[0, 3, 0]} center>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            style={{
+              background: "rgba(0, 0, 0, 0.8)",
+              color: "white",
+              padding: "8px 16px",
+              borderRadius: "20px",
+              fontSize: "14px",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Calibration Reset
+          </motion.div>
+        </Html>
       )}
     </>
   );
@@ -261,15 +322,26 @@ function OptionsGroup({
   cameraControlsRef,
   hideOptions,
   isMobile,
+  isClosing,
+  orientation,
+  acceleration,
+  permissionGranted,
 }: {
   windowWidth: number;
   windowHeight: number;
   cameraControlsRef: React.RefObject<CameraControls>;
   hideOptions: () => void;
   isMobile: boolean;
+  isClosing: boolean;
+  orientation: DeviceOrientation;
+  acceleration: DeviceMotionEventAcceleration;
+  permissionGranted: boolean;
 }) {
   const count = NAV_OPTIONS.length;
 
+  // const screenCenter = isMobile
+  //   ? new THREE.Vector3(0, -2, 0)
+  //   : new THREE.Vector3(0, 0, 0);
   const screenCenter = new THREE.Vector3(0, -2, 0);
 
   // Calculate appropriate radii based on screen dimensions
@@ -320,6 +392,10 @@ function OptionsGroup({
               cameraControlsRef={cameraControlsRef}
               hideOptions={hideOptions}
               isMobile={isMobile}
+              isClosing={isClosing}
+              orientation={orientation}
+              acceleration={acceleration}
+              permissionGranted={permissionGranted}
             />
           </Float>
         );
@@ -338,6 +414,10 @@ function Option({
   cameraControlsRef,
   hideOptions,
   isMobile,
+  isClosing,
+  orientation,
+  acceleration,
+  permissionGranted,
 }: {
   initialPosition: THREE.Vector3;
   label: string;
@@ -348,6 +428,10 @@ function Option({
   cameraControlsRef: React.RefObject<CameraControls>;
   hideOptions: () => void;
   isMobile: boolean;
+  isClosing: boolean;
+  orientation: DeviceOrientation;
+  acceleration: DeviceMotionEventAcceleration;
+  permissionGranted: boolean;
 }) {
   const optionRef = useRef<THREE.Group>(null!);
   const [hovered, setHovered] = useState(false);
@@ -370,6 +454,13 @@ function Option({
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, [windowWidth, windowHeight]);
+
+  // Initialize mouse position to center for mobile when sensor is not active
+  useEffect(() => {
+    if (isMobile && (!orientation || !acceleration || !permissionGranted)) {
+      setMousePosition({ x: 0, y: 0 });
+    }
+  }, [isMobile, orientation, acceleration, permissionGranted]);
 
   // Apply cursor influence to position, keeping buttons along circular path
   useFrame(() => {
@@ -414,6 +505,9 @@ function Option({
 
       // Apply position
       optionRef.current.position.copy(position);
+    } else {
+      // On mobile, when sensor is not active, keep options at their initial positions
+      optionRef.current.position.copy(initialPositionRef.current);
     }
   });
 
@@ -423,7 +517,11 @@ function Option({
         <motion.button
           key={href}
           initial={MOTION_VARIANTS.springScaleReversed.initial}
-          animate={MOTION_VARIANTS.springScaleReversed.animate(index)}
+          animate={
+            isClosing
+              ? MOTION_VARIANTS.springScaleReversed.exit
+              : MOTION_VARIANTS.springScaleReversed.animate(index)
+          }
           exit={MOTION_VARIANTS.springScaleReversed.exit}
           // whileHover={MOTION_VARIANTS.springScaleReversed.hover}
           whileTap={MOTION_VARIANTS.springScaleReversed.tap}

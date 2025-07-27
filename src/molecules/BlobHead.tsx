@@ -25,12 +25,14 @@ export function BlobHead({
   isMobile,
   cameraControlsRef,
   showOptions,
+  isClosing,
 }: {
   onHeadClick: () => void;
   motionPermissionGranted: boolean;
   isMobile: boolean;
   cameraControlsRef: React.RefObject<CameraControls>;
   showOptions: boolean;
+  isClosing: boolean;
 }) {
   const headRef = useRef<Group>(null!);
   const leftEyeRef = useRef<Mesh>(null!);
@@ -59,6 +61,24 @@ export function BlobHead({
       config: { tension: 300, friction: 10 },
     });
   }, []);
+
+  // Animate scale when showOptions or isClosing changes
+  useEffect(() => {
+    if (!showOptions || isClosing) {
+      // Add delay when closing to trigger after all closing animations are done
+      const delay = isClosing ? 400 : 0;
+      api.start({
+        scale: [1.2, 1.2, 1.2],
+        config: { tension: 300, friction: 10 },
+        delay,
+      });
+    } else {
+      api.start({
+        scale: [0.7, 0.7, 0.7],
+        config: { tension: 300, friction: 10 },
+      });
+    }
+  }, [showOptions, isClosing]);
 
   // Track mouse position for head rotation
   useEffect(() => {
@@ -279,10 +299,7 @@ export function BlobHead({
     });
 
     onHeadClick();
-    api.start({
-      scale: showOptions ? [1.2, 1.2, 1.2] : [0.7, 0.7, 0.7],
-      config: { tension: 300, friction: 10 },
-    });
+    // Remove scale animation from here, handled by effect above
   };
 
   return (
@@ -332,7 +349,10 @@ export function BlobHead({
       {/* Spinning Stars */}
       {isTipsy &&
         [-0.4, 0, 0.4].map((offset, i) => (
-          <Star3D position={[offset, 1.5 + (i % 2) * 0.1, offset * 0.5]} />
+          <Star3D
+            key={i}
+            position={[offset, 1.5 + (i % 2) * 0.1, offset * 0.5]}
+          />
         ))}
     </a.group>
   );
