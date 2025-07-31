@@ -1,30 +1,30 @@
 import { useRef, useState, useEffect } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
-import { Html } from "@react-three/drei";
-import { motion, AnimatePresence } from "framer-motion";
 import { SceneObject } from "@/contexts/RouteContext";
 import { useSpring, animated } from "@react-spring/three";
 import { RigidBody } from "@react-three/rapier";
 import { ObjectPrimitives } from "@/3d-objects/primitives";
-import { FillColumn } from "@/layout";
-import { H2 } from "@/layout/text";
-import styled from "styled-components";
+import { ObjectFactory } from "./ObjectFactory";
+import { useRouter } from "next/router";
+import { useKeyPress } from "@/hooks/useKeyPress";
 
 interface OrbitingObjectsProps {
   objects: SceneObject[];
   isVisible: boolean;
   onObjectClick: (object: SceneObject) => void;
+  onDialogOpen?: (dialogContent: { title: string; content: string }) => void;
 }
 
 export function OrbitingObjects({
   objects,
   isVisible,
   onObjectClick,
+  onDialogOpen,
 }: OrbitingObjectsProps) {
   const [hoveredObject, setHoveredObject] = useState<string | null>(null);
-  const [showDialog, setShowDialog] = useState<string | null>(null);
   const orbitGroupRef = useRef<THREE.Group>(null);
+  const router = useRouter();
 
   // Spring animation for object visibility
   const [springs, api] = useSpring(() => ({
@@ -46,26 +46,43 @@ export function OrbitingObjects({
     }
   }, [isVisible, api]);
 
-  // Orbit animation
+  // Orbit animation - stop when hovering
   useFrame(({ clock }) => {
-    if (orbitGroupRef.current) {
-      // Rotate the entire orbit group
+    if (orbitGroupRef.current && !hoveredObject) {
+      // Rotate the entire orbit group only when not hovering
       orbitGroupRef.current.rotation.y += 0.005;
     }
   });
 
   const handleObjectClick = (object: SceneObject) => {
+    console.log("Object clicked:", object);
     onObjectClick(object);
-    setShowDialog(object.id);
-    // setTimeout(() => setShowDialog(null), 4000);
+
+    // Get dialog content and pass it to parent
+    if (onDialogOpen && object.dialogTitle && object.dialogContent) {
+      onDialogOpen({
+        title: object.dialogTitle,
+        content: object.dialogContent,
+      });
+    }
   };
 
+  useKeyPress("Escape", () => {
+    // Handle escape key for dialog closing in parent component
+  });
+
   const renderObject = (object: SceneObject) => {
-    if (object.type === "custom" && object.objectType === "message") {
-      const ObjectComponent =
-        ObjectPrimitives[object.objectType as keyof typeof ObjectPrimitives];
+    if (object.type === "custom" && object.objectType) {
+      const ObjectComponent = ObjectFactory.getObjectComponent(
+        object.objectType
+      );
       if (ObjectComponent) {
-        return <ObjectComponent color={object.color} />;
+        return (
+          <ObjectComponent
+            color={object.color}
+            scale={object.scale?.[0] || 1}
+          />
+        );
       }
     }
 
@@ -141,6 +158,7 @@ export function OrbitingObjects({
           const radius = orbitRadius || 2.5;
           const x = Math.cos(angle) * radius;
           const z = Math.sin(angle) * radius;
+          const isHovered = hoveredObject === id;
 
           const object: SceneObject = {
             id,
@@ -172,37 +190,21 @@ export function OrbitingObjects({
                   onPointerOut={() => setHoveredObject(null)}
                 >
                   {renderObject(object)}
+
+                  {/* Hover sphere - only visible when hovered */}
+                  {isHovered && (
+                    <mesh>
+                      <sphereGeometry args={[1.5, 32, 32]} />
+                      <meshBasicMaterial
+                        color="#ffffff"
+                        transparent
+                        opacity={0.1}
+                        side={THREE.DoubleSide}
+                      />
+                    </mesh>
+                  )}
                 </group>
               </RigidBody>
-
-              {/* Dialog */}
-              <AnimatePresence>
-                {showDialog === id && dialogContent && (
-                  <Html position={[0, 2, 0]} center>
-                    <Backdrop
-                      onClick={() => setShowDialog(null)}
-                      initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
-                      animate={{ opacity: 1, backdropFilter: "blur(8px)" }}
-                      exit={{ opacity: 0, backdropFilter: "blur(0px)" }}
-                    >
-                      <ModalContent
-                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                        initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.8, y: 20 }}
-                        transition={{ duration: 0.3, ease: "easeOut" }}
-                      >
-                        <FillColumn>
-                          {dialogTitle && <H2> {dialogTitle}</H2>}
-                          <Content>
-                            <p>{dialogContent}</p>
-                          </Content>
-                        </FillColumn>
-                      </ModalContent>
-                    </Backdrop>
-                  </Html>
-                )}
-              </AnimatePresence>
             </group>
           );
         }
@@ -210,37 +212,3 @@ export function OrbitingObjects({
     </animated.group>
   );
 }
-
-const Backdrop = styled(motion.div)`
-  position: fixed;
-  inset: 0;
-  background: rgba(18, 18, 18, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 20;
-  overflow: hidden;
-  height: 100dvh;
-  max-height: 100lvh;
-  min-height: 100svh;
-`;
-
-const ModalContent = styled(motion.div)`
-  background: white;
-  padding: 24px;
-  border-radius: 44px;
-  max-width: 500px;
-  width: calc(100% - 48px);
-  max-height: 80vh;
-  overflow-y: auto;
-`;
-
-const Content = styled.div`
-  margin-top: 20px;
-
-  p {
-    margin-bottom: 16px;
-    line-height: 1.6;
-    color: #333;
-  }
-`;

@@ -414,6 +414,7 @@ function Option({
   const initialPositionRef = useRef(initialPosition.clone());
   const [position, setPosition] = useState(initialPosition.clone());
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const { routes, setCurrentRoute, getRouteByPath } = useRoute();
 
   // mouse track
   // TODO: replace with hook, maybe from lib
@@ -480,6 +481,28 @@ function Option({
     }
   });
 
+  const handleOptionClick = () => {
+    if (href !== "#") {
+      cameraControlsRef.current.setLookAt(
+        0,
+        CAMERA_Y_POSITION,
+        VISIBLE_OPTIONS_CAMERA_ZOOM,
+        position.x,
+        position.y + 2,
+        position.z,
+        true
+      );
+
+      // Update the current route in context instead of navigating
+      const selectedRoute = getRouteByPath(href);
+      if (selectedRoute) {
+        setCurrentRoute(selectedRoute);
+      }
+
+      hideOptions();
+    }
+  };
+
   return (
     <group ref={optionRef} position={initialPosition}>
       <Html position={[0, 1.5, 0]} center>
@@ -516,21 +539,7 @@ function Option({
           onPointerDown={(e) => e.stopPropagation()}
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
-          onClick={() => {
-            if (href !== "#") {
-              cameraControlsRef.current.setLookAt(
-                0,
-                CAMERA_Y_POSITION,
-                VISIBLE_OPTIONS_CAMERA_ZOOM,
-                position.x,
-                position.y + 2,
-                position.z,
-                true
-              );
-              router.push(href, undefined, { shallow: true });
-              hideOptions();
-            }
-          }}
+          onClick={handleOptionClick}
         >
           {label}
           {href === "/portfolio" && <LockIcon color="#ffffff" />}

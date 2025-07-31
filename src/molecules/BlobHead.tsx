@@ -310,6 +310,115 @@ export function BlobHead({
     document.body.style.cursor = "auto";
   };
 
+  // Render accessories based on current route
+  const renderAccessories = () => {
+    const routeId = currentRoute.id;
+
+    switch (routeId) {
+      case "portfolio":
+        return (
+          <>
+            {/* Camera lens glasses */}
+            <mesh position={[0, 0.1, 0.9]} scale={[0.8, 0.3, 0.1]}>
+              <cylinderGeometry args={[0.5, 0.5, 0.2, 16]} />
+              <meshToonMaterial color="#333" />
+            </mesh>
+            <mesh position={[0, 0.1, 0.95]} scale={[0.6, 0.2, 0.05]}>
+              <cylinderGeometry args={[0.5, 0.5, 0.1, 16]} />
+              <meshToonMaterial color="#000" />
+            </mesh>
+          </>
+        );
+
+      case "about":
+        return (
+          <>
+            {/* Graduation cap */}
+            <mesh position={[0, 1.2, 0]} scale={[1.1, 0.1, 1.1]}>
+              <cylinderGeometry args={[0.5, 0.5, 0.2, 16]} />
+              <meshToonMaterial color="#4facfe" />
+            </mesh>
+            <mesh position={[0, 1.35, 0]} scale={[0.9, 0.1, 0.9]}>
+              <cylinderGeometry args={[0.4, 0.4, 0.2, 16]} />
+              <meshToonMaterial color="#4facfe" />
+            </mesh>
+            {/* Tassel */}
+            <mesh position={[0, 1.5, 0]} scale={[0.05, 0.3, 0.05]}>
+              <cylinderGeometry args={[0.5, 0.5, 0.6, 8]} />
+              <meshToonMaterial color="#ffd700" />
+            </mesh>
+          </>
+        );
+
+      case "creative":
+        return (
+          <>
+            {/* Artist beret */}
+            <mesh position={[0, 1.1, 0]} scale={[1.2, 0.15, 1.2]}>
+              <cylinderGeometry args={[0.5, 0.5, 0.3, 16]} />
+              <meshToonMaterial color="#a8edea" />
+            </mesh>
+            {/* Paintbrush behind ear */}
+            <mesh
+              position={[0.6, 0.8, 0]}
+              rotation={[0, 0, Math.PI / 4]}
+              scale={[0.03, 0.4, 0.03]}
+            >
+              <cylinderGeometry args={[0.5, 0.5, 0.8, 8]} />
+              <meshToonMaterial color="#8B4513" />
+            </mesh>
+            <mesh
+              position={[0.65, 1.0, 0]}
+              rotation={[0, 0, Math.PI / 4]}
+              scale={[0.08, 0.15, 0.08]}
+            >
+              <cylinderGeometry args={[0.5, 0.3, 0.3, 16]} />
+              <meshToonMaterial color="#a8edea" />
+            </mesh>
+          </>
+        );
+
+      case "technical":
+        return (
+          <>
+            {/* Tech glasses */}
+            <mesh position={[0, 0.1, 0.9]} scale={[0.9, 0.25, 0.1]}>
+              <cylinderGeometry args={[0.5, 0.5, 0.2, 16]} />
+              <meshToonMaterial color="#333" />
+            </mesh>
+            <mesh position={[0, 0.1, 0.95]} scale={[0.7, 0.15, 0.05]}>
+              <cylinderGeometry args={[0.5, 0.5, 0.1, 16]} />
+              <meshToonMaterial color="#000" />
+            </mesh>
+            {/* Glasses frame */}
+            <mesh position={[0, 0.1, 0.85]} scale={[0.8, 0.05, 0.05]}>
+              <torusGeometry args={[0.4, 0.02, 8, 16]} />
+              <meshToonMaterial color="#333" />
+            </mesh>
+          </>
+        );
+
+      case "guestbook":
+        return (
+          <>
+            {/* Party hat */}
+            <mesh position={[0, 1.3, 0]} scale={[0.8, 0.8, 0.8]}>
+              <coneGeometry args={[0.5, 1, 8]} />
+              <meshToonMaterial color="#ff9a9e" />
+            </mesh>
+            {/* Hat decoration */}
+            <mesh position={[0, 1.6, 0]} scale={[0.1, 0.1, 0.1]}>
+              <sphereGeometry args={[0.5, 8, 8]} />
+              <meshToonMaterial color="#ffd700" />
+            </mesh>
+          </>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <a.group
       ref={headRef}
@@ -361,6 +470,9 @@ export function BlobHead({
           />
         </mesh>
       </group>
+
+      {/* Accessories based on route */}
+      {renderAccessories()}
 
       {/* Spinning Stars */}
       {isTipsy &&
