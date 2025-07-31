@@ -10,7 +10,9 @@ import { useEffect, useRef, useState } from "react";
 import { HeadNavigation } from "./HeadNavigation";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { BackgroundPlanet } from "@/3d-objects/BackgroundPlanet";
-import { Physics } from "@react-three/rapier";
+import { Physics, RigidBody } from "@react-three/rapier";
+import { useRoute } from "@/contexts/RouteContext";
+import { OrbitingObjects } from "./OrbitingObjects";
 
 export const Scene = ({
   permissionGranted,
@@ -21,6 +23,8 @@ export const Scene = ({
 }) => {
   const [showOptions, setShowOptions] = useState(false);
   const cameraControlsRef = useRef<CameraControls>(null!);
+  const { currentRoute } = useRoute();
+  const [objectsVisible, setObjectsVisible] = useState(false);
 
   useKeyPress("Escape", () => {
     if (showOptions) {
@@ -31,6 +35,22 @@ export const Scene = ({
   const hideOptionsIfOpen = () => {
     if (!modalIsOpen && showOptions) {
       setShowOptions(false);
+    }
+  };
+
+  useEffect(() => {
+    console.log("🚀 ~ Scene ~ currentRoute.sceneObject:", currentRoute);
+    if (!showOptions && currentRoute.sceneObjects.length > 0) {
+      setObjectsVisible(true);
+    } else {
+      setObjectsVisible(false);
+    }
+  }, [showOptions, currentRoute.sceneObjects]);
+
+  const handleObjectClick = (object: any) => {
+    console.log("Object clicked:", object);
+    if (object.onClick) {
+      object.onClick();
     }
   };
 
@@ -47,6 +67,12 @@ export const Scene = ({
             fadeDistance={4}
             position={[0, -2, 0]}
           />
+          <RigidBody type="fixed" position={[0, -2, 0]}>
+            <mesh rotation={[-Math.PI / 2, 0, 0]}>
+              <planeGeometry args={[20, 20]} />
+              <meshToonMaterial transparent opacity={0} />
+            </mesh>
+          </RigidBody>
           <CameraControls
             ref={cameraControlsRef}
             minPolarAngle={0}
@@ -63,6 +89,13 @@ export const Scene = ({
           <directionalLight intensity={1.2} position={[2, 4, 5]} />
           <Environment preset="city" />
           <BackgroundPlanet />
+
+          <OrbitingObjects
+            objects={currentRoute.sceneObjects}
+            isVisible={objectsVisible}
+            onObjectClick={handleObjectClick}
+          />
+
           <HeadNavigation
             showOptions={showOptions}
             setShowOptions={setShowOptions}

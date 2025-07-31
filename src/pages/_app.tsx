@@ -5,10 +5,11 @@ import type { AppProps } from "next/app";
 import Head from "next/head";
 import { Toaster } from "sonner";
 import styled from "styled-components";
+import { RouteProvider } from "@/contexts/RouteContext";
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
-    <>
+    <RouteProvider>
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
@@ -32,7 +33,7 @@ export default function App({ Component, pageProps }: AppProps) {
           </ContentWrapper>
         </MainLayout>
       </FullScreen>
-    </>
+    </RouteProvider>
   );
 }
 

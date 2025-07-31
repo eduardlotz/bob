@@ -5,6 +5,7 @@ import styled from "styled-components";
 import { Button } from "./atoms";
 import { MOTION_VARIANTS } from "@/molecules/HeadNavigation";
 import { AnimatePresence } from "motion/react";
+import { BackgroundGradient } from "@/molecules/BackgroundGradient";
 
 export default function MainLayout({ children }: any) {
   const [permissionGranted, setPermissionGranted] = useState(false);
@@ -26,6 +27,7 @@ export default function MainLayout({ children }: any) {
 
   return (
     <Container>
+      <BackgroundGradient />
       <Background style={{ height: windowHeight }}>
         <AnimatePresence>
           {!permissionGranted && isMobile && (

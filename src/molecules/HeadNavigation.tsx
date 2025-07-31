@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { Html, Float, CameraControls } from "@react-three/drei";
@@ -11,6 +11,9 @@ import {
   DeviceOrientation,
 } from "@/hooks/useDeviceOrientation";
 import { calculateAcceleratedRotation, resetCalibration } from "@/utils/math";
+import { useRoute } from "@/contexts/RouteContext";
+import { toast } from "sonner";
+import styled from "styled-components";
 
 //#region constants
 export const CAMERA_Y_POSITION = 0;
@@ -19,6 +22,7 @@ export const CAMERA_FOLLOW_OFFSET = 2.5;
 export const VISIBLE_OPTIONS_CAMERA_ZOOM = 10;
 export const HIDDEN_OPTIONS_CAMERA_ZOOM = 1.75;
 export const FUNNY_FISHEYE_ZOOM = 1.15;
+
 export const OPTION_RADIUS_OFFSET = 0.004;
 export const OPTIONS_BASE_RADIUS_MULTIPLIER = 1.5;
 
@@ -144,14 +148,7 @@ export const MOTION_VARIANTS = {
   },
 };
 
-// Navigation options
-const NAV_OPTIONS = [
-  { label: "Portfolio", href: "/portfolio" },
-  { label: "Über mich", href: "#" },
-  { label: "Kreatives", href: "#" },
-  { label: "Technisches", href: "#" },
-  { label: "Gästebuch", href: "#" },
-];
+// Navigation options will be provided by route context
 
 //#endregion
 
@@ -173,13 +170,11 @@ export function HeadNavigation({
     typeof window !== "undefined" && /Mobi|Android/i.test(navigator.userAgent);
 
   useEffect(() => {
-    // Get initial window size
     setWindowSize({
       width: window.innerWidth,
       height: window.innerHeight,
     });
 
-    // Update window size on resize
     const handleResize = () => {
       setWindowSize({
         width: window.innerWidth,
@@ -193,18 +188,21 @@ export function HeadNavigation({
 
   const [isClosing, setIsClosing] = useState(false);
   const [lastTapTime, setLastTapTime] = useState(0);
-  const [showCalibrationReset, setShowCalibrationReset] = useState(false);
+
+  const showCalibrationResetToast = () => {
+    toast.custom((id) => <CustomToast>Kalibrierung zurückgesetzt</CustomToast>);
+  };
 
   const toggleOptions = () => {
     const now = Date.now();
     const timeSinceLastTap = now - lastTapTime;
 
-    // Double tap detection for calibration reset (mobile only)
+    // double tap detection for calibration reset (mobile only)
+    // TODO: replace with a more robust gesture detection or add a dedicated button
     if (isMobile && timeSinceLastTap < 500 && timeSinceLastTap > 100) {
       resetCalibration();
       setLastTapTime(0);
-      setShowCalibrationReset(true);
-      setTimeout(() => setShowCalibrationReset(false), 2000);
+      showCalibrationResetToast();
       return;
     }
 
@@ -212,18 +210,19 @@ export function HeadNavigation({
 
     if (showOptions) {
       setIsClosing(true);
-      // Wait for exit animation to complete before hiding
+      // wait for exit animation to complete before hiding
       setTimeout(() => {
         setShowOptions(false);
         setIsClosing(false);
-      }, 400); // Match the exit animation duration
+      }, 400);
     } else {
       setShowOptions(true);
     }
   };
 
-  // Update camera zoom based on showOptions state
   useFrame(() => {
+    // update camera zoom based on showOptions state
+    // if mobile sesnor is active, use device orientation to control camera
     if (isMobile && orientation && acceleration && permissionGranted) {
       const { targetRotX, targetRotY, targetRotZ } =
         calculateAcceleratedRotation(acceleration, orientation);
@@ -240,7 +239,7 @@ export function HeadNavigation({
         true
       );
     } else {
-      // When sensor is not active, use mouse position or default to center
+      // when sensor is not active, use mouse position or default to center
       const cursorPos = new THREE.Vector3(
         mousePosition.x * CAMERA_FOLLOW_OFFSET * 0.1,
         mousePosition.y * CAMERA_FOLLOW_OFFSET * 0.1,
@@ -269,7 +268,7 @@ export function HeadNavigation({
         isMobile={isMobile}
         cameraControlsRef={cameraControlsRef}
         showOptions={showOptions}
-        isClosing={isClosing} // NEW: pass isClosing to BlobHead
+        isClosing={isClosing}
       />
 
       {showOptions && (
@@ -290,27 +289,6 @@ export function HeadNavigation({
           acceleration={acceleration}
           permissionGranted={permissionGranted}
         />
-      )}
-
-      {/* Calibration reset indicator */}
-      {showCalibrationReset && isMobile && (
-        <Html position={[0, 3, 0]} center>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            style={{
-              background: "rgba(0, 0, 0, 0.8)",
-              color: "white",
-              padding: "8px 16px",
-              borderRadius: "20px",
-              fontSize: "14px",
-              whiteSpace: "nowrap",
-            }}
-          >
-            Calibration Reset
-          </motion.div>
-        </Html>
       )}
     </>
   );
@@ -337,11 +315,9 @@ function OptionsGroup({
   acceleration: DeviceMotionEventAcceleration;
   permissionGranted: boolean;
 }) {
-  const count = NAV_OPTIONS.length;
+  const { routes } = useRoute();
+  const count = routes.length;
 
-  // const screenCenter = isMobile
-  //   ? new THREE.Vector3(0, -2, 0)
-  //   : new THREE.Vector3(0, 0, 0);
   const screenCenter = new THREE.Vector3(0, -2, 0);
 
   // Calculate appropriate radii based on screen dimensions
@@ -362,17 +338,16 @@ function OptionsGroup({
 
   return (
     <group>
-      {NAV_OPTIONS.map((option, index) => {
-        // Calculate position on ellipse centered in screen
+      {routes.map((option, index) => {
+        // calculate position on ellipse centered in screen
         const angle = (index / count) * Math.PI * 2;
 
-        // Adjust starting angle if needed (e.g., to start from top)
-        const adjustedAngle = angle - Math.PI / 2; // Start from top instead of right
+        // adjust starting angle (start from top instead of right)
+        const adjustedAngle = angle - Math.PI / 2;
 
         const x = Math.cos(adjustedAngle) * xRadius;
         const y = Math.sin(adjustedAngle) * -yRadius;
 
-        // Create position vector and add screen center offset
         const position = new THREE.Vector3(x, y, 0).add(screenCenter);
 
         return (
@@ -440,7 +415,8 @@ function Option({
   const [position, setPosition] = useState(initialPosition.clone());
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
-  // Track mouse for interactive effect
+  // mouse track
+  // TODO: replace with hook, maybe from lib
   useEffect(() => {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if (isMobile) return;
@@ -455,14 +431,7 @@ function Option({
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, [windowWidth, windowHeight]);
 
-  // Initialize mouse position to center for mobile when sensor is not active
-  useEffect(() => {
-    if (isMobile && (!orientation || !acceleration || !permissionGranted)) {
-      setMousePosition({ x: 0, y: 0 });
-    }
-  }, [isMobile, orientation, acceleration, permissionGranted]);
-
-  // Apply cursor influence to position, keeping buttons along circular path
+  // apply cursor influence to option position along the ellipse path
   useFrame(() => {
     const basePos = initialPositionRef.current;
     const cursorPos = new THREE.Vector3(
@@ -471,11 +440,11 @@ function Option({
       0
     );
 
-    // Calculate distance to cursor for influence weighting
+    // distance to cursor for influence weighting
     const distanceToCursor = basePos.distanceTo(cursorPos);
-    const maxInfluence = 0.5; // Maximum influence factor
+    const maxInfluence = 0.4; // Maximum influence factor
 
-    // The closer the cursor, the stronger the influence
+    // the closer the cursor, the stronger the influence
     const influenceFactor =
       Math.max(0, 1 - distanceToCursor / 1) * maxInfluence;
 
@@ -559,14 +528,41 @@ function Option({
                 true
               );
               router.push(href, undefined, { shallow: true });
-              // hideOptions();
+              hideOptions();
             }
           }}
         >
           {label}
-          {href !== "#" && <LockIcon color="#ffffff" />}
+          {href === "/portfolio" && <LockIcon color="#ffffff" />}
         </motion.button>
       </Html>
     </group>
   );
 }
+
+const CustomToast = styled.div`
+  background-color: white;
+  color: black;
+  padding: 20px 30px;
+  height: 58px;
+  width: 320px;
+  max-width: 100%;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  border-radius: 24px;
+  box-shadow: 0 4px 10px 10px rgba(37, 36, 39, 0.08);
+  text-align: center;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: normal;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+
+  @media (max-width: 600px) {
+    width: 100%;
+  }
+`;

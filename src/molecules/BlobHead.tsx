@@ -11,6 +11,7 @@ import { CameraControls } from "@react-three/drei";
 import { calculateAcceleratedRotation } from "@/utils/math";
 import { a, useSpring } from "@react-spring/three";
 import { Star3D } from "@/3d-objects/Star3D";
+import { useRoute } from "@/contexts/RouteContext";
 
 // TODO: Move these constants to a shared config file
 // Default head position Y
@@ -37,8 +38,6 @@ export function BlobHead({
   const headRef = useRef<Group>(null!);
   const leftEyeRef = useRef<Mesh>(null!);
   const rightEyeRef = useRef<Mesh>(null!);
-  const rightBrowRef = useRef<Mesh>(null!);
-  const leftBrowRef = useRef<Mesh>(null!);
   const starRef = useRef<Mesh>(null!);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [blinking, setBlinking] = useState(false);
@@ -46,6 +45,7 @@ export function BlobHead({
   const [clickTimestamps, setClickTimestamps] = useState<number[]>([]);
   const [isTipsy, setIsTipsy] = useState(false);
   const tipsyStartTimeRef = useRef<number | null>(null);
+  const { currentRoute } = useRoute();
 
   // Keep a ref to spring api for fine-grained control
   const [spring, api] = useSpring(() => ({
@@ -302,10 +302,20 @@ export function BlobHead({
     // Remove scale animation from here, handled by effect above
   };
 
+  const onPointerOver = () => {
+    document.body.style.cursor = "pointer";
+  };
+
+  const onPointerLeave = () => {
+    document.body.style.cursor = "auto";
+  };
+
   return (
     <a.group
       ref={headRef}
       onClick={onClick}
+      onPointerOver={onPointerOver}
+      onPointerLeave={onPointerLeave}
       castShadow
       scale={spring.scale}
       rotation={[0, Math.PI, 0]}
@@ -314,7 +324,9 @@ export function BlobHead({
       {/* Head */}
       <mesh castShadow>
         <sphereGeometry args={[1, 32, 32]} />
-        <meshToonMaterial color="#ffffff" />
+        <meshToonMaterial
+          color={currentRoute.blobCostume?.headColor || "#ffffff"}
+        />
       </mesh>
 
       {/* Eyes & Brows*/}
@@ -338,11 +350,15 @@ export function BlobHead({
 
         <mesh ref={leftEyeRef} position={[-0.3, 0, 0]}>
           <sphereGeometry args={[0.12, 16, 16]} />
-          <meshToonMaterial color="black" />
+          <meshToonMaterial
+            color={currentRoute.blobCostume?.eyeColor || "black"}
+          />
         </mesh>
         <mesh ref={rightEyeRef} position={[0.3, 0, 0]}>
           <sphereGeometry args={[0.12, 16, 16]} />
-          <meshToonMaterial color="black" />
+          <meshToonMaterial
+            color={currentRoute.blobCostume?.eyeColor || "black"}
+          />
         </mesh>
       </group>
 
