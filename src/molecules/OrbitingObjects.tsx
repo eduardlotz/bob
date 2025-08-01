@@ -24,7 +24,6 @@ export function OrbitingObjects({
 }: OrbitingObjectsProps) {
   const [hoveredObject, setHoveredObject] = useState<string | null>(null);
   const orbitGroupRef = useRef<THREE.Group>(null);
-  const router = useRouter();
 
   // Spring animation for object visibility
   const [springs, api] = useSpring(() => ({

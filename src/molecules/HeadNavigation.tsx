@@ -12,6 +12,8 @@ import {
 } from "@/hooks/useDeviceOrientation";
 import { calculateAcceleratedRotation, resetCalibration } from "@/utils/math";
 import { useRoute } from "@/contexts/RouteContext";
+import { useBlobEmotions } from "@/hooks/useBlobEmotions";
+import { useMagneticAttraction, MagneticConfig } from "@/hooks/useMagnets";
 import { toast } from "sonner";
 import styled from "styled-components";
 
@@ -157,14 +159,22 @@ export function HeadNavigation({
   setShowOptions,
   cameraControlsRef,
   permissionGranted,
+  onEmotionUpdate,
+  ...rest
 }: {
   showOptions: boolean;
   setShowOptions: React.Dispatch<React.SetStateAction<boolean>>;
   cameraControlsRef: React.RefObject<CameraControls>;
   permissionGranted: boolean;
+  onEmotionUpdate?: (data: {
+    emotionState: any;
+    tapCount: number;
+    getEmotionIcon: any;
+  }) => void;
+  [key: string]: any;
 }) {
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
-  const [mousePosition, _setMousePosition] = useState({ x: 0, y: 0 });
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const { orientation, acceleration } = useDeviceOrientation();
   const isMobile =
     typeof window !== "undefined" && /Mobi|Android/i.test(navigator.userAgent);
@@ -174,20 +184,41 @@ export function HeadNavigation({
       width: window.innerWidth,
       height: window.innerHeight,
     });
-
     const handleResize = () => {
       setWindowSize({
         width: window.innerWidth,
         height: window.innerHeight,
       });
     };
-
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  useEffect(() => {
+    const handleMouseMove = (event: MouseEvent) => {
+      setMousePosition({
+        x: event.clientX / window.innerWidth,
+        y: event.clientY / window.innerHeight,
+      });
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
+
   const [isClosing, setIsClosing] = useState(false);
   const [lastTapTime, setLastTapTime] = useState(0);
+
+  // Blob emotion system
+  const { emotionState, tapCount, handleTap, getEmotionIcon } =
+    useBlobEmotions();
+  const { currentRoute } = useRoute();
+
+  // Pass emotion data up to parent
+  useEffect(() => {
+    if (onEmotionUpdate) {
+      onEmotionUpdate({ emotionState, tapCount, getEmotionIcon });
+    }
+  }, [emotionState, tapCount, onEmotionUpdate]);
 
   const showCalibrationResetToast = () => {
     toast.custom((id) => <CustomToast>Kalibrierung zurückgesetzt</CustomToast>);
@@ -199,14 +230,21 @@ export function HeadNavigation({
 
     // double tap detection for calibration reset (mobile only)
     // TODO: replace with a more robust gesture detection or add a dedicated button
-    if (isMobile && timeSinceLastTap < 500 && timeSinceLastTap > 100) {
+    if (timeSinceLastTap < 500 && timeSinceLastTap > 100) {
+      const wasCalibrated = orientation; // Check if sensors were active
       resetCalibration();
       setLastTapTime(0);
-      showCalibrationResetToast();
+      // Only show toast if sensors were actually active/calibrated
+      if (wasCalibrated && permissionGranted) {
+        showCalibrationResetToast();
+      }
       return;
     }
 
     setLastTapTime(now);
+
+    // Handle blob emotion on tap
+    handleTap();
 
     if (showOptions) {
       setIsClosing(true);
@@ -221,12 +259,9 @@ export function HeadNavigation({
   };
 
   useFrame(() => {
-    // update camera zoom based on showOptions state
-    // if mobile sesnor is active, use device orientation to control camera
-    if (isMobile && orientation && acceleration && permissionGranted) {
+    if (orientation && acceleration && permissionGranted) {
       const { targetRotX, targetRotY, targetRotZ } =
         calculateAcceleratedRotation(acceleration, orientation);
-
       cameraControlsRef.current.setLookAt(
         0,
         showOptions && !isClosing ? 2 : CAMERA_Y_POSITION,
@@ -239,13 +274,11 @@ export function HeadNavigation({
         true
       );
     } else {
-      // when sensor is not active, use mouse position or default to center
       const cursorPos = new THREE.Vector3(
-        mousePosition.x * CAMERA_FOLLOW_OFFSET * 0.1,
-        mousePosition.y * CAMERA_FOLLOW_OFFSET * 0.1,
+        (mousePosition.x - 0.5) * CAMERA_FOLLOW_OFFSET * 0.1,
+        (mousePosition.y - 0.5) * CAMERA_FOLLOW_OFFSET * 0.1,
         0
       );
-
       cameraControlsRef.current.setLookAt(
         0,
         showOptions && !isClosing ? 2 : CAMERA_Y_POSITION,
@@ -269,8 +302,8 @@ export function HeadNavigation({
         cameraControlsRef={cameraControlsRef}
         showOptions={showOptions}
         isClosing={isClosing}
+        emotionState={emotionState}
       />
-
       {showOptions && (
         <OptionsGroup
           windowWidth={windowSize.width}
@@ -302,8 +335,8 @@ function OptionsGroup({
   isMobile,
   isClosing,
   orientation,
-  acceleration,
   permissionGranted,
+  acceleration,
 }: {
   windowWidth: number;
   windowHeight: number;
@@ -312,13 +345,13 @@ function OptionsGroup({
   isMobile: boolean;
   isClosing: boolean;
   orientation: DeviceOrientation;
-  acceleration: DeviceMotionEventAcceleration;
   permissionGranted: boolean;
+  acceleration: DeviceMotionEventAcceleration;
 }) {
   const { routes } = useRoute();
   const count = routes.length;
 
-  const screenCenter = new THREE.Vector3(0, -2, 0);
+  const screenCenter = new THREE.Vector3(-1, -2, 0);
 
   // Calculate appropriate radii based on screen dimensions
   // Use the smaller dimension to ensure elements stay within viewport
@@ -369,8 +402,8 @@ function OptionsGroup({
               isMobile={isMobile}
               isClosing={isClosing}
               orientation={orientation}
-              acceleration={acceleration}
               permissionGranted={permissionGranted}
+              acceleration={acceleration}
             />
           </Float>
         );
@@ -391,8 +424,8 @@ function Option({
   isMobile,
   isClosing,
   orientation,
-  acceleration,
   permissionGranted,
+  acceleration,
 }: {
   initialPosition: THREE.Vector3;
   label: string;
@@ -405,84 +438,44 @@ function Option({
   isMobile: boolean;
   isClosing: boolean;
   orientation: DeviceOrientation;
-  acceleration: DeviceMotionEventAcceleration;
   permissionGranted: boolean;
+  acceleration: DeviceMotionEventAcceleration;
 }) {
   const optionRef = useRef<THREE.Group>(null!);
   const [hovered, setHovered] = useState(false);
-  const router = useRouter();
-  const initialPositionRef = useRef(initialPosition.clone());
-  const [position, setPosition] = useState(initialPosition.clone());
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const { routes, setCurrentRoute, getRouteByPath } = useRoute();
+  const { setCurrentRoute, getRouteByPath } = useRoute();
 
-  // mouse track
-  // TODO: replace with hook, maybe from lib
-  useEffect(() => {
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isMobile) return;
+  // Only enable magnetic attraction when hovered
+  const magneticConfig: MagneticConfig = {
+    strength: hovered ? 0.7 : 0, // No attraction unless hovered
+    radius: 2.5,
+    falloff: 1.0, // Linear falloff for symmetric attraction
+    lerpFactor: 0.5,
+    maxDisplacement: 1.5,
+  };
 
-    const handleMouseMove = (event: MouseEvent) => {
-      setMousePosition({
-        x: (event.clientX / windowWidth) * 2 - 1,
-        y: -((event.clientY / windowHeight) * 2 - 1),
-      });
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [windowWidth, windowHeight]);
+  const { position, state } = useMagneticAttraction(
+    initialPosition,
+    isClosing ? { ...magneticConfig, strength: 0 } : magneticConfig
+  );
 
-  // apply cursor influence to option position along the ellipse path
+  // Apply magnetic position to the option
   useFrame(() => {
-    const basePos = initialPositionRef.current;
-    const cursorPos = new THREE.Vector3(
-      mousePosition.x * CAMERA_FOLLOW_OFFSET,
-      mousePosition.y * CAMERA_FOLLOW_OFFSET,
-      0
-    );
-
-    // distance to cursor for influence weighting
-    const distanceToCursor = basePos.distanceTo(cursorPos);
-    const maxInfluence = 0.4; // Maximum influence factor
-
-    // the closer the cursor, the stronger the influence
-    const influenceFactor =
-      Math.max(0, 1 - distanceToCursor / 1) * maxInfluence;
-
-    // Calculate new position with subtle cursor following
-    const newPos = basePos.clone();
-    newPos.x += (-cursorPos.x - basePos.x) * influenceFactor;
-    newPos.y += (-cursorPos.y - basePos.y) * influenceFactor;
-
-    if (!isMobile) {
-      cameraControlsRef.current.setLookAt(
-        0,
-        CAMERA_Y_POSITION,
-        VISIBLE_OPTIONS_CAMERA_ZOOM,
-        cursorPos.x * 0.1,
-        cursorPos.y * 0.1 + CAMERA_Y_POSITION,
-        cursorPos.z * 0.1,
-        true
-      );
-      // Update position with smooth lerping
-      setPosition((prev) => {
-        return new THREE.Vector3(
-          THREE.MathUtils.lerp(prev.x, newPos.x, 0.1),
-          THREE.MathUtils.lerp(prev.y, newPos.y, 0.1),
-          0
-        );
-      });
-
-      // Apply position
-      optionRef.current.position.copy(position);
-    } else {
-      // On mobile, when sensor is not active, keep options at their initial positions
-      optionRef.current.position.copy(initialPositionRef.current);
+    if (optionRef.current && position) {
+      // Ensure position is valid before applying
+      if (
+        isFinite(position.x) &&
+        isFinite(position.y) &&
+        isFinite(position.z)
+      ) {
+        optionRef.current.position.copy(position);
+      }
     }
   });
 
   const handleOptionClick = () => {
     if (href !== "#") {
+      // Use the current magnetic position for camera focus
       cameraControlsRef.current.setLookAt(
         0,
         CAMERA_Y_POSITION,
@@ -504,8 +497,8 @@ function Option({
   };
 
   return (
-    <group ref={optionRef} position={initialPosition}>
-      <Html position={[0, 1.5, 0]} center>
+    <group ref={optionRef} position={position}>
+      <Html position={[0, 1.5, 0]}>
         <motion.button
           key={href}
           initial={MOTION_VARIANTS.springScaleReversed.initial}
@@ -515,7 +508,7 @@ function Option({
               : MOTION_VARIANTS.springScaleReversed.animate(index)
           }
           exit={MOTION_VARIANTS.springScaleReversed.exit}
-          // whileHover={MOTION_VARIANTS.springScaleReversed.hover}
+          whileHover={MOTION_VARIANTS.springScaleReversed.hover}
           whileTap={MOTION_VARIANTS.springScaleReversed.tap}
           style={{
             background: hovered ? "#4285F4" : "#2979FF",
@@ -525,16 +518,27 @@ function Option({
             fontWeight: "400",
             whiteSpace: "nowrap",
             gap: "8px",
-            boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
+            boxShadow: state.isAttracted
+              ? `0 8px 16px rgba(66, 133, 244, ${
+                  0.3 + state.attractionStrength * 0.4
+                })`
+              : "0 4px 8px rgba(0, 0, 0, 0.2)",
             cursor: "pointer",
-            // width: "fit-content",
             textDecoration: "none",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            transform: "translate(-50%, -50%)",
+            transform: `translate(-50%, -50%) scale(${
+              1 + state.attractionStrength * 0.15
+            })`,
             fontSize: "22px",
             letterSpacing: "0.5px",
+            transition: "all 0.2s ease-out",
+            border: state.isAttracted
+              ? `2px solid rgba(66, 133, 244, ${
+                  0.5 + state.attractionStrength * 0.5
+                })`
+              : "2px solid transparent",
           }}
           onPointerDown={(e) => e.stopPropagation()}
           onMouseEnter={() => setHovered(true)}
@@ -544,6 +548,30 @@ function Option({
           {label}
           {href === "/portfolio" && <LockIcon color="#ffffff" />}
         </motion.button>
+
+        {/* Debug info - shows magnetic field status */}
+        {process.env.NODE_ENV === "development" && (
+          <div
+            style={{
+              position: "absolute",
+              top: "-20px",
+              left: "50%",
+              transform: "translateX(-50%)",
+              background: "rgba(0, 0, 0, 0.8)",
+              color: "white",
+              padding: "4px 8px",
+              borderRadius: "4px",
+              fontSize: "10px",
+              whiteSpace: "nowrap",
+              pointerEvents: "none",
+              zIndex: 1000,
+              opacity: state.isAttracted ? 1 : 0.5,
+            }}
+          >
+            {label}: {state.isAttracted ? "ATTRACTED" : "IDLE"}(
+            {state.attractionStrength.toFixed(2)})
+          </div>
+        )}
       </Html>
     </group>
   );

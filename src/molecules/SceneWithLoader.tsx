@@ -7,28 +7,36 @@ import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
 
 // Create a loading component with animated bounce effect
-const LoadingComponent = () => {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [showScene, setShowScene] = useState(false);
+const LoadingComponent = ({
+  permissionGranted,
+  onEmotionUpdate,
+  debugInfo,
+  setDebugInfo,
+  debugCircles,
+  setDebugCircles,
+  debugOptions,
+  setDebugOptions,
+  magneticEnabled,
+  setMagneticEnabled,
+  debugCirclesEnabled,
+  setDebugCirclesEnabled,
+  ...rest
+}: any) => {
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Add delay before starting the exit animation
     const timer = setTimeout(() => {
-      setIsLoaded(true);
+      setIsLoading(false);
     }, 2000); // 2 second delay
 
     return () => clearTimeout(timer);
   }, []);
 
-  // Show scene immediately but keep it hidden until loader animation starts
-  useEffect(() => {
-    setShowScene(true);
-  }, []);
-
   return (
     <>
       <AnimatePresence>
-        {!isLoaded && (
+        {isLoading && (
           <LoadingWrapper
             initial={{ opacity: 1 }}
             animate={{ opacity: 1 }}
@@ -64,14 +72,18 @@ const LoadingComponent = () => {
       {/* Scene component always rendered but hidden initially */}
       <SceneWrapper
         initial={{ opacity: 0 }}
-        animate={{ opacity: isLoaded ? 1 : 0 }}
+        animate={{ opacity: isLoading ? 0 : 1 }}
         transition={{
           duration: 0.8,
           delay: 0.4, // Start fading in halfway through loader exit
           ease: "easeInOut",
         }}
       >
-        <SceneComponent />
+        <SceneComponent
+          permissionGranted={permissionGranted}
+          onEmotionUpdate={onEmotionUpdate}
+          {...rest}
+        />
       </SceneWrapper>
     </>
   );
@@ -88,8 +100,19 @@ const SceneComponent = dynamic(
   }
 );
 
-export const SceneWithLoader = ({ permissionGranted, modalIsOpen }: any) => {
-  return <LoadingComponent />;
+export const SceneWithLoader = ({
+  permissionGranted,
+  onEmotionUpdate,
+
+  ...rest
+}: any) => {
+  return (
+    <LoadingComponent
+      permissionGranted={permissionGranted}
+      onEmotionUpdate={onEmotionUpdate}
+      {...rest}
+    />
+  );
 };
 
 const LoadingWrapper = styled(motion.div)`

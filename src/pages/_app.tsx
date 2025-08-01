@@ -37,21 +37,6 @@ export default function App({ Component, pageProps }: AppProps) {
   );
 }
 
-const NavigationWrapper = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-
-  width: 100%;
-  padding: 40px 16px 0 16px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
 const ContentWrapper = styled(FillColumn)`
   padding: 16px;
   padding-top: 100px;

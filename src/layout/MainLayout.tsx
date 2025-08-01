@@ -6,11 +6,32 @@ import { Button } from "./atoms";
 import { MOTION_VARIANTS } from "@/molecules/HeadNavigation";
 import { AnimatePresence } from "motion/react";
 import { BackgroundGradient } from "@/molecules/BackgroundGradient";
+import { EmotionBar } from "@/molecules/EmotionBar";
+import { useRoute } from "@/contexts/RouteContext";
 
 export default function MainLayout({ children }: any) {
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [windowHeight, setWindowHeight] = useState(0);
+  const [emotionData, setEmotionData] = useState<{
+    emotionState: any;
+    tapCount: number;
+    getEmotionIcon: any;
+  } | null>(null);
+  const { currentRoute } = useRoute();
+
+  // Debug state (lifted from HeadNavigation)
+  const [debugInfo, setDebugInfo] = useState<Record<string, any>>({});
+  const [debugCircles, setDebugCircles] = useState<any[]>([]);
+  const [debugOptions, setDebugOptions] = useState({
+    attractionCircles: true,
+    stayMagneticCircles: true,
+    arcPathCircle: true,
+    cursorDistance: true,
+    fieldRadius: true,
+  });
+  const [magneticEnabled, setMagneticEnabled] = useState(true);
+  const [debugCirclesEnabled, setDebugCirclesEnabled] = useState(false);
 
   useEffect(() => {
     setIsMobile(
@@ -44,9 +65,22 @@ export default function MainLayout({ children }: any) {
             </SensorButton>
           )}
         </AnimatePresence>
-        <SceneWithLoader permissionGranted={permissionGranted} />
+        <SceneWithLoader
+          permissionGranted={permissionGranted}
+          onEmotionUpdate={setEmotionData}
+        />
+
+        {/* EmotionBar as fixed overlay - like sensor button */}
+        {emotionData && (
+          <EmotionBar
+            emotionState={emotionData.emotionState}
+            tapCount={emotionData.tapCount}
+            getEmotionIcon={emotionData.getEmotionIcon}
+            routeColor={currentRoute.blobCostume?.headColor || "#4facfe"}
+          />
+        )}
       </Background>
-      <Overlay>{children}</Overlay>
+      {children}
     </Container>
   );
 }
@@ -62,11 +96,6 @@ const Background = styled.div`
   position: absolute;
   inset: 0;
   z-index: 0;
-`;
-
-const Overlay = styled.div`
-  position: relative;
-  z-index: 10;
 `;
 
 const SensorButton = styled(Button)`

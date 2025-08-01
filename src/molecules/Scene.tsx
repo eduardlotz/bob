@@ -4,10 +4,12 @@ import {
   PerspectiveCamera,
   Grid,
   Environment,
+  Text3D,
 } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
 import { HeadNavigation } from "./HeadNavigation";
+import { EmotionCounter } from "./EmotionBar";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { BackgroundPlanet } from "@/3d-objects/BackgroundPlanet";
 import { Physics, RigidBody } from "@react-three/rapier";
@@ -18,9 +20,37 @@ import { DialogModal } from "./DialogModal";
 export const Scene = ({
   permissionGranted,
   modalIsOpen = false,
+  onEmotionUpdate,
+  debugInfo,
+  setDebugInfo,
+  debugCircles,
+  setDebugCircles,
+  debugOptions,
+  setDebugOptions,
+  magneticEnabled,
+  setMagneticEnabled,
+  debugCirclesEnabled,
+  setDebugCirclesEnabled,
+  ...rest
 }: {
   permissionGranted: boolean;
   modalIsOpen?: boolean;
+  onEmotionUpdate?: (data: {
+    emotionState: any;
+    tapCount: number;
+    getEmotionIcon: any;
+  }) => void;
+  debugInfo: Record<string, any>;
+  setDebugInfo: any;
+  debugCircles: any[];
+  setDebugCircles: any;
+  debugOptions: any;
+  setDebugOptions: any;
+  magneticEnabled: boolean;
+  setMagneticEnabled: any;
+  debugCirclesEnabled: boolean;
+  setDebugCirclesEnabled: any;
+  [key: string]: any;
 }) => {
   const [showOptions, setShowOptions] = useState(false);
   const cameraControlsRef = useRef<CameraControls>(null!);
@@ -31,6 +61,7 @@ export const Scene = ({
     content: string;
   } | null>(null);
   const [isDialogVisible, setIsDialogVisible] = useState(false);
+  const [tapCount, setTapCount] = useState(0);
 
   useKeyPress("Escape", () => {
     if (showOptions) {
@@ -92,7 +123,7 @@ export const Scene = ({
             />
             <RigidBody type="fixed" position={[0, -1, 0]}>
               <mesh rotation={[-Math.PI / 2, 0, 0]}>
-                <planeGeometry args={[20, 20]} />
+                <planeGeometry args={[30, 30]} />
                 <meshToonMaterial transparent opacity={0} />
               </mesh>
             </RigidBody>
@@ -125,7 +156,25 @@ export const Scene = ({
               setShowOptions={setShowOptions}
               cameraControlsRef={cameraControlsRef} // pass down for portal click
               permissionGranted={permissionGranted}
+              onEmotionUpdate={(data) => {
+                setTapCount(data.tapCount);
+                onEmotionUpdate?.(data);
+              }}
+              debugInfo={debugInfo}
+              setDebugInfo={setDebugInfo}
+              debugCircles={debugCircles}
+              setDebugCircles={setDebugCircles}
+              debugOptions={debugOptions}
+              setDebugOptions={setDebugOptions}
+              magneticEnabled={magneticEnabled}
+              setMagneticEnabled={setMagneticEnabled}
+              debugCirclesEnabled={debugCirclesEnabled}
+              setDebugCirclesEnabled={setDebugCirclesEnabled}
+              {...rest}
             />
+
+            {/* 3D Emotion Counter */}
+            <EmotionCounter tapCount={tapCount || 0} />
           </Fisheye>
         </Physics>
       </FullScreenCanvas>
