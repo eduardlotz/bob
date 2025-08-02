@@ -866,7 +866,6 @@ export function BlobHead({
     document.body.style.cursor = "auto";
   };
 
-  // Conditionally wrap with physics only during jump animation
   const content = (
     <>
       <TapParticles particles={particles} />

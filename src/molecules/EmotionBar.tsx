@@ -1,21 +1,30 @@
 import { Text3D, Center, Outlines } from "@react-three/drei";
-import { useRef, useEffect } from "react";
-import { Vector3, Group } from "three";
+import { useRef, useEffect, useState } from "react";
+import { Vector3, Group, Mesh, Box3 } from "three";
 import { useSpring, a } from "@react-spring/three";
 
 const FONT_PATH = "/fonts/OpenRundeBold.json";
 
 export const EmotionCounter = ({ tapCount }: { tapCount: number }) => {
   const PAD_LENGTH = 0;
+
   const formattedNumber = tapCount.toString().padStart(PAD_LENGTH, "0");
   const groupRef = useRef<Group>(null!);
   const prevTapCount = useRef(tapCount);
 
-  const baseOffset = 2;
-  const textWidthFactor = formattedNumber.length * 0.07;
-  const magicFactor = baseOffset + textWidthFactor;
+  const numberRef = useRef<Mesh>(null);
+  const [numberWidth, setNumberWidth] = useState(0);
 
-  const responsivePosition = new Vector3(-magicFactor, 0.5, -1);
+  useEffect(() => {
+    if (!numberRef.current) return;
+    const bbox = new Box3().setFromObject(numberRef.current);
+    const size = new Vector3();
+    bbox.getSize(size);
+    const magicFactor = 1 / formattedNumber.length;
+    setNumberWidth(size.x - formattedNumber.length - magicFactor);
+  }, [formattedNumber]);
+
+  const responsivePosition = new Vector3(-numberWidth / 2, 0.5, -1);
 
   const [spring, api] = useSpring(() => ({
     scale: 1,
@@ -24,7 +33,6 @@ export const EmotionCounter = ({ tapCount }: { tapCount: number }) => {
 
   useEffect(() => {
     if (tapCount !== prevTapCount.current) {
-      // Bounce animation
       api.start({
         scale: 1.4,
         immediate: true,
@@ -50,6 +58,7 @@ export const EmotionCounter = ({ tapCount }: { tapCount: number }) => {
           bevelSize={0.03}
           bevelThickness={0.2}
           bevelSegments={6}
+          ref={numberRef}
         >
           {formattedNumber}
           <meshToonMaterial color="white" />
