@@ -8,19 +8,24 @@ import {
 import { Canvas } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
 import { HeadNavigation } from "./HeadNavigation";
+import { EmotionCounter } from "./EmotionBar";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { BackgroundPlanet } from "@/3d-objects/BackgroundPlanet";
-import { Physics } from "@react-three/rapier";
 
-export const Scene = ({
+const Scene = ({
   permissionGranted,
-  modalIsOpen = false,
+  onEmotionUpdate,
 }: {
   permissionGranted: boolean;
-  modalIsOpen?: boolean;
+  onEmotionUpdate?: (data: {
+    emotionState: any;
+    tapCount: number;
+    getEmotionIcon: any;
+  }) => void;
 }) => {
   const [showOptions, setShowOptions] = useState(false);
   const cameraControlsRef = useRef<CameraControls>(null!);
+  const [tapCount, setTapCount] = useState(0);
 
   useKeyPress("Escape", () => {
     if (showOptions) {
@@ -29,14 +34,14 @@ export const Scene = ({
   });
 
   const hideOptionsIfOpen = () => {
-    if (!modalIsOpen && showOptions) {
+    if (showOptions) {
       setShowOptions(false);
     }
   };
 
   return (
-    <FullScreenCanvas onPointerMissed={hideOptionsIfOpen}>
-      <Physics>
+    <>
+      <FullScreenCanvas onPointerMissed={hideOptionsIfOpen}>
         <Fisheye zoom={0}>
           <Grid
             args={[8, 8]}
@@ -47,6 +52,7 @@ export const Scene = ({
             fadeDistance={4}
             position={[0, -2, 0]}
           />
+
           <CameraControls
             ref={cameraControlsRef}
             minPolarAngle={0}
@@ -63,17 +69,27 @@ export const Scene = ({
           <directionalLight intensity={1.2} position={[2, 4, 5]} />
           <Environment preset="city" />
           <BackgroundPlanet />
+
           <HeadNavigation
             showOptions={showOptions}
             setShowOptions={setShowOptions}
             cameraControlsRef={cameraControlsRef} // pass down for portal click
             permissionGranted={permissionGranted}
+            onEmotionUpdate={(data) => {
+              setTapCount(data.tapCount);
+              onEmotionUpdate?.(data);
+            }}
           />
+
+          {/* 3D Emotion Counter */}
+          <EmotionCounter tapCount={tapCount || 0} />
         </Fisheye>
-      </Physics>
-    </FullScreenCanvas>
+      </FullScreenCanvas>
+    </>
   );
 };
+
+export default Scene;
 
 type FullScreenCanvasProps = {
   children: any;

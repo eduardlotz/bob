@@ -9,6 +9,7 @@ export function clamp(val: number, min: number, max: number) {
 let isCalibrated = false;
 let calibrationQuaternion = new Quaternion();
 let lastOrientation = { alpha: 0, beta: 0, gamma: 0 };
+let lastCalibrationTime = 0; // timestamp in ms
 
 export function resetCalibration() {
   isCalibrated = false;
@@ -55,10 +56,37 @@ export function calculateAcceleratedRotation(
   deviceQuaternion.multiply(alphaQuat).multiply(betaQuat).multiply(gammaQuat);
 
   // Calibration logic
+  const now = Date.now();
+  const orientationChange =
+    Math.abs((orientation.alpha ?? 0) - lastOrientation.alpha) +
+    Math.abs((orientation.beta ?? 0) - lastOrientation.beta) +
+    Math.abs((orientation.gamma ?? 0) - lastOrientation.gamma);
+
+  // Initial calibration
   if (!isCalibrated) {
-    // Set the current orientation as the "neutral" position
     calibrationQuaternion.copy(deviceQuaternion).invert();
     isCalibrated = true;
+    lastCalibrationTime = now;
+    lastOrientation = { ...orientation };
+  } else {
+    // Automatic re-calibration if phone is held fairly still & level for >1s
+    const accelMagnitude =
+      Math.abs(acceleration.x ?? 0) +
+      Math.abs(acceleration.y ?? 0) +
+      Math.abs(acceleration.z ?? 0);
+
+    const timeSinceCalib = now - lastCalibrationTime;
+
+    if (
+      timeSinceCalib > 1000 &&
+      accelMagnitude < 0.5 &&
+      orientationChange < 2 // degrees total change
+    ) {
+      calibrationQuaternion.copy(deviceQuaternion).invert();
+      lastCalibrationTime = now;
+    }
+
+    // store orientation for next diff calculation
     lastOrientation = { ...orientation };
   }
 

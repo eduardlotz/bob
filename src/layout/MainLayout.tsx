@@ -3,20 +3,32 @@ import { requestMotionPermission } from "@/utils/permission";
 import { useEffect, useState } from "react";
 import styled from "styled-components";
 import { Button } from "./atoms";
-import { MOTION_VARIANTS } from "@/molecules/HeadNavigation";
+import { MotionVariants } from "@/styles/motion";
 import { AnimatePresence } from "motion/react";
+import { useAppStore } from "@/store";
 
 export default function MainLayout({ children }: any) {
-  const [permissionGranted, setPermissionGranted] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const [windowHeight, setWindowHeight] = useState(0);
+  const [sceneLoaded, setSceneLoaded] = useState(false);
 
+  const {
+    currentRoute,
+    permissionGranted,
+    isMobile,
+    emotionData,
+    setPermissionGranted,
+    setIsMobile,
+    setEmotionData,
+  } = useAppStore();
+
+  // Initialize mobile detection and window height
   useEffect(() => {
-    setIsMobile(
-      typeof window !== "undefined" && /Mobi|Android/i.test(navigator.userAgent)
-    );
+    const mobile =
+      typeof window !== "undefined" &&
+      /Mobi|Android/i.test(navigator.userAgent);
+    setIsMobile(mobile);
     setWindowHeight(window.innerHeight);
-  }, []);
+  }, [setIsMobile]);
 
   // TODO: show permission modal with explanation before asking for permission
   const handlePermissionRequest = async () => {
@@ -28,12 +40,12 @@ export default function MainLayout({ children }: any) {
     <Container>
       <Background style={{ height: windowHeight }}>
         <AnimatePresence>
-          {!permissionGranted && isMobile && (
+          {!permissionGranted && isMobile && sceneLoaded && (
             <SensorButton
-              variants={MOTION_VARIANTS.springScaleReversed}
+              variants={MotionVariants.SpringScaleReversed}
               initial="initial"
               animate="animate"
-              custom={60}
+              custom={0}
               exit="exit"
               whileTap="tap"
               onClick={handlePermissionRequest}
@@ -42,9 +54,13 @@ export default function MainLayout({ children }: any) {
             </SensorButton>
           )}
         </AnimatePresence>
-        <SceneWithLoader permissionGranted={permissionGranted} />
+        <SceneWithLoader
+          permissionGranted={permissionGranted}
+          onEmotionUpdate={setEmotionData}
+          onLoaded={() => setSceneLoaded(true)}
+        />
       </Background>
-      <Overlay>{children}</Overlay>
+      {children}
     </Container>
   );
 }
@@ -60,11 +76,6 @@ const Background = styled.div`
   position: absolute;
   inset: 0;
   z-index: 0;
-`;
-
-const Overlay = styled.div`
-  position: relative;
-  z-index: 10;
 `;
 
 const SensorButton = styled(Button)`
