@@ -246,19 +246,6 @@ export function HeadNavigation({
     // Always handle blob emotion on tap FIRST
     handleTap();
 
-    // double tap detection for calibration reset (mobile only)
-    // TODO: replace with a more robust gesture detection or add a dedicated button
-    if (timeSinceLastTap < 500 && timeSinceLastTap > 100) {
-      const wasCalibrated = orientation; // Check if sensors were active
-      resetCalibration();
-      setLastTapTime(0);
-      // Only show toast if sensors were actually active/calibrated
-      if (wasCalibrated && permissionGranted) {
-        showCalibrationResetToast();
-      }
-      return;
-    }
-
     setLastTapTime(now);
 
     if (showOptions) {
@@ -457,7 +444,7 @@ function Option({
 }) {
   const optionRef = useRef<THREE.Group>(null!);
   const [hovered, setHovered] = useState(false);
-  const { setCurrentRoute, getRouteByPath, navigateToRoute } = useAppStore();
+  const { navigateToRoute } = useAppStore();
   const navigate = useNavigate();
 
   // Only enable magnetic attraction when hovered

@@ -1,30 +1,21 @@
 import { Text3D, Center, Outlines } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
-import { useThree } from "@react-three/fiber";
 import { useRef, useEffect } from "react";
 import { Vector3, Group } from "three";
 import { useSpring, a } from "@react-spring/three";
 
 const FONT_PATH = "/fonts/OpenRundeBold.json";
 
-export const EmotionCounter = ({
-  tapCount,
-  position = [0.2, 0, -1],
-}: {
-  tapCount: number;
-  position?: [number, number, number];
-}) => {
+export const EmotionCounter = ({ tapCount }: { tapCount: number }) => {
   const PAD_LENGTH = 0;
   const formattedNumber = tapCount.toString().padStart(PAD_LENGTH, "0");
   const groupRef = useRef<Group>(null!);
   const prevTapCount = useRef(tapCount);
 
-  const { viewport } = useThree();
+  const baseOffset = 2;
+  const textWidthFactor = formattedNumber.length * 0.07;
+  const magicFactor = baseOffset + textWidthFactor;
 
-  const DESIRED_PIXEL_HEIGHT = 1150; // on-screen height in CSS pixels
-  const textHeightWorldUnits = DESIRED_PIXEL_HEIGHT / viewport.factor;
-
-  const responsivePosition = new Vector3(-formattedNumber.length + 1, 0.5, -1);
+  const responsivePosition = new Vector3(-magicFactor, 0.5, -1);
 
   const [spring, api] = useSpring(() => ({
     scale: 1,
@@ -51,7 +42,7 @@ export const EmotionCounter = ({
       <a.group ref={groupRef} scale={spring.scale}>
         <Text3D
           font={FONT_PATH}
-          size={textHeightWorldUnits}
+          size={3}
           height={1.5}
           curveSegments={32}
           letterSpacing={-0.15}
@@ -62,7 +53,7 @@ export const EmotionCounter = ({
         >
           {formattedNumber}
           <meshToonMaterial color="white" />
-          <Outlines thickness={5} color="black" />
+          <Outlines thickness={0.011} color="black" screenspace />
         </Text3D>
       </a.group>
     </Center>

@@ -1,4 +1,7 @@
-import { useDeviceOrientation } from "@/hooks/useDeviceOrientation";
+import {
+  useDeviceOrientation,
+  DeviceOrientation,
+} from "@/hooks/useDeviceOrientation";
 import { useFrame } from "@react-three/fiber";
 import { useRef, useState, useEffect } from "react";
 import {
@@ -325,7 +328,7 @@ export function BlobHead({
     return () => clearInterval(idleCheckInterval);
   }, [lastActivity, idleAnimation, lastIdleAnimationTime]);
 
-  // Update activity timestamp on mouse movement
+  // Update activity timestamp on mouse movement (desktop) OR device motion (mobile)
   useEffect(() => {
     const handleActivity = () => {
       setLastActivity(Date.now());
@@ -337,6 +340,7 @@ export function BlobHead({
       }
     };
 
+    // Desktop interaction events
     window.addEventListener("mousemove", handleActivity);
     window.addEventListener("click", handleActivity);
     window.addEventListener("keydown", handleActivity);
@@ -349,6 +353,49 @@ export function BlobHead({
       window.removeEventListener("touchstart", handleActivity);
     };
   }, [idleAnimation]);
+
+  // Treat noticeable device motion as activity (mobile)
+  // Ref to remember previous orientation values between renders (mobile)
+  const prevOrientationRef = useRef<DeviceOrientation | null>(null);
+
+  useEffect(() => {
+    if (!isMobile || !permissionGranted) return;
+
+    const movementDetected = () => {
+      setLastActivity(Date.now());
+      if (idleAnimation !== "none") {
+        setIdleAnimation("none");
+        setIsJumping(false);
+        setSqueezeScale(1);
+      }
+    };
+
+    const thresholdAccel = 0.2; // g units (~2 m/s^2)
+    const thresholdDeg = 0.5; // degrees (lower = more sensitive)
+
+    const accelMag =
+      Math.abs(acceleration?.x ?? 0) +
+      Math.abs(acceleration?.y ?? 0) +
+      Math.abs(acceleration?.z ?? 0);
+    const orientChange =
+      orientation && prevOrientationRef.current
+        ? Math.abs(
+            (orientation.alpha ?? 0) - (prevOrientationRef.current.alpha ?? 0)
+          ) +
+          Math.abs(
+            (orientation.beta ?? 0) - (prevOrientationRef.current.beta ?? 0)
+          ) +
+          Math.abs(
+            (orientation.gamma ?? 0) - (prevOrientationRef.current.gamma ?? 0)
+          )
+        : 0;
+
+    if (accelMag > thresholdAccel || orientChange > thresholdDeg) {
+      movementDetected();
+    }
+
+    prevOrientationRef.current = orientation;
+  }, [orientation, acceleration, isMobile, permissionGranted, idleAnimation]);
 
   // Manage dizzy stars
   useEffect(() => {
@@ -441,7 +488,7 @@ export function BlobHead({
     } = calculateAcceleratedRotation(acceleration, orientation);
 
     // Apply mobile specific head rotation
-    applyHeadRotation(targetRotY, -targetRotX, 0, delta);
+    applyHeadRotation(targetRotY, targetRotX, 0, delta);
 
     // Apply mobile specific head position (shake effect)
     applyMobileHeadPosition(
@@ -454,9 +501,8 @@ export function BlobHead({
     );
 
     // Set camera look-at for mobile
-    // Using normalized direction vector approach
     const lookDirection = new Vector3(
-      targetRotX,
+      -targetRotX,
       targetRotY,
       targetRotZ
     ).normalize();
@@ -472,7 +518,7 @@ export function BlobHead({
       cameraPosition.y,
       cameraPosition.z,
       target.x,
-      target.y, // Keep the +2 offset from original code
+      target.y,
       target.z,
       true
     );
@@ -603,11 +649,6 @@ export function BlobHead({
           0,
           1 - Math.exp(-8 * delta)
         );
-        // headRef.current.rotation.x = MathUtils.lerp(
-        //   headRef.current.rotation.x,
-        //   0,
-        //   1 - Math.exp(-6 * delta)
-        // );
       }
     } else if (idleAnimation === "tilt") {
       // Always reset to center at start
@@ -767,7 +808,7 @@ export function BlobHead({
   };
 
   const createParticles = (x: number, y: number, z: number) => {
-    const numParticles = 20; // Increased particle count
+    const numParticles = 50; // Increased particle count
     const newParticles: TapParticle[] = [];
 
     for (let i = 0; i < numParticles; i++) {
@@ -843,7 +884,7 @@ export function BlobHead({
         <mesh castShadow>
           <sphereGeometry args={[1, 64, 64]} />
           <meshToonMaterial color="#ffffff" />
-          <Outlines thickness={5} color="black" />
+          <Outlines thickness={0.005} color="black" screenspace />
         </mesh>
 
         {/* Eyes */}
