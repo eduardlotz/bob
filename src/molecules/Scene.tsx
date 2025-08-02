@@ -4,7 +4,6 @@ import {
   PerspectiveCamera,
   Grid,
   Environment,
-  Text3D,
 } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
@@ -12,175 +11,85 @@ import { HeadNavigation } from "./HeadNavigation";
 import { EmotionCounter } from "./EmotionBar";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { BackgroundPlanet } from "@/3d-objects/BackgroundPlanet";
-import { Physics, RigidBody } from "@react-three/rapier";
-import { useRoute } from "@/contexts/RouteContext";
-import { OrbitingObjects } from "./OrbitingObjects";
-import { DialogModal } from "./DialogModal";
 
-export const Scene = ({
+const Scene = ({
   permissionGranted,
-  modalIsOpen = false,
   onEmotionUpdate,
-  debugInfo,
-  setDebugInfo,
-  debugCircles,
-  setDebugCircles,
-  debugOptions,
-  setDebugOptions,
-  magneticEnabled,
-  setMagneticEnabled,
-  debugCirclesEnabled,
-  setDebugCirclesEnabled,
-  ...rest
 }: {
   permissionGranted: boolean;
-  modalIsOpen?: boolean;
   onEmotionUpdate?: (data: {
     emotionState: any;
     tapCount: number;
     getEmotionIcon: any;
   }) => void;
-  debugInfo: Record<string, any>;
-  setDebugInfo: any;
-  debugCircles: any[];
-  setDebugCircles: any;
-  debugOptions: any;
-  setDebugOptions: any;
-  magneticEnabled: boolean;
-  setMagneticEnabled: any;
-  debugCirclesEnabled: boolean;
-  setDebugCirclesEnabled: any;
-  [key: string]: any;
 }) => {
   const [showOptions, setShowOptions] = useState(false);
   const cameraControlsRef = useRef<CameraControls>(null!);
-  const { currentRoute } = useRoute();
-  const [objectsVisible, setObjectsVisible] = useState(false);
-  const [dialogContent, setDialogContent] = useState<{
-    title: string;
-    content: string;
-  } | null>(null);
-  const [isDialogVisible, setIsDialogVisible] = useState(false);
   const [tapCount, setTapCount] = useState(0);
 
   useKeyPress("Escape", () => {
     if (showOptions) {
       setShowOptions(false);
     }
-    if (isDialogVisible) {
-      closeDialog();
-    }
   });
 
   const hideOptionsIfOpen = () => {
-    if (!modalIsOpen && showOptions) {
+    if (showOptions) {
       setShowOptions(false);
-    }
-  };
-
-  const closeDialog = () => {
-    setIsDialogVisible(false);
-    setTimeout(() => {
-      setDialogContent(null);
-    }, 300); // Wait for exit animation
-  };
-
-  const handleDialogOpen = (content: { title: string; content: string }) => {
-    setDialogContent(content);
-    setIsDialogVisible(true);
-  };
-
-  // Show objects when a route with objects is active (not just when menu is closed)
-  useEffect(() => {
-    if (currentRoute.sceneObjects.length > 0) {
-      setObjectsVisible(true);
-    } else {
-      setObjectsVisible(false);
-    }
-  }, [currentRoute.sceneObjects]);
-
-  const handleObjectClick = (object: any) => {
-    if (object.onClick) {
-      object.onClick();
     }
   };
 
   return (
     <>
       <FullScreenCanvas onPointerMissed={hideOptionsIfOpen}>
-        <Physics>
-          <Fisheye zoom={0}>
-            <Grid
-              args={[8, 8]}
-              sectionThickness={2}
-              sectionColor="#E0DEE6"
-              sectionSize={1}
-              cellThickness={0}
-              fadeDistance={4}
-              position={[0, -2, 0]}
-            />
-            <RigidBody type="fixed" position={[0, -1, 0]}>
-              <mesh rotation={[-Math.PI / 2, 0, 0]}>
-                <planeGeometry args={[30, 30]} />
-                <meshToonMaterial transparent opacity={0} />
-              </mesh>
-            </RigidBody>
-            <CameraControls
-              ref={cameraControlsRef}
-              minPolarAngle={0}
-              maxPolarAngle={Math.PI / 1.6}
-              maxDistance={10}
-              minDistance={1}
-            />
-            <ambientLight intensity={2} />
-            <PerspectiveCamera
-              makeDefault
-              position={[20, 20, 20]}
-              rotateX={Math.PI * 20}
-            />
-            <directionalLight intensity={1.2} position={[2, 4, 5]} />
-            <Environment preset="city" />
-            <BackgroundPlanet />
+        <Fisheye zoom={0}>
+          <Grid
+            args={[8, 8]}
+            sectionThickness={2}
+            sectionColor="#E0DEE6"
+            sectionSize={1}
+            cellThickness={0}
+            fadeDistance={4}
+            position={[0, -2, 0]}
+          />
 
-            <OrbitingObjects
-              objects={currentRoute.sceneObjects}
-              isVisible={objectsVisible}
-              onObjectClick={handleObjectClick}
-              onDialogOpen={handleDialogOpen}
-            />
+          <CameraControls
+            ref={cameraControlsRef}
+            minPolarAngle={0}
+            maxPolarAngle={Math.PI / 1.6}
+            maxDistance={10}
+            minDistance={1}
+          />
+          <ambientLight intensity={2} />
+          <PerspectiveCamera
+            makeDefault
+            position={[20, 20, 20]}
+            rotateX={Math.PI * 20}
+          />
+          <directionalLight intensity={1.2} position={[2, 4, 5]} />
+          <Environment preset="city" />
+          <BackgroundPlanet />
 
-            <HeadNavigation
-              showOptions={showOptions}
-              setShowOptions={setShowOptions}
-              cameraControlsRef={cameraControlsRef} // pass down for portal click
-              permissionGranted={permissionGranted}
-              onEmotionUpdate={(data) => {
-                setTapCount(data.tapCount);
-                onEmotionUpdate?.(data);
-              }}
-              magneticEnabled={magneticEnabled}
-              setMagneticEnabled={setMagneticEnabled}
-              {...rest}
-            />
+          <HeadNavigation
+            showOptions={showOptions}
+            setShowOptions={setShowOptions}
+            cameraControlsRef={cameraControlsRef} // pass down for portal click
+            permissionGranted={permissionGranted}
+            onEmotionUpdate={(data) => {
+              setTapCount(data.tapCount);
+              onEmotionUpdate?.(data);
+            }}
+          />
 
-            {/* 3D Emotion Counter */}
-            <EmotionCounter tapCount={tapCount || 0} />
-          </Fisheye>
-        </Physics>
+          {/* 3D Emotion Counter */}
+          <EmotionCounter tapCount={tapCount || 0} />
+        </Fisheye>
       </FullScreenCanvas>
-
-      {/* Dialog Modal rendered outside canvas */}
-      {dialogContent && (
-        <DialogModal
-          isVisible={isDialogVisible}
-          onClose={closeDialog}
-          title={dialogContent.title}
-          content={dialogContent.content}
-        />
-      )}
     </>
   );
 };
+
+export default Scene;
 
 type FullScreenCanvasProps = {
   children: any;

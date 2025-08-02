@@ -1,21 +1,21 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { Html, Float, CameraControls } from "@react-three/drei";
 import { motion } from "motion/react";
 import { BlobHead } from "./BlobHead";
-import { useRouter } from "next/router";
 import { LockIcon } from "@/layout/icons";
 import {
   useDeviceOrientation,
   DeviceOrientation,
 } from "@/hooks/useDeviceOrientation";
 import { calculateAcceleratedRotation, resetCalibration } from "@/utils/math";
-import { useRoute } from "@/contexts/RouteContext";
 import { useBlobEmotions } from "@/hooks/useBlobEmotions";
 import { useMagneticAttraction, MagneticConfig } from "@/hooks/useMagnets";
 import { toast } from "sonner";
 import styled from "styled-components";
+import { useAppStore, ROUTES } from "@/store";
+import { useNavigate } from "react-router-dom";
 
 //#region constants
 export const CAMERA_Y_POSITION = 0;
@@ -122,6 +122,9 @@ export const MOTION_VARIANTS = {
     initial: {
       scale: 0.8,
       opacity: 0,
+      backgroundColor: "#2979FF",
+      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
+      border: "2px solid transparent",
       transition: { type: "spring" as const, duration: 0.6, bounce: 0.4 },
     },
     exit: {
@@ -131,26 +134,41 @@ export const MOTION_VARIANTS = {
     },
     hover: {
       scale: 1.1,
+      backgroundColor: "#4285F4",
       transition: { type: "spring" as const, duration: 0.3, bounce: 0.5 },
     },
     tap: {
       scale: 0.9,
       transition: { type: "spring" as const, duration: 0.3, bounce: 0.5 },
     },
-    animate: (custom?: number) => ({
-      scale: 1,
+    animate: (custom?: {
+      delay?: number;
+      hovered?: boolean;
+      attractionStrength?: number;
+      isAttracted?: boolean;
+    }) => ({
+      scale: 1 + (custom?.attractionStrength || 0) * 0.15,
       opacity: 1,
+      backgroundColor: custom?.hovered ? "#4285F4" : "#2979FF",
+      boxShadow: custom?.isAttracted
+        ? `0 8px 16px rgba(66, 133, 244, ${
+            0.3 + (custom?.attractionStrength || 0) * 0.4
+          })`
+        : "0 4px 8px rgba(0, 0, 0, 0.2)",
+      border: custom?.isAttracted
+        ? `2px solid rgba(66, 133, 244, ${
+            0.5 + (custom?.attractionStrength || 0) * 0.5
+          })`
+        : "2px solid transparent",
       transition: {
         type: "spring" as const,
         duration: 0.6,
         bounce: 0.6,
-        delay: custom ? custom * 0.05 : 0,
+        delay: custom?.delay ? custom.delay * 0.05 : 0,
       },
     }),
   },
 };
-
-// Navigation options will be provided by route context
 
 //#endregion
 
@@ -160,7 +178,6 @@ export function HeadNavigation({
   cameraControlsRef,
   permissionGranted,
   onEmotionUpdate,
-  ...rest
 }: {
   showOptions: boolean;
   setShowOptions: React.Dispatch<React.SetStateAction<boolean>>;
@@ -171,7 +188,6 @@ export function HeadNavigation({
     tapCount: number;
     getEmotionIcon: any;
   }) => void;
-  [key: string]: any;
 }) {
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -211,7 +227,6 @@ export function HeadNavigation({
   // Blob emotion system
   const { emotionState, tapCount, handleTap, getEmotionIcon } =
     useBlobEmotions();
-  const { currentRoute } = useRoute();
 
   // Pass emotion data up to parent
   useEffect(() => {
@@ -348,8 +363,7 @@ function OptionsGroup({
   permissionGranted: boolean;
   acceleration: DeviceMotionEventAcceleration;
 }) {
-  const { routes } = useRoute();
-  const count = routes.length;
+  const count = ROUTES.length;
 
   const screenCenter = new THREE.Vector3(-1, -2, 0);
 
@@ -371,7 +385,7 @@ function OptionsGroup({
 
   return (
     <group>
-      {routes.map((option, index) => {
+      {ROUTES.map((option, index) => {
         // calculate position on ellipse centered in screen
         const angle = (index / count) * Math.PI * 2;
 
@@ -393,7 +407,7 @@ function OptionsGroup({
             <Option
               initialPosition={position}
               label={option.label}
-              href={option.href}
+              href={option.path}
               index={index}
               windowWidth={windowWidth}
               windowHeight={windowHeight}
@@ -443,7 +457,8 @@ function Option({
 }) {
   const optionRef = useRef<THREE.Group>(null!);
   const [hovered, setHovered] = useState(false);
-  const { setCurrentRoute, getRouteByPath } = useRoute();
+  const { setCurrentRoute, getRouteByPath, navigateToRoute } = useAppStore();
+  const navigate = useNavigate();
 
   // Only enable magnetic attraction when hovered
   const magneticConfig: MagneticConfig = {
@@ -486,11 +501,11 @@ function Option({
         true
       );
 
-      // Update the current route in context instead of navigating
-      const selectedRoute = getRouteByPath(href);
-      if (selectedRoute) {
-        setCurrentRoute(selectedRoute);
-      }
+      // Navigate using React Router
+      navigate(href);
+
+      // Update the store
+      navigateToRoute(href);
 
       hideOptions();
     }
@@ -505,40 +520,31 @@ function Option({
           animate={
             isClosing
               ? MOTION_VARIANTS.springScaleReversed.exit
-              : MOTION_VARIANTS.springScaleReversed.animate(index)
+              : MOTION_VARIANTS.springScaleReversed.animate({
+                  delay: index,
+                  hovered,
+                  attractionStrength: state.attractionStrength,
+                  isAttracted: state.isAttracted,
+                })
           }
           exit={MOTION_VARIANTS.springScaleReversed.exit}
           whileHover={MOTION_VARIANTS.springScaleReversed.hover}
           whileTap={MOTION_VARIANTS.springScaleReversed.tap}
           style={{
-            background: hovered ? "#4285F4" : "#2979FF",
             color: href === "#" ? "#7FA6FF" : "white",
             padding: "16px 20px",
             borderRadius: "50px",
             fontWeight: "400",
             whiteSpace: "nowrap",
             gap: "8px",
-            boxShadow: state.isAttracted
-              ? `0 8px 16px rgba(66, 133, 244, ${
-                  0.3 + state.attractionStrength * 0.4
-                })`
-              : "0 4px 8px rgba(0, 0, 0, 0.2)",
             cursor: "pointer",
             textDecoration: "none",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            transform: `translate(-50%, -50%) scale(${
-              1 + state.attractionStrength * 0.15
-            })`,
+            transform: "translate(-50%, -50%)",
             fontSize: "22px",
             letterSpacing: "0.5px",
-            transition: "all 0.2s ease-out",
-            border: state.isAttracted
-              ? `2px solid rgba(66, 133, 244, ${
-                  0.5 + state.attractionStrength * 0.5
-                })`
-              : "2px solid transparent",
           }}
           onPointerDown={(e) => e.stopPropagation()}
           onMouseEnter={() => setHovered(true)}

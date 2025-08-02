@@ -1,115 +1,70 @@
-import styled from "styled-components";
-import { EmotionState } from "@/hooks/useBlobEmotions";
-import { Text3D, Center } from "@react-three/drei";
+import { Text3D, Center, Outlines } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useThree } from "@react-three/fiber";
+import { useRef, useEffect } from "react";
+import { Vector3, Group } from "three";
+import { useSpring, a } from "@react-spring/three";
 
-interface EmotionBarProps {
-  emotionState: EmotionState;
-  tapCount: number;
-  getEmotionIcon: (emotion: EmotionState) => string;
-  routeColor?: string;
-}
-
-const EmotionContainer = styled.div`
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  z-index: 1001;
-  font-family: "Open Sauce Two", sans-serif;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 100px;
-  padding: 12px 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  box-shadow: 0 0px 0px 4px rgba(255, 255, 255, 0.25);
-`;
-
-const BobName = styled.h3<{ $routeColor: string }>`
-  color: #000;
-  font-size: 24px;
-  font-weight: 400;
-  margin: 0;
-  letter-spacing: -1.5px;
-`;
-
-const EmotionDisplay = styled.h4`
-  font-size: 32px;
-  margin: 0;
-  line-height: 1;
-`;
-
-export function EmotionBar({
-  emotionState,
-  tapCount,
-  getEmotionIcon,
-  routeColor = "#4facfe",
-}: EmotionBarProps) {
-  return (
-    <EmotionContainer>
-      <BobName $routeColor={routeColor}>Bob</BobName>
-      <EmotionDisplay>{getEmotionIcon(emotionState)}</EmotionDisplay>
-    </EmotionContainer>
-  );
-}
+const FONT_PATH = "/fonts/OpenRundeBold.json";
 
 export const EmotionCounter = ({
   tapCount,
-  position = [0, 0, -1],
+  position = [0.2, 0, -1],
 }: {
   tapCount: number;
   position?: [number, number, number];
 }) => {
-  // Format number with leading zeros for consistent width
-  const formattedNumber = tapCount.toString().padStart(3, "0");
+  const PAD_LENGTH = 0;
+  const formattedNumber = tapCount.toString().padStart(PAD_LENGTH, "0");
+  const groupRef = useRef<Group>(null!);
+  const prevTapCount = useRef(tapCount);
+
+  const { viewport } = useThree();
+
+  const DESIRED_PIXEL_HEIGHT = 1150; // on-screen height in CSS pixels
+  const textHeightWorldUnits = DESIRED_PIXEL_HEIGHT / viewport.factor;
+
+  const responsivePosition = new Vector3(-formattedNumber.length + 1, 0.5, -1);
+
+  const [spring, api] = useSpring(() => ({
+    scale: 1,
+    config: { tension: 300, friction: 10 },
+  }));
+
+  useEffect(() => {
+    if (tapCount !== prevTapCount.current) {
+      // Bounce animation
+      api.start({
+        scale: 1.4,
+        immediate: true,
+      });
+      api.start({
+        scale: 1,
+        config: { tension: 300, friction: 15 },
+      });
+      prevTapCount.current = tapCount;
+    }
+  }, [tapCount]);
 
   return (
-    <Center position={position} scale={[0.6, 0.6, 0.6]}>
-      {/* Wireframe text for testing */}
-      <Text3D
-        font="/fonts/OpenSauceTwoBlack.json"
-        size={5}
-        height={1.5}
-        curveSegments={32}
-        letterSpacing={-0.15}
-        bevelEnabled={true}
-        bevelSize={0.02}
-        bevelThickness={0.01}
-        bevelSegments={5}
-      >
-        {formattedNumber}
-        <meshBasicMaterial color="white" wireframe={true} />
-      </Text3D>
-
-      {/* OLD VERSION - White material with black outline */}
-      {/* 
-      <Text3D
-        font="/fonts/OpenSauceTwoBlack.json"
-        size={5}
-        height={1.5} // Increased depth for more solid 3D feel
-        curveSegments={32} // Increased segments for smoother curves
-        scale={[1.05, 1.05, 1.05]} // Slightly larger for outline
-        letterSpacing={-0.15} // Tighter letter spacing
-        position={[0, 0, 0.01]} // Slight z-offset for outline
-      >
-        {formattedNumber}
-        <meshStandardMaterial color="black" metalness={0} roughness={0.3} />
-      </Text3D>
-
-      <Text3D
-        font="/fonts/OpenSauceTwoBlack.json"
-        size={5}
-        height={1.5} // Increased depth for more solid 3D feel
-        curveSegments={32} // Increased segments for smoother curves
-        letterSpacing={-0.15} // Tighter letter spacing
-        bevelEnabled={true}
-        bevelSize={0.02}
-        bevelThickness={0.01}
-        bevelSegments={5}
-      >
-        {formattedNumber}
-        <meshStandardMaterial color="white" metalness={0.1} roughness={0.2} />
-      </Text3D>
-      */}
+    <Center position={responsivePosition}>
+      <a.group ref={groupRef} scale={spring.scale}>
+        <Text3D
+          font={FONT_PATH}
+          size={textHeightWorldUnits}
+          height={1.5}
+          curveSegments={32}
+          letterSpacing={-0.15}
+          bevelEnabled={true}
+          bevelSize={0.03}
+          bevelThickness={0.2}
+          bevelSegments={6}
+        >
+          {formattedNumber}
+          <meshToonMaterial color="white" />
+          <Outlines thickness={5} color="black" />
+        </Text3D>
+      </a.group>
     </Center>
   );
 };

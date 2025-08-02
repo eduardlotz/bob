@@ -15,13 +15,61 @@ import {
   HIDDEN_OPTIONS_CAMERA_ZOOM,
   VISIBLE_OPTIONS_CAMERA_ZOOM,
 } from "./HeadNavigation";
-import { CameraControls } from "@react-three/drei";
+import { CameraControls, Outlines } from "@react-three/drei";
 import { calculateAcceleratedRotation } from "@/utils/math";
-import { a, useSpring } from "@react-spring/three";
+import { a, useSpring, useSprings } from "@react-spring/three";
 import { type RapierRigidBody } from "@react-three/rapier";
 import { Star3D } from "@/3d-objects/Star3D";
-import { useRoute } from "@/contexts/RouteContext";
 import { EmotionState } from "@/hooks/useBlobEmotions";
+import { useCallback } from "react";
+
+interface TapParticle {
+  id: number;
+  position: [number, number, number];
+  velocity: [number, number, number];
+  life: number;
+  maxLife: number;
+}
+
+// Uses animated meshes instead of Points so we can individually fade each particle
+const TapParticles = ({ particles }: { particles: TapParticle[] }) => {
+  // Create one spring per particle
+  const [springs] = useSprings(
+    particles.length,
+    (index) => {
+      const p = particles[index];
+      const lifeRatio = Math.max(0, p.life / p.maxLife);
+      return {
+        scale: 0.05 + 0.15 * lifeRatio,
+        opacity: lifeRatio,
+        config: { tension: 60, friction: 10 },
+      };
+    },
+    [particles]
+  );
+
+  return (
+    <>
+      {springs.map((styles, index) => {
+        const particle = particles[index];
+        return (
+          <a.mesh
+            key={particle.id}
+            position={particle.position}
+            scale={styles.scale}
+          >
+            <sphereGeometry args={[0.1, 8, 8]} />
+            <a.meshBasicMaterial
+              color={["white", "grey", "black"][particle.id % 3]}
+              transparent
+              opacity={styles.opacity}
+            />
+          </a.mesh>
+        );
+      })}
+    </>
+  );
+};
 
 // TODO: Move these constants to a shared config file
 // Default head position Y
@@ -174,11 +222,12 @@ export function BlobHead({
   const [lastIdleAnimationTime, setLastIdleAnimationTime] = useState(0);
   const [isJumping, setIsJumping] = useState(false);
   const [squeezeScale, setSqueezeScale] = useState(1);
+  const [particles, setParticles] = useState<TapParticle[]>([]);
+  const particleIdCounter = useRef(0);
 
   // Ref for physics body
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const { orientation, acceleration } = useDeviceOrientation();
-  const { currentRoute } = useRoute();
 
   // Keep a ref to spring api for fine-grained control
   const [spring, api] = useSpring(() => ({
@@ -717,7 +766,54 @@ export function BlobHead({
     );
   };
 
-  const onClick = () => {
+  const createParticles = (x: number, y: number, z: number) => {
+    const numParticles = 20; // Increased particle count
+    const newParticles: TapParticle[] = [];
+
+    for (let i = 0; i < numParticles; i++) {
+      const angle = (Math.PI * 2 * i) / numParticles;
+      const speed = 0.05 + Math.random() * 0.1; // Reduced speed for smaller spread
+      newParticles.push({
+        id: particleIdCounter.current++,
+        position: [x, y, z],
+        velocity: [
+          Math.cos(angle) * speed,
+          Math.sin(angle) * speed + 0.05, // Reduced upward bias
+          (Math.random() - 0.5) * speed,
+        ],
+        life: 0.8, // Slightly shorter life
+        maxLife: 0.8,
+      });
+    }
+
+    setParticles((prev) => [...prev, ...newParticles]);
+  };
+
+  // Update particles in animation frame
+  useFrame((state, delta) => {
+    setParticles((prev) =>
+      prev
+        .map((particle) => ({
+          ...particle,
+          position: [
+            particle.position[0] + particle.velocity[0] * delta * 60,
+            particle.position[1] + particle.velocity[1] * delta * 60,
+            particle.position[2] + particle.velocity[2] * delta * 60,
+          ] as [number, number, number],
+          life: particle.life - delta,
+        }))
+        .filter((particle) => particle.life > 0)
+    );
+  });
+
+  const onClick = (event: any) => {
+    // Stop event propagation to prevent double counting from activity listeners
+    event.stopPropagation();
+
+    // Create particles at the counter text position instead of cursor
+    const COUNTER_POS: [number, number, number] = [-1, 0.5, -1];
+    createParticles(COUNTER_POS[0], COUNTER_POS[1], COUNTER_POS[2]);
+
     onHeadClick();
   };
 
@@ -729,97 +825,64 @@ export function BlobHead({
     document.body.style.cursor = "auto";
   };
 
-  // Render accessories based on current route
-  const renderAccessories = () => {
-    const routeId = currentRoute.id;
-
-    switch (routeId) {
-      case "guestbook":
-        return (
-          <>
-            {/* Party hat */}
-            <mesh position={[0, 1.3, 0]} scale={[0.8, 0.8, 0.8]}>
-              <coneGeometry args={[0.5, 1, 8]} />
-              <meshToonMaterial color="#ff9a9e" />
-            </mesh>
-            {/* Hat decoration */}
-            <mesh position={[0, 1.6, 0]} scale={[0.1, 0.1, 0.1]}>
-              <sphereGeometry args={[0.5, 8, 8]} />
-              <meshToonMaterial color="#ffd700" />
-            </mesh>
-          </>
-        );
-
-      default:
-        return null;
-    }
-  };
-
   // Conditionally wrap with physics only during jump animation
   const content = (
-    <a.group
-      ref={headRef}
-      onClick={onClick}
-      onPointerOver={onPointerOver}
-      onPointerLeave={onPointerLeave}
-      castShadow
-      scale={spring.scale}
-      rotation={[0, Math.PI, 0]}
-      position={[0, 2, 0]}
-    >
-      {/* Head */}
-      <mesh castShadow>
-        <sphereGeometry args={[1, 32, 32]} />
-        <meshToonMaterial
-          color={currentRoute.blobCostume?.headColor || "#ffffff"}
-        />
-      </mesh>
-
-      {/* Eyes */}
-      <group position={[0, 0.2, 0.85]}>
-        <mesh ref={leftEyeRef} position={[-0.3, 0, 0]}>
-          <sphereGeometry args={[0.12, 16, 16]} />
-          <meshToonMaterial
-            color={currentRoute.blobCostume?.eyeColor || "black"}
-          />
+    <>
+      <TapParticles particles={particles} />
+      <a.group
+        ref={headRef}
+        onClick={onClick}
+        onPointerOver={onPointerOver}
+        onPointerLeave={onPointerLeave}
+        castShadow
+        scale={spring.scale}
+        rotation={[0, Math.PI, 0]}
+        position={[0, 2, 0]}
+      >
+        {/* Head */}
+        <mesh castShadow>
+          <sphereGeometry args={[1, 64, 64]} />
+          <meshToonMaterial color="#ffffff" />
+          <Outlines thickness={5} color="black" />
         </mesh>
-        <mesh ref={rightEyeRef} position={[0.3, 0, 0]}>
-          <sphereGeometry args={[0.12, 16, 16]} />
-          <meshToonMaterial
-            color={currentRoute.blobCostume?.eyeColor || "black"}
-          />
-        </mesh>
-      </group>
 
-      {/* Accessories based on route */}
-      {renderAccessories()}
+        {/* Eyes */}
+        <group position={[0, 0.2, 0.85]}>
+          <mesh ref={leftEyeRef} position={[-0.3, 0, 0]}>
+            <sphereGeometry args={[0.12, 16, 16]} />
+            <meshToonMaterial color="#000000" />
+          </mesh>
+          <mesh ref={rightEyeRef} position={[0.3, 0, 0]}>
+            <sphereGeometry args={[0.12, 16, 16]} />
+            <meshToonMaterial color="#000000" />
+          </mesh>
+        </group>
 
-      {/* Enhanced Dizzy Stars */}
-      {emotionState === "dizzy" &&
-        dizzyStars.map((star) => {
-          if (!star.visible) return null;
+        {emotionState === "dizzy" &&
+          dizzyStars.map((star) => {
+            if (!star.visible) return null;
 
-          // Calculate orbit position
-          const orbitX = Math.cos(star.orbitAngle) * star.orbitRadius;
-          const orbitZ = Math.sin(star.orbitAngle) * star.orbitRadius;
-          const orbitY = 1.5 + Math.sin(star.orbitAngle * 2) * 0.2;
+            const orbitX = Math.cos(star.orbitAngle) * star.orbitRadius;
+            const orbitZ = Math.sin(star.orbitAngle) * star.orbitRadius;
+            const orbitY = 1.5 + Math.sin(star.orbitAngle * 2) * 0.2;
 
-          return (
-            <group
-              key={star.id}
-              position={[orbitX, orbitY, orbitZ]}
-              scale={[star.scale, star.scale, star.scale]}
-              rotation={[
-                Math.sin(star.spinAngle) * 0.2,
-                Math.cos(star.spinAngle * 0.7) * 0.3,
-                Math.sin(star.spinAngle * 1.3) * 0.1,
-              ]}
-            >
-              <Star3D />
-            </group>
-          );
-        })}
-    </a.group>
+            return (
+              <group
+                key={star.id}
+                position={[orbitX, orbitY, orbitZ]}
+                scale={[star.scale, star.scale, star.scale]}
+                rotation={[
+                  Math.sin(star.spinAngle) * 0.2,
+                  Math.cos(star.spinAngle * 0.7) * 0.3,
+                  Math.sin(star.spinAngle * 1.3) * 0.1,
+                ]}
+              >
+                <Star3D />
+              </group>
+            );
+          })}
+      </a.group>
+    </>
   );
 
   return content;

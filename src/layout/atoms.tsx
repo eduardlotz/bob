@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import styled from "styled-components";
 import { FillRow } from ".";
-import Link from "next/link";
+import { Link } from "react-router-dom";
 
 export const Logo = () => {
   return (

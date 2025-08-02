@@ -1,33 +1,40 @@
 import { FillRow } from "@/layout";
 import { Logo, MotionIconWrapper } from "@/layout/atoms";
 import { MotionVariants } from "@/styles/motion";
-import dynamic from "next/dynamic";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
+import Scene from "@/molecules/Scene";
 
 // Create a loading component with animated bounce effect
 const LoadingComponent = ({
   permissionGranted,
   onEmotionUpdate,
-  debugInfo,
-  setDebugInfo,
-  debugCircles,
-  setDebugCircles,
-  debugOptions,
-  setDebugOptions,
+  onLoaded,
   magneticEnabled,
   setMagneticEnabled,
-  debugCirclesEnabled,
-  setDebugCirclesEnabled,
   ...rest
-}: any) => {
+}: {
+  permissionGranted: boolean;
+  onEmotionUpdate?: (data: {
+    emotionState: any;
+    tapCount: number;
+    getEmotionIcon: any;
+  }) => void;
+  onLoaded?: () => void;
+  magneticEnabled?: boolean;
+  setMagneticEnabled?: (enabled: boolean) => void;
+}) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Add delay before starting the exit animation
     const timer = setTimeout(() => {
       setIsLoading(false);
+      if (onLoaded) {
+        // Wait for fade-out animation to finish before notifying
+        setTimeout(onLoaded, 800);
+      }
     }, 2000); // 2 second delay
 
     return () => clearTimeout(timer);
@@ -69,47 +76,46 @@ const LoadingComponent = ({
         )}
       </AnimatePresence>
 
-      {/* Scene component always rendered but hidden initially */}
-      <SceneWrapper
-        initial={{ opacity: 0 }}
-        animate={{ opacity: isLoading ? 0 : 1 }}
-        transition={{
-          duration: 0.8,
-          delay: 0.4, // Start fading in halfway through loader exit
-          ease: "easeInOut",
-        }}
-      >
-        <SceneComponent
-          permissionGranted={permissionGranted}
-          onEmotionUpdate={onEmotionUpdate}
-          {...rest}
-        />
-      </SceneWrapper>
+      {!isLoading && (
+        <SceneWrapper
+          initial={{ opacity: 0 }}
+          animate={{ opacity: isLoading ? 0 : 1 }}
+          transition={{
+            duration: 0.8,
+            delay: 0.4,
+            ease: "easeInOut",
+          }}
+        >
+          <Scene
+            permissionGranted={permissionGranted}
+            onEmotionUpdate={onEmotionUpdate}
+            {...rest}
+          />
+        </SceneWrapper>
+      )}
     </>
   );
 };
 
-// Separate scene component
-const SceneComponent = dynamic(
-  () =>
-    import("@/molecules/Scene").then((mod) => {
-      return { default: (props: any) => <mod.Scene {...props} /> };
-    }),
-  {
-    ssr: false,
-  }
-);
-
 export const SceneWithLoader = ({
   permissionGranted,
   onEmotionUpdate,
-
+  onLoaded,
   ...rest
-}: any) => {
+}: {
+  permissionGranted: boolean;
+  onEmotionUpdate?: (data: {
+    emotionState: any;
+    tapCount: number;
+    getEmotionIcon: any;
+  }) => void;
+  onLoaded?: () => void;
+}) => {
   return (
     <LoadingComponent
       permissionGranted={permissionGranted}
       onEmotionUpdate={onEmotionUpdate}
+      onLoaded={onLoaded}
       {...rest}
     />
   );

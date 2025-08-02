@@ -3,42 +3,32 @@ import { requestMotionPermission } from "@/utils/permission";
 import { useEffect, useState } from "react";
 import styled from "styled-components";
 import { Button } from "./atoms";
-import { MOTION_VARIANTS } from "@/molecules/HeadNavigation";
+import { MotionVariants } from "@/styles/motion";
 import { AnimatePresence } from "motion/react";
-import { BackgroundGradient } from "@/molecules/BackgroundGradient";
-import { EmotionBar } from "@/molecules/EmotionBar";
-import { useRoute } from "@/contexts/RouteContext";
+import { useAppStore } from "@/store";
 
 export default function MainLayout({ children }: any) {
-  const [permissionGranted, setPermissionGranted] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const [windowHeight, setWindowHeight] = useState(0);
-  const [emotionData, setEmotionData] = useState<{
-    emotionState: any;
-    tapCount: number;
-    getEmotionIcon: any;
-  } | null>(null);
-  const { currentRoute } = useRoute();
+  const [sceneLoaded, setSceneLoaded] = useState(false);
 
-  // Debug state (lifted from HeadNavigation)
-  const [debugInfo, setDebugInfo] = useState<Record<string, any>>({});
-  const [debugCircles, setDebugCircles] = useState<any[]>([]);
-  const [debugOptions, setDebugOptions] = useState({
-    attractionCircles: true,
-    stayMagneticCircles: true,
-    arcPathCircle: true,
-    cursorDistance: true,
-    fieldRadius: true,
-  });
-  const [magneticEnabled, setMagneticEnabled] = useState(true);
-  const [debugCirclesEnabled, setDebugCirclesEnabled] = useState(false);
+  const {
+    currentRoute,
+    permissionGranted,
+    isMobile,
+    emotionData,
+    setPermissionGranted,
+    setIsMobile,
+    setEmotionData,
+  } = useAppStore();
 
+  // Initialize mobile detection and window height
   useEffect(() => {
-    setIsMobile(
-      typeof window !== "undefined" && /Mobi|Android/i.test(navigator.userAgent)
-    );
+    const mobile =
+      typeof window !== "undefined" &&
+      /Mobi|Android/i.test(navigator.userAgent);
+    setIsMobile(mobile);
     setWindowHeight(window.innerHeight);
-  }, []);
+  }, [setIsMobile]);
 
   // TODO: show permission modal with explanation before asking for permission
   const handlePermissionRequest = async () => {
@@ -48,15 +38,14 @@ export default function MainLayout({ children }: any) {
 
   return (
     <Container>
-      <BackgroundGradient />
       <Background style={{ height: windowHeight }}>
         <AnimatePresence>
-          {!permissionGranted && isMobile && (
+          {!permissionGranted && isMobile && sceneLoaded && (
             <SensorButton
-              variants={MOTION_VARIANTS.springScaleReversed}
+              variants={MotionVariants.SpringScaleReversed}
               initial="initial"
               animate="animate"
-              custom={60}
+              custom={0}
               exit="exit"
               whileTap="tap"
               onClick={handlePermissionRequest}
@@ -68,17 +57,8 @@ export default function MainLayout({ children }: any) {
         <SceneWithLoader
           permissionGranted={permissionGranted}
           onEmotionUpdate={setEmotionData}
+          onLoaded={() => setSceneLoaded(true)}
         />
-
-        {/* EmotionBar as fixed overlay - like sensor button */}
-        {emotionData && (
-          <EmotionBar
-            emotionState={emotionData.emotionState}
-            tapCount={emotionData.tapCount}
-            getEmotionIcon={emotionData.getEmotionIcon}
-            routeColor={currentRoute.blobCostume?.headColor || "#4facfe"}
-          />
-        )}
       </Background>
       {children}
     </Container>
