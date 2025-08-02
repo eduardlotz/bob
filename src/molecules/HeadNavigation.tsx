@@ -218,7 +218,7 @@ export function HeadNavigation({
     if (onEmotionUpdate) {
       onEmotionUpdate({ emotionState, tapCount, getEmotionIcon });
     }
-  }, [emotionState, tapCount, onEmotionUpdate]);
+  }, [emotionState, tapCount, getEmotionIcon, onEmotionUpdate]);
 
   const showCalibrationResetToast = () => {
     toast.custom((id) => <CustomToast>Kalibrierung zurückgesetzt</CustomToast>);
@@ -227,6 +227,9 @@ export function HeadNavigation({
   const toggleOptions = () => {
     const now = Date.now();
     const timeSinceLastTap = now - lastTapTime;
+
+    // Always handle blob emotion on tap FIRST
+    handleTap();
 
     // double tap detection for calibration reset (mobile only)
     // TODO: replace with a more robust gesture detection or add a dedicated button
@@ -242,9 +245,6 @@ export function HeadNavigation({
     }
 
     setLastTapTime(now);
-
-    // Handle blob emotion on tap
-    handleTap();
 
     if (showOptions) {
       setIsClosing(true);

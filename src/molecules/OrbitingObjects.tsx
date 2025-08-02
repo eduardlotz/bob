@@ -4,9 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { SceneObject } from "@/contexts/RouteContext";
 import { useSpring, animated } from "@react-spring/three";
 import { RigidBody } from "@react-three/rapier";
-import { ObjectPrimitives } from "@/3d-objects/primitives";
 import { ObjectFactory } from "./ObjectFactory";
-import { useRouter } from "next/router";
 import { useKeyPress } from "@/hooks/useKeyPress";
 
 interface OrbitingObjectsProps {
@@ -54,7 +52,6 @@ export function OrbitingObjects({
   });
 
   const handleObjectClick = (object: SceneObject) => {
-    console.log("Object clicked:", object);
     onObjectClick(object);
 
     // Get dialog content and pass it to parent

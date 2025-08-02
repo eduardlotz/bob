@@ -92,7 +92,6 @@ export const Scene = ({
 
   // Show objects when a route with objects is active (not just when menu is closed)
   useEffect(() => {
-    console.log("🚀 ~ Scene ~ currentRoute:", currentRoute);
     if (currentRoute.sceneObjects.length > 0) {
       setObjectsVisible(true);
     } else {
@@ -101,7 +100,6 @@ export const Scene = ({
   }, [currentRoute.sceneObjects]);
 
   const handleObjectClick = (object: any) => {
-    console.log("Object clicked:", object);
     if (object.onClick) {
       object.onClick();
     }
@@ -160,16 +158,8 @@ export const Scene = ({
                 setTapCount(data.tapCount);
                 onEmotionUpdate?.(data);
               }}
-              debugInfo={debugInfo}
-              setDebugInfo={setDebugInfo}
-              debugCircles={debugCircles}
-              setDebugCircles={setDebugCircles}
-              debugOptions={debugOptions}
-              setDebugOptions={setDebugOptions}
               magneticEnabled={magneticEnabled}
               setMagneticEnabled={setMagneticEnabled}
-              debugCirclesEnabled={debugCirclesEnabled}
-              setDebugCirclesEnabled={setDebugCirclesEnabled}
               {...rest}
             />
 

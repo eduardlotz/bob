@@ -42,13 +42,6 @@ const constrainToWindowWithSnap = (
     winHeight - EMOTION_BAR_HEIGHT - SNAP_MARGIN
   );
 
-  console.log("Constraining position:", {
-    pos,
-    boundaries: { minX, maxX, topBound, bottomBound },
-    windowSize: { winWidth, winHeight },
-    barSize: { width: EMOTION_BAR_WIDTH, height: EMOTION_BAR_HEIGHT },
-  });
-
   let newX = pos.x;
   let newY = pos.y;
 
@@ -62,7 +55,6 @@ const constrainToWindowWithSnap = (
     } else {
       newX = maxX; // Snap to right edge
     }
-    console.log(`Flick detected (velocity: ${velocity.x}), snapping to:`, newX);
   } else {
     // Regular drag - use snap zones for better UX
     const leftSnapZone = minX + SNAP_MARGIN * 2;
@@ -82,7 +74,6 @@ const constrainToWindowWithSnap = (
   newY = Math.max(topBound, Math.min(pos.y, bottomBound));
 
   const finalPos = { x: newX, y: newY };
-  console.log("Final constrained position:", finalPos);
 
   return finalPos;
 };
@@ -207,11 +198,7 @@ export function EmotionBar({
       const centerX = Math.max(0, (window.innerWidth - EMOTION_BAR_WIDTH) / 2);
       const topY =
         sensorButtonHeight > 0 ? sensorButtonHeight + SNAP_MARGIN : SNAP_MARGIN;
-      console.log("Initial mobile position:", {
-        centerX,
-        topY,
-        windowWidth: window.innerWidth,
-      });
+
       setPosition({ x: centerX, y: topY });
     }
   }, [isMobile, sensorButtonHeight]);
@@ -235,13 +222,7 @@ export function EmotionBar({
           sensorButtonHeight > 0
             ? sensorButtonHeight + SNAP_MARGIN
             : SNAP_MARGIN;
-        console.log("Mobile positioning:", {
-          windowWidth: newWindowSize.width,
-          barWidth: EMOTION_BAR_WIDTH,
-          centerX,
-          topY,
-          sensorButtonHeight,
-        });
+
         setPosition({ x: centerX, y: topY });
         return;
       }
@@ -253,11 +234,9 @@ export function EmotionBar({
     // Only load saved position on desktop
     if (!isMobile) {
       const savedPosition = localStorage.getItem("bobEmotionBarPosition");
-      console.log("Loaded position from localStorage:", savedPosition);
       if (savedPosition) {
         try {
           const parsed = JSON.parse(savedPosition);
-          console.log("Parsed position:", parsed);
 
           const needsConstraining =
             parsed.x < 0 ||
@@ -310,7 +289,6 @@ export function EmotionBar({
       !isMobile &&
       (position.x !== DEFAULT_POSITION.x || position.y !== DEFAULT_POSITION.y)
     ) {
-      console.log("Saving position to localStorage:", position);
       localStorage.setItem("bobEmotionBarPosition", JSON.stringify(position));
     }
   }, [position, isMobile]);
@@ -319,15 +297,6 @@ export function EmotionBar({
     event: MouseEvent | TouchEvent | PointerEvent,
     info: PanInfo
   ) => {
-    console.log(
-      "Drag ended. Current position:",
-      position,
-      "Info offset:",
-      info.offset,
-      "Velocity:",
-      info.velocity
-    );
-
     setIsDragging(false);
 
     // Use offset-based calculation
@@ -335,10 +304,6 @@ export function EmotionBar({
       x: position.x + info.offset.x,
       y: position.y + info.offset.y,
     };
-
-    console.log("Calculated new position:", newPosition);
-    console.log("Window size:", windowSize);
-    console.log("Velocity from info:", info.velocity);
 
     // Always constrain to window bounds with snap logic
     const constrainedPosition = constrainToWindowWithSnap(
@@ -349,7 +314,6 @@ export function EmotionBar({
       sensorButtonHeight
     );
 
-    console.log("Final constrained position:", constrainedPosition);
     setPosition(constrainedPosition);
   };
 

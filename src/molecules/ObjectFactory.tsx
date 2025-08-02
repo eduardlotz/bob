@@ -264,7 +264,6 @@ export class ObjectFactory {
     const config = this.objectConfigs[configId];
     if (config) {
       // This would be implemented when dialog system supports images
-      console.log(`Image added to ${configId}: ${imageUrl}`);
     }
   }
 
@@ -275,7 +274,6 @@ export class ObjectFactory {
     const config = this.objectConfigs[configId];
     if (config) {
       // This would be implemented when dialog system supports custom components
-      console.log(`Component added to ${configId}`);
     }
   }
 

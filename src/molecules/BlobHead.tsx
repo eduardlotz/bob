@@ -195,26 +195,6 @@ export function BlobHead({
     });
   }, []);
 
-  // Debug: Log blob state to help troubleshoot visibility issues
-  useEffect(() => {
-    if (process.env.NODE_ENV === "development") {
-      const checkState = () => {
-        console.log("Blob debug info:", {
-          headRefExists: !!headRef.current,
-          springScale: spring.scale.get(),
-          idleAnimation,
-          showOptions,
-          isClosing,
-          position: headRef.current?.position,
-          scale: headRef.current?.scale,
-        });
-      };
-
-      const timer = setTimeout(checkState, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [spring.scale, idleAnimation, showOptions, isClosing]);
-
   // Animate scale when showOptions or isClosing changes
   useEffect(() => {
     if (!showOptions || isClosing) {
