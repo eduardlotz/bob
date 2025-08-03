@@ -185,6 +185,7 @@ export function BlobHead({
   showOptions,
   isClosing,
   emotionState,
+  onCameraZoomAnimation,
 }: {
   onHeadClick: () => void;
   motionPermissionGranted: boolean;
@@ -193,6 +194,7 @@ export function BlobHead({
   showOptions: boolean;
   isClosing: boolean;
   emotionState: EmotionState;
+  onCameraZoomAnimation?: (isAnimating: boolean) => void;
 }) {
   const headRef = useRef<Group>(null!);
   const leftEyeRef = useRef<Mesh>(null!);
@@ -227,6 +229,7 @@ export function BlobHead({
   const [squeezeScale, setSqueezeScale] = useState(1);
   const [particles, setParticles] = useState<TapParticle[]>([]);
   const particleIdCounter = useRef(0);
+  const [cameraZoomAnimation, setCameraZoomAnimation] = useState(false);
 
   // Ref for physics body
   const rigidBodyRef = useRef<RapierRigidBody>(null);
@@ -259,7 +262,7 @@ export function BlobHead({
       });
     } else {
       api.start({
-        scale: [0.7, 0.7, 0.7],
+        scale: [1.2, 1.2, 1.2], // Keep normal scale when menu is open
         config: { tension: 300, friction: 10 },
       });
     }
@@ -506,10 +509,18 @@ export function BlobHead({
       targetRotY,
       targetRotZ
     ).normalize();
+
+    // Add camera zoom animation on tap
+    const baseZoom = showOptions
+      ? VISIBLE_OPTIONS_CAMERA_ZOOM
+      : HIDDEN_OPTIONS_CAMERA_ZOOM;
+    const zoomOffset = cameraZoomAnimation
+      ? Math.sin(clock.getElapsedTime() * 20) * 0.5
+      : 0;
     const cameraPosition = new Vector3(
       0,
       CAMERA_Y_POSITION,
-      showOptions ? VISIBLE_OPTIONS_CAMERA_ZOOM : HIDDEN_OPTIONS_CAMERA_ZOOM
+      baseZoom + zoomOffset
     );
     const target = cameraPosition.clone().add(lookDirection);
 
@@ -545,10 +556,18 @@ export function BlobHead({
       0
     );
 
+    // Add camera zoom animation on tap
+    const baseZoom = showOptions
+      ? VISIBLE_OPTIONS_CAMERA_ZOOM
+      : HIDDEN_OPTIONS_CAMERA_ZOOM;
+    const zoomOffset = cameraZoomAnimation
+      ? Math.sin(clock.getElapsedTime() * 20) * 0.5
+      : 0;
+
     cameraControlsRef.current.setLookAt(
       0,
       CAMERA_Y_POSITION,
-      showOptions ? VISIBLE_OPTIONS_CAMERA_ZOOM : HIDDEN_OPTIONS_CAMERA_ZOOM,
+      baseZoom + zoomOffset,
       cursorPos.x,
       cursorPos.y + 2,
       cursorPos.z,
@@ -855,6 +874,26 @@ export function BlobHead({
     const COUNTER_POS: [number, number, number] = [-1, 0.5, -1];
     createParticles(COUNTER_POS[0], COUNTER_POS[1], COUNTER_POS[2]);
 
+    // Trigger bounce animation on tap
+    api.start({
+      scale: [1.4, 1.4, 1.4],
+      config: { tension: 400, friction: 8 },
+    });
+    api.start({
+      scale: [1.2, 1.2, 1.2],
+      config: { tension: 300, friction: 10 },
+      delay: 150,
+    });
+
+    // Trigger camera zoom animation on tap
+    setCameraZoomAnimation(true);
+    onCameraZoomAnimation?.(true);
+    setTimeout(() => {
+      setCameraZoomAnimation(false);
+      onCameraZoomAnimation?.(false);
+    }, 300);
+
+    // Only trigger emotion animation, not menu opening
     onHeadClick();
   };
 

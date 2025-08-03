@@ -15,6 +15,8 @@ import { BackgroundPlanet } from "@/3d-objects/BackgroundPlanet";
 const Scene = ({
   permissionGranted,
   onEmotionUpdate,
+  showOptions,
+  setShowOptions,
 }: {
   permissionGranted: boolean;
   onEmotionUpdate?: (data: {
@@ -22,19 +24,20 @@ const Scene = ({
     tapCount: number;
     getEmotionIcon: any;
   }) => void;
+  showOptions?: boolean;
+  setShowOptions?: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
-  const [showOptions, setShowOptions] = useState(false);
   const cameraControlsRef = useRef<CameraControls>(null!);
   const [tapCount, setTapCount] = useState(0);
 
   useKeyPress("Escape", () => {
-    if (showOptions) {
+    if (showOptions && setShowOptions) {
       setShowOptions(false);
     }
   });
 
   const hideOptionsIfOpen = () => {
-    if (showOptions) {
+    if (showOptions && setShowOptions) {
       setShowOptions(false);
     }
   };
@@ -71,8 +74,8 @@ const Scene = ({
           <BackgroundPlanet />
 
           <HeadNavigation
-            showOptions={showOptions}
-            setShowOptions={setShowOptions}
+            showOptions={showOptions || false}
+            setShowOptions={setShowOptions || (() => {})}
             cameraControlsRef={cameraControlsRef} // pass down for portal click
             permissionGranted={permissionGranted}
             onEmotionUpdate={(data) => {

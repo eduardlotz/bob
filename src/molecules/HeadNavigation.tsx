@@ -223,6 +223,7 @@ export function HeadNavigation({
 
   const [isClosing, setIsClosing] = useState(false);
   const [lastTapTime, setLastTapTime] = useState(0);
+  const [cameraZoomAnimation, setCameraZoomAnimation] = useState(false);
 
   // Blob emotion system
   const { emotionState, tapCount, handleTap, getEmotionIcon } =
@@ -239,72 +240,77 @@ export function HeadNavigation({
     toast.custom((id) => <CustomToast>Kalibrierung zurückgesetzt</CustomToast>);
   };
 
-  const toggleOptions = () => {
-    const now = Date.now();
-    const timeSinceLastTap = now - lastTapTime;
-
-    // Always handle blob emotion on tap FIRST
+  const handleHeadClick = () => {
+    // Only handle blob emotion on head click
     handleTap();
-
-    setLastTapTime(now);
-
-    if (showOptions) {
-      setIsClosing(true);
-      // wait for exit animation to complete before hiding
-      setTimeout(() => {
-        setShowOptions(false);
-        setIsClosing(false);
-      }, 400);
-    } else {
-      setShowOptions(true);
-    }
   };
 
   useFrame(() => {
+    // Add camera zoom animation on tap
+    const baseZoom =
+      showOptions && !isClosing
+        ? VISIBLE_OPTIONS_CAMERA_ZOOM
+        : HIDDEN_OPTIONS_CAMERA_ZOOM;
+    const zoomOffset = cameraZoomAnimation
+      ? Math.sin(Date.now() * 0.02) * 0.5
+      : 0;
+    const finalZoom = baseZoom + zoomOffset;
+
     if (orientation && acceleration && permissionGranted) {
       const { targetRotX, targetRotY, targetRotZ } =
         calculateAcceleratedRotation(acceleration, orientation);
       cameraControlsRef.current.setLookAt(
         0,
         showOptions && !isClosing ? 2 : CAMERA_Y_POSITION,
-        showOptions && !isClosing
-          ? VISIBLE_OPTIONS_CAMERA_ZOOM
-          : HIDDEN_OPTIONS_CAMERA_ZOOM,
+        finalZoom,
         -targetRotX,
         targetRotY + CAMERA_Y_POSITION,
         -targetRotZ,
         true
       );
     } else {
-      const cursorPos = new THREE.Vector3(
-        (mousePosition.x - 0.5) * CAMERA_FOLLOW_OFFSET * 0.1,
-        (mousePosition.y - 0.5) * CAMERA_FOLLOW_OFFSET * 0.1,
-        0
-      );
-      cameraControlsRef.current.setLookAt(
-        0,
-        showOptions && !isClosing ? 2 : CAMERA_Y_POSITION,
-        showOptions && !isClosing
-          ? VISIBLE_OPTIONS_CAMERA_ZOOM
-          : HIDDEN_OPTIONS_CAMERA_ZOOM,
-        cursorPos.x,
-        cursorPos.y + CAMERA_Y_POSITION,
-        cursorPos.z,
-        true
-      );
+      // Only follow cursor on desktop, not on mobile
+      if (!isMobile) {
+        const cursorPos = new THREE.Vector3(
+          (mousePosition.x - 0.5) * CAMERA_FOLLOW_OFFSET * 0.1,
+          (mousePosition.y - 0.5) * CAMERA_FOLLOW_OFFSET * 0.1,
+          0
+        );
+        cameraControlsRef.current.setLookAt(
+          0,
+          showOptions && !isClosing ? 2 : CAMERA_Y_POSITION,
+          finalZoom,
+          cursorPos.x,
+          cursorPos.y + CAMERA_Y_POSITION,
+          cursorPos.z,
+          true
+        );
+      } else {
+        // On mobile, just set the camera position without following cursor
+        cameraControlsRef.current.setLookAt(
+          0,
+          showOptions && !isClosing ? 2 : CAMERA_Y_POSITION,
+          finalZoom,
+          0,
+          CAMERA_Y_POSITION,
+          0,
+          true
+        );
+      }
     }
   });
 
   return (
     <>
       <BlobHead
-        onHeadClick={toggleOptions}
+        onHeadClick={handleHeadClick}
         motionPermissionGranted={permissionGranted}
         isMobile={isMobile}
         cameraControlsRef={cameraControlsRef}
         showOptions={showOptions}
         isClosing={isClosing}
         emotionState={emotionState}
+        onCameraZoomAnimation={setCameraZoomAnimation}
       />
       {showOptions && (
         <OptionsGroup

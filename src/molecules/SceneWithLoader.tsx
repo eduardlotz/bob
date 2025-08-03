@@ -13,6 +13,8 @@ const LoadingComponent = ({
   onLoaded,
   magneticEnabled,
   setMagneticEnabled,
+  showOptions,
+  setShowOptions,
   ...rest
 }: {
   permissionGranted: boolean;
@@ -24,6 +26,8 @@ const LoadingComponent = ({
   onLoaded?: () => void;
   magneticEnabled?: boolean;
   setMagneticEnabled?: (enabled: boolean) => void;
+  showOptions?: boolean;
+  setShowOptions?: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
   const [isLoading, setIsLoading] = useState(true);
 
@@ -89,6 +93,8 @@ const LoadingComponent = ({
           <Scene
             permissionGranted={permissionGranted}
             onEmotionUpdate={onEmotionUpdate}
+            showOptions={showOptions}
+            setShowOptions={setShowOptions}
             {...rest}
           />
         </SceneWrapper>
@@ -101,6 +107,8 @@ export const SceneWithLoader = ({
   permissionGranted,
   onEmotionUpdate,
   onLoaded,
+  showOptions,
+  setShowOptions,
   ...rest
 }: {
   permissionGranted: boolean;
@@ -110,12 +118,16 @@ export const SceneWithLoader = ({
     getEmotionIcon: any;
   }) => void;
   onLoaded?: () => void;
+  showOptions?: boolean;
+  setShowOptions?: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
   return (
     <LoadingComponent
       permissionGranted={permissionGranted}
       onEmotionUpdate={onEmotionUpdate}
       onLoaded={onLoaded}
+      showOptions={showOptions}
+      setShowOptions={setShowOptions}
       {...rest}
     />
   );
