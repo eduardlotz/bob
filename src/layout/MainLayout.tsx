@@ -10,6 +10,7 @@ import { useAppStore } from "@/store";
 export default function MainLayout({ children }: any) {
   const [windowHeight, setWindowHeight] = useState(0);
   const [sceneLoaded, setSceneLoaded] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
 
   const {
     currentRoute,
@@ -36,6 +37,10 @@ export default function MainLayout({ children }: any) {
     setPermissionGranted(granted);
   };
 
+  const toggleOptions = () => {
+    setShowOptions(!showOptions);
+  };
+
   return (
     <Container>
       <Background style={{ height: windowHeight }}>
@@ -54,8 +59,23 @@ export default function MainLayout({ children }: any) {
             </SensorButton>
           )}
         </AnimatePresence>
+
+        {/* Menu Button - Always visible */}
+        <MenuButton
+          variants={MotionVariants.SpringScaleReversed}
+          initial="initial"
+          animate="animate"
+          custom={0}
+          whileTap="tap"
+          onClick={toggleOptions}
+        >
+          Menü
+        </MenuButton>
+
         <SceneWithLoader
           permissionGranted={permissionGranted}
+          showOptions={showOptions}
+          setShowOptions={setShowOptions}
           onEmotionUpdate={setEmotionData}
           onLoaded={() => setSceneLoaded(true)}
         />
@@ -87,6 +107,29 @@ const SensorButton = styled(Button)`
   width: fit-content;
   margin: auto;
   max-width: calc(100% - 20px);
+  border: solid 2px #dbdbed;
+  font-weight: 700;
+  font-size: 1rem;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(5px);
+  color: white;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+
+  &:active,
+  &:hover {
+    border: solid 2px #dbdbed;
+    color: white;
+    box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.1);
+  }
+`;
+
+const MenuButton = styled(Button)`
+  position: absolute;
+  z-index: 100;
+  top: 40px;
+  left: 40px;
+  width: fit-content;
   border: solid 2px #dbdbed;
   font-weight: 700;
   font-size: 1rem;

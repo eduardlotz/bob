@@ -1,6 +1,6 @@
-import { Text3D, Center, Outlines } from "@react-three/drei";
+import { Text3D, Outlines } from "@react-three/drei";
 import { useRef, useEffect, useState } from "react";
-import { Vector3, Group, Mesh, Box3 } from "three";
+import { Vector3, Group, Mesh } from "three";
 import { useSpring, a } from "@react-spring/three";
 
 const FONT_PATH = "/fonts/OpenRundeBold.json";
@@ -17,11 +17,14 @@ export const EmotionCounter = ({ tapCount }: { tapCount: number }) => {
 
   useEffect(() => {
     if (!numberRef.current) return;
-    const bbox = new Box3().setFromObject(numberRef.current);
-    const size = new Vector3();
-    bbox.getSize(size);
-    const magicFactor = 1 / formattedNumber.length;
-    setNumberWidth(size.x - formattedNumber.length - magicFactor);
+
+    const geometry = numberRef.current.geometry;
+    geometry.computeBoundingBox();
+    const box = geometry.boundingBox;
+    if (!box) return;
+
+    const width = box.max.x - box.min.x;
+    setNumberWidth(width);
   }, [formattedNumber]);
 
   const responsivePosition = new Vector3(-numberWidth / 2, 0.5, -1);
@@ -46,25 +49,23 @@ export const EmotionCounter = ({ tapCount }: { tapCount: number }) => {
   }, [tapCount]);
 
   return (
-    <Center position={responsivePosition}>
-      <a.group ref={groupRef} scale={spring.scale}>
-        <Text3D
-          font={FONT_PATH}
-          size={3}
-          height={1.5}
-          curveSegments={32}
-          letterSpacing={-0.15}
-          bevelEnabled={true}
-          bevelSize={0.03}
-          bevelThickness={0.2}
-          bevelSegments={6}
-          ref={numberRef}
-        >
-          {formattedNumber}
-          <meshToonMaterial color="white" />
-          <Outlines thickness={0.011} color="black" screenspace />
-        </Text3D>
-      </a.group>
-    </Center>
+    <a.group ref={groupRef} scale={spring.scale} position={responsivePosition}>
+      <Text3D
+        font={FONT_PATH}
+        size={3}
+        height={1.5}
+        curveSegments={32}
+        letterSpacing={-0.15}
+        bevelEnabled={true}
+        bevelSize={0.03}
+        bevelThickness={0.2}
+        bevelSegments={6}
+        ref={numberRef}
+      >
+        {formattedNumber}
+        <meshToonMaterial color="white" />
+        <Outlines thickness={0.011} color="black" screenspace />
+      </Text3D>
+    </a.group>
   );
 };
