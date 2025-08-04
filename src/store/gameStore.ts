@@ -3,6 +3,49 @@ import { devtools } from "zustand/middleware";
 import { persist } from "zustand/middleware";
 import { THEME_CONFIG } from "./upgradesConfig";
 
+// Store version for migrations
+const STORE_VERSION = 2;
+
+// Migration functions
+function migrateStore(oldState: any, version: number): any {
+  let migratedState = { ...oldState };
+
+  // Migration from version 1 to 2
+  if (version < 2) {
+    console.log("Migrating store from version", version, "to", STORE_VERSION);
+
+    // Update theme prices
+    if (migratedState.themes) {
+      migratedState.themes = migratedState.themes.map((theme: any) => {
+        if (theme.id === "dark") {
+          return { ...theme, cost: 1000 };
+        } else if (theme.id === "pastel") {
+          return { ...theme, cost: 2000 };
+        } else if (theme.id === "neon") {
+          return { ...theme, cost: 3000 };
+        }
+        return theme;
+      });
+    }
+
+    // Update effect prices
+    if (migratedState.upgrades) {
+      migratedState.upgrades = migratedState.upgrades.map((upgrade: any) => {
+        if (upgrade.id === "tap_effect_confetti") {
+          return { ...upgrade, baseCost: 1500 };
+        } else if (upgrade.id === "tap_effect_hearts") {
+          return { ...upgrade, baseCost: 2500 };
+        } else if (upgrade.id === "tap_effect_stars") {
+          return { ...upgrade, baseCost: 3500 };
+        }
+        return upgrade;
+      });
+    }
+  }
+
+  return migratedState;
+}
+
 // Upgrade types
 export interface Upgrade {
   id: string;
@@ -199,7 +242,7 @@ const initialUpgrades: Upgrade[] = [
     id: "tap_effect_confetti",
     name: "Confetti Effect",
     description: "Colorful confetti pieces",
-    baseCost: 300,
+    baseCost: 1500,
     costMultiplier: 1,
     level: 0,
     maxLevel: 1,
@@ -213,7 +256,7 @@ const initialUpgrades: Upgrade[] = [
     id: "tap_effect_hearts",
     name: "Heart Effect",
     description: "Floating heart particles",
-    baseCost: 400,
+    baseCost: 2500,
     costMultiplier: 1,
     level: 0,
     maxLevel: 1,
@@ -227,7 +270,7 @@ const initialUpgrades: Upgrade[] = [
     id: "tap_effect_stars",
     name: "Star Effect",
     description: "Shining star particles",
-    baseCost: 500,
+    baseCost: 3500,
     costMultiplier: 1,
     level: 0,
     maxLevel: 1,
@@ -292,7 +335,16 @@ const initialThemes: Theme[] = Object.values(THEME_CONFIG).map(
     id: themeConfig.id,
     name: themeConfig.name,
     description: themeConfig.description,
-    cost: themeConfig.id === "default" ? 0 : 200 + Math.random() * 300, // Random cost for non-default themes
+    cost:
+      themeConfig.id === "default"
+        ? 0
+        : themeConfig.id === "dark"
+        ? 1000
+        : themeConfig.id === "pastel"
+        ? 2000
+        : themeConfig.id === "neon"
+        ? 3000
+        : 0,
     purchased: themeConfig.id === "default",
     active: themeConfig.id === "default",
     colors: themeConfig.colors,
@@ -700,6 +752,10 @@ export const useGameStore = create<GameStore>()(
       }),
       {
         name: "game-store",
+        version: STORE_VERSION,
+        migrate: (persistedState: any, version: number) => {
+          return migrateStore(persistedState, version);
+        },
         partialize: (state) => ({
           taps: state.taps,
           upgrades: state.upgrades,
@@ -754,4 +810,27 @@ export const stopAutoTap = () => {
     clearInterval(autoTapInterval);
     autoTapInterval = null;
   }
+};
+
+// Utility function to manually trigger store migration
+export const triggerStoreMigration = () => {
+  const store = useGameStore.getState();
+  const currentState = {
+    taps: store.taps,
+    upgrades: store.upgrades,
+    decorations: store.decorations,
+    themes: store.themes,
+    currentTheme: store.currentTheme,
+    fisheyeIntensity: store.fisheyeIntensity,
+  };
+
+  const migratedState = migrateStore(currentState, 1);
+
+  // Update the store with migrated data
+  useGameStore.setState({
+    ...store,
+    ...migratedState,
+  });
+
+  console.log("Store migration completed");
 };
