@@ -27,7 +27,7 @@ export const EmotionCounter = ({ tapCount }: { tapCount: number }) => {
     setNumberWidth(width);
   }, [formattedNumber]);
 
-  const responsivePosition = new Vector3(-numberWidth / 2, 0.5, -1);
+  const responsivePosition = new Vector3(-numberWidth / 2, 0.5, -2);
 
   const [spring, api] = useSpring(() => ({
     scale: 1,

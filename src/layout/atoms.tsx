@@ -128,8 +128,7 @@ export const Button = styled(motion.button)<{
   justify-content: center;
   align-items: center;
   gap: 10px;
-  border-radius: 50px;
-
+  border-radius: 24px;
   background: #121212;
   color: #fff;
   text-align: center;

@@ -68,8 +68,9 @@ export default function MainLayout({ children }: any) {
           custom={0}
           whileTap="tap"
           onClick={toggleOptions}
+          layout="size"
         >
-          Menü
+          {showOptions ? "Schließen" : "Menü"}
         </MenuButton>
 
         <SceneWithLoader
@@ -98,15 +99,41 @@ const Background = styled.div`
   z-index: 0;
 `;
 
-const SensorButton = styled(Button)`
+const MenuButton = styled(Button)`
+  position: absolute;
+  z-index: 100;
+  top: 16px;
+  right: 16px;
+  width: fit-content;
+  font-weight: 700;
+  font-size: 1rem;
+  background: rgba(100, 100, 100, 0.6);
+  backdrop-filter: blur(5px);
+  color: #ffffff;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.3) inset,
+    0 -1px 6px 0 rgba(0, 0, 0, 0.1) inset;
+
+  &:active,
+  &:hover {
+    color: white;
+    background: rgba(100, 100, 100, 0.8);
+    box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.3) inset,
+      0 -1px 6px 0 rgba(0, 0, 0, 0.1) inset, 0 1px 4px 0 rgba(0, 0, 0, 0.1);
+  }
+`;
+
+const SensorButton = styled(MenuButton)`
   position: absolute;
   z-index: 100;
   left: 0;
   right: 0;
-  bottom: 40px;
-  width: fit-content;
+  bottom: 20px;
+  top: unset;
   margin: auto;
-  max-width: calc(100% - 20px);
+  width: calc(100% - 32px);
+
+  /* min-width: fit-content;
   border: solid 2px #dbdbed;
   font-weight: 700;
   font-size: 1rem;
@@ -121,28 +148,5 @@ const SensorButton = styled(Button)`
     border: solid 2px #dbdbed;
     color: white;
     box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.1);
-  }
-`;
-
-const MenuButton = styled(Button)`
-  position: absolute;
-  z-index: 100;
-  top: 40px;
-  left: 40px;
-  width: fit-content;
-  border: solid 2px #dbdbed;
-  font-weight: 700;
-  font-size: 1rem;
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(5px);
-  color: white;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
-
-  &:active,
-  &:hover {
-    border: solid 2px #dbdbed;
-    color: white;
-    box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.1);
-  }
+  } */
 `;

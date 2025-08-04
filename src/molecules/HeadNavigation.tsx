@@ -18,11 +18,14 @@ import { useAppStore, ROUTES } from "@/store";
 import { useNavigate } from "react-router-dom";
 
 //#region constants
-export const CAMERA_Y_POSITION = 0;
+export const CAMERA_Y_POSITION = 1;
+export const CAMERA_HEIGHT = 2; // New constant for camera height only
 export const CAMERA_FOLLOW_OFFSET = 2.5;
+export const OPTIONS_Y_OFFSET = -1; // Y offset for options positioning
 
 export const VISIBLE_OPTIONS_CAMERA_ZOOM = 10;
-export const HIDDEN_OPTIONS_CAMERA_ZOOM = 1.75;
+// export const HIDDEN_OPTIONS_CAMERA_ZOOM = 1.75;
+export const HIDDEN_OPTIONS_CAMERA_ZOOM = 2.5;
 export const FUNNY_FISHEYE_ZOOM = 1.15;
 
 export const OPTION_RADIUS_OFFSET = 0.004;
@@ -261,7 +264,7 @@ export function HeadNavigation({
         calculateAcceleratedRotation(acceleration, orientation);
       cameraControlsRef.current.setLookAt(
         0,
-        showOptions && !isClosing ? 2 : CAMERA_Y_POSITION,
+        showOptions && !isClosing ? 2 : CAMERA_HEIGHT,
         finalZoom,
         -targetRotX,
         targetRotY + CAMERA_Y_POSITION,
@@ -278,7 +281,7 @@ export function HeadNavigation({
         );
         cameraControlsRef.current.setLookAt(
           0,
-          showOptions && !isClosing ? 2 : CAMERA_Y_POSITION,
+          showOptions && !isClosing ? 2 : CAMERA_HEIGHT,
           finalZoom,
           cursorPos.x,
           cursorPos.y + CAMERA_Y_POSITION,
@@ -289,7 +292,7 @@ export function HeadNavigation({
         // On mobile, just set the camera position without following cursor
         cameraControlsRef.current.setLookAt(
           0,
-          showOptions && !isClosing ? 2 : CAMERA_Y_POSITION,
+          showOptions && !isClosing ? 2 : CAMERA_HEIGHT,
           finalZoom,
           0,
           CAMERA_Y_POSITION,
@@ -358,7 +361,7 @@ function OptionsGroup({
 }) {
   const count = ROUTES.length;
 
-  const screenCenter = new THREE.Vector3(-1, -2, 0);
+  const screenCenter = new THREE.Vector3(-1, OPTIONS_Y_OFFSET, 0);
 
   // Calculate appropriate radii based on screen dimensions
   // Use the smaller dimension to ensure elements stay within viewport
