@@ -10,11 +10,17 @@ let isCalibrated = false;
 let calibrationQuaternion = new Quaternion();
 let lastOrientation = { alpha: 0, beta: 0, gamma: 0 };
 let lastCalibrationTime = 0; // timestamp in ms
+let autoCalibrationEnabled = true; // Enable auto-calibration by default
 
 export function resetCalibration() {
   isCalibrated = false;
   calibrationQuaternion.set(0, 0, 0, 1);
   lastOrientation = { alpha: 0, beta: 0, gamma: 0 };
+  lastCalibrationTime = Date.now();
+}
+
+export function setAutoCalibrationEnabled(enabled: boolean) {
+  autoCalibrationEnabled = enabled;
 }
 
 export function calculateAcceleratedRotation(
@@ -68,8 +74,8 @@ export function calculateAcceleratedRotation(
     isCalibrated = true;
     lastCalibrationTime = now;
     lastOrientation = { ...orientation };
-  } else {
-    // Automatic re-calibration if phone is held fairly still & level for >1s
+  } else if (autoCalibrationEnabled) {
+    // Enhanced auto-calibration logic for better UX
     const accelMagnitude =
       Math.abs(acceleration.x ?? 0) +
       Math.abs(acceleration.y ?? 0) +
@@ -77,10 +83,11 @@ export function calculateAcceleratedRotation(
 
     const timeSinceCalib = now - lastCalibrationTime;
 
+    // More responsive auto-calibration: shorter time (500ms) and more lenient conditions
     if (
-      timeSinceCalib > 1000 &&
-      accelMagnitude < 0.5 &&
-      orientationChange < 2 // degrees total change
+      timeSinceCalib > 500 && // Reduced from 1000ms to 500ms
+      accelMagnitude < 1.0 && // Increased from 0.5 to 1.0 for more lenient detection
+      orientationChange < 5 // Increased from 2 to 5 degrees for more responsive calibration
     ) {
       calibrationQuaternion.copy(deviceQuaternion).invert();
       lastCalibrationTime = now;

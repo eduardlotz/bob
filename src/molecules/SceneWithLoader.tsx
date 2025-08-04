@@ -1,108 +1,76 @@
-import { FillRow } from "@/layout";
+import { FillRow, FillColumn } from "@/layout";
 import { Logo, MotionIconWrapper } from "@/layout/atoms";
 import { MotionVariants } from "@/styles/motion";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useProgress } from "@react-three/drei";
 import Scene from "@/molecules/Scene";
+import { UILayer } from "@/components/UILayer";
+import { useAppStore } from "@/store";
+import { useAnimations } from "@/hooks/useAnimations";
 
-// Create a loading component with animated bounce effect
-const LoadingComponent = ({
-  permissionGranted,
-  onEmotionUpdate,
-  onLoaded,
-  magneticEnabled,
-  setMagneticEnabled,
-  showOptions,
-  setShowOptions,
-  ...rest
-}: {
-  permissionGranted: boolean;
-  onEmotionUpdate?: (data: {
-    emotionState: any;
-    tapCount: number;
-    getEmotionIcon: any;
-  }) => void;
-  onLoaded?: () => void;
-  magneticEnabled?: boolean;
-  setMagneticEnabled?: (enabled: boolean) => void;
-  showOptions?: boolean;
-  setShowOptions?: React.Dispatch<React.SetStateAction<boolean>>;
-}) => {
+// Custom loader component that tracks its own progress
+export const CustomLoader = () => {
+  const { progress } = useProgress();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Add delay before starting the exit animation
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-      if (onLoaded) {
-        // Wait for fade-out animation to finish before notifying
-        setTimeout(onLoaded, 800);
-      }
-    }, 2000); // 2 second delay
+    // Only start the exit animation when progress is 100%
+    if (progress >= 100) {
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 500); // Small delay to ensure everything is ready
 
-    return () => clearTimeout(timer);
-  }, []);
+      return () => clearTimeout(timer);
+    }
+  }, [progress]);
 
   return (
-    <>
-      <AnimatePresence>
-        {isLoading && (
-          <LoadingWrapper
-            initial={{ opacity: 1 }}
-            animate={{ opacity: 1 }}
-            exit={{
-              opacity: 0,
-              transition: {
-                duration: 0.8,
-                ease: "easeInOut",
-              },
-            }}
-          >
-            <FillRow $align="center" $justify="center">
-              <MotionIconWrapper
-                variants={MotionVariants.Pulse}
-                animate="animate"
-                exit={{
-                  scale: [1, 1.3, 0.8, 1.1, 0],
-                  transition: {
-                    duration: 0.8,
-                    times: [0, 0.3, 0.5, 0.7, 1],
-                    ease: "easeInOut",
-                  },
-                }}
-                initial="initial"
-              >
-                <Logo />
-              </MotionIconWrapper>
-            </FillRow>
-          </LoadingWrapper>
-        )}
-      </AnimatePresence>
-
-      {!isLoading && (
-        <SceneWrapper
-          initial={{ opacity: 0 }}
-          animate={{ opacity: isLoading ? 0 : 1 }}
-          transition={{
-            duration: 0.8,
-            delay: 0.4,
-            ease: "easeInOut",
+    <AnimatePresence>
+      {isLoading && (
+        <LoadingWrapper
+          initial={{ opacity: 1 }}
+          animate={{ opacity: 1 }}
+          exit={{
+            opacity: 0,
+            transition: {
+              duration: 0.8,
+              ease: "easeInOut",
+            },
           }}
         >
-          <Scene
-            permissionGranted={permissionGranted}
-            onEmotionUpdate={onEmotionUpdate}
-            showOptions={showOptions}
-            setShowOptions={setShowOptions}
-            {...rest}
-          />
-        </SceneWrapper>
+          <FillColumn $align="center" $justify="center">
+            <MotionIconWrapper
+              variants={MotionVariants.Pulse}
+              animate="animate"
+              exit={{
+                scale: [1, 1.3, 0.8, 1.1, 0],
+                transition: {
+                  duration: 0.8,
+                  times: [0, 0.3, 0.5, 0.7, 1],
+                  ease: "easeInOut",
+                },
+              }}
+              initial="initial"
+            >
+              <Logo />
+            </MotionIconWrapper>
+
+            <ProgressContainer>
+              <ProgressBar>
+                <ProgressFill style={{ width: `${progress}%` }} />
+              </ProgressBar>
+              <ProgressText>{Math.round(progress)}%</ProgressText>
+            </ProgressContainer>
+          </FillColumn>
+        </LoadingWrapper>
       )}
-    </>
+    </AnimatePresence>
   );
 };
 
+// Main SceneWithLoader component
 export const SceneWithLoader = ({
   permissionGranted,
   onEmotionUpdate,
@@ -121,15 +89,47 @@ export const SceneWithLoader = ({
   showOptions?: boolean;
   setShowOptions?: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
+  const [sceneLoaded, setSceneLoaded] = useState(false);
+  const { isMobile, emotionData, setPermissionGranted } = useAppStore();
+
+  // Initialize animations hook
+  useAnimations();
+
+  // Set scene as loaded when component mounts (after Suspense resolves)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSceneLoaded(true);
+      onLoaded?.();
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
-    <LoadingComponent
-      permissionGranted={permissionGranted}
-      onEmotionUpdate={onEmotionUpdate}
-      onLoaded={onLoaded}
-      showOptions={showOptions}
-      setShowOptions={setShowOptions}
-      {...rest}
-    />
+    <>
+      <Suspense fallback={null}>
+        {!sceneLoaded && <CustomLoader />}
+        <Scene
+          permissionGranted={permissionGranted}
+          onEmotionUpdate={onEmotionUpdate}
+          showOptions={showOptions}
+          setShowOptions={setShowOptions}
+          {...rest}
+        />
+      </Suspense>
+
+      {sceneLoaded && (
+        <UILayer
+          permissionGranted={permissionGranted}
+          isMobile={isMobile}
+          sceneLoaded={sceneLoaded}
+          showOptions={showOptions || false}
+          setShowOptions={setShowOptions || (() => {})}
+          setPermissionGranted={setPermissionGranted}
+          emotionState={emotionData?.emotionState || "normal"}
+        />
+      )}
+    </>
   );
 };
 
@@ -154,11 +154,32 @@ const LoadingWrapper = styled(motion.div)`
   }
 `;
 
-const SceneWrapper = styled(motion.div)`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 0;
+const ProgressContainer = styled.div`
+  margin-top: 40px;
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+`;
+
+const ProgressBar = styled.div`
+  width: 100%;
+  height: 4px;
+  background-color: #333333;
+  border-radius: 2px;
+  overflow: hidden;
+`;
+
+const ProgressFill = styled.div`
+  height: 100%;
+  background-color: #ffffff;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+`;
+
+const ProgressText = styled.div`
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
 `;

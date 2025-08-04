@@ -3,12 +3,12 @@ import { devtools } from "zustand/middleware";
 
 // Route definitions
 export const ROUTES = [
-  { path: "/", label: "Home", component: "home" },
-  { path: "/about", label: "Über mich", component: "about" },
-  { path: "/portfolio", label: "Portfolio", component: "portfolio" },
-  { path: "/technical", label: "Tech", component: "technical" },
-  { path: "/creative", label: "Kreativ", component: "creative" },
-  { path: "/guestbook", label: "Gästebuch", component: "guestbook" },
+  { path: "#", label: "Home", component: "home" },
+  { path: "#", label: "About me", component: "about" },
+  { path: "#", label: "Portfolio", component: "portfolio" },
+  { path: "#", label: "Technical", component: "technical" },
+  { path: "#", label: "Creative", component: "creative" },
+  { path: "#", label: "Guestbook", component: "guestbook" },
 ] as const;
 
 // Scene related types

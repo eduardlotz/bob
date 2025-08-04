@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useGameStore } from "@/store/gameStore";
 
 export type EmotionState = "normal" | "happy" | "dizzy" | "mad";
 
@@ -70,6 +71,11 @@ export function useBlobEmotions() {
 
     // Always increment tap count, regardless of emotion state or cooldown
     setTapCount((prev) => prev + 1);
+
+    // Add tap to game store
+    const gameStore = useGameStore.getState();
+    gameStore.addManualTap();
+    gameStore.addTaps(1); // Also add to total taps
 
     // Increment dizzy counter (separate from persistent tap count)
     setDizzyCounter((prev) => prev + 1);

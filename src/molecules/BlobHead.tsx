@@ -473,7 +473,7 @@ export function BlobHead({
         handleMobileMovement(clock, delta);
       } else {
         // Handle mouse movement for desktop
-        handleDesktopMovement(clock, delta);
+        handleDesktopMovement(clock, delta, showOptions);
       }
     }
 
@@ -564,10 +564,18 @@ export function BlobHead({
   };
 
   // Handle desktop mouse movement
-  const handleDesktopMovement = (clock: Clock, delta: number) => {
+  const handleDesktopMovement = (
+    clock: Clock,
+    delta: number,
+    showOptions: boolean
+  ) => {
     // Calculate target rotations based on mouse position
+    // Fix Y-axis inversion: cursor at top should make head look up (negative rotation)
     const targetRotY = mousePosition.x * MAX_ROTATION_X;
-    const targetRotX = mousePosition.y * MAX_ROTATION_Y;
+    // const targetRotX = mousePosition.y * MAX_ROTATION_Y;
+    const targetRotX =
+      (mousePosition.y - (showOptions ? 0 : CAMERA_Y_POSITION)) *
+      MAX_ROTATION_Y;
     const targetRotZ = -mousePosition.x * MAX_ROTATION_X;
 
     // Apply desktop specific head rotation
@@ -578,9 +586,10 @@ export function BlobHead({
     headRef.current.position.y = floatY + HEAD_POSITION_Y;
 
     // Set camera look-at for desktop
+    // Fix camera Y-axis inversion to match head movement
     const cursorPos = new Vector3(
       mousePosition.x * 0.2,
-      mousePosition.y * 0.2,
+      -(mousePosition.y - 0.5) * 0.4, // Invert Y and center around 0.5
       0
     );
 
@@ -857,21 +866,28 @@ export function BlobHead({
   };
 
   const createParticles = (x: number, y: number, z: number) => {
-    const numParticles = 50; // Increased particle count
+    // Use the new tap effect system if available
+    if ((window as any).createTapParticles) {
+      (window as any).createTapParticles(x, y, z, 15);
+      return;
+    }
+
+    // Fallback to old particle system
+    const numParticles = 50;
     const newParticles: TapParticle[] = [];
 
     for (let i = 0; i < numParticles; i++) {
       const angle = (Math.PI * 2 * i) / numParticles;
-      const speed = 0.05 + Math.random() * 0.1; // Reduced speed for smaller spread
+      const speed = 0.05 + Math.random() * 0.1;
       newParticles.push({
         id: particleIdCounter.current++,
         position: [x, y, z],
         velocity: [
           Math.cos(angle) * speed,
-          Math.sin(angle) * speed + 0.05, // Reduced upward bias
+          Math.sin(angle) * speed + 0.05,
           (Math.random() - 0.5) * speed,
         ],
-        life: 0.8, // Slightly shorter life
+        life: 0.8,
         maxLife: 0.8,
       });
     }
@@ -923,7 +939,7 @@ export function BlobHead({
       onCameraZoomAnimation?.(false);
     }, 300);
 
-    // Only trigger emotion animation, not menu opening
+    // Trigger both game tap and emotion animation
     onHeadClick();
   };
 

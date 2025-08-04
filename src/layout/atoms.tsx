@@ -119,7 +119,6 @@ export const Button = styled(motion.button)<{
   variant?: "primary" | "secondary";
 }>`
   display: flex;
-  /* min-width: 310px; */
   width: 100%;
   max-width: 100%;
   padding: 20px 30px;
@@ -132,11 +131,11 @@ export const Button = styled(motion.button)<{
   background: #121212;
   color: #fff;
   text-align: center;
-  font-size: 14px;
-  font-style: normal;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 1rem;
   line-height: normal;
-  letter-spacing: 1.4px;
+  letter-spacing: 1.5px;
+  font-family: "Open Sauce Two";
   text-transform: uppercase;
 
   box-shadow: 0px 0px 0px 0px #000;
@@ -164,4 +163,54 @@ export const RoundIconButton = styled(Button)`
 
 export const IconLink = styled(motion.create(Link))`
   text-decoration: none;
+`;
+
+export const MenuButton = styled(Button)`
+  position: absolute;
+  z-index: 100;
+  top: 16px;
+  bottom: unset;
+  right: 0;
+  left: 0;
+  margin: 0 auto;
+  width: fit-content;
+
+  background: rgba(100, 100, 100, 0.6);
+  backdrop-filter: blur(5px);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.3) inset,
+    0 -1px 6px 0 rgba(0, 0, 0, 0.1) inset;
+
+  color: #ffffff;
+  pointer-events: auto;
+
+  &:active,
+  &:hover {
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.25);
+      box-shadow: none;
+    }
+  }
+
+  > span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: fit-content;
+    width: fit-content;
+  }
+`;
+
+export const SensorButton = styled(MenuButton)`
+  position: absolute;
+  z-index: 100;
+  left: 0;
+  top: unset;
+  right: 0;
+  bottom: 100px;
+  box-shadow: none;
+
+  margin: 0 auto;
+  width: fit-content;
+  pointer-events: auto;
 `;

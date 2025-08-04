@@ -4,13 +4,17 @@ import {
   PerspectiveCamera,
   Grid,
   Environment,
+  Text,
 } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { HeadNavigation } from "./HeadNavigation";
 import { EmotionCounter } from "./EmotionBar";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { BackgroundPlanet } from "@/3d-objects/BackgroundPlanet";
+import { ParticleEffects } from "@/3d-objects/ParticleEffects";
+import { useGameStore } from "@/store/gameStore";
+import { FISHEYE_CONFIG } from "@/store/upgradesConfig";
 
 const Scene = ({
   permissionGranted,
@@ -29,6 +33,20 @@ const Scene = ({
 }) => {
   const cameraControlsRef = useRef<CameraControls>(null!);
   const [tapCount, setTapCount] = useState(0);
+  const [emotionState, setEmotionState] = useState("normal");
+
+  // Get decorations and fisheye intensity from game store
+  const { decorations, fisheyeIntensity } = useGameStore();
+
+  // Check fisheye intensity decoration
+  const fisheyeDecoration = decorations.find(
+    (d) => d.id === "fisheye_intensity"
+  );
+  const fisheyeEnabled =
+    fisheyeDecoration?.purchased && fisheyeDecoration?.enabled;
+  const currentFisheyeIntensity = fisheyeEnabled
+    ? fisheyeIntensity
+    : FISHEYE_CONFIG.MIN; // Use store value
 
   useKeyPress("Escape", () => {
     if (showOptions && setShowOptions) {
@@ -45,48 +63,56 @@ const Scene = ({
   return (
     <>
       <FullScreenCanvas onPointerMissed={hideOptionsIfOpen}>
-        <Fisheye zoom={0}>
-          <Grid
-            args={[8, 8]}
-            sectionThickness={2}
-            sectionColor="#E0DEE6"
-            sectionSize={1}
-            cellThickness={0}
-            fadeDistance={4}
-            position={[0, -2, 0]}
-          />
-
-          <CameraControls
-            ref={cameraControlsRef}
-            minPolarAngle={0}
-            maxPolarAngle={Math.PI / 1.6}
-            maxDistance={10}
-            minDistance={1}
-          />
-          <ambientLight intensity={2} />
-          <PerspectiveCamera
-            makeDefault
-            position={[20, 20, 20]}
-            rotateX={Math.PI * 20}
-          />
-          <directionalLight intensity={1.2} position={[2, 4, 5]} />
-          <Environment preset="city" />
-          <BackgroundPlanet />
-
-          <HeadNavigation
-            showOptions={showOptions || false}
-            setShowOptions={setShowOptions || (() => {})}
-            cameraControlsRef={cameraControlsRef} // pass down for portal click
-            permissionGranted={permissionGranted}
-            onEmotionUpdate={(data) => {
-              setTapCount(data.tapCount);
-              onEmotionUpdate?.(data);
-            }}
-          />
-
-          {/* 3D Emotion Counter */}
-          <EmotionCounter tapCount={tapCount || 0} />
-        </Fisheye>
+        <Suspense
+          fallback={
+            <mesh>
+              <boxGeometry args={[1, 1, 1]} />
+              <meshBasicMaterial color="white" />
+            </mesh>
+          }
+        >
+          <Fisheye zoom={currentFisheyeIntensity}>
+            <Grid
+              args={[8, 8]}
+              sectionThickness={2}
+              sectionColor="#E0DEE6"
+              sectionSize={1}
+              cellThickness={0}
+              fadeDistance={4}
+              position={[0, -2, 0]}
+            />
+            <CameraControls
+              ref={cameraControlsRef}
+              minPolarAngle={0}
+              maxPolarAngle={Math.PI / 1.6}
+              maxDistance={10}
+              minDistance={1}
+            />
+            <ambientLight intensity={2} />
+            <PerspectiveCamera
+              makeDefault
+              position={[20, 20, 20]}
+              rotateX={Math.PI * 20}
+            />
+            <directionalLight intensity={1.2} position={[2, 4, 5]} />
+            <Environment preset="city" />
+            <BackgroundPlanet />
+            <ParticleEffects />
+            <HeadNavigation
+              showOptions={showOptions || false}
+              setShowOptions={setShowOptions || (() => {})}
+              cameraControlsRef={cameraControlsRef} // pass down for portal click
+              permissionGranted={permissionGranted}
+              onEmotionUpdate={(data) => {
+                setTapCount(data.tapCount);
+                setEmotionState(data.emotionState);
+                onEmotionUpdate?.(data);
+              }}
+            />
+            {/* 3D Emotion Counter */}
+            <EmotionCounter tapCount={tapCount || 0} />
+          </Fisheye>
+        </Suspense>
       </FullScreenCanvas>
     </>
   );
