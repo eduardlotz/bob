@@ -6,6 +6,8 @@ import { GlobalStyle } from "@/styles/global";
 import { Toaster } from "sonner";
 import styled from "styled-components";
 import { useAppStore } from "@/store";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { useAnimations } from "@/hooks/useAnimations";
 
 // Route Components
 import Home from "./routes/Home";
@@ -19,13 +21,16 @@ export default function App() {
   const location = useLocation();
   const { navigateToRoute } = useAppStore();
 
+  // Initialize animations hook
+  useAnimations();
+
   // Sync router location with store and handle dialog opening
   useEffect(() => {
     navigateToRoute(location.pathname);
   }, [location.pathname, navigateToRoute]);
 
   return (
-    <>
+    <ThemeProvider>
       <GlobalStyle />
 
       <Toaster
@@ -44,7 +49,6 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/about" element={<About />} />
-                <Route path="/portfolio" element={<Portfolio />} />
                 <Route path="/technical" element={<Technical />} />
                 <Route path="/creative" element={<Creative />} />
                 <Route path="/guestbook" element={<Guestbook />} />
@@ -53,7 +57,7 @@ export default function App() {
           </ContentWrapper>
         </MainLayout>
       </FullScreen>
-    </>
+    </ThemeProvider>
   );
 }
 

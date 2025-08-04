@@ -1791,6 +1791,7 @@ __metadata:
     motion: "npm:^12.6.3"
     postprocessing: "npm:^6.37.2"
     react: "npm:19.1.0"
+    react-colorful: "npm:^5.6.1"
     react-dom: "npm:19.1.0"
     react-router-dom: "npm:^7.7.1"
     sonner: "npm:^2.0.3"
@@ -3017,6 +3018,16 @@ __metadata:
   version: 2.3.0
   resolution: "punycode@npm:2.3.0"
   checksum: 10c0/8e6f7abdd3a6635820049e3731c623bbef3fedbf63bbc696b0d7237fdba4cefa069bc1fa62f2938b0fbae057550df7b5318f4a6bcece27f1907fc75c54160bee
+  languageName: node
+  linkType: hard
+
+"react-colorful@npm:^5.6.1":
+  version: 5.6.1
+  resolution: "react-colorful@npm:5.6.1"
+  peerDependencies:
+    react: ">=16.8.0"
+    react-dom: ">=16.8.0"
+  checksum: 10c0/48eb73cf71e10841c2a61b6b06ab81da9fffa9876134c239bfdebcf348ce2a47e56b146338e35dfb03512c85966bfc9a53844fc56bc50154e71f8daee59ff6f0
   languageName: node
   linkType: hard
 

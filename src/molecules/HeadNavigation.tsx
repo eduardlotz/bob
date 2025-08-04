@@ -4,7 +4,6 @@ import { useFrame } from "@react-three/fiber";
 import { Html, Float, CameraControls } from "@react-three/drei";
 import { motion } from "motion/react";
 import { BlobHead } from "./BlobHead";
-import { LockIcon } from "@/layout/icons";
 import {
   useDeviceOrientation,
   DeviceOrientation,
@@ -18,15 +17,18 @@ import { useAppStore, ROUTES } from "@/store";
 import { useNavigate } from "react-router-dom";
 
 //#region constants
-export const CAMERA_Y_POSITION = 0;
+export const CAMERA_Y_POSITION = 1;
+export const CAMERA_HEIGHT = 2; // New constant for camera height only
 export const CAMERA_FOLLOW_OFFSET = 2.5;
+export const OPTIONS_Y_OFFSET = -1; // Y offset for options positioning
 
 export const VISIBLE_OPTIONS_CAMERA_ZOOM = 10;
-export const HIDDEN_OPTIONS_CAMERA_ZOOM = 1.75;
+// export const HIDDEN_OPTIONS_CAMERA_ZOOM = 1.75;
+export const HIDDEN_OPTIONS_CAMERA_ZOOM = 2.5;
 export const FUNNY_FISHEYE_ZOOM = 1.15;
 
 export const OPTION_RADIUS_OFFSET = 0.004;
-export const OPTIONS_BASE_RADIUS_MULTIPLIER = 1.5;
+export const OPTIONS_BASE_RADIUS_MULTIPLIER = 1.9;
 
 export const MOTION_VARIANTS = {
   slideInDown: {
@@ -122,7 +124,6 @@ export const MOTION_VARIANTS = {
     initial: {
       scale: 0.8,
       opacity: 0,
-      backgroundColor: "#2979FF",
       boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
       border: "2px solid transparent",
       transition: { type: "spring" as const, duration: 0.6, bounce: 0.4 },
@@ -134,7 +135,6 @@ export const MOTION_VARIANTS = {
     },
     hover: {
       scale: 1.1,
-      backgroundColor: "#4285F4",
       transition: { type: "spring" as const, duration: 0.3, bounce: 0.5 },
     },
     tap: {
@@ -146,20 +146,18 @@ export const MOTION_VARIANTS = {
       hovered?: boolean;
       attractionStrength?: number;
       isAttracted?: boolean;
+      isDisabled?: boolean;
     }) => ({
-      scale: 1 + (custom?.attractionStrength || 0) * 0.15,
-      opacity: 1,
-      backgroundColor: custom?.hovered ? "#4285F4" : "#2979FF",
-      boxShadow: custom?.isAttracted
-        ? `0 8px 16px rgba(66, 133, 244, ${
-            0.3 + (custom?.attractionStrength || 0) * 0.4
-          })`
-        : "0 4px 8px rgba(0, 0, 0, 0.2)",
-      border: custom?.isAttracted
-        ? `2px solid rgba(66, 133, 244, ${
-            0.5 + (custom?.attractionStrength || 0) * 0.5
-          })`
-        : "2px solid transparent",
+      scale: custom?.isDisabled
+        ? 1
+        : 1 + (custom?.attractionStrength || 0) * 0.15,
+      opacity: custom?.isDisabled ? 0.5 : 1,
+      boxShadow:
+        custom?.isAttracted && !custom?.isDisabled
+          ? `0 8px 16px rgba(66, 133, 244, ${
+              0.3 + (custom?.attractionStrength || 0) * 0.4
+            })`
+          : "0 4px 8px rgba(0, 0, 0, 0.2)",
       transition: {
         type: "spring" as const,
         duration: 0.6,
@@ -191,9 +189,22 @@ export function HeadNavigation({
 }) {
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const { orientation, acceleration } = useDeviceOrientation();
+  const { orientation, acceleration, sensorsAvailable } =
+    useDeviceOrientation();
   const isMobile =
     typeof window !== "undefined" && /Mobi|Android/i.test(navigator.userAgent);
+
+  // Auto-calibration state
+  const [lastPermissionState, setLastPermissionState] =
+    useState(permissionGranted);
+  const [lastOrientationValues, setLastOrientationValues] = useState({
+    alpha: 0,
+    beta: 0,
+    gamma: 0,
+  });
+  const [calibrationResetCount, setCalibrationResetCount] = useState(0);
+  const [lastSensorsAvailable, setLastSensorsAvailable] = useState(false);
+  const [calibrationFeedback, setCalibrationFeedback] = useState(false);
 
   useEffect(() => {
     setWindowSize({
@@ -222,7 +233,6 @@ export function HeadNavigation({
   }, []);
 
   const [isClosing, setIsClosing] = useState(false);
-  const [lastTapTime, setLastTapTime] = useState(0);
   const [cameraZoomAnimation, setCameraZoomAnimation] = useState(false);
 
   // Blob emotion system
@@ -237,7 +247,7 @@ export function HeadNavigation({
   }, [emotionState, tapCount, getEmotionIcon, onEmotionUpdate]);
 
   const showCalibrationResetToast = () => {
-    toast.custom((id) => <CustomToast>Kalibrierung zurückgesetzt</CustomToast>);
+    toast.custom((id) => <CustomToast>Calibration reset</CustomToast>);
   };
 
   const handleHeadClick = () => {
@@ -254,14 +264,20 @@ export function HeadNavigation({
     const zoomOffset = cameraZoomAnimation
       ? Math.sin(Date.now() * 0.02) * 0.5
       : 0;
-    const finalZoom = baseZoom + zoomOffset;
+
+    // Add calibration feedback animation
+    const calibrationOffset = calibrationFeedback
+      ? Math.sin(Date.now() * 0.01) * 0.3
+      : 0;
+
+    const finalZoom = baseZoom + zoomOffset + calibrationOffset;
 
     if (orientation && acceleration && permissionGranted) {
       const { targetRotX, targetRotY, targetRotZ } =
         calculateAcceleratedRotation(acceleration, orientation);
       cameraControlsRef.current.setLookAt(
         0,
-        showOptions && !isClosing ? 2 : CAMERA_Y_POSITION,
+        showOptions && !isClosing ? 2 : CAMERA_HEIGHT,
         finalZoom,
         -targetRotX,
         targetRotY + CAMERA_Y_POSITION,
@@ -271,14 +287,15 @@ export function HeadNavigation({
     } else {
       // Only follow cursor on desktop, not on mobile
       if (!isMobile) {
+        // Fix camera Y-axis inversion to match head movement
         const cursorPos = new THREE.Vector3(
           (mousePosition.x - 0.5) * CAMERA_FOLLOW_OFFSET * 0.1,
-          (mousePosition.y - 0.5) * CAMERA_FOLLOW_OFFSET * 0.1,
+          -(mousePosition.y - 0.5) * CAMERA_FOLLOW_OFFSET * 0.2, // Invert Y and center around 0.5
           0
         );
         cameraControlsRef.current.setLookAt(
           0,
-          showOptions && !isClosing ? 2 : CAMERA_Y_POSITION,
+          showOptions && !isClosing ? 2 : CAMERA_HEIGHT,
           finalZoom,
           cursorPos.x,
           cursorPos.y + CAMERA_Y_POSITION,
@@ -289,7 +306,7 @@ export function HeadNavigation({
         // On mobile, just set the camera position without following cursor
         cameraControlsRef.current.setLookAt(
           0,
-          showOptions && !isClosing ? 2 : CAMERA_Y_POSITION,
+          showOptions && !isClosing ? 2 : CAMERA_HEIGHT,
           finalZoom,
           0,
           CAMERA_Y_POSITION,
@@ -299,6 +316,67 @@ export function HeadNavigation({
       }
     }
   });
+
+  // Auto-calibration logic
+  useEffect(() => {
+    // Reset calibration when permission is first granted
+    if (permissionGranted && !lastPermissionState && isMobile) {
+      resetCalibration();
+      setCalibrationResetCount((prev) => prev + 1);
+      showCalibrationResetToast();
+      // Visual feedback
+      setCalibrationFeedback(true);
+      setTimeout(() => setCalibrationFeedback(false), 1000);
+    }
+    setLastPermissionState(permissionGranted);
+  }, [permissionGranted, lastPermissionState, isMobile]);
+
+  // Auto-calibration when sensors first become available
+  useEffect(() => {
+    if (
+      sensorsAvailable &&
+      !lastSensorsAvailable &&
+      isMobile &&
+      permissionGranted
+    ) {
+      resetCalibration();
+      setCalibrationResetCount((prev) => prev + 1);
+      showCalibrationResetToast();
+      // Visual feedback
+      setCalibrationFeedback(true);
+      setTimeout(() => setCalibrationFeedback(false), 1000);
+    }
+    setLastSensorsAvailable(sensorsAvailable);
+  }, [sensorsAvailable, lastSensorsAvailable, isMobile, permissionGranted]);
+
+  // Auto-calibration on significant orientation changes
+  useEffect(() => {
+    if (!permissionGranted || !orientation || !isMobile) return;
+
+    const currentOrientation = {
+      alpha: orientation.alpha ?? 0,
+      beta: orientation.beta ?? 0,
+      gamma: orientation.gamma ?? 0,
+    };
+
+    // Calculate total orientation change
+    const orientationChange =
+      Math.abs(currentOrientation.alpha - lastOrientationValues.alpha) +
+      Math.abs(currentOrientation.beta - lastOrientationValues.beta) +
+      Math.abs(currentOrientation.gamma - lastOrientationValues.gamma);
+
+    // Reset calibration if orientation changes significantly (>30 degrees total)
+    if (orientationChange > 30) {
+      resetCalibration();
+      setCalibrationResetCount((prev) => prev + 1);
+      showCalibrationResetToast();
+      // Visual feedback
+      setCalibrationFeedback(true);
+      setTimeout(() => setCalibrationFeedback(false), 1000);
+    }
+
+    setLastOrientationValues(currentOrientation);
+  }, [orientation, permissionGranted, isMobile, lastOrientationValues]);
 
   return (
     <>
@@ -312,6 +390,7 @@ export function HeadNavigation({
         emotionState={emotionState}
         onCameraZoomAnimation={setCameraZoomAnimation}
       />
+
       {showOptions && (
         <OptionsGroup
           windowWidth={windowSize.width}
@@ -358,7 +437,7 @@ function OptionsGroup({
 }) {
   const count = ROUTES.length;
 
-  const screenCenter = new THREE.Vector3(-1, -2, 0);
+  const screenCenter = new THREE.Vector3(-1, OPTIONS_Y_OFFSET, 0);
 
   // Calculate appropriate radii based on screen dimensions
   // Use the smaller dimension to ensure elements stay within viewport
@@ -518,13 +597,14 @@ function Option({
                   hovered,
                   attractionStrength: state.attractionStrength,
                   isAttracted: state.isAttracted,
+                  isDisabled: href === "#",
                 })
           }
           exit={MOTION_VARIANTS.springScaleReversed.exit}
           whileHover={MOTION_VARIANTS.springScaleReversed.hover}
           whileTap={MOTION_VARIANTS.springScaleReversed.tap}
           style={{
-            color: href === "#" ? "#7FA6FF" : "white",
+            color: "var(--text-color)",
             padding: "16px 20px",
             borderRadius: "50px",
             fontWeight: "400",
@@ -545,7 +625,6 @@ function Option({
           onClick={handleOptionClick}
         >
           {label}
-          {href === "/portfolio" && <LockIcon color="#ffffff" />}
         </motion.button>
 
         {/* Debug info - shows magnetic field status */}

@@ -2,15 +2,37 @@ import { Text3D, Outlines } from "@react-three/drei";
 import { useRef, useEffect, useState } from "react";
 import { Vector3, Group, Mesh } from "three";
 import { useSpring, a } from "@react-spring/three";
+import { useFrame } from "@react-three/fiber";
+import { useGameStore } from "@/store/gameStore";
+import { THEME_CONFIG } from "@/store/upgradesConfig";
 
 const FONT_PATH = "/fonts/OpenRundeBold.json";
 
+const formatNumber = (num: number): string => {
+  if (num >= 1000000) {
+    return Math.ceil(num / 1000000).toFixed(1) + "M";
+  }
+  if (num >= 1000) {
+    return Math.ceil(num / 1000).toFixed(1) + "K";
+  }
+  return Math.ceil(num).toString();
+};
+
 export const EmotionCounter = ({ tapCount }: { tapCount: number }) => {
   const PAD_LENGTH = 0;
+  const { taps, currentTheme } = useGameStore();
 
-  const formattedNumber = tapCount.toString().padStart(PAD_LENGTH, "0");
+  // Use game store taps instead of emotion tap count
+  const gameTapCount = taps;
+
+  // Get theme colors, fallback to default if no theme is active
+  const themeConfig = currentTheme
+    ? Object.values(THEME_CONFIG).find((t) => t.id === currentTheme.id) ||
+      THEME_CONFIG.DEFAULT
+    : THEME_CONFIG.DEFAULT;
+  const formattedNumber = formatNumber(gameTapCount);
   const groupRef = useRef<Group>(null!);
-  const prevTapCount = useRef(tapCount);
+  const prevTapCount = useRef(gameTapCount);
 
   const numberRef = useRef<Mesh>(null);
   const [numberWidth, setNumberWidth] = useState(0);
@@ -27,15 +49,33 @@ export const EmotionCounter = ({ tapCount }: { tapCount: number }) => {
     setNumberWidth(width);
   }, [formattedNumber]);
 
-  const responsivePosition = new Vector3(-numberWidth / 2, 0.5, -1);
+  const responsivePosition = new Vector3(-numberWidth / 2, -1, -2);
 
   const [spring, api] = useSpring(() => ({
     scale: 1,
     config: { tension: 300, friction: 10 },
   }));
 
+  // Floating animation for each character
+  useFrame((state) => {
+    if (groupRef.current) {
+      const time = state.clock.getElapsedTime();
+
+      // Base floating motion
+      const baseFloat = Math.sin(time * 0.5) * 0.05;
+      groupRef.current.position.y = responsivePosition.y + baseFloat;
+
+      // Gentle rotation
+      groupRef.current.rotation.z = Math.sin(time * 0.3) * 0.02;
+
+      // Additional subtle movement
+      const subtleX = Math.sin(time * 0.2) * 0.02;
+      groupRef.current.position.x = responsivePosition.x + subtleX;
+    }
+  });
+
   useEffect(() => {
-    if (tapCount !== prevTapCount.current) {
+    if (gameTapCount !== prevTapCount.current) {
       api.start({
         scale: 1.4,
         immediate: true,
@@ -44,9 +84,9 @@ export const EmotionCounter = ({ tapCount }: { tapCount: number }) => {
         scale: 1,
         config: { tension: 300, friction: 15 },
       });
-      prevTapCount.current = tapCount;
+      prevTapCount.current = gameTapCount;
     }
-  }, [tapCount]);
+  }, [gameTapCount]);
 
   return (
     <a.group ref={groupRef} scale={spring.scale} position={responsivePosition}>
@@ -63,7 +103,11 @@ export const EmotionCounter = ({ tapCount }: { tapCount: number }) => {
         ref={numberRef}
       >
         {formattedNumber}
-        <meshToonMaterial color="white" />
+        <meshToonMaterial
+          color={themeConfig.counterColor}
+          emissive={themeConfig.counterColor}
+          emissiveIntensity={themeConfig.counterEmission}
+        />
         <Outlines thickness={0.011} color="black" screenspace />
       </Text3D>
     </a.group>
