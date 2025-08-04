@@ -24,14 +24,6 @@ export function useDeviceOrientation() {
     const handleOrientation = (event: DeviceOrientationEvent) => {
       if (!hasReceivedOrientation) {
         hasReceivedOrientation = true;
-        // Auto-calibrate when orientation sensors first become available
-        if (
-          event.alpha !== null ||
-          event.beta !== null ||
-          event.gamma !== null
-        ) {
-          resetCalibration();
-        }
       }
 
       setOrientation({
@@ -44,11 +36,6 @@ export function useDeviceOrientation() {
     const handleMotion = (event: DeviceMotionEvent) => {
       if (!hasReceivedMotion) {
         hasReceivedMotion = true;
-        // Auto-calibrate when motion sensors first become available
-        const a = event.accelerationIncludingGravity;
-        if (a && (a.x !== null || a.y !== null || a.z !== null)) {
-          resetCalibration();
-        }
       }
 
       const a = event.accelerationIncludingGravity;

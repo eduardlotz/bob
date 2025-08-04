@@ -44,7 +44,7 @@ export const GlobalStyle = createGlobalStyle`
         background-color: #000000;
     }
 
-    body, root {
+    body, root, button, input, textarea, select {
         background-color: #000000;
         font-family: "Open Sauce Two", Helvetica, Arial, sans-serif;
     }

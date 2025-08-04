@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
-import { useGameStore } from "@/store/gameStore";
+import { useGameStore, triggerStoreMigration } from "@/store/gameStore";
 import { CartIcon } from "@/icons/cart";
 import { ThemeIcon } from "@/icons/theme";
 import { EffectsIcon } from "@/icons/effects";
@@ -68,10 +68,13 @@ export function Shop({ isOpen, onClose }: ShopProps) {
             onClick={onClose}
           />
           <ShopContainer
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
+            initial={{ opacity: 0, scale: 0.9, y: 40, filter: "blur(10px)" }}
+            animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
+            exit={{ opacity: 0, scale: 0.9, y: 40, filter: "blur(10px)" }}
+            transition={{
+              duration: 0.2,
+              ease: "easeInOut",
+            }}
           >
             <ShopHeader>
               <ShopTitle>
@@ -163,94 +166,45 @@ function ThemesView() {
       <ThemesSection>
         <SectionTitle>Available Themes</SectionTitle>
         <ItemsGrid>
-          {themes.map((theme) => (
-            <ThemeCard
-              key={theme.id}
-              $selected={currentTheme?.id === theme.id}
-              $purchased={theme.purchased}
-              onClick={() =>
-                theme.purchased
-                  ? handleThemeSelect(theme.id)
-                  : handleThemePurchase(theme.id)
-              }
-            >
-              <ThemePreview $colors={theme.colors}>
-                <ThemeGradient $colors={theme.colors} />
-              </ThemePreview>
-              <ThemeName>{theme.name}</ThemeName>
-              <ThemeStatus $purchased={theme.purchased}>
-                {theme.purchased
-                  ? currentTheme?.id === theme.id
-                    ? "Active"
-                    : "Available"
-                  : `Locked - ${theme.cost}`}
-              </ThemeStatus>
-              {!theme.purchased && (
-                <PurchaseButton
-                  $canAfford={canAfford(theme.cost)}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleThemePurchase(theme.id);
-                  }}
-                >
-                  {canAfford(theme.cost) ? "Buy" : "Can't Afford"}
-                </PurchaseButton>
-              )}
-            </ThemeCard>
-          ))}
+          {themes
+            .filter((theme) => theme.id !== "custom")
+            .map((theme) => (
+              <ThemeCard
+                key={theme.id}
+                $selected={currentTheme?.id === theme.id}
+                $purchased={theme.purchased}
+                onClick={() =>
+                  theme.purchased
+                    ? handleThemeSelect(theme.id)
+                    : handleThemePurchase(theme.id)
+                }
+              >
+                <ThemePreview $colors={theme.colors}>
+                  <ThemeGradient $colors={theme.colors} />
+                </ThemePreview>
+                <ThemeName>{theme.name}</ThemeName>
+                <ThemeStatus $purchased={theme.purchased}>
+                  {theme.purchased
+                    ? currentTheme?.id === theme.id
+                      ? "Active"
+                      : "Available"
+                    : `Locked - ${theme.cost}`}
+                </ThemeStatus>
+                {!theme.purchased && (
+                  <PurchaseButton
+                    $canAfford={canAfford(theme.cost)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleThemePurchase(theme.id);
+                    }}
+                  >
+                    {canAfford(theme.cost) ? "Buy" : "Can't Afford"}
+                  </PurchaseButton>
+                )}
+              </ThemeCard>
+            ))}
         </ItemsGrid>
       </ThemesSection>
-
-      <ColorCustomizationSection>
-        <SectionTitle>Color Customization</SectionTitle>
-        <ColorControls>
-          <ColorTypeSelector>
-            <ColorTypeButton
-              $active={colorType === "primary"}
-              onClick={() => setColorType("primary")}
-            >
-              Primary
-            </ColorTypeButton>
-            <ColorTypeButton
-              $active={colorType === "secondary"}
-              onClick={() => setColorType("secondary")}
-            >
-              Secondary
-            </ColorTypeButton>
-            <ColorTypeButton
-              $active={colorType === "accent"}
-              onClick={() => setColorType("accent")}
-            >
-              Accent
-            </ColorTypeButton>
-          </ColorTypeSelector>
-
-          <ColorPickerContainer>
-            <ColorPreview $color={selectedColor} />
-            <ColorPickerButton
-              onClick={() => setShowColorPicker(!showColorPicker)}
-            >
-              {showColorPicker ? "Hide" : "Show"} Color Picker
-            </ColorPickerButton>
-          </ColorPickerContainer>
-
-          <AnimatePresence>
-            {showColorPicker && (
-              <ColorPickerWrapper
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <HexColorPicker
-                  color={selectedColor}
-                  onChange={handleColorChange}
-                />
-              </ColorPickerWrapper>
-            )}
-          </AnimatePresence>
-        </ColorControls>
-      </ColorCustomizationSection>
     </ThemesContainer>
   );
 }
@@ -413,6 +367,7 @@ function DevView() {
           {isPaused ? "▶️" : "⏸️"} {isPaused ? "Resume" : "Pause"}
         </DevButton>
         <DevButton onClick={resetGame}>🔄 Reset Game</DevButton>
+        <DevButton onClick={triggerStoreMigration}>🔄 Migrate Store</DevButton>
       </DevGrid>
     </DevContainer>
   );
@@ -439,9 +394,9 @@ const ShopContainer = styled(motion.div)`
   margin: 0 auto;
   width: 90vw;
   max-width: calc(100% - 32px);
-  min-width: 320px;
   transform: translateY(-50%);
   height: 80vh;
+  max-height: calc(100vh - 140px);
   background: rgba(20, 20, 20, 0.95);
   backdrop-filter: blur(16px);
   border-radius: 20px;
