@@ -141,6 +141,19 @@ export function Statistics({ visible }: StatisticsProps) {
   );
 }
 
+// Helper function to format numbers with proper rounding down
+function formatNumber(num: number): string {
+  if (num < 1000) {
+    return Math.floor(num).toString();
+  } else if (num < 1000000) {
+    return Math.floor(num / 1000) + "k";
+  } else if (num < 1000000000) {
+    return Math.floor(num / 1000000) + "M";
+  } else {
+    return Math.floor(num / 1000000000) + "B";
+  }
+}
+
 function GameStats() {
   const {
     taps,
@@ -171,12 +184,12 @@ function GameStats() {
     <StatsGrid>
       <StatItem>
         <StatLabel>Total Taps</StatLabel>
-        <StatValue $color="#4CAF50">{taps.toLocaleString()}</StatValue>
+        <StatValue $color="#4CAF50">{formatNumber(taps)}</StatValue>
       </StatItem>
 
       <StatItem>
         <StatLabel>Manual Taps</StatLabel>
-        <StatValue $color="#FF5722">{manualTaps.toLocaleString()}</StatValue>
+        <StatValue $color="#FF5722">{formatNumber(manualTaps)}</StatValue>
       </StatItem>
 
       <StatItem>

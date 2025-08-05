@@ -1,18 +1,15 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
-import { motion, AnimatePresence } from "motion/react";
-import { Button, MenuButton, SensorButton } from "@/layout/atoms";
-import { MotionVariants } from "@/styles/motion";
-import { GameUI } from "@/molecules/GameUI";
+import { Button } from "@/layout/atoms";
 import { BottomNavigation } from "@/molecules/BottomNavigation";
 import { Statistics } from "@/molecules/Statistics";
-import { useAppStore } from "@/store";
+
 import { requestMotionPermission } from "@/utils/permission";
 import { useGameStore, startAutoTap, stopAutoTap } from "@/store/gameStore";
-import { CloseIcon } from "@/icons/close";
+
 import { resetCalibration } from "@/utils/math";
 import { toast } from "sonner";
-import { MenuIcon } from "@/icons/menu";
+
 import { useAnimations } from "@/hooks/useAnimations";
 import { useSwipeDismiss } from "@/hooks/useSwipeDismiss";
 
