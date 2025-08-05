@@ -16,9 +16,14 @@ export function BottomNavigation({ onMenuClick }: BottomNavigationProps) {
   const [isShopOpen, setIsShopOpen] = useState(false);
   const [isUpgradesOpen, setIsUpgradesOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { upgrades, purchaseUpgrade, canAfford, getTotalTapMultiplier } =
-    useGameStore();
-  const tapMultiplier = getTotalTapMultiplier();
+  const {
+    upgrades,
+    purchaseUpgrade,
+    canAfford,
+    autoTapRate,
+    manualTapsPerSecond,
+  } = useGameStore();
+  const totalTapsPerSecond = autoTapRate + manualTapsPerSecond;
   const tapUpgrades = upgrades.filter((u) => u.category === "upgrades");
   const hasAnyUpgrade = tapUpgrades.some((u) => u.unlocked);
 
@@ -69,8 +74,8 @@ export function BottomNavigation({ onMenuClick }: BottomNavigationProps) {
               >
                 {hasAnyUpgrade ? (
                   <UpgradeButtonContent>
-                    <TapMultiplier>x{tapMultiplier}</TapMultiplier>
-                    <FingerIcon>👆</FingerIcon>
+                    <FingerIcon>🫵</FingerIcon>
+                    <TapMultiplier>{totalTapsPerSecond}/s</TapMultiplier>
                   </UpgradeButtonContent>
                 ) : (
                   <UpgradesIcon color="#ffffff" />
@@ -99,7 +104,7 @@ export function BottomNavigation({ onMenuClick }: BottomNavigationProps) {
                   bounce: 0.5,
                 }}
               >
-                <CloseIcon color="#ffffff" />
+                <CloseIcon />
               </motion.div>
             ) : (
               <motion.div
@@ -248,7 +253,7 @@ const NavButton = styled(motion.button)<{ $isActive?: boolean }>`
   cursor: pointer;
   transition: all 0.2s;
   pointer-events: auto;
-  opacity: ${(props) => (props.$isActive ? 1 : 0.3)};
+  opacity: ${(props) => (props.$isActive ? 1 : 0.75)};
 
   &:hover {
     background: rgba(0, 0, 0, 0.9);

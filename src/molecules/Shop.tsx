@@ -108,20 +108,53 @@ export function Shop({ isOpen, onClose }: ShopProps) {
               </TabPanel>
 
               <ContentView>
-                <ContentHeader>
-                  <ContentTitle>
-                    {tabs.find((t) => t.id === activeTab)?.name}
-                  </ContentTitle>
-                  <ContentSubtitle>
-                    {tabs.find((t) => t.id === activeTab)?.name}
-                  </ContentSubtitle>
-                </ContentHeader>
-
                 <ContentItems>
-                  {activeTab === "themes" && <ThemesView />}
-                  {activeTab === "effects" && <EffectsView />}
-                  {activeTab === "environment" && <EnvironmentView />}
-                  {activeTab === "dev" && <DevView />}
+                  <AnimatePresence mode="popLayout">
+                    {activeTab === "themes" && (
+                      <motion.div
+                        key="themes"
+                        animate={{ opacity: 1, filter: "blur(0px)" }}
+                        initial={{ opacity: 0, filter: "blur(8px)" }}
+                        exit={{ opacity: 0, filter: "blur(8px)" }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
+                      >
+                        <ThemesView />
+                      </motion.div>
+                    )}
+                    {activeTab === "effects" && (
+                      <motion.div
+                        key="effects"
+                        animate={{ opacity: 1, filter: "blur(0px)" }}
+                        initial={{ opacity: 0, filter: "blur(8px)" }}
+                        exit={{ opacity: 0, filter: "blur(8px)" }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
+                      >
+                        <EffectsView />
+                      </motion.div>
+                    )}
+                    {activeTab === "environment" && (
+                      <motion.div
+                        key="environment"
+                        animate={{ opacity: 1, filter: "blur(0px)" }}
+                        initial={{ opacity: 0, filter: "blur(8px)" }}
+                        exit={{ opacity: 0, filter: "blur(8px)" }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
+                      >
+                        <EnvironmentView />
+                      </motion.div>
+                    )}
+                    {activeTab === "dev" && (
+                      <motion.div
+                        key="dev"
+                        animate={{ opacity: 1, filter: "blur(0px)" }}
+                        initial={{ opacity: 0, filter: "blur(8px)" }}
+                        exit={{ opacity: 0, filter: "blur(8px)" }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
+                      >
+                        <DevView />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </ContentItems>
               </ContentView>
             </ShopContent>
@@ -173,6 +206,7 @@ function ThemesView() {
                 key={theme.id}
                 $selected={currentTheme?.id === theme.id}
                 $purchased={theme.purchased}
+                $canAfford={canAfford(theme.cost)}
                 onClick={() =>
                   theme.purchased
                     ? handleThemeSelect(theme.id)
@@ -188,7 +222,7 @@ function ThemesView() {
                     ? currentTheme?.id === theme.id
                       ? "Active"
                       : "Available"
-                    : `Locked - ${theme.cost}`}
+                    : `${theme.cost} 🫵`}
                 </ThemeStatus>
                 {!theme.purchased && (
                   <PurchaseButton
@@ -238,6 +272,7 @@ function EffectsView() {
             key={effect.id}
             $selected={effect.selected}
             $unlocked={effect.unlocked}
+            $canAfford={canAfford(effect.baseCost)}
             onClick={() =>
               effect.unlocked
                 ? handleEffectSelect(effect.id)
@@ -251,7 +286,7 @@ function EffectsView() {
                 ? effect.selected
                   ? "Selected"
                   : "Available"
-                : `Locked - ${effect.baseCost}`}
+                : `${effect.baseCost} 🫵`}
             </EffectStatus>
             {!effect.unlocked && (
               <PurchaseButton
@@ -301,6 +336,7 @@ function EnvironmentView() {
             key={effect.id}
             $enabled={effect.selected}
             $unlocked={effect.unlocked}
+            $canAfford={canAfford(effect.baseCost)}
             onClick={() =>
               effect.unlocked
                 ? handleEnvironmentToggle(effect.id)
@@ -314,7 +350,7 @@ function EnvironmentView() {
                 ? effect.selected
                   ? "Enabled"
                   : "Disabled"
-                : `Locked - ${effect.baseCost}`}
+                : `${effect.baseCost} 🫵`}
             </EnvironmentStatus>
             {!effect.unlocked && (
               <PurchaseButton
@@ -395,8 +431,8 @@ const ShopContainer = styled(motion.div)`
   width: 90vw;
   max-width: calc(100% - 32px);
   transform: translateY(-50%);
-  height: 80vh;
-  max-height: calc(100vh - 140px);
+  height: 80dvh;
+  max-height: calc(100svh - 140px);
   background: rgba(20, 20, 20, 0.95);
   backdrop-filter: blur(16px);
   border-radius: 20px;
@@ -562,7 +598,11 @@ const ItemsGrid = styled.div`
   gap: 16px;
 `;
 
-const ThemeCard = styled.div<{ $selected: boolean; $purchased: boolean }>`
+const ThemeCard = styled.div<{
+  $selected: boolean;
+  $purchased: boolean;
+  $canAfford: boolean;
+}>`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -578,7 +618,7 @@ const ThemeCard = styled.div<{ $selected: boolean; $purchased: boolean }>`
       : props.$purchased
       ? "rgba(0, 0, 0, 0.3)"
       : "rgba(0, 0, 0, 0.1)"};
-  opacity: ${(props) => (props.$purchased ? 1 : 0.5)};
+  opacity: ${(props) => (props.$purchased ? 1 : props.$canAfford ? 1 : 0.5)};
 
   &:hover {
     background: ${(props) =>
@@ -770,7 +810,11 @@ const EffectsGrid = styled.div`
   gap: 16px;
 `;
 
-const EffectCard = styled.div<{ $selected?: boolean; $unlocked: boolean }>`
+const EffectCard = styled.div<{
+  $selected?: boolean;
+  $unlocked: boolean;
+  $canAfford: boolean;
+}>`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -786,7 +830,7 @@ const EffectCard = styled.div<{ $selected?: boolean; $unlocked: boolean }>`
       : props.$unlocked
       ? "rgba(0, 0, 0, 0.3)"
       : "rgba(0, 0, 0, 0.1)"};
-  opacity: ${(props) => (props.$unlocked ? 1 : 0.5)};
+  opacity: ${(props) => (props.$unlocked ? 1 : props.$canAfford ? 1 : 0.5)};
 
   &:hover {
     background: ${(props) =>
@@ -806,7 +850,11 @@ const EnvironmentGrid = styled.div`
   gap: 16px;
 `;
 
-const EnvironmentCard = styled.div<{ $enabled?: boolean; $unlocked: boolean }>`
+const EnvironmentCard = styled.div<{
+  $enabled?: boolean;
+  $unlocked: boolean;
+  $canAfford: boolean;
+}>`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -822,7 +870,7 @@ const EnvironmentCard = styled.div<{ $enabled?: boolean; $unlocked: boolean }>`
       : props.$unlocked
       ? "rgba(0, 0, 0, 0.3)"
       : "rgba(0, 0, 0, 0.1)"};
-  opacity: ${(props) => (props.$unlocked ? 1 : 0.5)};
+  opacity: ${(props) => (props.$unlocked ? 1 : props.$canAfford ? 1 : 0.5)};
 
   &:hover {
     background: ${(props) =>

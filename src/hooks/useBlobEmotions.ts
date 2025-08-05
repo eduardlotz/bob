@@ -75,7 +75,6 @@ export function useBlobEmotions() {
     // Add tap to game store
     const gameStore = useGameStore.getState();
     gameStore.addManualTap();
-    gameStore.addTaps(1); // Also add to total taps
 
     // Increment dizzy counter (separate from persistent tap count)
     setDizzyCounter((prev) => prev + 1);

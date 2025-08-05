@@ -3,8 +3,14 @@ import { devtools } from "zustand/middleware";
 import { persist } from "zustand/middleware";
 import { THEME_CONFIG } from "./upgradesConfig";
 
+// Constants
+const ONE_SECOND_MS = 1000;
+const AUTO_TAP_INTERVAL_MS = 1000;
+const MAX_PARTICLES_PER_AUTO_TAP = 5;
+const PARTICLE_STAGGER_MS = 100;
+
 // Store version for migrations
-const STORE_VERSION = 2;
+const STORE_VERSION = 4;
 
 // Migration functions
 function migrateStore(oldState: any, version: number): any {
@@ -12,8 +18,6 @@ function migrateStore(oldState: any, version: number): any {
 
   // Migration from version 1 to 2
   if (version < 2) {
-    console.log("Migrating store from version", version, "to", STORE_VERSION);
-
     // Update theme prices
     if (migratedState.themes) {
       migratedState.themes = migratedState.themes.map((theme: any) => {
@@ -37,6 +41,36 @@ function migrateStore(oldState: any, version: number): any {
           return { ...upgrade, baseCost: 2500 };
         } else if (upgrade.id === "tap_effect_stars") {
           return { ...upgrade, baseCost: 3500 };
+        }
+        return upgrade;
+      });
+    }
+  }
+
+  // Migration from version 2 to 3
+  if (version < 3) {
+    // Fix tap multiplier upgrades that might have incorrect levels
+    if (migratedState.upgrades) {
+      migratedState.upgrades = migratedState.upgrades.map((upgrade: any) => {
+        if (
+          upgrade.effect?.type === "tapMultiplier" &&
+          upgrade.unlocked &&
+          upgrade.level > 0
+        ) {
+          return { ...upgrade, level: 0 };
+        }
+        return upgrade;
+      });
+    }
+  }
+
+  // Migration from version 3 to 4
+  if (version < 4) {
+    // Lock the "Tap Power" upgrade by default and reset its level
+    if (migratedState.upgrades) {
+      migratedState.upgrades = migratedState.upgrades.map((upgrade: any) => {
+        if (upgrade.id === "tap_multiplier_1") {
+          return { ...upgrade, unlocked: false, level: 0 };
         }
         return upgrade;
       });
@@ -123,6 +157,11 @@ interface GameStore {
   isPaused: boolean;
   recentManualTaps: number[];
 
+  // Cached computed values for performance
+  _cachedTapsPerSecond?: number;
+  _cachedTapMultiplier?: number;
+  _lastUpgradeHash?: string;
+
   // Upgrades
   upgrades: Upgrade[];
 
@@ -142,6 +181,7 @@ interface GameStore {
 
   // Actions
   addTaps: (amount: number) => void;
+  addAutoTaps: (amount: number) => void;
   addManualTap: () => void;
   cleanupManualTaps: () => void;
   purchaseUpgrade: (upgradeId: string) => void;
@@ -193,7 +233,7 @@ const initialUpgrades: Upgrade[] = [
     level: 0,
     maxLevel: 3,
     effect: { type: "tapMultiplier", value: 2 },
-    unlocked: true,
+    unlocked: false,
     icon: "💪",
     category: "upgrades",
   },
@@ -353,6 +393,11 @@ const initialThemes: Theme[] = Object.values(THEME_CONFIG).map(
   })
 );
 
+// Helper function to generate upgrade hash for caching
+const generateUpgradeHash = (upgrades: Upgrade[]): string => {
+  return JSON.stringify(upgrades.map((u) => ({ id: u.id, level: u.level })));
+};
+
 export const useGameStore = create<GameStore>()(
   devtools(
     persist(
@@ -367,6 +412,11 @@ export const useGameStore = create<GameStore>()(
         isPaused: false,
         recentManualTaps: [],
 
+        // Cache properties
+        _cachedTapsPerSecond: undefined,
+        _cachedTapMultiplier: undefined,
+        _lastUpgradeHash: undefined,
+
         upgrades: initialUpgrades,
         decorations: initialDecorations,
         themes: initialThemes,
@@ -378,36 +428,39 @@ export const useGameStore = create<GameStore>()(
         // Actions
         addTaps: (amount) => {
           set((state) => ({
-            taps: state.taps + amount * state.tapMultiplier,
+            taps: state.taps + amount,
             manualTaps: state.manualTaps + amount,
+          }));
+        },
+
+        addAutoTaps: (amount: number) => {
+          set((state) => ({
+            taps: state.taps + amount * state.getTotalTapMultiplier(),
           }));
         },
 
         addManualTap: () => {
           set((state) => {
             const now = Date.now();
+            const oneSecondAgo = now - ONE_SECOND_MS;
+
+            // Optimize array operations by pre-allocating
             const recentTaps = state.recentManualTaps || [];
+            const filteredTaps: number[] = [];
 
-            // Keep only taps from the last second
-            const oneSecondAgo = now - 1000;
-            const filteredTaps = recentTaps.filter(
-              (timestamp) => timestamp > oneSecondAgo
-            );
+            // Manual filtering for better performance
+            for (let i = recentTaps.length - 1; i >= 0; i--) {
+              if (recentTaps[i] > oneSecondAgo) {
+                filteredTaps.unshift(recentTaps[i]);
+              }
+            }
 
-            // Add current tap
             const newTaps = [...filteredTaps, now];
-
-            // Debug logging
-            console.log("Manual tap added:", {
-              now,
-              recentTaps: recentTaps.length,
-              filteredTaps: filteredTaps.length,
-              newTaps: newTaps.length,
-              manualTapsPerSecond: newTaps.length,
-            });
+            const tapMultiplier = state.getTotalTapMultiplier();
 
             return {
               ...state,
+              taps: state.taps + 1 * tapMultiplier, // Apply multiplier to manual taps
               manualTaps: state.manualTaps + 1,
               manualTapsPerSecond: newTaps.length,
               recentManualTaps: newTaps,
@@ -415,15 +468,29 @@ export const useGameStore = create<GameStore>()(
           });
         },
 
-        // Cleanup old manual taps periodically
+        // Optimized cleanup with early return
         cleanupManualTaps: () => {
           set((state) => {
             const now = Date.now();
             const recentTaps = state.recentManualTaps || [];
-            const oneSecondAgo = now - 1000;
-            const filteredTaps = recentTaps.filter(
-              (timestamp) => timestamp > oneSecondAgo
-            );
+            const oneSecondAgo = now - ONE_SECOND_MS;
+
+            // Early return if no cleanup needed
+            if (recentTaps.length === 0) {
+              return state;
+            }
+
+            const filteredTaps: number[] = [];
+            for (let i = recentTaps.length - 1; i >= 0; i--) {
+              if (recentTaps[i] > oneSecondAgo) {
+                filteredTaps.unshift(recentTaps[i]);
+              }
+            }
+
+            // Early return if no cleanup needed
+            if (filteredTaps.length === recentTaps.length) {
+              return state;
+            }
 
             return {
               ...state,
@@ -479,14 +546,22 @@ export const useGameStore = create<GameStore>()(
                 if (u.id === "tap_multiplier_2" && state.taps >= 200) {
                   return { ...u, unlocked: true };
                 }
+                // Unlock "Tap Power" when player can afford it
+                if (u.id === "tap_multiplier_1" && state.taps >= u.baseCost) {
+                  return { ...u, unlocked: true };
+                }
                 return u;
               });
             }
 
+            // Invalidate cache when upgrades change
             return {
               ...state,
               taps: state.taps - cost,
               upgrades: updatedUpgrades,
+              _cachedTapsPerSecond: undefined,
+              _cachedTapMultiplier: undefined,
+              _lastUpgradeHash: undefined,
             };
           });
         },
@@ -648,6 +723,9 @@ export const useGameStore = create<GameStore>()(
             fisheyeIntensity: 0,
             animationsEnabled: true,
             statisticsVisible: false,
+            _cachedTapsPerSecond: undefined,
+            _cachedTapMultiplier: undefined,
+            _lastUpgradeHash: undefined,
           });
         },
 
@@ -700,6 +778,9 @@ export const useGameStore = create<GameStore>()(
               upgrades: updatedUpgrades,
               decorations: updatedDecorations,
               themes: updatedThemes,
+              _cachedTapsPerSecond: undefined,
+              _cachedTapMultiplier: undefined,
+              _lastUpgradeHash: undefined,
             };
           });
         },
@@ -718,23 +799,74 @@ export const useGameStore = create<GameStore>()(
           }));
         },
 
-        // Computed values
+        // Computed values with caching
         getTotalTapsPerSecond: () => {
           const state = get();
-          return state.upgrades
+          const upgradeHash = generateUpgradeHash(state.upgrades);
+
+          if (
+            state._lastUpgradeHash === upgradeHash &&
+            state._cachedTapsPerSecond !== undefined
+          ) {
+            return state._cachedTapsPerSecond;
+          }
+
+          const result = state.upgrades
             .filter((u) => u.effect.type === "autoTap")
             .reduce((total, upgrade) => {
               return total + upgrade.effect.value * upgrade.level;
             }, 0);
+
+          // Cache the result
+          set((s) => ({
+            ...s,
+            _cachedTapsPerSecond: result,
+            _lastUpgradeHash: upgradeHash,
+          }));
+
+          return result;
         },
 
         getTotalTapMultiplier: () => {
           const state = get();
-          return state.upgrades
-            .filter((u) => u.effect.type === "tapMultiplier")
-            .reduce((total, upgrade) => {
-              return total + upgrade.effect.value * upgrade.level;
-            }, 1);
+          const upgradeHash = generateUpgradeHash(state.upgrades);
+
+          if (
+            state._lastUpgradeHash === upgradeHash &&
+            state._cachedTapMultiplier !== undefined
+          ) {
+            return state._cachedTapMultiplier;
+          }
+
+          const multiplierUpgrades = state.upgrades.filter(
+            (u) => u.effect.type === "tapMultiplier"
+          );
+
+          if (multiplierUpgrades.length === 0) {
+            const result = 1;
+            set((s) => ({
+              ...s,
+              _cachedTapMultiplier: result,
+              _lastUpgradeHash: upgradeHash,
+            }));
+            return result;
+          }
+
+          const result = multiplierUpgrades.reduce((total, upgrade) => {
+            // Each level of the upgrade applies the multiplier
+            // So if you have level 2 of a "double tap power" upgrade (value: 2),
+            // you get 2^2 = 4x multiplier
+            return total * Math.pow(upgrade.effect.value, upgrade.level);
+          }, 1);
+
+          // Cache the result
+          set((s) => ({
+            ...s,
+            _cachedTapMultiplier: result,
+            _lastUpgradeHash: upgradeHash,
+          }));
+
+          return result;
         },
 
         getAutoTapRate: () => {
@@ -772,13 +904,18 @@ export const useGameStore = create<GameStore>()(
   )
 );
 
-// Auto-tap effect
+// Auto-tap effect with improved performance and cleanup
 let autoTapInterval: NodeJS.Timeout | null = null;
+let particleTimeouts: NodeJS.Timeout[] = [];
 
 export const startAutoTap = () => {
   if (autoTapInterval) {
     clearInterval(autoTapInterval);
   }
+
+  // Clear any existing particle timeouts
+  particleTimeouts.forEach((timeout) => clearTimeout(timeout));
+  particleTimeouts = [];
 
   autoTapInterval = setInterval(() => {
     const store = useGameStore.getState();
@@ -790,19 +927,25 @@ export const startAutoTap = () => {
 
     const tapsPerSecond = store.getTotalTapsPerSecond();
     if (tapsPerSecond > 0) {
-      store.addTaps(tapsPerSecond);
+      store.addAutoTaps(tapsPerSecond);
 
-      // Trigger tap effects for auto-taps (with limit to prevent spam)
+      // Trigger tap effects for auto-taps with improved performance
       if ((window as any).createTapParticles) {
-        const tapCount = Math.min(tapsPerSecond, 5); // Limit to 5 particles max
+        const tapCount = Math.min(tapsPerSecond, MAX_PARTICLES_PER_AUTO_TAP);
+
+        // Clear old timeouts before creating new ones
+        particleTimeouts.forEach((timeout) => clearTimeout(timeout));
+        particleTimeouts = [];
+
         for (let i = 0; i < tapCount; i++) {
-          setTimeout(() => {
+          const timeout = setTimeout(() => {
             (window as any).createTapParticles(-1, 0.5, -1, 1);
-          }, i * 100); // Stagger the particles
+          }, i * PARTICLE_STAGGER_MS);
+          particleTimeouts.push(timeout);
         }
       }
     }
-  }, 1000);
+  }, AUTO_TAP_INTERVAL_MS);
 };
 
 export const stopAutoTap = () => {
@@ -810,6 +953,10 @@ export const stopAutoTap = () => {
     clearInterval(autoTapInterval);
     autoTapInterval = null;
   }
+
+  // Clear all particle timeouts
+  particleTimeouts.forEach((timeout) => clearTimeout(timeout));
+  particleTimeouts = [];
 };
 
 // Utility function to manually trigger store migration
@@ -831,6 +978,4 @@ export const triggerStoreMigration = () => {
     ...store,
     ...migratedState,
   });
-
-  console.log("Store migration completed");
 };
