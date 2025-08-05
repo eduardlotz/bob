@@ -87,7 +87,12 @@ const SHARED_MATERIALS = {
     side: THREE.DoubleSide,
   }),
   rain: new THREE.MeshStandardMaterial({ color: "#87CEEB", transparent: true }),
-  cloud: new THREE.MeshToonMaterial({ color: "#ffffff", transparent: true }),
+  cloud: new THREE.MeshStandardMaterial({
+    color: "#ffffff",
+    transparent: true,
+    opacity: 0.3,
+    side: THREE.DoubleSide,
+  }),
 };
 
 // Particle pool for object reuse
@@ -121,16 +126,29 @@ class ParticlePool {
 // Global particle pool
 const PARTICLE_POOL = new ParticlePool();
 
-// Constants for limits
-const MAX_TAP_PARTICLES = 150; // Reduced from unlimited
-const MAX_RAIN_DROPS = 100;
-const MAX_CLOUD_PARTICLES = 50;
-const TAP_PARTICLE_COUNT = 8; // Reduced from 15
+// Matrix pool for object reuse
+const MATRIX_POOL = {
+  matrix: new THREE.Matrix4(),
+  euler: new THREE.Euler(),
+  vector: new THREE.Vector3(),
+
+  reset() {
+    this.matrix.identity();
+    this.euler.set(0, 0, 0);
+    this.vector.set(0, 0, 0);
+  },
+};
+
+// Constants for limits - BALANCED LIMITS FOR GOOD VISUAL QUALITY
+const MAX_TAP_PARTICLES = 80; // Balanced for visual quality
+const MAX_RAIN_DROPS = 60; // Balanced for visual quality
+const MAX_CLOUD_PARTICLES = 30; // Balanced for visual quality
+const TAP_PARTICLE_COUNT = 6; // Balanced for visual quality
 
 export function StarEffect() {
   return (
     <Sparkles
-      count={100} // Reduced from 200
+      count={80} // Balanced for visual quality
       scale={[50, 30, 50]}
       size={1.5}
       speed={0.1}
@@ -159,7 +177,6 @@ export function RainEffect() {
 
   const dropIdCounter = useRef(0);
   const instancedMeshRef = useRef<THREE.InstancedMesh>(null);
-  const matrix = useMemo(() => new THREE.Matrix4(), []);
 
   const createRainDrops = React.useCallback(() => {
     if (!rainEnabled) return;
@@ -223,15 +240,15 @@ export function RainEffect() {
         const lifeRatio = Math.max(0, drop.life / drop.maxLife);
         const scale = 0.1 + 0.2 * lifeRatio;
 
-        matrix.makeScale(scale, scale * 3, scale);
-        matrix.setPosition(
+        MATRIX_POOL.matrix.makeScale(scale, scale * 3, scale);
+        MATRIX_POOL.matrix.setPosition(
           drop.position[0],
           drop.position[1],
           drop.position[2]
         );
 
         if (instancedMeshRef.current) {
-          instancedMeshRef.current.setMatrixAt(aliveCount, matrix);
+          instancedMeshRef.current.setMatrixAt(aliveCount, MATRIX_POOL.matrix);
           // Set opacity via material (simplified for now)
         }
 
@@ -279,7 +296,6 @@ export function CloudEffect() {
 
   const particleIdCounter = useRef(0);
   const instancedMeshRef = useRef<THREE.InstancedMesh>(null);
-  const matrix = useMemo(() => new THREE.Matrix4(), []);
 
   const createCloudParticles = React.useCallback(() => {
     if (!cloudEnabled) return;
@@ -300,12 +316,12 @@ export function CloudEffect() {
           id: particleIdCounter.current++,
           position: [x, y, z] as [number, number, number],
           velocity: [
-            (Math.random() - 0.5) * 0.15,
+            (Math.random() - 0.5) * 0.05, // Much slower movement
             0,
-            (Math.random() - 0.5) * 0.15,
+            (Math.random() - 0.5) * 0.05,
           ] as [number, number, number],
-          scale: 0.6 + Math.random() * 0.8,
-          opacity: 0.15 + Math.random() * 0.25,
+          scale: 0.8 + Math.random() * 1.2, // Larger scale
+          opacity: 0.2 + Math.random() * 0.3, // Higher opacity
         };
       }
     );
@@ -338,15 +354,19 @@ export function CloudEffect() {
 
       if (distance < 8) {
         // Keep this particle, update instanced mesh
-        matrix.makeScale(particle.scale, particle.scale, particle.scale);
-        matrix.setPosition(
+        MATRIX_POOL.matrix.makeScale(
+          particle.scale,
+          particle.scale,
+          particle.scale
+        );
+        MATRIX_POOL.matrix.setPosition(
           particle.position[0],
           particle.position[1],
           particle.position[2]
         );
 
         if (instancedMeshRef.current) {
-          instancedMeshRef.current.setMatrixAt(aliveCount, matrix);
+          instancedMeshRef.current.setMatrixAt(aliveCount, MATRIX_POOL.matrix);
         }
 
         aliveCount++;
@@ -413,8 +433,14 @@ export function TapEffect() {
 
   const particleIdCounter = useRef(0);
   const lastTapTime = useRef(0);
-  const instancedMeshRef = useRef<THREE.InstancedMesh>(null);
-  const matrix = useMemo(() => new THREE.Matrix4(), []);
+
+  // Separate instanced meshes for each color
+  const instancedMeshRefs = useRef<{
+    [color: string]: THREE.InstancedMesh | null;
+  }>({});
+
+  // Track particle counts per color
+  const colorCounts = useRef<{ [color: string]: number }>({});
 
   // Memoize color arrays
   const colorConfigs = useMemo(
@@ -457,7 +483,7 @@ export function TapEffect() {
       const newParticles = Array.from({ length: count }, () => {
         const theta = Math.random() * Math.PI * 2;
         const phi = Math.acos(Math.random() * 2 - 1);
-        const speed = 0.15 + Math.random() * 0.25; // Reduced speed
+        const speed = 0.2 + Math.random() * 0.3; // Better speed for visual quality
         const color = colors[Math.floor(Math.random() * colors.length)];
 
         const vx = Math.sin(phi) * Math.cos(theta) * speed;
@@ -471,8 +497,8 @@ export function TapEffect() {
             id: particleIdCounter.current++,
             position: [x, y, z] as [number, number, number],
             velocity: [vx, vy, vz] as [number, number, number],
-            life: 1.5, // Reduced lifetime
-            maxLife: 1.5,
+            life: 2.0, // Better lifetime for visual quality
+            maxLife: 2.0,
             color,
             rotation: [0, 0, 0] as [number, number, number],
             rotationSpeed: [
@@ -488,8 +514,8 @@ export function TapEffect() {
           particle.id = particleIdCounter.current++;
           particle.position = [x, y, z];
           particle.velocity = [vx, vy, vz];
-          particle.life = 1.5;
-          particle.maxLife = 1.5;
+          particle.life = 2.0;
+          particle.maxLife = 2.0;
           particle.color = color;
           particle.rotation = [0, 0, 0];
           particle.rotationSpeed = [
@@ -515,6 +541,9 @@ export function TapEffect() {
     const particles = tapParticlesRef.current;
     let aliveCount = 0;
 
+    // Reset color counts
+    colorCounts.current = {};
+
     for (let i = 0; i < particles.length; i++) {
       const particle = particles[i];
 
@@ -537,49 +566,67 @@ export function TapEffect() {
         const lifeRatio = Math.max(0, particle.life / particle.maxLife);
         const scale = particle.scale * (0.5 + 0.5 * lifeRatio);
 
-        matrix.makeRotationFromEuler(
-          new THREE.Euler(
-            particle.rotation[0],
-            particle.rotation[1],
-            particle.rotation[2]
-          )
+        MATRIX_POOL.euler.set(
+          particle.rotation[0],
+          particle.rotation[1],
+          particle.rotation[2]
         );
-        matrix.scale(new THREE.Vector3(scale, scale, scale));
-        matrix.setPosition(
+        MATRIX_POOL.matrix.makeRotationFromEuler(MATRIX_POOL.euler);
+        MATRIX_POOL.vector.set(scale, scale, scale);
+        MATRIX_POOL.matrix.scale(MATRIX_POOL.vector);
+        MATRIX_POOL.matrix.setPosition(
           particle.position[0],
           particle.position[1],
           particle.position[2]
         );
 
-        if (instancedMeshRef.current) {
-          instancedMeshRef.current.setMatrixAt(aliveCount, matrix);
+        // Get or create instanced mesh for this color
+        const colorKey = particle.color;
+        if (!colorCounts.current[colorKey]) {
+          colorCounts.current[colorKey] = 0;
+        }
+
+        const instancedMesh = instancedMeshRefs.current[colorKey];
+        if (instancedMesh) {
+          instancedMesh.setMatrixAt(
+            colorCounts.current[colorKey],
+            MATRIX_POOL.matrix
+          );
+          colorCounts.current[colorKey]++;
         }
 
         aliveCount++;
       } else {
-        // Return to pool
+        // Return to pool and mark for removal
         PARTICLE_POOL.release(particle);
+        // Move this particle to the end so it gets removed
+        particles[i] = particles[particles.length - 1];
+        particles.pop();
+        i--; // Recheck this index since we moved a particle here
       }
     }
 
-    // Remove dead particles
-    if (aliveCount < particles.length) {
-      particles.splice(aliveCount);
-    }
+    // Particles are already removed inline above
 
-    // Update instanced mesh count
-    if (instancedMeshRef.current) {
-      instancedMeshRef.current.count = aliveCount;
-      instancedMeshRef.current.instanceMatrix.needsUpdate = true;
-    }
+    // Update all instanced mesh counts
+    Object.keys(colorCounts.current).forEach((colorKey) => {
+      const instancedMesh = instancedMeshRefs.current[colorKey];
+      if (instancedMesh) {
+        instancedMesh.count = colorCounts.current[colorKey];
+        instancedMesh.instanceMatrix.needsUpdate = true;
+      }
+    });
   });
 
   useEffect(() => {
     (window as any).createTapParticles = createTapParticles;
     return () => {
       delete (window as any).createTapParticles;
-      // Clean up pool when component unmounts
+      // Clean up pools when component unmounts
       PARTICLE_POOL.clear();
+      MATRIX_POOL.reset();
+      // Clear all particle arrays
+      tapParticlesRef.current = [];
     };
   }, [createTapParticles]);
 
@@ -609,11 +656,25 @@ export function TapEffect() {
     }
   }, [tapEffectType]);
 
+  // Get all possible colors for this effect type
+  const colors = useMemo(() => {
+    return colorConfigs[tapEffectType] || colorConfigs.default;
+  }, [tapEffectType, colorConfigs]);
+
   return (
-    <instancedMesh
-      ref={instancedMeshRef}
-      args={[geometry, material, MAX_TAP_PARTICLES]}
-    />
+    <group>
+      {colors.map((color) => (
+        <instancedMesh
+          key={color}
+          ref={(mesh) => {
+            instancedMeshRefs.current[color] = mesh;
+          }}
+          args={[geometry, material, MAX_TAP_PARTICLES]}
+        >
+          <meshStandardMaterial color={color} transparent opacity={0.8} />
+        </instancedMesh>
+      ))}
+    </group>
   );
 }
 
