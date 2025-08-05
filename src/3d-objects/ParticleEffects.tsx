@@ -55,7 +55,6 @@ const SHARED_GEOMETRIES = {
     );
     return new THREE.ShapeGeometry(shape);
   })(),
-
   star: (() => {
     const shape = new THREE.Shape();
     const spikes = 5;
@@ -70,7 +69,6 @@ const SHARED_GEOMETRIES = {
     shape.closePath();
     return new THREE.ShapeGeometry(shape);
   })(),
-
   sphere: new THREE.SphereGeometry(0.1, 8, 8),
   plane: new THREE.PlaneGeometry(1, 1),
   cylinder: new THREE.CylinderGeometry(0.02, 0.02, 0.3),
@@ -87,68 +85,20 @@ const SHARED_MATERIALS = {
     side: THREE.DoubleSide,
   }),
   rain: new THREE.MeshStandardMaterial({ color: "#87CEEB", transparent: true }),
-  cloud: new THREE.MeshStandardMaterial({
-    color: "#ffffff",
-    transparent: true,
-    opacity: 0.3,
-    side: THREE.DoubleSide,
-  }),
+  cloud: new THREE.MeshToonMaterial({ color: "#ffffff", transparent: true }),
 };
 
-// Particle pool for object reuse
-class ParticlePool {
-  private pool: any[] = [];
-  private maxSize: number;
+// Constants for limits
+const MAX_TAP_PARTICLES = 150;
+const MAX_RAIN_DROPS = 100;
+const MAX_CLOUD_PARTICLES = 50;
+const TAP_PARTICLE_COUNT = 15;
 
-  constructor(maxSize: number = 200) {
-    this.maxSize = maxSize;
-  }
-
-  get() {
-    return this.pool.length > 0 ? this.pool.pop() : null;
-  }
-
-  release(particle: any) {
-    if (this.pool.length < this.maxSize) {
-      // Reset particle properties
-      particle.life = 0;
-      particle.position = [0, 0, 0];
-      particle.velocity = [0, 0, 0];
-      this.pool.push(particle);
-    }
-  }
-
-  clear() {
-    this.pool.length = 0;
-  }
-}
-
-// Global particle pool
-const PARTICLE_POOL = new ParticlePool();
-
-// Matrix pool for object reuse
-const MATRIX_POOL = {
-  matrix: new THREE.Matrix4(),
-  euler: new THREE.Euler(),
-  vector: new THREE.Vector3(),
-
-  reset() {
-    this.matrix.identity();
-    this.euler.set(0, 0, 0);
-    this.vector.set(0, 0, 0);
-  },
-};
-
-// Constants for limits - BALANCED LIMITS FOR GOOD VISUAL QUALITY
-const MAX_TAP_PARTICLES = 80; // Balanced for visual quality
-const MAX_RAIN_DROPS = 60; // Balanced for visual quality
-const MAX_CLOUD_PARTICLES = 30; // Balanced for visual quality
-const TAP_PARTICLE_COUNT = 6; // Balanced for visual quality
-
+// Star Effect - Permanent background stars
 export function StarEffect() {
   return (
     <Sparkles
-      count={80} // Balanced for visual quality
+      count={200}
       scale={[50, 30, 50]}
       size={1.5}
       speed={0.1}
@@ -159,13 +109,13 @@ export function StarEffect() {
   );
 }
 
+// Rain Effect using rectangular plane emitter with falling droplets
 export function RainEffect() {
   const { upgrades } = useGameStore();
   const rainUpgrade = upgrades.find((u) => u.id === "environment_rain");
   const rainEnabled = rainUpgrade?.unlocked && rainUpgrade?.selected;
 
-  // Use refs instead of state to avoid React re-renders
-  const rainDropsRef = useRef<
+  const [rainDrops, setRainDrops] = React.useState<
     Array<{
       id: number;
       position: [number, number, number];
@@ -176,115 +126,95 @@ export function RainEffect() {
   >([]);
 
   const dropIdCounter = useRef(0);
-  const instancedMeshRef = useRef<THREE.InstancedMesh>(null);
 
+  // Create rain drops from rectangular plane emitter
   const createRainDrops = React.useCallback(() => {
     if (!rainEnabled) return;
 
-    const currentDrops = rainDropsRef.current;
-    if (currentDrops.length >= MAX_RAIN_DROPS) return; // Limit check
+    setRainDrops((prev) => {
+      if (prev.length >= MAX_RAIN_DROPS) return prev; // Limit check
 
-    const newDrops = Array.from(
-      { length: Math.min(3, MAX_RAIN_DROPS - currentDrops.length) },
-      () => {
-        const radius = 5.5;
+      const newDrops = Array.from({ length: 5 }, () => {
+        // Random position on rectangular plane (emitter) - constrained to sphere radius
+        const radius = 5.5; // Slightly smaller than the sphere radius (6)
         const angle = Math.random() * Math.PI * 2;
         const distance = Math.random() * radius;
 
         const x = Math.cos(angle) * distance;
-        const y = 15;
+        const y = 15; // Start from top
         const z = Math.sin(angle) * distance;
 
+        // Falling velocity (mostly downward with slight randomness)
         const vx = (Math.random() - 0.5) * 0.5;
-        const vy = -(2 + Math.random() * 2);
+        const vy = -(2 + Math.random() * 2); // Fall downward
         const vz = (Math.random() - 0.5) * 0.5;
 
         return {
           id: dropIdCounter.current++,
           position: [x, y, z] as [number, number, number],
           velocity: [vx, vy, vz] as [number, number, number],
-          life: 3.0,
+          life: 3.0, // 3 seconds lifetime
           maxLife: 3.0,
         };
-      }
-    );
+      });
 
-    // Mutate array in place instead of creating new one
-    rainDropsRef.current.push(...newDrops);
+      return [...prev, ...newDrops];
+    });
   }, [rainEnabled]);
 
+  // Update rain drops in animation frame
   useFrame((state, delta) => {
-    if (state.clock.getElapsedTime() % 0.2 < delta) {
-      // Reduced frequency
+    // Create new drops periodically
+    if (state.clock.getElapsedTime() % 0.1 < delta) {
       createRainDrops();
     }
 
-    // Update particles in place (no setState)
-    const drops = rainDropsRef.current;
-    let aliveCount = 0;
-
-    for (let i = 0; i < drops.length; i++) {
-      const drop = drops[i];
-
-      // Update position
-      drop.position[0] += drop.velocity[0] * delta * 60;
-      drop.position[1] += drop.velocity[1] * delta * 60;
-      drop.position[2] += drop.velocity[2] * delta * 60;
-
-      // Update life
-      drop.life -= delta;
-
-      // Check if alive
-      if (drop.life > 0 && drop.position[1] > -10) {
-        // Keep this particle, update instanced mesh
-        const lifeRatio = Math.max(0, drop.life / drop.maxLife);
-        const scale = 0.1 + 0.2 * lifeRatio;
-
-        MATRIX_POOL.matrix.makeScale(scale, scale * 3, scale);
-        MATRIX_POOL.matrix.setPosition(
-          drop.position[0],
-          drop.position[1],
-          drop.position[2]
-        );
-
-        if (instancedMeshRef.current) {
-          instancedMeshRef.current.setMatrixAt(aliveCount, MATRIX_POOL.matrix);
-          // Set opacity via material (simplified for now)
-        }
-
-        aliveCount++;
-      }
-    }
-
-    // Remove dead particles by keeping only alive ones
-    if (aliveCount < drops.length) {
-      drops.splice(aliveCount);
-    }
-
-    // Update instanced mesh count
-    if (instancedMeshRef.current) {
-      instancedMeshRef.current.count = aliveCount;
-      instancedMeshRef.current.instanceMatrix.needsUpdate = true;
-    }
+    setRainDrops(
+      (prev) =>
+        prev
+          .map((drop) => ({
+            ...drop,
+            position: [
+              drop.position[0] + drop.velocity[0] * delta * 60,
+              drop.position[1] + drop.velocity[1] * delta * 60,
+              drop.position[2] + drop.velocity[2] * delta * 60,
+            ] as [number, number, number],
+            life: drop.life - delta,
+          }))
+          .filter((drop) => drop.life > 0 && drop.position[1] > -10) // Remove when below ground or expired
+    );
   });
 
   if (!rainEnabled) return null;
 
   return (
-    <instancedMesh
-      ref={instancedMeshRef}
-      args={[SHARED_GEOMETRIES.cylinder, SHARED_MATERIALS.rain, MAX_RAIN_DROPS]}
-    />
+    <group>
+      {rainDrops.map((drop) => {
+        const lifeRatio = Math.max(0, drop.life / drop.maxLife);
+        const scale = 0.1 + 0.2 * lifeRatio;
+
+        return (
+          <mesh
+            key={drop.id}
+            position={drop.position}
+            scale={[scale, scale * 3, scale]} // Elongated drop shape
+            geometry={SHARED_GEOMETRIES.cylinder}
+            material={SHARED_MATERIALS.rain}
+            material-opacity={lifeRatio}
+          />
+        );
+      })}
+    </group>
   );
 }
 
+// Cloud Effect using instanced spheres for better performance
 export function CloudEffect() {
   const { upgrades } = useGameStore();
   const cloudUpgrade = upgrades.find((u) => u.id === "environment_clouds");
   const cloudEnabled = cloudUpgrade?.unlocked && cloudUpgrade?.selected;
 
-  // Use refs instead of state
-  const cloudParticlesRef = useRef<
+  const [cloudParticles, setCloudParticles] = React.useState<
     Array<{
       id: number;
       position: [number, number, number];
@@ -295,113 +225,89 @@ export function CloudEffect() {
   >([]);
 
   const particleIdCounter = useRef(0);
-  const instancedMeshRef = useRef<THREE.InstancedMesh>(null);
 
+  // Create cloud particles
   const createCloudParticles = React.useCallback(() => {
     if (!cloudEnabled) return;
 
-    const currentParticles = cloudParticlesRef.current;
-    if (currentParticles.length >= MAX_CLOUD_PARTICLES) return;
+    setCloudParticles((prev) => {
+      if (prev.length >= MAX_CLOUD_PARTICLES) return prev; // Limit check
 
-    const newParticles = Array.from(
-      { length: Math.min(4, MAX_CLOUD_PARTICLES - currentParticles.length) },
-      () => {
-        const radius = 1 + Math.random() * 3;
+      const newParticles = Array.from({ length: 8 }, () => {
+        // Spawn from center (where blob head is) with small radius
+        const radius = 1 + Math.random() * 3; // Small radius around center
         const angle = Math.random() * Math.PI * 2;
         const x = Math.cos(angle) * radius;
-        const y = 1 + Math.random() * 4;
-        const z = Math.sin(angle) * radius - 2;
+        const y = 1 + Math.random() * 4; // Height range behind the counter
+        const z = Math.sin(angle) * radius - 2; // Slightly behind the counter
 
         return {
           id: particleIdCounter.current++,
           position: [x, y, z] as [number, number, number],
           velocity: [
-            (Math.random() - 0.5) * 0.05, // Much slower movement
-            0,
-            (Math.random() - 0.5) * 0.05,
+            (Math.random() - 0.5) * 0.15, // Even slower horizontal movement
+            0, // No vertical movement - clouds stay at same height
+            (Math.random() - 0.5) * 0.15,
           ] as [number, number, number],
-          scale: 0.8 + Math.random() * 1.2, // Larger scale
-          opacity: 0.2 + Math.random() * 0.3, // Higher opacity
+          scale: 0.6 + Math.random() * 0.8, // Even smaller scale
+          opacity: 0.15 + Math.random() * 0.25, // Lower opacity
         };
-      }
-    );
+      });
 
-    // Mutate array in place
-    cloudParticlesRef.current.push(...newParticles);
+      return [...prev, ...newParticles];
+    });
   }, [cloudEnabled]);
 
+  // Update cloud particles
   useFrame((state, delta) => {
+    // Create new particles periodically (slower)
     if (state.clock.getElapsedTime() % 4 < delta) {
       createCloudParticles();
     }
 
-    // Update particles in place
-    const particles = cloudParticlesRef.current;
-    let aliveCount = 0;
-
-    for (let i = 0; i < particles.length; i++) {
-      const particle = particles[i];
-
-      // Update position
-      particle.position[0] += particle.velocity[0] * delta * 60;
-      particle.position[1] += particle.velocity[1] * delta * 60;
-      particle.position[2] += particle.velocity[2] * delta * 60;
-
-      // Check if alive
-      const distance = Math.sqrt(
-        particle.position[0] ** 2 + particle.position[2] ** 2
-      );
-
-      if (distance < 8) {
-        // Keep this particle, update instanced mesh
-        MATRIX_POOL.matrix.makeScale(
-          particle.scale,
-          particle.scale,
-          particle.scale
-        );
-        MATRIX_POOL.matrix.setPosition(
-          particle.position[0],
-          particle.position[1],
-          particle.position[2]
-        );
-
-        if (instancedMeshRef.current) {
-          instancedMeshRef.current.setMatrixAt(aliveCount, MATRIX_POOL.matrix);
-        }
-
-        aliveCount++;
-      }
-    }
-
-    // Remove dead particles
-    if (aliveCount < particles.length) {
-      particles.splice(aliveCount);
-    }
-
-    // Update instanced mesh count
-    if (instancedMeshRef.current) {
-      instancedMeshRef.current.count = aliveCount;
-      instancedMeshRef.current.instanceMatrix.needsUpdate = true;
-    }
+    setCloudParticles((prev) =>
+      prev
+        .map((particle) => ({
+          ...particle,
+          position: [
+            particle.position[0] + particle.velocity[0] * delta * 60,
+            particle.position[1] + particle.velocity[1] * delta * 60,
+            particle.position[2] + particle.velocity[2] * delta * 60,
+          ] as [number, number, number],
+        }))
+        .filter((particle) => {
+          // Remove particles that go too far from center
+          const distance = Math.sqrt(
+            particle.position[0] ** 2 + particle.position[2] ** 2
+          );
+          return distance < 8; // Much smaller area
+        })
+    );
   });
 
   if (!cloudEnabled) return null;
 
   return (
-    <instancedMesh
-      ref={instancedMeshRef}
-      args={[
-        SHARED_GEOMETRIES.cloudSphere,
-        SHARED_MATERIALS.cloud,
-        MAX_CLOUD_PARTICLES,
-      ]}
-    />
+    <group>
+      {cloudParticles.map((particle) => (
+        <mesh
+          key={particle.id}
+          position={particle.position}
+          scale={[particle.scale, particle.scale, particle.scale]}
+          geometry={SHARED_GEOMETRIES.cloudSphere}
+          material={SHARED_MATERIALS.cloud}
+          material-opacity={particle.opacity}
+        />
+      ))}
+    </group>
   );
 }
 
+// Tap Effect using upgrade-based effects
 export function TapEffect() {
   const { upgrades } = useGameStore();
 
+  // Find the selected tap effect
   const selectedTapEffect = upgrades.find(
     (u) => u.category === "tapEffects" && u.selected
   );
@@ -415,8 +321,7 @@ export function TapEffect() {
       ? "stars"
       : "default";
 
-  // Use refs instead of state
-  const tapParticlesRef = useRef<
+  const [tapParticles, setTapParticles] = React.useState<
     Array<{
       id: number;
       position: [number, number, number];
@@ -432,15 +337,6 @@ export function TapEffect() {
   >([]);
 
   const particleIdCounter = useRef(0);
-  const lastTapTime = useRef(0);
-
-  // Separate instanced meshes for each color
-  const instancedMeshRefs = useRef<{
-    [color: string]: THREE.InstancedMesh | null;
-  }>({});
-
-  // Track particle counts per color
-  const colorCounts = useRef<{ [color: string]: number }>({});
 
   // Memoize color arrays
   const colorConfigs = useMemo(
@@ -452,240 +348,274 @@ export function TapEffect() {
         "#96CEB4",
         "#FFEAA7",
         "#DDA0DD",
+        "#98D8C8",
+        "#FFB6C1",
+        "#FFD93D",
+        "#6BCF7F",
+        "#4D96FF",
+        "#FF9A8B",
+        "#FF6B9D",
+        "#4ECDC4",
+        "#45B7D1",
+        "#96CEB4",
+        "#FFEAA7",
+        "#DDA0DD",
+        "#98D8C8",
+        "#FFB6C1",
+        "#FFD93D",
+        "#6BCF7F",
+        "#4D96FF",
+        "#FF9A8B",
+        "#FF6B6B",
+        "#4ECDC4",
+        "#45B7D1",
+        "#96CEB4",
+        "#FFEAA7",
+        "#DDA0DD",
       ],
-      hearts: ["#FF69B4", "#FF1493", "#DC143C", "#FF007F"],
-      stars: ["#FFD700", "#FFA500", "#FF8C00"],
-      default: ["#ffffff", "#cccccc", "#999999"],
+      hearts: [
+        "#FF69B4",
+        "#FF1493",
+        "#DC143C",
+        "#FF007F",
+        "#FF69B4",
+        "#FF1493",
+        "#FF69B4",
+        "#FF1493",
+        "#DC143C",
+        "#FF007F",
+        "#FF69B4",
+        "#FF1493",
+        "#FF69B4",
+        "#FF1493",
+        "#DC143C",
+        "#FF007F",
+        "#FF69B4",
+        "#FF1493",
+      ],
+      stars: [
+        "#FFD700",
+        "#FFA500",
+        "#FF8C00",
+        "#FFD700",
+        "#FFA500",
+        "#FF8C00",
+        "#FFD700",
+        "#FFA500",
+        "#FF8C00",
+        "#FFD700",
+        "#FFA500",
+        "#FF8C00",
+        "#FFD700",
+        "#FFA500",
+        "#FF8C00",
+        "#FFD700",
+        "#FFA500",
+        "#FF8C00",
+      ],
+      default: [
+        "#ffffff",
+        "#cccccc",
+        "#999999",
+        "#666666",
+        "#333333",
+        "#000000",
+        "#ffffff",
+        "#cccccc",
+        "#999999",
+        "#666666",
+        "#333333",
+        "#000000",
+        "#ffffff",
+        "#cccccc",
+        "#999999",
+        "#666666",
+        "#333333",
+        "#000000",
+      ],
     }),
     []
   );
 
+  // Function to create tap particles
   const createTapParticles = React.useCallback(
     (x: number, y: number, z: number, count: number = TAP_PARTICLE_COUNT) => {
-      const now = Date.now();
-      // Throttle tap creation to prevent spam
-      if (now - lastTapTime.current < 50) return; // 50ms throttle
-      lastTapTime.current = now;
+      // Always create particles for any valid effect type
 
-      const currentParticles = tapParticlesRef.current;
-      // Remove oldest particles if we're at the limit
-      if (currentParticles.length >= MAX_TAP_PARTICLES) {
-        currentParticles.splice(0, MAX_TAP_PARTICLES - count);
+      let colors: string[];
+      let particleType: "default" | "confetti" | "hearts" | "stars";
+
+      if (tapEffectType === "confetti") {
+        // Confetti colors
+        colors = colorConfigs.confetti;
+        particleType = "confetti";
+      } else if (tapEffectType === "hearts") {
+        // Heart colors (pink, red, magenta)
+        colors = colorConfigs.hearts;
+        particleType = "hearts";
+      } else if (tapEffectType === "stars") {
+        // Star colors (gold, yellow, orange)
+        colors = colorConfigs.stars;
+        particleType = "stars";
+      } else {
+        // Default colors (white, grey, black)
+        colors = colorConfigs.default;
+        particleType = "default";
       }
 
-      const colors = colorConfigs[tapEffectType] || colorConfigs.default;
-      const particleType = tapEffectType as
-        | "default"
-        | "confetti"
-        | "hearts"
-        | "stars";
+      setTapParticles((prev) => {
+        // Remove oldest particles if we're at the limit
+        const currentParticles =
+          prev.length >= MAX_TAP_PARTICLES
+            ? prev.slice(-(MAX_TAP_PARTICLES - count))
+            : prev;
 
-      const newParticles = Array.from({ length: count }, () => {
-        const theta = Math.random() * Math.PI * 2;
-        const phi = Math.acos(Math.random() * 2 - 1);
-        const speed = 0.2 + Math.random() * 0.3; // Better speed for visual quality
-        const color = colors[Math.floor(Math.random() * colors.length)];
+        const newParticles = Array.from({ length: count }, (_, i) => {
+          // Random direction in 3D space (all directions)
+          const theta = Math.random() * Math.PI * 2; // Random angle around Y axis
+          const phi = Math.acos(Math.random() * 2 - 1); // Random angle from Y axis
+          const speed = 0.2 + Math.random() * 0.4;
+          // Ensure each particle gets a different random color
+          const colorIndex = Math.floor(Math.random() * colors.length);
+          const color = colors[colorIndex];
 
-        const vx = Math.sin(phi) * Math.cos(theta) * speed;
-        const vy = Math.cos(phi) * speed;
-        const vz = Math.sin(phi) * Math.sin(theta) * speed;
+          // Calculate velocity in all directions
+          const vx = Math.sin(phi) * Math.cos(theta) * speed;
+          const vy = Math.cos(phi) * speed;
+          const vz = Math.sin(phi) * Math.sin(theta) * speed;
 
-        // Try to get from pool first
-        let particle = PARTICLE_POOL.get();
-        if (!particle) {
-          particle = {
+          // Random rotation speeds for each axis
+          const rotationSpeedX = (Math.random() - 0.5) * 10;
+          const rotationSpeedY = (Math.random() - 0.5) * 10;
+          const rotationSpeedZ = (Math.random() - 0.5) * 10;
+
+          return {
             id: particleIdCounter.current++,
             position: [x, y, z] as [number, number, number],
             velocity: [vx, vy, vz] as [number, number, number],
-            life: 2.0, // Better lifetime for visual quality
+            life: 2.0,
             maxLife: 2.0,
             color,
             rotation: [0, 0, 0] as [number, number, number],
-            rotationSpeed: [
-              (Math.random() - 0.5) * 8,
-              (Math.random() - 0.5) * 8,
-              (Math.random() - 0.5) * 8,
-            ] as [number, number, number],
-            scale: (0.6 + Math.random() * 0.3) * 0.4, // Smaller scale
+            rotationSpeed: [rotationSpeedX, rotationSpeedY, rotationSpeedZ] as [
+              number,
+              number,
+              number
+            ],
+            scale: (0.8 + Math.random() * 0.4) * 0.5, // Decreased by 0.5
             particleType,
           };
-        } else {
-          // Reuse existing particle
-          particle.id = particleIdCounter.current++;
-          particle.position = [x, y, z];
-          particle.velocity = [vx, vy, vz];
-          particle.life = 2.0;
-          particle.maxLife = 2.0;
-          particle.color = color;
-          particle.rotation = [0, 0, 0];
-          particle.rotationSpeed = [
-            (Math.random() - 0.5) * 8,
-            (Math.random() - 0.5) * 8,
-            (Math.random() - 0.5) * 8,
-          ];
-          particle.scale = (0.6 + Math.random() * 0.3) * 0.4;
-          particle.particleType = particleType;
-        }
+        });
 
-        return particle;
+        return [...currentParticles, ...newParticles];
       });
-
-      // Mutate array in place
-      currentParticles.push(...newParticles);
     },
     [tapEffectType, colorConfigs]
   );
 
+  // Update particles in animation frame
   useFrame((state, delta) => {
-    // Update particles in place
-    const particles = tapParticlesRef.current;
-    let aliveCount = 0;
-
-    // Reset color counts
-    colorCounts.current = {};
-
-    for (let i = 0; i < particles.length; i++) {
-      const particle = particles[i];
-
-      // Update position
-      particle.position[0] += particle.velocity[0] * delta * 60;
-      particle.position[1] += particle.velocity[1] * delta * 60;
-      particle.position[2] += particle.velocity[2] * delta * 60;
-
-      // Update rotation
-      particle.rotation[0] += particle.rotationSpeed[0] * delta;
-      particle.rotation[1] += particle.rotationSpeed[1] * delta;
-      particle.rotation[2] += particle.rotationSpeed[2] * delta;
-
-      // Update life
-      particle.life -= delta;
-
-      // Check if alive
-      if (particle.life > 0) {
-        // Keep this particle, update instanced mesh
-        const lifeRatio = Math.max(0, particle.life / particle.maxLife);
-        const scale = particle.scale * (0.5 + 0.5 * lifeRatio);
-
-        MATRIX_POOL.euler.set(
-          particle.rotation[0],
-          particle.rotation[1],
-          particle.rotation[2]
-        );
-        MATRIX_POOL.matrix.makeRotationFromEuler(MATRIX_POOL.euler);
-        MATRIX_POOL.vector.set(scale, scale, scale);
-        MATRIX_POOL.matrix.scale(MATRIX_POOL.vector);
-        MATRIX_POOL.matrix.setPosition(
-          particle.position[0],
-          particle.position[1],
-          particle.position[2]
-        );
-
-        // Get or create instanced mesh for this color
-        const colorKey = particle.color;
-        if (!colorCounts.current[colorKey]) {
-          colorCounts.current[colorKey] = 0;
-        }
-
-        const instancedMesh = instancedMeshRefs.current[colorKey];
-        if (instancedMesh) {
-          instancedMesh.setMatrixAt(
-            colorCounts.current[colorKey],
-            MATRIX_POOL.matrix
-          );
-          colorCounts.current[colorKey]++;
-        }
-
-        aliveCount++;
-      } else {
-        // Return to pool and mark for removal
-        PARTICLE_POOL.release(particle);
-        // Move this particle to the end so it gets removed
-        particles[i] = particles[particles.length - 1];
-        particles.pop();
-        i--; // Recheck this index since we moved a particle here
-      }
-    }
-
-    // Particles are already removed inline above
-
-    // Update all instanced mesh counts
-    Object.keys(colorCounts.current).forEach((colorKey) => {
-      const instancedMesh = instancedMeshRefs.current[colorKey];
-      if (instancedMesh) {
-        instancedMesh.count = colorCounts.current[colorKey];
-        instancedMesh.instanceMatrix.needsUpdate = true;
-      }
-    });
+    setTapParticles((prev) =>
+      prev
+        .map((particle) => ({
+          ...particle,
+          position: [
+            particle.position[0] + particle.velocity[0] * delta * 60,
+            particle.position[1] + particle.velocity[1] * delta * 60,
+            particle.position[2] + particle.velocity[2] * delta * 60,
+          ] as [number, number, number],
+          rotation: [
+            particle.rotation[0] + particle.rotationSpeed[0] * delta,
+            particle.rotation[1] + particle.rotationSpeed[1] * delta,
+            particle.rotation[2] + particle.rotationSpeed[2] * delta,
+          ] as [number, number, number],
+          life: particle.life - delta,
+        }))
+        .filter((particle) => particle.life > 0)
+    );
   });
 
+  // Expose the create function globally for other components to use
   useEffect(() => {
     (window as any).createTapParticles = createTapParticles;
     return () => {
       delete (window as any).createTapParticles;
-      // Clean up pools when component unmounts
-      PARTICLE_POOL.clear();
-      MATRIX_POOL.reset();
-      // Clear all particle arrays
-      tapParticlesRef.current = [];
     };
   }, [createTapParticles]);
 
-  // Get geometry and material based on effect type
-  const { geometry, material } = useMemo(() => {
-    switch (tapEffectType) {
-      case "confetti":
-        return {
-          geometry: SHARED_GEOMETRIES.plane,
-          material: SHARED_MATERIALS.confetti,
-        };
-      case "hearts":
-        return {
-          geometry: SHARED_GEOMETRIES.heart,
-          material: SHARED_MATERIALS.heart,
-        };
-      case "stars":
-        return {
-          geometry: SHARED_GEOMETRIES.star,
-          material: SHARED_MATERIALS.star,
-        };
-      default:
-        return {
-          geometry: SHARED_GEOMETRIES.sphere,
-          material: SHARED_MATERIALS.sphere,
-        };
-    }
-  }, [tapEffectType]);
-
-  // Get all possible colors for this effect type
-  const colors = useMemo(() => {
-    return colorConfigs[tapEffectType] || colorConfigs.default;
-  }, [tapEffectType, colorConfigs]);
-
+  // Always render the effect component, but particles are created based on theme
   return (
     <group>
-      {colors.map((color) => (
-        <instancedMesh
-          key={color}
-          ref={(mesh) => {
-            instancedMeshRefs.current[color] = mesh;
-          }}
-          args={[geometry, material, MAX_TAP_PARTICLES]}
-        >
-          <meshStandardMaterial color={color} transparent opacity={0.8} />
-        </instancedMesh>
-      ))}
+      {tapParticles.map((particle) => {
+        const lifeRatio = Math.max(0, particle.life / particle.maxLife);
+        const scale = particle.scale * (0.3 + 0.7 * lifeRatio);
+
+        return (
+          <group
+            key={particle.id}
+            position={particle.position}
+            rotation={particle.rotation}
+            scale={[scale, scale, scale]}
+          >
+            {particle.particleType === "confetti" ? (
+              // 2D confetti piece - a simple plane
+              <mesh
+                geometry={SHARED_GEOMETRIES.plane}
+                material={SHARED_MATERIALS.confetti}
+                material-color={particle.color}
+                material-opacity={lifeRatio}
+              />
+            ) : particle.particleType === "hearts" ? (
+              // Heart shape using custom geometry
+              <mesh
+                geometry={SHARED_GEOMETRIES.heart}
+                material={SHARED_MATERIALS.heart}
+                material-color={particle.color}
+                material-opacity={lifeRatio}
+              />
+            ) : particle.particleType === "stars" ? (
+              // Star shape using custom geometry
+              <mesh
+                geometry={SHARED_GEOMETRIES.star}
+                material={SHARED_MATERIALS.star}
+                material-color={particle.color}
+                material-opacity={lifeRatio}
+              />
+            ) : (
+              // Default particles - small spheres
+              <mesh
+                geometry={SHARED_GEOMETRIES.sphere}
+                material={SHARED_MATERIALS.sphere}
+                material-color={particle.color}
+                material-opacity={lifeRatio}
+              />
+            )}
+          </group>
+        );
+      })}
     </group>
   );
 }
 
+// Fisheye Intensity Effect - this will be handled by the Scene component
 export function FisheyeIntensityEffect() {
+  const { decorations } = useGameStore();
+  const fisheyeDecoration = decorations.find(
+    (d) => d.id === "fisheye_intensity"
+  );
+  const fisheyeEnabled =
+    fisheyeDecoration?.purchased && fisheyeDecoration?.enabled;
+
+  // This effect will be handled by the Scene component's fisheye lens
+  // We just return null here as the effect is applied at the camera level
   return null;
 }
 
+// Main Particle Effects Container
 export function ParticleEffects() {
   return (
     <group>
-      <StarEffect />
+      <StarEffect /> {/* Permanent background stars */}
       <RainEffect />
       <CloudEffect />
       <TapEffect />

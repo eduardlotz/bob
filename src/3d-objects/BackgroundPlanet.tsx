@@ -4,8 +4,15 @@ import { THEME_CONFIG } from "@/store/upgradesConfig";
 import * as THREE from "three";
 import { useMemo } from "react";
 import { GradientTexture } from "@react-three/drei";
+import { useSpring, animated } from "@react-spring/three";
 
-export const BackgroundPlanet = () => {
+interface BackgroundPlanetProps {
+  showOptions?: boolean;
+}
+
+export const BackgroundPlanet = ({
+  showOptions = false,
+}: BackgroundPlanetProps) => {
   const { currentTheme } = useGameStore();
 
   // Get theme colors, fallback to default if no theme is active
@@ -16,9 +23,23 @@ export const BackgroundPlanet = () => {
 
   const planetColors = [...themeConfig.planetColors];
 
+  // Dynamic sphere scaling based on UI state
+  const sphereScale = useMemo(() => {
+    // When options are hidden: large sphere for more particle space
+    // When options are open: smaller sphere for better fisheye effect
+    return showOptions ? 6 : 12; // 2x larger when hidden
+  }, [showOptions]);
+
+  // Smooth spring animation for scale changes
+  const { scale } = useSpring({
+    scale: sphereScale,
+    config: { tension: 200, friction: 20 },
+    delay: 100, // Small delay to prevent jarring changes
+  });
+
   return (
-    <mesh>
-      <sphereGeometry args={[6, 32, 32]} />
+    <animated.mesh scale={scale}>
+      <sphereGeometry args={[1.4, 32, 32]} />
       <meshBasicMaterial side={BackSide}>
         <GradientTexture
           stops={[0, 0.5, 1]}
@@ -26,6 +47,6 @@ export const BackgroundPlanet = () => {
           size={1024}
         />
       </meshBasicMaterial>
-    </mesh>
+    </animated.mesh>
   );
 };
