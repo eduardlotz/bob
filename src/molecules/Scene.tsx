@@ -85,8 +85,8 @@ const Scene = ({
               ref={cameraControlsRef}
               minPolarAngle={0}
               maxPolarAngle={Math.PI / 1.6}
-              maxDistance={10}
-              minDistance={1}
+              maxDistance={40} // Increased to prevent clipping
+              minDistance={0.5} // Reduced to allow closer zoom
             />
             <ambientLight intensity={2} />
             <PerspectiveCamera
@@ -96,8 +96,7 @@ const Scene = ({
             />
             <directionalLight intensity={1.2} position={[2, 4, 5]} />
             <Environment preset="city" />
-            <BackgroundPlanet />
-            <ParticleEffects />
+            <BackgroundPlanet showOptions={showOptions || false} />
             <HeadNavigation
               showOptions={showOptions || false}
               setShowOptions={setShowOptions || (() => {})}
@@ -111,6 +110,8 @@ const Scene = ({
             />
             {/* 3D Emotion Counter */}
             <EmotionCounter tapCount={tapCount || 0} />
+            {/* ParticleEffects inside Fisheye but with larger spawn areas */}
+            <ParticleEffects />
           </Fisheye>
         </Suspense>
       </FullScreenCanvas>

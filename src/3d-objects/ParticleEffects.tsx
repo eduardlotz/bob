@@ -1,81 +1,98 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Cloud, Sparkles, Clouds, Sky } from "@react-three/drei";
 import { useGameStore } from "@/store/gameStore";
 import { THEME_CONFIG } from "@/store/upgradesConfig";
 import * as THREE from "three";
 
-// Custom Heart Geometry
-const heartGeometry = () => {
-  const shape = new THREE.Shape();
-  const x = 0,
-    y = 0;
-
-  shape.moveTo(x + 5 * 0.1, y + 5 * 0.1);
-  shape.bezierCurveTo(x + 5 * 0.1, y + 5 * 0.1, x + 4 * 0.1, y, x, y);
-  shape.bezierCurveTo(
-    x - 6 * 0.1,
-    y,
-    x - 6 * 0.1,
-    y + 7 * 0.1,
-    x - 6 * 0.1,
-    y + 7 * 0.1
-  );
-  shape.bezierCurveTo(
-    x - 6 * 0.1,
-    y + 11 * 0.1,
-    x - 3 * 0.1,
-    y + 15.4 * 0.1,
-    x + 5 * 0.1,
-    y + 19 * 0.1
-  );
-  shape.bezierCurveTo(
-    x + 12 * 0.1,
-    y + 15.4 * 0.1,
-    x + 16 * 0.1,
-    y + 11 * 0.1,
-    x + 16 * 0.1,
-    y + 6.4 * 0.1
-  );
-  shape.bezierCurveTo(
-    x + 16 * 0.1,
-    y + 7 * 0.1,
-    x + 16 * 0.1,
-    y,
-    x + 10 * 0.1,
-    y
-  );
-  shape.bezierCurveTo(
-    x + 7 * 0.1,
-    y,
-    x + 5 * 0.1,
-    y + 5 * 0.1,
-    x + 5 * 0.1,
-    y + 5 * 0.1
-  );
-
-  const geometry = new THREE.ShapeGeometry(shape);
-  return geometry;
+// Pre-create and reuse geometries (CRITICAL for performance)
+const SHARED_GEOMETRIES = {
+  heart: (() => {
+    const shape = new THREE.Shape();
+    const x = 0,
+      y = 0;
+    shape.moveTo(x + 5 * 0.1, y + 5 * 0.1);
+    shape.bezierCurveTo(x + 5 * 0.1, y + 5 * 0.1, x + 4 * 0.1, y, x, y);
+    shape.bezierCurveTo(
+      x - 6 * 0.1,
+      y,
+      x - 6 * 0.1,
+      y + 7 * 0.1,
+      x - 6 * 0.1,
+      y + 7 * 0.1
+    );
+    shape.bezierCurveTo(
+      x - 6 * 0.1,
+      y + 11 * 0.1,
+      x - 3 * 0.1,
+      y + 15.4 * 0.1,
+      x + 5 * 0.1,
+      y + 19 * 0.1
+    );
+    shape.bezierCurveTo(
+      x + 12 * 0.1,
+      y + 15.4 * 0.1,
+      x + 16 * 0.1,
+      y + 11 * 0.1,
+      x + 16 * 0.1,
+      y + 6.4 * 0.1
+    );
+    shape.bezierCurveTo(
+      x + 16 * 0.1,
+      y + 7 * 0.1,
+      x + 16 * 0.1,
+      y,
+      x + 10 * 0.1,
+      y
+    );
+    shape.bezierCurveTo(
+      x + 7 * 0.1,
+      y,
+      x + 5 * 0.1,
+      y + 5 * 0.1,
+      x + 5 * 0.1,
+      y + 5 * 0.1
+    );
+    return new THREE.ShapeGeometry(shape);
+  })(),
+  star: (() => {
+    const shape = new THREE.Shape();
+    const spikes = 5;
+    const outerRadius = 0.5;
+    const innerRadius = 0.2;
+    const step = (Math.PI * 2) / (spikes * 2);
+    shape.moveTo(outerRadius, 0);
+    for (let i = 1; i < spikes * 2; i++) {
+      const radius = i % 2 === 0 ? outerRadius : innerRadius;
+      shape.lineTo(Math.cos(i * step) * radius, Math.sin(i * step) * radius);
+    }
+    shape.closePath();
+    return new THREE.ShapeGeometry(shape);
+  })(),
+  sphere: new THREE.SphereGeometry(0.1, 8, 8),
+  plane: new THREE.PlaneGeometry(1, 1),
+  cylinder: new THREE.CylinderGeometry(0.02, 0.02, 0.3),
+  cloudSphere: new THREE.SphereGeometry(1, 8, 8),
 };
 
-// Custom Star Geometry
-const starGeometry = () => {
-  const shape = new THREE.Shape();
-  const spikes = 5;
-  const outerRadius = 0.5;
-  const innerRadius = 0.2;
-  const step = (Math.PI * 2) / (spikes * 2);
-
-  shape.moveTo(outerRadius, 0);
-  for (let i = 1; i < spikes * 2; i++) {
-    const radius = i % 2 === 0 ? outerRadius : innerRadius;
-    shape.lineTo(Math.cos(i * step) * radius, Math.sin(i * step) * radius);
-  }
-  shape.closePath();
-
-  const geometry = new THREE.ShapeGeometry(shape);
-  return geometry;
+// Pre-create and reuse materials
+const SHARED_MATERIALS = {
+  heart: new THREE.MeshStandardMaterial({ transparent: true }),
+  star: new THREE.MeshStandardMaterial({ transparent: true }),
+  sphere: new THREE.MeshStandardMaterial({ transparent: true }),
+  confetti: new THREE.MeshStandardMaterial({
+    transparent: true,
+    side: THREE.DoubleSide,
+  }),
+  rain: new THREE.MeshStandardMaterial({ color: "#87CEEB", transparent: true }),
+  cloud: new THREE.MeshToonMaterial({ color: "#ffffff", transparent: true }),
 };
+
+// Constants for limits
+const MAX_TAP_PARTICLES = 150;
+const MAX_RAIN_DROPS = 100;
+const MAX_CLOUD_PARTICLES = 50;
+const TAP_PARTICLE_COUNT = 15;
 
 // Star Effect - Permanent background stars
 export function StarEffect() {
@@ -111,35 +128,39 @@ export function RainEffect() {
   const dropIdCounter = useRef(0);
 
   // Create rain drops from rectangular plane emitter
-  const createRainDrops = () => {
+  const createRainDrops = React.useCallback(() => {
     if (!rainEnabled) return;
 
-    const newDrops = Array.from({ length: 5 }, () => {
-      // Random position on rectangular plane (emitter) - constrained to sphere radius
-      const radius = 5.5; // Slightly smaller than the sphere radius (6)
-      const angle = Math.random() * Math.PI * 2;
-      const distance = Math.random() * radius;
+    setRainDrops((prev) => {
+      if (prev.length >= MAX_RAIN_DROPS) return prev; // Limit check
 
-      const x = Math.cos(angle) * distance;
-      const y = 15; // Start from top
-      const z = Math.sin(angle) * distance;
+      const newDrops = Array.from({ length: 5 }, () => {
+        // Random position on rectangular plane (emitter) - constrained to sphere radius
+        const radius = 5.5; // Slightly smaller than the sphere radius (6)
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * radius;
 
-      // Falling velocity (mostly downward with slight randomness)
-      const vx = (Math.random() - 0.5) * 0.5;
-      const vy = -(2 + Math.random() * 2); // Fall downward
-      const vz = (Math.random() - 0.5) * 0.5;
+        const x = Math.cos(angle) * distance;
+        const y = 15; // Start from top
+        const z = Math.sin(angle) * distance;
 
-      return {
-        id: dropIdCounter.current++,
-        position: [x, y, z] as [number, number, number],
-        velocity: [vx, vy, vz] as [number, number, number],
-        life: 3.0, // 3 seconds lifetime
-        maxLife: 3.0,
-      };
+        // Falling velocity (mostly downward with slight randomness)
+        const vx = (Math.random() - 0.5) * 0.5;
+        const vy = -(2 + Math.random() * 2); // Fall downward
+        const vz = (Math.random() - 0.5) * 0.5;
+
+        return {
+          id: dropIdCounter.current++,
+          position: [x, y, z] as [number, number, number],
+          velocity: [vx, vy, vz] as [number, number, number],
+          life: 3.0, // 3 seconds lifetime
+          maxLife: 3.0,
+        };
+      });
+
+      return [...prev, ...newDrops];
     });
-
-    setRainDrops((prev) => [...prev, ...newDrops]);
-  };
+  }, [rainEnabled]);
 
   // Update rain drops in animation frame
   useFrame((state, delta) => {
@@ -177,14 +198,10 @@ export function RainEffect() {
             key={drop.id}
             position={drop.position}
             scale={[scale, scale * 3, scale]} // Elongated drop shape
-          >
-            <cylinderGeometry args={[0.02, 0.02, 0.3]} />
-            <meshStandardMaterial
-              color="#87CEEB"
-              transparent
-              opacity={lifeRatio}
-            />
-          </mesh>
+            geometry={SHARED_GEOMETRIES.cylinder}
+            material={SHARED_MATERIALS.rain}
+            material-opacity={lifeRatio}
+          />
         );
       })}
     </group>
@@ -210,32 +227,36 @@ export function CloudEffect() {
   const particleIdCounter = useRef(0);
 
   // Create cloud particles
-  const createCloudParticles = () => {
+  const createCloudParticles = React.useCallback(() => {
     if (!cloudEnabled) return;
 
-    const newParticles = Array.from({ length: 8 }, () => {
-      // Spawn from center (where blob head is) with small radius
-      const radius = 1 + Math.random() * 3; // Small radius around center
-      const angle = Math.random() * Math.PI * 2;
-      const x = Math.cos(angle) * radius;
-      const y = 1 + Math.random() * 4; // Height range behind the counter
-      const z = Math.sin(angle) * radius - 2; // Slightly behind the counter
+    setCloudParticles((prev) => {
+      if (prev.length >= MAX_CLOUD_PARTICLES) return prev; // Limit check
 
-      return {
-        id: particleIdCounter.current++,
-        position: [x, y, z] as [number, number, number],
-        velocity: [
-          (Math.random() - 0.5) * 0.15, // Even slower horizontal movement
-          0, // No vertical movement - clouds stay at same height
-          (Math.random() - 0.5) * 0.15,
-        ] as [number, number, number],
-        scale: 0.6 + Math.random() * 0.8, // Even smaller scale
-        opacity: 0.15 + Math.random() * 0.25, // Lower opacity
-      };
+      const newParticles = Array.from({ length: 8 }, () => {
+        // Spawn from center (where blob head is) with small radius
+        const radius = 1 + Math.random() * 3; // Small radius around center
+        const angle = Math.random() * Math.PI * 2;
+        const x = Math.cos(angle) * radius;
+        const y = 1 + Math.random() * 4; // Height range behind the counter
+        const z = Math.sin(angle) * radius - 2; // Slightly behind the counter
+
+        return {
+          id: particleIdCounter.current++,
+          position: [x, y, z] as [number, number, number],
+          velocity: [
+            (Math.random() - 0.5) * 0.15, // Even slower horizontal movement
+            0, // No vertical movement - clouds stay at same height
+            (Math.random() - 0.5) * 0.15,
+          ] as [number, number, number],
+          scale: 0.6 + Math.random() * 0.8, // Even smaller scale
+          opacity: 0.15 + Math.random() * 0.25, // Lower opacity
+        };
+      });
+
+      return [...prev, ...newParticles];
     });
-
-    setCloudParticles((prev) => [...prev, ...newParticles]);
-  };
+  }, [cloudEnabled]);
 
   // Update cloud particles
   useFrame((state, delta) => {
@@ -273,14 +294,10 @@ export function CloudEffect() {
           key={particle.id}
           position={particle.position}
           scale={[particle.scale, particle.scale, particle.scale]}
-        >
-          <sphereGeometry args={[1, 8, 8]} />
-          <meshToonMaterial
-            color="#ffffff"
-            transparent
-            opacity={particle.opacity}
-          />
-        </mesh>
+          geometry={SHARED_GEOMETRIES.cloudSphere}
+          material={SHARED_MATERIALS.cloud}
+          material-opacity={particle.opacity}
+        />
       ))}
     </group>
   );
@@ -321,21 +338,10 @@ export function TapEffect() {
 
   const particleIdCounter = useRef(0);
 
-  // Function to create tap particles
-  const createTapParticles = (
-    x: number,
-    y: number,
-    z: number,
-    count: number = 15
-  ) => {
-    // Always create particles for any valid effect type
-
-    let colors: string[];
-    let particleType: "default" | "confetti" | "hearts" | "stars";
-
-    if (tapEffectType === "confetti") {
-      // Confetti colors
-      colors = [
+  // Memoize color arrays
+  const colorConfigs = useMemo(
+    () => ({
+      confetti: [
         "#FF6B6B",
         "#4ECDC4",
         "#45B7D1",
@@ -348,80 +354,164 @@ export function TapEffect() {
         "#6BCF7F",
         "#4D96FF",
         "#FF9A8B",
-      ];
-      particleType = "confetti";
-    } else if (tapEffectType === "hearts") {
-      // Heart colors (pink, red, magenta)
-      colors = [
+        "#FF6B9D",
+        "#4ECDC4",
+        "#45B7D1",
+        "#96CEB4",
+        "#FFEAA7",
+        "#DDA0DD",
+        "#98D8C8",
+        "#FFB6C1",
+        "#FFD93D",
+        "#6BCF7F",
+        "#4D96FF",
+        "#FF9A8B",
+        "#FF6B6B",
+        "#4ECDC4",
+        "#45B7D1",
+        "#96CEB4",
+        "#FFEAA7",
+        "#DDA0DD",
+      ],
+      hearts: [
         "#FF69B4",
         "#FF1493",
         "#DC143C",
         "#FF007F",
         "#FF69B4",
         "#FF1493",
-      ];
-      particleType = "hearts";
-    } else if (tapEffectType === "stars") {
-      // Star colors (gold, yellow, orange)
-      colors = [
+        "#FF69B4",
+        "#FF1493",
+        "#DC143C",
+        "#FF007F",
+        "#FF69B4",
+        "#FF1493",
+        "#FF69B4",
+        "#FF1493",
+        "#DC143C",
+        "#FF007F",
+        "#FF69B4",
+        "#FF1493",
+      ],
+      stars: [
         "#FFD700",
         "#FFA500",
         "#FF8C00",
         "#FFD700",
         "#FFA500",
         "#FF8C00",
-      ];
-      particleType = "stars";
-    } else {
-      // Default colors (white, grey, black)
-      colors = [
+        "#FFD700",
+        "#FFA500",
+        "#FF8C00",
+        "#FFD700",
+        "#FFA500",
+        "#FF8C00",
+        "#FFD700",
+        "#FFA500",
+        "#FF8C00",
+        "#FFD700",
+        "#FFA500",
+        "#FF8C00",
+      ],
+      default: [
         "#ffffff",
         "#cccccc",
         "#999999",
         "#666666",
         "#333333",
         "#000000",
-      ];
-      particleType = "default";
-    }
+        "#ffffff",
+        "#cccccc",
+        "#999999",
+        "#666666",
+        "#333333",
+        "#000000",
+        "#ffffff",
+        "#cccccc",
+        "#999999",
+        "#666666",
+        "#333333",
+        "#000000",
+      ],
+    }),
+    []
+  );
 
-    const newParticles = Array.from({ length: count }, (_, i) => {
-      // Random direction in 3D space (all directions)
-      const theta = Math.random() * Math.PI * 2; // Random angle around Y axis
-      const phi = Math.acos(Math.random() * 2 - 1); // Random angle from Y axis
-      const speed = 0.2 + Math.random() * 0.4;
-      const color = colors[Math.floor(Math.random() * colors.length)];
+  // Function to create tap particles
+  const createTapParticles = React.useCallback(
+    (x: number, y: number, z: number, count: number = TAP_PARTICLE_COUNT) => {
+      // Always create particles for any valid effect type
 
-      // Calculate velocity in all directions
-      const vx = Math.sin(phi) * Math.cos(theta) * speed;
-      const vy = Math.cos(phi) * speed;
-      const vz = Math.sin(phi) * Math.sin(theta) * speed;
+      let colors: string[];
+      let particleType: "default" | "confetti" | "hearts" | "stars";
 
-      // Random rotation speeds for each axis
-      const rotationSpeedX = (Math.random() - 0.5) * 10;
-      const rotationSpeedY = (Math.random() - 0.5) * 10;
-      const rotationSpeedZ = (Math.random() - 0.5) * 10;
+      if (tapEffectType === "confetti") {
+        // Confetti colors
+        colors = colorConfigs.confetti;
+        particleType = "confetti";
+      } else if (tapEffectType === "hearts") {
+        // Heart colors (pink, red, magenta)
+        colors = colorConfigs.hearts;
+        particleType = "hearts";
+      } else if (tapEffectType === "stars") {
+        // Star colors (gold, yellow, orange)
+        colors = colorConfigs.stars;
+        particleType = "stars";
+      } else {
+        // Default colors (white, grey, black)
+        colors = colorConfigs.default;
+        particleType = "default";
+      }
 
-      return {
-        id: particleIdCounter.current++,
-        position: [x, y, z] as [number, number, number],
-        velocity: [vx, vy, vz] as [number, number, number],
-        life: 2.0,
-        maxLife: 2.0,
-        color,
-        rotation: [0, 0, 0] as [number, number, number],
-        rotationSpeed: [rotationSpeedX, rotationSpeedY, rotationSpeedZ] as [
-          number,
-          number,
-          number
-        ],
-        scale: (0.8 + Math.random() * 0.4) * 0.5, // Decreased by 0.5
-        particleType,
-      };
-    });
+      setTapParticles((prev) => {
+        // Remove oldest particles if we're at the limit
+        const currentParticles =
+          prev.length >= MAX_TAP_PARTICLES
+            ? prev.slice(-(MAX_TAP_PARTICLES - count))
+            : prev;
 
-    setTapParticles((prev) => [...prev, ...newParticles]);
-  };
+        const newParticles = Array.from({ length: count }, (_, i) => {
+          // Random direction in 3D space (all directions)
+          const theta = Math.random() * Math.PI * 2; // Random angle around Y axis
+          const phi = Math.acos(Math.random() * 2 - 1); // Random angle from Y axis
+          const speed = 0.2 + Math.random() * 0.4;
+          // Ensure each particle gets a different random color
+          const colorIndex = Math.floor(Math.random() * colors.length);
+          const color = colors[colorIndex];
+
+          // Calculate velocity in all directions
+          const vx = Math.sin(phi) * Math.cos(theta) * speed;
+          const vy = Math.cos(phi) * speed;
+          const vz = Math.sin(phi) * Math.sin(theta) * speed;
+
+          // Random rotation speeds for each axis
+          const rotationSpeedX = (Math.random() - 0.5) * 10;
+          const rotationSpeedY = (Math.random() - 0.5) * 10;
+          const rotationSpeedZ = (Math.random() - 0.5) * 10;
+
+          return {
+            id: particleIdCounter.current++,
+            position: [x, y, z] as [number, number, number],
+            velocity: [vx, vy, vz] as [number, number, number],
+            life: 2.0,
+            maxLife: 2.0,
+            color,
+            rotation: [0, 0, 0] as [number, number, number],
+            rotationSpeed: [rotationSpeedX, rotationSpeedY, rotationSpeedZ] as [
+              number,
+              number,
+              number
+            ],
+            scale: (0.8 + Math.random() * 0.4) * 0.5, // Decreased by 0.5
+            particleType,
+          };
+        });
+
+        return [...currentParticles, ...newParticles];
+      });
+    },
+    [tapEffectType, colorConfigs]
+  );
 
   // Update particles in animation frame
   useFrame((state, delta) => {
@@ -451,10 +541,9 @@ export function TapEffect() {
     return () => {
       delete (window as any).createTapParticles;
     };
-  }, [tapEffectType]);
+  }, [createTapParticles]);
 
   // Always render the effect component, but particles are created based on theme
-
   return (
     <group>
       {tapParticles.map((particle) => {
@@ -470,43 +559,36 @@ export function TapEffect() {
           >
             {particle.particleType === "confetti" ? (
               // 2D confetti piece - a simple plane
-              <mesh>
-                <planeGeometry args={[1, 1]} />
-                <meshStandardMaterial
-                  color={particle.color}
-                  transparent
-                  opacity={lifeRatio}
-                  side={THREE.DoubleSide}
-                />
-              </mesh>
+              <mesh
+                geometry={SHARED_GEOMETRIES.plane}
+                material={SHARED_MATERIALS.confetti}
+                material-color={particle.color}
+                material-opacity={lifeRatio}
+              />
             ) : particle.particleType === "hearts" ? (
               // Heart shape using custom geometry
-              <mesh geometry={heartGeometry()}>
-                <meshStandardMaterial
-                  color={particle.color}
-                  transparent
-                  opacity={lifeRatio}
-                />
-              </mesh>
+              <mesh
+                geometry={SHARED_GEOMETRIES.heart}
+                material={SHARED_MATERIALS.heart}
+                material-color={particle.color}
+                material-opacity={lifeRatio}
+              />
             ) : particle.particleType === "stars" ? (
               // Star shape using custom geometry
-              <mesh geometry={starGeometry()}>
-                <meshStandardMaterial
-                  color={particle.color}
-                  transparent
-                  opacity={lifeRatio}
-                />
-              </mesh>
+              <mesh
+                geometry={SHARED_GEOMETRIES.star}
+                material={SHARED_MATERIALS.star}
+                material-color={particle.color}
+                material-opacity={lifeRatio}
+              />
             ) : (
               // Default particles - small spheres
-              <mesh>
-                <sphereGeometry args={[0.1, 8, 8]} />
-                <meshStandardMaterial
-                  color={particle.color}
-                  transparent
-                  opacity={lifeRatio}
-                />
-              </mesh>
+              <mesh
+                geometry={SHARED_GEOMETRIES.sphere}
+                material={SHARED_MATERIALS.sphere}
+                material-color={particle.color}
+                material-opacity={lifeRatio}
+              />
             )}
           </group>
         );

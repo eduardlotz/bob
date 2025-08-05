@@ -27,54 +27,6 @@ import { Star3D } from "@/3d-objects/Star3D";
 import { EmotionState } from "@/hooks/useBlobEmotions";
 import { useCallback } from "react";
 
-interface TapParticle {
-  id: number;
-  position: [number, number, number];
-  velocity: [number, number, number];
-  life: number;
-  maxLife: number;
-}
-
-// Uses animated meshes instead of Points so we can individually fade each particle
-const TapParticles = ({ particles }: { particles: TapParticle[] }) => {
-  // Create one spring per particle
-  const [springs] = useSprings(
-    particles.length,
-    (index) => {
-      const p = particles[index];
-      const lifeRatio = Math.max(0, p.life / p.maxLife);
-      return {
-        scale: 0.05 + 0.15 * lifeRatio,
-        opacity: lifeRatio,
-        config: { tension: 60, friction: 10 },
-      };
-    },
-    [particles]
-  );
-
-  return (
-    <>
-      {springs.map((styles, index) => {
-        const particle = particles[index];
-        return (
-          <a.mesh
-            key={particle.id}
-            position={particle.position}
-            scale={styles.scale}
-          >
-            <sphereGeometry args={[0.1, 8, 8]} />
-            <a.meshBasicMaterial
-              color={["white", "grey", "black"][particle.id % 3]}
-              transparent
-              opacity={styles.opacity}
-            />
-          </a.mesh>
-        );
-      })}
-    </>
-  );
-};
-
 // TODO: Move these constants to a shared config file
 // Default head position Y
 
@@ -259,7 +211,6 @@ export function BlobHead({
   const [lastIdleAnimationTime, setLastIdleAnimationTime] = useState(0);
   const [isJumping, setIsJumping] = useState(false);
   const [squeezeScale, setSqueezeScale] = useState(1);
-  const [particles, setParticles] = useState<TapParticle[]>([]);
   const particleIdCounter = useRef(0);
   const [cameraZoomAnimation, setCameraZoomAnimation] = useState(false);
 
@@ -866,51 +817,11 @@ export function BlobHead({
   };
 
   const createParticles = (x: number, y: number, z: number) => {
-    // Use the new tap effect system if available
+    // Use the new tap effect system
     if ((window as any).createTapParticles) {
       (window as any).createTapParticles(x, y, z, 15);
-      return;
     }
-
-    // Fallback to old particle system
-    const numParticles = 50;
-    const newParticles: TapParticle[] = [];
-
-    for (let i = 0; i < numParticles; i++) {
-      const angle = (Math.PI * 2 * i) / numParticles;
-      const speed = 0.05 + Math.random() * 0.1;
-      newParticles.push({
-        id: particleIdCounter.current++,
-        position: [x, y, z],
-        velocity: [
-          Math.cos(angle) * speed,
-          Math.sin(angle) * speed + 0.05,
-          (Math.random() - 0.5) * speed,
-        ],
-        life: 0.8,
-        maxLife: 0.8,
-      });
-    }
-
-    setParticles((prev) => [...prev, ...newParticles]);
   };
-
-  // Update particles in animation frame
-  useFrame((state, delta) => {
-    setParticles((prev) =>
-      prev
-        .map((particle) => ({
-          ...particle,
-          position: [
-            particle.position[0] + particle.velocity[0] * delta * 60,
-            particle.position[1] + particle.velocity[1] * delta * 60,
-            particle.position[2] + particle.velocity[2] * delta * 60,
-          ] as [number, number, number],
-          life: particle.life - delta,
-        }))
-        .filter((particle) => particle.life > 0)
-    );
-  });
 
   const onClick = (event: any) => {
     // Stop event propagation to prevent double counting from activity listeners
@@ -953,7 +864,6 @@ export function BlobHead({
 
   const content = (
     <>
-      <TapParticles particles={particles} />
       <a.group
         ref={headRef}
         onClick={onClick}
