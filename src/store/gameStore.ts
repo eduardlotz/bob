@@ -348,7 +348,7 @@ const initialThemes: Theme[] = Object.values(THEME_CONFIG).map(
     purchased: themeConfig.id === "default",
     active: themeConfig.id === "default",
     colors: themeConfig.colors,
-    font: "OpenSauceTwo-Regular",
+    font: "Open Sauce Two",
     icon: themeConfig.id === "default" ? "🎨" : "🎨",
   })
 );

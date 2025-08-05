@@ -115,7 +115,8 @@ export function UILayer({
       <BottomNavigation onMenuClick={() => setShowOptions(!showOptions)} />
       <Statistics visible={statisticsVisible} />
 
-      <AnimatePresence>
+      {/* TODO: Add sensor button with dismiss */}
+      {/* <AnimatePresence>
         {!permissionGranted &&
           isMobile &&
           sceneLoaded &&
@@ -136,7 +137,7 @@ export function UILayer({
               use motion sensor
             </SensorButton>
           )}
-      </AnimatePresence>
+      </AnimatePresence> */}
 
       {/* <AnimatePresence>
         {permissionGranted && isMobile && sceneLoaded && (
