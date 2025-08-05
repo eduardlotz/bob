@@ -168,7 +168,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
         currentTheme.colors.background
       );
       root.style.setProperty("--text-color", currentTheme.colors.text);
-      root.style.setProperty("--font-family", currentTheme.font);
+      // root.style.setProperty("--font-family", currentTheme.font);
 
       // Set additional theme variables
       root.style.setProperty(
@@ -195,7 +195,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       // Also apply to body for immediate effect
       document.body.style.backgroundColor = currentTheme.colors.background;
       document.body.style.color = currentTheme.colors.text;
-      document.body.style.fontFamily = currentTheme.font;
+      // document.body.style.fontFamily = currentTheme.font;
     }
   }, [currentTheme]);
 
