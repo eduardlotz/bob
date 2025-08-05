@@ -9,13 +9,22 @@ import { THEME_CONFIG } from "@/store/upgradesConfig";
 const FONT_PATH = "/fonts/OpenRundeBold.json";
 
 const formatNumber = (num: number): string => {
-  if (num >= 1000000) {
-    return Math.ceil(num / 1000000).toFixed(1) + "M";
+  if (num < 10000) {
+    // For numbers below 10k, use German locale formatting
+    return num.toLocaleString("de-DE", {
+      minimumFractionDigits: 0,
+    });
+  } else {
+    // For numbers 10k and above, convert to K with one decimal place
+    const inK = num / 1000;
+    // Use English locale for decimal point, but format manually for German thousand separators
+    const formatted = inK.toLocaleString("en-US", {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    });
+    // Replace commas with dots for German formatting
+    return formatted.replace(/,/g, ".") + "K";
   }
-  if (num >= 1000) {
-    return Math.ceil(num / 1000).toFixed(1) + "K";
-  }
-  return Math.ceil(num).toString();
 };
 
 export const EmotionCounter = ({ tapCount }: { tapCount: number }) => {
