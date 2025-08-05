@@ -10,19 +10,24 @@ const FONT_PATH = "/fonts/OpenRundeBold.json";
 
 const formatNumber = (num: number): string => {
   if (num < 10000) {
-    // For numbers below 10k, use German locale formatting
+    // For numbers below 10k, use German locale formatting (dots for thousands)
     return num.toLocaleString("de-DE", {
       minimumFractionDigits: 0,
+      maximumFractionDigits: 0, // This will floor the decimals
     });
   } else {
-    // For numbers 10k and above, convert to K with one decimal place
-    const inK = num / 1000;
-    // Use English locale for decimal point, but format manually for German thousand separators
+    // For numbers 10k and above, convert to K format
+    // Floor to the nearest hundred first
+    const flooredToHundreds = Math.floor(num / 100) * 100;
+    const inK = flooredToHundreds / 1000;
+
+    // Format with one decimal place and use dot as decimal separator
     const formatted = inK.toLocaleString("en-US", {
       minimumFractionDigits: 1,
       maximumFractionDigits: 1,
     });
-    // Replace commas with dots for German formatting
+
+    // Replace comma with dot for German formatting (though there shouldn't be commas in K format)
     return formatted.replace(/,/g, ".") + "K";
   }
 };
