@@ -2,24 +2,80 @@ import React, { useEffect } from "react";
 import { useGameStore } from "@/store/gameStore";
 import { createGlobalStyle } from "styled-components";
 
-const GlobalStyle = createGlobalStyle<{ theme: any }>`
+// Type mapping to convert game store Theme to styled-components DefaultTheme
+type StyledTheme = {
+  colors: {
+    basic: {
+      white: string;
+      black: string;
+      red: string;
+      green: string;
+    };
+    brand: {
+      blue: string;
+      yellow: string;
+      electricBlue: string;
+      electricBlueTrans: string;
+    };
+    shades: {
+      grey: {
+        one: string;
+        two: string;
+        three: string;
+        four: string;
+        five: string;
+        six: string;
+        seven: string;
+      };
+    };
+  };
+  borders: {
+    button: {
+      default: string;
+      focus: string;
+    };
+    input: {
+      default: string;
+      focus: string;
+    };
+  };
+  shadows: {
+    none: string;
+    subtle: string;
+    subtleHover: string;
+    blue: string;
+    defaultBorderGrey: string;
+    selectedBorderGrey: string;
+    selectedBorderDarkGrey: string;
+    selectedBorderBlue: string;
+    selectedBorderRed: string;
+    activeBorderBlue: string;
+  };
+};
+
+const GlobalStyle = createGlobalStyle<{ theme: StyledTheme | undefined }>`
   :root {
-    --primary-color: ${(props) => props.theme?.colors?.primary || "#2979FF"};
+    --primary-color: ${(props) =>
+      props.theme?.colors?.basic?.white || "#2979FF"};
     --secondary-color: ${(props) =>
-      props.theme?.colors?.secondary || "#4285F4"};
-    --accent-color: ${(props) => props.theme?.colors?.accent || "#FFD700"};
+      props.theme?.colors?.brand?.blue || "#4285F4"};
+    --accent-color: ${(props) =>
+      props.theme?.colors?.brand?.yellow || "#FFD700"};
     --background-color: ${(props) =>
-      props.theme?.colors?.background || "#ffffff"};
-    --text-color: ${(props) => props.theme?.colors?.text || "#000000"};
-    --font-family: ${(props) => props.theme?.font || "OpenSauceTwo-Regular"};
+      props.theme?.colors?.basic?.black || "#ffffff"};
+    --text-color: ${(props) => props.theme?.colors?.basic?.white || "#000000"};
+    --font-family: "Open Sauce Two";
     
     /* Additional theme variables for better control */
-    --border-color: ${(props) => props.theme?.colors?.border || "#e9ecef"};
+    --border-color: ${(props) =>
+      props.theme?.colors?.shades?.grey?.two || "#e9ecef"};
     --card-background: ${(props) =>
-      props.theme?.colors?.cardBackground || "#f8f9fa"};
-    --success-color: ${(props) => props.theme?.colors?.success || "#4CAF50"};
-    --danger-color: ${(props) => props.theme?.colors?.danger || "#dc3545"};
-    --warning-color: ${(props) => props.theme?.colors?.warning || "#ffc107"};
+      props.theme?.colors?.shades?.grey?.one || "#f8f9fa"};
+    --success-color: ${(props) =>
+      props.theme?.colors?.basic?.green || "#4CAF50"};
+    --danger-color: ${(props) => props.theme?.colors?.basic?.red || "#dc3545"};
+    --warning-color: ${(props) =>
+      props.theme?.colors?.brand?.yellow || "#ffc107"};
   }
 
   * {
@@ -29,7 +85,7 @@ const GlobalStyle = createGlobalStyle<{ theme: any }>`
   body {
     background-color: var(--background-color);
     color: var(--text-color);
-    font-family: var(--font-family), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: var(--font-family), Aria, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 
   /* Apply theme colors to common elements */
@@ -54,6 +110,7 @@ const GlobalStyle = createGlobalStyle<{ theme: any }>`
   .game-ui {
     background-color: var(--background-color);
     color: var(--text-color);
+    font-family: var(--font-family);
   }
 
   .game-button {
@@ -144,7 +201,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
   return (
     <>
-      <GlobalStyle theme={currentTheme} />
+      <GlobalStyle theme={undefined} />
       {children}
     </>
   );
