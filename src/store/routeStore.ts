@@ -1,7 +1,9 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { ROUTE_IDS } from "./routeConfig";
-import { THEME_IDS, getBlobColorForTheme } from "./themeConfig";
+import { THEME_CONFIG } from "./upgradesConfig";
+import { Theme } from "./gameStore";
+import { THEME_IDS } from "./themeConfig";
 
 export interface RouteConfig {
   id: string;
@@ -16,7 +18,6 @@ export interface RouteConfig {
 export interface RouteStore {
   routeConfigs: RouteConfig[];
   getRouteConfig: (routeId: string) => RouteConfig | undefined;
-  getBlobColor: (routeId: string, themeId?: string) => string;
   getOutfit: (routeId: string) => RouteConfig["outfit"];
 }
 
@@ -28,7 +29,7 @@ const routeConfigs: RouteConfig[] = [
   },
   {
     id: ROUTE_IDS.ABOUT,
-    quests: ["about_quest_1", "about_quest_2"],
+    quests: ["about_quest_1", "about_quest_2", "about_quest_3"],
   },
   {
     id: ROUTE_IDS.PORTFOLIO,
@@ -37,7 +38,7 @@ const routeConfigs: RouteConfig[] = [
       scale: 1.2,
       position: [0, 0, 0],
     },
-    quests: ["portfolio_quest_1", "portfolio_quest_2"],
+    quests: ["portfolio_quest_1", "portfolio_quest_2", "portfolio_quest_3"],
   },
   {
     id: ROUTE_IDS.CREATIVE,
@@ -78,11 +79,6 @@ export const useRouteStore = create<RouteStore>()(
         return state.routeConfigs.find((config) => config.id === routeId);
       },
 
-      getBlobColor: (routeId, themeId) => {
-        // Use the new theme-aware blob color system
-        return getBlobColorForTheme(themeId || THEME_IDS.DEFAULT, routeId);
-      },
-
       getOutfit: (routeId) => {
         const state = get();
         const config = state.routeConfigs.find((c) => c.id === routeId);
@@ -91,7 +87,7 @@ export const useRouteStore = create<RouteStore>()(
     }),
     {
       name: "route-store",
-      version: 1,
+      version: 2,
       partialize: (state) => ({
         routeConfigs: state.routeConfigs,
       }),

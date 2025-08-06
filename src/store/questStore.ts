@@ -19,11 +19,15 @@ export interface Quest {
 
 export interface QuestStore {
   quests: Quest[];
+  activeQuests: string[]; // Track active quests for current route
   addQuest: (quest: Quest) => void;
   updateQuestProgress: (questId: string, progress: number) => void;
   completeQuest: (questId: string) => void;
   getQuestsByRoute: (routeId: string) => Quest[];
+  setActiveQuests: (routeId: string) => void;
+  clearActiveQuests: () => void;
   resetQuests: () => void;
+  resetAllQuests: () => void;
 }
 
 // Initial quests for each route
@@ -31,62 +35,93 @@ const initialQuests: Quest[] = [
   // About route quests
   {
     id: "about_quest_1",
-    title: "Learn About Me",
-    description: "Read through my background and experience",
+    title: "Explore the Chair",
+    description: "Click on the chair to learn about my development journey",
     progress: 0,
-    maxProgress: 100,
+    maxProgress: 30,
+    reward: 30,
+    completed: false,
+    routeId: "route_about",
+    type: "interaction",
+    trigger: {
+      action: "click_chair",
+      value: 30,
+    },
+  },
+  {
+    id: "about_quest_2",
+    title: "Discover the Sun",
+    description: "Click on the sun to learn about my passion for innovation",
+    progress: 0,
+    maxProgress: 25,
     reward: 25,
     completed: false,
     routeId: "route_about",
     type: "interaction",
     trigger: {
-      action: "click_background",
+      action: "click_sun",
       value: 25,
     },
   },
   {
-    id: "about_quest_2",
-    title: "Explore Skills",
-    description: "Discover my technical and creative skills",
+    id: "about_quest_3",
+    title: "Illuminate the Lamp",
+    description: "Click on the lamp to learn about my problem-solving approach",
     progress: 0,
-    maxProgress: 100,
-    reward: 50,
+    maxProgress: 35,
+    reward: 35,
     completed: false,
     routeId: "route_about",
     type: "interaction",
     trigger: {
-      action: "click_skills",
-      value: 25,
+      action: "click_lamp",
+      value: 35,
     },
   },
   // Portfolio route quests
   {
     id: "portfolio_quest_1",
-    title: "View Projects",
-    description: "Browse through my portfolio projects",
+    title: "Explore the Computer",
+    description:
+      "Click on the computer to learn about my development environment",
     progress: 0,
-    maxProgress: 150,
-    reward: 75,
+    maxProgress: 40,
+    reward: 40,
     completed: false,
     routeId: "route_portfolio",
     type: "interaction",
     trigger: {
-      action: "view_project",
-      value: 30,
+      action: "click_computer",
+      value: 40,
     },
   },
   {
     id: "portfolio_quest_2",
-    title: "Download Resume",
-    description: "Download my resume to learn more",
+    title: "Discover the Books",
+    description: "Click on the books to learn about my continuous learning",
     progress: 0,
-    maxProgress: 50,
-    reward: 100,
+    maxProgress: 30,
+    reward: 30,
     completed: false,
     routeId: "route_portfolio",
     type: "interaction",
     trigger: {
-      action: "download_resume",
+      action: "click_books",
+      value: 30,
+    },
+  },
+  {
+    id: "portfolio_quest_3",
+    title: "View Project Showcase",
+    description: "Click on the coffee cup to view my project showcase",
+    progress: 0,
+    maxProgress: 50,
+    reward: 50,
+    completed: false,
+    routeId: "route_portfolio",
+    type: "interaction",
+    trigger: {
+      action: "click_coffee",
       value: 50,
     },
   },
@@ -189,6 +224,7 @@ export const useQuestStore = create<QuestStore>()(
   persist(
     (set, get) => ({
       quests: initialQuests,
+      activeQuests: [],
 
       addQuest: (quest) =>
         set((state) => ({
@@ -216,9 +252,38 @@ export const useQuestStore = create<QuestStore>()(
         return state.quests.filter((quest) => quest.routeId === routeId);
       },
 
+      setActiveQuests: (routeId) => {
+        const state = get();
+        const routeQuests = state.quests.filter(
+          (quest) => quest.routeId === routeId
+        );
+        const questIds = routeQuests.map((quest) => quest.id);
+
+        set(() => ({
+          activeQuests: questIds,
+        }));
+      },
+
+      clearActiveQuests: () =>
+        set(() => ({
+          activeQuests: [],
+        })),
+
       resetQuests: () =>
         set(() => ({
           quests: initialQuests,
+          activeQuests: [],
+        })),
+
+      // Reset quests for testing - clears all progress
+      resetAllQuests: () =>
+        set(() => ({
+          quests: initialQuests.map((quest) => ({
+            ...quest,
+            progress: 0,
+            completed: false,
+          })),
+          activeQuests: [],
         })),
     }),
     {
@@ -226,6 +291,7 @@ export const useQuestStore = create<QuestStore>()(
       version: 1,
       partialize: (state) => ({
         quests: state.quests,
+        activeQuests: state.activeQuests,
       }),
     }
   )

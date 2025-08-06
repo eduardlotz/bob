@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useEffect } from "react";
 import { useQuestStore } from "@/store/questStore";
 import { useGameStore } from "@/store/gameStore";
 import { useAppStore } from "@/store";
@@ -19,8 +19,10 @@ const triggerConfetti = () => {
 export const useQuestSystem = () => {
   const { currentRoute } = useAppStore();
   const { addTaps } = useGameStore();
-  const { quests, updateQuestProgress, completeQuest, getQuestsByRoute } =
-    useQuestStore();
+  const questStore = useQuestStore();
+  const quests = questStore.quests;
+  const updateQuestProgress = questStore.updateQuestProgress;
+  const completeQuest = questStore.completeQuest;
 
   // Convert route path to route ID for quest lookup
   const routeId = useMemo(() => {
@@ -35,19 +37,35 @@ export const useQuestSystem = () => {
     return routeMap[currentRoute] || "route_home";
   }, [currentRoute]);
 
-  // Get quests for current route
+  // Get quests for current route - using stable reference
   const currentQuests = useMemo(
-    () => getQuestsByRoute(routeId),
-    [getQuestsByRoute, routeId]
+    () => quests.filter((quest) => quest.routeId === routeId),
+    [quests, routeId]
   );
 
-  // Memoized quest completion handler
-  const handleQuestComplete = useCallback(
-    (questId: string) => {
-      const quest = quests.find((q) => q.id === questId);
-      if (quest && !quest.completed && quest.progress >= quest.maxProgress) {
-        // Complete the quest
-        completeQuest(questId);
+  // Note: Removed useEffect that was causing infinite loop
+  // Quest activation is now handled directly in the store when needed
+
+  // Quest trigger handler
+  const triggerQuest = useCallback((action: string, value?: number) => {
+    const relevantQuests = currentQuests.filter(
+      (quest) => !quest.completed && quest.trigger?.action === action
+    );
+
+    relevantQuests.forEach((quest) => {
+      const progressIncrement = value || quest.trigger?.value || 1;
+      const newProgress = Math.min(
+        quest.progress + progressIncrement,
+        quest.maxProgress
+      );
+
+      // Update progress first
+      updateQuestProgress(quest.id, newProgress);
+
+      // Check if quest is now complete and handle completion
+      if (newProgress >= quest.maxProgress) {
+        // Mark as completed immediately to prevent double completion
+        completeQuest(quest.id);
 
         // Add reward to taps
         addTaps(quest.reward);
@@ -60,35 +78,11 @@ export const useQuestSystem = () => {
           description: quest.title,
           duration: 3000,
         });
+
+        console.log("Quest completed!", quest.title);
       }
-    },
-    [quests, completeQuest, addTaps]
-  );
-
-  // Quest trigger handler
-  const triggerQuest = useCallback(
-    (action: string, value?: number) => {
-      const relevantQuests = currentQuests.filter(
-        (quest) => !quest.completed && quest.trigger?.action === action
-      );
-
-      relevantQuests.forEach((quest) => {
-        const progressIncrement = value || quest.trigger?.value || 1;
-        const newProgress = Math.min(
-          quest.progress + progressIncrement,
-          quest.maxProgress
-        );
-
-        updateQuestProgress(quest.id, newProgress);
-
-        // Check if quest is now complete
-        if (newProgress >= quest.maxProgress) {
-          handleQuestComplete(quest.id);
-        }
-      });
-    },
-    [currentQuests, updateQuestProgress, handleQuestComplete]
-  );
+    });
+  }, []);
 
   // Specific quest triggers
   const triggerInteraction = useCallback(
@@ -142,6 +136,10 @@ export const useQuestSystem = () => {
     triggerReviewCode,
     triggerSignGuestbook,
     triggerReadMessages,
-    handleQuestComplete,
+    // Debug function to reset quests
+    resetQuests: () => {
+      const questStore = useQuestStore.getState();
+      questStore.resetAllQuests();
+    },
   };
 };

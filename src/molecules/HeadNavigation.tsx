@@ -14,7 +14,6 @@ import { useBlobEmotions } from "@/hooks/useBlobEmotions";
 // import { useMagneticAttraction, MagneticConfig } from "@/hooks/useMagnets";
 import { toast } from "sonner";
 import styled from "styled-components";
-import { useAppStore, ROUTES, ROUTE_IDS, ROUTE_PATHS } from "@/store";
 import { useGameStore } from "@/store/gameStore";
 import { useNavigate } from "react-router-dom";
 import { match } from "ts-pattern";
@@ -27,12 +26,11 @@ export const CAMERA_FOLLOW_OFFSET = 2.5;
 export const OPTIONS_Y_OFFSET = -1.5; // Y offset for options positioning
 
 export const VISIBLE_OPTIONS_CAMERA_ZOOM = 8;
-// export const HIDDEN_OPTIONS_CAMERA_ZOOM = 1.75;
-export const HIDDEN_OPTIONS_CAMERA_ZOOM = 2.5;
+export const HIDDEN_OPTIONS_CAMERA_ZOOM = 4;
 export const FUNNY_FISHEYE_ZOOM = 1.15;
 
-export const OPTION_RADIUS_OFFSET = 0.004;
-export const OPTIONS_BASE_RADIUS_MULTIPLIER = 1.9;
+export const OPTION_RADIUS_OFFSET = 0.005;
+export const OPTIONS_BASE_RADIUS_MULTIPLIER = 1.3;
 
 export const MOTION_VARIANTS = {
   slideInDown: {
@@ -139,6 +137,7 @@ export const MOTION_VARIANTS = {
     },
     hover: {
       scale: 1.1,
+      zIndex: 1000,
       transition: { type: "spring" as const, duration: 0.3, bounce: 0.5 },
     },
     tap: {
@@ -447,58 +446,63 @@ function OptionsGroup({
 
   // Memoize calculations to improve performance
   const screenCenter = useMemo(
-    () => new THREE.Vector3(-1, OPTIONS_Y_OFFSET, 0),
+    () => new THREE.Vector3(-0.5, OPTIONS_Y_OFFSET, 0),
     []
   );
 
-  // Calculate appropriate radii based on screen dimensions
-  // Use the smaller dimension to ensure elements stay within viewport
-  const minDimension = Math.min(windowWidth, windowHeight);
-  const baseRadius = minDimension * OPTIONS_BASE_RADIUS_MULTIPLIER;
-
-  // Apply the offset to create an elliptical path if needed
-  const xRadius =
-    windowWidth > windowHeight
-      ? baseRadius * OPTION_RADIUS_OFFSET
-      : baseRadius * (windowWidth / windowHeight) * OPTION_RADIUS_OFFSET;
-
-  const yRadius =
-    windowHeight > windowWidth
-      ? baseRadius * OPTION_RADIUS_OFFSET
-      : baseRadius * (windowHeight / windowWidth) * OPTION_RADIUS_OFFSET;
-
   // Memoize route positions to prevent unnecessary recalculations
   const routePositions = useMemo(() => {
+    if (!routes.length || !windowWidth || !windowHeight) {
+      return [];
+    }
+
+    // Convert screen dimensions to Three.js world coordinates
+    const aspect = windowWidth / windowHeight;
+    const fov = 75; // Assuming default camera FOV, adjust if different
+    const distance = 5; // Assuming camera distance, adjust if different
+
+    // Calculate visible world dimensions at camera distance
+    const vFOV = (fov * Math.PI) / 180;
+    const worldHeight = 2 * Math.tan(vFOV / 2) * distance;
+    const worldWidth = worldHeight * aspect;
+
+    // Define safe margins (as percentage of world dimensions)
+    const marginPercent = 0.1; // 10% margin from edges
+    const bottomNavPercent = 0.15; // 15% reserved for bottom navigation
+
+    const safeWidth = worldWidth * (1 - 2 * marginPercent);
+    const safeHeight = worldHeight * (1 - marginPercent - bottomNavPercent);
+
+    // Calculate optimal ellipse radii that fit within safe bounds
+    const maxXRadius = safeWidth / 2;
+    const maxYRadius = safeHeight / 2;
+
+    // Dynamic radius calculation based on number of items
+    // More items = larger ellipse to prevent overlap
+    const baseRadiusMultiplier = Math.min(1, Math.sqrt(count / 8)); // Scale with item count
+    const xRadius = maxXRadius * baseRadiusMultiplier;
+    const yRadius = maxYRadius * baseRadiusMultiplier;
+
+    // Calculate positions
     return routes.map((route, index) => {
-      // calculate position on ellipse centered in screen
+      // Even distribution around ellipse
       const angle = (index / count) * Math.PI * 2;
+      const adjustedAngle = angle - Math.PI / 2; // Start from top
 
-      // adjust starting angle (start from top instead of right)
-      const adjustedAngle = angle - Math.PI / 2;
+      // Calculate ellipse position
+      let x = Math.cos(adjustedAngle) * xRadius;
+      let y = Math.sin(adjustedAngle) * yRadius;
 
-      const x = Math.cos(adjustedAngle) * xRadius;
-      const y = Math.sin(adjustedAngle) * -yRadius;
+      // Apply strict boundary clamping
+      const halfSafeWidth = safeWidth / 2;
+      const halfSafeHeight = safeHeight / 2;
+      const bottomOffset = worldHeight * bottomNavPercent;
 
-      // Adjust for viewport edges and bottom navigation
-      const viewportMargin = 0.5; // Distance from viewport edges
-      const bottomNavOffset = 2.5; // Distance from bottom navigation
+      x = Math.max(-halfSafeWidth, Math.min(halfSafeWidth, x));
+      y = Math.max(-halfSafeHeight + bottomOffset, Math.min(halfSafeHeight, y));
 
-      let adjustedX = x;
-      let adjustedY = y;
-
-      // Check viewport boundaries
-      const maxX = (windowWidth / windowHeight) * 4 - viewportMargin;
-      const maxY = 4 - viewportMargin;
-
-      if (Math.abs(x) > maxX) {
-        adjustedX = Math.sign(x) * maxX;
-      }
-
-      if (y < -maxY + bottomNavOffset) {
-        adjustedY = -maxY + bottomNavOffset;
-      }
-
-      return new THREE.Vector3(adjustedX, adjustedY, 0).add(screenCenter);
+      // Offset by screen center
+      return new THREE.Vector3(x, y, 0).add(screenCenter);
     });
   }, [routes, count, windowWidth, windowHeight, screenCenter]);
 
@@ -518,15 +522,9 @@ function OptionsGroup({
               initialPosition={position}
               route={route}
               index={index}
-              windowWidth={windowWidth}
-              windowHeight={windowHeight}
               cameraControlsRef={cameraControlsRef}
               hideOptions={hideOptions}
-              isMobile={isMobile}
               isClosing={isClosing}
-              orientation={orientation}
-              permissionGranted={permissionGranted}
-              acceleration={acceleration}
             />
           </Float>
         );
@@ -539,28 +537,16 @@ function Option({
   initialPosition,
   route,
   index,
-  windowWidth,
-  windowHeight,
   cameraControlsRef,
   hideOptions,
-  isMobile,
   isClosing,
-  orientation,
-  permissionGranted,
-  acceleration,
 }: {
   initialPosition: THREE.Vector3;
   route: any; // Route type from game store
   index: number;
-  windowWidth: number;
-  windowHeight: number;
   cameraControlsRef: React.RefObject<CameraControls>;
   hideOptions: () => void;
-  isMobile: boolean;
   isClosing: boolean;
-  orientation: DeviceOrientation;
-  permissionGranted: boolean;
-  acceleration: DeviceMotionEventAcceleration;
 }) {
   const optionRef = useRef<THREE.Group>(null!);
   const navigate = useNavigate();

@@ -144,11 +144,7 @@ export const TapCounter = () => {
         ref={numberRef}
       >
         {formattedNumber}
-        <meshToonMaterial
-          color={themeConfig.counterColor}
-          emissive={themeConfig.counterColor}
-          emissiveIntensity={themeConfig.counterEmission}
-        />
+        <meshToonMaterial color={themeConfig.counterColor} />
         <Outlines thickness={0.011} color="black" screenspace />
       </Text3D>
     </a.group>

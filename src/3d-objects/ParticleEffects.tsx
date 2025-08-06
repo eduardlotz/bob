@@ -1,8 +1,7 @@
 import React, { useRef, useEffect, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Cloud, Sparkles, Clouds, Sky } from "@react-three/drei";
+import { Sparkles } from "@react-three/drei";
 import { useGameStore } from "@/store/gameStore";
-import { THEME_CONFIG } from "@/store/upgradesConfig";
 import * as THREE from "three";
 
 // Pre-create and reuse geometries (CRITICAL for performance)
@@ -99,12 +98,12 @@ export function StarEffect() {
   return (
     <Sparkles
       count={200}
-      scale={[50, 30, 50]}
-      size={1.5}
+      scale={[60, 30, 50]}
+      size={2}
       speed={0.1}
       opacity={0.8}
       color="#FFFFFF"
-      position={[0, 10, 0]}
+      position={[0, 1, 0]}
     />
   );
 }
@@ -597,29 +596,13 @@ export function TapEffect() {
   );
 }
 
-// Fisheye Intensity Effect - this will be handled by the Scene component
-export function FisheyeIntensityEffect() {
-  const { decorations } = useGameStore();
-  const fisheyeDecoration = decorations.find(
-    (d) => d.id === "fisheye_intensity"
-  );
-  const fisheyeEnabled =
-    fisheyeDecoration?.purchased && fisheyeDecoration?.enabled;
-
-  // This effect will be handled by the Scene component's fisheye lens
-  // We just return null here as the effect is applied at the camera level
-  return null;
-}
-
 // Main Particle Effects Container
 export function ParticleEffects() {
   return (
     <group>
-      <StarEffect /> {/* Permanent background stars */}
       <RainEffect />
       <CloudEffect />
       <TapEffect />
-      <FisheyeIntensityEffect />
     </group>
   );
 }

@@ -1,145 +1,141 @@
-import { Html, Float } from "@react-three/drei";
-import { match } from "ts-pattern";
+import { Float } from "@react-three/drei";
 import { useGameStore } from "@/store/gameStore";
-import { ROUTE_IDS } from "@/store";
-import { THEME_COLORS, THEME_IDS } from "@/store/themeConfig";
-import { useState, useCallback, useMemo } from "react";
-import { motion } from "framer-motion";
-import { useQuestSystem } from "@/hooks/useQuestSystem";
+import { ROUTE_PATHS } from "@/store";
+import { useCallback, useEffect } from "react";
+import { InteractiveObject } from "./InteractiveObject";
+import { useDialogStore } from "@/store/dialogStore";
+import { useNavigate } from "react-router-dom";
 
 export function AboutScene() {
-  const { currentTheme, routes, taps } = useGameStore();
-  const { currentQuests, triggerInteraction } = useQuestSystem();
-  const [interactedElements, setInteractedElements] = useState<Set<string>>(
-    new Set()
-  );
+  const { checkUnlockedRoutes } = useGameStore();
+  const { openDialog } = useDialogStore();
+  const navigate = useNavigate();
 
-  // Memoized theme data
-  const aboutRoute = useMemo(
-    () => routes.find((r) => r.id === ROUTE_IDS.ABOUT),
-    [routes]
-  );
+  const isAllowedToAcces = checkUnlockedRoutes(ROUTE_PATHS.PORTFOLIO);
 
-  const themeColors = useMemo(
-    () =>
-      match(currentTheme?.id)
-        .with(THEME_IDS.DARK, () => THEME_COLORS[THEME_IDS.DARK])
-        .with(THEME_IDS.PASTEL, () => THEME_COLORS[THEME_IDS.PASTEL])
-        .with(THEME_IDS.NEON, () => THEME_COLORS[THEME_IDS.NEON])
-        .otherwise(() => THEME_COLORS[THEME_IDS.DEFAULT]),
-    [currentTheme?.id]
-  );
+  useEffect(() => {
+    if (!isAllowedToAcces) {
+      navigate(ROUTE_PATHS.HOME);
+    }
+  }, [isAllowedToAcces]);
 
-  // Memoized interaction handler
-  const handleElementInteraction = useCallback(
-    (elementId: string) => {
-      setInteractedElements(
-        (prev) => new Set(Array.from(prev).concat([elementId]))
-      );
+  // Dialog content for different objects
+  const getDialogContent = useCallback((objectId: string) => {
+    switch (objectId) {
+      case "chair":
+        return (
+          <div>
+            <p>
+              This chair represents my journey in web development. It's where I
+              spend countless hours coding, learning, and creating.
+            </p>
+            <p>
+              From my first "Hello World" to building complex applications,
+              every project has been a step forward in my career.
+            </p>
+            <p>
+              I believe in creating comfortable, accessible, and beautiful user
+              experiences - just like a well-designed chair.
+            </p>
+          </div>
+        );
+      case "sun":
+        return (
+          <div>
+            <p>
+              The sun represents my passion for innovation and growth. It
+              symbolizes the energy I bring to every project.
+            </p>
+            <p>
+              Just as the sun provides light and warmth, I strive to bring
+              clarity and warmth to my work and collaborations.
+            </p>
+            <p>
+              I'm constantly learning and evolving, always seeking to shine
+              brighter and help others grow.
+            </p>
+          </div>
+        );
+      case "lamp":
+        return (
+          <div>
+            <p>
+              This lamp represents my approach to problem-solving. I illuminate
+              complex challenges with clear, elegant solutions.
+            </p>
+            <p>
+              Like a lamp that guides the way, I help teams navigate technical
+              challenges and find the best path forward.
+            </p>
+            <p>
+              I believe in shedding light on opportunities and making the
+              impossible possible.
+            </p>
+          </div>
+        );
+      default:
+        return (
+          <p>This object represents my journey and passion for technology.</p>
+        );
+    }
+  }, []);
 
-      // Trigger quest interaction
-      triggerInteraction(elementId);
+  const handleObjectClick = useCallback(
+    (objectId: string) => {
+      openDialog({
+        title: `About ${objectId.charAt(0).toUpperCase() + objectId.slice(1)}`,
+        content: getDialogContent(objectId),
+      });
     },
-    [triggerInteraction]
+    [getDialogContent, openDialog]
   );
 
   return (
     <group>
-      {/* Interactive Background Section */}
       <Float speed={1.5} rotationIntensity={0.5} floatIntensity={0.5}>
-        <group position={[-5, -2, -15]}>
-          <Html position={[0, 0, 0]} transform>
-            <motion.div
-              style={{
-                background: "rgba(0, 0, 0, 0.8)",
-                padding: "20px",
-                borderRadius: "12px",
-                border: "1px solid rgba(255, 255, 255, 0.2)",
-                cursor: "pointer",
-                maxWidth: "250px",
-                opacity: interactedElements.has("background") ? 1 : 0.8,
-              }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => handleElementInteraction("background")}
-            >
-              <h3 style={{ color: "#ffd700", marginBottom: "10px" }}>
-                Background
-              </h3>
-              <p
-                style={{ color: "white", fontSize: "14px", lineHeight: "1.4" }}
-              >
-                Full-stack developer with expertise in React, TypeScript, and
-                modern web technologies.
-              </p>
-              <p
-                style={{ color: "white", fontSize: "14px", lineHeight: "1.4" }}
-              >
-                Passionate about creating intuitive user experiences and
-                scalable applications.
-              </p>
-              {interactedElements.has("background") && (
-                <div
-                  style={{
-                    color: "#4ade80",
-                    fontSize: "12px",
-                    marginTop: "8px",
-                  }}
-                >
-                  ✓ Interacted
-                </div>
-              )}
-            </motion.div>
-          </Html>
-        </group>
+        <InteractiveObject
+          position={[-4, -1, -8]}
+          rotation={[0, 0, 0]}
+          scale={[1.2, 1.2, 1.2]}
+          questAction="click_chair"
+          questValue={30}
+          onDialogOpen={() => handleObjectClick("chair")}
+        >
+          <boxGeometry args={[1, 1, 1]} />
+          <meshStandardMaterial color="#8B4513" />
+        </InteractiveObject>
       </Float>
 
-      {/* Interactive Skills Section */}
       <Float speed={1.5} rotationIntensity={0.5} floatIntensity={0.5}>
-        <group position={[5, -2, -15]}>
-          <Html position={[0, 0, 0]} transform>
-            <motion.div
-              style={{
-                background: "rgba(0, 0, 0, 0.8)",
-                padding: "20px",
-                borderRadius: "12px",
-                border: "1px solid rgba(255, 255, 255, 0.2)",
-                cursor: "pointer",
-                maxWidth: "250px",
-                opacity: interactedElements.has("skills") ? 1 : 0.8,
-              }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => handleElementInteraction("skills")}
-            >
-              <h3 style={{ color: "#ffd700", marginBottom: "10px" }}>Skills</h3>
-              <div
-                style={{ color: "white", fontSize: "14px", lineHeight: "1.4" }}
-              >
-                <p>
-                  <strong>Frontend:</strong> React, TypeScript, Next.js
-                </p>
-                <p>
-                  <strong>Backend:</strong> Node.js, Python, PostgreSQL
-                </p>
-                <p>
-                  <strong>Tools:</strong> Git, Docker, AWS, CI/CD
-                </p>
-              </div>
-              {interactedElements.has("skills") && (
-                <div
-                  style={{
-                    color: "#4ade80",
-                    fontSize: "12px",
-                    marginTop: "8px",
-                  }}
-                >
-                  ✓ Interacted
-                </div>
-              )}
-            </motion.div>
-          </Html>
-        </group>
+        <InteractiveObject
+          position={[4, 2, -8]}
+          rotation={[0, 0, 0]}
+          scale={[1.5, 1.5, 1.5]}
+          questAction="click_sun"
+          questValue={25}
+          onDialogOpen={() => handleObjectClick("sun")}
+        >
+          <sphereGeometry args={[0.8, 32, 32]} />
+          <meshStandardMaterial
+            color="#FFD700"
+            emissive="#FFD700"
+            emissiveIntensity={0.3}
+          />
+        </InteractiveObject>
+      </Float>
+
+      <Float speed={1.5} rotationIntensity={0.5} floatIntensity={0.5}>
+        <InteractiveObject
+          position={[0, 0, -10]}
+          rotation={[0, 0, 0]}
+          scale={[1, 1, 1]}
+          questAction="click_lamp"
+          questValue={35}
+          onDialogOpen={() => handleObjectClick("lamp")}
+        >
+          <cylinderGeometry args={[0.1, 0.1, 2, 8]} />
+          <meshStandardMaterial color="#FFD700" />
+        </InteractiveObject>
       </Float>
     </group>
   );

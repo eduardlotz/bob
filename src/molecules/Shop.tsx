@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
 import { useGameStore, triggerStoreMigration } from "@/store/gameStore";
+import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { CartIcon } from "@/icons/cart";
 import { ThemeIcon } from "@/icons/theme";
 import { EffectsIcon } from "@/icons/effects";
@@ -9,6 +10,7 @@ import { EnvironmentIcon as EnvironmentIconComponent } from "@/icons/environment
 import { CloseIcon } from "@/icons/close";
 import { PagesIcon } from "@/icons/pages";
 import { DebuggingIcon } from "@/icons/debugging";
+import { toast } from "sonner";
 
 interface ShopProps {
   isOpen: boolean;
@@ -59,7 +61,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
     },
     {
       id: "environment" as ShopTab,
-      name: "Environment",
+      name: "Weather",
       icon: EnvironmentIconComponent,
       progress:
         upgrades.filter((u) => u.category === "environment" && u.unlocked)
@@ -101,7 +103,9 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                 <CartIcon color="#FFD700" />
                 Shop
               </ShopTitle>
-              <TapCountDisplay>{taps.toLocaleString()} taps</TapCountDisplay>
+              <TapCountDisplay>
+                {Math.floor(taps).toLocaleString("de-DE")} taps
+              </TapCountDisplay>
             </ShopHeader>
 
             <ShopContent>
@@ -325,7 +329,7 @@ function EnvironmentView() {
 
   return (
     <EnvironmentContainer>
-      <SectionTitle>Environment Effects</SectionTitle>
+      <SectionTitle>Weather Effects</SectionTitle>
       <EnvironmentGrid>
         {environmentEffects.map((effect) => (
           <EnvironmentCard
@@ -422,7 +426,16 @@ function DevView() {
     resumeGame,
     resetGame,
     isPaused,
+    routes,
+    purchaseRoute,
   } = useGameStore();
+  const { resetQuests } = useQuestSystem();
+
+  const unlockAllRoutes = () => {
+    routes.forEach((route) => {
+      purchaseRoute(route.id, true);
+    });
+  };
 
   return (
     <DevContainer>
@@ -433,6 +446,7 @@ function DevView() {
       <DevGrid>
         <DevButton onClick={() => addDevTaps(100)}>💰 Add 100 Taps</DevButton>
         <DevButton onClick={buyAllUpgrades}>🛒 Buy All Upgrades</DevButton>
+        <DevButton onClick={unlockAllRoutes}>🌐 Unlock All Pages</DevButton>
 
         <Divider />
 
@@ -451,6 +465,14 @@ function DevView() {
 
         <DevButton onClick={triggerStoreMigration}>
           🔄 Migrate Version
+        </DevButton>
+        <DevButton
+          onClick={() => {
+            confirm("This will reset all quests.\nAre you sure?") &&
+              resetQuests();
+          }}
+        >
+          🎯 Reset Quests
         </DevButton>
         <DevButton
           $variant="destructive"
@@ -584,6 +606,7 @@ const TabButton = styled.button<{ $active: boolean }>`
   transition: all 0.2s ease-in;
   border-radius: 12px;
   width: 100%;
+  min-width: 80px;
 
   &:hover {
     background: rgba(255, 255, 255, 0.05);
@@ -968,46 +991,32 @@ const DevButton = styled.button<{
   $active?: boolean;
   $variant?: "destructive" | "default";
 }>`
+  display: flex;
+  justify-content: center;
+  align-items: center;
   padding: 12px 16px;
+  max-width: 100%;
+
   border-radius: 8px;
   border: 1px solid transparent;
-  background: rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.1);
   border-color: ${(props) =>
     props.$active ? "var(--text-color)" : "transparent"};
   color: ${(props) => (props.$active ? "var(--text-color)" : "#ffffff")};
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  transition: all 0.2s;
+  transition: 0.2s;
+  transition-property: background-color, border-color, color;
 
   ${(props) =>
     props.$variant === "destructive" &&
     `
-    background: #b30f0f;
+    background-color: #b30f0f;
     color: #ffffff;
   `}
 
   &:hover {
-    background: rgba(255, 255, 255, 0.2);
-  }
-`;
-
-const PurchaseButton = styled.button<{ $canAfford: boolean }>`
-  padding: 4px 8px;
-  border-radius: 4px;
-  border-color: ${(props) => (props.$canAfford ? "#ffffff" : "transparent")};
-  border-width: 1px;
-  border-style: solid;
-  background: ${(props) => (props.$canAfford ? "#000000" : "#666666")};
-  color: white;
-  cursor: pointer;
-  font-size: 0.75rem;
-  font-weight: 500;
-
-  transition: all 0.2s;
-  margin-top: 4px;
-
-  &:hover {
-    background: ${(props) => (props.$canAfford ? "#45a049" : "#666666")};
+    background-color: rgba(255, 255, 255, 0.2);
   }
 `;

@@ -13,13 +13,15 @@ import { ROUTE_PATHS } from "../store/routeConfig";
 import { HeadNavigation } from "./HeadNavigation";
 import { TapCounter } from "./TapCounter";
 import { AboutScene } from "./AboutScene";
+import { PortfolioScene } from "./PortfolioScene";
 import { BackgroundPlanet } from "../3d-objects/BackgroundPlanet";
-import { ParticleEffects } from "../3d-objects/ParticleEffects";
+import { ParticleEffects, StarEffect } from "../3d-objects/ParticleEffects";
 import { match } from "ts-pattern";
 import { startAutoTap } from "../store/gameStore";
 import { useKeyPress } from "../hooks/useKeyPress";
 import { FISHEYE_CONFIG } from "../store/upgradesConfig";
-import { a } from "@react-spring/three";
+import { a, useSpring } from "@react-spring/three";
+import { spring } from "motion";
 
 const Scene = ({
   permissionGranted,
@@ -37,16 +39,34 @@ const Scene = ({
   const { currentRoute, showOptions, setShowOptions, setEmotionData } =
     useAppStore();
 
+  const isHome = currentRoute === ROUTE_PATHS.HOME;
+
+  const [visible, setVisible] = useState(isHome);
+
   // Handle auto-tap - continue on all routes since shop is accessible everywhere
   useEffect(() => {
     // Always start auto-tap regardless of route
     startAutoTap();
   }, [currentRoute]);
 
-  const showCounter = useMemo(
-    () => currentRoute === ROUTE_PATHS.HOME,
-    [currentRoute]
-  );
+  const [spring, api] = useSpring(() => ({
+    scale: 1,
+    config: { tension: 300, friction: 15 },
+  }));
+
+  useEffect(() => {
+    if (isHome) {
+      setVisible(true);
+      api.start({
+        scale: 1,
+      });
+    } else {
+      api.start({
+        scale: 0.0,
+        onRest: () => setVisible(false),
+      });
+    }
+  }, [isHome]);
 
   useKeyPress("Escape", () => {
     if (showOptions) {
@@ -84,7 +104,8 @@ const Scene = ({
             <directionalLight intensity={1.2} position={[2, 4, 5]} />
             <Environment preset="city" />
             <BackgroundPlanet />
-
+            {/* TODO: add back in as upgrade */}
+            {/* <StarEffect />  */}
             <HeadNavigation
               showOptions={showOptions || false}
               setShowOptions={setShowOptions || (() => {})}
@@ -101,17 +122,16 @@ const Scene = ({
                 }
               }}
             />
-
-            <a.group visible={showCounter}>
+            <a.group visible={visible} scale={spring.scale}>
               <TapCounter />
 
               {/* ParticleEffects inside Fisheye but with larger spawn areas */}
               <ParticleEffects />
             </a.group>
-
             {/* Route-specific content using pattern matching */}
             {match(currentRoute)
               .with(ROUTE_PATHS.ABOUT, () => <AboutScene />)
+              .with(ROUTE_PATHS.PORTFOLIO, () => <PortfolioScene />)
               .otherwise(() => null)}
           </Fisheye>
         </Suspense>

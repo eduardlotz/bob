@@ -3,35 +3,8 @@ import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
 import { useQuestStore } from "@/store/questStore";
 import { useAppStore } from "@/store";
-import { CheckmarkIcon } from "@/icons/checkmark";
 import { CloseIcon } from "@/icons/close";
 import { toast } from "sonner";
-
-interface Quest {
-  id: string;
-  title: string;
-  description: string;
-  progress: number;
-  maxProgress: number;
-  reward: number;
-  completed: boolean;
-}
-
-interface RouteQuests {
-  [key: string]: Quest[];
-}
-
-// Helper function to trigger confetti
-const triggerConfetti = () => {
-  if ((window as any).createTapParticles) {
-    // Create multiple confetti bursts
-    for (let i = 0; i < 5; i++) {
-      setTimeout(() => {
-        (window as any).createTapParticles(-1, 0.5, -1, 1);
-      }, i * 100);
-    }
-  }
-};
 
 // Memoized Quest Item Component
 const MemoizedQuestItem = memo<{
@@ -68,8 +41,11 @@ MemoizedQuestItem.displayName = "MemoizedQuestItem";
 export function ProgressTracker() {
   const [isOpen, setIsOpen] = useState(false);
   const { currentRoute } = useAppStore();
-  const { getQuestsByRoute, completeQuest, updateQuestProgress } =
-    useQuestStore();
+  const questStore = useQuestStore();
+  const quests = questStore.quests;
+  const getQuestsByRoute = questStore.getQuestsByRoute;
+  const completeQuest = questStore.completeQuest;
+  const updateQuestProgress = questStore.updateQuestProgress;
 
   // Convert route path to route ID for quest lookup
   const routeId = useMemo(() => {
@@ -87,7 +63,7 @@ export function ProgressTracker() {
   // Memoized quest data
   const currentQuests = useMemo(
     () => getQuestsByRoute(routeId),
-    [getQuestsByRoute, routeId]
+    [quests, routeId]
   );
 
   const completedQuests = useMemo(
@@ -109,17 +85,8 @@ export function ProgressTracker() {
     (questId: string) => {
       const quest = currentQuests.find((q: any) => q.id === questId);
       if (quest && !quest.completed && quest.progress >= quest.maxProgress) {
-        // Complete the quest
+        // Complete the quest (toast is handled in useQuestSystem)
         completeQuest(questId);
-
-        // Trigger confetti
-        triggerConfetti();
-
-        // Show success toast
-        toast.success(`Quest completed! +${quest.reward} taps`, {
-          description: quest.title,
-          duration: 3000,
-        });
       }
     },
     [currentQuests, completeQuest]

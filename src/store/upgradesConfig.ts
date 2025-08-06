@@ -1,3 +1,6 @@
+import { Theme } from "./gameStore";
+import { THEME_IDS } from "./themeConfig";
+
 // Upgrade Groups Configuration
 export const UPGRADE_GROUPS = {
   EFFECTS: {
@@ -35,11 +38,15 @@ export const FISHEYE_CONFIG = {
 } as const;
 
 // Theme Configuration
-export const THEME_CONFIG = {
-  DEFAULT: {
-    id: "default",
+export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
+  [THEME_IDS.DEFAULT]: {
+    id: THEME_IDS.DEFAULT,
     name: "Default",
     description: "The original theme",
+    cost: 0,
+    purchased: false,
+    active: true,
+    icon: "🌟",
     colors: {
       primary: "#2979FF",
       secondary: "#4285F4",
@@ -49,13 +56,16 @@ export const THEME_CONFIG = {
     },
     planetColors: ["#ffffff", "#C5BDD5", "#85799F"],
     counterColor: "#ffffff",
-    counterEmission: 0,
     blobColor: "#ffffff",
   },
-  DARK: {
-    id: "dark",
+  [THEME_IDS.DARK]: {
+    id: THEME_IDS.DARK,
     name: "Dark Mode",
     description: "A sleek dark theme with inverted colors",
+    cost: 0,
+    purchased: false,
+    active: false,
+    icon: "🌑",
     colors: {
       primary: "#BB86FC",
       secondary: "#03DAC6",
@@ -65,13 +75,16 @@ export const THEME_CONFIG = {
     },
     planetColors: ["#1a1a1a", "#2d2d2d", "#404040"],
     counterColor: "#BB86FC",
-    counterEmission: 0.5, // Cursor works as point light
-    blobColor: "#22c55e",
+    blobColor: "#919191",
   },
-  PASTEL: {
-    id: "pastel",
+  [THEME_IDS.PASTEL]: {
+    id: THEME_IDS.PASTEL,
     name: "Pastel",
     description: "A soft pastel theme",
+    cost: 0,
+    purchased: false,
+    active: false,
+    icon: "🎨",
     colors: {
       primary: "#FFB3BA",
       secondary: "#BAFFC9",
@@ -81,13 +94,16 @@ export const THEME_CONFIG = {
     },
     planetColors: ["#FFE5E5", "#E5FFE5", "#E5F0FF"],
     counterColor: "#FFB3BA",
-    counterEmission: 0,
-    blobColor: "#86efac",
+    blobColor: "#ffffff",
   },
-  NEON: {
-    id: "neon",
+  [THEME_IDS.NEON]: {
+    id: THEME_IDS.NEON,
     name: "Neon",
     description: "A vibrant neon theme",
+    cost: 0,
+    purchased: false,
+    active: false,
+    icon: "🌈",
     colors: {
       primary: "#FFFF00",
       secondary: "#00FFFF",
@@ -97,13 +113,16 @@ export const THEME_CONFIG = {
     },
     planetColors: ["#1a1a1a", "#2a2a2a", "#3a3a3a"], // Dark planet
     counterColor: "#FFFF00",
-    counterEmission: 1.0, // Counter emits light
     blobColor: "#00ff88",
   },
-  CUSTOM: {
-    id: "custom",
+  [THEME_IDS.CUSTOM]: {
+    id: THEME_IDS.CUSTOM,
     name: "Custom",
     description: "Create your own theme",
+    cost: 0,
+    purchased: false,
+    active: false,
+    icon: "🎨",
     colors: {
       primary: "#2979FF",
       secondary: "#4285F4",
@@ -113,7 +132,6 @@ export const THEME_CONFIG = {
     },
     planetColors: ["#ffffff", "#C5BDD5", "#85799F"],
     counterColor: "#2979FF",
-    counterEmission: 0,
     blobColor: "#ffffff",
   },
 } as const;

@@ -182,16 +182,13 @@ export function BlobHead({
   emotionState: EmotionState;
   onCameraZoomAnimation?: (isAnimating: boolean) => void;
 }) {
-  const { currentRoute } = useAppStore();
   const { currentTheme } = useGameStore();
-  const { getBlobColor } = useRouteStore();
 
   // Get route-specific blob color
-  const blobColor = getBlobColor(currentRoute, currentTheme?.id);
+  const blobColor = currentTheme?.blobColor;
   const headRef = useRef<Group>(null!);
   const leftEyeRef = useRef<Mesh>(null!);
   const rightEyeRef = useRef<Mesh>(null!);
-  const starRef = useRef<Mesh>(null!);
 
   // Create eye geometries once
   const eyeGeometries = useRef(createEyeGeometries());

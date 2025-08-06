@@ -153,7 +153,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   useEffect(() => {
     // Apply theme to document root
     if (currentTheme) {
-      console.log("Applying theme:", currentTheme.name, currentTheme.colors);
+      console.log("Applying theme:", currentTheme.id);
 
       // Set CSS custom properties
       const root = document.documentElement;

@@ -8,7 +8,7 @@ import styled from "styled-components";
 import { ROUTE_PATHS, useAppStore } from "@/store";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { useAnimations } from "@/hooks/useAnimations";
-import { UILayer } from "@/components/UILayer";
+import { DialogRoot } from "@/molecules/DialogRoot";
 
 // Route Components
 import Home from "./routes/Home";
@@ -74,6 +74,8 @@ export default function App() {
           </ContentWrapper>
         </MainLayout>
       </FullScreen>
+
+      <DialogRoot />
     </ThemeProvider>
   );
 }
