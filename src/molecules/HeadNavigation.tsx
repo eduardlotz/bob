@@ -24,7 +24,7 @@ import { LockIcon } from "@/icons/lock";
 export const CAMERA_Y_POSITION = 1;
 export const CAMERA_HEIGHT = 2; // New constant for camera height only
 export const CAMERA_FOLLOW_OFFSET = 2.5;
-export const OPTIONS_Y_OFFSET = -1; // Y offset for options positioning
+export const OPTIONS_Y_OFFSET = -1.5; // Y offset for options positioning
 
 export const VISIBLE_OPTIONS_CAMERA_ZOOM = 8;
 // export const HIDDEN_OPTIONS_CAMERA_ZOOM = 1.75;
@@ -587,7 +587,10 @@ function Option({
         hideOptions();
       })
       .otherwise(() => {
-        // Route is locked - do nothing
+        // Route is locked - notify user about shop
+        toast.custom((id) => (
+          <CustomToast>Visit the shop to unlock it!</CustomToast>
+        ));
       });
   };
 
@@ -602,7 +605,7 @@ function Option({
               ? MOTION_VARIANTS.springScaleReversed.exit
               : MOTION_VARIANTS.springScaleReversed.animate({
                   delay: index,
-                  isDisabled: !route.purchased && !route.unlocked,
+                  isDisabled: !route.purchased,
                 })
           }
           exit={MOTION_VARIANTS.springScaleReversed.exit}
@@ -636,16 +639,17 @@ function Option({
 }
 
 const CustomToast = styled.div`
-  background-color: white;
-  color: black;
-  padding: 20px 30px;
+  background-color: #000000;
+  color: white;
+  padding: 16px 24px;
   height: 58px;
-  width: 320px;
+  width: fit-content;
   max-width: 100%;
 
   display: flex;
   justify-content: center;
   align-items: center;
+  gap: 16px;
 
   border-radius: 24px;
   box-shadow: 0 4px 10px 10px rgba(37, 36, 39, 0.08);

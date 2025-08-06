@@ -7,7 +7,6 @@ import { ThemeIcon } from "@/icons/theme";
 import { EffectsIcon } from "@/icons/effects";
 import { EnvironmentIcon as EnvironmentIconComponent } from "@/icons/environment";
 import { CloseIcon } from "@/icons/close";
-import { HexColorPicker } from "react-colorful";
 import { PagesIcon } from "@/icons/pages";
 import { DebuggingIcon } from "@/icons/debugging";
 
@@ -16,13 +15,14 @@ interface ShopProps {
   onClose: () => void;
 }
 
-type ShopTab = "themes" | "effects" | "environment" | "routes" | "dev";
+type ShopTab = "themes" | "effects" | "environment" | "pages" | "dev";
 
 export function Shop({ isOpen, onClose }: ShopProps) {
-  const [activeTab, setActiveTab] = useState<ShopTab>("themes");
+  const [activeTab, setActiveTab] = useState<ShopTab>("pages");
   const { themes, upgrades, routes, taps, calculateOfflineTaps, addTaps } =
     useGameStore();
-  const isDevMode = process.env.NODE_ENV === "development";
+  // const isDevMode = process.env.NODE_ENV === "development";
+  const isDevMode = true; // Force dev mode for testing
 
   // Calculate and add offline taps when shop opens
   useEffect(() => {
@@ -36,6 +36,12 @@ export function Shop({ isOpen, onClose }: ShopProps) {
   }, [isOpen, calculateOfflineTaps, addTaps]);
 
   const tabs = [
+    {
+      id: "pages" as ShopTab,
+      name: "Pages",
+      icon: PagesIcon,
+      progress: routes.filter((r) => r.purchased).length / routes.length,
+    },
     {
       id: "themes" as ShopTab,
       name: "Themes",
@@ -58,12 +64,6 @@ export function Shop({ isOpen, onClose }: ShopProps) {
       progress:
         upgrades.filter((u) => u.category === "environment" && u.unlocked)
           .length / upgrades.filter((u) => u.category === "environment").length,
-    },
-    {
-      id: "routes" as ShopTab,
-      name: "Pages",
-      icon: PagesIcon,
-      progress: routes.filter((r) => r.purchased).length / routes.length,
     },
     ...(isDevMode
       ? [
@@ -102,9 +102,6 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                 Shop
               </ShopTitle>
               <TapCountDisplay>{taps.toLocaleString()} taps</TapCountDisplay>
-              <CloseButton onClick={onClose}>
-                <CloseIcon color="#ffffff" />
-              </CloseButton>
             </ShopHeader>
 
             <ShopContent>
@@ -134,9 +131,9 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                     {activeTab === "themes" && (
                       <motion.div
                         key="themes"
-                        animate={{ opacity: 1, filter: "blur(0px)" }}
-                        initial={{ opacity: 0, filter: "blur(8px)" }}
-                        exit={{ opacity: 0, filter: "blur(8px)" }}
+                        animate={{ opacity: 1 }}
+                        initial={{ opacity: 0 }}
+                        exit={{ opacity: 0 }}
                         transition={{ duration: 0.25, ease: "easeOut" }}
                       >
                         <ThemesView />
@@ -145,9 +142,9 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                     {activeTab === "effects" && (
                       <motion.div
                         key="effects"
-                        animate={{ opacity: 1, filter: "blur(0px)" }}
-                        initial={{ opacity: 0, filter: "blur(8px)" }}
-                        exit={{ opacity: 0, filter: "blur(8px)" }}
+                        animate={{ opacity: 1 }}
+                        initial={{ opacity: 0 }}
+                        exit={{ opacity: 0 }}
                         transition={{ duration: 0.25, ease: "easeOut" }}
                       >
                         <EffectsView />
@@ -156,20 +153,20 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                     {activeTab === "environment" && (
                       <motion.div
                         key="environment"
-                        animate={{ opacity: 1, filter: "blur(0px)" }}
-                        initial={{ opacity: 0, filter: "blur(8px)" }}
-                        exit={{ opacity: 0, filter: "blur(8px)" }}
+                        animate={{ opacity: 1 }}
+                        initial={{ opacity: 0 }}
+                        exit={{ opacity: 0 }}
                         transition={{ duration: 0.25, ease: "easeOut" }}
                       >
                         <EnvironmentView />
                       </motion.div>
                     )}
-                    {activeTab === "routes" && (
+                    {activeTab === "pages" && (
                       <motion.div
                         key="routes"
-                        animate={{ opacity: 1, filter: "blur(0px)" }}
-                        initial={{ opacity: 0, filter: "blur(8px)" }}
-                        exit={{ opacity: 0, filter: "blur(8px)" }}
+                        animate={{ opacity: 1 }}
+                        initial={{ opacity: 0 }}
+                        exit={{ opacity: 0 }}
                         transition={{ duration: 0.25, ease: "easeOut" }}
                       >
                         <RoutesView />
@@ -178,9 +175,9 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                     {activeTab === "dev" && (
                       <motion.div
                         key="dev"
-                        animate={{ opacity: 1, filter: "blur(0px)" }}
-                        initial={{ opacity: 0, filter: "blur(8px)" }}
-                        exit={{ opacity: 0, filter: "blur(8px)" }}
+                        animate={{ opacity: 1 }}
+                        initial={{ opacity: 0 }}
+                        exit={{ opacity: 0 }}
                         transition={{ duration: 0.25, ease: "easeOut" }}
                       >
                         <DevView />
@@ -245,17 +242,6 @@ function ThemesView() {
                       : "Available"
                     : `${theme.cost} taps`}
                 </ThemeStatus>
-                {!theme.purchased && (
-                  <PurchaseButton
-                    $canAfford={canAfford(theme.cost)}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleThemePurchase(theme.id);
-                    }}
-                  >
-                    {canAfford(theme.cost) ? "Unlock" : "Can't Afford"}
-                  </PurchaseButton>
-                )}
               </ThemeCard>
             ))}
         </ItemsGrid>
@@ -309,17 +295,6 @@ function EffectsView() {
                   : "Available"
                 : `${effect.baseCost} taps`}
             </EffectStatus>
-            {!effect.unlocked && (
-              <PurchaseButton
-                $canAfford={canAfford(effect.baseCost)}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleEffectPurchase(effect.id);
-                }}
-              >
-                {canAfford(effect.baseCost) ? "Unlock" : "Can't Afford"}
-              </PurchaseButton>
-            )}
           </EffectCard>
         ))}
       </EffectsGrid>
@@ -366,18 +341,13 @@ function EnvironmentView() {
           >
             <EnvironmentIcon>{effect.icon}</EnvironmentIcon>
             <EnvironmentName>{effect.name}</EnvironmentName>
-            <EnvironmentStatus $unlocked={effect.unlocked}></EnvironmentStatus>
-            {!effect.unlocked && (
-              <PurchaseButton
-                $canAfford={canAfford(effect.baseCost)}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleEnvironmentPurchase(effect.id);
-                }}
-              >
-                {canAfford(effect.baseCost) ? "Unlock" : "Can't Afford"}
-              </PurchaseButton>
-            )}
+            <EnvironmentStatus $unlocked={effect.unlocked}>
+              {effect.unlocked
+                ? effect.selected
+                  ? "Selected"
+                  : "Available"
+                : `${effect.baseCost} taps`}
+            </EnvironmentStatus>
           </EnvironmentCard>
         ))}
       </EnvironmentGrid>
@@ -430,24 +400,10 @@ function RoutesView() {
                       marginTop: "4px",
                     }}
                   >
-                    Cost: {route.cost} taps
+                    {route.cost} taps
                   </div>
                 </div>
-                <ThemeStatus $purchased={route.purchased}>
-                  {route.purchased ? (
-                    "Unlocked"
-                  ) : (
-                    <PurchaseButton
-                      $canAfford={canAfford(route.cost)}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRoutePurchase(route.id);
-                      }}
-                    >
-                      {canAfford(route.cost) ? "Unlock" : "Can't Afford"}
-                    </PurchaseButton>
-                  )}
-                </ThemeStatus>
+                <ThemeStatus $purchased={route.purchased}></ThemeStatus>
               </ThemeCard>
             ))}
         </ItemsGrid>
@@ -499,7 +455,7 @@ function DevView() {
         <DevButton
           $variant="destructive"
           onClick={() =>
-            confirm("This will delete all your progress. Are you sure?") &&
+            confirm("This will delete all your progress.\nAre you sure?") &&
             resetGame()
           }
         >
@@ -529,7 +485,7 @@ const ShopContainer = styled(motion.div)`
   right: 0;
   top: 40px;
   margin: 0 auto;
-  width: 90vw;
+  width: 880px;
   max-width: calc(100% - 32px);
   transform: translateY(-50%);
   height: 80dvh;
@@ -625,7 +581,7 @@ const TabButton = styled.button<{ $active: boolean }>`
   cursor: pointer;
   font-size: 14px;
   font-weight: ${(props) => (props.$active ? "600" : "400")};
-  transition: all 0.2s;
+  transition: all 0.2s ease-in;
   border-radius: 12px;
   width: 100%;
 
@@ -704,7 +660,7 @@ const ContentItems = styled.div`
 
 const ItemsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 16px;
 `;
 
@@ -719,7 +675,7 @@ const ThemeCard = styled.div<{
   gap: 8px;
   padding: 12px;
   border-radius: 12px;
-  cursor: ${(props) => (props.$purchased ? "pointer" : "not-allowed")};
+  cursor: pointer;
   transition: all 0.2s;
   border: 2px solid ${(props) => (props.$selected ? "#ffffff" : "transparent")};
   background: ${(props) =>
@@ -916,7 +872,7 @@ const EffectsContainer = styled.div`
 
 const EffectsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 16px;
 `;
 
@@ -931,7 +887,7 @@ const EffectCard = styled.div<{
   gap: 8px;
   padding: 12px;
   border-radius: 12px;
-  cursor: ${(props) => (props.$unlocked ? "pointer" : "not-allowed")};
+  cursor: pointer;
   transition: all 0.2s;
   border: 2px solid ${(props) => (props.$selected ? "#FFD700" : "transparent")};
   background: ${(props) =>
@@ -956,7 +912,7 @@ const EnvironmentContainer = styled.div`
 
 const EnvironmentGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 16px;
 `;
 
@@ -971,7 +927,7 @@ const EnvironmentCard = styled.div<{
   gap: 8px;
   padding: 12px;
   border-radius: 12px;
-  cursor: ${(props) => (props.$unlocked ? "pointer" : "not-allowed")};
+  cursor: pointer;
   transition: all 0.2s;
   border: 2px solid ${(props) => (props.$enabled ? "#4CAF50" : "transparent")};
   background: ${(props) =>
@@ -997,7 +953,7 @@ const DevContainer = styled.div`
 
 const DevGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 12px;
 `;
 
@@ -1044,7 +1000,7 @@ const PurchaseButton = styled.button<{ $canAfford: boolean }>`
   border-style: solid;
   background: ${(props) => (props.$canAfford ? "#000000" : "#666666")};
   color: white;
-  cursor: ${(props) => (props.$canAfford ? "pointer" : "not-allowed")};
+  cursor: pointer;
   font-size: 0.75rem;
   font-weight: 500;
 

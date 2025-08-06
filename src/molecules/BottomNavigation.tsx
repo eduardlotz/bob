@@ -183,9 +183,6 @@ export function BottomNavigation() {
             <UpgradesContent>
               <UpgradesHeader>
                 <UpgradesTitle>Tap Upgrades</UpgradesTitle>
-                <CloseButton onClick={() => setIsUpgradesOpen(false)}>
-                  ×
-                </CloseButton>
               </UpgradesHeader>
               <UpgradesList>
                 {tapUpgrades.map((upgrade) => (

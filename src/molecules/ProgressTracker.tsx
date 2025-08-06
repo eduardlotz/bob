@@ -234,7 +234,6 @@ export function ProgressTracker() {
             <TrackerContent>
               <TrackerHeader>
                 <TrackerTitle>Quests</TrackerTitle>
-                <CloseButton onClick={closePanel}>×</CloseButton>
               </TrackerHeader>
 
               <QuestsList>
@@ -250,36 +249,6 @@ export function ProgressTracker() {
               {totalReward > 0 && (
                 <TotalReward>Total Reward: +{totalReward}</TotalReward>
               )}
-
-              {/* Test buttons for development */}
-              {process.env.NODE_ENV === "development" &&
-                currentQuests.length > 0 && (
-                  <TestSection>
-                    <TestTitle>Test Progress</TestTitle>
-                    {currentQuests.map((quest) => (
-                      <div
-                        key={`test-${quest.id}`}
-                        style={{ marginBottom: "8px" }}
-                      >
-                        <TestButton
-                          onClick={() =>
-                            handleQuestProgress(quest.id, quest.progress + 25)
-                          }
-                          disabled={quest.completed}
-                        >
-                          +25 Progress
-                        </TestButton>
-                        <TestButton
-                          onClick={() => handleAutoComplete(quest.id)}
-                          disabled={quest.completed}
-                          style={{ marginLeft: "8px" }}
-                        >
-                          Complete
-                        </TestButton>
-                      </div>
-                    ))}
-                  </TestSection>
-                )}
             </TrackerContent>
           </TrackerPanel>
         )}
@@ -360,10 +329,11 @@ const TrackerPanel = styled(motion.div)`
   right: 0;
   margin: 0 auto;
 
-  width: 320px;
-  max-width: calc(100% - 32px);
+  width: 300px;
+  max-width: calc(100vw - 32px);
   background: rgba(20, 20, 20, 0.95);
   backdrop-filter: blur(16px);
+  padding: 16px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   z-index: 999;
@@ -483,6 +453,5 @@ const TestButton = styled.button`
 
   &:disabled {
     opacity: 0.5;
-    cursor: not-allowed;
   }
 `;
