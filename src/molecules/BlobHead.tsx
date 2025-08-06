@@ -883,12 +883,12 @@ export function BlobHead({
 
         {/* Eyes */}
         <group position={[0, 0.2, 0.85]}>
-          <mesh ref={leftEyeRef} position={[-0.3, 0, 0]}>
-            <sphereGeometry args={[0.12, 16, 16]} />
+          <mesh ref={leftEyeRef} position={[-0.45, 0, 0]}>
+            <sphereGeometry args={[0.1, 16, 16]} />
             <meshToonMaterial color="#000000" />
           </mesh>
-          <mesh ref={rightEyeRef} position={[0.3, 0, 0]}>
-            <sphereGeometry args={[0.12, 16, 16]} />
+          <mesh ref={rightEyeRef} position={[0.45, 0, 0]}>
+            <sphereGeometry args={[0.1, 16, 16]} />
             <meshToonMaterial color="#000000" />
           </mesh>
         </group>
@@ -906,13 +906,14 @@ export function BlobHead({
                 key={star.id}
                 position={[orbitX, orbitY, orbitZ]}
                 scale={[star.scale, star.scale, star.scale]}
-                rotation={[
-                  Math.sin(star.spinAngle) * 0.2,
-                  Math.cos(star.spinAngle * 0.7) * 0.3,
-                  Math.sin(star.spinAngle * 1.3) * 0.1,
-                ]}
               >
-                <Star3D />
+                <Star3D
+                  rotation={[
+                    Math.sin(star.spinAngle) * 0.1,
+                    star.spinAngle,
+                    Math.sin(star.spinAngle * 0.5) * 0.05,
+                  ]}
+                />
               </group>
             );
           })}

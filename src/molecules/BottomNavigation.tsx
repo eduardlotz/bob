@@ -10,30 +10,31 @@ import { Shop } from "./Shop";
 
 interface BottomNavigationProps {
   onMenuClick: () => void;
+  showMenu: boolean;
 }
 
-export function BottomNavigation({ onMenuClick }: BottomNavigationProps) {
+export function BottomNavigation({
+  onMenuClick,
+  showMenu,
+}: BottomNavigationProps) {
   const [isShopOpen, setIsShopOpen] = useState(false);
   const [isUpgradesOpen, setIsUpgradesOpen] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   const {
     upgrades,
     purchaseUpgrade,
     canAfford,
-    autoTapRate,
+    getAutoTapRate,
     manualTapsPerSecond,
   } = useGameStore();
+  const autoTapRate = getAutoTapRate();
+
   const totalTapsPerSecond = autoTapRate + manualTapsPerSecond;
   const tapUpgrades = upgrades.filter((u) => u.category === "upgrades");
   const hasAnyUpgrade = tapUpgrades.some((u) => u.unlocked);
 
   const handleUpgradePurchase = (upgradeId: string) => {
     purchaseUpgrade(upgradeId);
-  };
-
-  const handleMenuClick = () => {
-    setIsMenuOpen(!isMenuOpen);
-    onMenuClick();
   };
 
   return (
@@ -86,13 +87,13 @@ export function BottomNavigation({ onMenuClick }: BottomNavigationProps) {
         </NavButton>
 
         <MenuButton
-          onClick={handleMenuClick}
+          onClick={onMenuClick}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          $isActive={isMenuOpen}
+          $isActive={showMenu}
         >
           <AnimatePresence mode="popLayout">
-            {isMenuOpen ? (
+            {showMenu ? (
               <motion.div
                 key="close"
                 initial={{ scale: 0, opacity: 0 }}

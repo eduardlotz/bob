@@ -1,4 +1,4 @@
-import { FillRow, FillColumn } from "@/layout";
+import { FillColumn } from "@/layout";
 import { Logo, MotionIconWrapper } from "@/layout/atoms";
 import { MotionVariants } from "@/styles/motion";
 import styled from "styled-components";

@@ -2,22 +2,13 @@ import { SceneWithLoader } from "@/molecules/SceneWithLoader";
 import { useEffect, useState } from "react";
 import styled from "styled-components";
 import { useAppStore } from "@/store";
-import { UILayer } from "@/components/UILayer";
 
 export default function MainLayout({ children }: any) {
   const [windowHeight, setWindowHeight] = useState(0);
   const [sceneLoaded, setSceneLoaded] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
 
-  const {
-    currentRoute,
-    permissionGranted,
-    isMobile,
-    emotionData,
-    setPermissionGranted,
-    setIsMobile,
-    setEmotionData,
-  } = useAppStore();
+  const { permissionGranted, setIsMobile, setEmotionData } = useAppStore();
 
   // Initialize mobile detection and window height
   useEffect(() => {
