@@ -2,27 +2,31 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
 import { useGameStore } from "@/store/gameStore";
+import { useAppStore, ROUTE_PATHS } from "@/store";
 import { UpgradesIcon } from "@/icons/upgrades";
 import { CartIcon } from "@/icons/cart";
 import { MenuIcon } from "@/icons/menu";
 import { CloseIcon } from "@/icons/close";
 import { Shop } from "./Shop";
+import { ProgressTracker } from "./ProgressTracker";
 
-interface BottomNavigationProps {
-  onMenuClick: () => void;
-}
-
-export function BottomNavigation({ onMenuClick }: BottomNavigationProps) {
+export function BottomNavigation() {
   const [isShopOpen, setIsShopOpen] = useState(false);
   const [isUpgradesOpen, setIsUpgradesOpen] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   const {
     upgrades,
     purchaseUpgrade,
     canAfford,
-    autoTapRate,
+    getAutoTapRate,
     manualTapsPerSecond,
   } = useGameStore();
+  const { currentRoute, showOptions, setShowOptions } = useAppStore();
+
+  // Only show upgrade/shop buttons on home route
+  const isHomeRoute = currentRoute === ROUTE_PATHS.HOME;
+  const autoTapRate = getAutoTapRate();
+
   const totalTapsPerSecond = autoTapRate + manualTapsPerSecond;
   const tapUpgrades = upgrades.filter((u) => u.category === "upgrades");
   const hasAnyUpgrade = tapUpgrades.some((u) => u.unlocked);
@@ -31,68 +35,67 @@ export function BottomNavigation({ onMenuClick }: BottomNavigationProps) {
     purchaseUpgrade(upgradeId);
   };
 
-  const handleMenuClick = () => {
-    setIsMenuOpen(!isMenuOpen);
-    onMenuClick();
-  };
-
   return (
     <>
       <NavigationContainer>
-        <NavButton
-          onClick={() => setIsUpgradesOpen(!isUpgradesOpen)}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          $isActive={isUpgradesOpen}
-        >
-          <AnimatePresence mode="popLayout">
-            {isUpgradesOpen ? (
-              <motion.div
-                key="close"
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{
-                  duration: 0.25,
-                  type: "spring" as const,
-                  bounce: 0.5,
-                }}
-              >
-                <CloseIcon color="#ffffff" />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="upgrade"
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{
-                  duration: 0.25,
-                  type: "spring" as const,
-                  bounce: 0.5,
-                }}
-              >
-                {hasAnyUpgrade ? (
-                  <UpgradeButtonContent>
-                    <FingerIcon>🫵</FingerIcon>
-                    <TapMultiplier>{totalTapsPerSecond}/s</TapMultiplier>
-                  </UpgradeButtonContent>
-                ) : (
-                  <UpgradesIcon color="#ffffff" />
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </NavButton>
+        {isHomeRoute ? (
+          <NavButton
+            onClick={() => setIsUpgradesOpen(!isUpgradesOpen)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            $isActive={isUpgradesOpen}
+          >
+            <AnimatePresence mode="popLayout">
+              {isUpgradesOpen ? (
+                <motion.div
+                  key="close"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{
+                    duration: 0.25,
+                    type: "spring" as const,
+                    bounce: 0.5,
+                  }}
+                >
+                  <CloseIcon color="#ffffff" />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="upgrade"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{
+                    duration: 0.25,
+                    type: "spring" as const,
+                    bounce: 0.5,
+                  }}
+                >
+                  {hasAnyUpgrade ? (
+                    <UpgradeButtonContent>
+                      <FingerIcon>🫵</FingerIcon>
+                      <TapMultiplier>{totalTapsPerSecond}/s</TapMultiplier>
+                    </UpgradeButtonContent>
+                  ) : (
+                    <UpgradesIcon color="#ffffff" />
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </NavButton>
+        ) : (
+          <ProgressTracker />
+        )}
 
         <MenuButton
-          onClick={handleMenuClick}
+          onClick={() => setShowOptions(!showOptions)}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          $isActive={isMenuOpen}
+          $isActive={showOptions}
         >
           <AnimatePresence mode="popLayout">
-            {isMenuOpen ? (
+            {showOptions ? (
               <motion.div
                 key="close"
                 initial={{ scale: 0, opacity: 0 }}
@@ -169,9 +172,9 @@ export function BottomNavigation({ onMenuClick }: BottomNavigationProps) {
       <AnimatePresence>
         {isUpgradesOpen && (
           <UpgradesPanel
-            initial={{ opacity: 0, scale: 0.9, y: 40, filter: "blur(10px)" }}
-            animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, scale: 0.9, y: 40, filter: "blur(10px)" }}
+            initial={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(10px)" }}
+            animate={{ opacity: 1, scaleX: 1, y: 0, filter: "blur(0px)" }}
+            exit={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(10px)" }}
             transition={{
               duration: 0.2,
               ease: "easeInOut",
@@ -180,9 +183,6 @@ export function BottomNavigation({ onMenuClick }: BottomNavigationProps) {
             <UpgradesContent>
               <UpgradesHeader>
                 <UpgradesTitle>Tap Upgrades</UpgradesTitle>
-                <CloseButton onClick={() => setIsUpgradesOpen(false)}>
-                  ×
-                </CloseButton>
               </UpgradesHeader>
               <UpgradesList>
                 {tapUpgrades.map((upgrade) => (
@@ -238,11 +238,11 @@ const NavigationContainer = styled.div`
 `;
 
 const NavButton = styled(motion.button)<{ $isActive?: boolean }>`
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(14px);
+  height: 58px;
+  padding: 20px;
+  border-radius: 24px;
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(16px);
   border: ${(props) =>
     props.$isActive
       ? "2px solid #ffffff"

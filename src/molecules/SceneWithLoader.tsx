@@ -1,4 +1,4 @@
-import { FillRow, FillColumn } from "@/layout";
+import { FillColumn } from "@/layout";
 import { Logo, MotionIconWrapper } from "@/layout/atoms";
 import { MotionVariants } from "@/styles/motion";
 import styled from "styled-components";
@@ -75,8 +75,6 @@ export const SceneWithLoader = ({
   permissionGranted,
   onEmotionUpdate,
   onLoaded,
-  showOptions,
-  setShowOptions,
   ...rest
 }: {
   permissionGranted: boolean;
@@ -86,8 +84,6 @@ export const SceneWithLoader = ({
     getEmotionIcon: any;
   }) => void;
   onLoaded?: () => void;
-  showOptions?: boolean;
-  setShowOptions?: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
   const [sceneLoaded, setSceneLoaded] = useState(false);
   const { isMobile, emotionData, setPermissionGranted } = useAppStore();
@@ -112,8 +108,6 @@ export const SceneWithLoader = ({
         <Scene
           permissionGranted={permissionGranted}
           onEmotionUpdate={onEmotionUpdate}
-          showOptions={showOptions}
-          setShowOptions={setShowOptions}
           {...rest}
         />
       </Suspense>
@@ -123,8 +117,6 @@ export const SceneWithLoader = ({
           permissionGranted={permissionGranted}
           isMobile={isMobile}
           sceneLoaded={sceneLoaded}
-          showOptions={showOptions || false}
-          setShowOptions={setShowOptions || (() => {})}
           setPermissionGranted={setPermissionGranted}
           emotionState={emotionData?.emotionState || "normal"}
         />

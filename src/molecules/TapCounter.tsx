@@ -15,8 +15,8 @@ const formatNumber = (num: number): string => {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0, // This will floor the decimals
     });
-  } else {
-    // For numbers 10k and above, convert to K format
+  } else if (num < 1000000) {
+    // For numbers 10k to 1M, convert to K format
     // Floor to the nearest hundred first
     const flooredToHundreds = Math.floor(num / 100) * 100;
     const inK = flooredToHundreds / 1000;
@@ -29,11 +29,38 @@ const formatNumber = (num: number): string => {
 
     // Replace comma with dot for German formatting (though there shouldn't be commas in K format)
     return formatted.replace(/,/g, ".") + "K";
+  } else if (num < 1000000000) {
+    // For numbers 1M to 1B, convert to M format
+    // Floor to the nearest thousand first
+    const flooredToThousands = Math.floor(num / 1000) * 1000;
+    const inM = flooredToThousands / 1000000;
+
+    // Format with one decimal place and use dot as decimal separator
+    const formatted = inM.toLocaleString("en-US", {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    });
+
+    // Replace comma with dot for German formatting
+    return formatted.replace(/,/g, ".") + "M";
+  } else {
+    // For numbers 1B and above, convert to B format
+    // Floor to the nearest million first
+    const flooredToMillions = Math.floor(num / 1000000) * 1000000;
+    const inB = flooredToMillions / 1000000000;
+
+    // Format with one decimal place and use dot as decimal separator
+    const formatted = inB.toLocaleString("en-US", {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    });
+
+    // Replace comma with dot for German formatting
+    return formatted.replace(/,/g, ".") + "B";
   }
 };
 
-export const EmotionCounter = ({ tapCount }: { tapCount: number }) => {
-  const PAD_LENGTH = 0;
+export const TapCounter = () => {
   const { taps, currentTheme } = useGameStore();
 
   // Use game store taps instead of emotion tap count
@@ -117,11 +144,7 @@ export const EmotionCounter = ({ tapCount }: { tapCount: number }) => {
         ref={numberRef}
       >
         {formattedNumber}
-        <meshToonMaterial
-          color={themeConfig.counterColor}
-          emissive={themeConfig.counterColor}
-          emissiveIntensity={themeConfig.counterEmission}
-        />
+        <meshToonMaterial color={themeConfig.counterColor} />
         <Outlines thickness={0.011} color="black" screenspace />
       </Text3D>
     </a.group>

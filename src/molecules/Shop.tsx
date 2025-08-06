@@ -1,33 +1,53 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
 import { useGameStore, triggerStoreMigration } from "@/store/gameStore";
+import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { CartIcon } from "@/icons/cart";
 import { ThemeIcon } from "@/icons/theme";
 import { EffectsIcon } from "@/icons/effects";
 import { EnvironmentIcon as EnvironmentIconComponent } from "@/icons/environment";
-import { CloseIcon } from "@/icons/close";
-import { HexColorPicker } from "react-colorful";
+import { PagesIcon } from "@/icons/pages";
+import { DebuggingIcon } from "@/icons/debugging";
+import { MOTION_VARIANTS } from "./HeadNavigation";
 
 interface ShopProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type ShopTab = "themes" | "effects" | "environment" | "dev";
+type ShopTab = "themes" | "effects" | "environment" | "pages" | "dev";
 
 export function Shop({ isOpen, onClose }: ShopProps) {
-  const [activeTab, setActiveTab] = useState<ShopTab>("themes");
-  const { themes, currentTheme, activateTheme, canAfford, upgrades } =
+  const [activeTab, setActiveTab] = useState<ShopTab>("pages");
+  const { themes, upgrades, routes, taps, calculateOfflineTaps, addTaps } =
     useGameStore();
-  const isDevMode = process.env.NODE_ENV === "development";
+  // const isDevMode = process.env.NODE_ENV === "development";
+  const isDevMode = true; // Force dev mode for testing
+
+  // Calculate and add offline taps when shop opens
+  useEffect(() => {
+    if (isOpen) {
+      const offlineTaps = calculateOfflineTaps();
+      if (offlineTaps > 0) {
+        addTaps(offlineTaps);
+        console.log(`Added ${offlineTaps} offline taps`);
+      }
+    }
+  }, [isOpen, calculateOfflineTaps, addTaps]);
 
   const tabs = [
+    {
+      id: "pages" as ShopTab,
+      name: "Pages",
+      icon: PagesIcon,
+      progress: routes.filter((r) => r.purchased).length / routes.length,
+    },
     {
       id: "themes" as ShopTab,
       name: "Themes",
       icon: ThemeIcon,
-      progress: themes.filter((t) => t.purchased).length / themes.length,
+      progress: themes.filter((t) => t.purchased).length / themes.length, // Exclude default,
     },
     {
       id: "effects" as ShopTab,
@@ -36,10 +56,11 @@ export function Shop({ isOpen, onClose }: ShopProps) {
       progress:
         upgrades.filter((u) => u.category === "tapEffects" && u.unlocked)
           .length / upgrades.filter((u) => u.category === "tapEffects").length,
+      // Exclude default
     },
     {
       id: "environment" as ShopTab,
-      name: "Environment",
+      name: "Weather",
       icon: EnvironmentIconComponent,
       progress:
         upgrades.filter((u) => u.category === "environment" && u.unlocked)
@@ -50,8 +71,8 @@ export function Shop({ isOpen, onClose }: ShopProps) {
           {
             id: "dev" as ShopTab,
             name: "Dev",
-            icon: () => <span style={{ fontSize: "20px" }}>🔧</span>,
-            progress: 1, // Dev tab is always 100% complete
+            icon: DebuggingIcon,
+            progress: 0, // Dev tab is always 100% complete
           },
         ]
       : []),
@@ -68,9 +89,9 @@ export function Shop({ isOpen, onClose }: ShopProps) {
             onClick={onClose}
           />
           <ShopContainer
-            initial={{ opacity: 0, scale: 0.9, y: 40, filter: "blur(10px)" }}
-            animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, scale: 0.9, y: 40, filter: "blur(10px)" }}
+            initial={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(10px)" }}
+            animate={{ opacity: 1, scaleX: 1, y: 0, filter: "blur(0px)" }}
+            exit={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(10px)" }}
             transition={{
               duration: 0.2,
               ease: "easeInOut",
@@ -81,9 +102,9 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                 <CartIcon color="#FFD700" />
                 Shop
               </ShopTitle>
-              <CloseButton onClick={onClose}>
-                <CloseIcon color="#ffffff" />
-              </CloseButton>
+              <TapCountDisplay>
+                {Math.floor(taps).toLocaleString("de-DE")} taps
+              </TapCountDisplay>
             </ShopHeader>
 
             <ShopContent>
@@ -96,9 +117,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                   >
                     <TabContent>
                       <TabIcon>
-                        <tab.icon
-                          color={activeTab === tab.id ? "#FFD700" : "#666666"}
-                        />
+                        <tab.icon />
                       </TabIcon>
                       <TabName>{tab.name}</TabName>
                       <ProgressBar $progress={tab.progress} />
@@ -113,9 +132,10 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                     {activeTab === "themes" && (
                       <motion.div
                         key="themes"
-                        animate={{ opacity: 1, filter: "blur(0px)" }}
-                        initial={{ opacity: 0, filter: "blur(8px)" }}
-                        exit={{ opacity: 0, filter: "blur(8px)" }}
+                        animate="animate"
+                        initial="initial"
+                        exit="exit"
+                        variants={MOTION_VARIANTS.slideUp}
                         transition={{ duration: 0.25, ease: "easeOut" }}
                       >
                         <ThemesView />
@@ -124,9 +144,10 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                     {activeTab === "effects" && (
                       <motion.div
                         key="effects"
-                        animate={{ opacity: 1, filter: "blur(0px)" }}
-                        initial={{ opacity: 0, filter: "blur(8px)" }}
-                        exit={{ opacity: 0, filter: "blur(8px)" }}
+                        animate="animate"
+                        initial="initial"
+                        exit="exit"
+                        variants={MOTION_VARIANTS.slideUp}
                         transition={{ duration: 0.25, ease: "easeOut" }}
                       >
                         <EffectsView />
@@ -135,20 +156,34 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                     {activeTab === "environment" && (
                       <motion.div
                         key="environment"
-                        animate={{ opacity: 1, filter: "blur(0px)" }}
-                        initial={{ opacity: 0, filter: "blur(8px)" }}
-                        exit={{ opacity: 0, filter: "blur(8px)" }}
+                        animate="animate"
+                        initial="initial"
+                        exit="exit"
+                        variants={MOTION_VARIANTS.slideUp}
                         transition={{ duration: 0.25, ease: "easeOut" }}
                       >
                         <EnvironmentView />
                       </motion.div>
                     )}
+                    {activeTab === "pages" && (
+                      <motion.div
+                        key="routes"
+                        animate="animate"
+                        initial="initial"
+                        exit="exit"
+                        variants={MOTION_VARIANTS.slideUp}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
+                      >
+                        <RoutesView />
+                      </motion.div>
+                    )}
                     {activeTab === "dev" && (
                       <motion.div
                         key="dev"
-                        animate={{ opacity: 1, filter: "blur(0px)" }}
-                        initial={{ opacity: 0, filter: "blur(8px)" }}
-                        exit={{ opacity: 0, filter: "blur(8px)" }}
+                        animate="animate"
+                        initial="initial"
+                        exit="exit"
+                        variants={MOTION_VARIANTS.slideUp}
                         transition={{ duration: 0.25, ease: "easeOut" }}
                       >
                         <DevView />
@@ -168,11 +203,6 @@ export function Shop({ isOpen, onClose }: ShopProps) {
 function ThemesView() {
   const { themes, currentTheme, activateTheme, purchaseTheme, canAfford } =
     useGameStore();
-  const [showColorPicker, setShowColorPicker] = useState(false);
-  const [selectedColor, setSelectedColor] = useState("#2979FF");
-  const [colorType, setColorType] = useState<
-    "primary" | "secondary" | "accent"
-  >("primary");
 
   const handleThemeSelect = (themeId: string) => {
     const theme = themes.find((t) => t.id === themeId);
@@ -188,16 +218,10 @@ function ThemesView() {
     }
   };
 
-  const handleColorChange = (color: string) => {
-    setSelectedColor(color);
-    // Here you would update the theme colors in the store
-    // For now, we'll just update the local state
-  };
-
   return (
     <ThemesContainer>
       <ThemesSection>
-        <SectionTitle>Available Themes</SectionTitle>
+        <SectionTitle>Page Themes</SectionTitle>
         <ItemsGrid>
           {themes
             .filter((theme) => theme.id !== "custom")
@@ -222,19 +246,8 @@ function ThemesView() {
                     ? currentTheme?.id === theme.id
                       ? "Active"
                       : "Available"
-                    : `${theme.cost} 🫵`}
+                    : `${theme.cost} taps`}
                 </ThemeStatus>
-                {!theme.purchased && (
-                  <PurchaseButton
-                    $canAfford={canAfford(theme.cost)}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleThemePurchase(theme.id);
-                    }}
-                  >
-                    {canAfford(theme.cost) ? "Buy" : "Can't Afford"}
-                  </PurchaseButton>
-                )}
               </ThemeCard>
             ))}
         </ItemsGrid>
@@ -247,7 +260,6 @@ function EffectsView() {
   const { upgrades, selectTapEffect, purchaseUpgrade, canAfford } =
     useGameStore();
   const tapEffects = upgrades.filter((u) => u.category === "tapEffects");
-  const selectedEffect = tapEffects.find((effect) => effect.selected);
 
   const handleEffectSelect = (effectId: string) => {
     const effect = tapEffects.find((e) => e.id === effectId);
@@ -266,6 +278,7 @@ function EffectsView() {
   return (
     <EffectsContainer>
       <SectionTitle>Tap Effects</SectionTitle>
+
       <EffectsGrid>
         {tapEffects.map((effect) => (
           <EffectCard
@@ -286,19 +299,8 @@ function EffectsView() {
                 ? effect.selected
                   ? "Selected"
                   : "Available"
-                : `${effect.baseCost} 🫵`}
+                : `${effect.baseCost} taps`}
             </EffectStatus>
-            {!effect.unlocked && (
-              <PurchaseButton
-                $canAfford={canAfford(effect.baseCost)}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleEffectPurchase(effect.id);
-                }}
-              >
-                {canAfford(effect.baseCost) ? "Buy" : "Can't Afford"}
-              </PurchaseButton>
-            )}
           </EffectCard>
         ))}
       </EffectsGrid>
@@ -329,7 +331,7 @@ function EnvironmentView() {
 
   return (
     <EnvironmentContainer>
-      <SectionTitle>Environment Effects</SectionTitle>
+      <SectionTitle>Weather Effects</SectionTitle>
       <EnvironmentGrid>
         {environmentEffects.map((effect) => (
           <EnvironmentCard
@@ -348,21 +350,10 @@ function EnvironmentView() {
             <EnvironmentStatus $unlocked={effect.unlocked}>
               {effect.unlocked
                 ? effect.selected
-                  ? "Enabled"
-                  : "Disabled"
-                : `${effect.baseCost} 🫵`}
+                  ? "Selected"
+                  : "Available"
+                : `${effect.baseCost} taps`}
             </EnvironmentStatus>
-            {!effect.unlocked && (
-              <PurchaseButton
-                $canAfford={canAfford(effect.baseCost)}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleEnvironmentPurchase(effect.id);
-                }}
-              >
-                {canAfford(effect.baseCost) ? "Buy" : "Can't Afford"}
-              </PurchaseButton>
-            )}
           </EnvironmentCard>
         ))}
       </EnvironmentGrid>
@@ -370,29 +361,97 @@ function EnvironmentView() {
   );
 }
 
+function RoutesView() {
+  const { routes, purchaseRoute, canAfford } = useGameStore();
+
+  const handleRoutePurchase = (routeId: string) => {
+    const route = routes.find((r) => r.id === routeId);
+    if (route && !route.purchased && canAfford(route.cost)) {
+      purchaseRoute(routeId);
+    }
+  };
+
+  return (
+    <ThemesContainer>
+      <ThemesSection>
+        <SectionTitle>Unlockable Pages</SectionTitle>
+        <ItemsGrid>
+          {routes
+            .filter((route) => route.id !== "route_home") // Don't show home in shop
+            .map((route) => (
+              <ThemeCard
+                key={route.id}
+                $selected={route.purchased}
+                $purchased={route.purchased}
+                $canAfford={canAfford(route.cost)}
+                onClick={() => handleRoutePurchase(route.id)}
+              >
+                <div style={{ fontSize: "32px" }}>{route.icon}</div>
+                <div>
+                  <ThemeName>{route.name}</ThemeName>
+                  <div
+                    style={{
+                      fontSize: "10px",
+                      color: "#666666",
+                      textAlign: "center",
+                    }}
+                  >
+                    {route.description}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "10px",
+                      color: "#FFD700",
+                      textAlign: "center",
+                      marginTop: "4px",
+                    }}
+                  >
+                    {route.cost} taps
+                  </div>
+                </div>
+                <ThemeStatus $purchased={route.purchased}></ThemeStatus>
+              </ThemeCard>
+            ))}
+        </ItemsGrid>
+      </ThemesSection>
+    </ThemesContainer>
+  );
+}
+
 function DevView() {
   const {
     addDevTaps,
     buyAllUpgrades,
-    toggleAnimations,
     toggleStatistics,
-    animationsEnabled,
     statisticsVisible,
     pauseGame,
     resumeGame,
     resetGame,
     isPaused,
+    routes,
+    purchaseRoute,
   } = useGameStore();
+  const { resetQuests } = useQuestSystem();
+
+  const unlockAllRoutes = () => {
+    routes.forEach((route) => {
+      purchaseRoute(route.id, true);
+    });
+  };
 
   return (
     <DevContainer>
-      <SectionTitle>Development Controls</SectionTitle>
+      <SectionTitle>Development</SectionTitle>
+      <ContentSubtitle>
+        For debugging or testing — use with caution
+      </ContentSubtitle>
       <DevGrid>
         <DevButton onClick={() => addDevTaps(100)}>💰 Add 100 Taps</DevButton>
         <DevButton onClick={buyAllUpgrades}>🛒 Buy All Upgrades</DevButton>
-        <DevButton onClick={toggleAnimations} $active={animationsEnabled}>
-          {animationsEnabled ? "🎬" : "⏸️"} Toggle Animations
-        </DevButton>
+        <DevButton onClick={unlockAllRoutes}>🌐 Unlock All Pages</DevButton>
+
+        <Divider />
+
         <DevButton onClick={toggleStatistics} $active={statisticsVisible}>
           📊 Toggle Statistics
         </DevButton>
@@ -400,10 +459,32 @@ function DevView() {
           onClick={isPaused ? resumeGame : pauseGame}
           $active={!isPaused}
         >
-          {isPaused ? "▶️" : "⏸️"} {isPaused ? "Resume" : "Pause"}
+          {isPaused ? "▶️" : "⏸️"}{" "}
+          {isPaused ? "Resume Auto-Tap" : "Pause Auto-Tap"}
         </DevButton>
-        <DevButton onClick={resetGame}>🔄 Reset Game</DevButton>
-        <DevButton onClick={triggerStoreMigration}>🔄 Migrate Store</DevButton>
+
+        <Divider />
+
+        <DevButton onClick={triggerStoreMigration}>
+          🔄 Migrate Version
+        </DevButton>
+        <DevButton
+          onClick={() => {
+            confirm("This will reset all quests.\nAre you sure?") &&
+              resetQuests();
+          }}
+        >
+          🎯 Reset Quests
+        </DevButton>
+        <DevButton
+          $variant="destructive"
+          onClick={() =>
+            confirm("This will delete all your progress.\nAre you sure?") &&
+            resetGame()
+          }
+        >
+          🗑️ Reset Game
+        </DevButton>
       </DevGrid>
     </DevContainer>
   );
@@ -428,7 +509,7 @@ const ShopContainer = styled(motion.div)`
   right: 0;
   top: 40px;
   margin: 0 auto;
-  width: 90vw;
+  width: 880px;
   max-width: calc(100% - 32px);
   transform: translateY(-50%);
   height: 80dvh;
@@ -450,6 +531,7 @@ const ShopHeader = styled.div`
   align-items: center;
   padding: 20px 24px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 16px;
 `;
 
 const ShopTitle = styled.div`
@@ -459,6 +541,15 @@ const ShopTitle = styled.div`
   font-size: 24px;
   font-weight: bold;
   color: #ffffff;
+`;
+
+const TapCountDisplay = styled.div`
+  font-size: 14px;
+  color: var(--accent-color);
+  font-weight: 600;
+  margin-left: auto;
+  margin-right: 16px;
+  text-align: right;
 `;
 
 const CloseButton = styled.button`
@@ -511,17 +602,18 @@ const TabButton = styled.button<{ $active: boolean }>`
   background: ${(props) =>
     props.$active ? "rgba(255, 215, 0, 0.1)" : "transparent"};
   border: none;
-  color: ${(props) => (props.$active ? "#FFD700" : "#666666")};
+  color: ${(props) => (props.$active ? "var(--accent-color)" : "#666666")};
   cursor: pointer;
   font-size: 14px;
   font-weight: ${(props) => (props.$active ? "600" : "400")};
-  transition: all 0.2s;
+  transition: all 0.2s ease-in;
   border-radius: 12px;
   width: 100%;
+  min-width: 80px;
 
   &:hover {
     background: rgba(255, 255, 255, 0.05);
-    color: ${(props) => (props.$active ? "#FFD700" : "#ffffff")};
+    color: ${(props) => (props.$active ? "var(--accent-color)" : "#ffffff")};
   }
 
   @media (max-width: 768px) {
@@ -560,7 +652,7 @@ const ProgressBar = styled.div<{ $progress: number }>`
     display: block;
     height: 100%;
     width: ${(props) => props.$progress * 100}%;
-    background: #ffd700;
+    background: var(--accent-color);
     transition: width 0.3s ease;
   }
 `;
@@ -569,17 +661,6 @@ const ContentView = styled.div`
   flex: 1;
   padding: 24px;
   overflow-y: auto;
-`;
-
-const ContentHeader = styled.div`
-  margin-bottom: 24px;
-`;
-
-const ContentTitle = styled.h2`
-  font-size: 24px;
-  font-weight: bold;
-  color: #ffffff;
-  margin: 0 0 4px 0;
 `;
 
 const ContentSubtitle = styled.p`
@@ -594,7 +675,7 @@ const ContentItems = styled.div`
 
 const ItemsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 16px;
 `;
 
@@ -609,7 +690,7 @@ const ThemeCard = styled.div<{
   gap: 8px;
   padding: 12px;
   border-radius: 12px;
-  cursor: ${(props) => (props.$purchased ? "pointer" : "not-allowed")};
+  cursor: pointer;
   transition: all 0.2s;
   border: 2px solid ${(props) => (props.$selected ? "#ffffff" : "transparent")};
   background: ${(props) =>
@@ -723,78 +804,7 @@ const SectionTitle = styled.h3`
   font-size: 18px;
   font-weight: bold;
   color: #ffffff;
-  margin: 0 0 16px 0;
-`;
-
-const ColorCustomizationSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-`;
-
-const ColorControls = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-`;
-
-const ColorTypeSelector = styled.div`
-  display: flex;
-  gap: 8px;
-`;
-
-const ColorTypeButton = styled.button<{ $active: boolean }>`
-  padding: 8px 16px;
-  border-radius: 6px;
-  border: none;
-  background: ${(props) =>
-    props.$active ? "#FFD700" : "rgba(255, 255, 255, 0.1)"};
-  color: ${(props) => (props.$active ? "#000000" : "#ffffff")};
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  transition: all 0.2s;
-
-  &:hover {
-    background: ${(props) =>
-      props.$active ? "#FFD700" : "rgba(255, 255, 255, 0.2)"};
-  }
-`;
-
-const ColorPickerContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-`;
-
-const ColorPreview = styled.div<{ $color: string }>`
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: ${(props) => props.$color};
-  border: 2px solid rgba(255, 255, 255, 0.2);
-`;
-
-const ColorPickerButton = styled.button`
-  padding: 8px 16px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  cursor: pointer;
-  font-size: 12px;
-  transition: all 0.2s;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.2);
-  }
-`;
-
-const ColorPickerWrapper = styled(motion.div)`
-  display: flex;
-  justify-content: center;
-  padding: 16px 0;
-  overflow: hidden;
+  margin: 0;
 `;
 
 // Effects and Environment styled components
@@ -806,7 +816,7 @@ const EffectsContainer = styled.div`
 
 const EffectsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 16px;
 `;
 
@@ -821,9 +831,10 @@ const EffectCard = styled.div<{
   gap: 8px;
   padding: 12px;
   border-radius: 12px;
-  cursor: ${(props) => (props.$unlocked ? "pointer" : "not-allowed")};
+  cursor: pointer;
   transition: all 0.2s;
-  border: 2px solid ${(props) => (props.$selected ? "#FFD700" : "transparent")};
+  border: 2px solid
+    ${(props) => (props.$selected ? "var(--accent-color)" : "transparent")};
   background: ${(props) =>
     props.$selected
       ? "rgba(255, 215, 0, 0.2)"
@@ -846,7 +857,7 @@ const EnvironmentContainer = styled.div`
 
 const EnvironmentGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 16px;
 `;
 
@@ -861,7 +872,7 @@ const EnvironmentCard = styled.div<{
   gap: 8px;
   padding: 12px;
   border-radius: 12px;
-  cursor: ${(props) => (props.$unlocked ? "pointer" : "not-allowed")};
+  cursor: pointer;
   transition: all 0.2s;
   border: 2px solid ${(props) => (props.$enabled ? "#4CAF50" : "transparent")};
   background: ${(props) =>
@@ -887,41 +898,47 @@ const DevContainer = styled.div`
 
 const DevGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 12px;
+  grid-template-columns: repeat(auto-fill, 1fr);
 `;
 
-const DevButton = styled.button<{ $active?: boolean }>`
+const Divider = styled.div`
+  width: 100%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 16px 0;
+`;
+
+const DevButton = styled.button<{
+  $active?: boolean;
+  $variant?: "destructive" | "default";
+}>`
+  display: flex;
+  justify-content: center;
+  align-items: center;
   padding: 12px 16px;
+  max-width: 100%;
+
   border-radius: 8px;
-  border: none;
-  background: ${(props) =>
-    props.$active ? "#FFD700" : "rgba(255, 255, 255, 0.1)"};
-  color: ${(props) => (props.$active ? "#000000" : "#ffffff")};
+  border: 1px solid transparent;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: ${(props) =>
+    props.$active ? "var(--text-color)" : "transparent"};
+  color: ${(props) => (props.$active ? "var(--text-color)" : "#ffffff")};
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  transition: all 0.2s;
+  transition: 0.2s;
+  transition-property: background-color, border-color, color;
+
+  ${(props) =>
+    props.$variant === "destructive" &&
+    `
+    background-color: #b30f0f;
+    color: #ffffff;
+  `}
 
   &:hover {
-    background: ${(props) =>
-      props.$active ? "#FFD700" : "rgba(255, 255, 255, 0.2)"};
-  }
-`;
-
-const PurchaseButton = styled.button<{ $canAfford: boolean }>`
-  padding: 4px 8px;
-  border-radius: 4px;
-  border: none;
-  background: ${(props) => (props.$canAfford ? "#4CAF50" : "#666666")};
-  color: white;
-  cursor: ${(props) => (props.$canAfford ? "pointer" : "not-allowed")};
-  font-size: 10px;
-  font-weight: 500;
-  transition: all 0.2s;
-  margin-top: 4px;
-
-  &:hover {
-    background: ${(props) => (props.$canAfford ? "#45a049" : "#666666")};
+    background-color: rgba(255, 255, 255, 0.2);
   }
 `;

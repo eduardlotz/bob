@@ -1798,7 +1798,7 @@ __metadata:
     styled-components: "npm:^6.1.17"
     styled-reset: "npm:^4.5.2"
     three: "npm:^0.175.0"
-    ts-pattern: "npm:^5.7.0"
+    ts-pattern: "npm:^5.8.0"
     typescript: "npm:5.8.2"
     vite: "npm:^7.0.6"
     zustand: "npm:^5.0.7"
@@ -3578,10 +3578,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ts-pattern@npm:^5.7.0":
-  version: 5.7.0
-  resolution: "ts-pattern@npm:5.7.0"
-  checksum: 10c0/6a49d2b502a916def7b07ed66d5675aaf5159dd09b9dbdb334ebfc464af6307e33ae9fbec8ece9182f7ae6a9b2589087da5924d35a74bd52323c3f3745b15d1e
+"ts-pattern@npm:^5.8.0":
+  version: 5.8.0
+  resolution: "ts-pattern@npm:5.8.0"
+  checksum: 10c0/0e41006a8de7490c7edbba36c095550cd4b0e334247f9e76cddbdaadea4bcdc479763fb403a787db19bb83480c02fe6ea0e9799ceaaba0573acbe31e341ab947
   languageName: node
   linkType: hard
 

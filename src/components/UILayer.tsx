@@ -6,9 +6,7 @@ import { Statistics } from "@/molecules/Statistics";
 
 import { requestMotionPermission } from "@/utils/permission";
 import { useGameStore, startAutoTap, stopAutoTap } from "@/store/gameStore";
-
-import { resetCalibration } from "@/utils/math";
-import { toast } from "sonner";
+import { useAppStore } from "@/store";
 
 import { useAnimations } from "@/hooks/useAnimations";
 import { useSwipeDismiss } from "@/hooks/useSwipeDismiss";
@@ -17,22 +15,13 @@ interface UILayerProps {
   permissionGranted: boolean;
   isMobile: boolean;
   sceneLoaded: boolean;
-  showOptions: boolean;
-  setShowOptions: (show: boolean) => void;
   setPermissionGranted: (granted: boolean) => void;
   emotionState: string;
 }
 
-export function UILayer({
-  permissionGranted,
-  isMobile,
-  sceneLoaded,
-  showOptions,
-  setShowOptions,
-  setPermissionGranted,
-  emotionState,
-}: UILayerProps) {
-  const { taps, statisticsVisible, isPaused } = useGameStore();
+export function UILayer({ setPermissionGranted }: UILayerProps) {
+  const { statisticsVisible, isPaused } = useGameStore();
+  const { showOptions, toggleOptions } = useAppStore();
   const [permissionDismissed, setPermissionDismissed] = useState(false);
   const { motionStyles, dragConstraints, dragEndHandler, drag } =
     useSwipeDismiss({
@@ -73,43 +62,9 @@ export function UILayer({
     setPermissionGranted(granted);
   };
 
-  const handleCalibrationReset = () => {
-    resetCalibration();
-    toast.custom((id) => (
-      <div
-        style={{
-          backgroundColor: "white",
-          color: "black",
-          padding: "20px 30px",
-          height: "58px",
-          width: "320px",
-          maxWidth: "100%",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          borderRadius: "24px",
-          boxShadow: "0 4px 10px 10px rgba(37, 36, 39, 0.08)",
-          textAlign: "center",
-          fontSize: "14px",
-          fontStyle: "normal",
-          fontWeight: "600",
-          lineHeight: "normal",
-          letterSpacing: "1.4px",
-          textTransform: "uppercase",
-        }}
-      >
-        Kalibrierung zurückgesetzt
-      </div>
-    ));
-  };
-
-  const toggleOptions = () => {
-    setShowOptions(!showOptions);
-  };
-
   return (
     <UILayerContainer>
-      <BottomNavigation onMenuClick={() => setShowOptions(!showOptions)} />
+      <BottomNavigation />
       <Statistics visible={statisticsVisible} />
 
       {/* TODO: Add sensor button with dismiss */}
@@ -134,22 +89,6 @@ export function UILayer({
               use motion sensor
             </SensorButton>
           )}
-      </AnimatePresence> */}
-
-      {/* <AnimatePresence>
-        {permissionGranted && isMobile && sceneLoaded && (
-          <CalibrationButton
-            variants={MotionVariants.SpringScaleReversed}
-            initial="initial"
-            animate="animate"
-            custom={0}
-            exit="exit"
-            whileTap="tap"
-            onClick={handleCalibrationReset}
-          >
-            Kalibrieren
-          </CalibrationButton>
-        )}
       </AnimatePresence> */}
     </UILayerContainer>
   );

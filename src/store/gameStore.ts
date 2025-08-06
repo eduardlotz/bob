@@ -2,6 +2,20 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { persist } from "zustand/middleware";
 import { THEME_CONFIG } from "./upgradesConfig";
+import { match } from "ts-pattern";
+import { ROUTE_PATHS, ROUTE_IDS, ROUTE_CONFIG } from "./routeConfig";
+import { toast } from "sonner";
+import { THEME_IDS } from "./themeConfig";
+
+export enum GAME_STORE_VERSIONS {
+  V1 = 1,
+  V2 = 2,
+  V3 = 3,
+  V4 = 4,
+  V5 = 5,
+  V6 = 6,
+  LATEST = 6,
+}
 
 // Constants
 const ONE_SECOND_MS = 1000;
@@ -9,49 +23,80 @@ const AUTO_TAP_INTERVAL_MS = 1000;
 const MAX_PARTICLES_PER_AUTO_TAP = 5;
 const PARTICLE_STAGGER_MS = 100;
 
-// Store version for migrations
-const STORE_VERSION = 4;
-
 // Migration functions
-function migrateStore(oldState: any, version: number): any {
+function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
   let migratedState = { ...oldState };
+  let currentVersion = version;
 
-  // Migration from version 1 to 2
-  if (version < 2) {
-    // Update theme prices
-    if (migratedState.themes) {
-      migratedState.themes = migratedState.themes.map((theme: any) => {
-        if (theme.id === "dark") {
-          return { ...theme, cost: 1000 };
-        } else if (theme.id === "pastel") {
-          return { ...theme, cost: 2000 };
-        } else if (theme.id === "neon") {
-          return { ...theme, cost: 3000 };
-        }
-        return theme;
-      });
-    }
+  // Helper function to safely check and transform arrays
+  const safeArrayTransform = <T>(
+    array: T[] | undefined,
+    transform: (item: T, index: number) => T
+  ): T[] | undefined => {
+    if (!Array.isArray(array)) return array;
+    return array.map(transform);
+  };
 
-    // Update effect prices
-    if (migratedState.upgrades) {
-      migratedState.upgrades = migratedState.upgrades.map((upgrade: any) => {
-        if (upgrade.id === "tap_effect_confetti") {
-          return { ...upgrade, baseCost: 1500 };
-        } else if (upgrade.id === "tap_effect_hearts") {
-          return { ...upgrade, baseCost: 2500 };
-        } else if (upgrade.id === "tap_effect_stars") {
-          return { ...upgrade, baseCost: 3500 };
-        }
-        return upgrade;
-      });
-    }
+  // Helper function to merge route objects while preserving existing fields
+  const mergeRoute = (existingRoute: any, initialRoute: any): any => {
+    if (!existingRoute) return initialRoute;
+    return {
+      ...initialRoute,
+      ...existingRoute,
+      // Preserve specific fields from existing route unless explicitly overridden
+      unlocked: existingRoute.unlocked ?? initialRoute.unlocked,
+      purchased: existingRoute.purchased ?? initialRoute.purchased,
+    };
+  };
+
+  // Migration V1 → V2: Update theme and effect prices
+  if (currentVersion < GAME_STORE_VERSIONS.V2) {
+    // Update theme prices in a single pass
+    migratedState.themes = safeArrayTransform(
+      migratedState.themes,
+      (theme: any) => {
+        if (!theme || typeof theme !== "object") return theme;
+
+        const themeUpdates: Record<string, number> = {
+          [THEME_IDS.DARK]: 1000,
+          [THEME_IDS.PASTEL]: 2000,
+          [THEME_IDS.NEON]: 3000,
+        };
+
+        return themeUpdates[theme.id] !== undefined
+          ? { ...theme, cost: themeUpdates[theme.id] }
+          : theme;
+      }
+    );
+
+    // Update effect prices in a single pass
+    migratedState.upgrades = safeArrayTransform(
+      migratedState.upgrades,
+      (upgrade: any) => {
+        if (!upgrade || typeof upgrade !== "object") return upgrade;
+
+        const effectUpdates: Record<string, number> = {
+          tap_effect_confetti: 1500,
+          tap_effect_hearts: 2500,
+          tap_effect_stars: 3500,
+        };
+
+        return effectUpdates[upgrade.id] !== undefined
+          ? { ...upgrade, baseCost: effectUpdates[upgrade.id] }
+          : upgrade;
+      }
+    );
+
+    currentVersion = GAME_STORE_VERSIONS.V2;
   }
 
-  // Migration from version 2 to 3
-  if (version < 3) {
-    // Fix tap multiplier upgrades that might have incorrect levels
-    if (migratedState.upgrades) {
-      migratedState.upgrades = migratedState.upgrades.map((upgrade: any) => {
+  // Migration V2 → V3: Fix tap multiplier upgrade levels
+  if (currentVersion < GAME_STORE_VERSIONS.V3) {
+    migratedState.upgrades = safeArrayTransform(
+      migratedState.upgrades,
+      (upgrade: any) => {
+        if (!upgrade || typeof upgrade !== "object") return upgrade;
+
         if (
           upgrade.effect?.type === "tapMultiplier" &&
           upgrade.unlocked &&
@@ -60,22 +105,63 @@ function migrateStore(oldState: any, version: number): any {
           return { ...upgrade, level: 0 };
         }
         return upgrade;
-      });
-    }
+      }
+    );
+
+    currentVersion = GAME_STORE_VERSIONS.V3;
   }
 
-  // Migration from version 3 to 4
-  if (version < 4) {
-    // Lock the "Tap Power" upgrade by default and reset its level
-    if (migratedState.upgrades) {
-      migratedState.upgrades = migratedState.upgrades.map((upgrade: any) => {
+  // Migration V3 → V4: Lock "Tap Power" upgrade by default
+  if (currentVersion < GAME_STORE_VERSIONS.V4) {
+    migratedState.upgrades = safeArrayTransform(
+      migratedState.upgrades,
+      (upgrade: any) => {
+        if (!upgrade || typeof upgrade !== "object") return upgrade;
+
         if (upgrade.id === "tap_multiplier_1") {
           return { ...upgrade, unlocked: false, level: 0 };
         }
         return upgrade;
+      }
+    );
+
+    currentVersion = GAME_STORE_VERSIONS.V4;
+  }
+
+  // Migration V4 → V5: Ensure routes are properly initialized and persisted
+  if (currentVersion < GAME_STORE_VERSIONS.V5) {
+    if (!Array.isArray(migratedState.routes)) {
+      migratedState.routes = initialRoutes;
+    } else {
+      // Merge existing routes with initial routes, preserving all existing fields
+      const existingRoutes = migratedState.routes;
+      migratedState.routes = initialRoutes.map((initialRoute) => {
+        const existingRoute = existingRoutes.find(
+          (r: any) => r && typeof r === "object" && r.id === initialRoute.id
+        );
+        return mergeRoute(existingRoute, initialRoute);
       });
     }
+
+    // Initialize lastAutoTapTime if missing
+    if (typeof migratedState.lastAutoTapTime !== "number") {
+      migratedState.lastAutoTapTime = Date.now();
+    }
+
+    currentVersion = GAME_STORE_VERSIONS.V5;
   }
+
+  // Migration V5 → V6: Ensure themes are properly initialized
+  if (currentVersion < GAME_STORE_VERSIONS.V6) {
+    if (!Array.isArray(migratedState.themes)) {
+      migratedState.themes = initialThemes;
+    }
+
+    currentVersion = GAME_STORE_VERSIONS.V6;
+  }
+
+  // Set the final version to the latest
+  migratedState.version = GAME_STORE_VERSIONS.LATEST;
 
   return migratedState;
 }
@@ -141,8 +227,24 @@ export interface Theme {
     danger?: string;
     warning?: string;
   };
-  font: string;
   icon: string;
+  planetColors: string[];
+  counterColor: string;
+  blobColor: string;
+}
+
+// Route types
+
+export interface Route {
+  id: string;
+  name: string;
+  description: string;
+  cost: number;
+  purchased: boolean;
+  unlocked: boolean;
+  path: string;
+  icon: string;
+  category: "pages";
 }
 
 // Game state interface
@@ -156,6 +258,7 @@ interface GameStore {
   autoTapRate: number;
   isPaused: boolean;
   recentManualTaps: number[];
+  lastAutoTapTime: number;
 
   // Cached computed values for performance
   _cachedTapsPerSecond?: number;
@@ -172,6 +275,9 @@ interface GameStore {
   themes: Theme[];
   currentTheme: Theme | null;
 
+  // Routes
+  routes: Route[];
+
   // Fisheye slider
   fisheyeIntensity: number;
 
@@ -187,6 +293,8 @@ interface GameStore {
   purchaseUpgrade: (upgradeId: string) => void;
   purchaseDecoration: (decorationId: string) => void;
   purchaseTheme: (themeId: string) => void;
+  purchaseRoute: (routeId: string, force?: boolean) => void;
+  checkRouteUnlocks: () => void;
   activateTheme: (themeId: string) => void;
   toggleDecoration: (decorationId: string) => void;
   selectTapEffect: (upgradeId: string) => void;
@@ -207,6 +315,8 @@ interface GameStore {
   getTotalTapMultiplier: () => number;
   getAutoTapRate: () => number;
   canAfford: (cost: number) => boolean;
+  calculateOfflineTaps: () => number;
+  checkUnlockedRoutes: (routePath: string) => boolean;
 }
 
 // Initial upgrades
@@ -376,22 +486,94 @@ const initialThemes: Theme[] = Object.values(THEME_CONFIG).map(
     name: themeConfig.name,
     description: themeConfig.description,
     cost:
-      themeConfig.id === "default"
+      themeConfig.id === THEME_IDS.DEFAULT
         ? 0
-        : themeConfig.id === "dark"
+        : themeConfig.id === THEME_IDS.DARK
         ? 1000
-        : themeConfig.id === "pastel"
+        : themeConfig.id === THEME_IDS.PASTEL
         ? 2000
-        : themeConfig.id === "neon"
+        : themeConfig.id === THEME_IDS.NEON
         ? 3000
         : 0,
-    purchased: themeConfig.id === "default",
-    active: themeConfig.id === "default",
+    purchased: themeConfig.id === THEME_IDS.DEFAULT,
+    active: themeConfig.id === THEME_IDS.DEFAULT,
     colors: themeConfig.colors,
-    font: "Open Sauce Two",
-    icon: themeConfig.id === "default" ? "🎨" : "🎨",
+    icon: themeConfig.id === THEME_IDS.DEFAULT ? "🎨" : "🎨",
+    planetColors: themeConfig.planetColors,
+    counterColor: themeConfig.counterColor,
+    blobColor: themeConfig.blobColor,
   })
 );
+
+// Initial routes using constants
+const initialRoutes: Route[] = [
+  {
+    id: ROUTE_IDS.HOME,
+    name: ROUTE_CONFIG[ROUTE_PATHS.HOME].name,
+    description: ROUTE_CONFIG[ROUTE_PATHS.HOME].description,
+    cost: ROUTE_CONFIG[ROUTE_PATHS.HOME].cost,
+    purchased: true,
+    unlocked: true,
+    path: ROUTE_PATHS.HOME,
+    icon: ROUTE_CONFIG[ROUTE_PATHS.HOME].icon,
+    category: "pages",
+  },
+  {
+    id: ROUTE_IDS.ABOUT,
+    name: ROUTE_CONFIG[ROUTE_PATHS.ABOUT].name,
+    description: ROUTE_CONFIG[ROUTE_PATHS.ABOUT].description,
+    cost: ROUTE_CONFIG[ROUTE_PATHS.ABOUT].cost,
+    purchased: false,
+    unlocked: false,
+    path: ROUTE_PATHS.ABOUT,
+    icon: ROUTE_CONFIG[ROUTE_PATHS.ABOUT].icon,
+    category: "pages",
+  },
+  {
+    id: ROUTE_IDS.PORTFOLIO,
+    name: ROUTE_CONFIG[ROUTE_PATHS.PORTFOLIO].name,
+    description: ROUTE_CONFIG[ROUTE_PATHS.PORTFOLIO].description,
+    cost: ROUTE_CONFIG[ROUTE_PATHS.PORTFOLIO].cost,
+    purchased: false,
+    unlocked: false,
+    path: ROUTE_PATHS.PORTFOLIO,
+    icon: ROUTE_CONFIG[ROUTE_PATHS.PORTFOLIO].icon,
+    category: "pages",
+  },
+  {
+    id: ROUTE_IDS.TECHNICAL,
+    name: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].name,
+    description: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].description,
+    cost: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].cost,
+    purchased: false,
+    unlocked: false,
+    path: ROUTE_PATHS.TECHNICAL,
+    icon: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].icon,
+    category: "pages",
+  },
+  {
+    id: ROUTE_IDS.CREATIVE,
+    name: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].name,
+    description: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].description,
+    cost: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].cost,
+    purchased: false,
+    unlocked: false,
+    path: ROUTE_PATHS.CREATIVE,
+    icon: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].icon,
+    category: "pages",
+  },
+  {
+    id: ROUTE_IDS.GUESTBOOK,
+    name: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].name,
+    description: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].description,
+    cost: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].cost,
+    purchased: false,
+    unlocked: false,
+    path: ROUTE_PATHS.GUESTBOOK,
+    icon: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].icon,
+    category: "pages",
+  },
+];
 
 // Helper function to generate upgrade hash for caching
 const generateUpgradeHash = (upgrades: Upgrade[]): string => {
@@ -411,6 +593,7 @@ export const useGameStore = create<GameStore>()(
         autoTapRate: 0,
         isPaused: false,
         recentManualTaps: [],
+        lastAutoTapTime: Date.now(),
 
         // Cache properties
         _cachedTapsPerSecond: undefined,
@@ -421,6 +604,7 @@ export const useGameStore = create<GameStore>()(
         decorations: initialDecorations,
         themes: initialThemes,
         currentTheme: initialThemes[0],
+        routes: initialRoutes,
         fisheyeIntensity: 0,
         animationsEnabled: true,
         statisticsVisible: false,
@@ -436,6 +620,7 @@ export const useGameStore = create<GameStore>()(
         addAutoTaps: (amount: number) => {
           set((state) => ({
             taps: state.taps + amount * state.getTotalTapMultiplier(),
+            lastAutoTapTime: Date.now(),
           }));
         },
 
@@ -458,12 +643,47 @@ export const useGameStore = create<GameStore>()(
             const newTaps = [...filteredTaps, now];
             const tapMultiplier = state.getTotalTapMultiplier();
 
-            return {
+            const newState = {
               ...state,
               taps: state.taps + 1 * tapMultiplier, // Apply multiplier to manual taps
               manualTaps: state.manualTaps + 1,
               manualTapsPerSecond: newTaps.length,
               recentManualTaps: newTaps,
+            };
+
+            // Check for route unlocks after adding taps using pattern matching
+            // Only update routes if there are any changes to prevent unnecessary re-renders
+            let hasRouteChanges = false;
+            const updatedRoutes = newState.routes.map((route) => {
+              const shouldUnlock = match({
+                purchased: route.purchased,
+                canAfford: newState.canAfford(route.cost),
+                unlocked: route.unlocked,
+              })
+                .with(
+                  { purchased: false, canAfford: true, unlocked: false },
+                  () => true
+                )
+                .otherwise(() => false);
+
+              if (shouldUnlock) {
+                hasRouteChanges = true;
+                return { ...route, unlocked: true };
+              }
+              return route;
+            });
+
+            // Only update state if there are actual changes
+            if (hasRouteChanges) {
+              return {
+                ...newState,
+                routes: updatedRoutes,
+              };
+            }
+
+            return {
+              ...newState,
+              routes: updatedRoutes,
             };
           });
         },
@@ -612,6 +832,54 @@ export const useGameStore = create<GameStore>()(
           });
         },
 
+        purchaseRoute: (routeId, force = false) => {
+          set((state) => {
+            const route = state.routes.find((r) => r.id === routeId);
+
+            return match({
+              route,
+              canAfford: route ? state.canAfford(route.cost) : false,
+              force,
+            })
+              .with(
+                { route: { purchased: false }, canAfford: true },
+                ({ route }) => {
+                  const updatedRoutes = state.routes.map((r) =>
+                    r.id === routeId
+                      ? { ...r, purchased: true, unlocked: true }
+                      : r
+                  );
+
+                  return {
+                    ...state,
+                    taps: state.taps - route.cost,
+                    routes: updatedRoutes,
+                  };
+                }
+              )
+              .with({ force: true }, () => {
+                const updatedRoutes = state.routes.map((r) =>
+                  r.id === routeId
+                    ? { ...r, purchased: true, unlocked: true }
+                    : r
+                );
+
+                return {
+                  ...state,
+                  routes: updatedRoutes,
+                };
+              })
+              .otherwise(() => state);
+          });
+        },
+
+        checkUnlockedRoutes: (routePath: string) => {
+          const routes = get().routes;
+          return routes.some(
+            (route) => route.path === routePath && route.unlocked
+          );
+        },
+
         activateTheme: (themeId) => {
           set((state) => {
             const theme = state.themes.find((t) => t.id === themeId);
@@ -720,6 +988,7 @@ export const useGameStore = create<GameStore>()(
             decorations: initialDecorations,
             themes: initialThemes,
             currentTheme: initialThemes[0],
+            routes: initialRoutes,
             fisheyeIntensity: 0,
             animationsEnabled: true,
             statisticsVisible: false,
@@ -773,11 +1042,17 @@ export const useGameStore = create<GameStore>()(
               purchased: true,
             }));
 
+            const updatedRoutes = state.routes.map((route) => ({
+              ...route,
+              purchased: true,
+            }));
+
             return {
               ...state,
               upgrades: updatedUpgrades,
               decorations: updatedDecorations,
               themes: updatedThemes,
+              routes: updatedRoutes,
               _cachedTapsPerSecond: undefined,
               _cachedTapMultiplier: undefined,
               _lastUpgradeHash: undefined,
@@ -797,6 +1072,24 @@ export const useGameStore = create<GameStore>()(
             ...state,
             statisticsVisible: !state.statisticsVisible,
           }));
+        },
+
+        // Route unlocking logic
+        checkRouteUnlocks: () => {
+          set((state) => {
+            const updatedRoutes = state.routes.map((route) => {
+              // Auto-unlock routes when affordable
+              if (!route.purchased && state.canAfford(route.cost)) {
+                return { ...route, unlocked: true };
+              }
+              return route;
+            });
+
+            return {
+              ...state,
+              routes: updatedRoutes,
+            };
+          });
         },
 
         // Computed values with caching
@@ -878,13 +1171,30 @@ export const useGameStore = create<GameStore>()(
             }, 0);
         },
 
+        calculateOfflineTaps: () => {
+          const state = get();
+          const now = Date.now();
+          const timeSinceLastTap = now - state.lastAutoTapTime;
+          const secondsSinceLastTap = timeSinceLastTap / 1000;
+
+          // Calculate how many taps should have been generated
+          const tapsPerSecond = state.getTotalTapsPerSecond();
+          const tapMultiplier = state.getTotalTapMultiplier();
+          const baseOfflineTaps = Math.floor(
+            tapsPerSecond * secondsSinceLastTap
+          );
+          const offlineTaps = Math.floor(baseOfflineTaps * tapMultiplier);
+
+          return offlineTaps;
+        },
+
         canAfford: (cost) => {
           return get().taps >= cost;
         },
       }),
       {
         name: "game-store",
-        version: STORE_VERSION,
+        version: GAME_STORE_VERSIONS.LATEST,
         migrate: (persistedState: any, version: number) => {
           return migrateStore(persistedState, version);
         },
@@ -894,7 +1204,9 @@ export const useGameStore = create<GameStore>()(
           decorations: state.decorations,
           themes: state.themes,
           currentTheme: state.currentTheme,
+          routes: state.routes,
           fisheyeIntensity: state.fisheyeIntensity,
+          lastAutoTapTime: state.lastAutoTapTime,
         }),
       }
     ),
@@ -929,7 +1241,7 @@ export const startAutoTap = () => {
     if (tapsPerSecond > 0) {
       store.addAutoTaps(tapsPerSecond);
 
-      // Trigger tap effects for auto-taps with improved performance
+      // trigger tap effects for auto-taps
       if ((window as any).createTapParticles) {
         const tapCount = Math.min(tapsPerSecond, MAX_PARTICLES_PER_AUTO_TAP);
 
@@ -972,6 +1284,7 @@ export const triggerStoreMigration = () => {
   };
 
   const migratedState = migrateStore(currentState, 1);
+  toast.success(`Store migrated to VERSION_${GAME_STORE_VERSIONS.LATEST}`);
 
   // Update the store with migrated data
   useGameStore.setState({

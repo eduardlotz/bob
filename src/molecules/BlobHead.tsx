@@ -21,11 +21,13 @@ import {
 } from "./HeadNavigation";
 import { CameraControls, Outlines } from "@react-three/drei";
 import { calculateAcceleratedRotation } from "@/utils/math";
-import { a, useSpring, useSprings } from "@react-spring/three";
+import { a, useSpring } from "@react-spring/three";
 import { type RapierRigidBody } from "@react-three/rapier";
 import { Star3D } from "@/3d-objects/Star3D";
 import { EmotionState } from "@/hooks/useBlobEmotions";
-import { useCallback } from "react";
+import { useRouteStore } from "@/store/routeStore";
+import { useAppStore } from "@/store";
+import { useGameStore } from "@/store/gameStore";
 
 // TODO: Move these constants to a shared config file
 // Default head position Y
@@ -180,10 +182,13 @@ export function BlobHead({
   emotionState: EmotionState;
   onCameraZoomAnimation?: (isAnimating: boolean) => void;
 }) {
+  const { currentTheme } = useGameStore();
+
+  // Get route-specific blob color
+  const blobColor = currentTheme?.blobColor;
   const headRef = useRef<Group>(null!);
   const leftEyeRef = useRef<Mesh>(null!);
   const rightEyeRef = useRef<Mesh>(null!);
-  const starRef = useRef<Mesh>(null!);
 
   // Create eye geometries once
   const eyeGeometries = useRef(createEyeGeometries());
@@ -828,7 +833,7 @@ export function BlobHead({
     event.stopPropagation();
 
     // Create particles at the counter text position instead of cursor
-    const COUNTER_POS: [number, number, number] = [-1, 0.5, -1];
+    const COUNTER_POS: [number, number, number] = [0, 0, 0];
     createParticles(COUNTER_POS[0], COUNTER_POS[1], COUNTER_POS[2]);
 
     // Trigger bounce animation on tap
@@ -877,18 +882,18 @@ export function BlobHead({
         {/* Head */}
         <mesh castShadow>
           <sphereGeometry args={[1, 64, 64]} />
-          <meshToonMaterial color="#ffffff" />
+          <meshToonMaterial color={blobColor} />
           <Outlines thickness={0.005} color="black" screenspace />
         </mesh>
 
         {/* Eyes */}
         <group position={[0, 0.2, 0.85]}>
-          <mesh ref={leftEyeRef} position={[-0.3, 0, 0]}>
-            <sphereGeometry args={[0.12, 16, 16]} />
+          <mesh ref={leftEyeRef} position={[-0.45, 0, 0]}>
+            <sphereGeometry args={[0.1, 16, 16]} />
             <meshToonMaterial color="#000000" />
           </mesh>
-          <mesh ref={rightEyeRef} position={[0.3, 0, 0]}>
-            <sphereGeometry args={[0.12, 16, 16]} />
+          <mesh ref={rightEyeRef} position={[0.45, 0, 0]}>
+            <sphereGeometry args={[0.1, 16, 16]} />
             <meshToonMaterial color="#000000" />
           </mesh>
         </group>
@@ -906,13 +911,14 @@ export function BlobHead({
                 key={star.id}
                 position={[orbitX, orbitY, orbitZ]}
                 scale={[star.scale, star.scale, star.scale]}
-                rotation={[
-                  Math.sin(star.spinAngle) * 0.2,
-                  Math.cos(star.spinAngle * 0.7) * 0.3,
-                  Math.sin(star.spinAngle * 1.3) * 0.1,
-                ]}
               >
-                <Star3D />
+                <Star3D
+                  rotation={[
+                    Math.sin(star.spinAngle) * 0.1,
+                    star.spinAngle,
+                    Math.sin(star.spinAngle * 0.5) * 0.05,
+                  ]}
+                />
               </group>
             );
           })}

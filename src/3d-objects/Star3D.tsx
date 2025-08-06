@@ -1,25 +1,15 @@
 import * as THREE from "three";
 import { useMemo, useRef } from "react";
-import { useSpring, a } from "@react-spring/three";
+import { a } from "@react-spring/three";
 
 export function Star3D({
   position = [0, 0, 0],
+  rotation = [0, 0, 0],
 }: {
   position?: [number, number, number];
+  rotation?: [number, number, number];
 }) {
   const meshRef = useRef<THREE.Mesh>(null);
-
-  const random = useMemo(() => Math.random(), []);
-
-  const spring = useSpring({
-    loop: true,
-    to: { rotation: [Math.PI * 4, Math.PI * 6, Math.PI * 8] },
-    from: {
-      rotation: [random * Math.PI, random * Math.PI * 2, random * Math.PI * 4],
-    },
-    config: { mass: 1, tension: 30, friction: 20 },
-    reset: true,
-  });
 
   const { geometry } = useMemo(() => {
     const shape = new THREE.Shape();
@@ -53,7 +43,7 @@ export function Star3D({
   return (
     <a.mesh
       ref={meshRef}
-      rotation={spring.rotation}
+      rotation={rotation}
       position={position}
       scale={0.2}
       geometry={geometry}

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useGameStore } from "@/store/gameStore";
 
+// TODO: remove or fix
 export function useAnimations() {
   const { animationsEnabled } = useGameStore();
 

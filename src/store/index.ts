@@ -1,15 +1,15 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 
-// Route definitions
-export const ROUTES = [
-  { path: "#", label: "Home", component: "home" },
-  { path: "#", label: "About me", component: "about" },
-  { path: "#", label: "Portfolio", component: "portfolio" },
-  { path: "#", label: "Technical", component: "technical" },
-  { path: "#", label: "Creative", component: "creative" },
-  { path: "#", label: "Guestbook", component: "guestbook" },
-] as const;
+// Re-export route configuration from centralized config
+export {
+  ROUTE_PATHS,
+  ROUTE_IDS,
+  ROUTE_CONFIG,
+  ROUTES,
+  getRouteLabelByPath,
+  getAllRoutes,
+} from "./routeConfig";
 
 // Scene related types
 export type SceneMode = "home" | "navigation";
@@ -41,16 +41,17 @@ interface AppStore {
   setCurrentRoute: (route: string) => void;
   setNavigationOpen: (open: boolean) => void;
   setSceneMode: (mode: SceneMode) => void;
-  setShowOptions: (show: boolean) => void;
+  setShowOptions: React.Dispatch<React.SetStateAction<boolean>>;
   setPermissionGranted: (granted: boolean) => void;
   setIsMobile: (mobile: boolean) => void;
   setEmotionData: (data: EmotionState | null) => void;
 
   // Complex actions
   navigateToRoute: (route: string) => void;
+  toggleOptions: () => void;
 
   // Route helpers
-  getRouteByPath: (path: string) => (typeof ROUTES)[number] | undefined;
+  getRouteByPath: (path: string) => any;
   isRouteActive: (path: string) => boolean;
 }
 
@@ -58,7 +59,7 @@ export const useAppStore = create<AppStore>()(
   devtools(
     (set, get) => ({
       // Initial state
-      currentRoute: "/",
+      currentRoute: "/home",
       isNavigationOpen: false,
       sceneMode: "home",
       showOptions: false,
@@ -70,7 +71,11 @@ export const useAppStore = create<AppStore>()(
       setCurrentRoute: (route) => set({ currentRoute: route }),
       setNavigationOpen: (open) => set({ isNavigationOpen: open }),
       setSceneMode: (mode) => set({ sceneMode: mode }),
-      setShowOptions: (show) => set({ showOptions: show }),
+      setShowOptions: (show) =>
+        set({
+          showOptions:
+            typeof show === "function" ? show(get().showOptions) : show,
+        }),
       setPermissionGranted: (granted) => set({ permissionGranted: granted }),
       setIsMobile: (mobile) => set({ isMobile: mobile }),
       setEmotionData: (data) => set({ emotionData: data }),
@@ -80,24 +85,19 @@ export const useAppStore = create<AppStore>()(
         // Update current route
         set({ currentRoute: route });
 
-        // Handle different route behaviors
-        if (route === "/") {
-          // Home route - set to home mode
-          set({
-            sceneMode: "home",
-            showOptions: false,
-          });
-        } else {
-          // Other routes - just update the route
-          set({
-            sceneMode: "navigation",
-            showOptions: false,
-          });
-        }
+        // Always close options when navigating
+        set({ showOptions: false });
+      },
+
+      toggleOptions: () => {
+        set((state) => ({ showOptions: !state.showOptions }));
       },
 
       // Route helpers
-      getRouteByPath: (path) => ROUTES.find((route) => route.path === path),
+      getRouteByPath: (path) => {
+        const { ROUTES } = require("./routeConfig");
+        return ROUTES.find((route: any) => route.path === path);
+      },
       isRouteActive: (path) => get().currentRoute === path,
     }),
     {
@@ -106,10 +106,7 @@ export const useAppStore = create<AppStore>()(
   )
 );
 
-// Export route utilities
-export const getRouteLabelByPath = (path: string): string => {
-  const route = ROUTES.find((r) => r.path === path);
-  return route?.label || "Unknown";
-};
-
-export const getAllRoutes = () => ROUTES;
+// Export other stores
+export * from "./gameStore";
+export * from "./questStore";
+export * from "./routeStore";

@@ -1,26 +1,29 @@
+import { Canvas } from "@react-three/fiber";
 import {
-  Fisheye,
   CameraControls,
+  Fisheye,
+  Environment,
   PerspectiveCamera,
   Grid,
-  Environment,
-  Text,
 } from "@react-three/drei";
-import { Canvas } from "@react-three/fiber";
-import { useEffect, useRef, useState, Suspense } from "react";
+import { Suspense, useRef, useState, useEffect } from "react";
+import { useAppStore } from "../store";
+import { ROUTE_PATHS } from "../store/routeConfig";
 import { HeadNavigation } from "./HeadNavigation";
-import { EmotionCounter } from "./EmotionBar";
-import { useKeyPress } from "@/hooks/useKeyPress";
-import { BackgroundPlanet } from "@/3d-objects/BackgroundPlanet";
-import { ParticleEffects } from "@/3d-objects/ParticleEffects";
-import { useGameStore } from "@/store/gameStore";
-import { FISHEYE_CONFIG } from "@/store/upgradesConfig";
+import { TapCounter } from "./TapCounter";
+import { AboutScene } from "./AboutScene";
+import { PortfolioScene } from "./PortfolioScene";
+import { BackgroundPlanet } from "../3d-objects/BackgroundPlanet";
+import { ParticleEffects } from "../3d-objects/ParticleEffects";
+import { match } from "ts-pattern";
+import { startAutoTap } from "../store/gameStore";
+import { useKeyPress } from "../hooks/useKeyPress";
+import { FISHEYE_CONFIG } from "../store/upgradesConfig";
+import { a, useSpring } from "@react-spring/three";
 
 const Scene = ({
   permissionGranted,
   onEmotionUpdate,
-  showOptions,
-  setShowOptions,
 }: {
   permissionGranted: boolean;
   onEmotionUpdate?: (data: {
@@ -28,50 +31,54 @@ const Scene = ({
     tapCount: number;
     getEmotionIcon: any;
   }) => void;
-  showOptions?: boolean;
-  setShowOptions?: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
   const cameraControlsRef = useRef<CameraControls>(null!);
-  const [tapCount, setTapCount] = useState(0);
-  const [emotionState, setEmotionState] = useState("normal");
 
-  // Get decorations and fisheye intensity from game store
-  const { decorations, fisheyeIntensity } = useGameStore();
+  const { currentRoute, showOptions, setShowOptions, setEmotionData } =
+    useAppStore();
 
-  // Check fisheye intensity decoration
-  const fisheyeDecoration = decorations.find(
-    (d) => d.id === "fisheye_intensity"
-  );
-  const fisheyeEnabled =
-    fisheyeDecoration?.purchased && fisheyeDecoration?.enabled;
-  const currentFisheyeIntensity = fisheyeEnabled
-    ? fisheyeIntensity
-    : FISHEYE_CONFIG.MIN; // Use store value
+  const isHome = currentRoute === ROUTE_PATHS.HOME;
+
+  const [visible, setVisible] = useState(isHome);
+
+  // Handle auto-tap - continue on all routes since shop is accessible everywhere
+  useEffect(() => {
+    // Always start auto-tap regardless of route
+    startAutoTap();
+  }, [currentRoute]);
+
+  const [spring, api] = useSpring(() => ({
+    scale: 1,
+    config: { tension: 300, friction: 15 },
+  }));
+
+  useEffect(() => {
+    if (isHome) {
+      setVisible(true);
+      api.start({
+        scale: 1,
+        config: { mass: 0.5, tension: 300, friction: 10 },
+      });
+    } else {
+      api.start({
+        scale: 0.0,
+        config: { tension: 100, friction: 10 },
+        onRest: () => setVisible(false),
+      });
+    }
+  }, [isHome]);
 
   useKeyPress("Escape", () => {
-    if (showOptions && setShowOptions) {
+    if (showOptions) {
       setShowOptions(false);
     }
   });
 
-  const hideOptionsIfOpen = () => {
-    if (showOptions && setShowOptions) {
-      setShowOptions(false);
-    }
-  };
-
   return (
     <>
-      <FullScreenCanvas onPointerMissed={hideOptionsIfOpen}>
-        <Suspense
-          fallback={
-            <mesh>
-              <boxGeometry args={[1, 1, 1]} />
-              <meshBasicMaterial color="white" />
-            </mesh>
-          }
-        >
-          <Fisheye zoom={currentFisheyeIntensity}>
+      <FullScreenCanvas>
+        <Suspense fallback={null}>
+          <Fisheye zoom={FISHEYE_CONFIG.DEFAULT}>
             <Grid
               args={[8, 8]}
               sectionThickness={2}
@@ -85,8 +92,8 @@ const Scene = ({
               ref={cameraControlsRef}
               minPolarAngle={0}
               maxPolarAngle={Math.PI / 1.6}
-              maxDistance={40} // Increased to prevent clipping
-              minDistance={0.5} // Reduced to allow closer zoom
+              maxDistance={15}
+              minDistance={1}
             />
             <ambientLight intensity={2} />
             <PerspectiveCamera
@@ -96,22 +103,36 @@ const Scene = ({
             />
             <directionalLight intensity={1.2} position={[2, 4, 5]} />
             <Environment preset="city" />
-            <BackgroundPlanet showOptions={showOptions || false} />
+            <BackgroundPlanet />
+            {/* TODO: add back in as upgrade */}
+            {/* <StarEffect />  */}
             <HeadNavigation
               showOptions={showOptions || false}
               setShowOptions={setShowOptions || (() => {})}
               cameraControlsRef={cameraControlsRef} // pass down for portal click
               permissionGranted={permissionGranted}
               onEmotionUpdate={(data) => {
-                setTapCount(data.tapCount);
-                setEmotionState(data.emotionState);
-                onEmotionUpdate?.(data);
+                // Only update emotion state on home route to prevent auto-tap effects
+                if (currentRoute === ROUTE_PATHS.HOME) {
+                  setEmotionData(data.emotionState);
+                  onEmotionUpdate?.(data);
+                } else {
+                  // Just pass through emotion data without updating tap count
+                  onEmotionUpdate?.(data);
+                }
               }}
             />
-            {/* 3D Emotion Counter */}
-            <EmotionCounter tapCount={tapCount || 0} />
-            {/* ParticleEffects inside Fisheye but with larger spawn areas */}
-            <ParticleEffects />
+            <a.group visible={visible} scale={spring.scale}>
+              <TapCounter />
+
+              {/* ParticleEffects inside Fisheye but with larger spawn areas */}
+              <ParticleEffects />
+            </a.group>
+            {/* Route-specific content using pattern matching */}
+            {match(currentRoute)
+              .with(ROUTE_PATHS.ABOUT, () => <AboutScene />)
+              .with(ROUTE_PATHS.PORTFOLIO, () => <PortfolioScene />)
+              .otherwise(() => null)}
           </Fisheye>
         </Suspense>
       </FullScreenCanvas>
@@ -123,14 +144,9 @@ export default Scene;
 
 type FullScreenCanvasProps = {
   children: any;
-  onPointerMissed?: () => void;
 };
 
-const FullScreenCanvas = ({
-  children,
-  onPointerMissed,
-  ...props
-}: FullScreenCanvasProps) => {
+const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
   const canvasRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -162,7 +178,6 @@ const FullScreenCanvas = ({
         left: 0,
         zIndex: 0,
       }}
-      onPointerMissed={onPointerMissed}
       {...props}
     >
       {children}

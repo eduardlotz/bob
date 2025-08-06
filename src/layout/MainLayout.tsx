@@ -1,23 +1,22 @@
 import { SceneWithLoader } from "@/molecules/SceneWithLoader";
+import { BottomNavigation } from "@/molecules/BottomNavigation";
 import { useEffect, useState } from "react";
 import styled from "styled-components";
 import { useAppStore } from "@/store";
-import { UILayer } from "@/components/UILayer";
+import { useGameStore } from "@/store/gameStore";
 
 export default function MainLayout({ children }: any) {
   const [windowHeight, setWindowHeight] = useState(0);
   const [sceneLoaded, setSceneLoaded] = useState(false);
-  const [showOptions, setShowOptions] = useState(false);
 
   const {
-    currentRoute,
     permissionGranted,
-    isMobile,
-    emotionData,
-    setPermissionGranted,
     setIsMobile,
     setEmotionData,
+    showOptions,
+    setShowOptions,
   } = useAppStore();
+  const { checkRouteUnlocks } = useGameStore();
 
   // Initialize mobile detection and window height
   useEffect(() => {
@@ -28,17 +27,22 @@ export default function MainLayout({ children }: any) {
     setWindowHeight(window.innerHeight);
   }, [setIsMobile]);
 
+  // Check route unlocks on mount
+  useEffect(() => {
+    checkRouteUnlocks();
+  }, [checkRouteUnlocks]);
+
   return (
     <Container>
       <Background style={{ height: windowHeight }}>
         <SceneWithLoader
           permissionGranted={permissionGranted}
-          showOptions={showOptions}
-          setShowOptions={setShowOptions}
           onEmotionUpdate={setEmotionData}
           onLoaded={() => setSceneLoaded(true)}
         />
       </Background>
+
+      <BottomNavigation />
 
       {children}
     </Container>
