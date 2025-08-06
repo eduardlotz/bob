@@ -28,7 +28,7 @@ export const UPGRADE_GROUPS = {
 
 // Fisheye Slider Configuration
 export const FISHEYE_CONFIG = {
-  MIN: 0,
+  MIN: 0.1,
   MAX: 0.8,
   DEFAULT: 0.3,
   STEP: 0.05,

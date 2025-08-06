@@ -8,7 +8,11 @@ import {
 } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { useEffect, useRef, useState, Suspense } from "react";
-import { HeadNavigation } from "./HeadNavigation";
+import {
+  HeadNavigation,
+  VISIBLE_OPTIONS_CAMERA_ZOOM,
+  HIDDEN_OPTIONS_CAMERA_ZOOM,
+} from "./HeadNavigation";
 import { EmotionCounter } from "./EmotionBar";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { BackgroundPlanet } from "@/3d-objects/BackgroundPlanet";
@@ -63,14 +67,7 @@ const Scene = ({
   return (
     <>
       <FullScreenCanvas onPointerMissed={hideOptionsIfOpen}>
-        <Suspense
-          fallback={
-            <mesh>
-              <boxGeometry args={[1, 1, 1]} />
-              <meshBasicMaterial color="white" />
-            </mesh>
-          }
-        >
+        <Suspense fallback={null}>
           <Fisheye zoom={currentFisheyeIntensity}>
             <Grid
               args={[8, 8]}
@@ -85,8 +82,8 @@ const Scene = ({
               ref={cameraControlsRef}
               minPolarAngle={0}
               maxPolarAngle={Math.PI / 1.6}
-              maxDistance={40} // Increased to prevent clipping
-              minDistance={0.5} // Reduced to allow closer zoom
+              maxDistance={VISIBLE_OPTIONS_CAMERA_ZOOM + 1} // Increased to prevent clipping
+              minDistance={HIDDEN_OPTIONS_CAMERA_ZOOM - 1} // Reduced to allow closer zoom
             />
             <ambientLight intensity={2} />
             <PerspectiveCamera
@@ -96,7 +93,7 @@ const Scene = ({
             />
             <directionalLight intensity={1.2} position={[2, 4, 5]} />
             <Environment preset="city" />
-            <BackgroundPlanet showOptions={showOptions || false} />
+            <BackgroundPlanet />
             <HeadNavigation
               showOptions={showOptions || false}
               setShowOptions={setShowOptions || (() => {})}

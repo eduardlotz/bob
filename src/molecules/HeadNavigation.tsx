@@ -22,7 +22,7 @@ export const CAMERA_HEIGHT = 2; // New constant for camera height only
 export const CAMERA_FOLLOW_OFFSET = 2.5;
 export const OPTIONS_Y_OFFSET = -1; // Y offset for options positioning
 
-export const VISIBLE_OPTIONS_CAMERA_ZOOM = 10;
+export const VISIBLE_OPTIONS_CAMERA_ZOOM = 8;
 // export const HIDDEN_OPTIONS_CAMERA_ZOOM = 1.75;
 export const HIDDEN_OPTIONS_CAMERA_ZOOM = 2.5;
 export const FUNNY_FISHEYE_ZOOM = 1.15;
