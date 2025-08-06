@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
 import { useGameStore, triggerStoreMigration } from "@/store/gameStore";
@@ -8,6 +8,8 @@ import { EffectsIcon } from "@/icons/effects";
 import { EnvironmentIcon as EnvironmentIconComponent } from "@/icons/environment";
 import { CloseIcon } from "@/icons/close";
 import { HexColorPicker } from "react-colorful";
+import { PagesIcon } from "@/icons/pages";
+import { DebuggingIcon } from "@/icons/debugging";
 
 interface ShopProps {
   isOpen: boolean;
@@ -18,23 +20,27 @@ type ShopTab = "themes" | "effects" | "environment" | "routes" | "dev";
 
 export function Shop({ isOpen, onClose }: ShopProps) {
   const [activeTab, setActiveTab] = useState<ShopTab>("themes");
-  const {
-    themes,
-    currentTheme,
-    activateTheme,
-    canAfford,
-    upgrades,
-    routes,
-    purchaseRoute,
-  } = useGameStore();
+  const { themes, upgrades, routes, taps, calculateOfflineTaps, addTaps } =
+    useGameStore();
   const isDevMode = process.env.NODE_ENV === "development";
+
+  // Calculate and add offline taps when shop opens
+  useEffect(() => {
+    if (isOpen) {
+      const offlineTaps = calculateOfflineTaps();
+      if (offlineTaps > 0) {
+        addTaps(offlineTaps);
+        console.log(`Added ${offlineTaps} offline taps`);
+      }
+    }
+  }, [isOpen, calculateOfflineTaps, addTaps]);
 
   const tabs = [
     {
       id: "themes" as ShopTab,
       name: "Themes",
       icon: ThemeIcon,
-      progress: themes.filter((t) => t.purchased).length / themes.length,
+      progress: themes.filter((t) => t.purchased).length / themes.length, // Exclude default,
     },
     {
       id: "effects" as ShopTab,
@@ -43,6 +49,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
       progress:
         upgrades.filter((u) => u.category === "tapEffects" && u.unlocked)
           .length / upgrades.filter((u) => u.category === "tapEffects").length,
+      // Exclude default
     },
     {
       id: "environment" as ShopTab,
@@ -55,7 +62,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
     {
       id: "routes" as ShopTab,
       name: "Pages",
-      icon: () => <span style={{ fontSize: "20px" }}>📄</span>,
+      icon: PagesIcon,
       progress: routes.filter((r) => r.purchased).length / routes.length,
     },
     ...(isDevMode
@@ -63,8 +70,8 @@ export function Shop({ isOpen, onClose }: ShopProps) {
           {
             id: "dev" as ShopTab,
             name: "Dev",
-            icon: () => <span style={{ fontSize: "20px" }}>🔧</span>,
-            progress: 1, // Dev tab is always 100% complete
+            icon: DebuggingIcon,
+            progress: 0, // Dev tab is always 100% complete
           },
         ]
       : []),
@@ -94,6 +101,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                 <CartIcon color="#FFD700" />
                 Shop
               </ShopTitle>
+              <TapCountDisplay>{taps.toLocaleString()} taps</TapCountDisplay>
               <CloseButton onClick={onClose}>
                 <CloseIcon color="#ffffff" />
               </CloseButton>
@@ -192,11 +200,6 @@ export function Shop({ isOpen, onClose }: ShopProps) {
 function ThemesView() {
   const { themes, currentTheme, activateTheme, purchaseTheme, canAfford } =
     useGameStore();
-  const [showColorPicker, setShowColorPicker] = useState(false);
-  const [selectedColor, setSelectedColor] = useState("#2979FF");
-  const [colorType, setColorType] = useState<
-    "primary" | "secondary" | "accent"
-  >("primary");
 
   const handleThemeSelect = (themeId: string) => {
     const theme = themes.find((t) => t.id === themeId);
@@ -212,16 +215,10 @@ function ThemesView() {
     }
   };
 
-  const handleColorChange = (color: string) => {
-    setSelectedColor(color);
-    // Here you would update the theme colors in the store
-    // For now, we'll just update the local state
-  };
-
   return (
     <ThemesContainer>
       <ThemesSection>
-        <SectionTitle>Available Themes</SectionTitle>
+        <SectionTitle>Page Themes</SectionTitle>
         <ItemsGrid>
           {themes
             .filter((theme) => theme.id !== "custom")
@@ -246,7 +243,7 @@ function ThemesView() {
                     ? currentTheme?.id === theme.id
                       ? "Active"
                       : "Available"
-                    : `${theme.cost} 🫵`}
+                    : `${theme.cost} taps`}
                 </ThemeStatus>
                 {!theme.purchased && (
                   <PurchaseButton
@@ -256,7 +253,7 @@ function ThemesView() {
                       handleThemePurchase(theme.id);
                     }}
                   >
-                    {canAfford(theme.cost) ? "Buy" : "Can't Afford"}
+                    {canAfford(theme.cost) ? "Unlock" : "Can't Afford"}
                   </PurchaseButton>
                 )}
               </ThemeCard>
@@ -271,7 +268,6 @@ function EffectsView() {
   const { upgrades, selectTapEffect, purchaseUpgrade, canAfford } =
     useGameStore();
   const tapEffects = upgrades.filter((u) => u.category === "tapEffects");
-  const selectedEffect = tapEffects.find((effect) => effect.selected);
 
   const handleEffectSelect = (effectId: string) => {
     const effect = tapEffects.find((e) => e.id === effectId);
@@ -290,6 +286,7 @@ function EffectsView() {
   return (
     <EffectsContainer>
       <SectionTitle>Tap Effects</SectionTitle>
+
       <EffectsGrid>
         {tapEffects.map((effect) => (
           <EffectCard
@@ -310,7 +307,7 @@ function EffectsView() {
                 ? effect.selected
                   ? "Selected"
                   : "Available"
-                : `${effect.baseCost} 🫵`}
+                : `${effect.baseCost} taps`}
             </EffectStatus>
             {!effect.unlocked && (
               <PurchaseButton
@@ -320,7 +317,7 @@ function EffectsView() {
                   handleEffectPurchase(effect.id);
                 }}
               >
-                {canAfford(effect.baseCost) ? "Buy" : "Can't Afford"}
+                {canAfford(effect.baseCost) ? "Unlock" : "Can't Afford"}
               </PurchaseButton>
             )}
           </EffectCard>
@@ -369,13 +366,7 @@ function EnvironmentView() {
           >
             <EnvironmentIcon>{effect.icon}</EnvironmentIcon>
             <EnvironmentName>{effect.name}</EnvironmentName>
-            <EnvironmentStatus $unlocked={effect.unlocked}>
-              {effect.unlocked
-                ? effect.selected
-                  ? "Enabled"
-                  : "Disabled"
-                : `${effect.baseCost} 🫵`}
-            </EnvironmentStatus>
+            <EnvironmentStatus $unlocked={effect.unlocked}></EnvironmentStatus>
             {!effect.unlocked && (
               <PurchaseButton
                 $canAfford={canAfford(effect.baseCost)}
@@ -384,7 +375,7 @@ function EnvironmentView() {
                   handleEnvironmentPurchase(effect.id);
                 }}
               >
-                {canAfford(effect.baseCost) ? "Buy" : "Can't Afford"}
+                {canAfford(effect.baseCost) ? "Unlock" : "Can't Afford"}
               </PurchaseButton>
             )}
           </EnvironmentCard>
@@ -407,7 +398,7 @@ function RoutesView() {
   return (
     <ThemesContainer>
       <ThemesSection>
-        <SectionTitle>Available Pages</SectionTitle>
+        <SectionTitle>Unlockable Pages</SectionTitle>
         <ItemsGrid>
           {routes
             .filter((route) => route.id !== "route_home") // Don't show home in shop
@@ -444,8 +435,8 @@ function RoutesView() {
                 </div>
                 <ThemeStatus $purchased={route.purchased}>
                   {route.purchased ? (
-                    "Purchased"
-                  ) : route.unlocked ? (
+                    "Unlocked"
+                  ) : (
                     <PurchaseButton
                       $canAfford={canAfford(route.cost)}
                       onClick={(e) => {
@@ -453,10 +444,8 @@ function RoutesView() {
                         handleRoutePurchase(route.id);
                       }}
                     >
-                      Purchase
+                      {canAfford(route.cost) ? "Unlock" : "Can't Afford"}
                     </PurchaseButton>
-                  ) : (
-                    "Locked"
                   )}
                 </ThemeStatus>
               </ThemeCard>
@@ -471,9 +460,7 @@ function DevView() {
   const {
     addDevTaps,
     buyAllUpgrades,
-    toggleAnimations,
     toggleStatistics,
-    animationsEnabled,
     statisticsVisible,
     pauseGame,
     resumeGame,
@@ -483,13 +470,16 @@ function DevView() {
 
   return (
     <DevContainer>
-      <SectionTitle>Development Controls</SectionTitle>
+      <SectionTitle>Development</SectionTitle>
+      <ContentSubtitle>
+        For debugging or testing — use with caution
+      </ContentSubtitle>
       <DevGrid>
         <DevButton onClick={() => addDevTaps(100)}>💰 Add 100 Taps</DevButton>
         <DevButton onClick={buyAllUpgrades}>🛒 Buy All Upgrades</DevButton>
-        <DevButton onClick={toggleAnimations} $active={animationsEnabled}>
-          {animationsEnabled ? "🎬" : "⏸️"} Toggle Animations
-        </DevButton>
+
+        <Divider />
+
         <DevButton onClick={toggleStatistics} $active={statisticsVisible}>
           📊 Toggle Statistics
         </DevButton>
@@ -497,10 +487,24 @@ function DevView() {
           onClick={isPaused ? resumeGame : pauseGame}
           $active={!isPaused}
         >
-          {isPaused ? "▶️" : "⏸️"} {isPaused ? "Resume" : "Pause"}
+          {isPaused ? "▶️" : "⏸️"}{" "}
+          {isPaused ? "Resume Auto-Tap" : "Pause Auto-Tap"}
         </DevButton>
-        <DevButton onClick={resetGame}>🔄 Reset Game</DevButton>
-        <DevButton onClick={triggerStoreMigration}>🔄 Migrate Store</DevButton>
+
+        <Divider />
+
+        <DevButton onClick={triggerStoreMigration}>
+          🔄 Migrate Version
+        </DevButton>
+        <DevButton
+          $variant="destructive"
+          onClick={() =>
+            confirm("This will delete all your progress. Are you sure?") &&
+            resetGame()
+          }
+        >
+          🗑️ Reset Game
+        </DevButton>
       </DevGrid>
     </DevContainer>
   );
@@ -547,6 +551,7 @@ const ShopHeader = styled.div`
   align-items: center;
   padding: 20px 24px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 16px;
 `;
 
 const ShopTitle = styled.div`
@@ -556,6 +561,14 @@ const ShopTitle = styled.div`
   font-size: 24px;
   font-weight: bold;
   color: #ffffff;
+`;
+
+const TapCountDisplay = styled.div`
+  font-size: 14px;
+  color: #ffd700;
+  font-weight: 600;
+  margin-left: auto;
+  margin-right: 16px;
 `;
 
 const CloseButton = styled.button`
@@ -820,7 +833,7 @@ const SectionTitle = styled.h3`
   font-size: 18px;
   font-weight: bold;
   color: #ffffff;
-  margin: 0 0 16px 0;
+  margin: 0;
 `;
 
 const ColorCustomizationSection = styled.div`
@@ -988,33 +1001,53 @@ const DevGrid = styled.div`
   gap: 12px;
 `;
 
-const DevButton = styled.button<{ $active?: boolean }>`
+const Divider = styled.div`
+  width: 100%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 16px 0;
+`;
+
+const DevButton = styled.button<{
+  $active?: boolean;
+  $variant?: "destructive" | "default";
+}>`
   padding: 12px 16px;
   border-radius: 8px;
-  border: none;
-  background: ${(props) =>
-    props.$active ? "#FFD700" : "rgba(255, 255, 255, 0.1)"};
-  color: ${(props) => (props.$active ? "#000000" : "#ffffff")};
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: ${(props) =>
+    props.$active ? "var(--text-color)" : "transparent"};
+  color: ${(props) => (props.$active ? "var(--text-color)" : "#ffffff")};
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
   transition: all 0.2s;
 
+  ${(props) =>
+    props.$variant === "destructive" &&
+    `
+    background: #b30f0f;
+    color: #ffffff;
+  `}
+
   &:hover {
-    background: ${(props) =>
-      props.$active ? "#FFD700" : "rgba(255, 255, 255, 0.2)"};
+    background: rgba(255, 255, 255, 0.2);
   }
 `;
 
 const PurchaseButton = styled.button<{ $canAfford: boolean }>`
   padding: 4px 8px;
   border-radius: 4px;
-  border: none;
-  background: ${(props) => (props.$canAfford ? "#4CAF50" : "#666666")};
+  border-color: ${(props) => (props.$canAfford ? "#ffffff" : "transparent")};
+  border-width: 1px;
+  border-style: solid;
+  background: ${(props) => (props.$canAfford ? "#000000" : "#666666")};
   color: white;
   cursor: ${(props) => (props.$canAfford ? "pointer" : "not-allowed")};
-  font-size: 10px;
+  font-size: 0.75rem;
   font-weight: 500;
+
   transition: all 0.2s;
   margin-top: 4px;
 

@@ -3,8 +3,9 @@ import { devtools } from "zustand/middleware";
 import { persist } from "zustand/middleware";
 import { THEME_CONFIG } from "./upgradesConfig";
 import { match } from "ts-pattern";
-import { ROUTE_PATHS, ROUTE_IDS, ROUTE_CONFIG } from "./index";
+import { ROUTE_PATHS, ROUTE_IDS, ROUTE_CONFIG } from "./routeConfig";
 import { ROUTE_THEME_VARIATIONS } from "./themeConfig";
+import { toast } from "sonner";
 
 // Constants
 const ONE_SECOND_MS = 1000;
@@ -13,7 +14,7 @@ const MAX_PARTICLES_PER_AUTO_TAP = 5;
 const PARTICLE_STAGGER_MS = 100;
 
 // Store version for migrations
-const STORE_VERSION = 4;
+export const STORE_VERSION = 5;
 
 // Migration functions
 function migrateStore(oldState: any, version: number): any {
@@ -77,6 +78,37 @@ function migrateStore(oldState: any, version: number): any {
         }
         return upgrade;
       });
+    }
+  }
+
+  // Migration from version 4 to 5
+  if (version < 5) {
+    // Ensure routes are properly initialized and persisted
+    if (!migratedState.routes) {
+      migratedState.routes = initialRoutes;
+    } else {
+      // Merge existing routes with initial routes to ensure all routes exist
+      const existingRoutes = migratedState.routes;
+      const mergedRoutes = initialRoutes.map((initialRoute) => {
+        const existingRoute = existingRoutes.find(
+          (r: any) => r.id === initialRoute.id
+        );
+        if (existingRoute) {
+          // Preserve unlocked/purchased state from existing data
+          return {
+            ...initialRoute,
+            unlocked: existingRoute.unlocked,
+            purchased: existingRoute.purchased,
+          };
+        }
+        return initialRoute;
+      });
+      migratedState.routes = mergedRoutes;
+    }
+
+    // Initialize lastAutoTapTime if missing
+    if (!migratedState.lastAutoTapTime) {
+      migratedState.lastAutoTapTime = Date.now();
     }
   }
 
@@ -149,6 +181,7 @@ export interface Theme {
 }
 
 // Route types
+
 export interface Route {
   id: string;
   name: string;
@@ -177,6 +210,7 @@ interface GameStore {
   autoTapRate: number;
   isPaused: boolean;
   recentManualTaps: number[];
+  lastAutoTapTime: number;
 
   // Cached computed values for performance
   _cachedTapsPerSecond?: number;
@@ -233,6 +267,7 @@ interface GameStore {
   getTotalTapMultiplier: () => number;
   getAutoTapRate: () => number;
   canAfford: (cost: number) => boolean;
+  calculateOfflineTaps: () => number;
 }
 
 // Initial upgrades
@@ -508,6 +543,7 @@ export const useGameStore = create<GameStore>()(
         autoTapRate: 0,
         isPaused: false,
         recentManualTaps: [],
+        lastAutoTapTime: Date.now(),
 
         // Cache properties
         _cachedTapsPerSecond: undefined,
@@ -534,6 +570,7 @@ export const useGameStore = create<GameStore>()(
         addAutoTaps: (amount: number) => {
           set((state) => ({
             taps: state.taps + amount * state.getTotalTapMultiplier(),
+            lastAutoTapTime: Date.now(),
           }));
         },
 
@@ -1064,6 +1101,23 @@ export const useGameStore = create<GameStore>()(
             }, 0);
         },
 
+        calculateOfflineTaps: () => {
+          const state = get();
+          const now = Date.now();
+          const timeSinceLastTap = now - state.lastAutoTapTime;
+          const secondsSinceLastTap = timeSinceLastTap / 1000;
+
+          // Calculate how many taps should have been generated
+          const tapsPerSecond = state.getTotalTapsPerSecond();
+          const tapMultiplier = state.getTotalTapMultiplier();
+          const baseOfflineTaps = Math.floor(
+            tapsPerSecond * secondsSinceLastTap
+          );
+          const offlineTaps = Math.floor(baseOfflineTaps * tapMultiplier);
+
+          return offlineTaps;
+        },
+
         canAfford: (cost) => {
           return get().taps >= cost;
         },
@@ -1080,7 +1134,9 @@ export const useGameStore = create<GameStore>()(
           decorations: state.decorations,
           themes: state.themes,
           currentTheme: state.currentTheme,
+          routes: state.routes,
           fisheyeIntensity: state.fisheyeIntensity,
+          lastAutoTapTime: state.lastAutoTapTime,
         }),
       }
     ),
@@ -1158,6 +1214,7 @@ export const triggerStoreMigration = () => {
   };
 
   const migratedState = migrateStore(currentState, 1);
+  toast.success(`Store migrated to VERSION_${STORE_VERSION}`);
 
   // Update the store with migrated data
   useGameStore.setState({

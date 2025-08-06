@@ -3,6 +3,7 @@ import { BottomNavigation } from "@/molecules/BottomNavigation";
 import { useEffect, useState } from "react";
 import styled from "styled-components";
 import { useAppStore } from "@/store";
+import { useGameStore } from "@/store/gameStore";
 
 export default function MainLayout({ children }: any) {
   const [windowHeight, setWindowHeight] = useState(0);
@@ -15,6 +16,7 @@ export default function MainLayout({ children }: any) {
     showOptions,
     setShowOptions,
   } = useAppStore();
+  const { checkRouteUnlocks } = useGameStore();
 
   // Initialize mobile detection and window height
   useEffect(() => {
@@ -24,6 +26,11 @@ export default function MainLayout({ children }: any) {
     setIsMobile(mobile);
     setWindowHeight(window.innerHeight);
   }, [setIsMobile]);
+
+  // Check route unlocks on mount
+  useEffect(() => {
+    checkRouteUnlocks();
+  }, [checkRouteUnlocks]);
 
   return (
     <Container>

@@ -18,6 +18,7 @@ import { useAppStore, ROUTES, ROUTE_IDS, ROUTE_PATHS } from "@/store";
 import { useGameStore } from "@/store/gameStore";
 import { useNavigate } from "react-router-dom";
 import { match } from "ts-pattern";
+import { LockIcon } from "@/icons/lock";
 
 //#region constants
 export const CAMERA_Y_POSITION = 1;
@@ -264,9 +265,7 @@ export function HeadNavigation({
       showOptions && !isClosing
         ? VISIBLE_OPTIONS_CAMERA_ZOOM
         : HIDDEN_OPTIONS_CAMERA_ZOOM;
-    const zoomOffset = cameraZoomAnimation
-      ? Math.sin(Date.now() * 0.02) * 0.5
-      : 0;
+    const zoomOffset = cameraZoomAnimation ? 1 : 0;
 
     // Add calibration feedback animation
     const calibrationOffset = calibrationFeedback
@@ -452,20 +451,33 @@ function OptionsGroup({
     []
   );
 
+  // Calculate appropriate radii based on screen dimensions
+  // Use the smaller dimension to ensure elements stay within viewport
+  const minDimension = Math.min(windowWidth, windowHeight);
+  const baseRadius = minDimension * OPTIONS_BASE_RADIUS_MULTIPLIER;
+
+  // Apply the offset to create an elliptical path if needed
+  const xRadius =
+    windowWidth > windowHeight
+      ? baseRadius * OPTION_RADIUS_OFFSET
+      : baseRadius * (windowWidth / windowHeight) * OPTION_RADIUS_OFFSET;
+
+  const yRadius =
+    windowHeight > windowWidth
+      ? baseRadius * OPTION_RADIUS_OFFSET
+      : baseRadius * (windowHeight / windowWidth) * OPTION_RADIUS_OFFSET;
+
   // Memoize route positions to prevent unnecessary recalculations
   const routePositions = useMemo(() => {
     return routes.map((route, index) => {
-      // Calculate circular distribution around the blob head
-      const angleStep = (2 * Math.PI) / count;
-      const angle = index * angleStep - Math.PI / 2; // Start from top
+      // calculate position on ellipse centered in screen
+      const angle = (index / count) * Math.PI * 2;
 
-      // Calculate base radius based on screen size and number of options
-      const baseRadius = Math.min(windowWidth, windowHeight) * 0.0008;
-      const radius = baseRadius * Math.max(count, 3); // Ensure minimum spacing
+      // adjust starting angle (start from top instead of right)
+      const adjustedAngle = angle - Math.PI / 2;
 
-      // Calculate position on circle
-      const x = Math.cos(angle) * radius;
-      const y = Math.sin(angle) * radius;
+      const x = Math.cos(adjustedAngle) * xRadius;
+      const y = Math.sin(adjustedAngle) * -yRadius;
 
       // Adjust for viewport edges and bottom navigation
       const viewportMargin = 0.5; // Distance from viewport edges
@@ -551,28 +563,16 @@ function Option({
   acceleration: DeviceMotionEventAcceleration;
 }) {
   const optionRef = useRef<THREE.Group>(null!);
-  const [hovered, setHovered] = useState(false);
-  const { currentRoute } = useAppStore();
-  const { purchaseRoute, canAfford } = useGameStore();
   const navigate = useNavigate();
 
   // Position is fixed for now (magnet functionality disabled)
   const position = initialPosition;
-  const state = { attractionStrength: 0, isAttracted: false } as const;
 
   const handleOptionClick = () => {
     match({
       purchased: route.purchased,
-      unlocked: route.unlocked,
-      canAfford: canAfford(route.cost),
     })
-      .with({ purchased: false, unlocked: true, canAfford: true }, () => {
-        // Route is locked but affordable - purchase it
-        purchaseRoute(route.id);
-        hideOptions();
-      })
       .with({ purchased: true }, () => {
-        // Route is purchased - navigate to it
         cameraControlsRef.current.setLookAt(
           0,
           CAMERA_Y_POSITION,
@@ -587,7 +587,7 @@ function Option({
         hideOptions();
       })
       .otherwise(() => {
-        // Route is locked and not affordable - do nothing
+        // Route is locked - do nothing
       });
   };
 
@@ -625,11 +625,10 @@ function Option({
             letterSpacing: "0.5px",
           }}
           onPointerDown={(e) => e.stopPropagation()}
-          onMouseEnter={() => setHovered(true)}
-          onMouseLeave={() => setHovered(false)}
           onClick={handleOptionClick}
         >
-          {route.purchased ? route.name : `${route.name} (${route.cost})`}
+          {!route.purchased && <LockIcon />}
+          {route.name}
         </motion.button>
       </Html>
     </group>

@@ -8,6 +8,7 @@ import { CartIcon } from "@/icons/cart";
 import { MenuIcon } from "@/icons/menu";
 import { CloseIcon } from "@/icons/close";
 import { Shop } from "./Shop";
+import { ProgressTracker } from "./ProgressTracker";
 
 export function BottomNavigation() {
   const [isShopOpen, setIsShopOpen] = useState(false);
@@ -37,7 +38,7 @@ export function BottomNavigation() {
   return (
     <>
       <NavigationContainer>
-        {isHomeRoute && (
+        {isHomeRoute ? (
           <NavButton
             onClick={() => setIsUpgradesOpen(!isUpgradesOpen)}
             whileHover={{ scale: 1.05 }}
@@ -83,6 +84,8 @@ export function BottomNavigation() {
               )}
             </AnimatePresence>
           </NavButton>
+        ) : (
+          <ProgressTracker />
         )}
 
         <MenuButton
@@ -124,46 +127,44 @@ export function BottomNavigation() {
           </AnimatePresence>
         </MenuButton>
 
-        {isHomeRoute && (
-          <NavButton
-            onClick={() => setIsShopOpen(!isShopOpen)}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            $isActive={isShopOpen}
-          >
-            <AnimatePresence mode="popLayout">
-              {isShopOpen ? (
-                <motion.div
-                  key="close"
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0, opacity: 0 }}
-                  transition={{
-                    duration: 0.25,
-                    type: "spring" as const,
-                    bounce: 0.5,
-                  }}
-                >
-                  <CloseIcon color="#ffffff" />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="cart"
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0, opacity: 0 }}
-                  transition={{
-                    duration: 0.25,
-                    type: "spring" as const,
-                    bounce: 0.5,
-                  }}
-                >
-                  <CartIcon color="#ffffff" />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </NavButton>
-        )}
+        <NavButton
+          onClick={() => setIsShopOpen(!isShopOpen)}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          $isActive={isShopOpen}
+        >
+          <AnimatePresence mode="popLayout">
+            {isShopOpen ? (
+              <motion.div
+                key="close"
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                transition={{
+                  duration: 0.25,
+                  type: "spring" as const,
+                  bounce: 0.5,
+                }}
+              >
+                <CloseIcon color="#ffffff" />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="cart"
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                transition={{
+                  duration: 0.25,
+                  type: "spring" as const,
+                  bounce: 0.5,
+                }}
+              >
+                <CartIcon color="#ffffff" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </NavButton>
       </NavigationContainer>
 
       <Shop isOpen={isShopOpen} onClose={() => setIsShopOpen(false)} />

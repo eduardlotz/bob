@@ -50,6 +50,7 @@ export const THEME_CONFIG = {
     planetColors: ["#ffffff", "#C5BDD5", "#85799F"],
     counterColor: "#ffffff",
     counterEmission: 0,
+    blobColor: "#ffffff",
   },
   DARK: {
     id: "dark",
@@ -65,6 +66,7 @@ export const THEME_CONFIG = {
     planetColors: ["#1a1a1a", "#2d2d2d", "#404040"],
     counterColor: "#BB86FC",
     counterEmission: 0.5, // Cursor works as point light
+    blobColor: "#22c55e",
   },
   PASTEL: {
     id: "pastel",
@@ -80,6 +82,7 @@ export const THEME_CONFIG = {
     planetColors: ["#FFE5E5", "#E5FFE5", "#E5F0FF"],
     counterColor: "#FFB3BA",
     counterEmission: 0,
+    blobColor: "#86efac",
   },
   NEON: {
     id: "neon",
@@ -95,6 +98,7 @@ export const THEME_CONFIG = {
     planetColors: ["#1a1a1a", "#2a2a2a", "#3a3a3a"], // Dark planet
     counterColor: "#FFFF00",
     counterEmission: 1.0, // Counter emits light
+    blobColor: "#00ff88",
   },
   CUSTOM: {
     id: "custom",
@@ -110,6 +114,7 @@ export const THEME_CONFIG = {
     planetColors: ["#ffffff", "#C5BDD5", "#85799F"],
     counterColor: "#2979FF",
     counterEmission: 0,
+    blobColor: "#ffffff",
   },
 } as const;
 

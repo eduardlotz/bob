@@ -21,11 +21,13 @@ import {
 } from "./HeadNavigation";
 import { CameraControls, Outlines } from "@react-three/drei";
 import { calculateAcceleratedRotation } from "@/utils/math";
-import { a, useSpring, useSprings } from "@react-spring/three";
+import { a, useSpring } from "@react-spring/three";
 import { type RapierRigidBody } from "@react-three/rapier";
 import { Star3D } from "@/3d-objects/Star3D";
 import { EmotionState } from "@/hooks/useBlobEmotions";
-import { useCallback } from "react";
+import { useRouteStore } from "@/store/routeStore";
+import { useAppStore } from "@/store";
+import { useGameStore } from "@/store/gameStore";
 
 // TODO: Move these constants to a shared config file
 // Default head position Y
@@ -180,6 +182,12 @@ export function BlobHead({
   emotionState: EmotionState;
   onCameraZoomAnimation?: (isAnimating: boolean) => void;
 }) {
+  const { currentRoute } = useAppStore();
+  const { currentTheme } = useGameStore();
+  const { getBlobColor } = useRouteStore();
+
+  // Get route-specific blob color
+  const blobColor = getBlobColor(currentRoute, currentTheme?.id);
   const headRef = useRef<Group>(null!);
   const leftEyeRef = useRef<Mesh>(null!);
   const rightEyeRef = useRef<Mesh>(null!);
@@ -828,7 +836,7 @@ export function BlobHead({
     event.stopPropagation();
 
     // Create particles at the counter text position instead of cursor
-    const COUNTER_POS: [number, number, number] = [-1, 0.5, -1];
+    const COUNTER_POS: [number, number, number] = [0, 0, 0];
     createParticles(COUNTER_POS[0], COUNTER_POS[1], COUNTER_POS[2]);
 
     // Trigger bounce animation on tap
@@ -877,7 +885,7 @@ export function BlobHead({
         {/* Head */}
         <mesh castShadow>
           <sphereGeometry args={[1, 64, 64]} />
-          <meshToonMaterial color="#ffffff" />
+          <meshToonMaterial color={blobColor} />
           <Outlines thickness={0.005} color="black" screenspace />
         </mesh>
 
