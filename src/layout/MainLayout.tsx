@@ -1,4 +1,5 @@
 import { SceneWithLoader } from "@/molecules/SceneWithLoader";
+import { BottomNavigation } from "@/molecules/BottomNavigation";
 import { useEffect, useState } from "react";
 import styled from "styled-components";
 import { useAppStore } from "@/store";
@@ -6,9 +7,14 @@ import { useAppStore } from "@/store";
 export default function MainLayout({ children }: any) {
   const [windowHeight, setWindowHeight] = useState(0);
   const [sceneLoaded, setSceneLoaded] = useState(false);
-  const [showOptions, setShowOptions] = useState(false);
 
-  const { permissionGranted, setIsMobile, setEmotionData } = useAppStore();
+  const {
+    permissionGranted,
+    setIsMobile,
+    setEmotionData,
+    showOptions,
+    setShowOptions,
+  } = useAppStore();
 
   // Initialize mobile detection and window height
   useEffect(() => {
@@ -24,12 +30,12 @@ export default function MainLayout({ children }: any) {
       <Background style={{ height: windowHeight }}>
         <SceneWithLoader
           permissionGranted={permissionGranted}
-          showOptions={showOptions}
-          setShowOptions={setShowOptions}
           onEmotionUpdate={setEmotionData}
           onLoaded={() => setSceneLoaded(true)}
         />
       </Background>
+
+      <BottomNavigation />
 
       {children}
     </Container>

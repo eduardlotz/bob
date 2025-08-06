@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useGameStore } from "@/store/gameStore";
+import { useAppStore, ROUTE_PATHS } from "@/store";
 
 export type EmotionState = "normal" | "happy" | "dizzy" | "mad";
 
@@ -23,6 +24,7 @@ export function useBlobEmotions() {
   const [clickTimestamps, setClickTimestamps] = useState<number[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
   const [dizzyCounter, setDizzyCounter] = useState(0); // Separate counter for dizzy detection
+  const { currentRoute } = useAppStore();
 
   const emotionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const cooldownRef = useRef<number>(0);
@@ -69,12 +71,14 @@ export function useBlobEmotions() {
   const handleTap = useCallback(() => {
     const now = Date.now();
 
-    // Always increment tap count, regardless of emotion state or cooldown
-    setTapCount((prev) => prev + 1);
+    // Only increment tap count on home route
+    if (currentRoute === ROUTE_PATHS.HOME) {
+      setTapCount((prev) => prev + 1);
 
-    // Add tap to game store
-    const gameStore = useGameStore.getState();
-    gameStore.addManualTap();
+      // Add tap to game store
+      const gameStore = useGameStore.getState();
+      gameStore.addManualTap();
+    }
 
     // Increment dizzy counter (separate from persistent tap count)
     setDizzyCounter((prev) => prev + 1);

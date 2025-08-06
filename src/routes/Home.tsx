@@ -5,5 +5,5 @@ export default function Home() {
     document.title = "Eduard Lotz";
   }, []);
 
-  return null;
+  return null; // Scene is rendered in MainLayout
 }

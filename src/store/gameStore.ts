@@ -2,6 +2,9 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { persist } from "zustand/middleware";
 import { THEME_CONFIG } from "./upgradesConfig";
+import { match } from "ts-pattern";
+import { ROUTE_PATHS, ROUTE_IDS, ROUTE_CONFIG } from "./index";
+import { ROUTE_THEME_VARIATIONS } from "./themeConfig";
 
 // Constants
 const ONE_SECOND_MS = 1000;
@@ -145,6 +148,24 @@ export interface Theme {
   icon: string;
 }
 
+// Route types
+export interface Route {
+  id: string;
+  name: string;
+  description: string;
+  cost: number;
+  purchased: boolean;
+  unlocked: boolean;
+  path: string;
+  icon: string;
+  category: "pages";
+  themeVariation?: {
+    primary: string;
+    secondary: string;
+    accent: string;
+  };
+}
+
 // Game state interface
 interface GameStore {
   // Core game state
@@ -172,6 +193,9 @@ interface GameStore {
   themes: Theme[];
   currentTheme: Theme | null;
 
+  // Routes
+  routes: Route[];
+
   // Fisheye slider
   fisheyeIntensity: number;
 
@@ -187,6 +211,8 @@ interface GameStore {
   purchaseUpgrade: (upgradeId: string) => void;
   purchaseDecoration: (decorationId: string) => void;
   purchaseTheme: (themeId: string) => void;
+  purchaseRoute: (routeId: string) => void;
+  checkRouteUnlocks: () => void;
   activateTheme: (themeId: string) => void;
   toggleDecoration: (decorationId: string) => void;
   selectTapEffect: (upgradeId: string) => void;
@@ -393,6 +419,77 @@ const initialThemes: Theme[] = Object.values(THEME_CONFIG).map(
   })
 );
 
+// Initial routes using constants
+const initialRoutes: Route[] = [
+  {
+    id: ROUTE_IDS.HOME,
+    name: ROUTE_CONFIG[ROUTE_PATHS.HOME].name,
+    description: ROUTE_CONFIG[ROUTE_PATHS.HOME].description,
+    cost: ROUTE_CONFIG[ROUTE_PATHS.HOME].cost,
+    purchased: true,
+    unlocked: true,
+    path: ROUTE_PATHS.HOME,
+    icon: ROUTE_CONFIG[ROUTE_PATHS.HOME].icon,
+    category: "pages",
+  },
+  {
+    id: ROUTE_IDS.ABOUT,
+    name: ROUTE_CONFIG[ROUTE_PATHS.ABOUT].name,
+    description: ROUTE_CONFIG[ROUTE_PATHS.ABOUT].description,
+    cost: ROUTE_CONFIG[ROUTE_PATHS.ABOUT].cost,
+    purchased: false,
+    unlocked: false,
+    path: ROUTE_PATHS.ABOUT,
+    icon: ROUTE_CONFIG[ROUTE_PATHS.ABOUT].icon,
+    category: "pages",
+    themeVariation: ROUTE_THEME_VARIATIONS.about,
+  },
+  {
+    id: ROUTE_IDS.PORTFOLIO,
+    name: ROUTE_CONFIG[ROUTE_PATHS.PORTFOLIO].name,
+    description: ROUTE_CONFIG[ROUTE_PATHS.PORTFOLIO].description,
+    cost: ROUTE_CONFIG[ROUTE_PATHS.PORTFOLIO].cost,
+    purchased: false,
+    unlocked: false,
+    path: ROUTE_PATHS.PORTFOLIO,
+    icon: ROUTE_CONFIG[ROUTE_PATHS.PORTFOLIO].icon,
+    category: "pages",
+  },
+  {
+    id: ROUTE_IDS.TECHNICAL,
+    name: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].name,
+    description: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].description,
+    cost: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].cost,
+    purchased: false,
+    unlocked: false,
+    path: ROUTE_PATHS.TECHNICAL,
+    icon: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].icon,
+    category: "pages",
+  },
+  {
+    id: ROUTE_IDS.CREATIVE,
+    name: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].name,
+    description: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].description,
+    cost: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].cost,
+    purchased: false,
+    unlocked: false,
+    path: ROUTE_PATHS.CREATIVE,
+    icon: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].icon,
+    category: "pages",
+  },
+  {
+    id: ROUTE_IDS.GUESTBOOK,
+    name: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].name,
+    description: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].description,
+    cost: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].cost,
+    purchased: false,
+    unlocked: false,
+    path: ROUTE_PATHS.GUESTBOOK,
+    icon: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].icon,
+    category: "pages",
+  },
+];
+
 // Helper function to generate upgrade hash for caching
 const generateUpgradeHash = (upgrades: Upgrade[]): string => {
   return JSON.stringify(upgrades.map((u) => ({ id: u.id, level: u.level })));
@@ -421,6 +518,7 @@ export const useGameStore = create<GameStore>()(
         decorations: initialDecorations,
         themes: initialThemes,
         currentTheme: initialThemes[0],
+        routes: initialRoutes,
         fisheyeIntensity: 0,
         animationsEnabled: true,
         statisticsVisible: false,
@@ -458,12 +556,47 @@ export const useGameStore = create<GameStore>()(
             const newTaps = [...filteredTaps, now];
             const tapMultiplier = state.getTotalTapMultiplier();
 
-            return {
+            const newState = {
               ...state,
               taps: state.taps + 1 * tapMultiplier, // Apply multiplier to manual taps
               manualTaps: state.manualTaps + 1,
               manualTapsPerSecond: newTaps.length,
               recentManualTaps: newTaps,
+            };
+
+            // Check for route unlocks after adding taps using pattern matching
+            // Only update routes if there are any changes to prevent unnecessary re-renders
+            let hasRouteChanges = false;
+            const updatedRoutes = newState.routes.map((route) => {
+              const shouldUnlock = match({
+                purchased: route.purchased,
+                canAfford: newState.canAfford(route.cost),
+                unlocked: route.unlocked,
+              })
+                .with(
+                  { purchased: false, canAfford: true, unlocked: false },
+                  () => true
+                )
+                .otherwise(() => false);
+
+              if (shouldUnlock) {
+                hasRouteChanges = true;
+                return { ...route, unlocked: true };
+              }
+              return route;
+            });
+
+            // Only update state if there are actual changes
+            if (hasRouteChanges) {
+              return {
+                ...newState,
+                routes: updatedRoutes,
+              };
+            }
+
+            return {
+              ...newState,
+              routes: updatedRoutes,
             };
           });
         },
@@ -612,6 +745,34 @@ export const useGameStore = create<GameStore>()(
           });
         },
 
+        purchaseRoute: (routeId) => {
+          set((state) => {
+            const route = state.routes.find((r) => r.id === routeId);
+
+            return match({
+              route,
+              canAfford: route ? state.canAfford(route.cost) : false,
+            })
+              .with(
+                { route: { purchased: false }, canAfford: true },
+                ({ route }) => {
+                  const updatedRoutes = state.routes.map((r) =>
+                    r.id === routeId
+                      ? { ...r, purchased: true, unlocked: true }
+                      : r
+                  );
+
+                  return {
+                    ...state,
+                    taps: state.taps - route.cost,
+                    routes: updatedRoutes,
+                  };
+                }
+              )
+              .otherwise(() => state);
+          });
+        },
+
         activateTheme: (themeId) => {
           set((state) => {
             const theme = state.themes.find((t) => t.id === themeId);
@@ -720,6 +881,7 @@ export const useGameStore = create<GameStore>()(
             decorations: initialDecorations,
             themes: initialThemes,
             currentTheme: initialThemes[0],
+            routes: initialRoutes,
             fisheyeIntensity: 0,
             animationsEnabled: true,
             statisticsVisible: false,
@@ -773,11 +935,17 @@ export const useGameStore = create<GameStore>()(
               purchased: true,
             }));
 
+            const updatedRoutes = state.routes.map((route) => ({
+              ...route,
+              purchased: true,
+            }));
+
             return {
               ...state,
               upgrades: updatedUpgrades,
               decorations: updatedDecorations,
               themes: updatedThemes,
+              routes: updatedRoutes,
               _cachedTapsPerSecond: undefined,
               _cachedTapMultiplier: undefined,
               _lastUpgradeHash: undefined,
@@ -797,6 +965,24 @@ export const useGameStore = create<GameStore>()(
             ...state,
             statisticsVisible: !state.statisticsVisible,
           }));
+        },
+
+        // Route unlocking logic
+        checkRouteUnlocks: () => {
+          set((state) => {
+            const updatedRoutes = state.routes.map((route) => {
+              // Auto-unlock routes when affordable
+              if (!route.purchased && state.canAfford(route.cost)) {
+                return { ...route, unlocked: true };
+              }
+              return route;
+            });
+
+            return {
+              ...state,
+              routes: updatedRoutes,
+            };
+          });
         },
 
         // Computed values with caching

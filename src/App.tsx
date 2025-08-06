@@ -1,4 +1,4 @@
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import { FullScreen, ContentWidth, FillColumn } from "@/layout";
 import MainLayout from "@/layout/MainLayout";
@@ -8,6 +8,7 @@ import styled from "styled-components";
 import { useAppStore } from "@/store";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { useAnimations } from "@/hooks/useAnimations";
+import { UILayer } from "@/components/UILayer";
 
 // Route Components
 import Home from "./routes/Home";
@@ -19,15 +20,16 @@ import Guestbook from "./routes/Guestbook";
 
 export default function App() {
   const location = useLocation();
-  const { navigateToRoute } = useAppStore();
+  const { setCurrentRoute } = useAppStore();
 
   // Initialize animations hook
   useAnimations();
 
-  // Sync router location with store and handle dialog opening
+  // Sync router location with store
   useEffect(() => {
-    navigateToRoute(location.pathname);
-  }, [location.pathname, navigateToRoute]);
+    // Just update the current route without triggering navigation logic
+    setCurrentRoute(location.pathname);
+  }, [location.pathname]);
 
   return (
     <ThemeProvider>
@@ -47,7 +49,8 @@ export default function App() {
           <ContentWrapper>
             <ContentWidth>
               <Routes>
-                <Route path="/" element={<Home />} />
+                <Route path="/" element={<Navigate to="/home" replace />} />
+                <Route path="/home" element={<Home />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/technical" element={<Technical />} />
                 <Route path="/creative" element={<Creative />} />

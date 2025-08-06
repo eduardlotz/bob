@@ -2,21 +2,14 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
 import { useGameStore } from "@/store/gameStore";
+import { useAppStore, ROUTE_PATHS } from "@/store";
 import { UpgradesIcon } from "@/icons/upgrades";
 import { CartIcon } from "@/icons/cart";
 import { MenuIcon } from "@/icons/menu";
 import { CloseIcon } from "@/icons/close";
 import { Shop } from "./Shop";
 
-interface BottomNavigationProps {
-  onMenuClick: () => void;
-  showMenu: boolean;
-}
-
-export function BottomNavigation({
-  onMenuClick,
-  showMenu,
-}: BottomNavigationProps) {
+export function BottomNavigation() {
   const [isShopOpen, setIsShopOpen] = useState(false);
   const [isUpgradesOpen, setIsUpgradesOpen] = useState(false);
 
@@ -27,6 +20,10 @@ export function BottomNavigation({
     getAutoTapRate,
     manualTapsPerSecond,
   } = useGameStore();
+  const { currentRoute, showOptions, setShowOptions } = useAppStore();
+
+  // Only show upgrade/shop buttons on home route
+  const isHomeRoute = currentRoute === ROUTE_PATHS.HOME;
   const autoTapRate = getAutoTapRate();
 
   const totalTapsPerSecond = autoTapRate + manualTapsPerSecond;
@@ -40,60 +37,62 @@ export function BottomNavigation({
   return (
     <>
       <NavigationContainer>
-        <NavButton
-          onClick={() => setIsUpgradesOpen(!isUpgradesOpen)}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          $isActive={isUpgradesOpen}
-        >
-          <AnimatePresence mode="popLayout">
-            {isUpgradesOpen ? (
-              <motion.div
-                key="close"
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{
-                  duration: 0.25,
-                  type: "spring" as const,
-                  bounce: 0.5,
-                }}
-              >
-                <CloseIcon color="#ffffff" />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="upgrade"
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{
-                  duration: 0.25,
-                  type: "spring" as const,
-                  bounce: 0.5,
-                }}
-              >
-                {hasAnyUpgrade ? (
-                  <UpgradeButtonContent>
-                    <FingerIcon>🫵</FingerIcon>
-                    <TapMultiplier>{totalTapsPerSecond}/s</TapMultiplier>
-                  </UpgradeButtonContent>
-                ) : (
-                  <UpgradesIcon color="#ffffff" />
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </NavButton>
+        {isHomeRoute && (
+          <NavButton
+            onClick={() => setIsUpgradesOpen(!isUpgradesOpen)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            $isActive={isUpgradesOpen}
+          >
+            <AnimatePresence mode="popLayout">
+              {isUpgradesOpen ? (
+                <motion.div
+                  key="close"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{
+                    duration: 0.25,
+                    type: "spring" as const,
+                    bounce: 0.5,
+                  }}
+                >
+                  <CloseIcon color="#ffffff" />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="upgrade"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{
+                    duration: 0.25,
+                    type: "spring" as const,
+                    bounce: 0.5,
+                  }}
+                >
+                  {hasAnyUpgrade ? (
+                    <UpgradeButtonContent>
+                      <FingerIcon>🫵</FingerIcon>
+                      <TapMultiplier>{totalTapsPerSecond}/s</TapMultiplier>
+                    </UpgradeButtonContent>
+                  ) : (
+                    <UpgradesIcon color="#ffffff" />
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </NavButton>
+        )}
 
         <MenuButton
-          onClick={onMenuClick}
+          onClick={() => setShowOptions(!showOptions)}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          $isActive={showMenu}
+          $isActive={showOptions}
         >
           <AnimatePresence mode="popLayout">
-            {showMenu ? (
+            {showOptions ? (
               <motion.div
                 key="close"
                 initial={{ scale: 0, opacity: 0 }}
@@ -125,44 +124,46 @@ export function BottomNavigation({
           </AnimatePresence>
         </MenuButton>
 
-        <NavButton
-          onClick={() => setIsShopOpen(!isShopOpen)}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          $isActive={isShopOpen}
-        >
-          <AnimatePresence mode="popLayout">
-            {isShopOpen ? (
-              <motion.div
-                key="close"
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{
-                  duration: 0.25,
-                  type: "spring" as const,
-                  bounce: 0.5,
-                }}
-              >
-                <CloseIcon color="#ffffff" />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="cart"
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{
-                  duration: 0.25,
-                  type: "spring" as const,
-                  bounce: 0.5,
-                }}
-              >
-                <CartIcon color="#ffffff" />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </NavButton>
+        {isHomeRoute && (
+          <NavButton
+            onClick={() => setIsShopOpen(!isShopOpen)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            $isActive={isShopOpen}
+          >
+            <AnimatePresence mode="popLayout">
+              {isShopOpen ? (
+                <motion.div
+                  key="close"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{
+                    duration: 0.25,
+                    type: "spring" as const,
+                    bounce: 0.5,
+                  }}
+                >
+                  <CloseIcon color="#ffffff" />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="cart"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{
+                    duration: 0.25,
+                    type: "spring" as const,
+                    bounce: 0.5,
+                  }}
+                >
+                  <CartIcon color="#ffffff" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </NavButton>
+        )}
       </NavigationContainer>
 
       <Shop isOpen={isShopOpen} onClose={() => setIsShopOpen(false)} />

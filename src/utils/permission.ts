@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react";
+
 interface DeviceOrientationEventiOS extends DeviceOrientationEvent {
   requestPermission?: () => Promise<"granted" | "denied">;
 }
@@ -14,4 +16,19 @@ export async function requestMotionPermission() {
     } else return false;
   }
   return true;
+}
+
+export function usePermission() {
+  const [permissionGranted, setPermissionGranted] = useState(false);
+
+  useEffect(() => {
+    const checkPermission = async () => {
+      const granted = await requestMotionPermission();
+      setPermissionGranted(granted);
+    };
+
+    checkPermission();
+  }, []);
+
+  return { permissionGranted };
 }

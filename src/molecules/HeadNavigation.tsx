@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { Html, Float, CameraControls } from "@react-three/drei";
@@ -10,11 +10,14 @@ import {
 } from "@/hooks/useDeviceOrientation";
 import { calculateAcceleratedRotation, resetCalibration } from "@/utils/math";
 import { useBlobEmotions } from "@/hooks/useBlobEmotions";
-import { useMagneticAttraction, MagneticConfig } from "@/hooks/useMagnets";
+// Magnet functionality removed for now
+// import { useMagneticAttraction, MagneticConfig } from "@/hooks/useMagnets";
 import { toast } from "sonner";
 import styled from "styled-components";
-import { useAppStore, ROUTES } from "@/store";
+import { useAppStore, ROUTES, ROUTE_IDS, ROUTE_PATHS } from "@/store";
+import { useGameStore } from "@/store/gameStore";
 import { useNavigate } from "react-router-dom";
+import { match } from "ts-pattern";
 
 //#region constants
 export const CAMERA_Y_POSITION = 1;
@@ -251,7 +254,7 @@ export function HeadNavigation({
   };
 
   const handleHeadClick = () => {
-    // Only handle blob emotion on head click
+    // Always call handleTap for animation, but tap counting is handled by the hook
     handleTap();
   };
 
@@ -435,51 +438,73 @@ function OptionsGroup({
   permissionGranted: boolean;
   acceleration: DeviceMotionEventAcceleration;
 }) {
-  const count = ROUTES.length;
+  const routes = useGameStore((state) => state.routes);
+  const count = routes.length;
 
-  const screenCenter = new THREE.Vector3(-1, OPTIONS_Y_OFFSET, 0);
+  // Early return if no routes to improve performance
+  if (count === 0) {
+    return <group />;
+  }
 
-  // Calculate appropriate radii based on screen dimensions
-  // Use the smaller dimension to ensure elements stay within viewport
-  const minDimension = Math.min(windowWidth, windowHeight);
-  const baseRadius = minDimension * OPTIONS_BASE_RADIUS_MULTIPLIER;
+  // Memoize calculations to improve performance
+  const screenCenter = useMemo(
+    () => new THREE.Vector3(-1, OPTIONS_Y_OFFSET, 0),
+    []
+  );
 
-  // Apply the offset to create an elliptical path if needed
-  const xRadius =
-    windowWidth > windowHeight
-      ? baseRadius * OPTION_RADIUS_OFFSET
-      : baseRadius * (windowWidth / windowHeight) * OPTION_RADIUS_OFFSET;
+  // Memoize route positions to prevent unnecessary recalculations
+  const routePositions = useMemo(() => {
+    return routes.map((route, index) => {
+      // Calculate circular distribution around the blob head
+      const angleStep = (2 * Math.PI) / count;
+      const angle = index * angleStep - Math.PI / 2; // Start from top
 
-  const yRadius =
-    windowHeight > windowWidth
-      ? baseRadius * OPTION_RADIUS_OFFSET
-      : baseRadius * (windowHeight / windowWidth) * OPTION_RADIUS_OFFSET;
+      // Calculate base radius based on screen size and number of options
+      const baseRadius = Math.min(windowWidth, windowHeight) * 0.0008;
+      const radius = baseRadius * Math.max(count, 3); // Ensure minimum spacing
+
+      // Calculate position on circle
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius;
+
+      // Adjust for viewport edges and bottom navigation
+      const viewportMargin = 0.5; // Distance from viewport edges
+      const bottomNavOffset = 2.5; // Distance from bottom navigation
+
+      let adjustedX = x;
+      let adjustedY = y;
+
+      // Check viewport boundaries
+      const maxX = (windowWidth / windowHeight) * 4 - viewportMargin;
+      const maxY = 4 - viewportMargin;
+
+      if (Math.abs(x) > maxX) {
+        adjustedX = Math.sign(x) * maxX;
+      }
+
+      if (y < -maxY + bottomNavOffset) {
+        adjustedY = -maxY + bottomNavOffset;
+      }
+
+      return new THREE.Vector3(adjustedX, adjustedY, 0).add(screenCenter);
+    });
+  }, [routes, count, windowWidth, windowHeight, screenCenter]);
 
   return (
     <group>
-      {ROUTES.map((option, index) => {
-        // calculate position on ellipse centered in screen
-        const angle = (index / count) * Math.PI * 2;
-
-        // adjust starting angle (start from top instead of right)
-        const adjustedAngle = angle - Math.PI / 2;
-
-        const x = Math.cos(adjustedAngle) * xRadius;
-        const y = Math.sin(adjustedAngle) * -yRadius;
-
-        const position = new THREE.Vector3(x, y, 0).add(screenCenter);
+      {routes.map((route, index) => {
+        const position = routePositions[index];
 
         return (
           <Float
             floatIntensity={3}
             floatingRange={[0.2, 0.1]}
             speed={1.5}
-            key={option.label}
+            key={route.id}
           >
             <Option
               initialPosition={position}
-              label={option.label}
-              href={option.path}
+              route={route}
               index={index}
               windowWidth={windowWidth}
               windowHeight={windowHeight}
@@ -500,8 +525,7 @@ function OptionsGroup({
 
 function Option({
   initialPosition,
-  label,
-  href,
+  route,
   index,
   windowWidth,
   windowHeight,
@@ -514,8 +538,7 @@ function Option({
   acceleration,
 }: {
   initialPosition: THREE.Vector3;
-  label: string;
-  href: string;
+  route: any; // Route type from game store
   index: number;
   windowWidth: number;
   windowHeight: number;
@@ -529,75 +552,57 @@ function Option({
 }) {
   const optionRef = useRef<THREE.Group>(null!);
   const [hovered, setHovered] = useState(false);
-  const { navigateToRoute } = useAppStore();
+  const { currentRoute } = useAppStore();
+  const { purchaseRoute, canAfford } = useGameStore();
   const navigate = useNavigate();
 
-  // Only enable magnetic attraction when hovered
-  const magneticConfig: MagneticConfig = {
-    strength: hovered ? 0.7 : 0, // No attraction unless hovered
-    radius: 2.5,
-    falloff: 1.0, // Linear falloff for symmetric attraction
-    lerpFactor: 0.5,
-    maxDisplacement: 1.5,
-  };
-
-  const { position, state } = useMagneticAttraction(
-    initialPosition,
-    isClosing ? { ...magneticConfig, strength: 0 } : magneticConfig
-  );
-
-  // Apply magnetic position to the option
-  useFrame(() => {
-    if (optionRef.current && position) {
-      // Ensure position is valid before applying
-      if (
-        isFinite(position.x) &&
-        isFinite(position.y) &&
-        isFinite(position.z)
-      ) {
-        optionRef.current.position.copy(position);
-      }
-    }
-  });
+  // Position is fixed for now (magnet functionality disabled)
+  const position = initialPosition;
+  const state = { attractionStrength: 0, isAttracted: false } as const;
 
   const handleOptionClick = () => {
-    if (href !== "#") {
-      // Use the current magnetic position for camera focus
-      cameraControlsRef.current.setLookAt(
-        0,
-        CAMERA_Y_POSITION,
-        VISIBLE_OPTIONS_CAMERA_ZOOM,
-        position.x,
-        position.y + 2,
-        position.z,
-        true
-      );
+    match({
+      purchased: route.purchased,
+      unlocked: route.unlocked,
+      canAfford: canAfford(route.cost),
+    })
+      .with({ purchased: false, unlocked: true, canAfford: true }, () => {
+        // Route is locked but affordable - purchase it
+        purchaseRoute(route.id);
+        hideOptions();
+      })
+      .with({ purchased: true }, () => {
+        // Route is purchased - navigate to it
+        cameraControlsRef.current.setLookAt(
+          0,
+          CAMERA_Y_POSITION,
+          VISIBLE_OPTIONS_CAMERA_ZOOM,
+          position.x,
+          position.y + 2,
+          position.z,
+          true
+        );
 
-      // Navigate using React Router
-      navigate(href);
-
-      // Update the store
-      navigateToRoute(href);
-
-      hideOptions();
-    }
+        navigate(route.path);
+        hideOptions();
+      })
+      .otherwise(() => {
+        // Route is locked and not affordable - do nothing
+      });
   };
 
   return (
     <group ref={optionRef} position={position}>
       <Html position={[0, 1.5, 0]}>
         <motion.button
-          key={href}
+          key={route.id}
           initial={MOTION_VARIANTS.springScaleReversed.initial}
           animate={
             isClosing
               ? MOTION_VARIANTS.springScaleReversed.exit
               : MOTION_VARIANTS.springScaleReversed.animate({
                   delay: index,
-                  hovered,
-                  attractionStrength: state.attractionStrength,
-                  isAttracted: state.isAttracted,
-                  isDisabled: href === "#",
+                  isDisabled: !route.purchased && !route.unlocked,
                 })
           }
           exit={MOTION_VARIANTS.springScaleReversed.exit}
@@ -624,32 +629,8 @@ function Option({
           onMouseLeave={() => setHovered(false)}
           onClick={handleOptionClick}
         >
-          {label}
+          {route.purchased ? route.name : `${route.name} (${route.cost})`}
         </motion.button>
-
-        {/* Debug info - shows magnetic field status */}
-        {process.env.NODE_ENV === "development" && (
-          <div
-            style={{
-              position: "absolute",
-              top: "-20px",
-              left: "50%",
-              transform: "translateX(-50%)",
-              background: "rgba(0, 0, 0, 0.8)",
-              color: "white",
-              padding: "4px 8px",
-              borderRadius: "4px",
-              fontSize: "10px",
-              whiteSpace: "nowrap",
-              pointerEvents: "none",
-              zIndex: 1000,
-              opacity: state.isAttracted ? 1 : 0.5,
-            }}
-          >
-            {label}: {state.isAttracted ? "ATTRACTED" : "IDLE"}(
-            {state.attractionStrength.toFixed(2)})
-          </div>
-        )}
       </Html>
     </group>
   );

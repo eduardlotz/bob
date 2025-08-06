@@ -18,13 +18,16 @@ import { useKeyPress } from "@/hooks/useKeyPress";
 import { BackgroundPlanet } from "@/3d-objects/BackgroundPlanet";
 import { ParticleEffects } from "@/3d-objects/ParticleEffects";
 import { useGameStore } from "@/store/gameStore";
+import { useAppStore, ROUTE_PATHS } from "@/store";
 import { FISHEYE_CONFIG } from "@/store/upgradesConfig";
+import { AboutScene } from "./AboutScene";
+import { TapCounter } from "./TapCounter";
+import { BottomNavigation } from "./BottomNavigation";
+import { match } from "ts-pattern";
 
 const Scene = ({
   permissionGranted,
   onEmotionUpdate,
-  showOptions,
-  setShowOptions,
 }: {
   permissionGranted: boolean;
   onEmotionUpdate?: (data: {
@@ -32,8 +35,6 @@ const Scene = ({
     tapCount: number;
     getEmotionIcon: any;
   }) => void;
-  showOptions?: boolean;
-  setShowOptions?: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
   const cameraControlsRef = useRef<CameraControls>(null!);
   const [tapCount, setTapCount] = useState(0);
@@ -41,6 +42,7 @@ const Scene = ({
 
   // Get decorations and fisheye intensity from game store
   const { decorations, fisheyeIntensity } = useGameStore();
+  const { currentRoute, showOptions, setShowOptions } = useAppStore();
 
   // Check fisheye intensity decoration
   const fisheyeDecoration = decorations.find(
@@ -94,19 +96,37 @@ const Scene = ({
             <directionalLight intensity={1.2} position={[2, 4, 5]} />
             <Environment preset="city" />
             <BackgroundPlanet />
+
+            {/* Always render HeadNavigation for blob head and navigation */}
             <HeadNavigation
               showOptions={showOptions || false}
               setShowOptions={setShowOptions || (() => {})}
               cameraControlsRef={cameraControlsRef} // pass down for portal click
               permissionGranted={permissionGranted}
               onEmotionUpdate={(data) => {
-                setTapCount(data.tapCount);
-                setEmotionState(data.emotionState);
-                onEmotionUpdate?.(data);
+                // Only update tap count on home route to prevent auto-tap effects
+                if (currentRoute === ROUTE_PATHS.HOME) {
+                  setTapCount(data.tapCount);
+                  setEmotionState(data.emotionState);
+                  onEmotionUpdate?.(data);
+                } else {
+                  // Just pass through emotion data without updating tap count
+                  onEmotionUpdate?.(data);
+                }
               }}
             />
-            {/* 3D Emotion Counter */}
-            <EmotionCounter tapCount={tapCount || 0} />
+
+            {/* Route-specific content using pattern matching */}
+            {match(currentRoute)
+              .with(ROUTE_PATHS.HOME, () => (
+                <EmotionCounter tapCount={tapCount || 0} />
+              ))
+              .with(ROUTE_PATHS.ABOUT, () => <AboutScene />)
+              .otherwise(() => (
+                // Show tap counter for other routes
+                <TapCounter tapCount={tapCount || 0} />
+              ))}
+
             {/* ParticleEffects inside Fisheye but with larger spawn areas */}
             <ParticleEffects />
           </Fisheye>

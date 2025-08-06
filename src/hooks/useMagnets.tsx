@@ -83,11 +83,11 @@ const validateMagneticConfig = (
  * Provides a good balance of responsiveness and smoothness
  */
 const DEFAULT_CONFIG: MagneticConfig = {
-  strength: 0.8,
-  radius: 2.0,
-  falloff: 1.5,
+  strength: 0.6, // Reduced strength for less aggressive attraction
+  radius: 2.5, // Increased radius for earlier attraction
+  falloff: 2.0, // Increased falloff for smoother transition
   lerpFactor: 0.15,
-  maxDisplacement: 1.0,
+  maxDisplacement: 0.8, // Reduced max displacement
 };
 
 /**
@@ -205,9 +205,9 @@ export const useMagneticAttraction = (
 
   const springConfig = useMemo(
     () => ({
-      damping: 100,
-      stiffness: 400,
-      mass: 1,
+      damping: 200, // Increased damping to reduce bouncing
+      stiffness: 300, // Reduced stiffness for smoother movement
+      mass: 0.8, // Reduced mass for more responsive movement
     }),
     []
   );

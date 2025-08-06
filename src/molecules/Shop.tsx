@@ -14,12 +14,19 @@ interface ShopProps {
   onClose: () => void;
 }
 
-type ShopTab = "themes" | "effects" | "environment" | "dev";
+type ShopTab = "themes" | "effects" | "environment" | "routes" | "dev";
 
 export function Shop({ isOpen, onClose }: ShopProps) {
   const [activeTab, setActiveTab] = useState<ShopTab>("themes");
-  const { themes, currentTheme, activateTheme, canAfford, upgrades } =
-    useGameStore();
+  const {
+    themes,
+    currentTheme,
+    activateTheme,
+    canAfford,
+    upgrades,
+    routes,
+    purchaseRoute,
+  } = useGameStore();
   const isDevMode = process.env.NODE_ENV === "development";
 
   const tabs = [
@@ -44,6 +51,12 @@ export function Shop({ isOpen, onClose }: ShopProps) {
       progress:
         upgrades.filter((u) => u.category === "environment" && u.unlocked)
           .length / upgrades.filter((u) => u.category === "environment").length,
+    },
+    {
+      id: "routes" as ShopTab,
+      name: "Pages",
+      icon: () => <span style={{ fontSize: "20px" }}>📄</span>,
+      progress: routes.filter((r) => r.purchased).length / routes.length,
     },
     ...(isDevMode
       ? [
@@ -141,6 +154,17 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                         transition={{ duration: 0.25, ease: "easeOut" }}
                       >
                         <EnvironmentView />
+                      </motion.div>
+                    )}
+                    {activeTab === "routes" && (
+                      <motion.div
+                        key="routes"
+                        animate={{ opacity: 1, filter: "blur(0px)" }}
+                        initial={{ opacity: 0, filter: "blur(8px)" }}
+                        exit={{ opacity: 0, filter: "blur(8px)" }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
+                      >
+                        <RoutesView />
                       </motion.div>
                     )}
                     {activeTab === "dev" && (
@@ -367,6 +391,79 @@ function EnvironmentView() {
         ))}
       </EnvironmentGrid>
     </EnvironmentContainer>
+  );
+}
+
+function RoutesView() {
+  const { routes, purchaseRoute, canAfford } = useGameStore();
+
+  const handleRoutePurchase = (routeId: string) => {
+    const route = routes.find((r) => r.id === routeId);
+    if (route && !route.purchased && canAfford(route.cost)) {
+      purchaseRoute(routeId);
+    }
+  };
+
+  return (
+    <ThemesContainer>
+      <ThemesSection>
+        <SectionTitle>Available Pages</SectionTitle>
+        <ItemsGrid>
+          {routes
+            .filter((route) => route.id !== "route_home") // Don't show home in shop
+            .map((route) => (
+              <ThemeCard
+                key={route.id}
+                $selected={route.purchased}
+                $purchased={route.purchased}
+                $canAfford={canAfford(route.cost)}
+                onClick={() => handleRoutePurchase(route.id)}
+              >
+                <div style={{ fontSize: "32px" }}>{route.icon}</div>
+                <div>
+                  <ThemeName>{route.name}</ThemeName>
+                  <div
+                    style={{
+                      fontSize: "10px",
+                      color: "#666666",
+                      textAlign: "center",
+                    }}
+                  >
+                    {route.description}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "10px",
+                      color: "#FFD700",
+                      textAlign: "center",
+                      marginTop: "4px",
+                    }}
+                  >
+                    Cost: {route.cost} taps
+                  </div>
+                </div>
+                <ThemeStatus $purchased={route.purchased}>
+                  {route.purchased ? (
+                    "Purchased"
+                  ) : route.unlocked ? (
+                    <PurchaseButton
+                      $canAfford={canAfford(route.cost)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRoutePurchase(route.id);
+                      }}
+                    >
+                      Purchase
+                    </PurchaseButton>
+                  ) : (
+                    "Locked"
+                  )}
+                </ThemeStatus>
+              </ThemeCard>
+            ))}
+        </ItemsGrid>
+      </ThemesSection>
+    </ThemesContainer>
   );
 }
 
