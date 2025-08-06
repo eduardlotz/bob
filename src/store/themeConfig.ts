@@ -20,6 +20,7 @@ export interface ThemeColors {
   warning?: string;
 }
 
+//TODO: remove after checking with THEME_CONFIG in store/upgradesConfig.ts
 export const THEME_COLORS: Record<string, ThemeColors> = {
   [THEME_IDS.DEFAULT]: {
     primary: "#4285F4",

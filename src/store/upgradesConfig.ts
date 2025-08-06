@@ -75,7 +75,7 @@ export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
     },
     planetColors: ["#1a1a1a", "#2d2d2d", "#404040"],
     counterColor: "#BB86FC",
-    blobColor: "#919191",
+    blobColor: "#ffffff",
   },
   [THEME_IDS.PASTEL]: {
     id: THEME_IDS.PASTEL,

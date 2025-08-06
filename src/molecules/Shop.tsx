@@ -7,10 +7,9 @@ import { CartIcon } from "@/icons/cart";
 import { ThemeIcon } from "@/icons/theme";
 import { EffectsIcon } from "@/icons/effects";
 import { EnvironmentIcon as EnvironmentIconComponent } from "@/icons/environment";
-import { CloseIcon } from "@/icons/close";
 import { PagesIcon } from "@/icons/pages";
 import { DebuggingIcon } from "@/icons/debugging";
-import { toast } from "sonner";
+import { MOTION_VARIANTS } from "./HeadNavigation";
 
 interface ShopProps {
   isOpen: boolean;
@@ -90,9 +89,9 @@ export function Shop({ isOpen, onClose }: ShopProps) {
             onClick={onClose}
           />
           <ShopContainer
-            initial={{ opacity: 0, scale: 0.9, y: 40, filter: "blur(10px)" }}
-            animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, scale: 0.9, y: 40, filter: "blur(10px)" }}
+            initial={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(10px)" }}
+            animate={{ opacity: 1, scaleX: 1, y: 0, filter: "blur(0px)" }}
+            exit={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(10px)" }}
             transition={{
               duration: 0.2,
               ease: "easeInOut",
@@ -118,9 +117,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                   >
                     <TabContent>
                       <TabIcon>
-                        <tab.icon
-                          color={activeTab === tab.id ? "#FFD700" : "#666666"}
-                        />
+                        <tab.icon />
                       </TabIcon>
                       <TabName>{tab.name}</TabName>
                       <ProgressBar $progress={tab.progress} />
@@ -135,9 +132,10 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                     {activeTab === "themes" && (
                       <motion.div
                         key="themes"
-                        animate={{ opacity: 1 }}
-                        initial={{ opacity: 0 }}
-                        exit={{ opacity: 0 }}
+                        animate="animate"
+                        initial="initial"
+                        exit="exit"
+                        variants={MOTION_VARIANTS.slideUp}
                         transition={{ duration: 0.25, ease: "easeOut" }}
                       >
                         <ThemesView />
@@ -146,9 +144,10 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                     {activeTab === "effects" && (
                       <motion.div
                         key="effects"
-                        animate={{ opacity: 1 }}
-                        initial={{ opacity: 0 }}
-                        exit={{ opacity: 0 }}
+                        animate="animate"
+                        initial="initial"
+                        exit="exit"
+                        variants={MOTION_VARIANTS.slideUp}
                         transition={{ duration: 0.25, ease: "easeOut" }}
                       >
                         <EffectsView />
@@ -157,9 +156,10 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                     {activeTab === "environment" && (
                       <motion.div
                         key="environment"
-                        animate={{ opacity: 1 }}
-                        initial={{ opacity: 0 }}
-                        exit={{ opacity: 0 }}
+                        animate="animate"
+                        initial="initial"
+                        exit="exit"
+                        variants={MOTION_VARIANTS.slideUp}
                         transition={{ duration: 0.25, ease: "easeOut" }}
                       >
                         <EnvironmentView />
@@ -168,9 +168,10 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                     {activeTab === "pages" && (
                       <motion.div
                         key="routes"
-                        animate={{ opacity: 1 }}
-                        initial={{ opacity: 0 }}
-                        exit={{ opacity: 0 }}
+                        animate="animate"
+                        initial="initial"
+                        exit="exit"
+                        variants={MOTION_VARIANTS.slideUp}
                         transition={{ duration: 0.25, ease: "easeOut" }}
                       >
                         <RoutesView />
@@ -179,9 +180,10 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                     {activeTab === "dev" && (
                       <motion.div
                         key="dev"
-                        animate={{ opacity: 1 }}
-                        initial={{ opacity: 0 }}
-                        exit={{ opacity: 0 }}
+                        animate="animate"
+                        initial="initial"
+                        exit="exit"
+                        variants={MOTION_VARIANTS.slideUp}
                         transition={{ duration: 0.25, ease: "easeOut" }}
                       >
                         <DevView />
@@ -543,10 +545,11 @@ const ShopTitle = styled.div`
 
 const TapCountDisplay = styled.div`
   font-size: 14px;
-  color: #ffd700;
+  color: var(--accent-color);
   font-weight: 600;
   margin-left: auto;
   margin-right: 16px;
+  text-align: right;
 `;
 
 const CloseButton = styled.button`
@@ -599,7 +602,7 @@ const TabButton = styled.button<{ $active: boolean }>`
   background: ${(props) =>
     props.$active ? "rgba(255, 215, 0, 0.1)" : "transparent"};
   border: none;
-  color: ${(props) => (props.$active ? "#FFD700" : "#666666")};
+  color: ${(props) => (props.$active ? "var(--accent-color)" : "#666666")};
   cursor: pointer;
   font-size: 14px;
   font-weight: ${(props) => (props.$active ? "600" : "400")};
@@ -610,7 +613,7 @@ const TabButton = styled.button<{ $active: boolean }>`
 
   &:hover {
     background: rgba(255, 255, 255, 0.05);
-    color: ${(props) => (props.$active ? "#FFD700" : "#ffffff")};
+    color: ${(props) => (props.$active ? "var(--accent-color)" : "#ffffff")};
   }
 
   @media (max-width: 768px) {
@@ -649,7 +652,7 @@ const ProgressBar = styled.div<{ $progress: number }>`
     display: block;
     height: 100%;
     width: ${(props) => props.$progress * 100}%;
-    background: #ffd700;
+    background: var(--accent-color);
     transition: width 0.3s ease;
   }
 `;
@@ -658,17 +661,6 @@ const ContentView = styled.div`
   flex: 1;
   padding: 24px;
   overflow-y: auto;
-`;
-
-const ContentHeader = styled.div`
-  margin-bottom: 24px;
-`;
-
-const ContentTitle = styled.h2`
-  font-size: 24px;
-  font-weight: bold;
-  color: #ffffff;
-  margin: 0 0 4px 0;
 `;
 
 const ContentSubtitle = styled.p`
@@ -815,77 +807,6 @@ const SectionTitle = styled.h3`
   margin: 0;
 `;
 
-const ColorCustomizationSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-`;
-
-const ColorControls = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-`;
-
-const ColorTypeSelector = styled.div`
-  display: flex;
-  gap: 8px;
-`;
-
-const ColorTypeButton = styled.button<{ $active: boolean }>`
-  padding: 8px 16px;
-  border-radius: 6px;
-  border: none;
-  background: ${(props) =>
-    props.$active ? "#FFD700" : "rgba(255, 255, 255, 0.1)"};
-  color: ${(props) => (props.$active ? "#000000" : "#ffffff")};
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  transition: all 0.2s;
-
-  &:hover {
-    background: ${(props) =>
-      props.$active ? "#FFD700" : "rgba(255, 255, 255, 0.2)"};
-  }
-`;
-
-const ColorPickerContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-`;
-
-const ColorPreview = styled.div<{ $color: string }>`
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: ${(props) => props.$color};
-  border: 2px solid rgba(255, 255, 255, 0.2);
-`;
-
-const ColorPickerButton = styled.button`
-  padding: 8px 16px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  cursor: pointer;
-  font-size: 12px;
-  transition: all 0.2s;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.2);
-  }
-`;
-
-const ColorPickerWrapper = styled(motion.div)`
-  display: flex;
-  justify-content: center;
-  padding: 16px 0;
-  overflow: hidden;
-`;
-
 // Effects and Environment styled components
 const EffectsContainer = styled.div`
   display: flex;
@@ -912,7 +833,8 @@ const EffectCard = styled.div<{
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s;
-  border: 2px solid ${(props) => (props.$selected ? "#FFD700" : "transparent")};
+  border: 2px solid
+    ${(props) => (props.$selected ? "var(--accent-color)" : "transparent")};
   background: ${(props) =>
     props.$selected
       ? "rgba(255, 215, 0, 0.2)"
@@ -976,8 +898,8 @@ const DevContainer = styled.div`
 
 const DevGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 12px;
+  grid-template-columns: repeat(auto-fill, 1fr);
 `;
 
 const Divider = styled.div`

@@ -172,9 +172,9 @@ export function BottomNavigation() {
       <AnimatePresence>
         {isUpgradesOpen && (
           <UpgradesPanel
-            initial={{ opacity: 0, scale: 0.9, y: 40, filter: "blur(10px)" }}
-            animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, scale: 0.9, y: 40, filter: "blur(10px)" }}
+            initial={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(10px)" }}
+            animate={{ opacity: 1, scaleX: 1, y: 0, filter: "blur(0px)" }}
+            exit={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(10px)" }}
             transition={{
               duration: 0.2,
               ease: "easeInOut",
@@ -238,11 +238,11 @@ const NavigationContainer = styled.div`
 `;
 
 const NavButton = styled(motion.button)<{ $isActive?: boolean }>`
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(14px);
+  height: 58px;
+  padding: 20px;
+  border-radius: 24px;
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(16px);
   border: ${(props) =>
     props.$isActive
       ? "2px solid #ffffff"

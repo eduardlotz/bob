@@ -2,12 +2,11 @@ import { Canvas } from "@react-three/fiber";
 import {
   CameraControls,
   Fisheye,
-  Html,
   Environment,
   PerspectiveCamera,
   Grid,
 } from "@react-three/drei";
-import { Suspense, useRef, useState, useEffect, useMemo } from "react";
+import { Suspense, useRef, useState, useEffect } from "react";
 import { useAppStore } from "../store";
 import { ROUTE_PATHS } from "../store/routeConfig";
 import { HeadNavigation } from "./HeadNavigation";
@@ -15,13 +14,12 @@ import { TapCounter } from "./TapCounter";
 import { AboutScene } from "./AboutScene";
 import { PortfolioScene } from "./PortfolioScene";
 import { BackgroundPlanet } from "../3d-objects/BackgroundPlanet";
-import { ParticleEffects, StarEffect } from "../3d-objects/ParticleEffects";
+import { ParticleEffects } from "../3d-objects/ParticleEffects";
 import { match } from "ts-pattern";
 import { startAutoTap } from "../store/gameStore";
 import { useKeyPress } from "../hooks/useKeyPress";
 import { FISHEYE_CONFIG } from "../store/upgradesConfig";
 import { a, useSpring } from "@react-spring/three";
-import { spring } from "motion";
 
 const Scene = ({
   permissionGranted,
@@ -59,10 +57,12 @@ const Scene = ({
       setVisible(true);
       api.start({
         scale: 1,
+        config: { mass: 0.5, tension: 300, friction: 10 },
       });
     } else {
       api.start({
         scale: 0.0,
+        config: { tension: 100, friction: 10 },
         onRest: () => setVisible(false),
       });
     }
