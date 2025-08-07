@@ -14,7 +14,8 @@ export enum GAME_STORE_VERSIONS {
   V4 = 4,
   V5 = 5,
   V6 = 6,
-  LATEST = 6,
+  V7 = 7,
+  LATEST = 7,
 }
 
 // Constants
@@ -25,8 +26,13 @@ const PARTICLE_STAGGER_MS = 100;
 
 // Migration functions
 function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
+  console.log(
+    `Migration triggered: oldState version=${oldState.version}, migration version=${version}`
+  );
   let migratedState = { ...oldState };
-  let currentVersion = version;
+
+  // Handle case where version field is missing (old saves)
+  let currentVersion = oldState.version || 1;
 
   // Helper function to safely check and transform arrays
   const safeArrayTransform = <T>(
@@ -160,6 +166,54 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
     currentVersion = GAME_STORE_VERSIONS.V6;
   }
 
+  // Migration V6 → V7: Add outlineColor and eyeColor to themes
+  if (currentVersion < GAME_STORE_VERSIONS.V7) {
+    console.log(
+      `Migrating from V${currentVersion} to V7: Adding outlineColor and eyeColor to themes`
+    );
+
+    migratedState.themes = safeArrayTransform(
+      migratedState.themes,
+      (theme: any) => {
+        if (!theme || typeof theme !== "object") return theme;
+
+        // Check if theme already has the new properties (skip if already migrated)
+        if (theme.outlineColor && theme.eyeColor) {
+          console.log(
+            `Theme ${theme.id} already has outlineColor and eyeColor, skipping`
+          );
+          return theme;
+        }
+
+        // Get the corresponding theme config to get the new colors
+        const themeConfig = Object.values(THEME_CONFIG).find(
+          (config) => config.id === theme.id
+        );
+
+        if (themeConfig) {
+          console.log(
+            `Migrating theme ${theme.id}: adding outlineColor=${themeConfig.outlineColor}, eyeColor=${themeConfig.eyeColor}`
+          );
+          return {
+            ...theme,
+            outlineColor: themeConfig.outlineColor,
+            eyeColor: themeConfig.eyeColor,
+          };
+        }
+
+        // Fallback colors if theme config not found
+        console.log(`Migrating theme ${theme.id}: using fallback colors`);
+        return {
+          ...theme,
+          outlineColor: "#000000",
+          eyeColor: "#000000",
+        };
+      }
+    );
+
+    currentVersion = GAME_STORE_VERSIONS.V7;
+  }
+
   // Set the final version to the latest
   migratedState.version = GAME_STORE_VERSIONS.LATEST;
 
@@ -231,6 +285,8 @@ export interface Theme {
   planetColors: string[];
   counterColor: string;
   blobColor: string;
+  outlineColor: string;
+  eyeColor: string;
 }
 
 // Route types
@@ -249,6 +305,9 @@ export interface Route {
 
 // Game state interface
 interface GameStore {
+  // Store version for migrations
+  version: number;
+
   // Core game state
   taps: number;
   manualTaps: number;
@@ -502,6 +561,8 @@ const initialThemes: Theme[] = Object.values(THEME_CONFIG).map(
     planetColors: themeConfig.planetColors,
     counterColor: themeConfig.counterColor,
     blobColor: themeConfig.blobColor,
+    outlineColor: themeConfig.outlineColor,
+    eyeColor: themeConfig.eyeColor,
   })
 );
 
@@ -585,6 +646,7 @@ export const useGameStore = create<GameStore>()(
     persist(
       (set, get) => ({
         // Initial state
+        version: GAME_STORE_VERSIONS.LATEST,
         taps: 0,
         manualTaps: 0,
         manualTapsPerSecond: 0,
@@ -1199,6 +1261,7 @@ export const useGameStore = create<GameStore>()(
           return migrateStore(persistedState, version);
         },
         partialize: (state) => ({
+          version: state.version,
           taps: state.taps,
           upgrades: state.upgrades,
           decorations: state.decorations,
@@ -1275,6 +1338,7 @@ export const stopAutoTap = () => {
 export const triggerStoreMigration = () => {
   const store = useGameStore.getState();
   const currentState = {
+    version: store.version || 1,
     taps: store.taps,
     upgrades: store.upgrades,
     decorations: store.decorations,
@@ -1285,6 +1349,31 @@ export const triggerStoreMigration = () => {
 
   const migratedState = migrateStore(currentState, 1);
   toast.success(`Store migrated to VERSION_${GAME_STORE_VERSIONS.LATEST}`);
+
+  // Update the store with migrated data
+  useGameStore.setState({
+    ...store,
+    ...migratedState,
+  });
+};
+
+// Utility function to force V7 migration specifically
+export const forceV7Migration = () => {
+  const store = useGameStore.getState();
+
+  // Force migration from V6 to V7
+  const currentState = {
+    version: 6, // Force V6 to trigger V7 migration
+    taps: store.taps,
+    upgrades: store.upgrades,
+    decorations: store.decorations,
+    themes: store.themes,
+    currentTheme: store.currentTheme,
+    fisheyeIntensity: store.fisheyeIntensity,
+  };
+
+  const migratedState = migrateStore(currentState, 6);
+  toast.success("Forced V7 migration completed");
 
   // Update the store with migrated data
   useGameStore.setState({

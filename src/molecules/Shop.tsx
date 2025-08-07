@@ -89,9 +89,9 @@ export function Shop({ isOpen, onClose }: ShopProps) {
             onClick={onClose}
           />
           <ShopContainer
-            initial={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(10px)" }}
-            animate={{ opacity: 1, scaleX: 1, y: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(10px)" }}
+            initial={{ opacity: 0, scaleX: 0.9 }}
+            animate={{ opacity: 1, scaleX: 1 }}
+            exit={{ opacity: 0, scaleX: 0.9 }}
             transition={{
               duration: 0.2,
               ease: "easeInOut",
@@ -600,7 +600,7 @@ const TabButton = styled.button<{ $active: boolean }>`
   align-items: center;
   padding: 12px 20px;
   background: ${(props) =>
-    props.$active ? "rgba(255, 215, 0, 0.1)" : "transparent"};
+    props.$active ? "rgba(255, 255, 255, 0.1)" : "transparent"};
   border: none;
   color: ${(props) => (props.$active ? "var(--accent-color)" : "#666666")};
   cursor: pointer;

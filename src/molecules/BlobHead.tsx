@@ -184,8 +184,10 @@ export function BlobHead({
 }) {
   const { currentTheme } = useGameStore();
 
-  // Get route-specific blob color
+  // Get theme-specific blob colors
   const blobColor = currentTheme?.blobColor;
+  const outlineColor = currentTheme?.outlineColor;
+  const eyeColor = currentTheme?.eyeColor;
   const headRef = useRef<Group>(null!);
   const leftEyeRef = useRef<Mesh>(null!);
   const rightEyeRef = useRef<Mesh>(null!);
@@ -883,18 +885,18 @@ export function BlobHead({
         <mesh castShadow>
           <sphereGeometry args={[1, 64, 64]} />
           <meshToonMaterial color={blobColor} />
-          <Outlines thickness={0.005} color="black" screenspace />
+          <Outlines thickness={0.005} color={outlineColor} screenspace />
         </mesh>
 
         {/* Eyes */}
         <group position={[0, 0.2, 0.85]}>
           <mesh ref={leftEyeRef} position={[-0.45, 0, 0]}>
             <sphereGeometry args={[0.1, 16, 16]} />
-            <meshToonMaterial color="#000000" />
+            <meshToonMaterial color={eyeColor} />
           </mesh>
           <mesh ref={rightEyeRef} position={[0.45, 0, 0]}>
             <sphereGeometry args={[0.1, 16, 16]} />
-            <meshToonMaterial color="#000000" />
+            <meshToonMaterial color={eyeColor} />
           </mesh>
         </group>
 
