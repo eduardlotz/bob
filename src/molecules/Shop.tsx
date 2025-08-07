@@ -9,7 +9,6 @@ import { EffectsIcon } from "@/icons/effects";
 import { EnvironmentIcon as EnvironmentIconComponent } from "@/icons/environment";
 import { PagesIcon } from "@/icons/pages";
 import { DebuggingIcon } from "@/icons/debugging";
-import { MOTION_VARIANTS } from "./HeadNavigation";
 
 interface ShopProps {
   isOpen: boolean;
@@ -87,11 +86,13 @@ export function Shop({ isOpen, onClose }: ShopProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
+            key="shop-backdrop"
           />
           <ShopContainer
-            initial={{ opacity: 0, scaleX: 0.9 }}
-            animate={{ opacity: 1, scaleX: 1 }}
-            exit={{ opacity: 0, scaleX: 0.9 }}
+            key="shop-container"
+            initial={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(10px)" }}
+            animate={{ opacity: 1, scaleX: 1, y: 0, filter: "blur(0px)" }}
+            exit={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(10px)" }}
             transition={{
               duration: 0.2,
               ease: "easeInOut",
@@ -132,11 +133,10 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                     {activeTab === "themes" && (
                       <motion.div
                         key="themes"
-                        animate="animate"
-                        initial="initial"
-                        exit="exit"
-                        variants={MOTION_VARIANTS.slideUp}
-                        transition={{ duration: 0.25, ease: "easeOut" }}
+                        animate={{ opacity: 1 }}
+                        initial={{ opacity: 0 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15, ease: "easeOut" }}
                       >
                         <ThemesView />
                       </motion.div>
@@ -144,11 +144,10 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                     {activeTab === "effects" && (
                       <motion.div
                         key="effects"
-                        animate="animate"
-                        initial="initial"
-                        exit="exit"
-                        variants={MOTION_VARIANTS.slideUp}
-                        transition={{ duration: 0.25, ease: "easeOut" }}
+                        animate={{ opacity: 1 }}
+                        initial={{ opacity: 0 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15, ease: "easeOut" }}
                       >
                         <EffectsView />
                       </motion.div>
@@ -156,11 +155,10 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                     {activeTab === "environment" && (
                       <motion.div
                         key="environment"
-                        animate="animate"
-                        initial="initial"
-                        exit="exit"
-                        variants={MOTION_VARIANTS.slideUp}
-                        transition={{ duration: 0.25, ease: "easeOut" }}
+                        animate={{ opacity: 1 }}
+                        initial={{ opacity: 0 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15, ease: "easeOut" }}
                       >
                         <EnvironmentView />
                       </motion.div>
@@ -168,11 +166,10 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                     {activeTab === "pages" && (
                       <motion.div
                         key="routes"
-                        animate="animate"
-                        initial="initial"
-                        exit="exit"
-                        variants={MOTION_VARIANTS.slideUp}
-                        transition={{ duration: 0.25, ease: "easeOut" }}
+                        animate={{ opacity: 1 }}
+                        initial={{ opacity: 0 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15, ease: "easeOut" }}
                       >
                         <RoutesView />
                       </motion.div>
@@ -180,11 +177,10 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                     {activeTab === "dev" && (
                       <motion.div
                         key="dev"
-                        animate="animate"
-                        initial="initial"
-                        exit="exit"
-                        variants={MOTION_VARIANTS.slideUp}
-                        transition={{ duration: 0.25, ease: "easeOut" }}
+                        animate={{ opacity: 1 }}
+                        initial={{ opacity: 0 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15, ease: "easeOut" }}
                       >
                         <DevView />
                       </motion.div>

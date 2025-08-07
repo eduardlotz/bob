@@ -374,6 +374,11 @@ interface GameStore {
   getTotalTapsPerSecond: () => number;
   getTotalTapMultiplier: () => number;
   getAutoTapRate: () => number;
+  // Non-caching versions for use during render
+  getAutoTapRateUncached: () => number;
+  getTotalTapMultiplierUncached: () => number;
+  // Cache management
+  updateComputedValueCache: () => void;
   canAfford: (cost: number) => boolean;
   calculateOfflineTaps: () => number;
   checkUnlockedRoutes: (routePath: string) => boolean;
@@ -847,6 +852,11 @@ export const useGameStore = create<GameStore>()(
               _lastUpgradeHash: undefined,
             };
           });
+
+          // Update cache after state change
+          setTimeout(() => {
+            get().updateComputedValueCache();
+          }, 0);
         },
 
         purchaseDecoration: (decorationId: string) => {
@@ -1173,7 +1183,7 @@ export const useGameStore = create<GameStore>()(
               return total + upgrade.effect.value * upgrade.level;
             }, 0);
 
-          // Cache the result
+          // Cache the result - this is safe because we're not in a React render cycle
           set((s) => ({
             ...s,
             _cachedTapsPerSecond: result,
@@ -1200,6 +1210,7 @@ export const useGameStore = create<GameStore>()(
 
           if (multiplierUpgrades.length === 0) {
             const result = 1;
+            // Cache the result - this is safe because we're not in a React render cycle
             set((s) => ({
               ...s,
               _cachedTapMultiplier: result,
@@ -1215,7 +1226,7 @@ export const useGameStore = create<GameStore>()(
             return total * Math.pow(upgrade.effect.value, upgrade.level);
           }, 1);
 
-          // Cache the result
+          // Cache the result - this is safe because we're not in a React render cycle
           set((s) => ({
             ...s,
             _cachedTapMultiplier: result,
@@ -1232,6 +1243,61 @@ export const useGameStore = create<GameStore>()(
             .reduce((total, upgrade) => {
               return total + upgrade.effect.value * upgrade.level;
             }, 0);
+        },
+
+        // Non-caching versions for use during render
+        getAutoTapRateUncached: () => {
+          const state = get();
+          return state.upgrades
+            .filter((u) => u.effect.type === "autoTap")
+            .reduce((total, upgrade) => {
+              return total + upgrade.effect.value * upgrade.level;
+            }, 0);
+        },
+
+        getTotalTapMultiplierUncached: () => {
+          const state = get();
+          const multiplierUpgrades = state.upgrades.filter(
+            (u) => u.effect.type === "tapMultiplier"
+          );
+
+          if (multiplierUpgrades.length === 0) {
+            return 1;
+          }
+
+          return multiplierUpgrades.reduce((total, upgrade) => {
+            return total * Math.pow(upgrade.effect.value, upgrade.level);
+          }, 1);
+        },
+
+        // Update cache when upgrades change (called from actions, not during render)
+        updateComputedValueCache: () => {
+          const state = get();
+          const upgradeHash = generateUpgradeHash(state.upgrades);
+
+          // Only update if hash changed
+          if (state._lastUpgradeHash === upgradeHash) {
+            return;
+          }
+
+          const tapsPerSecond = state.upgrades
+            .filter((u) => u.effect.type === "autoTap")
+            .reduce((total, upgrade) => {
+              return total + upgrade.effect.value * upgrade.level;
+            }, 0);
+
+          const tapMultiplier = state.upgrades
+            .filter((u) => u.effect.type === "tapMultiplier")
+            .reduce((total, upgrade) => {
+              return total * Math.pow(upgrade.effect.value, upgrade.level);
+            }, 1);
+
+          set((s) => ({
+            ...s,
+            _cachedTapsPerSecond: tapsPerSecond,
+            _cachedTapMultiplier: tapMultiplier,
+            _lastUpgradeHash: upgradeHash,
+          }));
         },
 
         calculateOfflineTaps: () => {

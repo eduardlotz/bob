@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import styled from "styled-components";
 import { motion } from "motion/react";
 import { useGameStore } from "@/store/gameStore";
@@ -162,8 +162,8 @@ function GameStats() {
     upgrades,
     decorations,
     themes,
-    getAutoTapRate,
-    getTotalTapMultiplier,
+    getAutoTapRateUncached,
+    getTotalTapMultiplierUncached,
   } = useGameStore();
 
   const totalUpgrades = upgrades.length;
@@ -173,12 +173,17 @@ function GameStats() {
   const totalThemes = themes.length;
   const purchasedThemes = themes.filter((t) => t.purchased).length;
 
-  // Get computed values
-  const autoTapRate = getAutoTapRate();
-  const tapMultiplier = getTotalTapMultiplier();
-
-  // Calculate total taps per second (auto + manual)
-  const totalTapsPerSecond = autoTapRate + manualTapsPerSecond;
+  // Memoize computed values to avoid calling setState during render
+  const { autoTapRate, tapMultiplier, totalTapsPerSecond } = useMemo(() => {
+    const autoTapRate = getAutoTapRateUncached();
+    const tapMultiplier = getTotalTapMultiplierUncached();
+    const totalTapsPerSecond = autoTapRate + manualTapsPerSecond;
+    return { autoTapRate, tapMultiplier, totalTapsPerSecond };
+  }, [
+    getAutoTapRateUncached,
+    getTotalTapMultiplierUncached,
+    manualTapsPerSecond,
+  ]);
 
   return (
     <StatsGrid>
