@@ -6,7 +6,6 @@ import { Statistics } from "@/molecules/Statistics";
 
 import { requestMotionPermission } from "@/utils/permission";
 import { useGameStore, startAutoTap, stopAutoTap } from "@/store/gameStore";
-import { useAppStore } from "@/store";
 
 import { useAnimations } from "@/hooks/useAnimations";
 import { useSwipeDismiss } from "@/hooks/useSwipeDismiss";
@@ -21,7 +20,6 @@ interface UILayerProps {
 
 export function UILayer({ setPermissionGranted }: UILayerProps) {
   const { statisticsVisible, isPaused } = useGameStore();
-  const { showOptions, toggleOptions } = useAppStore();
   const [permissionDismissed, setPermissionDismissed] = useState(false);
   const { motionStyles, dragConstraints, dragEndHandler, drag } =
     useSwipeDismiss({
@@ -66,6 +64,8 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
     <UILayerContainer>
       <BottomNavigation />
       <Statistics visible={statisticsVisible} />
+      {/* <StorageDebugger />
+      <MigrationDebugger /> */}
 
       {/* TODO: Add sensor button with dismiss */}
       {/* <AnimatePresence>

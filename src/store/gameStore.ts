@@ -16,7 +16,9 @@ export enum GAME_STORE_VERSIONS {
   V5 = 5,
   V6 = 6,
   V7 = 7,
-  LATEST = 7,
+  V8 = 8,
+  V9 = 9,
+  LATEST = 9,
 }
 
 // Constants
@@ -215,6 +217,53 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
     currentVersion = GAME_STORE_VERSIONS.V7;
   }
 
+  // Migration V7 → V8: Replace all themes with current configuration
+  if (currentVersion < GAME_STORE_VERSIONS.V8) {
+    console.log(
+      `Migrating from V${currentVersion} to V8: Replacing all themes with current configuration`
+    );
+
+    // Get the current active theme ID to preserve it
+    const currentThemeId = migratedState.currentTheme?.id || THEME_IDS.DEFAULT;
+
+    // Replace all themes with the current configuration from THEME_CONFIG
+    migratedState.themes = Object.values(THEME_CONFIG).map((themeConfig) => ({
+      ...themeConfig,
+      purchased:
+        migratedState.themes?.find((t: any) => t.id === themeConfig.id)
+          ?.purchased || false,
+      active: themeConfig.id === currentThemeId,
+    }));
+
+    // Update current theme reference
+    migratedState.currentTheme =
+      migratedState.themes.find((t: any) => t.id === currentThemeId) ||
+      migratedState.themes[0];
+
+    console.log(
+      `V8 Migration: Replaced ${migratedState.themes.length} themes with current configuration`
+    );
+    console.log(`V8 Migration: Preserved active theme: ${currentThemeId}`);
+
+    currentVersion = GAME_STORE_VERSIONS.V8;
+  }
+
+  // Migration V8 → V9: Add lastSchemaUpdate property for manual migration triggers
+  if (currentVersion < GAME_STORE_VERSIONS.V9) {
+    console.log(
+      `Migrating from V${currentVersion} to V9: Adding lastSchemaUpdate property`
+    );
+
+    // Set the lastSchemaUpdate to the current date
+    migratedState.lastSchemaUpdate = new Date();
+
+    console.log(
+      `V9 Migration: Set lastSchemaUpdate to ${migratedState.lastSchemaUpdate}`
+    );
+
+    currentVersion = GAME_STORE_VERSIONS.V9;
+  }
+
   // Set the final version to the latest
   migratedState.version = GAME_STORE_VERSIONS.LATEST;
 
@@ -308,6 +357,7 @@ export interface Route {
 interface GameStore {
   // Store version for migrations
   version: number;
+  lastSchemaUpdate: Date; // Timestamp for manual migration triggers
 
   // Core game state
   taps: number;
@@ -653,6 +703,7 @@ export const useGameStore = create<GameStore>()(
       (set, get) => ({
         // Initial state
         version: GAME_STORE_VERSIONS.LATEST,
+        lastSchemaUpdate: new Date(),
         taps: 0,
         manualTaps: 0,
         manualTapsPerSecond: 0,
@@ -1329,6 +1380,7 @@ export const useGameStore = create<GameStore>()(
         },
         partialize: (state) => ({
           version: state.version,
+          lastSchemaUpdate: state.lastSchemaUpdate,
           taps: state.taps,
           upgrades: state.upgrades,
           decorations: state.decorations,
@@ -1340,8 +1392,35 @@ export const useGameStore = create<GameStore>()(
         }),
         onRehydrateStorage: (state) => {
           console.log("Game store rehydrated:", state);
-          // Check for migration after store is loaded
+
+          // Check for storage migration (localStorage → IndexedDB)
           checkAndMigrate().catch(console.error);
+
+          // Check if store version migration is needed
+          if (
+            state &&
+            state.version &&
+            (state.version < GAME_STORE_VERSIONS.LATEST ||
+              state.lastSchemaUpdate < new Date("08/07/2025"))
+          ) {
+            console.log(
+              `Store version ${state.version} detected, triggering migration to ${GAME_STORE_VERSIONS.LATEST}`
+            );
+            const migratedState = migrateStore(
+              state,
+              GAME_STORE_VERSIONS.LATEST
+            );
+
+            // Update the store with migrated data
+            useGameStore.setState({
+              ...state,
+              ...migratedState,
+            });
+
+            toast.success(
+              `Store migrated from V${state.version} to V${GAME_STORE_VERSIONS.LATEST}`
+            );
+          }
         },
       }
     ),
@@ -1419,7 +1498,7 @@ export const triggerStoreMigration = () => {
     fisheyeIntensity: store.fisheyeIntensity,
   };
 
-  const migratedState = migrateStore(currentState, 1);
+  const migratedState = migrateStore(currentState, GAME_STORE_VERSIONS.V9);
   toast.success(`Store migrated to VERSION_${GAME_STORE_VERSIONS.LATEST}`);
 
   // Update the store with migrated data
@@ -1429,13 +1508,13 @@ export const triggerStoreMigration = () => {
   });
 };
 
-// Utility function to force V7 migration specifically
-export const forceV7Migration = () => {
+// Utility function to force V9 migration specifically
+export const forceV9Migration = () => {
   const store = useGameStore.getState();
 
-  // Force migration from V6 to V7
+  // Force migration from V8 to V9
   const currentState = {
-    version: 6, // Force V6 to trigger V7 migration
+    version: 8, // Force V8 to trigger V9 migration
     taps: store.taps,
     upgrades: store.upgrades,
     decorations: store.decorations,
