@@ -468,7 +468,7 @@ function OptionsGroup({
 
     // Define safe margins (as percentage of world dimensions)
     const marginPercent = 0.1; // 10% margin from edges
-    const bottomNavPercent = 0.15; // 15% reserved for bottom navigation
+    const bottomNavPercent = 0.25; // Increased from 15% to 25% to account for navigation + potential panels
 
     const safeWidth = worldWidth * (1 - 2 * marginPercent);
     const safeHeight = worldHeight * (1 - marginPercent - bottomNavPercent);
@@ -493,13 +493,20 @@ function OptionsGroup({
       let x = Math.cos(adjustedAngle) * xRadius;
       let y = Math.sin(adjustedAngle) * yRadius;
 
-      // Apply strict boundary clamping
+      // Apply strict boundary clamping with additional safety margins
       const halfSafeWidth = safeWidth / 2;
       const halfSafeHeight = safeHeight / 2;
       const bottomOffset = worldHeight * bottomNavPercent;
 
+      // Add extra safety margin for bottom area to account for navigation buttons and potential panels
+      const extraBottomMargin = worldHeight * 0;
+      const effectiveBottomOffset = bottomOffset + extraBottomMargin;
+
       x = Math.max(-halfSafeWidth, Math.min(halfSafeWidth, x));
-      y = Math.max(-halfSafeHeight + bottomOffset, Math.min(halfSafeHeight, y));
+      y = Math.max(
+        -halfSafeHeight + effectiveBottomOffset,
+        Math.min(halfSafeHeight, y)
+      );
 
       // Offset by screen center
       return new THREE.Vector3(x, y, 0).add(screenCenter);

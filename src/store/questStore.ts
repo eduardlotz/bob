@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { checkAndMigrate } from "./migration";
 
 export interface Quest {
   id: string;
@@ -293,6 +294,11 @@ export const useQuestStore = create<QuestStore>()(
         quests: state.quests,
         activeQuests: state.activeQuests,
       }),
+      onRehydrateStorage: (state) => {
+        console.log("Quest store rehydrated:", state);
+        // Check for migration after store is loaded
+        checkAndMigrate().catch(console.error);
+      },
     }
   )
 );

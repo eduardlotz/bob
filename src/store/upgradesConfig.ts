@@ -57,6 +57,8 @@ export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
     planetColors: ["#ffffff", "#C5BDD5", "#85799F"],
     counterColor: "#ffffff",
     blobColor: "#ffffff",
+    outlineColor: "#000000",
+    eyeColor: "#000000",
   },
   [THEME_IDS.DARK]: {
     id: THEME_IDS.DARK,
@@ -75,7 +77,9 @@ export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
     },
     planetColors: ["#1a1a1a", "#2d2d2d", "#404040"],
     counterColor: "#BB86FC",
-    blobColor: "#ffffff",
+    blobColor: "#000000",
+    outlineColor: "#ffffff",
+    eyeColor: "#ffffff",
   },
   [THEME_IDS.PASTEL]: {
     id: THEME_IDS.PASTEL,
@@ -94,7 +98,9 @@ export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
     },
     planetColors: ["#FFE5E5", "#E5FFE5", "#E5F0FF"],
     counterColor: "#FFB3BA",
-    blobColor: "#ffffff",
+    blobColor: "#FFB3BA",
+    outlineColor: "#000000",
+    eyeColor: "#000000",
   },
   [THEME_IDS.NEON]: {
     id: THEME_IDS.NEON,
@@ -103,17 +109,19 @@ export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
     cost: 0,
     purchased: false,
     active: false,
-    icon: "🌈",
+    icon: "💡",
     colors: {
       primary: "#FFFF00",
-      secondary: "#00FFFF",
-      accent: "#FFFF00",
+      secondary: "#FF3FF9",
+      accent: "#FF3FF9",
       background: "#FFFF00",
       text: "#000000",
     },
-    planetColors: ["#1a1a1a", "#2a2a2a", "#3a3a3a"], // Dark planet
+    planetColors: ["#3F3F3F", "#000000", "#2a2a2a"], // Dark planet
     counterColor: "#FFFF00",
-    blobColor: "#00ff88",
+    blobColor: "#FFFF00",
+    outlineColor: "#000000",
+    eyeColor: "#000000",
   },
   [THEME_IDS.CUSTOM]: {
     id: THEME_IDS.CUSTOM,
@@ -133,6 +141,8 @@ export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
     planetColors: ["#ffffff", "#C5BDD5", "#85799F"],
     counterColor: "#2979FF",
     blobColor: "#ffffff",
+    outlineColor: "#000000",
+    eyeColor: "#000000",
   },
 } as const;
 

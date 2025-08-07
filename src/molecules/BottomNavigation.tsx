@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
 import { useGameStore } from "@/store/gameStore";
@@ -18,16 +18,25 @@ export function BottomNavigation() {
     upgrades,
     purchaseUpgrade,
     canAfford,
-    getAutoTapRate,
+    getAutoTapRateUncached,
     manualTapsPerSecond,
+    getTotalTapMultiplierUncached,
   } = useGameStore();
   const { currentRoute, showOptions, setShowOptions } = useAppStore();
 
   // Only show upgrade/shop buttons on home route
   const isHomeRoute = currentRoute === ROUTE_PATHS.HOME;
-  const autoTapRate = getAutoTapRate();
 
-  const totalTapsPerSecond = autoTapRate + manualTapsPerSecond;
+  // Memoize the calculations to avoid calling setState during render
+  const totalTapsPerSecond = useMemo(() => {
+    const autoTapRate =
+      getAutoTapRateUncached() * getTotalTapMultiplierUncached();
+    return autoTapRate + manualTapsPerSecond;
+  }, [
+    getAutoTapRateUncached,
+    getTotalTapMultiplierUncached,
+    manualTapsPerSecond,
+  ]);
   const tapUpgrades = upgrades.filter((u) => u.category === "upgrades");
   const hasAnyUpgrade = tapUpgrades.some((u) => u.unlocked);
 
@@ -172,6 +181,7 @@ export function BottomNavigation() {
       <AnimatePresence>
         {isUpgradesOpen && (
           <UpgradesPanel
+            key="upgrades-panel"
             initial={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(10px)" }}
             animate={{ opacity: 1, scaleX: 1, y: 0, filter: "blur(0px)" }}
             exit={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(10px)" }}

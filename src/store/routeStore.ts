@@ -4,6 +4,7 @@ import { ROUTE_IDS } from "./routeConfig";
 import { THEME_CONFIG } from "./upgradesConfig";
 import { Theme } from "./gameStore";
 import { THEME_IDS } from "./themeConfig";
+import { checkAndMigrate } from "./migration";
 
 export interface RouteConfig {
   id: string;
@@ -91,6 +92,11 @@ export const useRouteStore = create<RouteStore>()(
       partialize: (state) => ({
         routeConfigs: state.routeConfigs,
       }),
+      onRehydrateStorage: (state) => {
+        console.log("Route store rehydrated:", state);
+        // Check for migration after store is loaded
+        checkAndMigrate().catch(console.error);
+      },
     }
   )
 );
