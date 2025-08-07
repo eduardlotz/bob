@@ -6,6 +6,7 @@ import { match } from "ts-pattern";
 import { ROUTE_PATHS, ROUTE_IDS, ROUTE_CONFIG } from "./routeConfig";
 import { toast } from "sonner";
 import { THEME_IDS } from "./themeConfig";
+import { checkAndMigrate } from "./migration";
 
 export enum GAME_STORE_VERSIONS {
   V1 = 1,
@@ -672,7 +673,7 @@ export const useGameStore = create<GameStore>()(
         statisticsVisible: false,
 
         // Actions
-        addTaps: (amount) => {
+        addTaps: (amount: number) => {
           set((state) => ({
             taps: state.taps + amount,
             manualTaps: state.manualTaps + amount,
@@ -782,7 +783,7 @@ export const useGameStore = create<GameStore>()(
           });
         },
 
-        purchaseUpgrade: (upgradeId) => {
+        purchaseUpgrade: (upgradeId: string) => {
           set((state) => {
             const upgrade = state.upgrades.find((u) => u.id === upgradeId);
             if (
@@ -848,7 +849,7 @@ export const useGameStore = create<GameStore>()(
           });
         },
 
-        purchaseDecoration: (decorationId) => {
+        purchaseDecoration: (decorationId: string) => {
           set((state) => {
             const decoration = state.decorations.find(
               (d) => d.id === decorationId
@@ -875,7 +876,7 @@ export const useGameStore = create<GameStore>()(
           });
         },
 
-        purchaseTheme: (themeId) => {
+        purchaseTheme: (themeId: string) => {
           set((state) => {
             const theme = state.themes.find((t) => t.id === themeId);
             if (!theme || theme.purchased || !state.canAfford(theme.cost)) {
@@ -894,7 +895,7 @@ export const useGameStore = create<GameStore>()(
           });
         },
 
-        purchaseRoute: (routeId, force = false) => {
+        purchaseRoute: (routeId: string, force = false) => {
           set((state) => {
             const route = state.routes.find((r) => r.id === routeId);
 
@@ -942,7 +943,7 @@ export const useGameStore = create<GameStore>()(
           );
         },
 
-        activateTheme: (themeId) => {
+        activateTheme: (themeId: string) => {
           set((state) => {
             const theme = state.themes.find((t) => t.id === themeId);
             if (!theme || !theme.purchased) {
@@ -962,7 +963,7 @@ export const useGameStore = create<GameStore>()(
           });
         },
 
-        toggleDecoration: (decorationId) => {
+        toggleDecoration: (decorationId: string) => {
           set((state) => {
             const decoration = state.decorations.find(
               (d) => d.id === decorationId
@@ -982,7 +983,7 @@ export const useGameStore = create<GameStore>()(
           });
         },
 
-        selectTapEffect: (upgradeId) => {
+        selectTapEffect: (upgradeId: string) => {
           set((state) => {
             const upgrade = state.upgrades.find((u) => u.id === upgradeId);
             if (
@@ -1007,7 +1008,7 @@ export const useGameStore = create<GameStore>()(
           });
         },
 
-        toggleEnvironmentEffect: (upgradeId) => {
+        toggleEnvironmentEffect: (upgradeId: string) => {
           set((state) => {
             const upgrade = state.upgrades.find((u) => u.id === upgradeId);
             if (
@@ -1029,7 +1030,7 @@ export const useGameStore = create<GameStore>()(
           });
         },
 
-        setFisheyeIntensity: (intensity) => {
+        setFisheyeIntensity: (intensity: number) => {
           set((state) => ({
             ...state,
             fisheyeIntensity: intensity,
@@ -1075,7 +1076,7 @@ export const useGameStore = create<GameStore>()(
         },
 
         // Dev Actions
-        addDevTaps: (amount) => {
+        addDevTaps: (amount: number) => {
           set((state) => ({
             taps: state.taps + amount,
           }));
@@ -1250,7 +1251,7 @@ export const useGameStore = create<GameStore>()(
           return offlineTaps;
         },
 
-        canAfford: (cost) => {
+        canAfford: (cost: number) => {
           return get().taps >= cost;
         },
       }),
@@ -1271,6 +1272,11 @@ export const useGameStore = create<GameStore>()(
           fisheyeIntensity: state.fisheyeIntensity,
           lastAutoTapTime: state.lastAutoTapTime,
         }),
+        onRehydrateStorage: (state) => {
+          console.log("Game store rehydrated:", state);
+          // Check for migration after store is loaded
+          checkAndMigrate().catch(console.error);
+        },
       }
     ),
     {

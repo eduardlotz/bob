@@ -112,12 +112,12 @@ export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
     icon: "💡",
     colors: {
       primary: "#FFFF00",
-      secondary: "#00FFFF",
-      accent: "#FFFF00",
+      secondary: "#FF3FF9",
+      accent: "#FF3FF9",
       background: "#FFFF00",
       text: "#000000",
     },
-    planetColors: ["3F3F3F", "#000000", "#2a2a2a"], // Dark planet
+    planetColors: ["#3F3F3F", "#000000", "#2a2a2a"], // Dark planet
     counterColor: "#FFFF00",
     blobColor: "#FFFF00",
     outlineColor: "#000000",

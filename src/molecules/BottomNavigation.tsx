@@ -20,12 +20,13 @@ export function BottomNavigation() {
     canAfford,
     getAutoTapRate,
     manualTapsPerSecond,
+    getTotalTapMultiplier,
   } = useGameStore();
   const { currentRoute, showOptions, setShowOptions } = useAppStore();
 
   // Only show upgrade/shop buttons on home route
   const isHomeRoute = currentRoute === ROUTE_PATHS.HOME;
-  const autoTapRate = getAutoTapRate();
+  const autoTapRate = getAutoTapRate() * getTotalTapMultiplier();
 
   const totalTapsPerSecond = autoTapRate + manualTapsPerSecond;
   const tapUpgrades = upgrades.filter((u) => u.category === "upgrades");
