@@ -59,5 +59,6 @@ export const GlobalStyle = createGlobalStyle`
         outline: none;
         border: none;
         box-shadow: none;
+        cursor: pointer;
     }
 `;

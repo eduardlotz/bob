@@ -94,8 +94,9 @@ export const StorageDebugger: React.FC = () => {
         borderRadius: "8px",
         fontSize: "12px",
         fontFamily: "monospace",
-        zIndex: 1000,
         maxWidth: "300px",
+        zIndex: 1000,
+        pointerEvents: "auto",
       }}
     >
       <h4 style={{ margin: "0 0 10px 0", fontSize: "14px" }}>

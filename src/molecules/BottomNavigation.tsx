@@ -36,6 +36,7 @@ export function BottomNavigation() {
     getAutoTapRateUncached,
     getTotalTapMultiplierUncached,
     manualTapsPerSecond,
+    upgrades, // Add upgrades as dependency so calculation updates when upgrades change
   ]);
   const tapUpgrades = upgrades.filter((u) => u.category === "upgrades");
   const hasAnyUpgrade = tapUpgrades.some((u) => u.unlocked);
