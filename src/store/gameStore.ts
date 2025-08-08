@@ -11,8 +11,15 @@ import {
   playTapSound,
   setMasterVolume as engineSetMasterVolume,
   setCurrentTapSound as engineSetCurrentTapSound,
+  setTapEnabled as engineSetTapEnabled,
+  setWorldEnabled as engineSetWorldEnabled,
+  setWorldMusic as engineSetWorldMusic,
 } from "@/utils/soundSystem";
-import { getTapSoundIdForEffect } from "@/utils/sound/configs";
+import {
+  getTapSoundById,
+  resolveTapSoundForEffect,
+} from "@/utils/sound/configs";
+import { getWorldSoundById } from "@/utils/sound/configs";
 
 export enum GAME_STORE_VERSIONS {
   V1 = 1,
@@ -26,7 +33,8 @@ export enum GAME_STORE_VERSIONS {
   V9 = 9,
   V10 = 10,
   V11 = 11,
-  LATEST = 11,
+  V12 = 12,
+  LATEST = 12,
 }
 
 // Constants
@@ -302,6 +310,26 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
     currentVersion = GAME_STORE_VERSIONS.V11;
   }
 
+  // Migration V11 → V12: Add audio selections for multi world sounds and tap effect audio id
+  if (currentVersion < GAME_STORE_VERSIONS.V12) {
+    const now = new Date();
+    migratedState.audioSelections = {
+      ...(migratedState.audioSelections || {}),
+      worldMusicId: migratedState.audioSelections?.worldMusicId || "world-lofi",
+      // Multi-select list for layered world sounds; default to only world-lofi
+      worldSoundIds:
+        Array.isArray(migratedState.audioSelections?.worldSoundIds) &&
+        migratedState.audioSelections.worldSoundIds.length > 0
+          ? migratedState.audioSelections.worldSoundIds
+          : ["world-lofi"],
+      // Tap effect audio per selected effect id; default undefined -> use default tap
+      tapEffectAudioId:
+        migratedState.audioSelections?.tapEffectAudioId || undefined,
+    };
+    migratedState.lastSchemaUpdate = now;
+    currentVersion = GAME_STORE_VERSIONS.V12;
+  }
+
   // Set the final version to the latest
   migratedState.version = GAME_STORE_VERSIONS.LATEST;
 
@@ -450,6 +478,8 @@ interface GameStore {
   audioSelections: {
     worldMusicId: string;
     tapEffectId: string;
+    worldSoundIds?: string[];
+    tapEffectAudioId?: string; // optional override for selected tap effect
   };
 
   // Actions
@@ -489,6 +519,9 @@ interface GameStore {
   setTapEffectId: (id: string) => void;
   setTapEnabled: (enabled: boolean) => void;
   setWorldEnabled: (enabled: boolean) => void;
+  setWorldSoundIds?: (ids: string[]) => void;
+  toggleWorldSoundId?: (id: string) => void;
+  setTapEffectAudioId?: (id?: string) => void;
 
   // Computed values
   getTotalTapsPerSecond: () => number;
@@ -813,6 +846,8 @@ export const useGameStore = create<GameStore>()(
         audioSelections: {
           worldMusicId: "world-lofi",
           tapEffectId: "tap_effect_default",
+          worldSoundIds: ["world-lofi"],
+          tapEffectAudioId: undefined,
         },
 
         // Actions
@@ -1149,11 +1184,19 @@ export const useGameStore = create<GameStore>()(
                 u.category === "tapEffects" ? u.id === upgradeId : u.selected,
             }));
 
-            // Update engine's current tap sound mapping based on selected effect
+            // Resolve tap audio from selected effect id with optional override; fall back to defaults
             try {
-              const soundId = getTapSoundIdForEffect(upgradeId);
-              engineSetCurrentTapSound(soundId);
-            } catch {}
+              const overrideId = get().audioSelections.tapEffectAudioId;
+              const cfg = resolveTapSoundForEffect(upgradeId, overrideId);
+              if (cfg && cfg.id) {
+                if (cfg.filePath)
+                  engineSetCurrentTapSound(cfg.id, cfg.filePath);
+                else engineSetCurrentTapSound(cfg.id);
+              }
+            } catch (e) {
+              console.error("Error setting current tap sound", e);
+              toast.error("Error setting current tap sound");
+            }
 
             return {
               ...state,
@@ -1350,6 +1393,14 @@ export const useGameStore = create<GameStore>()(
               worldMusicId: id,
             },
           }));
+          try {
+            const track = getWorldSoundById(id);
+            if (track) {
+              // Update engine primary background music id
+              useGameStore.getState();
+              engineSetWorldMusic(track.filePath, track.id);
+            }
+          } catch {}
         },
         setTapEffectId: (id: string) => {
           set((state) => ({
@@ -1357,6 +1408,54 @@ export const useGameStore = create<GameStore>()(
             audioSelections: {
               ...state.audioSelections,
               tapEffectId: id,
+            },
+          }));
+          // runtime: also resolve and apply audio for the selected tap effect
+          try {
+            const s = useGameStore.getState();
+            const cfg = resolveTapSoundForEffect(
+              id,
+              s.audioSelections.tapEffectAudioId
+            );
+            if (cfg && cfg.id) {
+              if (cfg.filePath) engineSetCurrentTapSound(cfg.id, cfg.filePath);
+              else engineSetCurrentTapSound(cfg.id);
+            }
+          } catch {}
+        },
+        // Replace or toggle in a set of world sound ids (for layered ambience)
+        setWorldSoundIds: (ids: string[]) => {
+          set((state) => ({
+            ...state,
+            audioSelections: {
+              ...state.audioSelections,
+              worldSoundIds: Array.isArray(ids)
+                ? ids
+                : state.audioSelections.worldSoundIds,
+            },
+          }));
+        },
+        toggleWorldSoundId: (id: string) => {
+          set((state) => {
+            const current = state.audioSelections.worldSoundIds || [];
+            const next = current.includes(id)
+              ? current.filter((x) => x !== id)
+              : [...current, id];
+            return {
+              ...state,
+              audioSelections: {
+                ...state.audioSelections,
+                worldSoundIds: next,
+              },
+            };
+          });
+        },
+        setTapEffectAudioId: (id?: string) => {
+          set((state) => ({
+            ...state,
+            audioSelections: {
+              ...state.audioSelections,
+              tapEffectAudioId: id,
             },
           }));
         },
@@ -1628,6 +1727,31 @@ export const useGameStore = create<GameStore>()(
           // Also ensure engine reflects muted state at boot
           try {
             engineSetMasterVolume(0);
+          } catch {}
+
+          // Sync per-type enable flags and current selections with engine after rehydrate
+          try {
+            const s = useGameStore.getState();
+            engineSetTapEnabled(!!s.soundSystem.tapEnabled);
+            engineSetWorldEnabled(!!s.soundSystem.worldEnabled);
+            // Apply selected primary world music id to engine without forcing start
+            const worldId = s.audioSelections.worldMusicId;
+            if (worldId) {
+              const track = getWorldSoundById(worldId);
+              if (track) engineSetWorldMusic(track.filePath, track.id);
+            }
+            // Apply currently selected tap effect audio using resolver
+            const selectedTap = s.upgrades.find(
+              (u) => u.category === "tapEffects" && u.selected
+            );
+            const cfg = resolveTapSoundForEffect(
+              selectedTap?.id || "tap_effect_default",
+              s.audioSelections.tapEffectAudioId
+            );
+            if (cfg && cfg.id) {
+              if (cfg.filePath) engineSetCurrentTapSound(cfg.id, cfg.filePath);
+              else engineSetCurrentTapSound(cfg.id);
+            }
           } catch {}
         },
       }

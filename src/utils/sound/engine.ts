@@ -643,14 +643,8 @@ export const getSoundConfig = (soundId: string): SoundConfig | undefined => {
 // State management functions
 export const enable = (): void => {
   state.enabled = true;
-  // If enabling, ensure background music is started (respecting policies)
-  resumeAudioContext()
-    .then(() => {
-      if (state.masterVolume > 0 && state.worldEnabled !== false) {
-        startBackgroundMusic();
-      }
-    })
-    .catch(() => {});
+  // If enabling, resume context but do not auto-start any music; UI decides what to play
+  resumeAudioContext().catch(() => {});
 };
 
 export const disable = (): void => {
@@ -707,7 +701,8 @@ export const playWorldSound = (
   options?: Partial<SoundConfig>
 ) => {
   if (state.worldEnabled === false) return;
-  playSound(soundId, options);
+  // Allow layered world sounds: do not enforce stopPrevious unless requested
+  playSound(soundId, { loop: true, fadeIn: 5000, fadeOut: 5000, ...options });
 };
 
 export const stopAllTapSounds = () => {
@@ -716,6 +711,15 @@ export const stopAllTapSounds = () => {
 
 export const stopAllWorldSounds = () => {
   stopSoundsByType("world");
+};
+
+// Stop all instances for a specific sound config id (e.g., layered world sounds)
+export const stopSoundsById = (soundConfigId: string): void => {
+  const setForId = instancesBySoundId.get(soundConfigId);
+  if (!setForId || setForId.size === 0) return;
+  for (const instanceId of Array.from(setForId)) {
+    stopSound(instanceId);
+  }
 };
 
 export const setTapVolume = (volume: number) => {
@@ -760,7 +764,6 @@ export const startBackgroundMusic = async (): Promise<void> => {
   // Ensure any prior world instances are fully stopped to avoid layering
   try {
     stopBackgroundMusic();
-    forceStopSoundsByType("world");
   } catch {}
   // ensure config exists even if DEFAULT_SOUND_CONFIGS changed
   if (!configs.get(currentWorldMusicId)) {
@@ -770,14 +773,22 @@ export const startBackgroundMusic = async (): Promise<void> => {
       type: "world",
       volume: DEFAULT_WORLD_VOLUME,
       loop: true,
-      stopPrevious: true,
+      stopPrevious: false,
       distanceAttenuation: false,
       detune: { enabled: false, minSemitones: 0, maxSemitones: 0 },
+      fadeIn: 5000,
+      fadeOut: 5000,
     });
   }
+  // If there is no active instance for the selected background id already, start it.
   isStartingBackgroundMusic = true;
   try {
-    await playSound(currentWorldMusicId, { loop: true, stopPrevious: true });
+    await playSound(currentWorldMusicId, {
+      loop: true,
+      stopPrevious: false,
+      fadeIn: 5000,
+      fadeOut: 5000,
+    });
   } finally {
     isStartingBackgroundMusic = false;
   }
@@ -799,9 +810,9 @@ export const mute = (): void => {
   }
   // Volume-only approach: keep instances alive, just zero final output
   setMasterVolume(0);
-  // Explicitly stop background music so it does not continue running while muted
+  // Explicitly stop ALL world sounds (primary + layered) while muted to avoid stale instances
   try {
-    stopBackgroundMusic();
+    stopAllWorldSounds();
   } catch {}
 };
 
@@ -830,8 +841,9 @@ export const setWorldEnabled = (enabled: boolean): void => {
   if (!state.worldEnabled) {
     try {
       stopBackgroundMusic();
-    } catch {}
-    forceStopSoundsByType("world");
+    } catch {
+      forceStopSoundsByType("world");
+    }
   } else {
     // Do not auto-start here to avoid double-start on the same user gesture.
     // The UI can call setWorldMusic or a gesture handler can start it.
@@ -851,14 +863,11 @@ export const setWorldMusic = (
     type: "world",
     volume: DEFAULT_WORLD_VOLUME,
     loop: true,
-    stopPrevious: true,
+    stopPrevious: false,
     distanceAttenuation: false,
     detune: { enabled: false, minSemitones: 0, maxSemitones: 0 },
   });
-  if (state.enabled && state.worldEnabled !== false && state.masterVolume > 0) {
-    stopBackgroundMusic();
-    startBackgroundMusic().catch(() => {});
-  }
+  // Do not auto-start here; caller can choose to startBackgroundMusic if desired
 };
 
 export const setCurrentTapSound = (id: string, filePath?: string): void => {
@@ -881,19 +890,13 @@ export const scheduleBackgroundMusicAutoStart = () => {
   autoStartBound = true;
 
   const maybeStart = async () => {
-    // Only start if system is enabled and not muted
-    if (
-      state.enabled &&
-      state.masterVolume > 0 &&
-      state.worldEnabled !== false
-    ) {
-      try {
-        await startBackgroundMusic();
-      } finally {
-        window.removeEventListener("pointerdown", maybeStart);
-        window.removeEventListener("keydown", maybeStart);
-        window.removeEventListener("touchstart", maybeStart);
-      }
+    // Only ensure audio context is resumed on first gesture; do NOT auto-start music
+    try {
+      await resumeAudioContext();
+    } finally {
+      window.removeEventListener("pointerdown", maybeStart);
+      window.removeEventListener("keydown", maybeStart);
+      window.removeEventListener("touchstart", maybeStart);
     }
   };
 

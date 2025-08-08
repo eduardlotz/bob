@@ -21,6 +21,12 @@ import {
   setWorldMusic as engineSetWorldMusic,
   setCurrentTapSound as engineSetCurrentTapSound,
 } from "../utils/soundSystem";
+import { getWorldSoundById } from "@/utils/sound/configs";
+import {
+  addSoundConfig as engineAddSoundConfig,
+  playWorldSound as enginePlayWorldSound,
+  stopSoundsById as engineStopSoundsById,
+} from "@/utils/soundSystem";
 import { useGameStore } from "../store/gameStore";
 import { match } from "ts-pattern";
 import { toast } from "sonner";
@@ -67,6 +73,9 @@ export function useSoundSystem(): SoundSystemHook {
       ? gameStore.soundSystem.masterVolume
       : 1
   );
+  const lastMasterVolumeRef = useRef<number>(
+    gameStore.soundSystem.masterVolume
+  );
 
   // Sound system is initialized in SceneWithLoader before scene loads
 
@@ -90,11 +99,48 @@ export function useSoundSystem(): SoundSystemHook {
     } else {
       disable();
     }
+
+    // Keep engine per-type enable flags in sync
+    try {
+      engineSetTapEnabled(!!gameStore.soundSystem.tapEnabled);
+      engineSetWorldEnabled(!!gameStore.soundSystem.worldEnabled);
+    } catch {}
   }, [gameStore.soundSystem]);
+
+  // Helper: resume all selected world layers based on current store
+  const resumeSelectedWorldLayers = useCallback(() => {
+    const s = useGameStore.getState();
+    if (!s.soundSystem.enabled) return;
+    if (s.soundSystem.masterVolume <= 0) return;
+    if (s.soundSystem.worldEnabled === false) return;
+    const ids = s.audioSelections.worldSoundIds || [];
+    if (!ids.length) return;
+    ids.forEach((id) => {
+      try {
+        const track = getWorldSoundById(id);
+        if (!track) return;
+        engineAddSoundConfig({
+          id: track.id,
+          filePath: track.filePath,
+          type: "world",
+          volume: s.soundSystem.worldVolume,
+          loop: true,
+          stopPrevious: false,
+          distanceAttenuation: false,
+          detune: { enabled: false, minSemitones: 0, maxSemitones: 0 },
+        } as any);
+        // ensure no stale instance, then play the layer
+        try {
+          engineStopSoundsById(track.id);
+        } catch {}
+        enginePlayWorldSound(track.id, { loop: true, stopPrevious: false });
+      } catch {}
+    });
+  }, []);
 
   // Enhanced tap sound function that integrates with game state
   const playTapSoundWithGameIntegration = useCallback(
-    (soundId: string = "tap-bing-bong") => {
+    (soundId?: string) => {
       // Only play tap sounds when game is not paused
       if (gameStore.isPaused) return;
 
@@ -106,8 +152,12 @@ export function useSoundSystem(): SoundSystemHook {
         .with({ isPaused: false, soundEnabled: true }, () => true)
         .otherwise(() => false);
 
-      if (shouldPlaySound) {
+      if (!shouldPlaySound) return;
+      if (typeof soundId === "string") {
         playTapSoundUtil(soundId);
+      } else {
+        // Let engine use its currentTapSoundId selection
+        (playTapSoundUtil as any)();
       }
     },
     [gameStore.isPaused, gameStore.routes]
@@ -134,6 +184,12 @@ export function useSoundSystem(): SoundSystemHook {
     setMasterVolume(clamped);
     // Do not persist master volume per requirements; local store update is okay
     useGameStore.getState().setMasterVolume(clamped);
+    // If this is a 0 -> >0 transition, resume selected world layers
+    const prev = lastMasterVolumeRef.current;
+    lastMasterVolumeRef.current = clamped;
+    if (prev === 0 && clamped > 0) {
+      resumeSelectedWorldLayers();
+    }
   }, []);
 
   const setTapVolumeCallback = useCallback((volume: number) => {
@@ -146,11 +202,23 @@ export function useSoundSystem(): SoundSystemHook {
     const clamped = Math.max(0, Math.min(1, volume));
     setTypeVolume("world", clamped);
     useGameStore.getState().setWorldVolume(clamped);
+    // Ensure engine reapplies gain to active world instances immediately
+    try {
+      updateWorldSoundVolumes(false);
+    } catch {}
   }, []);
 
   // System control functions
   const enableCallback = useCallback(() => {
     gameStore.setSoundEnabled(true);
+    // If already unmuted and world is enabled, resume layers immediately
+    const s = useGameStore.getState();
+    if (
+      s.soundSystem.masterVolume > 0 &&
+      s.soundSystem.worldEnabled !== false
+    ) {
+      resumeSelectedWorldLayers();
+    }
   }, [gameStore]);
 
   const disableCallback = useCallback(() => {
@@ -175,6 +243,9 @@ export function useSoundSystem(): SoundSystemHook {
         : 1;
     engineUnmute();
     useGameStore.getState().setMasterVolume(restore);
+    // Resume selected layers on unmute
+    lastMasterVolumeRef.current = restore;
+    resumeSelectedWorldLayers();
   }, []);
 
   const toggleMuteCallback = useCallback(() => {

@@ -2,12 +2,16 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
 import { useGameStore, triggerStoreMigration } from "@/store/gameStore";
-import { MUSIC_TRACKS, getMusicTrackById } from "@/utils/sound/configs";
+import { WORLD_SOUNDS, getWorldSoundById } from "@/utils/sound/configs";
 import {
   setWorldEnabled as engineSetWorldEnabled,
   setTapEnabled as engineSetTapEnabled,
   setWorldMusic as engineSetWorldMusic,
   setCurrentTapSound as engineSetCurrentTapSound,
+  stopSoundsById,
+  playWorldSound as enginePlayWorldSound,
+  addSoundConfig as engineAddSoundConfig,
+  stopBackgroundMusic as engineStopBackgroundMusic,
 } from "@/utils/soundSystem";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { CartIcon } from "@/icons/cart";
@@ -406,6 +410,7 @@ function EnvironmentView() {
     audioSelections,
     setWorldMusicId,
     setWorldEnabled,
+    toggleWorldSoundId,
   } = useGameStore();
   const environmentEffects = upgrades.filter(
     (u) => u.category === "environment"
@@ -436,7 +441,7 @@ function EnvironmentView() {
             setWorldEnabled(next);
             engineSetWorldEnabled(next);
             if (!next) return;
-            const track = getMusicTrackById(audioSelections.worldMusicId);
+            const track = getWorldSoundById(audioSelections.worldMusicId);
             engineSetWorldMusic(track.filePath, track.id);
           }}
           $active={soundSystem.worldEnabled !== false}
@@ -472,23 +477,93 @@ function EnvironmentView() {
       </EnvironmentGrid>
       <SectionSubtitle>Music</SectionSubtitle>
       <EnvironmentGrid>
-        {MUSIC_TRACKS.map((track) => {
-          const isActive = audioSelections.worldMusicId === track.id;
+        {WORLD_SOUNDS.map((track) => {
+          const isPrimary = audioSelections.worldMusicId === track.id;
+          const isLayered = (audioSelections.worldSoundIds || []).includes(
+            track.id
+          );
           return (
             <EnvironmentCard
               key={track.id}
-              $enabled={isActive}
+              $enabled={isLayered}
               $unlocked={true}
               $canAfford={true}
               onClick={() => {
-                setWorldMusicId(track.id);
-                engineSetWorldMusic(track.filePath, track.id);
+                const currentIds = audioSelections.worldSoundIds || [];
+                const wasLayered = isLayered;
+                const nextLayered = !wasLayered;
+                const nextIds = nextLayered
+                  ? [...currentIds, track.id]
+                  : currentIds.filter((x) => x !== track.id);
+
+                // Toggle layered selection in store
+                toggleWorldSoundId?.(track.id);
+
+                // Play or stop the clicked layer immediately
+                if (nextLayered) {
+                  try {
+                    engineAddSoundConfig({
+                      id: track.id,
+                      filePath: track.filePath,
+                      type: "world",
+                      volume: 0.1,
+                      loop: true,
+                      stopPrevious: false,
+                      distanceAttenuation: false,
+                      detune: {
+                        enabled: false,
+                        minSemitones: 0,
+                        maxSemitones: 0,
+                      },
+                      fadeIn: 2000,
+                      fadeOut: 1000,
+                    } as any);
+                  } catch {}
+                  enginePlayWorldSound(track.id, {
+                    loop: true,
+                    stopPrevious: false,
+                  });
+                } else {
+                  try {
+                    stopSoundsById(track.id);
+                  } catch {}
+                  if (isPrimary) {
+                    try {
+                      engineStopBackgroundMusic();
+                    } catch {}
+                  }
+                }
+
+                // Auto-promote primary for smoother UX
+                if (!nextLayered && isPrimary && nextIds.length > 0) {
+                  // Promote the first remaining layer to primary
+                  const newPrimaryId = nextIds[0];
+                  setWorldMusicId(newPrimaryId);
+                  const newTrack = WORLD_SOUNDS.find(
+                    (t) => t.id === newPrimaryId
+                  );
+                  if (newTrack)
+                    engineSetWorldMusic(newTrack.filePath, newTrack.id);
+                }
+                if (nextLayered && nextIds.length === 1) {
+                  // First selection becomes primary
+                  setWorldMusicId(track.id);
+                  engineSetWorldMusic(track.filePath, track.id);
+                }
+
+                // Keep engine selection in sync when clicked track is/was primary
+                if (isPrimary) {
+                  engineSetWorldMusic(track.filePath, track.id);
+                }
               }}
             >
               <EnvironmentIcon>{track.icon}</EnvironmentIcon>
-              <EnvironmentName>{track.name}</EnvironmentName>
+              <EnvironmentName>
+                {track.name}
+                {isPrimary ? " • primary" : ""}
+              </EnvironmentName>
               <EnvironmentStatus $unlocked={true}>
-                {isActive ? "Selected" : "Available"}
+                {isLayered ? "Layered" : "Available"}
               </EnvironmentStatus>
             </EnvironmentCard>
           );
