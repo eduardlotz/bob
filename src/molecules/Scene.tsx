@@ -1,4 +1,4 @@
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
 import {
   CameraControls,
   Fisheye,
@@ -20,6 +20,7 @@ import { startAutoTap } from "../store/gameStore";
 import { useKeyPress } from "../hooks/useKeyPress";
 import { FISHEYE_CONFIG } from "../store/upgradesConfig";
 import { a, useSpring } from "@react-spring/three";
+import { attachListenerToCamera } from "@/utils/soundSystem";
 
 const Scene = ({
   permissionGranted,
@@ -34,8 +35,13 @@ const Scene = ({
 }) => {
   const cameraControlsRef = useRef<CameraControls>(null!);
 
-  const { currentRoute, showOptions, setShowOptions, setEmotionData } =
-    useAppStore();
+  const {
+    currentRoute,
+    showOptions,
+    setShowOptions,
+    setEmotionData,
+    closeOptionsWithAnimation,
+  } = useAppStore();
 
   const isHome = currentRoute === ROUTE_PATHS.HOME;
 
@@ -70,7 +76,7 @@ const Scene = ({
 
   useKeyPress("Escape", () => {
     if (showOptions) {
-      setShowOptions(false);
+      closeOptionsWithAnimation();
     }
   });
 
@@ -78,6 +84,7 @@ const Scene = ({
     <>
       <FullScreenCanvas>
         <Suspense fallback={null}>
+          <AudioListenerBinder />
           <Fisheye zoom={FISHEYE_CONFIG.DEFAULT}>
             <Grid
               args={[8, 8]}
@@ -184,3 +191,11 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
     </Canvas>
   );
 };
+
+function AudioListenerBinder() {
+  const { camera } = useThree();
+  useEffect(() => {
+    attachListenerToCamera(camera);
+  }, [camera]);
+  return null;
+}

@@ -3,6 +3,8 @@ import styled from "styled-components";
 import { Button } from "@/layout/atoms";
 import { BottomNavigation } from "@/molecules/BottomNavigation";
 import { Statistics } from "@/molecules/Statistics";
+import { SoundSettings } from "@/components/SoundSettings";
+import { SoundToggle } from "@/components/SoundToggle";
 
 import { requestMotionPermission } from "@/utils/permission";
 import { useGameStore, startAutoTap, stopAutoTap } from "@/store/gameStore";
@@ -21,6 +23,7 @@ interface UILayerProps {
 export function UILayer({ setPermissionGranted }: UILayerProps) {
   const { statisticsVisible, isPaused } = useGameStore();
   const [permissionDismissed, setPermissionDismissed] = useState(false);
+  const [soundSettingsVisible, setSoundSettingsVisible] = useState(false);
   const { motionStyles, dragConstraints, dragEndHandler, drag } =
     useSwipeDismiss({
       onClose: () => setPermissionDismissed(true),
@@ -64,6 +67,17 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
     <UILayerContainer>
       <BottomNavigation />
       <Statistics visible={statisticsVisible} />
+
+      <ToggleContainer>
+        <SoundToggle />
+      </ToggleContainer>
+
+      {/* Sound Settings Modal */}
+      <SoundSettings
+        visible={soundSettingsVisible}
+        onClose={() => setSoundSettingsVisible(false)}
+      />
+
       {/* <StorageDebugger />
       <MigrationDebugger /> */}
 
@@ -102,6 +116,14 @@ const UILayerContainer = styled.div`
   height: 100%;
   pointer-events: none;
   z-index: 1000;
+`;
+
+const ToggleContainer = styled.div`
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 100;
+  pointer-events: auto;
 `;
 
 const CalibrationButton = styled(Button)`

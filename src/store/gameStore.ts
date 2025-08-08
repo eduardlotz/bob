@@ -7,6 +7,19 @@ import { ROUTE_PATHS, ROUTE_IDS, ROUTE_CONFIG } from "./routeConfig";
 import { toast } from "sonner";
 import { THEME_IDS } from "./themeConfig";
 import { checkAndMigrate } from "./migration";
+import {
+  playTapSound,
+  setMasterVolume as engineSetMasterVolume,
+  setCurrentTapSound as engineSetCurrentTapSound,
+  setTapEnabled as engineSetTapEnabled,
+  setWorldEnabled as engineSetWorldEnabled,
+  setWorldMusic as engineSetWorldMusic,
+} from "@/utils/soundSystem";
+import {
+  getTapSoundById,
+  resolveTapSoundForEffect,
+} from "@/utils/sound/configs";
+import { getWorldSoundById } from "@/utils/sound/configs";
 
 export enum GAME_STORE_VERSIONS {
   V1 = 1,
@@ -18,7 +31,11 @@ export enum GAME_STORE_VERSIONS {
   V7 = 7,
   V8 = 8,
   V9 = 9,
-  LATEST = 9,
+  V10 = 10,
+  V11 = 11,
+  V12 = 12,
+  V13 = 13,
+  LATEST = 13,
 }
 
 // Constants
@@ -264,6 +281,68 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
     currentVersion = GAME_STORE_VERSIONS.V9;
   }
 
+  // Migration V9 → V10: Ensure soundSystem preferences exist and default to 1.0
+  if (currentVersion < GAME_STORE_VERSIONS.V10) {
+    const clamp01 = (v: any) => {
+      const n = typeof v === "number" ? v : 1;
+      return Math.max(0, Math.min(1, n));
+    };
+    const sound = migratedState.soundSystem || {};
+    migratedState.soundSystem = {
+      enabled: sound.enabled !== false,
+      // Default master to 0 so app starts muted
+      masterVolume: clamp01(sound.masterVolume ?? 0),
+      tapVolume: clamp01(sound.tapVolume ?? 1),
+      worldVolume: clamp01(sound.worldVolume ?? 1),
+      uiVolume: clamp01(sound.uiVolume ?? 1),
+      tapEnabled: sound.tapEnabled !== false,
+      worldEnabled: sound.worldEnabled !== false,
+    };
+    currentVersion = GAME_STORE_VERSIONS.V10;
+  }
+
+  // Migration V10 → V11: Initialize audio selections (ids only)
+  if (currentVersion < GAME_STORE_VERSIONS.V11) {
+    migratedState.audioSelections = {
+      worldMusicId: migratedState.audioSelections?.worldMusicId || "world-lofi",
+      tapEffectId:
+        migratedState.audioSelections?.tapEffectId || "tap_effect_default",
+    };
+    currentVersion = GAME_STORE_VERSIONS.V11;
+  }
+
+  // Migration V11 → V12: Add audio selections for multi world sounds and tap effect audio id
+  if (currentVersion < GAME_STORE_VERSIONS.V12) {
+    const now = new Date();
+    migratedState.audioSelections = {
+      ...(migratedState.audioSelections || {}),
+      worldMusicId: migratedState.audioSelections?.worldMusicId || "world-lofi",
+      // Multi-select list for layered world sounds; default to only world-lofi
+      worldSoundIds:
+        Array.isArray(migratedState.audioSelections?.worldSoundIds) &&
+        migratedState.audioSelections.worldSoundIds.length > 0
+          ? migratedState.audioSelections.worldSoundIds
+          : ["world-lofi"],
+      // Tap effect audio per selected effect id; default undefined -> use default tap
+      tapEffectAudioId:
+        migratedState.audioSelections?.tapEffectAudioId || undefined,
+    };
+    migratedState.lastSchemaUpdate = now;
+    currentVersion = GAME_STORE_VERSIONS.V12;
+  }
+
+  // Migration V12 → V13: Start with no layered world sounds selected by default
+  if (currentVersion < GAME_STORE_VERSIONS.V13) {
+    migratedState.audioSelections = {
+      ...(migratedState.audioSelections || {}),
+      // Avoid auto-playing any world sounds until user unmutes and selects
+      worldSoundIds: Array.isArray(migratedState.audioSelections?.worldSoundIds)
+        ? migratedState.audioSelections.worldSoundIds
+        : [],
+    };
+    currentVersion = GAME_STORE_VERSIONS.V13;
+  }
+
   // Set the final version to the latest
   migratedState.version = GAME_STORE_VERSIONS.LATEST;
 
@@ -353,6 +432,16 @@ export interface Route {
   category: "pages";
 }
 
+export interface SoundSystemState {
+  enabled: boolean;
+  masterVolume: number;
+  tapVolume: number;
+  worldVolume: number;
+  uiVolume: number;
+  tapEnabled?: boolean;
+  worldEnabled?: boolean;
+}
+
 // Game state interface
 interface GameStore {
   // Store version for migrations
@@ -395,6 +484,17 @@ interface GameStore {
   animationsEnabled: boolean;
   statisticsVisible: boolean;
 
+  // Sound system state
+  soundSystem: SoundSystemState;
+
+  // Audio selections (ids only)
+  audioSelections: {
+    worldMusicId: string;
+    tapEffectId: string;
+    worldSoundIds?: string[];
+    tapEffectAudioId?: string; // optional override for selected tap effect
+  };
+
   // Actions
   addTaps: (amount: number) => void;
   addAutoTaps: (amount: number) => void;
@@ -419,6 +519,22 @@ interface GameStore {
   buyAllUpgrades: () => void;
   toggleAnimations: () => void;
   toggleStatistics: () => void;
+
+  // Sound system actions
+  setSoundEnabled: (enabled: boolean) => void;
+  setMasterVolume: (volume: number) => void;
+  setTapVolume: (volume: number) => void;
+  setWorldVolume: (volume: number) => void;
+  setUIVolume: (volume: number) => void;
+
+  // Audio selection actions
+  setWorldMusicId: (id: string) => void;
+  setTapEffectId: (id: string) => void;
+  setTapEnabled: (enabled: boolean) => void;
+  setWorldEnabled: (enabled: boolean) => void;
+  setWorldSoundIds?: (ids: string[]) => void;
+  toggleWorldSoundId?: (id: string) => void;
+  setTapEffectAudioId?: (id?: string) => void;
 
   // Computed values
   getTotalTapsPerSecond: () => number;
@@ -727,6 +843,25 @@ export const useGameStore = create<GameStore>()(
         fisheyeIntensity: 0,
         animationsEnabled: true,
         statisticsVisible: false,
+
+        // Sound system state
+        soundSystem: {
+          enabled: true,
+          masterVolume: 0.0,
+          tapVolume: 1.0,
+          worldVolume: 1.0,
+          uiVolume: 1.0,
+          tapEnabled: true,
+          worldEnabled: true,
+        },
+
+        // Audio selections
+        audioSelections: {
+          worldMusicId: "world-lofi",
+          tapEffectId: "tap_effect_default",
+          worldSoundIds: [],
+          tapEffectAudioId: undefined,
+        },
 
         // Actions
         addTaps: (amount: number) => {
@@ -1062,6 +1197,20 @@ export const useGameStore = create<GameStore>()(
                 u.category === "tapEffects" ? u.id === upgradeId : u.selected,
             }));
 
+            // Resolve tap audio from selected effect id with optional override; fall back to defaults
+            try {
+              const overrideId = get().audioSelections.tapEffectAudioId;
+              const cfg = resolveTapSoundForEffect(upgradeId, overrideId);
+              if (cfg && cfg.id) {
+                if (cfg.filePath)
+                  engineSetCurrentTapSound(cfg.id, cfg.filePath);
+                else engineSetCurrentTapSound(cfg.id);
+              }
+            } catch (e) {
+              console.error("Error setting current tap sound", e);
+              toast.error("Error setting current tap sound");
+            }
+
             return {
               ...state,
               upgrades: updatedUpgrades,
@@ -1195,6 +1344,143 @@ export const useGameStore = create<GameStore>()(
           set((state) => ({
             ...state,
             statisticsVisible: !state.statisticsVisible,
+          }));
+        },
+
+        // Sound system actions
+        setSoundEnabled: (enabled: boolean) => {
+          set((state) => ({
+            ...state,
+            soundSystem: {
+              ...state.soundSystem,
+              enabled,
+            },
+          }));
+        },
+
+        setMasterVolume: (volume: number) => {
+          set((state) => ({
+            ...state,
+            soundSystem: {
+              ...state.soundSystem,
+              masterVolume: Math.max(0, Math.min(1, volume)),
+            },
+          }));
+        },
+
+        setTapVolume: (volume: number) => {
+          set((state) => ({
+            ...state,
+            soundSystem: {
+              ...state.soundSystem,
+              tapVolume: Math.max(0, Math.min(1, volume)),
+            },
+          }));
+        },
+
+        setWorldVolume: (volume: number) => {
+          set((state) => ({
+            ...state,
+            soundSystem: {
+              ...state.soundSystem,
+              worldVolume: Math.max(0, Math.min(1, volume)),
+            },
+          }));
+        },
+
+        setUIVolume: (volume: number) => {
+          set((state) => ({
+            ...state,
+            soundSystem: {
+              ...state.soundSystem,
+              uiVolume: Math.max(0, Math.min(1, volume)),
+            },
+          }));
+        },
+
+        setWorldMusicId: (id: string) => {
+          // Deprecated: Primary/secondary handling removed; keep method no-op to avoid runtime errors
+          set((state) => ({
+            ...state,
+            audioSelections: {
+              ...state.audioSelections,
+              worldMusicId: id,
+            },
+          }));
+        },
+        setTapEffectId: (id: string) => {
+          set((state) => ({
+            ...state,
+            audioSelections: {
+              ...state.audioSelections,
+              tapEffectId: id,
+            },
+          }));
+          // runtime: also resolve and apply audio for the selected tap effect
+          try {
+            const s = useGameStore.getState();
+            const cfg = resolveTapSoundForEffect(
+              id,
+              s.audioSelections.tapEffectAudioId
+            );
+            if (cfg && cfg.id) {
+              if (cfg.filePath) engineSetCurrentTapSound(cfg.id, cfg.filePath);
+              else engineSetCurrentTapSound(cfg.id);
+            }
+          } catch {}
+        },
+        // Replace or toggle in a set of world sound ids (for layered ambience)
+        setWorldSoundIds: (ids: string[]) => {
+          set((state) => ({
+            ...state,
+            audioSelections: {
+              ...state.audioSelections,
+              worldSoundIds: Array.isArray(ids)
+                ? ids
+                : state.audioSelections.worldSoundIds,
+            },
+          }));
+        },
+        toggleWorldSoundId: (id: string) => {
+          set((state) => {
+            const current = state.audioSelections.worldSoundIds || [];
+            const next = current.includes(id)
+              ? current.filter((x) => x !== id)
+              : [...current, id];
+            return {
+              ...state,
+              audioSelections: {
+                ...state.audioSelections,
+                worldSoundIds: next,
+              },
+            };
+          });
+        },
+        setTapEffectAudioId: (id?: string) => {
+          set((state) => ({
+            ...state,
+            audioSelections: {
+              ...state.audioSelections,
+              tapEffectAudioId: id,
+            },
+          }));
+        },
+        setTapEnabled: (enabled: boolean) => {
+          set((state) => ({
+            ...state,
+            soundSystem: {
+              ...state.soundSystem,
+              tapEnabled: enabled,
+            },
+          }));
+        },
+        setWorldEnabled: (enabled: boolean) => {
+          set((state) => ({
+            ...state,
+            soundSystem: {
+              ...state.soundSystem,
+              worldEnabled: enabled,
+            },
           }));
         },
 
@@ -1389,6 +1675,17 @@ export const useGameStore = create<GameStore>()(
           routes: state.routes,
           fisheyeIntensity: state.fisheyeIntensity,
           lastAutoTapTime: state.lastAutoTapTime,
+          // Do not persist previous masterVolume; always persist 0 so app starts muted
+          soundSystem: {
+            enabled: state.soundSystem.enabled,
+            masterVolume: 0,
+            tapVolume: state.soundSystem.tapVolume,
+            worldVolume: state.soundSystem.worldVolume,
+            uiVolume: state.soundSystem.uiVolume,
+            tapEnabled: state.soundSystem.tapEnabled,
+            worldEnabled: state.soundSystem.worldEnabled,
+          },
+          audioSelections: state.audioSelections,
         }),
         onRehydrateStorage: (state) => {
           console.log("Game store rehydrated:", state);
@@ -1421,6 +1718,47 @@ export const useGameStore = create<GameStore>()(
               `Store migrated from V${state.version} to V${GAME_STORE_VERSIONS.LATEST}`
             );
           }
+
+          // Always enforce masterVolume = 0 on rehydrate so unmute acts as user gesture
+          try {
+            useGameStore.setState((s) => ({
+              ...s,
+              soundSystem: {
+                ...s.soundSystem,
+                masterVolume: 0,
+              },
+            }));
+          } catch {}
+
+          // Also ensure engine reflects muted state at boot
+          try {
+            engineSetMasterVolume(0);
+          } catch {}
+
+          // Sync per-type enable flags and current selections with engine after rehydrate
+          try {
+            const s = useGameStore.getState();
+            engineSetTapEnabled(!!s.soundSystem.tapEnabled);
+            engineSetWorldEnabled(!!s.soundSystem.worldEnabled);
+            // Apply selected primary world music id to engine without forcing start
+            const worldId = s.audioSelections.worldMusicId;
+            if (worldId) {
+              const track = getWorldSoundById(worldId);
+              if (track) engineSetWorldMusic(track.filePath, track.id);
+            }
+            // Apply currently selected tap effect audio using resolver
+            const selectedTap = s.upgrades.find(
+              (u) => u.category === "tapEffects" && u.selected
+            );
+            const cfg = resolveTapSoundForEffect(
+              selectedTap?.id || "tap_effect_default",
+              s.audioSelections.tapEffectAudioId
+            );
+            if (cfg && cfg.id) {
+              if (cfg.filePath) engineSetCurrentTapSound(cfg.id, cfg.filePath);
+              else engineSetCurrentTapSound(cfg.id);
+            }
+          } catch {}
         },
       }
     ),

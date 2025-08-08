@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useGameStore } from "@/store/gameStore";
 import { useAppStore, ROUTE_PATHS } from "@/store";
+import { useSoundSystem } from "./useSoundSystem";
+import { isEnabled, resumeAudioContext } from "@/utils/soundSystem";
 
 export type EmotionState = "normal" | "happy" | "dizzy" | "mad";
 
@@ -11,9 +13,9 @@ export interface BlobEmotionData {
 }
 
 const EMOTION_DURATIONS = {
-  happy: 800, // Brief happiness after each tap
-  dizzy: 4000, // Dizzy animation duration
-  mad: 5000, // Mad state after dizzy
+  happy: 1000,
+  dizzy: 4000,
+  mad: 5000,
 };
 
 const COOLDOWN_DURATION = 1000; // Cooldown between emotional state changes
@@ -21,10 +23,10 @@ const COOLDOWN_DURATION = 1000; // Cooldown between emotional state changes
 export function useBlobEmotions() {
   const [emotionState, setEmotionState] = useState<EmotionState>("normal");
   const [tapCount, setTapCount] = useState(0);
-  const [clickTimestamps, setClickTimestamps] = useState<number[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
   const [dizzyCounter, setDizzyCounter] = useState(0); // Separate counter for dizzy detection
   const { currentRoute } = useAppStore();
+  const { playTapSound } = useSoundSystem();
 
   const emotionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const cooldownRef = useRef<number>(0);
@@ -71,11 +73,13 @@ export function useBlobEmotions() {
   const handleTap = useCallback(() => {
     const now = Date.now();
 
-    // Only increment tap count on home route
+    // ensure audio context is resumed on first interaction
+    // resumeAudioContext().catch(() => {});
+    playTapSound();
+
+    // only increment tap count on home route
     if (currentRoute === ROUTE_PATHS.HOME) {
       setTapCount((prev) => prev + 1);
-
-      // Add tap to game store
       const gameStore = useGameStore.getState();
       gameStore.addManualTap();
     }
@@ -83,34 +87,31 @@ export function useBlobEmotions() {
     // Increment dizzy counter (separate from persistent tap count)
     setDizzyCounter((prev) => prev + 1);
 
-    // Check if we hit the dizzy threshold (every 10 taps)
+    // check dizzy threshold every 10 taps
     const shouldTriggerDizzy = dizzyCounter + 1 >= 10;
 
-    // Handle dizzy trigger (this overrides cooldown for dizzy state)
+    // handle dizzy trigger
     if (shouldTriggerDizzy) {
-      // Reset dizzy counter after triggering
       setDizzyCounter(0);
 
-      // Trigger dizzy -> mad sequence
+      // trigger dizzy -> mad sequence
       setEmotionWithTimeout("dizzy", EMOTION_DURATIONS.dizzy);
-
-      // After dizzy, go to mad
       setTimeout(() => {
         setEmotionWithTimeout("mad", EMOTION_DURATIONS.mad);
       }, EMOTION_DURATIONS.dizzy);
 
-      // Set cooldown after the entire sequence
+      // set cooldown after sequence
       cooldownRef.current =
         now + EMOTION_DURATIONS.dizzy + EMOTION_DURATIONS.mad;
 
-      return; // Exit early, don't process normal emotion changes
+      return; // exit early, don't process normal emotion changes
     }
 
-    // If not triggering dizzy, just show brief happiness (only if currently normal)
+    // if normal, show short happiness animation
     if (emotionState === "normal") {
       setEmotionWithTimeout("happy", EMOTION_DURATIONS.happy);
     }
-  }, [emotionState, setEmotionWithTimeout]);
+  }, [emotionState, setEmotionWithTimeout, currentRoute]);
 
   const getEmotionIcon = useCallback((emotion: EmotionState): string => {
     switch (emotion) {
