@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { Html, Float, CameraControls } from "@react-three/drei";
 import { motion } from "motion/react";
+import { MotionVariants } from "@/styles/motion";
 import { BlobHead } from "./BlobHead";
 import {
   useDeviceOrientation,
@@ -18,6 +19,7 @@ import { useGameStore } from "@/store/gameStore";
 import { useNavigate } from "react-router-dom";
 import { match } from "ts-pattern";
 import { LockIcon } from "@/icons/lock";
+import { useAppStore } from "@/store";
 
 //#region constants
 export const CAMERA_Y_POSITION = 1;
@@ -122,53 +124,7 @@ export const MOTION_VARIANTS = {
       },
     }),
   },
-  springScaleReversed: {
-    initial: {
-      scale: 0.8,
-      opacity: 0,
-      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
-      border: "2px solid transparent",
-      transition: { type: "spring" as const, duration: 0.6, bounce: 0.4 },
-    },
-    exit: {
-      scale: 0.8,
-      opacity: 0,
-      transition: { type: "spring" as const, duration: 0.4, bounce: 0.4 },
-    },
-    hover: {
-      scale: 1.1,
-      zIndex: 1000,
-      transition: { type: "spring" as const, duration: 0.3, bounce: 0.5 },
-    },
-    tap: {
-      scale: 0.9,
-      transition: { type: "spring" as const, duration: 0.3, bounce: 0.5 },
-    },
-    animate: (custom?: {
-      delay?: number;
-      hovered?: boolean;
-      attractionStrength?: number;
-      isAttracted?: boolean;
-      isDisabled?: boolean;
-    }) => ({
-      scale: custom?.isDisabled
-        ? 1
-        : 1 + (custom?.attractionStrength || 0) * 0.15,
-      opacity: custom?.isDisabled ? 0.5 : 1,
-      boxShadow:
-        custom?.isAttracted && !custom?.isDisabled
-          ? `0 8px 16px rgba(66, 133, 244, ${
-              0.3 + (custom?.attractionStrength || 0) * 0.4
-            })`
-          : "0 4px 8px rgba(0, 0, 0, 0.2)",
-      transition: {
-        type: "spring" as const,
-        duration: 0.6,
-        bounce: 0.6,
-        delay: custom?.delay ? custom.delay * 0.05 : 0,
-      },
-    }),
-  },
+  springScaleReversed: MotionVariants.OptionButton,
 };
 
 //#endregion
@@ -235,7 +191,7 @@ export function HeadNavigation({
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
-  const [isClosing, setIsClosing] = useState(false);
+  const { isOptionsClosing, closeOptionsWithAnimation } = useAppStore();
   const [cameraZoomAnimation, setCameraZoomAnimation] = useState(false);
 
   // Blob emotion system
@@ -261,7 +217,7 @@ export function HeadNavigation({
   useFrame(() => {
     // Add camera zoom animation on tap
     const baseZoom =
-      showOptions && !isClosing
+      showOptions && !isOptionsClosing
         ? VISIBLE_OPTIONS_CAMERA_ZOOM
         : HIDDEN_OPTIONS_CAMERA_ZOOM;
     const zoomOffset = cameraZoomAnimation ? 1 : 0;
@@ -278,7 +234,7 @@ export function HeadNavigation({
         calculateAcceleratedRotation(acceleration, orientation);
       cameraControlsRef.current.setLookAt(
         0,
-        showOptions && !isClosing ? 2 : CAMERA_HEIGHT,
+        showOptions && !isOptionsClosing ? 2 : CAMERA_HEIGHT,
         finalZoom,
         -targetRotX,
         targetRotY + CAMERA_Y_POSITION,
@@ -296,7 +252,7 @@ export function HeadNavigation({
         );
         cameraControlsRef.current.setLookAt(
           0,
-          showOptions && !isClosing ? 2 : CAMERA_HEIGHT,
+          showOptions && !isOptionsClosing ? 2 : CAMERA_HEIGHT,
           finalZoom,
           cursorPos.x,
           cursorPos.y + CAMERA_Y_POSITION,
@@ -307,7 +263,7 @@ export function HeadNavigation({
         // On mobile, just set the camera position without following cursor
         cameraControlsRef.current.setLookAt(
           0,
-          showOptions && !isClosing ? 2 : CAMERA_HEIGHT,
+          showOptions && !isOptionsClosing ? 2 : CAMERA_HEIGHT,
           finalZoom,
           0,
           CAMERA_Y_POSITION,
@@ -387,7 +343,7 @@ export function HeadNavigation({
         isMobile={isMobile}
         cameraControlsRef={cameraControlsRef}
         showOptions={showOptions}
-        isClosing={isClosing}
+        isClosing={isOptionsClosing}
         emotionState={emotionState}
         onCameraZoomAnimation={setCameraZoomAnimation}
       />
@@ -397,15 +353,9 @@ export function HeadNavigation({
           windowWidth={windowSize.width}
           windowHeight={windowSize.height}
           cameraControlsRef={cameraControlsRef}
-          hideOptions={() => {
-            setIsClosing(true);
-            setTimeout(() => {
-              setShowOptions(false);
-              setIsClosing(false);
-            }, 400);
-          }}
+          hideOptions={closeOptionsWithAnimation}
           isMobile={isMobile}
-          isClosing={isClosing}
+          isClosing={isOptionsClosing}
           orientation={orientation}
           acceleration={acceleration}
           permissionGranted={permissionGranted}
@@ -592,18 +542,18 @@ function Option({
       <Html position={[0, 1.5, 0]}>
         <motion.button
           key={route.id}
-          initial={MOTION_VARIANTS.springScaleReversed.initial}
+          initial={MotionVariants.OptionButton.initial}
           animate={
             isClosing
-              ? MOTION_VARIANTS.springScaleReversed.exit
-              : MOTION_VARIANTS.springScaleReversed.animate({
+              ? MotionVariants.OptionButton.exit
+              : MotionVariants.OptionButton.animate({
                   delay: index,
                   isDisabled: !route.purchased,
                 })
           }
-          exit={MOTION_VARIANTS.springScaleReversed.exit}
-          whileHover={MOTION_VARIANTS.springScaleReversed.hover}
-          whileTap={MOTION_VARIANTS.springScaleReversed.tap}
+          exit={MotionVariants.OptionButton.exit}
+          whileHover={MotionVariants.OptionButton.hover}
+          whileTap={MotionVariants.OptionButton.tap}
           style={{
             color: "var(--text-color)",
             padding: "16px 20px",

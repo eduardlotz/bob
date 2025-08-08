@@ -22,7 +22,7 @@ export function BottomNavigation() {
     manualTapsPerSecond,
     getTotalTapMultiplierUncached,
   } = useGameStore();
-  const { currentRoute, showOptions, setShowOptions } = useAppStore();
+  const { currentRoute, showOptions, toggleOptions } = useAppStore();
 
   // Only show upgrade/shop buttons on home route
   const isHomeRoute = currentRoute === ROUTE_PATHS.HOME;
@@ -99,7 +99,7 @@ export function BottomNavigation() {
         )}
 
         <MenuButton
-          onClick={() => setShowOptions(!showOptions)}
+          onClick={() => toggleOptions()}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           $isActive={showOptions}

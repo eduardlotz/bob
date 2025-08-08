@@ -34,7 +34,8 @@ export enum GAME_STORE_VERSIONS {
   V10 = 10,
   V11 = 11,
   V12 = 12,
-  LATEST = 12,
+  V13 = 13,
+  LATEST = 13,
 }
 
 // Constants
@@ -328,6 +329,18 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
     };
     migratedState.lastSchemaUpdate = now;
     currentVersion = GAME_STORE_VERSIONS.V12;
+  }
+
+  // Migration V12 → V13: Start with no layered world sounds selected by default
+  if (currentVersion < GAME_STORE_VERSIONS.V13) {
+    migratedState.audioSelections = {
+      ...(migratedState.audioSelections || {}),
+      // Avoid auto-playing any world sounds until user unmutes and selects
+      worldSoundIds: Array.isArray(migratedState.audioSelections?.worldSoundIds)
+        ? migratedState.audioSelections.worldSoundIds
+        : [],
+    };
+    currentVersion = GAME_STORE_VERSIONS.V13;
   }
 
   // Set the final version to the latest
@@ -846,7 +859,7 @@ export const useGameStore = create<GameStore>()(
         audioSelections: {
           worldMusicId: "world-lofi",
           tapEffectId: "tap_effect_default",
-          worldSoundIds: ["world-lofi"],
+          worldSoundIds: [],
           tapEffectAudioId: undefined,
         },
 
@@ -1386,6 +1399,7 @@ export const useGameStore = create<GameStore>()(
         },
 
         setWorldMusicId: (id: string) => {
+          // Deprecated: Primary/secondary handling removed; keep method no-op to avoid runtime errors
           set((state) => ({
             ...state,
             audioSelections: {
@@ -1393,14 +1407,6 @@ export const useGameStore = create<GameStore>()(
               worldMusicId: id,
             },
           }));
-          try {
-            const track = getWorldSoundById(id);
-            if (track) {
-              // Update engine primary background music id
-              useGameStore.getState();
-              engineSetWorldMusic(track.filePath, track.id);
-            }
-          } catch {}
         },
         setTapEffectId: (id: string) => {
           set((state) => ({

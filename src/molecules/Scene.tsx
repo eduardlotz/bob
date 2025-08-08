@@ -35,8 +35,13 @@ const Scene = ({
 }) => {
   const cameraControlsRef = useRef<CameraControls>(null!);
 
-  const { currentRoute, showOptions, setShowOptions, setEmotionData } =
-    useAppStore();
+  const {
+    currentRoute,
+    showOptions,
+    setShowOptions,
+    setEmotionData,
+    closeOptionsWithAnimation,
+  } = useAppStore();
 
   const isHome = currentRoute === ROUTE_PATHS.HOME;
 
@@ -71,7 +76,7 @@ const Scene = ({
 
   useKeyPress("Escape", () => {
     if (showOptions) {
-      setShowOptions(false);
+      closeOptionsWithAnimation();
     }
   });
 

@@ -6,12 +6,10 @@ import { WORLD_SOUNDS, getWorldSoundById } from "@/utils/sound/configs";
 import {
   setWorldEnabled as engineSetWorldEnabled,
   setTapEnabled as engineSetTapEnabled,
-  setWorldMusic as engineSetWorldMusic,
   setCurrentTapSound as engineSetCurrentTapSound,
   stopSoundsById,
   playWorldSound as enginePlayWorldSound,
   addSoundConfig as engineAddSoundConfig,
-  stopBackgroundMusic as engineStopBackgroundMusic,
 } from "@/utils/soundSystem";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { CartIcon } from "@/icons/cart";
@@ -408,7 +406,6 @@ function EnvironmentView() {
     canAfford,
     soundSystem,
     audioSelections,
-    setWorldMusicId,
     setWorldEnabled,
     toggleWorldSoundId,
   } = useGameStore();
@@ -440,9 +437,7 @@ function EnvironmentView() {
             const next = !(soundSystem.worldEnabled !== false);
             setWorldEnabled(next);
             engineSetWorldEnabled(next);
-            if (!next) return;
-            const track = getWorldSoundById(audioSelections.worldMusicId);
-            engineSetWorldMusic(track.filePath, track.id);
+            // No primary/secondary: when enabling, resume layers via hook logic
           }}
           $active={soundSystem.worldEnabled !== false}
         >
@@ -478,7 +473,6 @@ function EnvironmentView() {
       <SectionSubtitle>Music</SectionSubtitle>
       <EnvironmentGrid>
         {WORLD_SOUNDS.map((track) => {
-          const isPrimary = audioSelections.worldMusicId === track.id;
           const isLayered = (audioSelections.worldSoundIds || []).includes(
             track.id
           );
@@ -489,18 +483,11 @@ function EnvironmentView() {
               $unlocked={true}
               $canAfford={true}
               onClick={() => {
-                const currentIds = audioSelections.worldSoundIds || [];
-                const wasLayered = isLayered;
-                const nextLayered = !wasLayered;
-                const nextIds = nextLayered
-                  ? [...currentIds, track.id]
-                  : currentIds.filter((x) => x !== track.id);
-
                 // Toggle layered selection in store
                 toggleWorldSoundId?.(track.id);
 
                 // Play or stop the clicked layer immediately
-                if (nextLayered) {
+                if (!isLayered) {
                   try {
                     engineAddSoundConfig({
                       id: track.id,
@@ -527,41 +514,11 @@ function EnvironmentView() {
                   try {
                     stopSoundsById(track.id);
                   } catch {}
-                  if (isPrimary) {
-                    try {
-                      engineStopBackgroundMusic();
-                    } catch {}
-                  }
-                }
-
-                // Auto-promote primary for smoother UX
-                if (!nextLayered && isPrimary && nextIds.length > 0) {
-                  // Promote the first remaining layer to primary
-                  const newPrimaryId = nextIds[0];
-                  setWorldMusicId(newPrimaryId);
-                  const newTrack = WORLD_SOUNDS.find(
-                    (t) => t.id === newPrimaryId
-                  );
-                  if (newTrack)
-                    engineSetWorldMusic(newTrack.filePath, newTrack.id);
-                }
-                if (nextLayered && nextIds.length === 1) {
-                  // First selection becomes primary
-                  setWorldMusicId(track.id);
-                  engineSetWorldMusic(track.filePath, track.id);
-                }
-
-                // Keep engine selection in sync when clicked track is/was primary
-                if (isPrimary) {
-                  engineSetWorldMusic(track.filePath, track.id);
                 }
               }}
             >
               <EnvironmentIcon>{track.icon}</EnvironmentIcon>
-              <EnvironmentName>
-                {track.name}
-                {isPrimary ? " • primary" : ""}
-              </EnvironmentName>
+              <EnvironmentName>{track.name}</EnvironmentName>
               <EnvironmentStatus $unlocked={true}>
                 {isLayered ? "Layered" : "Available"}
               </EnvironmentStatus>

@@ -126,6 +126,50 @@ export namespace MotionVariants {
       },
     },
   };
+  // Extended option button variant used by navigation option pills
+  export const OptionButton = {
+    initial: {
+      scale: 0.8,
+      opacity: 0,
+      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
+      border: "2px solid transparent",
+      transition: { type: "spring" as const, duration: 0.6, bounce: 0.4 },
+    },
+    exit: {
+      scale: 0.8,
+      opacity: 0,
+      transition: { type: "spring" as const, duration: 0.4, bounce: 0.4 },
+    },
+    hover: {
+      scale: 1.1,
+      zIndex: 1000,
+      transition: { type: "spring" as const, duration: 0.3, bounce: 0.5 },
+    },
+    tap: {
+      scale: 0.9,
+      transition: { type: "spring" as const, duration: 0.3, bounce: 0.5 },
+    },
+    animate: (custom?: {
+      delay?: number;
+      hovered?: boolean;
+      attractionStrength?: number;
+      isAttracted?: boolean;
+      isDisabled?: boolean;
+    }) => ({
+      scale: custom?.isDisabled ? 1 : 1 + (custom?.attractionStrength || 0) * 0.15,
+      opacity: custom?.isDisabled ? 0.5 : 1,
+      boxShadow:
+        custom?.isAttracted && !custom?.isDisabled
+          ? `0 8px 16px rgba(66, 133, 244, ${0.3 + (custom?.attractionStrength || 0) * 0.4})`
+          : "0 4px 8px rgba(0, 0, 0, 0.2)",
+      transition: {
+        type: "spring" as const,
+        duration: 0.6,
+        bounce: 0.6,
+        delay: custom?.delay ? custom.delay * 0.05 : 0,
+      },
+    }),
+  } as const;
 }
 export namespace Transitions {
   export const quick = {

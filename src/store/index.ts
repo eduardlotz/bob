@@ -25,6 +25,7 @@ interface AppStore {
   // Navigation state
   currentRoute: string;
   isNavigationOpen: boolean;
+  isOptionsClosing: boolean;
 
   // Scene state
   sceneMode: SceneMode;
@@ -42,6 +43,8 @@ interface AppStore {
   setNavigationOpen: (open: boolean) => void;
   setSceneMode: (mode: SceneMode) => void;
   setShowOptions: React.Dispatch<React.SetStateAction<boolean>>;
+  closeOptionsWithAnimation: () => void;
+  openOptions: () => void;
   setPermissionGranted: (granted: boolean) => void;
   setIsMobile: (mobile: boolean) => void;
   setEmotionData: (data: EmotionState | null) => void;
@@ -61,6 +64,7 @@ export const useAppStore = create<AppStore>()(
       // Initial state
       currentRoute: "/home",
       isNavigationOpen: false,
+      isOptionsClosing: false,
       sceneMode: "home",
       showOptions: false,
       permissionGranted: false,
@@ -76,6 +80,15 @@ export const useAppStore = create<AppStore>()(
           showOptions:
             typeof show === "function" ? show(get().showOptions) : show,
         }),
+      openOptions: () => set({ showOptions: true, isOptionsClosing: false }),
+      closeOptionsWithAnimation: () => {
+        // trigger closing flag so animated components can play exit
+        set({ isOptionsClosing: true });
+        // after a small delay, actually close options and reset closing flag
+        setTimeout(() => {
+          set({ showOptions: false, isOptionsClosing: false });
+        }, 400);
+      },
       setPermissionGranted: (granted) => set({ permissionGranted: granted }),
       setIsMobile: (mobile) => set({ isMobile: mobile }),
       setEmotionData: (data) => set({ emotionData: data }),
@@ -86,11 +99,16 @@ export const useAppStore = create<AppStore>()(
         set({ currentRoute: route });
 
         // Always close options when navigating
-        set({ showOptions: false });
+        set({ showOptions: false, isOptionsClosing: false });
       },
 
       toggleOptions: () => {
-        set((state) => ({ showOptions: !state.showOptions }));
+        const { showOptions } = get();
+        if (showOptions) {
+          get().closeOptionsWithAnimation();
+        } else {
+          get().openOptions();
+        }
       },
 
       // Route helpers

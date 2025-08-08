@@ -16,6 +16,7 @@ import {
   unmute as engineUnmute,
   toggleMute as engineToggleMute,
   isAudioContextRunning,
+  resumeAudioContext,
   setTapEnabled as engineSetTapEnabled,
   setWorldEnabled as engineSetWorldEnabled,
   setWorldMusic as engineSetWorldMusic,
@@ -241,6 +242,10 @@ export function useSoundSystem(): SoundSystemHook {
       lastNonZeroMasterVolumeRef.current > 0
         ? lastNonZeroMasterVolumeRef.current
         : 1;
+    try {
+      // Best-effort unlock on iOS within user gesture
+      resumeAudioContext();
+    } catch {}
     engineUnmute();
     useGameStore.getState().setMasterVolume(restore);
     // Resume selected layers on unmute
@@ -259,8 +264,14 @@ export function useSoundSystem(): SoundSystemHook {
         lastNonZeroMasterVolumeRef.current > 0
           ? lastNonZeroMasterVolumeRef.current
           : 1;
+      try {
+        // Best-effort unlock on iOS within user gesture
+        resumeAudioContext();
+      } catch {}
       engineUnmute();
       useGameStore.getState().setMasterVolume(restore);
+      // Ensure previously selected world layers resume on unmute
+      resumeSelectedWorldLayers();
     }
   }, []);
 
