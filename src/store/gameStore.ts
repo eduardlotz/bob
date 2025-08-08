@@ -353,6 +353,14 @@ export interface Route {
   category: "pages";
 }
 
+export interface SoundSystemState {
+  enabled: boolean;
+  masterVolume: number;
+  tapVolume: number;
+  worldVolume: number;
+  uiVolume: number;
+}
+
 // Game state interface
 interface GameStore {
   // Store version for migrations
@@ -395,6 +403,9 @@ interface GameStore {
   animationsEnabled: boolean;
   statisticsVisible: boolean;
 
+  // Sound system state
+  soundSystem: SoundSystemState;
+
   // Actions
   addTaps: (amount: number) => void;
   addAutoTaps: (amount: number) => void;
@@ -419,6 +430,13 @@ interface GameStore {
   buyAllUpgrades: () => void;
   toggleAnimations: () => void;
   toggleStatistics: () => void;
+
+  // Sound system actions
+  setSoundEnabled: (enabled: boolean) => void;
+  setMasterVolume: (volume: number) => void;
+  setTapVolume: (volume: number) => void;
+  setWorldVolume: (volume: number) => void;
+  setUIVolume: (volume: number) => void;
 
   // Computed values
   getTotalTapsPerSecond: () => number;
@@ -727,6 +745,15 @@ export const useGameStore = create<GameStore>()(
         fisheyeIntensity: 0,
         animationsEnabled: true,
         statisticsVisible: false,
+
+        // Sound system state
+        soundSystem: {
+          enabled: true,
+          masterVolume: 1.0,
+          tapVolume: 1.0,
+          worldVolume: 1.0,
+          uiVolume: 1.0,
+        },
 
         // Actions
         addTaps: (amount: number) => {
@@ -1198,6 +1225,57 @@ export const useGameStore = create<GameStore>()(
           }));
         },
 
+        // Sound system actions
+        setSoundEnabled: (enabled: boolean) => {
+          set((state) => ({
+            ...state,
+            soundSystem: {
+              ...state.soundSystem,
+              enabled,
+            },
+          }));
+        },
+
+        setMasterVolume: (volume: number) => {
+          set((state) => ({
+            ...state,
+            soundSystem: {
+              ...state.soundSystem,
+              masterVolume: Math.max(0, Math.min(1, volume)),
+            },
+          }));
+        },
+
+        setTapVolume: (volume: number) => {
+          set((state) => ({
+            ...state,
+            soundSystem: {
+              ...state.soundSystem,
+              tapVolume: Math.max(0, Math.min(1, volume)),
+            },
+          }));
+        },
+
+        setWorldVolume: (volume: number) => {
+          set((state) => ({
+            ...state,
+            soundSystem: {
+              ...state.soundSystem,
+              worldVolume: Math.max(0, Math.min(1, volume)),
+            },
+          }));
+        },
+
+        setUIVolume: (volume: number) => {
+          set((state) => ({
+            ...state,
+            soundSystem: {
+              ...state.soundSystem,
+              uiVolume: Math.max(0, Math.min(1, volume)),
+            },
+          }));
+        },
+
         // Route unlocking logic
         checkRouteUnlocks: () => {
           set((state) => {
@@ -1389,6 +1467,7 @@ export const useGameStore = create<GameStore>()(
           routes: state.routes,
           fisheyeIntensity: state.fisheyeIntensity,
           lastAutoTapTime: state.lastAutoTapTime,
+          soundSystem: state.soundSystem,
         }),
         onRehydrateStorage: (state) => {
           console.log("Game store rehydrated:", state);

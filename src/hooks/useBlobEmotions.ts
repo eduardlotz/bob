@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useGameStore } from "@/store/gameStore";
 import { useAppStore, ROUTE_PATHS } from "@/store";
+import { useSoundSystem } from "./useSoundSystem";
+import { isEnabled, resumeAudioContext } from "@/utils/soundSystem";
 
 export type EmotionState = "normal" | "happy" | "dizzy" | "mad";
 
@@ -25,6 +27,7 @@ export function useBlobEmotions() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [dizzyCounter, setDizzyCounter] = useState(0); // Separate counter for dizzy detection
   const { currentRoute } = useAppStore();
+  const { playTapSound } = useSoundSystem();
 
   const emotionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const cooldownRef = useRef<number>(0);
@@ -69,15 +72,26 @@ export function useBlobEmotions() {
   );
 
   const handleTap = useCallback(() => {
+    console.log("handleTap: Function called");
     const now = Date.now();
+
+    // Ensure audio context is resumed on first interaction
+    resumeAudioContext().catch(() => {});
 
     // Only increment tap count on home route
     if (currentRoute === ROUTE_PATHS.HOME) {
+      console.log("handleTap: On home route, processing tap");
       setTapCount((prev) => prev + 1);
 
       // Add tap to game store
       const gameStore = useGameStore.getState();
       gameStore.addManualTap();
+
+      // Play tap sound
+      console.log("handleTap: Playing tap sound...");
+      console.log("handleTap: Sound system enabled:", isEnabled());
+      playTapSound();
+      console.log("handleTap: Tap sound called");
     }
 
     // Increment dizzy counter (separate from persistent tap count)
