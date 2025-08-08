@@ -42,20 +42,39 @@ let isStartingBackgroundMusic = false;
 
 // Ensure audio context is resumed (required for browser autoplay policies)
 export const resumeAudioContext = async () => {
-  if (!audioListener?.context) {
+  // Ensure listener exists (create within gesture when called from unmute)
+  const listener = initializeAudioListener();
+  if (!listener?.context) {
     console.log("No audio context available");
     return;
   }
 
-  if (audioListener.context.state === "suspended") {
+  if (listener.context.state === "suspended") {
     console.log("Resuming suspended audio context...");
     try {
-      await audioListener.context.resume();
+      await listener.context.resume();
       console.log("Audio context resumed successfully");
     } catch (error) {
       console.error("Failed to resume audio context:", error);
     }
   }
+};
+
+// Some iOS versions need an actual start/stop of a source node after resume
+// This plays a near-silent, extremely short tone to fully unlock playback
+export const unlockAudioContext = async () => {
+  const listener = initializeAudioListener();
+  const ctx = listener?.context as AudioContext | undefined;
+  if (!ctx) return;
+  try {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    gain.gain.value = 0.0001; // effectively silent
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.05);
+  } catch {}
 };
 
 export const suspendAudioContext = async () => {

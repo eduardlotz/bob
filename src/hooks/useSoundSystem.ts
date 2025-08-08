@@ -17,6 +17,7 @@ import {
   toggleMute as engineToggleMute,
   isAudioContextRunning,
   resumeAudioContext,
+  unlockAudioContext,
   setTapEnabled as engineSetTapEnabled,
   setWorldEnabled as engineSetWorldEnabled,
   setWorldMusic as engineSetWorldMusic,
@@ -245,6 +246,7 @@ export function useSoundSystem(): SoundSystemHook {
     // Always resume audio context after unmute (fixes iOS policies)
     try {
       await resumeAudioContext();
+      await unlockAudioContext();
     } catch {}
     engineUnmute();
     useGameStore.getState().setMasterVolume(restore);
@@ -267,6 +269,7 @@ export function useSoundSystem(): SoundSystemHook {
       // Always resume audio context after unmute (fixes iOS policies)
       try {
         await resumeAudioContext();
+        await unlockAudioContext();
       } catch {}
       engineUnmute();
       useGameStore.getState().setMasterVolume(restore);
