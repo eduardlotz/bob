@@ -4,6 +4,7 @@ import { Button } from "@/layout/atoms";
 import { BottomNavigation } from "@/molecules/BottomNavigation";
 import { Statistics } from "@/molecules/Statistics";
 import { SoundSettings } from "@/components/SoundSettings";
+import { SoundToggle } from "@/components/SoundToggle";
 
 import { requestMotionPermission } from "@/utils/permission";
 import { useGameStore, startAutoTap, stopAutoTap } from "@/store/gameStore";
@@ -67,13 +68,9 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
       <BottomNavigation />
       <Statistics visible={statisticsVisible} />
 
-      {/* Sound Settings Button */}
-      <SoundSettingsButton
-        onClick={() => setSoundSettingsVisible(true)}
-        title="Sound Settings"
-      >
-        🔊
-      </SoundSettingsButton>
+      <ToggleContainer>
+        <SoundToggle />
+      </ToggleContainer>
 
       {/* Sound Settings Modal */}
       <SoundSettings
@@ -121,33 +118,12 @@ const UILayerContainer = styled.div`
   z-index: 1000;
 `;
 
-const SoundSettingsButton = styled.button`
+const ToggleContainer = styled.div`
   position: fixed;
   top: 20px;
   right: 20px;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  background: #2979ff;
-  color: white;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  transition: all 0.2s ease;
   z-index: 100;
-
-  &:hover {
-    transform: scale(1.1);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-  }
-
-  &:active {
-    transform: scale(0.95);
-  }
+  pointer-events: auto;
 `;
 
 const CalibrationButton = styled(Button)`

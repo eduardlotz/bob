@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   playTapSound as playTapSoundUtil,
   playWorldSound as playWorldSoundUtil,
@@ -12,9 +12,18 @@ import {
   setTypeVolume,
   updateWorldSoundVolumes,
   initializeSoundSystemAsync,
+  mute as engineMute,
+  unmute as engineUnmute,
+  toggleMute as engineToggleMute,
+  isAudioContextRunning,
+  setTapEnabled as engineSetTapEnabled,
+  setWorldEnabled as engineSetWorldEnabled,
+  setWorldMusic as engineSetWorldMusic,
+  setCurrentTapSound as engineSetCurrentTapSound,
 } from "../utils/soundSystem";
 import { useGameStore } from "../store/gameStore";
 import { match } from "ts-pattern";
+import { toast } from "sonner";
 
 export interface SoundSystemHook {
   // Core sound functions
@@ -30,6 +39,9 @@ export interface SoundSystemHook {
 
   // State
   isEnabled: boolean;
+  isMuted: boolean;
+  audioStatus: "playing" | "muted" | "stopped";
+  isActive: boolean;
   masterVolume: number;
   tapVolume: number;
   worldVolume: number;
@@ -37,11 +49,24 @@ export interface SoundSystemHook {
   // System control
   enable: () => void;
   disable: () => void;
+  start: () => void; // alias for enable
+  stop: () => void; // alias for disable
+
+  // Mute control
+  mute: () => void;
+  unmute: () => void;
+  toggleMute: () => void;
+  toggle: () => void; // alias for toggleMute for UI consumption
 }
 
 export function useSoundSystem(): SoundSystemHook {
   const gameStore = useGameStore();
   const lastMenuStateRef = useRef<boolean>(false);
+  const lastNonZeroMasterVolumeRef = useRef<number>(
+    gameStore.soundSystem.masterVolume > 0
+      ? gameStore.soundSystem.masterVolume
+      : 1
+  );
 
   // Sound system is initialized in SceneWithLoader before scene loads
 
@@ -99,26 +124,29 @@ export function useSoundSystem(): SoundSystemHook {
   );
 
   // Volume control functions
-  const setMasterVolumeCallback = useCallback(
-    (volume: number) => {
-      gameStore.setMasterVolume(volume);
-    },
-    [gameStore]
-  );
+  const setMasterVolumeCallback = useCallback((volume: number) => {
+    // Attempt to resume on any user-driven volume change
+    try {
+      // best effort; engine handles missing listener
+      (window as any).requestIdleCallback?.(() => {});
+    } catch {}
+    const clamped = Math.max(0, Math.min(1, volume));
+    setMasterVolume(clamped);
+    // Do not persist master volume per requirements; local store update is okay
+    useGameStore.getState().setMasterVolume(clamped);
+  }, []);
 
-  const setTapVolumeCallback = useCallback(
-    (volume: number) => {
-      gameStore.setTapVolume(volume);
-    },
-    [gameStore]
-  );
+  const setTapVolumeCallback = useCallback((volume: number) => {
+    const clamped = Math.max(0, Math.min(1, volume));
+    setTypeVolume("tap", clamped);
+    useGameStore.getState().setTapVolume(clamped);
+  }, []);
 
-  const setWorldVolumeCallback = useCallback(
-    (volume: number) => {
-      gameStore.setWorldVolume(volume);
-    },
-    [gameStore]
-  );
+  const setWorldVolumeCallback = useCallback((volume: number) => {
+    const clamped = Math.max(0, Math.min(1, volume));
+    setTypeVolume("world", clamped);
+    useGameStore.getState().setWorldVolume(clamped);
+  }, []);
 
   // System control functions
   const enableCallback = useCallback(() => {
@@ -128,6 +156,42 @@ export function useSoundSystem(): SoundSystemHook {
   const disableCallback = useCallback(() => {
     gameStore.setSoundEnabled(false);
   }, [gameStore]);
+
+  // Mute control functions work by changing master volume while leaving the system enabled
+  const muteCallback = useCallback(() => {
+    const current = useGameStore.getState().soundSystem.masterVolume;
+    if (current > 0) {
+      lastNonZeroMasterVolumeRef.current = current;
+    }
+    // Apply immediately to engine and persist
+    engineMute();
+    useGameStore.getState().setMasterVolume(0);
+  }, []);
+
+  const unmuteCallback = useCallback(() => {
+    const restore =
+      lastNonZeroMasterVolumeRef.current > 0
+        ? lastNonZeroMasterVolumeRef.current
+        : 1;
+    engineUnmute();
+    useGameStore.getState().setMasterVolume(restore);
+  }, []);
+
+  const toggleMuteCallback = useCallback(() => {
+    const current = useGameStore.getState().soundSystem.masterVolume;
+    if (current > 0) {
+      lastNonZeroMasterVolumeRef.current = current;
+      engineMute();
+      useGameStore.getState().setMasterVolume(0);
+    } else {
+      const restore =
+        lastNonZeroMasterVolumeRef.current > 0
+          ? lastNonZeroMasterVolumeRef.current
+          : 1;
+      engineUnmute();
+      useGameStore.getState().setMasterVolume(restore);
+    }
+  }, []);
 
   // Effect to handle menu state changes for world sound attenuation
   useEffect(() => {
@@ -146,6 +210,12 @@ export function useSoundSystem(): SoundSystemHook {
     }
   }, [gameStore.isPaused]);
 
+  const isActive = useMemo(() => {
+    return (
+      gameStore.soundSystem.enabled && gameStore.soundSystem.masterVolume > 0
+    );
+  }, [gameStore.soundSystem.enabled, gameStore.soundSystem.masterVolume]);
+
   return {
     playTapSound: playTapSoundWithGameIntegration,
     playWorldSound: playWorldSoundWithOptions,
@@ -155,10 +225,23 @@ export function useSoundSystem(): SoundSystemHook {
     setTapVolume: setTapVolumeCallback,
     setWorldVolume: setWorldVolumeCallback,
     isEnabled: gameStore.soundSystem.enabled,
+    isMuted: gameStore.soundSystem.masterVolume === 0,
+    audioStatus: !gameStore.soundSystem.enabled
+      ? "stopped"
+      : gameStore.soundSystem.masterVolume === 0
+      ? "muted"
+      : "playing",
+    isActive,
     masterVolume: gameStore.soundSystem.masterVolume,
     tapVolume: gameStore.soundSystem.tapVolume,
     worldVolume: gameStore.soundSystem.worldVolume,
     enable: enableCallback,
     disable: disableCallback,
+    start: enableCallback,
+    stop: disableCallback,
+    mute: muteCallback,
+    unmute: unmuteCallback,
+    toggleMute: toggleMuteCallback,
+    toggle: toggleMuteCallback,
   };
 }

@@ -2,6 +2,13 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
 import { useGameStore, triggerStoreMigration } from "@/store/gameStore";
+import { MUSIC_TRACKS, getMusicTrackById } from "@/utils/sound/configs";
+import {
+  setWorldEnabled as engineSetWorldEnabled,
+  setTapEnabled as engineSetTapEnabled,
+  setWorldMusic as engineSetWorldMusic,
+  setCurrentTapSound as engineSetCurrentTapSound,
+} from "@/utils/soundSystem";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { CartIcon } from "@/icons/cart";
 import { ThemeIcon } from "@/icons/theme";
@@ -9,6 +16,7 @@ import { EffectsIcon } from "@/icons/effects";
 import { EnvironmentIcon as EnvironmentIconComponent } from "@/icons/environment";
 import { PagesIcon } from "@/icons/pages";
 import { DebuggingIcon } from "@/icons/debugging";
+import { useSoundSystem } from "@/hooks/useSoundSystem";
 
 interface ShopProps {
   isOpen: boolean;
@@ -19,6 +27,7 @@ type ShopTab = "themes" | "effects" | "environment" | "pages" | "dev";
 
 export function Shop({ isOpen, onClose }: ShopProps) {
   const [activeTab, setActiveTab] = useState<ShopTab>("pages");
+  const sound = useSoundSystem();
   const { themes, upgrades, routes, taps, calculateOfflineTaps, addTaps } =
     useGameStore();
   // const isDevMode = process.env.NODE_ENV === "development";
@@ -183,6 +192,70 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                         transition={{ duration: 0.15, ease: "easeOut" }}
                       >
                         <DevView />
+                        <Divider />
+                        <SettingsGroup>
+                          <GroupHeader>
+                            <GroupTitle>Music & Sound</GroupTitle>
+                            <ToggleSwitch
+                              onClick={
+                                sound.isEnabled ? sound.disable : sound.enable
+                              }
+                              $active={sound.isEnabled}
+                            >
+                              {sound.isEnabled ? "ON" : "OFF"}
+                            </ToggleSwitch>
+                          </GroupHeader>
+                          <SliderRow>
+                            <SliderLabel>Master</SliderLabel>
+                            <Slider
+                              type="range"
+                              min={0}
+                              max={1}
+                              step={0.01}
+                              value={sound.masterVolume}
+                              onChange={(e) =>
+                                sound.setMasterVolume(
+                                  parseFloat(e.target.value)
+                                )
+                              }
+                            />
+                            <SliderValue>
+                              {Math.round(sound.masterVolume * 100)}%
+                            </SliderValue>
+                          </SliderRow>
+                          <SliderRow>
+                            <SliderLabel>World</SliderLabel>
+                            <Slider
+                              type="range"
+                              min={0}
+                              max={1}
+                              step={0.01}
+                              value={sound.worldVolume}
+                              onChange={(e) =>
+                                sound.setWorldVolume(parseFloat(e.target.value))
+                              }
+                            />
+                            <SliderValue>
+                              {Math.round(sound.worldVolume * 100)}%
+                            </SliderValue>
+                          </SliderRow>
+                          <SliderRow>
+                            <SliderLabel>Tap</SliderLabel>
+                            <Slider
+                              type="range"
+                              min={0}
+                              max={1}
+                              step={0.01}
+                              value={sound.tapVolume}
+                              onChange={(e) =>
+                                sound.setTapVolume(parseFloat(e.target.value))
+                              }
+                            />
+                            <SliderValue>
+                              {Math.round(sound.tapVolume * 100)}%
+                            </SliderValue>
+                          </SliderRow>
+                        </SettingsGroup>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -253,8 +326,14 @@ function ThemesView() {
 }
 
 function EffectsView() {
-  const { upgrades, selectTapEffect, purchaseUpgrade, canAfford } =
-    useGameStore();
+  const {
+    upgrades,
+    selectTapEffect,
+    purchaseUpgrade,
+    canAfford,
+    soundSystem,
+    setTapEnabled,
+  } = useGameStore();
   const tapEffects = upgrades.filter((u) => u.category === "tapEffects");
 
   const handleEffectSelect = (effectId: string) => {
@@ -274,6 +353,19 @@ function EffectsView() {
   return (
     <EffectsContainer>
       <SectionTitle>Tap Effects</SectionTitle>
+      <ToggleRow>
+        <ToggleLabel>Enable Tap Sound</ToggleLabel>
+        <ToggleSwitch
+          onClick={() => {
+            const next = !(soundSystem.tapEnabled !== false);
+            setTapEnabled(next);
+            engineSetTapEnabled(next);
+          }}
+          $active={soundSystem.tapEnabled !== false}
+        >
+          {soundSystem.tapEnabled !== false ? "ON" : "OFF"}
+        </ToggleSwitch>
+      </ToggleRow>
 
       <EffectsGrid>
         {tapEffects.map((effect) => (
@@ -305,8 +397,16 @@ function EffectsView() {
 }
 
 function EnvironmentView() {
-  const { upgrades, toggleEnvironmentEffect, purchaseUpgrade, canAfford } =
-    useGameStore();
+  const {
+    upgrades,
+    toggleEnvironmentEffect,
+    purchaseUpgrade,
+    canAfford,
+    soundSystem,
+    audioSelections,
+    setWorldMusicId,
+    setWorldEnabled,
+  } = useGameStore();
   const environmentEffects = upgrades.filter(
     (u) => u.category === "environment"
   );
@@ -327,7 +427,24 @@ function EnvironmentView() {
 
   return (
     <EnvironmentContainer>
-      <SectionTitle>Weather Effects</SectionTitle>
+      <SectionTitle>World</SectionTitle>
+      <ToggleRow>
+        <ToggleLabel>Enable Music</ToggleLabel>
+        <ToggleSwitch
+          onClick={() => {
+            const next = !(soundSystem.worldEnabled !== false);
+            setWorldEnabled(next);
+            engineSetWorldEnabled(next);
+            if (!next) return;
+            const track = getMusicTrackById(audioSelections.worldMusicId);
+            engineSetWorldMusic(track.filePath, track.id);
+          }}
+          $active={soundSystem.worldEnabled !== false}
+        >
+          {soundSystem.worldEnabled !== false ? "ON" : "OFF"}
+        </ToggleSwitch>
+      </ToggleRow>
+      <SectionSubtitle>Weather Effects</SectionSubtitle>
       <EnvironmentGrid>
         {environmentEffects.map((effect) => (
           <EnvironmentCard
@@ -352,6 +469,30 @@ function EnvironmentView() {
             </EnvironmentStatus>
           </EnvironmentCard>
         ))}
+      </EnvironmentGrid>
+      <SectionSubtitle>Music</SectionSubtitle>
+      <EnvironmentGrid>
+        {MUSIC_TRACKS.map((track) => {
+          const isActive = audioSelections.worldMusicId === track.id;
+          return (
+            <EnvironmentCard
+              key={track.id}
+              $enabled={isActive}
+              $unlocked={true}
+              $canAfford={true}
+              onClick={() => {
+                setWorldMusicId(track.id);
+                engineSetWorldMusic(track.filePath, track.id);
+              }}
+            >
+              <EnvironmentIcon>{track.icon}</EnvironmentIcon>
+              <EnvironmentName>{track.name}</EnvironmentName>
+              <EnvironmentStatus $unlocked={true}>
+                {isActive ? "Selected" : "Available"}
+              </EnvironmentStatus>
+            </EnvironmentCard>
+          );
+        })}
       </EnvironmentGrid>
     </EnvironmentContainer>
   );
@@ -803,11 +944,31 @@ const SectionTitle = styled.h3`
   margin: 0;
 `;
 
+const SectionSubtitle = styled.h4`
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 8px 0 0 0;
+  opacity: 0.9;
+`;
+
 // Effects and Environment styled components
 const EffectsContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: 16px;
+`;
+
+const ToggleRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const ToggleLabel = styled.div`
+  font-size: 12px;
+  color: #ffffff;
+  opacity: 0.8;
 `;
 
 const EffectsGrid = styled.div`
@@ -896,6 +1057,75 @@ const DevGrid = styled.div`
   display: grid;
   gap: 12px;
   grid-template-columns: repeat(auto-fill, 1fr);
+`;
+
+// Settings styles
+const SettingsGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+const GroupHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const GroupTitle = styled.h4`
+  margin: 0;
+  font-size: 16px;
+  color: #ffffff;
+`;
+
+const ToggleSwitch = styled.button<{ $active: boolean }>`
+  padding: 6px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: ${({ $active }) =>
+    $active ? "var(--primary-color)" : "rgba(255,255,255,0.1)"};
+  color: #ffffff;
+  cursor: pointer;
+`;
+
+const SliderRow = styled.div`
+  display: grid;
+  grid-template-columns: 60px 1fr 50px;
+  align-items: center;
+  gap: 8px;
+`;
+
+const SliderLabel = styled.div`
+  font-size: 12px;
+  color: #ffffff;
+  opacity: 0.8;
+`;
+
+const Slider = styled.input`
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+  &::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent-color);
+  }
+`;
+
+const SliderValue = styled.div`
+  text-align: right;
+  font-size: 12px;
+  color: #ffffff;
+  opacity: 0.8;
+`;
+
+const Row = styled.div`
+  display: flex;
+  gap: 8px;
 `;
 
 const Divider = styled.div`

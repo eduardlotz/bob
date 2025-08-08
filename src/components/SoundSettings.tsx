@@ -2,6 +2,7 @@ import React from "react";
 import styled from "styled-components";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { testSoundSystem, debugSoundSystem } from "@/utils/soundSystem";
+import { motion } from "motion/react";
 
 interface SoundSettingsProps {
   visible?: boolean;
@@ -14,6 +15,8 @@ export function SoundSettings({
 }: SoundSettingsProps) {
   const {
     isEnabled,
+    isMuted,
+    audioStatus,
     masterVolume,
     tapVolume,
     worldVolume,
@@ -22,6 +25,9 @@ export function SoundSettings({
     setWorldVolume,
     enable,
     disable,
+    mute,
+    unmute,
+    toggleMute,
     playTapSound,
   } = useSoundSystem();
 
@@ -29,14 +35,20 @@ export function SoundSettings({
 
   return (
     <SettingsOverlay onClick={onClose}>
-      <SettingsPanel onClick={(e) => e.stopPropagation()}>
+      <SettingsPanel
+        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+        initial={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(10px)" }}
+        animate={{ opacity: 1, scaleX: 1, y: 0, filter: "blur(0px)" }}
+        exit={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(10px)" }}
+        transition={{ duration: 0.2, ease: "easeInOut" }}
+      >
         <SettingsHeader>
           <h3>Sound Settings</h3>
           {onClose && <CloseButton onClick={onClose}>×</CloseButton>}
         </SettingsHeader>
 
         <SettingsContent>
-          {/* Master Sound Toggle */}
+          {/* System Power (Stop/Start) */}
           <SettingGroup>
             <SettingLabel>
               <span>Sound System</span>
@@ -45,6 +57,19 @@ export function SoundSettings({
                 onClick={() => (isEnabled ? disable() : enable())}
               >
                 {isEnabled ? "ON" : "OFF"}
+              </ToggleButton>
+            </SettingLabel>
+          </SettingGroup>
+
+          {/* Mute/Unmute */}
+          <SettingGroup>
+            <SettingLabel>
+              <span>Mute</span>
+              <ToggleButton
+                $active={!isMuted}
+                onClick={() => (isMuted ? unmute() : mute())}
+              >
+                {isMuted ? "MUTED" : "SOUND"}
               </ToggleButton>
             </SettingLabel>
           </SettingGroup>
@@ -116,8 +141,12 @@ export function SoundSettings({
 
           {/* Sound Info */}
           <SoundInfo>
-            <p>Current sound: bing-bong.mp3</p>
-            <p>Features: Detune randomization, stop previous sounds</p>
+            <p>Status: {audioStatus}</p>
+            <p>
+              Master: {Math.round(masterVolume * 100)}% | Tap:{" "}
+              {Math.round(tapVolume * 100)}% | World:{" "}
+              {Math.round(worldVolume * 100)}%
+            </p>
           </SoundInfo>
         </SettingsContent>
       </SettingsPanel>
@@ -138,16 +167,25 @@ const SettingsOverlay = styled.div`
   z-index: 1000;
 `;
 
-const SettingsPanel = styled.div`
-  background: white;
-  border: 1px solid #2979ff;
-  border-radius: 12px;
+const SettingsPanel = styled(motion.div)`
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 40px;
+  margin: 0 auto;
+  width: 520px;
+  max-width: calc(100% - 32px);
+  transform: translateY(-50%);
+  max-height: calc(100svh - 140px);
+  background: rgba(20, 20, 20, 0.95);
+  backdrop-filter: blur(16px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  pointer-events: auto;
   padding: 20px;
-  max-width: 400px;
-  width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 `;
 
 const SettingsHeader = styled.div`
@@ -156,11 +194,11 @@ const SettingsHeader = styled.div`
   align-items: center;
   margin-bottom: 20px;
   padding-bottom: 10px;
-  border-bottom: 1px solid #2979ff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 
   h3 {
     margin: 0;
-    color: #333;
+    color: #ffffff;
   }
 `;
 
@@ -200,14 +238,14 @@ const SettingLabel = styled.div`
   justify-content: space-between;
   align-items: center;
   font-weight: 500;
-  color: #333;
+  color: #ffffff;
 `;
 
 const VolumeSlider = styled.input<{ $disabled: boolean }>`
   width: 100%;
   height: 6px;
   border-radius: 3px;
-  background: #e0e0e0;
+  background: rgba(255, 255, 255, 0.1);
   outline: none;
   opacity: ${({ $disabled }) => ($disabled ? 0.5 : 1)};
   cursor: ${({ $disabled }) => ($disabled ? "not-allowed" : "pointer")};
@@ -218,7 +256,7 @@ const VolumeSlider = styled.input<{ $disabled: boolean }>`
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: #2979ff;
+    background: var(--accent-color);
     cursor: pointer;
   }
 
@@ -226,7 +264,7 @@ const VolumeSlider = styled.input<{ $disabled: boolean }>`
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: #2979ff;
+    background: var(--accent-color);
     cursor: pointer;
     border: none;
   }
@@ -234,15 +272,16 @@ const VolumeSlider = styled.input<{ $disabled: boolean }>`
 
 const VolumeValue = styled.span`
   font-size: 12px;
-  color: #333;
+  color: #ffffff;
   opacity: 0.7;
   text-align: right;
 `;
 
 const ToggleButton = styled.button<{ $active: boolean }>`
-  background: ${({ $active }) => ($active ? "#2979ff" : "#e0e0e0")};
-  color: ${({ $active }) => ($active ? "white" : "#333")};
-  border: 1px solid #2979ff;
+  background: ${({ $active }) =>
+    $active ? "var(--primary-color)" : "rgba(255,255,255,0.1)"};
+  color: ${({ $active }) => ($active ? "#ffffff" : "#ffffff")};
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
   padding: 4px 12px;
   font-size: 12px;
@@ -256,8 +295,8 @@ const ToggleButton = styled.button<{ $active: boolean }>`
 `;
 
 const TestButton = styled.button<{ $disabled: boolean }>`
-  background: #2979ff;
-  color: white;
+  background: var(--primary-color);
+  color: #ffffff;
   border: none;
   border-radius: 8px;
   padding: 10px 16px;
@@ -277,11 +316,11 @@ const TestButton = styled.button<{ $disabled: boolean }>`
 const SoundInfo = styled.div`
   margin-top: 20px;
   padding: 12px;
-  background: #e3f2fd;
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
   font-size: 12px;
-  color: #333;
-  opacity: 0.8;
+  color: #ffffff;
+  opacity: 0.9;
 
   p {
     margin: 4px 0;

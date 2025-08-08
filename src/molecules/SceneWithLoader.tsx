@@ -9,7 +9,10 @@ import Scene from "@/molecules/Scene";
 import { UILayer } from "@/components/UILayer";
 import { useAppStore } from "@/store";
 import { useAnimations } from "@/hooks/useAnimations";
-import { initializeSoundSystemAsync } from "@/utils/soundSystem";
+import {
+  initializeSoundSystemAsync,
+  scheduleBackgroundMusicAutoStart,
+} from "@/utils/soundSystem";
 
 // Custom loader component that tracks its own progress
 export const CustomLoader = () => {
@@ -103,6 +106,8 @@ export const SceneWithLoader = ({
       );
       try {
         await initializeSoundSystemAsync();
+        // Prepare auto-start for background music on first user gesture
+        scheduleBackgroundMusicAutoStart();
         console.log("SceneWithLoader: Sound system ready, loading scene...");
       } catch (error) {
         console.error(
