@@ -885,25 +885,7 @@ export const setCurrentTapSound = (id: string, filePath?: string): void => {
 };
 
 let autoStartBound = false;
-export const scheduleBackgroundMusicAutoStart = () => {
-  if (autoStartBound) return;
-  autoStartBound = true;
-
-  const maybeStart = async () => {
-    // Only ensure audio context is resumed on first gesture; do NOT auto-start music
-    try {
-      await resumeAudioContext();
-    } finally {
-      window.removeEventListener("pointerdown", maybeStart);
-      window.removeEventListener("keydown", maybeStart);
-      window.removeEventListener("touchstart", maybeStart);
-    }
-  };
-
-  window.addEventListener("pointerdown", maybeStart);
-  window.addEventListener("keydown", maybeStart);
-  window.addEventListener("touchstart", maybeStart);
-};
+// Removed auto-start binding; we now resume audio context explicitly upon unmute
 
 // play a simple beep sound using threejs oscillator
 export const testSoundSystem = () => {

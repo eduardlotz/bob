@@ -237,14 +237,14 @@ export function useSoundSystem(): SoundSystemHook {
     useGameStore.getState().setMasterVolume(0);
   }, []);
 
-  const unmuteCallback = useCallback(() => {
+  const unmuteCallback = useCallback(async () => {
     const restore =
       lastNonZeroMasterVolumeRef.current > 0
         ? lastNonZeroMasterVolumeRef.current
         : 1;
+    // Always resume audio context after unmute (fixes iOS policies)
     try {
-      // Best-effort unlock on iOS within user gesture
-      resumeAudioContext();
+      await resumeAudioContext();
     } catch {}
     engineUnmute();
     useGameStore.getState().setMasterVolume(restore);
@@ -253,7 +253,7 @@ export function useSoundSystem(): SoundSystemHook {
     resumeSelectedWorldLayers();
   }, []);
 
-  const toggleMuteCallback = useCallback(() => {
+  const toggleMuteCallback = useCallback(async () => {
     const current = useGameStore.getState().soundSystem.masterVolume;
     if (current > 0) {
       lastNonZeroMasterVolumeRef.current = current;
@@ -264,9 +264,9 @@ export function useSoundSystem(): SoundSystemHook {
         lastNonZeroMasterVolumeRef.current > 0
           ? lastNonZeroMasterVolumeRef.current
           : 1;
+      // Always resume audio context after unmute (fixes iOS policies)
       try {
-        // Best-effort unlock on iOS within user gesture
-        resumeAudioContext();
+        await resumeAudioContext();
       } catch {}
       engineUnmute();
       useGameStore.getState().setMasterVolume(restore);
