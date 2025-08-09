@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { useMessageStore } from "@/store/messageStore";
 import { useGameStore } from "@/store/gameStore";
 import { textSynth } from "@/utils/sound/textSynth";
+import { resumeAudioContext, unlockAudioContext } from "@/utils/soundSystem";
 
 // Typing animation constants
 const DEFAULT_MS_PER_CHAR = 50;
@@ -31,6 +32,7 @@ export const MessageBubble = memo(function MessageBubble({
   const dismissTimerRef = useRef<number | null>(null);
   const removalTimersRef = useRef<Record<string, number>>({});
   const finishTimerRef = useRef<number | null>(null);
+  const blipTimeoutsRef = useRef<number[]>([]);
 
   type ThreadItem = {
     key: string;
@@ -185,6 +187,9 @@ export const MessageBubble = memo(function MessageBubble({
     if (!typingKey) return;
     // Clear any running RAF
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    // Clear any pending blip timeouts
+    blipTimeoutsRef.current.forEach((id) => clearTimeout(id));
+    blipTimeoutsRef.current = [];
     setIsFullyTyped(false);
     setDisplayText(line);
     setRevealed(0);
@@ -214,19 +219,27 @@ export const MessageBubble = memo(function MessageBubble({
           soundSystem.enabled &&
           soundSystem.masterVolume > 0
         ) {
+          // Stagger blips when multiple chars revealed in the same frame
+          const baseDelay = Math.max(16, Math.min(80, per * 0.5));
           for (let i = 0; i < delta; i++) {
-            try {
-              textSynth.resume();
-              // Ensure per-char sound length is slightly shorter than reveal period
-              const charDurMs = Math.max(30, Math.min(180, per * 0.9));
-              // Scale gain by master * text volume (fallback to 0.8)
-              const textVolume = (soundSystem as any).textVolume ?? 0.8;
-              const gainScale = Math.max(
-                0.2,
-                Math.min(1.2, (soundSystem.masterVolume || 0) * textVolume || 0)
-              );
-              textSynth.playCharBlip(charDurMs, gainScale || 0.2);
-            } catch {}
+            const timeoutId = window.setTimeout(() => {
+              try {
+                textSynth.resume();
+                // Ensure per-char sound length is slightly shorter than reveal period
+                const charDurMs = Math.max(50, Math.min(220, per * 0.9));
+                // Scale gain by master * text volume (fallback to 0.8)
+                const textVolume = (soundSystem as any).textVolume ?? 0.8;
+                const gainScale = Math.max(
+                  0.2,
+                  Math.min(
+                    1.2,
+                    (soundSystem.masterVolume || 0) * textVolume || 0
+                  )
+                );
+                textSynth.playCharBlip(charDurMs, gainScale || 0.2);
+              } catch {}
+            }, i * baseDelay) as unknown as number;
+            blipTimeoutsRef.current.push(timeoutId);
           }
         }
         if (toReveal === line.length) setIsFullyTyped(true);
@@ -238,6 +251,9 @@ export const MessageBubble = memo(function MessageBubble({
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
+      // Clear blip timeouts on effect cleanup
+      blipTimeoutsRef.current.forEach((id) => clearTimeout(id));
+      blipTimeoutsRef.current = [];
     };
   }, [activeMessage, lineIndex, skipRequested, typingKey]);
 
@@ -314,11 +330,11 @@ export const MessageBubble = memo(function MessageBubble({
   if (!activeMessage || !cfg) return null;
 
   const onClickBubble = () => {
+    // On click: if animating, skip to end of current line; if fully typed, advance to next line
     if (!isFullyTyped) {
       setSkipRequested(true);
       return;
     }
-    // If fully typed, advance immediately to next line or dismiss
     const nextIdx = lineIndex + 1;
     if (nextIdx < lines.length) {
       if (autoAdvanceTimerRef.current) {
@@ -327,13 +343,8 @@ export const MessageBubble = memo(function MessageBubble({
       }
       setLineIndex(nextIdx);
       addTypingBubble(activeMessage!.config.id, nextIdx, lines[nextIdx] ?? "");
-    } else {
-      if (dismissTimerRef.current) {
-        clearTimeout(dismissTimerRef.current);
-        dismissTimerRef.current = null;
-      }
-      handleDismiss();
     }
+    // Do not allow manual dismiss; auto-cleanup handles removal
   };
 
   const handleDismiss = () => {
@@ -374,6 +385,9 @@ export const MessageBubble = memo(function MessageBubble({
           onPointerDown={() => {
             try {
               textSynth.resume();
+              // Help Safari/iOS policies by resuming/unlocking the primary context too
+              resumeAudioContext();
+              unlockAudioContext();
             } catch {}
           }}
         >
@@ -383,15 +397,11 @@ export const MessageBubble = memo(function MessageBubble({
               {thread.map((it) => (
                 <ThreadBubble
                   key={it.key}
+                  layout
                   initial={{ opacity: 0, y: -8, scale: 0.98 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -8, scale: 0.98 }}
                   transition={{ type: "spring", stiffness: 400, damping: 28 }}
-                  onClick={(e: React.MouseEvent) => {
-                    e.stopPropagation();
-                    clearRemovalTimer(it.key);
-                    setThread((prev) => prev.filter((x) => x.key !== it.key));
-                  }}
                 >
                   <ThreadText>
                     {it.status === "typing" && typingKey === it.key

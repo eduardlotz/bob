@@ -21,6 +21,13 @@ import { DebuggingIcon } from "@/icons/debugging";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { MigrationDebugger } from "@/components/MigrationDebugger";
 import StorageDebugger from "@/components/StorageDebugger";
+import {
+  DevSettingsGroup,
+  DevSliderRow,
+  DevSliderLabel,
+  DevSlider,
+  DevSliderValue,
+} from "@/layout/atoms";
 
 interface ShopProps {
   isOpen: boolean;
@@ -197,7 +204,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                       >
                         <DevView />
                         <Divider />
-                        <SettingsGroup>
+                        <DevSettingsGroup>
                           <GroupHeader>
                             <GroupTitle>Music & Sound</GroupTitle>
                             <ToggleSwitch
@@ -209,9 +216,9 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                               {sound.isEnabled ? "ON" : "OFF"}
                             </ToggleSwitch>
                           </GroupHeader>
-                          <SliderRow>
-                            <SliderLabel>Master</SliderLabel>
-                            <Slider
+                          <DevSliderRow>
+                            <DevSliderLabel>Master</DevSliderLabel>
+                            <DevSlider
                               type="range"
                               min={0}
                               max={1}
@@ -223,13 +230,13 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                                 )
                               }
                             />
-                            <SliderValue>
+                            <DevSliderValue>
                               {Math.round(sound.masterVolume * 100)}%
-                            </SliderValue>
-                          </SliderRow>
-                          <SliderRow>
-                            <SliderLabel>World</SliderLabel>
-                            <Slider
+                            </DevSliderValue>
+                          </DevSliderRow>
+                          <DevSliderRow>
+                            <DevSliderLabel>World</DevSliderLabel>
+                            <DevSlider
                               type="range"
                               min={0}
                               max={1}
@@ -239,13 +246,13 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                                 sound.setWorldVolume(parseFloat(e.target.value))
                               }
                             />
-                            <SliderValue>
+                            <DevSliderValue>
                               {Math.round(sound.worldVolume * 100)}%
-                            </SliderValue>
-                          </SliderRow>
-                          <SliderRow>
-                            <SliderLabel>Tap</SliderLabel>
-                            <Slider
+                            </DevSliderValue>
+                          </DevSliderRow>
+                          <DevSliderRow>
+                            <DevSliderLabel>Tap</DevSliderLabel>
+                            <DevSlider
                               type="range"
                               min={0}
                               max={1}
@@ -255,11 +262,29 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                                 sound.setTapVolume(parseFloat(e.target.value))
                               }
                             />
-                            <SliderValue>
+                            <DevSliderValue>
                               {Math.round(sound.tapVolume * 100)}%
-                            </SliderValue>
-                          </SliderRow>
-                        </SettingsGroup>
+                            </DevSliderValue>
+                          </DevSliderRow>
+                          <DevSliderRow>
+                            <DevSliderLabel>Text</DevSliderLabel>
+                            <DevSlider
+                              type="range"
+                              min={0}
+                              max={1}
+                              step={0.01}
+                              value={sound.textVolume ?? 0.8}
+                              onChange={(e) =>
+                                sound.setTextVolume?.(
+                                  parseFloat(e.target.value)
+                                )
+                              }
+                            />
+                            <DevSliderValue>
+                              {Math.round((sound.textVolume ?? 0.8) * 100)}%
+                            </DevSliderValue>
+                          </DevSliderRow>
+                        </DevSettingsGroup>
                       </motion.div>
                     )}
                   </AnimatePresence>
