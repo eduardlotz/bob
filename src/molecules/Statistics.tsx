@@ -238,6 +238,7 @@ const StatsContainer = styled(motion.div)`
   top: 20px;
   right: 20px;
   background: rgba(0, 0, 0, 0.9);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border-radius: 12px;
   padding: 16px;

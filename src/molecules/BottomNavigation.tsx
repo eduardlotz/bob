@@ -253,6 +253,7 @@ const NavButton = styled(motion.button)<{ $isActive?: boolean }>`
   padding: 20px;
   border-radius: 24px;
   background: rgba(0, 0, 0, 0.25);
+  -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   border: ${(props) =>
     props.$isActive
@@ -324,6 +325,7 @@ const UpgradesPanel = styled(motion.div)`
   width: 320px;
   max-width: calc(100% - 32px);
   background: rgba(20, 20, 20, 0.95);
+  -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.1);

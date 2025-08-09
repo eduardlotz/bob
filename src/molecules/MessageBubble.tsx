@@ -2,10 +2,11 @@ import { Html } from "@react-three/drei";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import { a, useSpring } from "@react-spring/three";
+import { motion } from "motion/react";
 import { useMessageStore } from "@/store/messageStore";
 import { useGameStore } from "@/store/gameStore";
 import { playTapSound } from "@/utils/soundSystem";
-import { DEFAULT_TEXT_SOUND } from "@/utils/sound/defaults";
+import { textSynth } from "@/utils/sound/textSynth";
 
 // Typing animation constants
 const DEFAULT_MS_PER_CHAR = 50;
@@ -23,6 +24,8 @@ export const MessageBubble = memo(function MessageBubble({
 
   const [isFullyTyped, setIsFullyTyped] = useState(false);
   const [displayText, setDisplayText] = useState<string>("");
+  const [revealed, setRevealed] = useState<number>(0);
+  const rafRef = useRef<number | null>(null);
   const [lineIndex, setLineIndex] = useState(0);
   const [skipRequested, setSkipRequested] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -46,6 +49,23 @@ export const MessageBubble = memo(function MessageBubble({
     }
   }, [!!activeMessage]);
 
+  // Ensure synth is resumed when audio becomes active
+  useEffect(() => {
+    if (soundSystem.enabled && soundSystem.masterVolume > 0) {
+      try {
+        textSynth.resume();
+      } catch {}
+    }
+  }, [soundSystem.enabled, soundSystem.masterVolume]);
+
+  useEffect(() => {
+    if (activeMessage && soundSystem.enabled && soundSystem.masterVolume > 0) {
+      try {
+        textSynth.resume();
+      } catch {}
+    }
+  }, [activeMessage]);
+
   // Prepare text sequence
   const lines: string[] = useMemo(() => {
     const base = cfg?.text;
@@ -54,49 +74,49 @@ export const MessageBubble = memo(function MessageBubble({
     return [];
   }, [cfg]);
 
-  // Typing effect per line
+  // RAF-driven per-character reveal with bounce/rotate variants
   useEffect(() => {
     if (!activeMessage) return;
     const line = lines[lineIndex] ?? "";
-
-    let cancelled = false;
     setIsFullyTyped(false);
-    setDisplayText("");
+    setDisplayText(line);
+    setRevealed(0);
+    let last = 0;
+    let acc = 0;
+    const per = options?.typingSpeedMs ?? DEFAULT_MS_PER_CHAR;
 
-    const msPerChar = options?.typingSpeedMs ?? DEFAULT_MS_PER_CHAR;
-    let i = 0;
-
-    const tick = () => {
-      if (cancelled) return;
+    const loop = (t: number) => {
       if (skipRequested) {
-        setDisplayText(line);
+        setRevealed(line.length);
         setIsFullyTyped(true);
         return;
       }
-      if (i < line.length) {
-        setDisplayText((prev) => prev + line[i]);
-        // per-char sound
+      const dt = last ? t - last : 0;
+      last = t;
+      acc += dt;
+      const toReveal = Math.min(line.length, Math.floor(acc / per));
+      if (toReveal > revealed) {
+        const delta = toReveal - revealed;
+        setRevealed(toReveal);
         if (
           cfg?.audioEnabled &&
           soundSystem.enabled &&
           soundSystem.masterVolume > 0
         ) {
-          try {
-            // let engine choose current tap sound; detune handled internally
-            playTapSound();
-          } catch {}
+          for (let i = 0; i < delta; i++) {
+            try {
+              textSynth.playCharBlip();
+            } catch {}
+          }
         }
-        i += 1;
-        setTimeout(tick, msPerChar);
-      } else {
-        setIsFullyTyped(true);
+        if (toReveal === line.length) setIsFullyTyped(true);
       }
+      if (revealed < line.length) rafRef.current = requestAnimationFrame(loop);
     };
-
-    const start = setTimeout(tick, 50);
+    rafRef.current = requestAnimationFrame(loop);
     return () => {
-      cancelled = true;
-      clearTimeout(start);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
     };
   }, [activeMessage, lineIndex, skipRequested]);
 
@@ -182,8 +202,58 @@ export const MessageBubble = memo(function MessageBubble({
             }}
           >
             <Text>
-              {displayText}
-              <Cursor hidden={isFullyTyped}>▌</Cursor>
+              {(() => {
+                const content = lines[lineIndex] ?? "";
+                const tokens = content.split(/(\s+)/);
+                let idx = 0;
+                const out: any[] = [];
+                tokens.forEach((tok, t) => {
+                  if (!tok) return;
+                  if (/^\s+$/.test(tok)) {
+                    // whitespace token: render spaces and newlines; advance index per char
+                    for (let j = 0; j < tok.length; j++) {
+                      const ch = tok[j];
+                      if (ch === "\n") {
+                        out.push(<br key={`br-${lineIndex}-${idx}`} />);
+                      } else if (ch === " ") {
+                        out.push(
+                          <Space key={`sp-${lineIndex}-${idx}`}> </Space>
+                        );
+                      } else {
+                        out.push(
+                          <Space key={`spx-${lineIndex}-${idx}`}>{ch}</Space>
+                        );
+                      }
+                      idx += 1;
+                    }
+                  } else {
+                    // word token: keep as one unit; animate internal chars; no breaking inside
+                    const chars = Array.from(tok);
+                    out.push(
+                      <Word key={`w-${lineIndex}-${t}`}>
+                        {chars.map((ch, k) => {
+                          const thisIndex = idx + k;
+                          return (
+                            <Char
+                              key={`c-${lineIndex}-${thisIndex}`}
+                              initial="hidden"
+                              animate={
+                                thisIndex < revealed ? "visible" : "hidden"
+                              }
+                              variants={charVariants}
+                              custom={thisIndex}
+                            >
+                              {ch}
+                            </Char>
+                          );
+                        })}
+                      </Word>
+                    );
+                    idx += chars.length;
+                  }
+                });
+                return out;
+              })()}
             </Text>
           </Bubble>
         </Container>
@@ -212,6 +282,7 @@ const Label = styled.div`
   padding: 6px 12px;
   background: rgba(0, 0, 0, 0.1);
   border-radius: 50px;
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   margin-bottom: 2px;
 `;
@@ -226,8 +297,9 @@ const Bubble = styled.div`
   padding: 12px 16px;
   min-width: 200px;
   max-width: 360px;
-  word-wrap: break-word;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  word-break: keep-all;
+  white-space: normal;
   @media (max-width: 480px) {
     max-width: 86vw;
   }
@@ -239,15 +311,43 @@ const Text = styled.div`
   color: var(--text-color);
 `;
 
-const Cursor = styled.span<{ hidden?: boolean }>`
-  opacity: ${(p) => (p.hidden ? 0 : 1)};
-  animation: blink 1s step-start 0s infinite;
-  @keyframes blink {
-    50% {
-      opacity: 0;
-    }
-  }
+const Space = styled.span`
+  display: inline-block;
+  width: 0.33rem;
 `;
+
+const Word = styled.span`
+  display: inline-flex;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+`;
+
+const Char = styled(motion.span)`
+  display: inline-block;
+  will-change: transform, opacity;
+` as any;
+
+const charVariants = {
+  hidden: {
+    opacity: 0,
+    scale: 0.6,
+    rotateX: -90,
+  },
+  visible: (i: number) => ({
+    opacity: 1,
+    scale: [1.2, 1],
+    rotateX: [10, 0],
+    transition: {
+      delay: i * 0.02,
+      type: "spring",
+      stiffness: 500,
+      damping: 24,
+      mass: 0.4,
+    },
+  }),
+};
+
+// Remove legacy typewriter cursor
 
 const Close = styled.button`
   position: absolute;

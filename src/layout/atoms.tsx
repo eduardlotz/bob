@@ -176,6 +176,7 @@ export const MenuButton = styled(Button)`
   width: fit-content;
 
   background: rgba(100, 100, 100, 0.6);
+  -webkit-backdrop-filter: blur(5px);
   backdrop-filter: blur(5px);
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
   box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.3) inset,

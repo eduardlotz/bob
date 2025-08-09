@@ -667,6 +667,7 @@ const Backdrop = styled(motion.div)`
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.7);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   z-index: 999;
   pointer-events: auto;
@@ -684,6 +685,7 @@ const ShopContainer = styled(motion.div)`
   height: 80dvh;
   max-height: calc(100svh - 140px);
   background: rgba(20, 20, 20, 0.95);
+  -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.1);

@@ -178,6 +178,7 @@ const SettingsPanel = styled(motion.div)`
   transform: translateY(-50%);
   max-height: calc(100svh - 140px);
   background: rgba(20, 20, 20, 0.95);
+  -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.1);

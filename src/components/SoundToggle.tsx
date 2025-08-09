@@ -74,6 +74,7 @@ const Button = styled(motion.button)<{ $isActive?: boolean }>`
   padding: 20px;
   border-radius: 24px;
   background: rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
 
   display: flex;

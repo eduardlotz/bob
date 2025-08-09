@@ -230,6 +230,7 @@ const TrackerButton = styled(motion.button)<{ $isActive?: boolean }>`
   height: 56px;
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.8);
+  -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
   border: ${(props) =>
     props.$isActive
@@ -299,6 +300,7 @@ const TrackerPanel = styled(motion.div)`
   width: 300px;
   max-width: calc(100vw - 32px);
   background: rgba(20, 20, 20, 0.95);
+  -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   padding: 16px;
   border-radius: 16px;
