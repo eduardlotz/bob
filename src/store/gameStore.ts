@@ -8,17 +8,13 @@ import { toast } from "sonner";
 import { THEME_IDS } from "./themeConfig";
 import { checkAndMigrate } from "./migration";
 import {
-  playTapSound,
   setMasterVolume as engineSetMasterVolume,
   setCurrentTapSound as engineSetCurrentTapSound,
   setTapEnabled as engineSetTapEnabled,
   setWorldEnabled as engineSetWorldEnabled,
   setWorldMusic as engineSetWorldMusic,
 } from "@/utils/soundSystem";
-import {
-  getTapSoundById,
-  resolveTapSoundForEffect,
-} from "@/utils/sound/configs";
+import { resolveTapSoundForEffect } from "@/utils/sound/configs";
 import { getWorldSoundById } from "@/utils/sound/configs";
 
 export enum GAME_STORE_VERSIONS {

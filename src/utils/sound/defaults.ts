@@ -6,6 +6,10 @@ export const DEFAULT_TAP_SOUND = {
   id: "tap-bing-bong",
   filePath: "/audio/bing-bong.wav",
 };
+export const DEFAULT_TEXT_SOUND = {
+  id: "text-typing",
+  filePath: "/audio/pop-sound.wav", // TODO: find a better sound
+};
 
 export const DEFAULT_MASTER_VOLUME = 0;
 export const DEFAULT_TAP_VOLUME = 0.5;
