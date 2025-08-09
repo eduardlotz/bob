@@ -3,7 +3,7 @@ import * as THREE from "three";
 export interface SoundConfig {
   id: string;
   filePath: string;
-  type: "tap" | "world" | "ui";
+  type: "tap" | "world" | "ui" | "text";
   volume: number;
   detune?: {
     enabled: boolean;
@@ -34,6 +34,7 @@ export interface SoundSystemState {
   tapVolume: number;
   worldVolume: number;
   uiVolume: number;
+  textVolume?: number;
   // Optional per-type enable flags for runtime control
   tapEnabled?: boolean;
   worldEnabled?: boolean;

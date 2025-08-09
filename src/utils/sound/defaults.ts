@@ -13,7 +13,8 @@ export const DEFAULT_TEXT_SOUND = {
 
 export const DEFAULT_MASTER_VOLUME = 0;
 export const DEFAULT_TAP_VOLUME = 0.5;
-export const DEFAULT_WORLD_VOLUME = 0.6;
+export const DEFAULT_WORLD_VOLUME = 0.5;
 export const DEFAULT_UI_VOLUME = 0.6;
+export const DEFAULT_TEXT_VOLUME = 0.8;
 
 export const DEBUG_LOGS = false;

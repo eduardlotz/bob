@@ -4,6 +4,7 @@ import {
   DEFAULT_TAP_VOLUME,
   DEFAULT_WORLD_VOLUME,
   DEFAULT_UI_VOLUME,
+  DEFAULT_TEXT_VOLUME,
   DEBUG_LOGS,
   DEFAULT_WORLD_MUSIC,
   DEFAULT_TAP_SOUND,
@@ -23,6 +24,7 @@ let state: SoundSystemState = {
   tapVolume: DEFAULT_TAP_VOLUME,
   worldVolume: DEFAULT_WORLD_VOLUME,
   uiVolume: DEFAULT_UI_VOLUME,
+  textVolume: DEFAULT_TEXT_VOLUME,
   tapEnabled: true,
   worldEnabled: true,
 };
@@ -211,6 +213,8 @@ const getTypeVolume = (type: SoundConfig["type"]): number => {
       return state.worldVolume;
     case "ui":
       return state.uiVolume;
+    case "text":
+      return state.textVolume ?? 0.6;
     default:
       return 1.0;
   }
@@ -630,6 +634,9 @@ export const setTypeVolume = (
       break;
     case "ui":
       state.uiVolume = safe;
+      break;
+    case "text":
+      state.textVolume = safe;
       break;
   }
 

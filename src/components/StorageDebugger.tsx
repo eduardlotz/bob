@@ -11,8 +11,11 @@ import {
   clearAllData,
 } from "../store/migration";
 import { toast } from "sonner";
+import { useMessageStore } from "@/store/messageStore";
+import { DebugBlock } from "@/layout/atoms";
 
 export const StorageDebugger: React.FC = () => {
+  const { clearShownFlags } = useMessageStore();
   const [storageInfo, setStorageInfo] = useState({
     storageType: "unknown",
     indexedDBAvailable: false,
@@ -82,23 +85,7 @@ export const StorageDebugger: React.FC = () => {
   };
 
   return (
-    <div
-      className="storage-debugger"
-      style={{
-        position: "fixed",
-        bottom: "20px",
-        right: "20px",
-        background: "rgba(0, 0, 0, 0.8)",
-        color: "white",
-        padding: "15px",
-        borderRadius: "8px",
-        fontSize: "12px",
-        fontFamily: "monospace",
-        maxWidth: "300px",
-        zIndex: 1000,
-        pointerEvents: "auto",
-      }}
-    >
+    <DebugBlock>
       <h4 style={{ margin: "0 0 10px 0", fontSize: "14px" }}>
         Storage Debugger
       </h4>
@@ -149,6 +136,27 @@ export const StorageDebugger: React.FC = () => {
           }}
         >
           Force localStorage
+        </button>
+
+        <button
+          onClick={() => {
+            if (confirm("Clear message 'already shown' flags?")) {
+              clearShownFlags();
+              toast.success("Message shown flags cleared");
+            }
+          }}
+          disabled={isLoading}
+          style={{
+            padding: "5px 10px",
+            fontSize: "10px",
+            background: "#795548",
+            color: "white",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer",
+          }}
+        >
+          Clear Message Flags
         </button>
 
         <button
@@ -227,7 +235,7 @@ export const StorageDebugger: React.FC = () => {
           Loading...
         </div>
       )}
-    </div>
+    </DebugBlock>
   );
 };
 

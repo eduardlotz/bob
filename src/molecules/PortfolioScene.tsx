@@ -16,7 +16,7 @@ export function PortfolioScene() {
 
   useEffect(() => {
     if (!isAllowedToAcces) {
-      navigate(ROUTE_PATHS.HOME);
+      navigate(ROUTE_PATHS.HOME, { replace: true });
     }
   }, [isAllowedToAcces]);
 

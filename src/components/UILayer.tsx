@@ -3,7 +3,6 @@ import styled from "styled-components";
 import { Button } from "@/layout/atoms";
 import { BottomNavigation } from "@/molecules/BottomNavigation";
 import { Statistics } from "@/molecules/Statistics";
-import { SoundSettings } from "@/components/SoundSettings";
 import { SoundToggle } from "@/components/SoundToggle";
 
 import { requestMotionPermission } from "@/utils/permission";
@@ -11,6 +10,7 @@ import { useGameStore, startAutoTap, stopAutoTap } from "@/store/gameStore";
 
 import { useAnimations } from "@/hooks/useAnimations";
 import { useSwipeDismiss } from "@/hooks/useSwipeDismiss";
+import { AnimatePresence, motion } from "motion/react";
 
 interface UILayerProps {
   permissionGranted: boolean;
@@ -23,7 +23,15 @@ interface UILayerProps {
 export function UILayer({ setPermissionGranted }: UILayerProps) {
   const { statisticsVisible, isPaused } = useGameStore();
   const [permissionDismissed, setPermissionDismissed] = useState(false);
-  const [soundSettingsVisible, setSoundSettingsVisible] = useState(false);
+  const [soundHintDismissed, setSoundHintDismissed] = useState(false);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setSoundHintDismissed(true);
+    }, 10000);
+    return () => clearTimeout(timeout);
+  }, []);
+
   const { motionStyles, dragConstraints, dragEndHandler, drag } =
     useSwipeDismiss({
       onClose: () => setPermissionDismissed(true),
@@ -68,18 +76,22 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
       <BottomNavigation />
       <Statistics visible={statisticsVisible} />
 
-      <ToggleContainer>
+      <ToggleRow>
+        <AnimatePresence mode="wait">
+          {!soundHintDismissed && (
+            <SoundHint
+              key="sound-hint"
+              initial={{ opacity: 0, filter: "blur(24px)" }}
+              animate={{ opacity: 1, filter: "blur(0px)" }}
+              exit={{ opacity: 0, filter: "blur(24px)" }}
+              transition={{ duration: 1.5, ease: "easeInOut", delay: 1 }}
+            >
+              Besser mit Sound
+            </SoundHint>
+          )}
+        </AnimatePresence>
         <SoundToggle />
-      </ToggleContainer>
-
-      {/* Sound Settings Modal */}
-      <SoundSettings
-        visible={soundSettingsVisible}
-        onClose={() => setSoundSettingsVisible(false)}
-      />
-
-      {/* <StorageDebugger />
-      <MigrationDebugger /> */}
+      </ToggleRow>
 
       {/* TODO: Add sensor button with dismiss */}
       {/* <AnimatePresence>
@@ -109,21 +121,38 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
 }
 
 const UILayerContainer = styled.div`
-  position: fixed;
+  position: relative;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
   z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 `;
 
-const ToggleContainer = styled.div`
+const ToggleRow = styled.div`
   position: fixed;
   top: 20px;
   right: 20px;
   z-index: 100;
   pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`;
+
+const SoundHint = styled(motion.span)`
+  color: #ffffff;
+  padding: 12px 16px;
+  border-radius: 24px;
+  background-color: rgba(0, 0, 0, 0.25);
+  border-radius: 50px;
+  font-size: 16px;
+  z-index: 100;
 `;
 
 const CalibrationButton = styled(Button)`

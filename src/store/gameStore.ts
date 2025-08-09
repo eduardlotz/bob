@@ -31,7 +31,8 @@ export enum GAME_STORE_VERSIONS {
   V11 = 11,
   V12 = 12,
   V13 = 13,
-  LATEST = 13,
+  V14 = 14,
+  LATEST = 14,
 }
 
 // Constants
@@ -337,6 +338,27 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
         : [],
     };
     currentVersion = GAME_STORE_VERSIONS.V13;
+  }
+
+  // Migration V13 → V14: Introduce textVolume and reduce worldVolume by 0.1
+  if (currentVersion < GAME_STORE_VERSIONS.V14) {
+    const clamp01 = (v: any) => {
+      const n = typeof v === "number" ? v : 1;
+      return Math.max(0, Math.min(1, n));
+    };
+    const sound = migratedState.soundSystem || {};
+    const newWorld = clamp01((sound.worldVolume ?? 1) - 0.1);
+    migratedState.soundSystem = {
+      enabled: sound.enabled !== false,
+      masterVolume: clamp01(sound.masterVolume ?? 0),
+      tapVolume: clamp01(sound.tapVolume ?? 1),
+      worldVolume: newWorld,
+      uiVolume: clamp01(sound.uiVolume ?? 1),
+      tapEnabled: sound.tapEnabled !== false,
+      worldEnabled: sound.worldEnabled !== false,
+      textVolume: clamp01(sound.textVolume ?? 0.8),
+    };
+    currentVersion = GAME_STORE_VERSIONS.V14;
   }
 
   // Set the final version to the latest
@@ -845,8 +867,9 @@ export const useGameStore = create<GameStore>()(
           enabled: true,
           masterVolume: 0.0,
           tapVolume: 1.0,
-          worldVolume: 1.0,
+          worldVolume: 0.9,
           uiVolume: 1.0,
+          textVolume: 0.8,
           tapEnabled: true,
           worldEnabled: true,
         },

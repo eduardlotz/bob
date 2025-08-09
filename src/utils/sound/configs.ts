@@ -1,4 +1,8 @@
-import { DEFAULT_TAP_SOUND, DEFAULT_WORLD_MUSIC } from "./defaults";
+import {
+  DEFAULT_TAP_SOUND,
+  DEFAULT_WORLD_MUSIC,
+  DEFAULT_TEXT_SOUND,
+} from "./defaults";
 import { SoundConfig } from "./types";
 
 export const DEFAULT_SOUND_CONFIGS: SoundConfig[] = [
@@ -26,6 +30,15 @@ export const DEFAULT_SOUND_CONFIGS: SoundConfig[] = [
     detune: { enabled: false, minSemitones: 0, maxSemitones: 0 },
     fadeIn: 5000,
     fadeOut: 5000,
+  },
+  {
+    id: DEFAULT_TEXT_SOUND.id,
+    filePath: DEFAULT_TEXT_SOUND.filePath,
+    type: "text" as any,
+    volume: 0.4,
+    detune: { enabled: false, minSemitones: 0, maxSemitones: 0 },
+    stopPrevious: false,
+    layerable: true,
   },
 ];
 

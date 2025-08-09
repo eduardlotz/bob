@@ -37,8 +37,10 @@ export interface MessageStoreState {
   // Actions
   showMessage: (id: string, overrides?: Partial<MessageOptions>) => void;
   dismissMessage: () => void;
+  dismissMessageById: (id: string) => void;
   resetMessage: (id: string) => void;
   setPreference: (key: string, value: unknown) => void;
+  clearShownFlags: () => void; // dev tools: clear oncePerPersist/session flags
 }
 
 const DEFAULT_OPTIONS: Required<MessageOptions> = {
@@ -52,12 +54,6 @@ const canShowMessage = (
   state: MessageStoreState,
   config: MessageConfig
 ): boolean => {
-  // In development, always allow showing for test purposes
-  try {
-    // Vite exposes import.meta.env.DEV as a boolean in dev
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if ((import.meta as any).env?.DEV) return true;
-  } catch {}
   return match(config.repeatRule)
     .with("always", () => true)
     .with("oncePerSession", () => state.seenThisSession[config.id] !== true)
@@ -157,6 +153,16 @@ export const useMessageStore = create<MessageStoreState>()(
         });
       },
 
+      dismissMessageById: (id: string) => {
+        const active = get().activeMessage;
+        if (active?.config.id === id) {
+          get().dismissMessage();
+          return;
+        }
+        // remove from queue if present
+        set({ queue: get().queue.filter((m) => m !== id) });
+      },
+
       resetMessage: (id) => {
         set({
           seenThisSession: { ...get().seenThisSession, [id]: false },
@@ -169,6 +175,10 @@ export const useMessageStore = create<MessageStoreState>()(
 
       setPreference: (key, value) => {
         set({ preferences: { ...get().preferences, [key]: value } });
+      },
+
+      clearShownFlags: () => {
+        set({ seenThisSession: {}, repeatFlags: {} });
       },
     }),
     {

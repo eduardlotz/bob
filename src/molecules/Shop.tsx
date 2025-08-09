@@ -19,6 +19,8 @@ import { EnvironmentIcon as EnvironmentIconComponent } from "@/icons/environment
 import { PagesIcon } from "@/icons/pages";
 import { DebuggingIcon } from "@/icons/debugging";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
+import { MigrationDebugger } from "@/components/MigrationDebugger";
+import StorageDebugger from "@/components/StorageDebugger";
 
 interface ShopProps {
   isOpen: boolean;
@@ -632,11 +634,14 @@ function DevView() {
           {isPaused ? "Resume Auto-Tap" : "Pause Auto-Tap"}
         </DevButton>
 
+        <StorageDebugger />
+
         <Divider />
 
         <DevButton onClick={triggerStoreMigration}>
           🔄 Migrate Version
         </DevButton>
+        <MigrationDebugger />
         <DevButton
           onClick={() => {
             confirm("This will reset all quests.\nAre you sure?") &&

@@ -44,6 +44,7 @@ export interface SoundSystemHook {
   setMasterVolume: (volume: number) => void;
   setTapVolume: (volume: number) => void;
   setWorldVolume: (volume: number) => void;
+  setTextVolume?: (volume: number) => void;
 
   // State
   isEnabled: boolean;
@@ -53,6 +54,7 @@ export interface SoundSystemHook {
   masterVolume: number;
   tapVolume: number;
   worldVolume: number;
+  textVolume?: number;
 
   // System control
   enable: () => void;
@@ -210,6 +212,19 @@ export function useSoundSystem(): SoundSystemHook {
     } catch {}
   }, []);
 
+  const setTextVolumeCallback = useCallback((volume: number) => {
+    const clamped = Math.max(0, Math.min(1, volume));
+    setTypeVolume("text" as any, clamped);
+    // Persist in game store
+    useGameStore
+      .getState()
+      .setUIVolume(useGameStore.getState().soundSystem.uiVolume);
+    useGameStore.setState((s) => ({
+      ...s,
+      soundSystem: { ...s.soundSystem, textVolume: clamped },
+    }));
+  }, []);
+
   // System control functions
   const enableCallback = useCallback(() => {
     gameStore.setSoundEnabled(true);
@@ -309,6 +324,7 @@ export function useSoundSystem(): SoundSystemHook {
     setMasterVolume: setMasterVolumeCallback,
     setTapVolume: setTapVolumeCallback,
     setWorldVolume: setWorldVolumeCallback,
+    setTextVolume: setTextVolumeCallback,
     isEnabled: gameStore.soundSystem.enabled,
     isMuted: gameStore.soundSystem.masterVolume === 0,
     audioStatus: !gameStore.soundSystem.enabled
@@ -320,6 +336,7 @@ export function useSoundSystem(): SoundSystemHook {
     masterVolume: gameStore.soundSystem.masterVolume,
     tapVolume: gameStore.soundSystem.tapVolume,
     worldVolume: gameStore.soundSystem.worldVolume,
+    textVolume: (gameStore.soundSystem as any).textVolume,
     enable: enableCallback,
     disable: disableCallback,
     start: enableCallback,

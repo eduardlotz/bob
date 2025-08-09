@@ -35,11 +35,12 @@ export default function App() {
     }
   }, []);
 
-  // // Sync router location with store
+  // Sync router location with store (avoid loops by checking value)
   useEffect(() => {
-    // Update the current route and ensure it's properly set
-    setCurrentRoute(location.pathname);
-  }, [location.pathname]);
+    if (currentRoute !== location.pathname) {
+      setCurrentRoute(location.pathname);
+    }
+  }, [location.pathname, currentRoute, setCurrentRoute]);
 
   return (
     <ThemeProvider>

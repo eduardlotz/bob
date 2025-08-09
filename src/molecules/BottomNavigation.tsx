@@ -47,7 +47,12 @@ export function BottomNavigation() {
 
   return (
     <>
-      <NavigationContainer>
+      <NavigationContainer
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 40 }}
+        transition={{ duration: 0.5, type: "spring", mass: 0.5 }}
+      >
         {isHomeRoute ? (
           <NavButton
             onClick={() => setIsUpgradesOpen(!isUpgradesOpen)}
@@ -57,8 +62,7 @@ export function BottomNavigation() {
           >
             <AnimatePresence mode="popLayout">
               {isUpgradesOpen ? (
-                <motion.div
-                  key="close"
+                <motion.span
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0, opacity: 0 }}
@@ -69,10 +73,9 @@ export function BottomNavigation() {
                   }}
                 >
                   <CloseIcon color="#ffffff" />
-                </motion.div>
+                </motion.span>
               ) : (
-                <motion.div
-                  key="upgrade"
+                <motion.span
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0, opacity: 0 }}
@@ -90,7 +93,7 @@ export function BottomNavigation() {
                   ) : (
                     <UpgradesIcon color="#ffffff" />
                   )}
-                </motion.div>
+                </motion.span>
               )}
             </AnimatePresence>
           </NavButton>
@@ -106,8 +109,8 @@ export function BottomNavigation() {
         >
           <AnimatePresence mode="popLayout">
             {showOptions ? (
-              <motion.div
-                key="close"
+              <motion.span
+                key="close-menu-icon"
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0, opacity: 0 }}
@@ -118,10 +121,10 @@ export function BottomNavigation() {
                 }}
               >
                 <CloseIcon />
-              </motion.div>
+              </motion.span>
             ) : (
-              <motion.div
-                key="menu"
+              <motion.span
+                key="show-menu-icon"
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0, opacity: 0 }}
@@ -132,7 +135,7 @@ export function BottomNavigation() {
                 }}
               >
                 <MenuIcon />
-              </motion.div>
+              </motion.span>
             )}
           </AnimatePresence>
         </MenuButton>
@@ -145,8 +148,8 @@ export function BottomNavigation() {
         >
           <AnimatePresence mode="popLayout">
             {isShopOpen ? (
-              <motion.div
-                key="close"
+              <motion.span
+                key="close-shop-icon"
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0, opacity: 0 }}
@@ -157,10 +160,10 @@ export function BottomNavigation() {
                 }}
               >
                 <CloseIcon color="#ffffff" />
-              </motion.div>
+              </motion.span>
             ) : (
-              <motion.div
-                key="cart"
+              <motion.span
+                key="show-shop-icon"
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0, opacity: 0 }}
@@ -171,7 +174,7 @@ export function BottomNavigation() {
                 }}
               >
                 <CartIcon color="#ffffff" />
-              </motion.div>
+              </motion.span>
             )}
           </AnimatePresence>
         </NavButton>
@@ -236,11 +239,9 @@ export function BottomNavigation() {
 }
 
 // Styled Components
-const NavigationContainer = styled.div`
+const NavigationContainer = styled(motion.div)`
   position: fixed;
   bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 16px;
@@ -250,9 +251,11 @@ const NavigationContainer = styled.div`
 
 const NavButton = styled(motion.button)<{ $isActive?: boolean }>`
   height: 58px;
+  width: 58px;
+  min-width: fit-content;
   padding: 20px;
   border-radius: 24px;
-  background: rgba(0, 0, 0, 0.25);
+  background-color: rgba(0, 0, 0, 0.25);
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   border: ${(props) =>
@@ -263,12 +266,14 @@ const NavButton = styled(motion.button)<{ $isActive?: boolean }>`
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition-duration: 0.2s;
+  transition-property: box-shadow, opacity, border, background-color, width,
+    height;
   pointer-events: auto;
   opacity: ${(props) => (props.$isActive ? 1 : 0.75)};
 
   &:hover {
-    background: rgba(0, 0, 0, 0.9);
+    background-color: rgba(0, 0, 0, 0.9);
     border-color: ${(props) =>
       props.$isActive ? "#ffffff" : "rgba(255, 255, 255, 0.2)"};
     opacity: 1;
@@ -298,15 +303,17 @@ const MenuButton = styled(motion.button)<{ $isActive?: boolean }>`
   padding: 20px 30px;
   border-radius: 24px;
   background: var(--primary-color);
-  border: ${(props) => (props.$isActive ? "2px solid #ffffff" : "none")};
+
+  border: 2px solid transparent;
+  border-color: ${(props) => (props.$isActive ? "#ffffff" : "transparent")};
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(41, 121, 255, 0.3);
-  transition: all 0.2s;
+  transition-duration: 0.2s;
+  transition-property: box-shadow, opacity, border-color;
   pointer-events: auto;
-  /* opacity: ${(props) => (props.$isActive ? 1 : 0.3)}; */
   color: var(--text-color);
 
   &:hover {
@@ -324,11 +331,8 @@ const UpgradesPanel = styled(motion.div)`
 
   width: 320px;
   max-width: calc(100% - 32px);
-  background: rgba(20, 20, 20, 0.95);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
+  background: rgba(20, 20, 20, 1);
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
   z-index: 999;
   overflow: hidden;
   pointer-events: auto;

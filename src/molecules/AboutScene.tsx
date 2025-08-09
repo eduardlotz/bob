@@ -11,11 +11,11 @@ export function AboutScene() {
   const { openDialog } = useDialogStore();
   const navigate = useNavigate();
 
-  const isAllowedToAcces = checkUnlockedRoutes(ROUTE_PATHS.PORTFOLIO);
+  const isAllowedToAcces = checkUnlockedRoutes(ROUTE_PATHS.ABOUT);
 
   useEffect(() => {
     if (!isAllowedToAcces) {
-      navigate(ROUTE_PATHS.HOME);
+      navigate(ROUTE_PATHS.HOME, { replace: true });
     }
   }, [isAllowedToAcces]);
 

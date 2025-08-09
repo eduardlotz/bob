@@ -48,6 +48,10 @@ export const SoundToggle = () => {
       whileTap={{ scale: 0.95 }}
       aria-label={!isEnabled ? "Audio stopped" : isMuted ? "Unmute" : "Mute"}
       $isActive={!isMuted}
+      initial={{ opacity: 0, filter: "blur(24px)" }}
+      animate={{ opacity: 1, filter: "blur(0px)" }}
+      exit={{ opacity: 0, filter: "blur(24px)" }}
+      transition={{ duration: 0.8, ease: "easeInOut", delay: 0.2 }}
     >
       <AnimatePresence mode="popLayout">
         <motion.div

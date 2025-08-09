@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import styled from "styled-components";
 import { motion } from "motion/react";
 import { useGameStore } from "@/store/gameStore";
-import { MigrationDebugger } from "@/components/MigrationDebugger";
-import StorageDebugger from "@/components/StorageDebugger";
 
 interface StatisticsProps {
   visible: boolean;

@@ -7,6 +7,8 @@ import {
 } from "@/store/migration";
 import { forceV9Migration } from "@/store/gameStore";
 import { toast } from "sonner";
+import styled from "styled-components";
+import { DebugBlock } from "@/layout/atoms";
 
 export const MigrationDebugger: React.FC = () => {
   const [migrationStatus, setMigrationStatus] = useState<any>(null);
@@ -91,22 +93,8 @@ export const MigrationDebugger: React.FC = () => {
   };
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: "10px",
-        right: "10px",
-        background: "rgba(0,0,0,0.8)",
-        color: "white",
-        padding: "10px",
-        borderRadius: "5px",
-        fontSize: "12px",
-        zIndex: 1000,
-        pointerEvents: "auto",
-        maxWidth: "300px",
-      }}
-    >
-      <h4>Migration Debugger</h4>
+    <DebugBlock>
+      <b>Migration Debugger</b>
 
       <div>
         <strong>Store Version:</strong> {storeVersion}
@@ -127,7 +115,14 @@ export const MigrationDebugger: React.FC = () => {
 
       <div>
         <strong>Last Schema Update:</strong>{" "}
-        {lastSchemaUpdate ? lastSchemaUpdate.toLocaleDateString() : "none"}
+        {/* somehow lastSchemaUpdate is a string here */}
+        {lastSchemaUpdate
+          ? new Date(lastSchemaUpdate.toString()).toLocaleDateString("de-DE", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })
+          : "N/A"}
       </div>
 
       <div style={{ marginTop: "10px" }}>
@@ -186,6 +181,6 @@ export const MigrationDebugger: React.FC = () => {
           </div>
         ))}
       </div>
-    </div>
+    </DebugBlock>
   );
 };

@@ -23,6 +23,8 @@ class TextSynth {
     if (!this.audioCtx || !this.masterGain) return;
     const v = Math.max(0, Math.min(1, volume));
     try {
+      // set immediate without scheduling drift
+      this.masterGain.gain.cancelScheduledValues(this.audioCtx.currentTime);
       this.masterGain.gain.setValueAtTime(v, this.audioCtx.currentTime);
     } catch {}
   }
@@ -36,7 +38,8 @@ class TextSynth {
   }
 
   // Short blip with sine + LFO on frequency, plus LPF cutoff ramp
-  playCharBlip() {
+  // durationMs allows syncing to typing speed; optional gainScale tweaks loudness per blip
+  playCharBlip(durationMs: number = 60, gainScale: number = 1) {
     this.initialize();
     if (!this.audioCtx || !this.masterGain) return;
     const ctx = this.audioCtx;
@@ -68,11 +71,11 @@ class TextSynth {
     gain.connect(this.masterGain);
 
     const now = ctx.currentTime;
-    const dur = 0.06; // 60ms blip
+    const dur = Math.max(0.02, Math.min(0.12, durationMs / 1000));
     try {
       // Fade in/out quickly
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.15, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.15 * gainScale, now + 0.01);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
       // Base freq randomized slightly

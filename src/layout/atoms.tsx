@@ -215,3 +215,14 @@ export const SensorButton = styled(MenuButton)`
   width: fit-content;
   pointer-events: auto;
 `;
+
+//TODO: move to own debug components file with more components
+export const DebugBlock = styled.div`
+  font-family: monospace;
+  font-size: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  width: 100%;
+`;

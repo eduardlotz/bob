@@ -42,7 +42,7 @@ export default function MainLayout({ children }: any) {
         />
       </Background>
 
-      <BottomNavigation />
+      {/* <BottomNavigation /> */}
 
       {children}
     </Container>

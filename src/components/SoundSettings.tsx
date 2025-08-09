@@ -20,6 +20,8 @@ export function SoundSettings({
     masterVolume,
     tapVolume,
     worldVolume,
+    textVolume,
+    setTextVolume,
     setMasterVolume,
     setTapVolume,
     setWorldVolume,
@@ -117,6 +119,21 @@ export function SoundSettings({
               $disabled={!isEnabled}
             />
             <VolumeValue>{Math.round(worldVolume * 100)}%</VolumeValue>
+          </SettingGroup>
+
+          {/* Text Sound Volume */}
+          <SettingGroup>
+            <SettingLabel>Text Sounds</SettingLabel>
+            <VolumeSlider
+              type="range"
+              min="0"
+              max="1"
+              step="0.1"
+              value={typeof textVolume === "number" ? textVolume : 0.8}
+              onChange={(e) => setTextVolume?.(parseFloat(e.target.value))}
+              $disabled={!isEnabled}
+            />
+            <VolumeValue>{Math.round((textVolume ?? 0.8) * 100)}%</VolumeValue>
           </SettingGroup>
 
           {/* Test Button */}
