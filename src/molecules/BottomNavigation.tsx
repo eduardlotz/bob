@@ -251,8 +251,9 @@ const NavigationContainer = styled(motion.div)`
 
 const NavButton = styled(motion.button)<{ $isActive?: boolean }>`
   height: 58px;
-  width: 58px;
-  min-width: fit-content;
+  min-width: 64px;
+  width: 64px;
+  max-width: 64px;
   padding: 20px;
   border-radius: 24px;
   background-color: rgba(0, 0, 0, 0.25);
