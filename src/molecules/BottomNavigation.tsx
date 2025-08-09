@@ -10,9 +10,12 @@ import { CloseIcon } from "@/icons/close";
 import { Shop } from "./Shop";
 import { ProgressTracker } from "./ProgressTracker";
 
+type NavigationView = "shop" | "upgrades" | "quests" | "default";
+
 export function BottomNavigation() {
-  const [isShopOpen, setIsShopOpen] = useState(false);
-  const [isUpgradesOpen, setIsUpgradesOpen] = useState(false);
+  // const [isShopOpen, setIsShopOpen] = useState(false);
+  // const [isUpgradesOpen, setIsUpgradesOpen] = useState(false);
+  const [currentView, setCurrentView] = useState<NavigationView>("default");
 
   const {
     upgrades,
@@ -45,6 +48,18 @@ export function BottomNavigation() {
     purchaseUpgrade(upgradeId);
   };
 
+  const handleMenuButtonClick = () => {
+    toggleOptions();
+  };
+
+  const handleNavigationClick = (view: NavigationView) => {
+    if (currentView === view) {
+      setCurrentView("default");
+    } else {
+      setCurrentView(view);
+    }
+  };
+
   return (
     <>
       <NavigationContainer
@@ -55,13 +70,14 @@ export function BottomNavigation() {
       >
         {isHomeRoute ? (
           <NavButton
-            onClick={() => setIsUpgradesOpen(!isUpgradesOpen)}
+            onClick={() => handleNavigationClick("upgrades")}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            $isActive={isUpgradesOpen}
+            $isActive={currentView === "upgrades"}
+            data-ui-sound-id="ui-tap-2"
           >
             <AnimatePresence mode="popLayout">
-              {isUpgradesOpen ? (
+              {currentView === "upgrades" ? (
                 <motion.span
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
@@ -102,10 +118,11 @@ export function BottomNavigation() {
         )}
 
         <MenuButton
-          onClick={() => toggleOptions()}
+          onClick={handleMenuButtonClick}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           $isActive={showOptions}
+          data-ui-sound-id="ui-tap-2"
         >
           <AnimatePresence mode="popLayout">
             {showOptions ? (
@@ -141,13 +158,14 @@ export function BottomNavigation() {
         </MenuButton>
 
         <NavButton
-          onClick={() => setIsShopOpen(!isShopOpen)}
+          onClick={() => handleNavigationClick("shop")}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          $isActive={isShopOpen}
+          $isActive={currentView === "shop"}
+          data-ui-sound-id="ui-tap-2"
         >
           <AnimatePresence mode="popLayout">
-            {isShopOpen ? (
+            {currentView === "shop" ? (
               <motion.span
                 key="close-shop-icon"
                 initial={{ scale: 0, opacity: 0 }}
@@ -180,10 +198,13 @@ export function BottomNavigation() {
         </NavButton>
       </NavigationContainer>
 
-      <Shop isOpen={isShopOpen} onClose={() => setIsShopOpen(false)} />
+      <Shop
+        isOpen={currentView === "shop"}
+        onClose={() => setCurrentView("default")}
+      />
 
       <AnimatePresence>
-        {isUpgradesOpen && (
+        {currentView === "upgrades" && (
           <UpgradesPanel
             key="upgrades-panel"
             initial={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(10px)" }}
@@ -249,7 +270,7 @@ const NavigationContainer = styled(motion.div)`
   pointer-events: auto;
 `;
 
-const NavButton = styled(motion.button)<{ $isActive?: boolean }>`
+export const NavButton = styled(motion.button)<{ $isActive?: boolean }>`
   height: 58px;
   min-width: 64px;
   width: 64px;
@@ -257,8 +278,10 @@ const NavButton = styled(motion.button)<{ $isActive?: boolean }>`
   padding: 20px;
   border-radius: 24px;
   background-color: rgba(0, 0, 0, 0.25);
-  -webkit-backdrop-filter: blur(16px);
+
   backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+
   border: ${(props) =>
     props.$isActive
       ? "2px solid #ffffff"
@@ -271,7 +294,6 @@ const NavButton = styled(motion.button)<{ $isActive?: boolean }>`
   transition-property: box-shadow, opacity, border, background-color, width,
     height;
   pointer-events: auto;
-  opacity: ${(props) => (props.$isActive ? 1 : 0.75)};
 
   &:hover {
     background-color: rgba(0, 0, 0, 0.9);
@@ -355,21 +377,6 @@ const UpgradesTitle = styled.h3`
   font-weight: bold;
   color: #ffffff;
   margin: 0;
-`;
-
-const CloseButton = styled.button`
-  background: none;
-  border: none;
-  color: #666666;
-  font-size: 20px;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  transition: color 0.2s;
-
-  &:hover {
-    color: #ffffff;
-  }
 `;
 
 const UpgradesList = styled.div`

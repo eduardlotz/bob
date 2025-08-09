@@ -2,6 +2,8 @@ import {
   DEFAULT_TAP_SOUND,
   DEFAULT_WORLD_MUSIC,
   DEFAULT_TEXT_SOUND,
+  DEFAULT_UI_SOUND,
+  DEFAULT_UI_SOUND_2,
 } from "./defaults";
 import { SoundConfig } from "./types";
 
@@ -39,6 +41,22 @@ export const DEFAULT_SOUND_CONFIGS: SoundConfig[] = [
     detune: { enabled: false, minSemitones: 0, maxSemitones: 0 },
     stopPrevious: false,
     layerable: true,
+  },
+  {
+    id: DEFAULT_UI_SOUND.id,
+    filePath: DEFAULT_UI_SOUND.filePath,
+    type: "ui",
+    volume: 0.3,
+    detune: { enabled: true, minSemitones: 0, maxSemitones: 1 },
+    stopPrevious: true,
+  },
+  {
+    id: DEFAULT_UI_SOUND_2.id,
+    filePath: DEFAULT_UI_SOUND_2.filePath,
+    type: "ui",
+    volume: 0.35,
+    detune: { enabled: true, minSemitones: 0, maxSemitones: 1 },
+    stopPrevious: true,
   },
 ];
 
@@ -83,8 +101,8 @@ export const getTapSoundById = (id: string) =>
 // Mapping from tap effect upgrade ids to default tap audio ids
 export const TAP_EFFECT_TO_DEFAULT_TAP_SOUND: Record<string, string> = {
   tap_effect_default: DEFAULT_TAP_SOUND.id,
-  tap_effect_confetti: "tap-pop",
-  tap_effect_hearts: DEFAULT_TAP_SOUND.id,
+  tap_effect_confetti: DEFAULT_TAP_SOUND.id,
+  tap_effect_hearts: "tap-pop",
   tap_effect_stars: DEFAULT_TAP_SOUND.id,
 };
 

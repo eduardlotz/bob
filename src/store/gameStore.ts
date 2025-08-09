@@ -32,7 +32,8 @@ export enum GAME_STORE_VERSIONS {
   V12 = 12,
   V13 = 13,
   V14 = 14,
-  LATEST = 14,
+  V15 = 15,
+  LATEST = 15,
 }
 
 // Constants
@@ -361,6 +362,16 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
     currentVersion = GAME_STORE_VERSIONS.V14;
   }
 
+  // Migration V14 → V15: Introduce soundPreferences (enabled/muted) and stop persisting per-type volumes
+  if (currentVersion < GAME_STORE_VERSIONS.V15) {
+    const sound = migratedState.soundSystem || {};
+    migratedState.soundPreferences = {
+      enabled: sound.enabled !== false,
+      muted: (sound.masterVolume ?? 0) === 0,
+    };
+    currentVersion = GAME_STORE_VERSIONS.V15;
+  }
+
   // Set the final version to the latest
   migratedState.version = GAME_STORE_VERSIONS.LATEST;
 
@@ -456,6 +467,7 @@ export interface SoundSystemState {
   tapVolume: number;
   worldVolume: number;
   uiVolume: number;
+  textVolume: number;
   tapEnabled?: boolean;
   worldEnabled?: boolean;
 }
@@ -505,6 +517,12 @@ interface GameStore {
   // Sound system state
   soundSystem: SoundSystemState;
 
+  // Only persist minimal audio prefs
+  soundPreferences?: {
+    enabled: boolean;
+    muted: boolean;
+  };
+
   // Audio selections (ids only)
   audioSelections: {
     worldMusicId: string;
@@ -544,6 +562,7 @@ interface GameStore {
   setTapVolume: (volume: number) => void;
   setWorldVolume: (volume: number) => void;
   setUIVolume: (volume: number) => void;
+  setTextVolume: (volume: number) => void;
 
   // Audio selection actions
   setWorldMusicId: (id: string) => void;
@@ -873,6 +892,7 @@ export const useGameStore = create<GameStore>()(
           tapEnabled: true,
           worldEnabled: true,
         },
+        soundPreferences: { enabled: true, muted: true },
 
         // Audio selections
         audioSelections: {
@@ -1417,6 +1437,16 @@ export const useGameStore = create<GameStore>()(
           }));
         },
 
+        setTextVolume: (volume: number) => {
+          set((state) => ({
+            ...state,
+            soundSystem: {
+              ...state.soundSystem,
+              textVolumne: Math.max(0, Math.min(1, volume)),
+            },
+          }));
+        },
+
         setWorldMusicId: (id: string) => {
           // Deprecated: Primary/secondary handling removed; keep method no-op to avoid runtime errors
           set((state) => ({
@@ -1695,14 +1725,10 @@ export const useGameStore = create<GameStore>()(
           fisheyeIntensity: state.fisheyeIntensity,
           lastAutoTapTime: state.lastAutoTapTime,
           // Do not persist previous masterVolume; always persist 0 so app starts muted
-          soundSystem: {
+          // Only persist minimal audio prefs
+          soundPreferences: state.soundPreferences || {
             enabled: state.soundSystem.enabled,
-            masterVolume: 0,
-            tapVolume: state.soundSystem.tapVolume,
-            worldVolume: state.soundSystem.worldVolume,
-            uiVolume: state.soundSystem.uiVolume,
-            tapEnabled: state.soundSystem.tapEnabled,
-            worldEnabled: state.soundSystem.worldEnabled,
+            muted: state.soundSystem.masterVolume === 0,
           },
           audioSelections: state.audioSelections,
         }),
@@ -1738,20 +1764,26 @@ export const useGameStore = create<GameStore>()(
             );
           }
 
-          // Always enforce masterVolume = 0 on rehydrate so unmute acts as user gesture
+          // Restore enabled/muted preference; keep volumes from config
           try {
+            const prefs = (state as any)?.soundPreferences;
+            const enabled = prefs?.enabled !== false;
+            const muted = prefs?.muted !== false;
             useGameStore.setState((s) => ({
               ...s,
               soundSystem: {
                 ...s.soundSystem,
-                masterVolume: 0,
+                enabled,
+                masterVolume: muted ? 0 : s.soundSystem.masterVolume,
               },
+              soundPreferences: { enabled, muted },
             }));
-          } catch {}
-
-          // Also ensure engine reflects muted state at boot
-          try {
-            engineSetMasterVolume(0);
+            try {
+              const current = useGameStore.getState();
+              engineSetMasterVolume(
+                muted ? 0 : current.soundSystem?.masterVolume || 1
+              );
+            } catch {}
           } catch {}
 
           // Sync per-type enable flags and current selections with engine after rehydrate

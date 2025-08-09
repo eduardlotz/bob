@@ -41,9 +41,6 @@ export default function MainLayout({ children }: any) {
           onLoaded={() => setSceneLoaded(true)}
         />
       </Background>
-
-      {/* <BottomNavigation /> */}
-
       {children}
     </Container>
   );

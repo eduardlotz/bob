@@ -4,12 +4,12 @@ import { Button } from "@/layout/atoms";
 import { BottomNavigation } from "@/molecules/BottomNavigation";
 import { Statistics } from "@/molecules/Statistics";
 import { SoundToggle } from "@/components/SoundToggle";
+import { useSoundSystem } from "@/hooks/useSoundSystem";
 
 import { requestMotionPermission } from "@/utils/permission";
 import { useGameStore, startAutoTap, stopAutoTap } from "@/store/gameStore";
 
 import { useAnimations } from "@/hooks/useAnimations";
-import { useSwipeDismiss } from "@/hooks/useSwipeDismiss";
 import { AnimatePresence, motion } from "motion/react";
 
 interface UILayerProps {
@@ -22,8 +22,8 @@ interface UILayerProps {
 
 export function UILayer({ setPermissionGranted }: UILayerProps) {
   const { statisticsVisible, isPaused } = useGameStore();
-  const [permissionDismissed, setPermissionDismissed] = useState(false);
   const [soundHintDismissed, setSoundHintDismissed] = useState(false);
+  const sound = useSoundSystem();
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -31,12 +31,6 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
     }, 10000);
     return () => clearTimeout(timeout);
   }, []);
-
-  const { motionStyles, dragConstraints, dragEndHandler, drag } =
-    useSwipeDismiss({
-      onClose: () => setPermissionDismissed(true),
-      direction: "x",
-    });
 
   // Initialize animations hook
   useAnimations();
@@ -66,6 +60,33 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
     return () => clearInterval(cleanupInterval);
   }, []);
 
+  // Global UI click sound handler (plays for any button-like element)
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as Element | null;
+      if (!target) return;
+      const clickable = target.closest(
+        'button, [role="button"], input[type="button"], input[type="submit"], .click-sound, input[type="radio"], input[type="checkbox"], [data-ui-sound-id]'
+      );
+      if (clickable) {
+        // check for unique sound first
+        const attrId = clickable.getAttribute("data-ui-sound-id");
+        // defer slightly to avoid interfering with UI thread
+        setTimeout(() => {
+          if (attrId && (window as any).__playUISoundById) {
+            // Use engine directly to avoid type widening in hook
+            (window as any).__playUISoundById(attrId);
+          } else {
+            sound.playUISound();
+          }
+        }, 0);
+      }
+    };
+    // Capture to ensure we hear it before stopPropagation in components
+    document.addEventListener("click", handleClick, true);
+    return () => document.removeEventListener("click", handleClick, true);
+  }, [sound]);
+
   const handlePermissionRequest = async () => {
     const granted = await requestMotionPermission();
     setPermissionGranted(granted);
@@ -92,30 +113,6 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
         </AnimatePresence>
         <SoundToggle />
       </ToggleRow>
-
-      {/* TODO: Add sensor button with dismiss */}
-      {/* <AnimatePresence>
-        {!permissionGranted &&
-          isMobile &&
-          sceneLoaded &&
-          !permissionDismissed && (
-            <SensorButton
-              variants={MotionVariants.SpringScaleReversed}
-              initial="initial"
-              animate="animate"
-              custom={0}
-              exit="exit"
-              whileTap="tap"
-              onClick={handlePermissionRequest}
-              style={motionStyles}
-              drag={drag}
-              dragConstraints={dragConstraints}
-              onDragEnd={dragEndHandler}
-            >
-              use motion sensor
-            </SensorButton>
-          )}
-      </AnimatePresence> */}
     </UILayerContainer>
   );
 }

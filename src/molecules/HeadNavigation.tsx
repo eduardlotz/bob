@@ -507,8 +507,11 @@ function Option({
 }) {
   const optionRef = useRef<THREE.Group>(null!);
   const navigate = useNavigate();
+  const { currentRoute } = useAppStore();
 
-  // Position is fixed for now (magnet functionality disabled)
+  const isActive = currentRoute === route.path;
+
+  // position is fixed for now (magnet functionality disabled)
   const position = initialPosition;
 
   const handleOptionClick = () => {
@@ -540,7 +543,7 @@ function Option({
   return (
     <group ref={optionRef} position={position}>
       <Html position={[0, 1.5, 0]}>
-        <motion.button
+        <NavigationBubble
           key={route.id}
           initial={MotionVariants.OptionButton.initial}
           animate={
@@ -551,38 +554,23 @@ function Option({
                   isDisabled: !route.purchased,
                 })
           }
+          $active={isActive}
           exit={MotionVariants.OptionButton.exit}
           whileHover={MotionVariants.OptionButton.hover}
           whileTap={MotionVariants.OptionButton.tap}
-          style={{
-            color: "var(--text-color)",
-            padding: "16px 20px",
-            borderRadius: "50px",
-            fontWeight: "400",
-            whiteSpace: "nowrap",
-            gap: "8px",
-            cursor: "pointer",
-            textDecoration: "none",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            transform: "translate(-50%, -50%)",
-            fontSize: "22px",
-            letterSpacing: "0.5px",
-          }}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={handleOptionClick}
         >
           {!route.purchased && <LockIcon />}
           {route.name}
-        </motion.button>
+        </NavigationBubble>
       </Html>
     </group>
   );
 }
 
-const CustomToast = styled.div`
-  background-color: #000000;
+export const CustomToast = styled.div`
+  background-color: rgba(0, 0, 0, 0.3);
   color: white;
   padding: 16px 24px;
   height: 58px;
@@ -594,17 +582,60 @@ const CustomToast = styled.div`
   align-items: center;
   gap: 16px;
 
+  min-width: fit-content;
+  width: fit-content;
+  max-width: calc(100vw - 32px);
+  word-wrap: nowrap;
+
+  color: #ffffff;
+  padding: 12px 24px;
   border-radius: 24px;
-  box-shadow: 0 4px 10px 10px rgba(37, 36, 39, 0.08);
-  text-align: center;
-  font-size: 14px;
-  font-style: normal;
+  background-color: rgba(0, 0, 0, 0.8);
+  -webkit-backdrop-filter: blur(32px);
+
+  backdrop-filter: blur(32px);
+  border-radius: 50px;
+  font-size: 16px;
   font-weight: 600;
-  line-height: normal;
-  letter-spacing: 1.4px;
-  text-transform: uppercase;
 
   @media (max-width: 600px) {
     width: 100%;
   }
+
+  // pulse animation for attention
+
+  box-shadow: 0 0 0 0px rgba(0, 0, 0, 0.5);
+  transition: box-shadow 0.5s ease-in-out;
+  animation: pulse 2.5s infinite ease-in-out;
+  animation-delay: 0.5;
+
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0px rgba(0, 0, 0, 0.5);
+    }
+    50% {
+      box-shadow: 0 0 0 10px rgba(255, 255, 255, 0.2);
+    }
+    100% {
+      box-shadow: 0 0 0 14px rgba(0, 0, 0, 0);
+    }
+  }
+`;
+
+const NavigationBubble = styled(motion.button)<{ $active: boolean }>`
+  color: ${(p) =>
+    p.$active ? "var(--active-text-color)" : "var(--text-color)"};
+  padding: 16px 20px;
+  border-radius: 50px;
+  font-weight: 400;
+  white-space: nowrap;
+  gap: 8px;
+  cursor: pointer;
+  text-decoration: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transform: translate(-50%, -50%);
+  font-size: 22px;
+  letter-spacing: 0.5px;
 `;

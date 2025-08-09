@@ -2,6 +2,7 @@ import React from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
+import { useGameStore } from "@/store/gameStore";
 
 function SpeakerIcon({ muted = false }: { muted?: boolean }) {
   return (
@@ -36,9 +37,12 @@ function SpeakerIcon({ muted = false }: { muted?: boolean }) {
 
 export const SoundToggle = () => {
   const { toggle, isMuted, isEnabled } = useSoundSystem();
+  // Persist preference-only settings: enabled/muted
+  const store = useGameStore();
 
   const handleClick = async () => {
     toggle();
+    store.setSoundEnabled(isEnabled);
   };
 
   return (

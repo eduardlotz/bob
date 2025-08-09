@@ -8,6 +8,8 @@ import {
   DEBUG_LOGS,
   DEFAULT_WORLD_MUSIC,
   DEFAULT_TAP_SOUND,
+  DEFAULT_UI_SOUND,
+  DEFAULT_UI_SOUND_2,
 } from "./defaults";
 import { DEFAULT_SOUND_CONFIGS } from "./configs";
 import { SoundConfig, SoundInstance, SoundSystemState } from "./types";
@@ -738,6 +740,14 @@ export const stopAllTapSounds = () => {
 export const stopAllWorldSounds = () => {
   stopSoundsByType("world");
 };
+
+export const playUISound = (soundId: string = DEFAULT_UI_SOUND.id) => {
+  // UI sounds do not have a dedicated enable flag; respect master and uiVolume
+  playSound(soundId);
+};
+
+export const getDefaultUISoundId = () => DEFAULT_UI_SOUND.id;
+export const getSecondaryUISoundId = () => DEFAULT_UI_SOUND_2.id;
 
 // Stop all instances for a specific sound config id (e.g., layered world sounds)
 export const stopSoundsById = (soundConfigId: string): void => {

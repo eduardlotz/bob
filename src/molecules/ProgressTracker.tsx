@@ -2,15 +2,15 @@ import React, { useState, useCallback, useMemo, memo } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
 import { useQuestStore } from "@/store/questStore";
-import { useAppStore } from "@/store";
 import { CloseIcon } from "@/icons/close";
 import { toast } from "sonner";
+import { NavButton } from "./BottomNavigation";
+import { useQuestSystem } from "@/hooks/useQuestSystem";
 
-// Memoized Quest Item Component
 const MemoizedQuestItem = memo<{
   quest: any;
-  onQuestClick: (quest: any) => void;
-}>(({ quest, onQuestClick }) => {
+  // onQuestClick: (quest: any) => void;
+}>(({ quest }) => {
   const questIcon = useMemo(() => {
     if (quest.completed) return "✅";
     if (quest.progress >= quest.maxProgress) return "🎯";
@@ -18,20 +18,21 @@ const MemoizedQuestItem = memo<{
   }, [quest.completed, quest.progress, quest.maxProgress]);
 
   return (
-    <QuestItem $completed={quest.completed} onClick={() => onQuestClick(quest)}>
+    <QuestItem $completed={quest.completed}>
       <QuestIcon>{questIcon}</QuestIcon>
       <QuestInfo>
         <QuestName>{quest.title}</QuestName>
         <QuestDescription>{quest.description}</QuestDescription>
-        <QuestProgress>
-          {quest.progress}/{quest.maxProgress}
-        </QuestProgress>
-        <ProgressBar
-          $progress={quest.progress}
-          $maxProgress={quest.maxProgress}
-        />
+        {quest.showProgress && (
+          <ProgressBar
+            $progress={quest.progress}
+            $maxProgress={quest.maxProgress}
+          />
+        )}
       </QuestInfo>
-      <QuestReward>+{quest.reward}</QuestReward>
+      <QuestReward>
+        <span>+{quest.reward}</span>
+      </QuestReward>
     </QuestItem>
   );
 });
@@ -40,45 +41,11 @@ MemoizedQuestItem.displayName = "MemoizedQuestItem";
 
 export function ProgressTracker() {
   const [isOpen, setIsOpen] = useState(false);
-  const { currentRoute } = useAppStore();
   const questStore = useQuestStore();
-  const quests = questStore.quests;
-  const getQuestsByRoute = questStore.getQuestsByRoute;
+  const { currentQuests, completedQuests, totalReward } = useQuestSystem();
+
   const completeQuest = questStore.completeQuest;
   const updateQuestProgress = questStore.updateQuestProgress;
-
-  // Convert route path to route ID for quest lookup
-  const routeId = useMemo(() => {
-    const routeMap: { [key: string]: string } = {
-      "/home": "route_home",
-      "/about": "route_about",
-      "/portfolio": "route_portfolio",
-      "/creative": "route_creative",
-      "/technical": "route_technical",
-      "/guestbook": "route_guestbook",
-    };
-    return routeMap[currentRoute] || "route_home";
-  }, [currentRoute]);
-
-  // Memoized quest data
-  const currentQuests = useMemo(
-    () => getQuestsByRoute(routeId),
-    [quests, routeId]
-  );
-
-  const completedQuests = useMemo(
-    () => currentQuests.filter((q: any) => q.completed).length,
-    [currentQuests]
-  );
-
-  const totalReward = useMemo(
-    () =>
-      currentQuests.reduce(
-        (sum: number, q: any) => sum + (q.completed ? q.reward : 0),
-        0
-      ),
-    [currentQuests]
-  );
 
   // Memoized handlers
   const handleQuestComplete = useCallback(
@@ -90,13 +57,6 @@ export function ProgressTracker() {
       }
     },
     [currentQuests, completeQuest]
-  );
-
-  const handleQuestProgress = useCallback(
-    (questId: string, progress: number) => {
-      updateQuestProgress(questId, progress);
-    },
-    [updateQuestProgress]
   );
 
   // Auto-complete quests for testing (only in development)
@@ -114,36 +74,33 @@ export function ProgressTracker() {
     setIsOpen((prev) => !prev);
   }, []);
 
-  const closePanel = useCallback(() => {
-    setIsOpen(false);
-  }, []);
-
   // Memoized quest click handler
-  const handleQuestClick = useCallback(
-    (quest: any) => {
-      if (quest.completed) {
-        // Show completion message
-        toast.info("Quest already completed!", {
-          description: quest.title,
-          duration: 2000,
-        });
-      } else if (quest.progress >= quest.maxProgress) {
-        // Complete the quest if progress is full
-        handleQuestComplete(quest.id);
-      } else {
-        // Show progress message
-        toast.info("Quest in progress...", {
-          description: `${quest.title} - ${quest.progress}/${quest.maxProgress}`,
-          duration: 2000,
-        });
-      }
-    },
-    [handleQuestComplete]
-  );
+  // const handleQuestClick = useCallback(
+  //   (quest: any) => {
+  //     if (quest.completed) {
+  //       // Show completion message
+  //       toast.info("Quest already completed!", {
+  //         description: quest.title,
+  //         duration: 2000,
+  //       });
+  //     } else if (quest.progress >= quest.maxProgress) {
+  //       // Complete the quest if progress is full
+  //       handleQuestComplete(quest.id);
+  //     }
+  //     // Show progress message
+  //     else {
+  //       toast.info("Quest in progress...", {
+  //         description: `${quest.title} - ${quest.progress}/${quest.maxProgress}`,
+  //         duration: 2000,
+  //       });
+  //     }
+  //   },
+  //   [handleQuestComplete]
+  // );
 
   return (
     <>
-      <TrackerButton
+      <NavButton
         onClick={toggleOpen}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
@@ -177,7 +134,6 @@ export function ProgressTracker() {
               }}
             >
               <TrackerContent>
-                <QuestIcon>📋</QuestIcon>
                 <QuestProgress>
                   {completedQuests}/{currentQuests.length}
                 </QuestProgress>
@@ -185,7 +141,7 @@ export function ProgressTracker() {
             </motion.div>
           )}
         </AnimatePresence>
-      </TrackerButton>
+      </NavButton>
 
       <AnimatePresence>
         {isOpen && (
@@ -201,6 +157,13 @@ export function ProgressTracker() {
             <TrackerContent>
               <TrackerHeader>
                 <TrackerTitle>Quests</TrackerTitle>
+
+                <TotalReward>
+                  {completedQuests}/{currentQuests.length}
+                </TotalReward>
+                {totalReward > 0 && (
+                  <TotalReward>+{totalReward} taps</TotalReward>
+                )}
               </TrackerHeader>
 
               <QuestsList>
@@ -208,14 +171,10 @@ export function ProgressTracker() {
                   <MemoizedQuestItem
                     key={quest.id}
                     quest={quest}
-                    onQuestClick={handleQuestClick}
+                    // onQuestClick={handleQuestClick}
                   />
                 ))}
               </QuestsList>
-
-              {totalReward > 0 && (
-                <TotalReward>Total Reward: +{totalReward}</TotalReward>
-              )}
             </TrackerContent>
           </TrackerPanel>
         )}
@@ -223,34 +182,6 @@ export function ProgressTracker() {
     </>
   );
 }
-
-// Styled Components
-const TrackerButton = styled(motion.button)<{ $isActive?: boolean }>`
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.8);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
-  border: ${(props) =>
-    props.$isActive
-      ? "2px solid #ffffff"
-      : "1px solid rgba(255, 255, 255, 0.1)"};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  pointer-events: auto;
-  opacity: ${(props) => (props.$isActive ? 1 : 0.75)};
-
-  &:hover {
-    background: rgba(0, 0, 0, 0.9);
-    border-color: ${(props) =>
-      props.$isActive ? "#ffffff" : "rgba(255, 255, 255, 0.2)"};
-    opacity: 1;
-  }
-`;
 
 const TrackerContent = styled.div`
   display: flex;
@@ -265,11 +196,9 @@ const QuestIcon = styled.div`
 `;
 
 const QuestProgress = styled.div`
-  font-size: 10px;
-  font-weight: bold;
-  color: #4ade80;
-  line-height: 1;
-  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-color);
 `;
 
 const ProgressBar = styled.div<{ $progress: number; $maxProgress: number }>`
@@ -311,10 +240,11 @@ const TrackerPanel = styled(motion.div)`
 `;
 
 const TrackerHeader = styled.div`
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  padding-bottom: 12px;
 `;
 
 const TrackerTitle = styled.h3`
@@ -322,21 +252,6 @@ const TrackerTitle = styled.h3`
   font-weight: bold;
   color: #ffffff;
   margin: 0;
-`;
-
-const CloseButton = styled.button`
-  background: none;
-  border: none;
-  color: #666666;
-  font-size: 20px;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  transition: color 0.2s;
-
-  &:hover {
-    color: #ffffff;
-  }
 `;
 
 const QuestsList = styled.div`
@@ -353,11 +268,11 @@ const QuestItem = styled.div<{ $completed: boolean }>`
   background: rgba(0, 0, 0, 0.3);
   border-radius: 8px;
   transition: background-color 0.2s;
-  cursor: pointer;
-  opacity: ${(props) => (props.$completed ? 0.7 : 1)};
+  opacity: ${(props) => (props.$completed ? 0.5 : 1)};
 
-  &:hover {
-    background: rgba(255, 255, 255, 0.05);
+  > * {
+    user-select: none;
+    pointer-events: none;
   }
 `;
 
@@ -369,58 +284,34 @@ const QuestName = styled.div`
   font-size: 14px;
   font-weight: 600;
   color: #ffffff;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 `;
 
 const QuestDescription = styled.div`
   font-size: 12px;
   color: #666666;
+  margin-bottom: 8px;
 `;
 
 const QuestReward = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 8px;
+  border-radius: 20px;
   font-size: 12px;
-  color: #4ade80;
+  background-color: var(--success-color);
   font-weight: 500;
+  color: var(--success-color);
+
+  > * {
+    filter: brightness(0.3);
+  }
 `;
 
 const TotalReward = styled.div`
   font-size: 14px;
-  color: #4ade80;
+  color: var(--success-color);
   font-weight: 600;
-  text-align: center;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-`;
-
-const TestSection = styled.div`
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-`;
-
-const TestTitle = styled.div`
-  font-size: 12px;
-  color: #666666;
-  margin-bottom: 8px;
-`;
-
-const TestButton = styled.button`
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 10px;
-  cursor: pointer;
-  margin-right: 8px;
-  margin-bottom: 4px;
-
-  &:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.2);
-  }
-
-  &:disabled {
-    opacity: 0.5;
-  }
+  text-align: right;
 `;

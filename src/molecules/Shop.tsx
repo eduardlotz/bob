@@ -79,7 +79,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
     },
     {
       id: "environment" as ShopTab,
-      name: "Weather",
+      name: "World",
       icon: EnvironmentIconComponent,
       progress:
         upgrades.filter((u) => u.category === "environment" && u.unlocked)
@@ -267,6 +267,22 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                             </DevSliderValue>
                           </DevSliderRow>
                           <DevSliderRow>
+                            <DevSliderLabel>UI</DevSliderLabel>
+                            <DevSlider
+                              type="range"
+                              min={0}
+                              max={1}
+                              step={0.01}
+                              value={sound.uiVolume}
+                              onChange={(e) =>
+                                sound.setUIVolume(parseFloat(e.target.value))
+                              }
+                            />
+                            <DevSliderValue>
+                              {Math.round(sound.uiVolume * 100)}%
+                            </DevSliderValue>
+                          </DevSliderRow>
+                          <DevSliderRow>
                             <DevSliderLabel>Text</DevSliderLabel>
                             <DevSlider
                               type="range"
@@ -334,6 +350,7 @@ function ThemesView() {
                     ? handleThemeSelect(theme.id)
                     : handleThemePurchase(theme.id)
                 }
+                role="button"
               >
                 <ThemePreview $colors={theme.colors}>
                   <ThemeGradient $colors={theme.colors} />
@@ -408,6 +425,7 @@ function EffectsView() {
                 ? handleEffectSelect(effect.id)
                 : handleEffectPurchase(effect.id)
             }
+            role="button"
           >
             <EffectIcon>{effect.icon}</EffectIcon>
             <EffectName>{effect.name}</EffectName>
@@ -581,6 +599,7 @@ function RoutesView() {
                 $purchased={route.purchased}
                 $canAfford={canAfford(route.cost)}
                 onClick={() => handleRoutePurchase(route.id)}
+                role="button"
               >
                 <div style={{ fontSize: "32px" }}>{route.icon}</div>
                 <div>
