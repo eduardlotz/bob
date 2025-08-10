@@ -59,7 +59,9 @@ export function PortfolioScene() {
         case "books":
           return (
             <div>
-              <h3 style={{ color: "#ffd700", marginBottom: "12px" }}>
+              <h3
+                style={{ color: "var(--accent-color)", marginBottom: "12px" }}
+              >
                 Learning
               </h3>
               <p>These books represent my books</p>
@@ -68,7 +70,12 @@ export function PortfolioScene() {
         case "coffee":
           return (
             <div>
-              <h3 style={{ color: "#ffd700", marginBottom: "12px" }}>
+              <h3
+                style={{
+                  color: "var(--accent-color)",
+                  marginBottom: "12px",
+                }}
+              >
                 Project Showcase
               </h3>
               <ImageCarousel images={projectImages} />

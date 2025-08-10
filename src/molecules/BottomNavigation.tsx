@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import styled from "styled-components";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, stagger } from "motion/react";
 import { useGameStore } from "@/store/gameStore";
 import { useAppStore, ROUTE_PATHS } from "@/store";
 import { UpgradesIcon } from "@/icons/upgrades";
@@ -10,7 +10,7 @@ import { CloseIcon } from "@/icons/close";
 import { Shop } from "./Shop";
 import { ProgressTracker } from "./ProgressTracker";
 
-type NavigationView = "shop" | "upgrades" | "quests" | "default";
+type NavigationView = "shop" | "upgrades" | "quests" | "menu" | "default";
 
 export function BottomNavigation() {
   // const [isShopOpen, setIsShopOpen] = useState(false);
@@ -30,7 +30,6 @@ export function BottomNavigation() {
   // Only show upgrade/shop buttons on home route
   const isHomeRoute = currentRoute === ROUTE_PATHS.HOME;
 
-  // Memoize the calculations to avoid calling setState during render
   const totalTapsPerSecond = useMemo(() => {
     const autoTapRate =
       getAutoTapRateUncached() * getTotalTapMultiplierUncached();
@@ -39,7 +38,7 @@ export function BottomNavigation() {
     getAutoTapRateUncached,
     getTotalTapMultiplierUncached,
     manualTapsPerSecond,
-    upgrades, // Add upgrades as dependency so calculation updates when upgrades change
+    upgrades, // add upgrades as dependency so calculation updates when upgrades change
   ]);
   const tapUpgrades = upgrades.filter((u) => u.category === "upgrades");
   const hasAnyUpgrade = tapUpgrades.some((u) => u.unlocked);
@@ -50,6 +49,7 @@ export function BottomNavigation() {
 
   const handleMenuButtonClick = () => {
     toggleOptions();
+    handleNavigationClick("menu");
   };
 
   const handleNavigationClick = (view: NavigationView) => {
@@ -66,7 +66,11 @@ export function BottomNavigation() {
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 40 }}
-        transition={{ duration: 0.5, type: "spring", mass: 0.5 }}
+        transition={{
+          duration: 0.5,
+          type: "spring",
+          mass: 0.5,
+        }}
       >
         {isHomeRoute ? (
           <NavButton
@@ -101,14 +105,10 @@ export function BottomNavigation() {
                     bounce: 0.5,
                   }}
                 >
-                  {hasAnyUpgrade ? (
-                    <UpgradeButtonContent>
-                      <FingerIcon>🫵</FingerIcon>
-                      <TapMultiplier>{totalTapsPerSecond}/s</TapMultiplier>
-                    </UpgradeButtonContent>
-                  ) : (
-                    <UpgradesIcon color="#ffffff" />
-                  )}
+                  <UpgradeButtonContent>
+                    <FingerIcon>🫵</FingerIcon>
+                    <TapMultiplier>{totalTapsPerSecond}/s</TapMultiplier>
+                  </UpgradeButtonContent>
                 </motion.span>
               )}
             </AnimatePresence>
@@ -217,7 +217,7 @@ export function BottomNavigation() {
           >
             <UpgradesContent>
               <UpgradesHeader>
-                <UpgradesTitle>Tap Upgrades</UpgradesTitle>
+                <UpgradesTitle>Upgrades</UpgradesTitle>
               </UpgradesHeader>
               <UpgradesList>
                 {tapUpgrades.map((upgrade) => (
@@ -235,19 +235,19 @@ export function BottomNavigation() {
                       <UpgradeDescription>
                         {upgrade.description}
                       </UpgradeDescription>
-                      <UpgradeCost>
-                        Cost:{" "}
-                        {Math.floor(
-                          upgrade.baseCost *
-                            Math.pow(upgrade.costMultiplier, upgrade.level)
-                        )}
-                      </UpgradeCost>
+                      <UpgradeLevel>
+                        {upgrade.unlocked
+                          ? `Level ${upgrade.level}/${upgrade.maxLevel}`
+                          : "Locked"}
+                      </UpgradeLevel>
                     </UpgradeInfo>
-                    <UpgradeLevel>
-                      {upgrade.unlocked
-                        ? `Level ${upgrade.level}/${upgrade.maxLevel}`
-                        : "Locked"}
-                    </UpgradeLevel>
+                    <UpgradeCost>
+                      {Math.floor(
+                        upgrade.baseCost *
+                          Math.pow(upgrade.costMultiplier, upgrade.level)
+                      )}
+                      {" taps"}
+                    </UpgradeCost>
                   </UpgradeItem>
                 ))}
               </UpgradesList>
@@ -282,10 +282,10 @@ export const NavButton = styled(motion.button)<{ $isActive?: boolean }>`
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 
-  border: ${(props) =>
-    props.$isActive
-      ? "2px solid #ffffff"
-      : "1px solid rgba(255, 255, 255, 0.1)"};
+  outline: 2px solid transparent;
+  outline-color: ${(props) => (props.$isActive ? "#ffffff" : "transparent")};
+  outline-offset: ${(props) => (props.$isActive ? "3px" : "0")};
+
   display: flex;
   align-items: center;
   justify-content: center;
@@ -296,7 +296,7 @@ export const NavButton = styled(motion.button)<{ $isActive?: boolean }>`
   pointer-events: auto;
 
   &:hover {
-    background-color: rgba(0, 0, 0, 0.9);
+    background-color: rgba(0, 0, 0, 0.4);
     border-color: ${(props) =>
       props.$isActive ? "#ffffff" : "rgba(255, 255, 255, 0.2)"};
     opacity: 1;
@@ -313,7 +313,7 @@ const UpgradeButtonContent = styled.div`
 const TapMultiplier = styled.div`
   font-size: 12px;
   font-weight: bold;
-  color: #ffd700;
+  color: var(--accent-color);
   line-height: 1;
 `;
 
@@ -327,8 +327,9 @@ const MenuButton = styled(motion.button)<{ $isActive?: boolean }>`
   border-radius: 24px;
   background: var(--primary-color);
 
-  border: 2px solid transparent;
-  border-color: ${(props) => (props.$isActive ? "#ffffff" : "transparent")};
+  outline: 2px solid transparent;
+  outline-color: ${(props) => (props.$isActive ? "#ffffff" : "transparent")};
+  outline-offset: ${(props) => (props.$isActive ? "3px" : "0")};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -420,23 +421,24 @@ const UpgradeName = styled.div`
   font-size: 14px;
   font-weight: 600;
   color: #ffffff;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 `;
 
 const UpgradeDescription = styled.div`
   font-size: 12px;
   color: #666666;
+  margin-bottom: 8px;
 `;
 
 const UpgradeCost = styled.div`
-  font-size: 10px;
-  color: #ffd700;
+  font-size: 12px;
+  color: var(--accent-color);
   font-weight: 500;
   margin-top: 4px;
 `;
 
 const UpgradeLevel = styled.div`
-  font-size: 12px;
-  color: #ffd700;
+  font-size: 10px;
+  color: var(--text-color);
   font-weight: 500;
 `;

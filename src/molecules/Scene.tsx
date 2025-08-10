@@ -18,7 +18,7 @@ import { ParticleEffects } from "../3d-objects/ParticleEffects";
 import { match } from "ts-pattern";
 import { startAutoTap } from "../store/gameStore";
 import { useKeyPress } from "../hooks/useKeyPress";
-import { FISHEYE_CONFIG } from "../store/upgradesConfig";
+import { FISHEYE_CONFIG } from "../store/themeConfig";
 import { a, useSpring } from "@react-spring/three";
 import { attachListenerToCamera } from "@/utils/soundSystem";
 import { MessageBubble } from "@/molecules/MessageBubble";

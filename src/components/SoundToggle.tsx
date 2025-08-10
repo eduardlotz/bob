@@ -84,6 +84,7 @@ const Button = styled(motion.button)`
   background-color: rgba(0, 0, 0, 0.3);
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
+  color: #ffffff;
 
   display: flex;
   align-items: center;
@@ -93,6 +94,6 @@ const Button = styled(motion.button)`
   transition-property: background-color;
 
   &:hover {
-    background-color: rgba(0, 0, 0, 1);
+    background-color: rgba(0, 0, 0, 0.4);
   }
 `;

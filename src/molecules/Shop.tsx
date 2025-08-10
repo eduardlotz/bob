@@ -28,6 +28,7 @@ import {
   DevSlider,
   DevSliderValue,
 } from "@/layout/atoms";
+import { THEME_IDS } from "@/store/themeConfig";
 
 interface ShopProps {
   isOpen: boolean;
@@ -58,7 +59,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
   const tabs = [
     {
       id: "pages" as ShopTab,
-      name: "Pages",
+      name: "Seiten",
       icon: PagesIcon,
       progress: routes.filter((r) => r.purchased).length / routes.length,
     },
@@ -70,7 +71,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
     },
     {
       id: "effects" as ShopTab,
-      name: "Effects",
+      name: "Effekte",
       icon: EffectsIcon,
       progress:
         upgrades.filter((u) => u.category === "tapEffects" && u.unlocked)
@@ -79,7 +80,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
     },
     {
       id: "environment" as ShopTab,
-      name: "World",
+      name: "Umwelt & Sound",
       icon: EnvironmentIconComponent,
       progress:
         upgrades.filter((u) => u.category === "environment" && u.unlocked)
@@ -89,7 +90,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
       ? [
           {
             id: "dev" as ShopTab,
-            name: "Dev",
+            name: "Debugging",
             icon: DebuggingIcon,
             progress: 0, // Dev tab is always 100% complete
           },
@@ -335,10 +336,10 @@ function ThemesView() {
   return (
     <ThemesContainer>
       <ThemesSection>
-        <SectionTitle>Page Themes</SectionTitle>
+        <SectionTitle>Themes</SectionTitle>
         <ItemsGrid>
           {themes
-            .filter((theme) => theme.id !== "custom")
+            .filter((theme) => theme.id !== THEME_IDS.CUSTOM) // exclude custom theme, not ready yet
             .map((theme) => (
               <ThemeCard
                 key={theme.id}
@@ -353,7 +354,20 @@ function ThemesView() {
                 role="button"
               >
                 <ThemePreview $colors={theme.colors}>
-                  <ThemeGradient $colors={theme.colors} />
+                  <ThemeGradient $colors={theme.planetColors} />
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: "4px",
+                      left: 0,
+                      right: 0,
+                      height: "12px",
+                      width: "16px",
+                      margin: "0 auto",
+                      borderRadius: "20px",
+                      background: theme.colors.primary,
+                    }}
+                  />
                 </ThemePreview>
                 <ThemeName>{theme.name}</ThemeName>
                 <ThemeStatus $purchased={theme.purchased}>
@@ -580,7 +594,7 @@ function RoutesView() {
 
   const handleRoutePurchase = (routeId: string) => {
     const route = routes.find((r) => r.id === routeId);
-    if (route && !route.purchased && canAfford(route.cost)) {
+    if (route && !route.purchased && !route.isLocked && canAfford(route.cost)) {
       purchaseRoute(routeId);
     }
   };
@@ -588,45 +602,36 @@ function RoutesView() {
   return (
     <ThemesContainer>
       <ThemesSection>
-        <SectionTitle>Unlockable Pages</SectionTitle>
+        <SectionTitle>Seiten</SectionTitle>
         <ItemsGrid>
-          {routes
-            .filter((route) => route.id !== "route_home") // Don't show home in shop
-            .map((route) => (
-              <ThemeCard
-                key={route.id}
-                $selected={route.purchased}
-                $purchased={route.purchased}
-                $canAfford={canAfford(route.cost)}
-                onClick={() => handleRoutePurchase(route.id)}
-                role="button"
-              >
-                <div style={{ fontSize: "32px" }}>{route.icon}</div>
-                <div>
-                  <ThemeName>{route.name}</ThemeName>
-                  <div
-                    style={{
-                      fontSize: "10px",
-                      color: "#666666",
-                      textAlign: "center",
-                    }}
-                  >
-                    {route.description}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "10px",
-                      color: "#FFD700",
-                      textAlign: "center",
-                      marginTop: "4px",
-                    }}
-                  >
-                    {route.cost} taps
-                  </div>
+          {routes.map((route) => (
+            <ThemeCard
+              key={route.id}
+              $selected={route.purchased}
+              $purchased={route.purchased}
+              $canAfford={!route.isLocked && canAfford(route.cost)}
+              onClick={() => handleRoutePurchase(route.id)}
+              role="button"
+              disabled={route.isLocked}
+            >
+              <div style={{ fontSize: "32px" }}>{route.icon}</div>
+              <div>
+                <ThemeName>{route.name}</ThemeName>
+                <ThemeDescription>{route.description}</ThemeDescription>
+                <div
+                  style={{
+                    fontSize: "10px",
+                    color: "#FFD700",
+                    textAlign: "center",
+                    marginTop: "4px",
+                  }}
+                >
+                  {route.cost} taps
                 </div>
-                <ThemeStatus $purchased={route.purchased}></ThemeStatus>
-              </ThemeCard>
-            ))}
+              </div>
+              <ThemeStatus $purchased={route.purchased}></ThemeStatus>
+            </ThemeCard>
+          ))}
         </ItemsGrid>
       </ThemesSection>
     </ThemesContainer>
@@ -899,7 +904,7 @@ const ItemsGrid = styled.div`
   gap: 16px;
 `;
 
-const ThemeCard = styled.div<{
+const ThemeCard = styled.button<{
   $selected: boolean;
   $purchased: boolean;
   $canAfford: boolean;
@@ -908,11 +913,13 @@ const ThemeCard = styled.div<{
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 12px;
+  padding: 12px 40px;
   border-radius: 12px;
-  cursor: pointer;
+  cursor: ${(p) => (p.$canAfford ? "pointer" : "not-allowed")};
   transition: all 0.2s;
-  border: 2px solid ${(props) => (props.$selected ? "#ffffff" : "transparent")};
+  border: 2px solid
+    ${(props) =>
+      props.$selected && props.$canAfford ? "#ffffff" : "transparent"};
   background: ${(props) =>
     props.$selected
       ? "rgba(255, 255, 255, 0.1)"
@@ -940,9 +947,9 @@ const ThemeGradient = styled.div<{ $colors: any }>`
   height: 100%;
   background: linear-gradient(
     to bottom,
-    ${(props) => props.$colors.primary} 0%,
-    ${(props) => props.$colors.secondary} 50%,
-    ${(props) => props.$colors.accent} 100%
+    ${(props) => props.$colors[0]} 0%,
+    ${(props) => props.$colors[1]} 50%,
+    ${(props) => props.$colors[2]} 100%
   );
 `;
 
@@ -950,6 +957,13 @@ const ThemeName = styled.div`
   font-size: 12px;
   color: #ffffff;
   text-align: center;
+`;
+
+const ThemeDescription = styled.div`
+  font-size: 10px;
+  color: #666666;
+  text-align: center;
+  text-wrap: balance;
 `;
 
 const ThemeStatus = styled.div<{ $purchased: boolean }>`

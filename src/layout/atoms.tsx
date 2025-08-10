@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { FillRow } from ".";
 import { Link } from "react-router-dom";
 
+// check if blend mode is good idea
 export const Logo = () => {
   return (
     <svg
@@ -13,8 +14,8 @@ export const Logo = () => {
       viewBox="0 0 80 56"
       style={{
         mixBlendMode: "difference",
-        minHeight: "56px",
-        minWidth: "80px",
+        // minHeight: "56px",
+        // minWidth: "80px",
       }}
     >
       <g clipPath="url(#clip0_2458_55)">

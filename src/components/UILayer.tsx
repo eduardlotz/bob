@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
-import { Button } from "@/layout/atoms";
+import { Button, Logo } from "@/layout/atoms";
 import { BottomNavigation } from "@/molecules/BottomNavigation";
 import { Statistics } from "@/molecules/Statistics";
 import { SoundToggle } from "@/components/SoundToggle";
@@ -94,6 +94,9 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
 
   return (
     <UILayerContainer>
+      <TopLogoContainer>
+        <Logo />
+      </TopLogoContainer>
       <BottomNavigation />
       <Statistics visible={statisticsVisible} />
 
@@ -116,6 +119,23 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
     </UILayerContainer>
   );
 }
+
+const TopLogoContainer = styled.div`
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 100;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000;
+  height: 56px;
+
+  svg {
+    height: 44px;
+  }
+`;
 
 const UILayerContainer = styled.div`
   position: relative;

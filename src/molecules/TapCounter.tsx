@@ -4,7 +4,7 @@ import { Vector3, Group, Mesh } from "three";
 import { useSpring, a } from "@react-spring/three";
 import { useFrame } from "@react-three/fiber";
 import { useGameStore } from "@/store/gameStore";
-import { THEME_CONFIG } from "@/store/upgradesConfig";
+import { THEME_CONFIG } from "@/store/themeConfig";
 
 const FONT_PATH = "/fonts/OpenRundeBold.json";
 

@@ -15,7 +15,7 @@ import { useBlobEmotions } from "@/hooks/useBlobEmotions";
 // import { useMagneticAttraction, MagneticConfig } from "@/hooks/useMagnets";
 import { toast } from "sonner";
 import styled from "styled-components";
-import { useGameStore } from "@/store/gameStore";
+import { Route, useGameStore } from "@/store/gameStore";
 import { useNavigate } from "react-router-dom";
 import { match } from "ts-pattern";
 import { LockIcon } from "@/icons/lock";
@@ -408,8 +408,8 @@ function OptionsGroup({
 
     // Convert screen dimensions to Three.js world coordinates
     const aspect = windowWidth / windowHeight;
-    const fov = 75; // Assuming default camera FOV, adjust if different
-    const distance = 5; // Assuming camera distance, adjust if different
+    const fov = 50; // Assuming default camera FOV, adjust if different
+    const distance = 7; // Assuming camera distance, adjust if different
 
     // Calculate visible world dimensions at camera distance
     const vFOV = (fov * Math.PI) / 180;
@@ -418,7 +418,7 @@ function OptionsGroup({
 
     // Define safe margins (as percentage of world dimensions)
     const marginPercent = 0.1; // 10% margin from edges
-    const bottomNavPercent = 0.25; // Increased from 15% to 25% to account for navigation + potential panels
+    const bottomNavPercent = 0.15; // Increased from 15% to 25% to account for navigation + potential panels
 
     const safeWidth = worldWidth * (1 - 2 * marginPercent);
     const safeHeight = worldHeight * (1 - marginPercent - bottomNavPercent);
@@ -429,7 +429,7 @@ function OptionsGroup({
 
     // Dynamic radius calculation based on number of items
     // More items = larger ellipse to prevent overlap
-    const baseRadiusMultiplier = Math.min(1, Math.sqrt(count / 8)); // Scale with item count
+    const baseRadiusMultiplier = Math.min(1, Math.sqrt(count / 6)); // Scale with item count
     const xRadius = maxXRadius * baseRadiusMultiplier;
     const yRadius = maxYRadius * baseRadiusMultiplier;
 
@@ -449,7 +449,7 @@ function OptionsGroup({
       const bottomOffset = worldHeight * bottomNavPercent;
 
       // Add extra safety margin for bottom area to account for navigation buttons and potential panels
-      const extraBottomMargin = worldHeight * 0;
+      const extraBottomMargin = worldHeight * 0.05; // 5% extra margin
       const effectiveBottomOffset = bottomOffset + extraBottomMargin;
 
       x = Math.max(-halfSafeWidth, Math.min(halfSafeWidth, x));
@@ -499,7 +499,7 @@ function Option({
   isClosing,
 }: {
   initialPosition: THREE.Vector3;
-  route: any; // Route type from game store
+  route: Route; // Route type from game store
   index: number;
   cameraControlsRef: React.RefObject<CameraControls>;
   hideOptions: () => void;
@@ -515,9 +515,7 @@ function Option({
   const position = initialPosition;
 
   const handleOptionClick = () => {
-    match({
-      purchased: route.purchased,
-    })
+    match(route)
       .with({ purchased: true }, () => {
         cameraControlsRef.current.setLookAt(
           0,
@@ -532,10 +530,17 @@ function Option({
         navigate(route.path);
         hideOptions();
       })
-      .otherwise(() => {
-        // Route is locked - notify user about shop
+      .with({ isLocked: true }, () => {
         toast.custom((id) => (
-          <CustomToast>Visit the shop to unlock it!</CustomToast>
+          <CustomToast>Dieser Bereich ist noch nicht fertig ☹️</CustomToast>
+        ));
+      })
+      .otherwise(() => {
+        // route is not hard locked - notify user about shop
+        toast.custom((id) => (
+          <CustomToast>
+            Besuch den Shop, um diesen Bereich freizuschalten!
+          </CustomToast>
         ));
       });
   };
@@ -552,6 +557,7 @@ function Option({
               : MotionVariants.OptionButton.animate({
                   delay: index,
                   isDisabled: !route.purchased,
+                  isLocked: route.isLocked,
                 })
           }
           $active={isActive}
@@ -561,7 +567,7 @@ function Option({
           onPointerDown={(e) => e.stopPropagation()}
           onClick={handleOptionClick}
         >
-          {!route.purchased && <LockIcon />}
+          {route.isLocked && <LockIcon />}
           {route.name}
         </NavigationBubble>
       </Html>
@@ -570,33 +576,30 @@ function Option({
 }
 
 export const CustomToast = styled.div`
-  background-color: rgba(0, 0, 0, 0.3);
-  color: white;
-  padding: 16px 24px;
-  height: 58px;
-  width: fit-content;
-  max-width: 100%;
-
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 16px;
 
-  min-width: fit-content;
-  width: fit-content;
+  padding: 12px 28px;
+  min-height: 52px;
+  width: min-content;
+  min-width: min-content;
   max-width: calc(100vw - 32px);
-  word-wrap: nowrap;
 
-  color: #ffffff;
-  padding: 12px 24px;
-  border-radius: 24px;
+  white-space: nowrap;
+
   background-color: rgba(0, 0, 0, 0.8);
-  -webkit-backdrop-filter: blur(32px);
+  color: white;
 
+  -webkit-backdrop-filter: blur(32px);
   backdrop-filter: blur(32px);
+
   border-radius: 50px;
-  font-size: 16px;
-  font-weight: 600;
+
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
 
   @media (max-width: 600px) {
     width: 100%;
@@ -624,7 +627,15 @@ export const CustomToast = styled.div`
 
 const NavigationBubble = styled(motion.button)<{ $active: boolean }>`
   color: ${(p) =>
-    p.$active ? "var(--active-text-color)" : "var(--text-color)"};
+    p.$active ? "var(--background-color)" : "var(--text-color)"};
+  background-color: ${(p) =>
+    p.$active ? "var(--text-color)" : "var(--background-color)"};
+  border: 2px solid transparent;
+  border-color: ${(p) => (p.$active ? "var(--text-color)" : "transparent")};
+
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+
   padding: 16px 20px;
   border-radius: 50px;
   font-weight: 400;

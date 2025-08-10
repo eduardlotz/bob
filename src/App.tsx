@@ -18,32 +18,29 @@ import Technical from "./routes/Technical";
 import Creative from "./routes/Creative";
 import Guestbook from "./routes/Guestbook";
 import { AnimatePresence, motion } from "motion/react";
+import MiniGames from "./routes/MiniGames";
 
 export default function App() {
   const location = useLocation();
   const { setCurrentRoute, currentRoute } = useAppStore();
-  const [firstMount, setFirstMount] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [currentRouteInPretty, setCurrentRouteInPretty] = useState("");
   const [showRouteChip, setShowRouteChip] = useState(false);
 
   useAnimations();
 
-  // app startup
   useEffect(() => {
-    const initialRoute =
-      location.pathname === "/" ? "/home" : location.pathname;
-    if (!currentRoute || currentRoute !== initialRoute) {
-      setCurrentRoute(initialRoute);
-    }
-    setFirstMount(true);
+    setCurrentRoute(location.pathname);
+    setMounted(true);
   }, []);
 
-  // Sync router location with store (avoid loops by checking value)
+  // sync router location with store
+  // fix potential access to locked pages
   useEffect(() => {
     if (currentRoute !== location.pathname) {
       setCurrentRoute(location.pathname);
 
-      if (firstMount) {
+      if (mounted) {
         const route = getRouteLabelByPath(location.pathname);
         setCurrentRouteInPretty(route);
         setShowRouteChip(true);
@@ -60,12 +57,13 @@ export default function App() {
       <GlobalStyle />
 
       <Toaster
+        duration={5000}
         position="top-center"
-        style={
-          {
-            "--width": "320px",
-          } as React.CSSProperties
-        }
+        // style={
+        //   {
+        //     "--width": "360px",
+        //   } as React.CSSProperties
+        // }
       />
       <AnimatePresence mode="sync">
         <RouteChip
@@ -96,6 +94,7 @@ export default function App() {
                 <Route path={ROUTE_PATHS.CREATIVE} element={<Creative />} />
                 <Route path={ROUTE_PATHS.PORTFOLIO} element={<Portfolio />} />
                 <Route path={ROUTE_PATHS.GUESTBOOK} element={<Guestbook />} />
+                <Route path={ROUTE_PATHS.MINIGAMES} element={<MiniGames />} />
               </Routes>
             </ContentWidth>
           </ContentWrapper>

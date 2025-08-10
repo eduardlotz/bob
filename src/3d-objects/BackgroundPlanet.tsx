@@ -1,6 +1,6 @@
 import { BackSide } from "three";
 import { useGameStore } from "@/store/gameStore";
-import { THEME_CONFIG } from "@/store/upgradesConfig";
+import { THEME_CONFIG } from "@/store/themeConfig";
 import { GradientTexture } from "@react-three/drei";
 
 export const BackgroundPlanet = () => {

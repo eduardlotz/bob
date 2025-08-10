@@ -5,23 +5,17 @@ import {
   stopAllTapSounds,
   stopAllWorldSounds,
   isEnabled,
-  getState,
   enable,
   disable,
   setMasterVolume,
   setTypeVolume,
   updateWorldSoundVolumes,
-  initializeSoundSystemAsync,
   mute as engineMute,
   unmute as engineUnmute,
-  toggleMute as engineToggleMute,
-  isAudioContextRunning,
   resumeAudioContext,
   unlockAudioContext,
   setTapEnabled as engineSetTapEnabled,
   setWorldEnabled as engineSetWorldEnabled,
-  setWorldMusic as engineSetWorldMusic,
-  setCurrentTapSound as engineSetCurrentTapSound,
   playUISound as enginePlayUISound,
 } from "../utils/soundSystem";
 import { getWorldSoundById } from "@/utils/sound/configs";
@@ -296,23 +290,31 @@ export function useSoundSystem(): SoundSystemHook {
   }, []);
 
   const toggleMuteCallback = useCallback(async () => {
-    const current = useGameStore.getState().soundSystem.masterVolume;
-    if (current > 0) {
-      lastNonZeroMasterVolumeRef.current = current;
+    const gamestore = useGameStore.getState();
+    const currentMasterVolume = gamestore.soundSystem.masterVolume;
+
+    if (currentMasterVolume > 0) {
+      lastNonZeroMasterVolumeRef.current = currentMasterVolume;
       engineMute();
-      useGameStore.getState().setMasterVolume(0);
+
+      gamestore.setMasterVolume(0);
+      gamestore.setSoundEnabled(false);
     } else {
       const restore =
         lastNonZeroMasterVolumeRef.current > 0
           ? lastNonZeroMasterVolumeRef.current
           : 1;
+      gamestore.setSoundEnabled(true);
+
       // Always resume audio context after unmute (fixes iOS policies)
       try {
         await resumeAudioContext();
         await unlockAudioContext();
-      } catch {}
+      } catch (error) {
+        console.error("Error unlocking audio context:", error);
+      }
       engineUnmute();
-      useGameStore.getState().setMasterVolume(restore);
+      gamestore.setMasterVolume(restore);
       // Ensure previously selected world layers resume on unmute
       resumeSelectedWorldLayers();
     }
