@@ -147,12 +147,7 @@ export const TapCounter = () => {
   // }, [gameTapCount]);
 
   return (
-    <a.group
-      ref={groupRef}
-      scale={spring.scale}
-      position={responsivePosition}
-      origin={[0, 0, 0]}
-    >
+    <a.group ref={groupRef} scale={spring.scale} position={responsivePosition}>
       <Text3D
         font={FONT_PATH}
         size={3}

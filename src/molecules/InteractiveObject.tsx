@@ -39,18 +39,23 @@ export function InteractiveObject({
     onDialogOpen?.();
   };
 
+  const handlePointerEnter = () => {
+    setIsHovered(true);
+    document.body.style.cursor = "pointer";
+  };
+
+  const handlePointerLeave = () => {
+    setIsHovered(false);
+    document.body.style.cursor = "auto";
+  };
+
   return (
-    <a.group
-      position={position}
-      rotation={rotation}
-      scale={scale}
-      style={{ cursor: "pointer" }}
-    >
+    <a.group position={position} rotation={rotation} scale={scale}>
       <mesh
         ref={meshRef}
         onClick={handleClick}
-        onPointerEnter={() => setIsHovered(true)}
-        onPointerLeave={() => setIsHovered(false)}
+        onPointerEnter={handlePointerEnter}
+        onPointerLeave={handlePointerLeave}
       >
         {children}
         {isHovered && <Outlines thickness={0.03} color="black" screenspace />}

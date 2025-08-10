@@ -1,5 +1,4 @@
 import { cubicBezier } from "motion";
-import { blur } from "three/tsl";
 
 export namespace MotionVariants {
   export const SlideInDown = {
