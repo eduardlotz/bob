@@ -50,7 +50,7 @@ export class StoreMigration {
   }
 
   // Process the migration queue
-  private async processMigrationQueue(): Promise<void> {
+  async processMigrationQueue(): Promise<void> {
     if (this.isProcessingQueue || this.migrationQueue.length === 0) {
       return;
     }
@@ -283,8 +283,8 @@ export class StoreMigration {
 export const storeMigration = StoreMigration.getInstance();
 
 // Safe migration function that queues the migration instead of running immediately
-export const queueStorageMigration = (): void => {
-  const needsMigration = storeMigration.checkMigrationNeeded();
+export const queueStorageMigration = async (): Promise<void> => {
+  const needsMigration = await storeMigration.checkMigrationNeeded();
 
   if (needsMigration) {
     console.log("Migration needed, queuing for later execution...");
