@@ -9,6 +9,8 @@ import { toast } from "sonner";
 export class StoreMigration {
   private static instance: StoreMigration;
   private isMigrating = false;
+  private migrationQueue: Array<() => Promise<void>> = [];
+  private isProcessingQueue = false;
 
   private constructor() {}
 
@@ -29,10 +31,68 @@ export class StoreMigration {
     return storageType === "localstorage";
   }
 
+  // Queue a migration task to be executed after stores are ready
+  queueMigration(task: () => Promise<void>): void {
+    this.migrationQueue.push(task);
+    console.log(
+      `Migration task queued. Queue length: ${this.migrationQueue.length}`
+    );
+
+    // Process queue if not already processing
+    if (!this.isProcessingQueue) {
+      console.log("Starting to process migration queue...");
+      this.processMigrationQueue();
+    } else {
+      console.log(
+        "Migration queue is already being processed, task will be handled later"
+      );
+    }
+  }
+
+  // Process the migration queue
+  private async processMigrationQueue(): Promise<void> {
+    if (this.isProcessingQueue || this.migrationQueue.length === 0) {
+      return;
+    }
+
+    this.isProcessingQueue = true;
+
+    try {
+      console.log(
+        `Processing ${this.migrationQueue.length} queued migration tasks...`
+      );
+
+      while (this.migrationQueue.length > 0) {
+        const task = this.migrationQueue.shift();
+        if (task) {
+          try {
+            await task();
+            console.log("Migration task completed successfully");
+          } catch (error) {
+            console.error("Migration task failed:", error);
+            // Continue with other tasks even if one fails
+          }
+        }
+      }
+
+      console.log("All queued migration tasks processed");
+    } catch (error) {
+      console.error("Error processing migration queue:", error);
+    } finally {
+      this.isProcessingQueue = false;
+    }
+  }
+
   // Migrate all stores from localStorage to IndexedDB
   async migrateAllStores(): Promise<void> {
     if (this.isMigrating) {
       console.log("Migration already in progress");
+      return;
+    }
+
+    // Check if IndexedDB is available before starting migration
+    if (!isIndexedDBAvailable()) {
+      console.log("IndexedDB not available, skipping migration");
       return;
     }
 
@@ -42,19 +102,37 @@ export class StoreMigration {
       const stores = ["game-store", "quest-store", "route-store", "app-store"];
 
       let migratedCount = 0;
+      let failedCount = 0;
 
       for (const storeName of stores) {
-        const migrated = await this.migrateStore(storeName);
-        if (migrated) {
-          migratedCount++;
+        try {
+          const migrated = await this.migrateStore(storeName);
+          if (migrated) {
+            migratedCount++;
+          }
+        } catch (storeError) {
+          console.error(`Failed to migrate store ${storeName}:`, storeError);
+          failedCount++;
         }
       }
 
       if (migratedCount > 0) {
-        toast.success(
-          `Successfully migrated ${migratedCount} stores to IndexedDB`
+        const message =
+          failedCount > 0
+            ? `Migrated ${migratedCount} stores, ${failedCount} failed`
+            : `Successfully migrated ${migratedCount} stores to IndexedDB`;
+
+        if (failedCount > 0) {
+          toast.warning(message);
+        } else {
+          toast.success(message);
+        }
+        console.log(
+          `Migration completed: ${migratedCount} stores migrated, ${failedCount} failed`
         );
-        console.log(`Migration completed: ${migratedCount} stores migrated`);
+      } else if (failedCount > 0) {
+        toast.error("All store migrations failed");
+        console.log("Migration completed: all stores failed to migrate");
       } else {
         console.log("No stores needed migration");
       }
@@ -77,16 +155,35 @@ export class StoreMigration {
         return false;
       }
 
-      // Parse the data
-      const parsedData = JSON.parse(localStorageData);
+      // Validate the data before migration
+      let parsedData;
+      try {
+        parsedData = JSON.parse(localStorageData);
+
+        // Basic validation - ensure it's an object
+        if (!parsedData || typeof parsedData !== "object") {
+          console.warn(
+            `Invalid data format for ${storeName}, skipping migration`
+          );
+          return false;
+        }
+      } catch (parseError) {
+        console.error(
+          `Failed to parse localStorage data for ${storeName}:`,
+          parseError
+        );
+        return false;
+      }
 
       // Save to IndexedDB
       await persistenceManager.save(storeName, parsedData, 1);
 
-      // Remove from localStorage
+      // Only remove from localStorage after successful save
       localStorage.removeItem(localStorageKey);
 
-      console.log(`Migrated ${storeName} from localStorage to IndexedDB`);
+      console.log(
+        `Successfully migrated ${storeName} from localStorage to IndexedDB`
+      );
       return true;
     } catch (error) {
       console.error(`Failed to migrate ${storeName}:`, error);
@@ -99,11 +196,52 @@ export class StoreMigration {
     isAvailable: boolean;
     currentStorage: "indexeddb" | "localstorage";
     isMigrating: boolean;
+    queueLength: number;
+    isProcessingQueue: boolean;
   } {
     return {
       isAvailable: isIndexedDBAvailable(),
       currentStorage: getStorageType(),
       isMigrating: this.isMigrating,
+      queueLength: this.migrationQueue.length,
+      isProcessingQueue: this.isProcessingQueue,
+    };
+  }
+
+  // Get detailed migration info for debugging
+  getDetailedMigrationInfo(): {
+    status: ReturnType<StoreMigration["getMigrationStatus"]>;
+    queueDetails: string[];
+    storageInfo: {
+      indexedDBAvailable: boolean;
+      localStorageKeys: string[];
+    };
+  } {
+    const status = this.getMigrationStatus();
+    const queueDetails = this.migrationQueue.map(
+      (_, index) => `Task ${index + 1}`
+    );
+
+    // Get localStorage keys for debugging
+    const localStorageKeys: string[] = [];
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith("vorgarten-")) {
+          localStorageKeys.push(key);
+        }
+      }
+    } catch (error) {
+      console.warn("Could not access localStorage:", error);
+    }
+
+    return {
+      status,
+      queueDetails,
+      storageInfo: {
+        indexedDBAvailable: isIndexedDBAvailable(),
+        localStorageKeys,
+      },
     };
   }
 
@@ -132,23 +270,64 @@ export class StoreMigration {
       toast.error("Failed to clear data");
     }
   }
+
+  // Clear the migration queue (useful for debugging)
+  clearMigrationQueue(): void {
+    const queueLength = this.migrationQueue.length;
+    this.migrationQueue = [];
+    console.log(`Cleared migration queue (${queueLength} tasks removed)`);
+  }
 }
 
 // Export singleton instance
 export const storeMigration = StoreMigration.getInstance();
 
-// Utility functions
+// Safe migration function that queues the migration instead of running immediately
+export const queueStorageMigration = (): void => {
+  const needsMigration = storeMigration.checkMigrationNeeded();
+
+  if (needsMigration) {
+    console.log("Migration needed, queuing for later execution...");
+    storeMigration.queueMigration(async () => {
+      await storeMigration.migrateAllStores();
+    });
+  }
+};
+
+// Function to check if migration is needed without running it
+export const isMigrationNeeded = async (): Promise<boolean> => {
+  return await storeMigration.checkMigrationNeeded();
+};
+
+// Legacy function for backward compatibility - now queues instead of running immediately
 export const checkAndMigrate = async (): Promise<void> => {
   const needsMigration = await storeMigration.checkMigrationNeeded();
 
   if (needsMigration) {
-    console.log("Migration needed, starting automatic migration...");
-    await storeMigration.migrateAllStores();
+    console.log("Migration needed, queuing for later execution...");
+    storeMigration.queueMigration(async () => {
+      await storeMigration.migrateAllStores();
+    });
   }
+};
+
+// Function to execute queued migrations (call this after stores are ready)
+export const executeQueuedMigrations = async (): Promise<void> => {
+  await storeMigration.processMigrationQueue();
+};
+
+// Function to manually trigger migration (useful for debugging)
+export const triggerManualMigration = async (): Promise<void> => {
+  console.log("Manually triggering migration...");
+  await storeMigration.migrateAllStores();
 };
 
 export const getMigrationStatus = () => {
   return storeMigration.getMigrationStatus();
+};
+
+export const getDetailedMigrationInfo = () => {
+  return storeMigration.getDetailedMigrationInfo();
 };
 
 export const forceMigration = async () => {
@@ -157,4 +336,8 @@ export const forceMigration = async () => {
 
 export const clearAllData = async () => {
   await storeMigration.clearAllData();
+};
+
+export const clearMigrationQueue = () => {
+  storeMigration.clearMigrationQueue();
 };

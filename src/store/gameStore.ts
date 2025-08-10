@@ -4,7 +4,7 @@ import { persist } from "zustand/middleware";
 import { match } from "ts-pattern";
 import { ROUTE_PATHS, ROUTE_IDS, ROUTE_CONFIG } from "./routeConfig";
 import { toast } from "sonner";
-import { checkAndMigrate } from "./migration";
+import { queueStorageMigration } from "./migration";
 import {
   setMasterVolume as engineSetMasterVolume,
   setCurrentTapSound as engineSetCurrentTapSound,
@@ -1628,8 +1628,9 @@ export const useGameStore = create<GameStore>()(
         onRehydrateStorage: (state) => {
           console.log("Game store rehydrated:", state);
 
-          // Check for storage migration (localStorage → IndexedDB)
-          checkAndMigrate().catch(console.error);
+          // Queue storage migration instead of running immediately
+          queueStorageMigration();
+
           const needsPurge = new Date(state?.lastSchemaUpdate) < PURGE_DATE;
 
           // Check if store version migration is needed
