@@ -9,6 +9,7 @@ import { getRouteLabelByPath, ROUTE_PATHS, useAppStore } from "@/store";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { useAnimations } from "@/hooks/useAnimations";
 import { DialogRoot } from "@/molecules/DialogRoot";
+import { executeMigrationsWhenReady } from "@/store/migrationExecutor";
 
 // Route Components
 import Home from "./routes/Home";
@@ -33,6 +34,18 @@ export default function App() {
     setCurrentRoute(location.pathname);
     setMounted(true);
   }, []);
+
+  // Execute queued migrations after stores are ready
+  useEffect(() => {
+    if (mounted) {
+      // Execute migrations after a short delay to ensure all stores are initialized
+      const timer = setTimeout(() => {
+        executeMigrationsWhenReady().catch(console.error);
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [mounted]);
 
   // sync router location with store
   // fix potential access to locked pages

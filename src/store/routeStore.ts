@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { ROUTE_IDS } from "./routeConfig";
-import { checkAndMigrate } from "./migration";
+import { queueStorageMigration } from "./migration";
 
 export interface RouteConfig {
   id: string;
@@ -91,8 +91,8 @@ export const useRouteStore = create<RouteStore>()(
       }),
       onRehydrateStorage: (state) => {
         console.log("Route store rehydrated:", state);
-        // Check for migration after store is loaded
-        checkAndMigrate().catch(console.error);
+        // Queue migration instead of running immediately
+        queueStorageMigration();
       },
     }
   )
