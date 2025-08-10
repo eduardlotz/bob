@@ -139,23 +139,22 @@ export const storeMigration = StoreMigration.getInstance();
 
 // Utility functions
 export const checkAndMigrate = async (): Promise<void> => {
-  const migration = StoreMigration.getInstance();
-  const needsMigration = await migration.checkMigrationNeeded();
+  const needsMigration = await storeMigration.checkMigrationNeeded();
 
   if (needsMigration) {
     console.log("Migration needed, starting automatic migration...");
-    await migration.migrateAllStores();
+    await storeMigration.migrateAllStores();
   }
 };
 
 export const getMigrationStatus = () => {
-  return StoreMigration.getInstance().getMigrationStatus();
+  return storeMigration.getMigrationStatus();
 };
 
 export const forceMigration = async () => {
-  await StoreMigration.getInstance().forceMigration();
+  await storeMigration.forceMigration();
 };
 
 export const clearAllData = async () => {
-  await StoreMigration.getInstance().clearAllData();
+  await storeMigration.clearAllData();
 };

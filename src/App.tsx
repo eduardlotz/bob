@@ -1,11 +1,11 @@
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { FullScreen, ContentWidth, FillColumn } from "@/layout";
 import MainLayout from "@/layout/MainLayout";
 import { GlobalStyle } from "@/styles/global";
-import { Toaster } from "sonner";
+import { toast, Toaster } from "sonner";
 import styled from "styled-components";
-import { ROUTE_PATHS, useAppStore } from "@/store";
+import { getRouteLabelByPath, ROUTE_PATHS, useAppStore } from "@/store";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { useAnimations } from "@/hooks/useAnimations";
 import { DialogRoot } from "@/molecules/DialogRoot";
@@ -17,42 +17,67 @@ import Portfolio from "./routes/Portfolio";
 import Technical from "./routes/Technical";
 import Creative from "./routes/Creative";
 import Guestbook from "./routes/Guestbook";
+import { AnimatePresence, motion } from "motion/react";
+import MiniGames from "./routes/MiniGames";
 
 export default function App() {
   const location = useLocation();
   const { setCurrentRoute, currentRoute } = useAppStore();
+  const [mounted, setMounted] = useState(false);
+  const [currentRouteInPretty, setCurrentRouteInPretty] = useState("");
+  const [showRouteChip, setShowRouteChip] = useState(false);
 
-  // Initialize animations hook
   useAnimations();
 
-  // Initialize route on app startup
   useEffect(() => {
-    const initialRoute =
-      location.pathname === "/" ? "/home" : location.pathname;
-    if (!currentRoute || currentRoute !== initialRoute) {
-      console.log("App: Initializing route to:", initialRoute);
-      setCurrentRoute(initialRoute);
-    }
+    setCurrentRoute(location.pathname);
+    setMounted(true);
   }, []);
 
-  // // Sync router location with store
+  // sync router location with store
+  // fix potential access to locked pages
   useEffect(() => {
-    // Update the current route and ensure it's properly set
-    setCurrentRoute(location.pathname);
-  }, [location.pathname]);
+    if (currentRoute !== location.pathname) {
+      setCurrentRoute(location.pathname);
+
+      if (mounted) {
+        const route = getRouteLabelByPath(location.pathname);
+        setCurrentRouteInPretty(route);
+        setShowRouteChip(true);
+
+        setTimeout(() => {
+          setShowRouteChip(false);
+        }, 1800);
+      }
+    }
+  }, [location.pathname, currentRoute, setCurrentRoute]);
 
   return (
     <ThemeProvider>
       <GlobalStyle />
 
       <Toaster
+        duration={5000}
         position="top-center"
-        style={
-          {
-            "--width": "320px",
-          } as React.CSSProperties
-        }
+        // style={
+        //   {
+        //     "--width": "360px",
+        //   } as React.CSSProperties
+        // }
       />
+      <AnimatePresence mode="sync">
+        <RouteChip
+          initial={{ y: -80, filter: "blur(6px)" }}
+          animate={{
+            y: showRouteChip ? 0 : -80,
+            filter: showRouteChip ? "blur(0px)" : "blur(6px)",
+          }}
+          exit={{ y: -80, filter: "blur(6px)" }}
+          transition={{ duration: 0.9, ease: "circInOut" }}
+        >
+          {currentRouteInPretty}
+        </RouteChip>
+      </AnimatePresence>
 
       <FullScreen>
         <MainLayout>
@@ -69,6 +94,7 @@ export default function App() {
                 <Route path={ROUTE_PATHS.CREATIVE} element={<Creative />} />
                 <Route path={ROUTE_PATHS.PORTFOLIO} element={<Portfolio />} />
                 <Route path={ROUTE_PATHS.GUESTBOOK} element={<Guestbook />} />
+                <Route path={ROUTE_PATHS.MINIGAMES} element={<MiniGames />} />
               </Routes>
             </ContentWidth>
           </ContentWrapper>
@@ -83,4 +109,29 @@ export default function App() {
 const ContentWrapper = styled(FillColumn)`
   padding: 16px;
   padding-top: 100px;
+`;
+
+const RouteChip = styled(motion.div)`
+  position: absolute;
+  top: 24px;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+
+  min-width: fit-content;
+  width: fit-content;
+  max-width: calc(100vw - 32px);
+  word-wrap: nowrap;
+
+  color: #ffffff;
+  padding: 12px 16px;
+  border-radius: 24px;
+  background-color: rgba(0, 0, 0, 0.2);
+  -webkit-backdrop-filter: blur(32px);
+  backdrop-filter: blur(32px);
+  border-radius: 50px;
+  font-size: 16px;
+  letter-spacing: -2%;
+  font-weight: 600;
+  z-index: 1000;
 `;

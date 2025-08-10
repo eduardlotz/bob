@@ -20,6 +20,8 @@ export function SoundSettings({
     masterVolume,
     tapVolume,
     worldVolume,
+    textVolume,
+    setTextVolume,
     setMasterVolume,
     setTapVolume,
     setWorldVolume,
@@ -119,6 +121,21 @@ export function SoundSettings({
             <VolumeValue>{Math.round(worldVolume * 100)}%</VolumeValue>
           </SettingGroup>
 
+          {/* Text Sound Volume */}
+          <SettingGroup>
+            <SettingLabel>Text Sounds</SettingLabel>
+            <VolumeSlider
+              type="range"
+              min="0"
+              max="1"
+              step="0.1"
+              value={typeof textVolume === "number" ? textVolume : 0.8}
+              onChange={(e) => setTextVolume?.(parseFloat(e.target.value))}
+              $disabled={!isEnabled}
+            />
+            <VolumeValue>{Math.round((textVolume ?? 0.8) * 100)}%</VolumeValue>
+          </SettingGroup>
+
           {/* Test Button */}
           <SettingGroup>
             <TestButton
@@ -178,6 +195,7 @@ const SettingsPanel = styled(motion.div)`
   transform: translateY(-50%);
   max-height: calc(100svh - 140px);
   background: rgba(20, 20, 20, 0.95);
+  -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.1);

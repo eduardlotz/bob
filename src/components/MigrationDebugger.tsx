@@ -7,6 +7,12 @@ import {
 } from "@/store/migration";
 import { forceV9Migration } from "@/store/gameStore";
 import { toast } from "sonner";
+import styled from "styled-components";
+import {
+  DebugBlock,
+  DevActionButton,
+  DevActionDescription,
+} from "@/layout/atoms";
 
 export const MigrationDebugger: React.FC = () => {
   const [migrationStatus, setMigrationStatus] = useState<any>(null);
@@ -91,22 +97,8 @@ export const MigrationDebugger: React.FC = () => {
   };
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: "10px",
-        right: "10px",
-        background: "rgba(0,0,0,0.8)",
-        color: "white",
-        padding: "10px",
-        borderRadius: "5px",
-        fontSize: "12px",
-        zIndex: 1000,
-        pointerEvents: "auto",
-        maxWidth: "300px",
-      }}
-    >
-      <h4>Migration Debugger</h4>
+    <DebugBlock>
+      <b>Migration Debugger</b>
 
       <div>
         <strong>Store Version:</strong> {storeVersion}
@@ -127,54 +119,54 @@ export const MigrationDebugger: React.FC = () => {
 
       <div>
         <strong>Last Schema Update:</strong>{" "}
-        {lastSchemaUpdate ? lastSchemaUpdate.toLocaleDateString() : "none"}
+        {/* somehow lastSchemaUpdate is a string here */}
+        {lastSchemaUpdate
+          ? new Date(lastSchemaUpdate.toString()).toLocaleDateString("de-DE", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })
+          : "N/A"}
       </div>
 
       <div style={{ marginTop: "10px" }}>
-        <button
-          onClick={handleForceMigration}
-          style={{ margin: "2px", padding: "4px 8px", fontSize: "10px" }}
-        >
+        <DevActionButton onClick={handleForceMigration} $variant="primary">
           Force Storage Migration
-        </button>
+        </DevActionButton>
+        <DevActionDescription>
+          Apply current storage migration logic.
+        </DevActionDescription>
 
-        <button
-          onClick={handleForceV9Migration}
-          style={{ margin: "2px", padding: "4px 8px", fontSize: "10px" }}
-        >
+        <DevActionButton onClick={handleForceV9Migration}>
           Force V9 Migration
-        </button>
+        </DevActionButton>
+        <DevActionDescription>
+          Test older migration path (V9) specifically.
+        </DevActionDescription>
 
-        <button
-          onClick={checkThemeColors}
-          style={{ margin: "2px", padding: "4px 8px", fontSize: "10px" }}
-        >
+        <DevActionButton onClick={checkThemeColors}>
           Check Theme Colors
-        </button>
+        </DevActionButton>
+        <DevActionDescription>
+          Verifies themes for required color fields after migrations.
+        </DevActionDescription>
 
-        <button
-          onClick={handleClearData}
-          style={{
-            margin: "2px",
-            padding: "4px 8px",
-            fontSize: "10px",
-            background: "red",
-          }}
-        >
+        <DevActionButton onClick={handleClearData} $variant="danger">
           Clear All Data
-        </button>
+        </DevActionButton>
+        <DevActionDescription>
+          Remove all persisted data. This cannot be undone.
+        </DevActionDescription>
 
-        <button
+        <DevActionButton
           onClick={handleTriggerSchemaMigration}
-          style={{
-            margin: "2px",
-            padding: "4px 8px",
-            fontSize: "10px",
-            background: "orange",
-          }}
+          $variant="accent"
         >
           Trigger Schema Migration
-        </button>
+        </DevActionButton>
+        <DevActionDescription>
+          Sets a flag for schema migration to run on next reload.
+        </DevActionDescription>
       </div>
 
       <div style={{ marginTop: "10px", fontSize: "10px" }}>
@@ -186,6 +178,6 @@ export const MigrationDebugger: React.FC = () => {
           </div>
         ))}
       </div>
-    </div>
+    </DebugBlock>
   );
 };

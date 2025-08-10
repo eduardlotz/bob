@@ -1,9 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { ROUTE_IDS } from "./routeConfig";
-import { THEME_CONFIG } from "./upgradesConfig";
-import { Theme } from "./gameStore";
-import { THEME_IDS } from "./themeConfig";
 import { checkAndMigrate } from "./migration";
 
 export interface RouteConfig {

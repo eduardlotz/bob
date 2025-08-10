@@ -4,7 +4,7 @@ import { Vector3, Group, Mesh } from "three";
 import { useSpring, a } from "@react-spring/three";
 import { useFrame } from "@react-three/fiber";
 import { useGameStore } from "@/store/gameStore";
-import { THEME_CONFIG } from "@/store/upgradesConfig";
+import { THEME_CONFIG } from "@/store/themeConfig";
 
 const FONT_PATH = "/fonts/OpenRundeBold.json";
 
@@ -113,9 +113,7 @@ export const TapCounter = () => {
       const subtleX = Math.sin(time * 0.2) * 0.02;
       groupRef.current.position.x = responsivePosition.x + subtleX;
     }
-  });
 
-  useEffect(() => {
     if (gameTapCount !== prevTapCount.current) {
       api.start({
         scale: 1.4,
@@ -127,10 +125,34 @@ export const TapCounter = () => {
       });
       prevTapCount.current = gameTapCount;
     }
-  }, [gameTapCount]);
+  });
+
+  // best practice: useEffect to handle animation updates with dependencies
+  // but manually tapping while auto-tap is active
+  // feels better when the update is in useFrame 🤷
+  // check later if this is a performance issue
+
+  // useEffect(() => {
+  //   if (gameTapCount !== prevTapCount.current) {
+  //     api.start({
+  //       scale: 1.4,
+  //       immediate: true,
+  //     });
+  //     api.start({
+  //       scale: 1,
+  //       config: { tension: 300, friction: 15 },
+  //     });
+  //     prevTapCount.current = gameTapCount;
+  //   }
+  // }, [gameTapCount]);
 
   return (
-    <a.group ref={groupRef} scale={spring.scale} position={responsivePosition}>
+    <a.group
+      ref={groupRef}
+      scale={spring.scale}
+      position={responsivePosition}
+      origin={[0, 0, 0]}
+    >
       <Text3D
         font={FONT_PATH}
         size={3}

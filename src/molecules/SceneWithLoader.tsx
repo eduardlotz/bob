@@ -11,19 +11,15 @@ import { useAppStore } from "@/store";
 import { useAnimations } from "@/hooks/useAnimations";
 import { initializeSoundSystemAsync } from "@/utils/soundSystem";
 
-// Custom loader component that tracks its own progress
 export const CustomLoader = () => {
   const { progress } = useProgress();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    console.log("Loader progress:", progress);
-    // Only start the exit animation when progress is 100%
     if (progress >= 100) {
-      console.log("Progress reached 100%, starting exit animation");
       const timer = setTimeout(() => {
         setIsLoading(false);
-      }, 500); // Small delay to ensure everything is ready
+      }, 500); // small delay to ensure everything is ready
 
       return () => clearTimeout(timer);
     }
@@ -94,21 +90,12 @@ export const SceneWithLoader = ({
   // Initialize animations hook
   useAnimations();
 
-  // Set scene as loaded when component mounts (after Suspense resolves)
   useEffect(() => {
     const timer = setTimeout(async () => {
-      // Initialize sound system before scene is ready for interaction
-      console.log(
-        "SceneWithLoader: Initializing sound system before scene load..."
-      );
       try {
         await initializeSoundSystemAsync();
-        console.log("SceneWithLoader: Sound system ready, loading scene...");
       } catch (error) {
-        console.error(
-          "SceneWithLoader: Failed to initialize sound system:",
-          error
-        );
+        console.error("failed to initialize sound system:", error);
       }
 
       setSceneLoaded(true);

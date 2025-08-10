@@ -5,23 +5,18 @@ import {
   stopAllTapSounds,
   stopAllWorldSounds,
   isEnabled,
-  getState,
   enable,
   disable,
   setMasterVolume,
   setTypeVolume,
   updateWorldSoundVolumes,
-  initializeSoundSystemAsync,
   mute as engineMute,
   unmute as engineUnmute,
-  toggleMute as engineToggleMute,
-  isAudioContextRunning,
   resumeAudioContext,
   unlockAudioContext,
   setTapEnabled as engineSetTapEnabled,
   setWorldEnabled as engineSetWorldEnabled,
-  setWorldMusic as engineSetWorldMusic,
-  setCurrentTapSound as engineSetCurrentTapSound,
+  playUISound as enginePlayUISound,
 } from "../utils/soundSystem";
 import { getWorldSoundById } from "@/utils/sound/configs";
 import {
@@ -33,10 +28,32 @@ import { useGameStore } from "../store/gameStore";
 import { match } from "ts-pattern";
 import { toast } from "sonner";
 
+// TODO: refactooooor ⚽️
+// ** GPT-5 Review **
+// Maintainability
+// 	•	You’ve mixed static configuration (DEFAULT_SOUND_CONFIGS, WORLD_SOUNDS, TAP_SOUNDS) with your hook logic in the same file. That works now, but makes the hook harder to scan and change without risking unrelated edits.
+// 	•	The hook is dense—useEffect for syncing, several useCallbacks for every action, and game state matching all live here. This is cohesive but long, so cognitive load is high for someone new.
+
+// Flexibility
+// 	•	Config arrays are easily extendable—WORLD_SOUNDS and TAP_SOUNDS are simple to add to.
+// 	•	Hardcoding type: "ui" as any and type: "text" as any suggests your type system isn’t fully reflecting the supported sound types. This is friction for extension; you’ll keep sprinkling as any unless you expand your SoundConfig type.
+// 	•	TAP_EFFECT_TO_DEFAULT_TAP_SOUND is a static mapping—if you add effects often, consider making it data-driven from the configs themselves.
+
+// Extensibility
+// 	•	The sound engine interaction is all funneled through imported engine functions—good separation. If you swap out the sound engine later, you only rewrite soundSystem utils.
+// 	•	However, resumeSelectedWorldLayers knows exactly how to add configs and play sounds—this is internal engine knowledge leaking into the hook. That will require refactoring if the engine changes.
+// 	•	Volume control is already abstracted well; adding another sound type would require adding only one more set<SoundType>Volume function.
+
+// Complexity
+// 	•	You’re guarding against multiple states (isPaused, isEnabled, masterVolume, etc.) in many callbacks. This is correct, but the duplication is high—there’s no single canPlay(type) check to centralize this.
+// 	•	lastNonZeroMasterVolumeRef and lastMasterVolumeRef logic is good for mute/unmute, but it’s scattered. If you ever add a “solo” or “ducking” feature, this pattern will multiply and get hairy.
+// 	•	Some engine calls are wrapped in try { } catch {} with empty catches. That hides actual errors if the sound system misbehaves—debugging will be painful.
+
 export interface SoundSystemHook {
   // Core sound functions
   playTapSound: (soundId?: string) => void;
   playWorldSound: (soundId: string, options?: any) => void;
+  playUISound: (soundId?: string) => void;
   stopAllTapSounds: () => void;
   stopAllWorldSounds: () => void;
 
@@ -44,6 +61,8 @@ export interface SoundSystemHook {
   setMasterVolume: (volume: number) => void;
   setTapVolume: (volume: number) => void;
   setWorldVolume: (volume: number) => void;
+  setUIVolume: (volume: number) => void;
+  setTextVolume?: (volume: number) => void;
 
   // State
   isEnabled: boolean;
@@ -53,6 +72,8 @@ export interface SoundSystemHook {
   masterVolume: number;
   tapVolume: number;
   worldVolume: number;
+  uiVolume: number;
+  textVolume?: number;
 
   // System control
   enable: () => void;
@@ -95,6 +116,7 @@ export function useSoundSystem(): SoundSystemHook {
     setTypeVolume("tap", gameStore.soundSystem.tapVolume);
     setTypeVolume("world", gameStore.soundSystem.worldVolume);
     setTypeVolume("ui", gameStore.soundSystem.uiVolume);
+    setTypeVolume("text", gameStore.soundSystem.textVolume);
 
     if (gameStore.soundSystem.enabled) {
       enable();
@@ -210,6 +232,18 @@ export function useSoundSystem(): SoundSystemHook {
     } catch {}
   }, []);
 
+  const setUIVolumeCallback = useCallback((volume: number) => {
+    const clamped = Math.max(0, Math.min(1, volume));
+    setTypeVolume("ui" as any, clamped);
+    useGameStore.getState().setUIVolume(clamped);
+  }, []);
+
+  const setTextVolumeCallback = useCallback((volume: number) => {
+    const clamped = Math.max(0, Math.min(1, volume));
+    setTypeVolume("text" as any, clamped);
+    useGameStore.getState().setTextVolume(clamped);
+  }, []);
+
   // System control functions
   const enableCallback = useCallback(() => {
     gameStore.setSoundEnabled(true);
@@ -256,23 +290,31 @@ export function useSoundSystem(): SoundSystemHook {
   }, []);
 
   const toggleMuteCallback = useCallback(async () => {
-    const current = useGameStore.getState().soundSystem.masterVolume;
-    if (current > 0) {
-      lastNonZeroMasterVolumeRef.current = current;
+    const gamestore = useGameStore.getState();
+    const currentMasterVolume = gamestore.soundSystem.masterVolume;
+
+    if (currentMasterVolume > 0) {
+      lastNonZeroMasterVolumeRef.current = currentMasterVolume;
       engineMute();
-      useGameStore.getState().setMasterVolume(0);
+
+      gamestore.setMasterVolume(0);
+      gamestore.setSoundEnabled(false);
     } else {
       const restore =
         lastNonZeroMasterVolumeRef.current > 0
           ? lastNonZeroMasterVolumeRef.current
           : 1;
+      gamestore.setSoundEnabled(true);
+
       // Always resume audio context after unmute (fixes iOS policies)
       try {
         await resumeAudioContext();
         await unlockAudioContext();
-      } catch {}
+      } catch (error) {
+        console.error("Error unlocking audio context:", error);
+      }
       engineUnmute();
-      useGameStore.getState().setMasterVolume(restore);
+      gamestore.setMasterVolume(restore);
       // Ensure previously selected world layers resume on unmute
       resumeSelectedWorldLayers();
     }
@@ -304,11 +346,15 @@ export function useSoundSystem(): SoundSystemHook {
   return {
     playTapSound: playTapSoundWithGameIntegration,
     playWorldSound: playWorldSoundWithOptions,
+    playUISound: (soundId?: string) =>
+      soundId ? enginePlayUISound(soundId as any) : enginePlayUISound(),
     stopAllTapSounds,
     stopAllWorldSounds,
     setMasterVolume: setMasterVolumeCallback,
     setTapVolume: setTapVolumeCallback,
     setWorldVolume: setWorldVolumeCallback,
+    setUIVolume: setUIVolumeCallback,
+    setTextVolume: setTextVolumeCallback,
     isEnabled: gameStore.soundSystem.enabled,
     isMuted: gameStore.soundSystem.masterVolume === 0,
     audioStatus: !gameStore.soundSystem.enabled
@@ -320,6 +366,8 @@ export function useSoundSystem(): SoundSystemHook {
     masterVolume: gameStore.soundSystem.masterVolume,
     tapVolume: gameStore.soundSystem.tapVolume,
     worldVolume: gameStore.soundSystem.worldVolume,
+    uiVolume: gameStore.soundSystem.uiVolume,
+    textVolume: (gameStore.soundSystem as any).textVolume,
     enable: enableCallback,
     disable: disableCallback,
     start: enableCallback,

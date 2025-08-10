@@ -15,7 +15,7 @@ import { useBlobEmotions } from "@/hooks/useBlobEmotions";
 // import { useMagneticAttraction, MagneticConfig } from "@/hooks/useMagnets";
 import { toast } from "sonner";
 import styled from "styled-components";
-import { useGameStore } from "@/store/gameStore";
+import { Route, useGameStore } from "@/store/gameStore";
 import { useNavigate } from "react-router-dom";
 import { match } from "ts-pattern";
 import { LockIcon } from "@/icons/lock";
@@ -408,8 +408,8 @@ function OptionsGroup({
 
     // Convert screen dimensions to Three.js world coordinates
     const aspect = windowWidth / windowHeight;
-    const fov = 75; // Assuming default camera FOV, adjust if different
-    const distance = 5; // Assuming camera distance, adjust if different
+    const fov = 50; // Assuming default camera FOV, adjust if different
+    const distance = 7; // Assuming camera distance, adjust if different
 
     // Calculate visible world dimensions at camera distance
     const vFOV = (fov * Math.PI) / 180;
@@ -418,7 +418,7 @@ function OptionsGroup({
 
     // Define safe margins (as percentage of world dimensions)
     const marginPercent = 0.1; // 10% margin from edges
-    const bottomNavPercent = 0.25; // Increased from 15% to 25% to account for navigation + potential panels
+    const bottomNavPercent = 0.15; // Increased from 15% to 25% to account for navigation + potential panels
 
     const safeWidth = worldWidth * (1 - 2 * marginPercent);
     const safeHeight = worldHeight * (1 - marginPercent - bottomNavPercent);
@@ -429,7 +429,7 @@ function OptionsGroup({
 
     // Dynamic radius calculation based on number of items
     // More items = larger ellipse to prevent overlap
-    const baseRadiusMultiplier = Math.min(1, Math.sqrt(count / 8)); // Scale with item count
+    const baseRadiusMultiplier = Math.min(1, Math.sqrt(count / 6)); // Scale with item count
     const xRadius = maxXRadius * baseRadiusMultiplier;
     const yRadius = maxYRadius * baseRadiusMultiplier;
 
@@ -449,7 +449,7 @@ function OptionsGroup({
       const bottomOffset = worldHeight * bottomNavPercent;
 
       // Add extra safety margin for bottom area to account for navigation buttons and potential panels
-      const extraBottomMargin = worldHeight * 0;
+      const extraBottomMargin = worldHeight * 0.05; // 5% extra margin
       const effectiveBottomOffset = bottomOffset + extraBottomMargin;
 
       x = Math.max(-halfSafeWidth, Math.min(halfSafeWidth, x));
@@ -499,7 +499,7 @@ function Option({
   isClosing,
 }: {
   initialPosition: THREE.Vector3;
-  route: any; // Route type from game store
+  route: Route; // Route type from game store
   index: number;
   cameraControlsRef: React.RefObject<CameraControls>;
   hideOptions: () => void;
@@ -507,14 +507,15 @@ function Option({
 }) {
   const optionRef = useRef<THREE.Group>(null!);
   const navigate = useNavigate();
+  const { currentRoute } = useAppStore();
 
-  // Position is fixed for now (magnet functionality disabled)
+  const isActive = currentRoute === route.path;
+
+  // position is fixed for now (magnet functionality disabled)
   const position = initialPosition;
 
   const handleOptionClick = () => {
-    match({
-      purchased: route.purchased,
-    })
+    match(route)
       .with({ purchased: true }, () => {
         cameraControlsRef.current.setLookAt(
           0,
@@ -529,10 +530,17 @@ function Option({
         navigate(route.path);
         hideOptions();
       })
-      .otherwise(() => {
-        // Route is locked - notify user about shop
+      .with({ isLocked: true }, () => {
         toast.custom((id) => (
-          <CustomToast>Visit the shop to unlock it!</CustomToast>
+          <CustomToast>Dieser Bereich ist noch nicht fertig ☹️</CustomToast>
+        ));
+      })
+      .otherwise(() => {
+        // route is not hard locked - notify user about shop
+        toast.custom((id) => (
+          <CustomToast>
+            Besuch den Shop, um diesen Bereich freizuschalten!
+          </CustomToast>
         ));
       });
   };
@@ -540,7 +548,7 @@ function Option({
   return (
     <group ref={optionRef} position={position}>
       <Html position={[0, 1.5, 0]}>
-        <motion.button
+        <NavigationBubble
           key={route.id}
           initial={MotionVariants.OptionButton.initial}
           animate={
@@ -549,62 +557,96 @@ function Option({
               : MotionVariants.OptionButton.animate({
                   delay: index,
                   isDisabled: !route.purchased,
+                  isLocked: route.isLocked,
                 })
           }
+          $active={isActive}
           exit={MotionVariants.OptionButton.exit}
           whileHover={MotionVariants.OptionButton.hover}
           whileTap={MotionVariants.OptionButton.tap}
-          style={{
-            color: "var(--text-color)",
-            padding: "16px 20px",
-            borderRadius: "50px",
-            fontWeight: "400",
-            whiteSpace: "nowrap",
-            gap: "8px",
-            cursor: "pointer",
-            textDecoration: "none",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            transform: "translate(-50%, -50%)",
-            fontSize: "22px",
-            letterSpacing: "0.5px",
-          }}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={handleOptionClick}
         >
-          {!route.purchased && <LockIcon />}
+          {route.isLocked && <LockIcon />}
           {route.name}
-        </motion.button>
+        </NavigationBubble>
       </Html>
     </group>
   );
 }
 
-const CustomToast = styled.div`
-  background-color: #000000;
-  color: white;
-  padding: 16px 24px;
-  height: 58px;
-  width: fit-content;
-  max-width: 100%;
-
+export const CustomToast = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 16px;
 
-  border-radius: 24px;
-  box-shadow: 0 4px 10px 10px rgba(37, 36, 39, 0.08);
-  text-align: center;
+  padding: 12px 28px;
+  min-height: 52px;
+  width: min-content;
+  min-width: min-content;
+  max-width: calc(100vw - 32px);
+
+  white-space: nowrap;
+
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+
+  -webkit-backdrop-filter: blur(32px);
+  backdrop-filter: blur(32px);
+
+  border-radius: 50px;
+
   font-size: 14px;
-  font-style: normal;
-  font-weight: 600;
-  line-height: normal;
-  letter-spacing: 1.4px;
-  text-transform: uppercase;
+  font-weight: 500;
+  letter-spacing: 0.5px;
 
   @media (max-width: 600px) {
     width: 100%;
   }
+
+  // pulse animation for attention
+
+  box-shadow: 0 0 0 0px rgba(0, 0, 0, 0.5);
+  transition: box-shadow 0.5s ease-in-out;
+  animation: pulse 2.5s infinite ease-in-out;
+  animation-delay: 0.5;
+
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0px rgba(0, 0, 0, 0.5);
+    }
+    50% {
+      box-shadow: 0 0 0 10px rgba(255, 255, 255, 0.2);
+    }
+    100% {
+      box-shadow: 0 0 0 14px rgba(0, 0, 0, 0);
+    }
+  }
+`;
+
+const NavigationBubble = styled(motion.button)<{ $active: boolean }>`
+  color: ${(p) =>
+    p.$active ? "var(--background-color)" : "var(--text-color)"};
+  background-color: ${(p) =>
+    p.$active ? "var(--text-color)" : "var(--background-color)"};
+  border: 2px solid transparent;
+  border-color: ${(p) => (p.$active ? "var(--text-color)" : "transparent")};
+
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+
+  padding: 16px 20px;
+  border-radius: 50px;
+  font-weight: 400;
+  white-space: nowrap;
+  gap: 8px;
+  cursor: pointer;
+  text-decoration: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transform: translate(-50%, -50%);
+  font-size: 22px;
+  letter-spacing: 0.5px;
 `;

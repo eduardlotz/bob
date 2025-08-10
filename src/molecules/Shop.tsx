@@ -19,6 +19,16 @@ import { EnvironmentIcon as EnvironmentIconComponent } from "@/icons/environment
 import { PagesIcon } from "@/icons/pages";
 import { DebuggingIcon } from "@/icons/debugging";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
+import { MigrationDebugger } from "@/components/MigrationDebugger";
+import StorageDebugger from "@/components/StorageDebugger";
+import {
+  DevSettingsGroup,
+  DevSliderRow,
+  DevSliderLabel,
+  DevSlider,
+  DevSliderValue,
+} from "@/layout/atoms";
+import { THEME_IDS } from "@/store/themeConfig";
 
 interface ShopProps {
   isOpen: boolean;
@@ -49,7 +59,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
   const tabs = [
     {
       id: "pages" as ShopTab,
-      name: "Pages",
+      name: "Seiten",
       icon: PagesIcon,
       progress: routes.filter((r) => r.purchased).length / routes.length,
     },
@@ -61,7 +71,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
     },
     {
       id: "effects" as ShopTab,
-      name: "Effects",
+      name: "Effekte",
       icon: EffectsIcon,
       progress:
         upgrades.filter((u) => u.category === "tapEffects" && u.unlocked)
@@ -70,7 +80,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
     },
     {
       id: "environment" as ShopTab,
-      name: "Weather",
+      name: "Umwelt & Sound",
       icon: EnvironmentIconComponent,
       progress:
         upgrades.filter((u) => u.category === "environment" && u.unlocked)
@@ -80,7 +90,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
       ? [
           {
             id: "dev" as ShopTab,
-            name: "Dev",
+            name: "Debugging",
             icon: DebuggingIcon,
             progress: 0, // Dev tab is always 100% complete
           },
@@ -195,7 +205,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                       >
                         <DevView />
                         <Divider />
-                        <SettingsGroup>
+                        <DevSettingsGroup>
                           <GroupHeader>
                             <GroupTitle>Music & Sound</GroupTitle>
                             <ToggleSwitch
@@ -207,9 +217,9 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                               {sound.isEnabled ? "ON" : "OFF"}
                             </ToggleSwitch>
                           </GroupHeader>
-                          <SliderRow>
-                            <SliderLabel>Master</SliderLabel>
-                            <Slider
+                          <DevSliderRow>
+                            <DevSliderLabel>Master</DevSliderLabel>
+                            <DevSlider
                               type="range"
                               min={0}
                               max={1}
@@ -221,13 +231,13 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                                 )
                               }
                             />
-                            <SliderValue>
+                            <DevSliderValue>
                               {Math.round(sound.masterVolume * 100)}%
-                            </SliderValue>
-                          </SliderRow>
-                          <SliderRow>
-                            <SliderLabel>World</SliderLabel>
-                            <Slider
+                            </DevSliderValue>
+                          </DevSliderRow>
+                          <DevSliderRow>
+                            <DevSliderLabel>World</DevSliderLabel>
+                            <DevSlider
                               type="range"
                               min={0}
                               max={1}
@@ -237,13 +247,13 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                                 sound.setWorldVolume(parseFloat(e.target.value))
                               }
                             />
-                            <SliderValue>
+                            <DevSliderValue>
                               {Math.round(sound.worldVolume * 100)}%
-                            </SliderValue>
-                          </SliderRow>
-                          <SliderRow>
-                            <SliderLabel>Tap</SliderLabel>
-                            <Slider
+                            </DevSliderValue>
+                          </DevSliderRow>
+                          <DevSliderRow>
+                            <DevSliderLabel>Tap</DevSliderLabel>
+                            <DevSlider
                               type="range"
                               min={0}
                               max={1}
@@ -253,11 +263,45 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                                 sound.setTapVolume(parseFloat(e.target.value))
                               }
                             />
-                            <SliderValue>
+                            <DevSliderValue>
                               {Math.round(sound.tapVolume * 100)}%
-                            </SliderValue>
-                          </SliderRow>
-                        </SettingsGroup>
+                            </DevSliderValue>
+                          </DevSliderRow>
+                          <DevSliderRow>
+                            <DevSliderLabel>UI</DevSliderLabel>
+                            <DevSlider
+                              type="range"
+                              min={0}
+                              max={1}
+                              step={0.01}
+                              value={sound.uiVolume}
+                              onChange={(e) =>
+                                sound.setUIVolume(parseFloat(e.target.value))
+                              }
+                            />
+                            <DevSliderValue>
+                              {Math.round(sound.uiVolume * 100)}%
+                            </DevSliderValue>
+                          </DevSliderRow>
+                          <DevSliderRow>
+                            <DevSliderLabel>Text</DevSliderLabel>
+                            <DevSlider
+                              type="range"
+                              min={0}
+                              max={1}
+                              step={0.01}
+                              value={sound.textVolume ?? 0.8}
+                              onChange={(e) =>
+                                sound.setTextVolume?.(
+                                  parseFloat(e.target.value)
+                                )
+                              }
+                            />
+                            <DevSliderValue>
+                              {Math.round((sound.textVolume ?? 0.8) * 100)}%
+                            </DevSliderValue>
+                          </DevSliderRow>
+                        </DevSettingsGroup>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -292,10 +336,10 @@ function ThemesView() {
   return (
     <ThemesContainer>
       <ThemesSection>
-        <SectionTitle>Page Themes</SectionTitle>
+        <SectionTitle>Themes</SectionTitle>
         <ItemsGrid>
           {themes
-            .filter((theme) => theme.id !== "custom")
+            .filter((theme) => theme.id !== THEME_IDS.CUSTOM) // exclude custom theme, not ready yet
             .map((theme) => (
               <ThemeCard
                 key={theme.id}
@@ -307,9 +351,23 @@ function ThemesView() {
                     ? handleThemeSelect(theme.id)
                     : handleThemePurchase(theme.id)
                 }
+                role="button"
               >
                 <ThemePreview $colors={theme.colors}>
-                  <ThemeGradient $colors={theme.colors} />
+                  <ThemeGradient $colors={theme.planetColors} />
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: "4px",
+                      left: 0,
+                      right: 0,
+                      height: "12px",
+                      width: "16px",
+                      margin: "0 auto",
+                      borderRadius: "20px",
+                      background: theme.colors.primary,
+                    }}
+                  />
                 </ThemePreview>
                 <ThemeName>{theme.name}</ThemeName>
                 <ThemeStatus $purchased={theme.purchased}>
@@ -381,6 +439,7 @@ function EffectsView() {
                 ? handleEffectSelect(effect.id)
                 : handleEffectPurchase(effect.id)
             }
+            role="button"
           >
             <EffectIcon>{effect.icon}</EffectIcon>
             <EffectName>{effect.name}</EffectName>
@@ -535,7 +594,7 @@ function RoutesView() {
 
   const handleRoutePurchase = (routeId: string) => {
     const route = routes.find((r) => r.id === routeId);
-    if (route && !route.purchased && canAfford(route.cost)) {
+    if (route && !route.purchased && !route.isLocked && canAfford(route.cost)) {
       purchaseRoute(routeId);
     }
   };
@@ -543,44 +602,36 @@ function RoutesView() {
   return (
     <ThemesContainer>
       <ThemesSection>
-        <SectionTitle>Unlockable Pages</SectionTitle>
+        <SectionTitle>Seiten</SectionTitle>
         <ItemsGrid>
-          {routes
-            .filter((route) => route.id !== "route_home") // Don't show home in shop
-            .map((route) => (
-              <ThemeCard
-                key={route.id}
-                $selected={route.purchased}
-                $purchased={route.purchased}
-                $canAfford={canAfford(route.cost)}
-                onClick={() => handleRoutePurchase(route.id)}
-              >
-                <div style={{ fontSize: "32px" }}>{route.icon}</div>
-                <div>
-                  <ThemeName>{route.name}</ThemeName>
-                  <div
-                    style={{
-                      fontSize: "10px",
-                      color: "#666666",
-                      textAlign: "center",
-                    }}
-                  >
-                    {route.description}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "10px",
-                      color: "#FFD700",
-                      textAlign: "center",
-                      marginTop: "4px",
-                    }}
-                  >
-                    {route.cost} taps
-                  </div>
+          {routes.map((route) => (
+            <ThemeCard
+              key={route.id}
+              $selected={route.purchased}
+              $purchased={route.purchased}
+              $canAfford={!route.isLocked && canAfford(route.cost)}
+              onClick={() => handleRoutePurchase(route.id)}
+              role="button"
+              disabled={route.isLocked}
+            >
+              <div style={{ fontSize: "32px" }}>{route.icon}</div>
+              <div>
+                <ThemeName>{route.name}</ThemeName>
+                <ThemeDescription>{route.description}</ThemeDescription>
+                <div
+                  style={{
+                    fontSize: "10px",
+                    color: "#FFD700",
+                    textAlign: "center",
+                    marginTop: "4px",
+                  }}
+                >
+                  {route.cost} taps
                 </div>
-                <ThemeStatus $purchased={route.purchased}></ThemeStatus>
-              </ThemeCard>
-            ))}
+              </div>
+              <ThemeStatus $purchased={route.purchased}></ThemeStatus>
+            </ThemeCard>
+          ))}
         </ItemsGrid>
       </ThemesSection>
     </ThemesContainer>
@@ -632,11 +683,14 @@ function DevView() {
           {isPaused ? "Resume Auto-Tap" : "Pause Auto-Tap"}
         </DevButton>
 
+        <StorageDebugger />
+
         <Divider />
 
         <DevButton onClick={triggerStoreMigration}>
           🔄 Migrate Version
         </DevButton>
+        <MigrationDebugger />
         <DevButton
           onClick={() => {
             confirm("This will reset all quests.\nAre you sure?") &&
@@ -667,6 +721,7 @@ const Backdrop = styled(motion.div)`
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.7);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   z-index: 999;
   pointer-events: auto;
@@ -684,6 +739,7 @@ const ShopContainer = styled(motion.div)`
   height: 80dvh;
   max-height: calc(100svh - 140px);
   background: rgba(20, 20, 20, 0.95);
+  -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -848,7 +904,7 @@ const ItemsGrid = styled.div`
   gap: 16px;
 `;
 
-const ThemeCard = styled.div<{
+const ThemeCard = styled.button<{
   $selected: boolean;
   $purchased: boolean;
   $canAfford: boolean;
@@ -857,11 +913,13 @@ const ThemeCard = styled.div<{
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 12px;
+  padding: 12px 40px;
   border-radius: 12px;
-  cursor: pointer;
+  cursor: ${(p) => (p.$canAfford ? "pointer" : "not-allowed")};
   transition: all 0.2s;
-  border: 2px solid ${(props) => (props.$selected ? "#ffffff" : "transparent")};
+  border: 2px solid
+    ${(props) =>
+      props.$selected && props.$canAfford ? "#ffffff" : "transparent"};
   background: ${(props) =>
     props.$selected
       ? "rgba(255, 255, 255, 0.1)"
@@ -889,9 +947,9 @@ const ThemeGradient = styled.div<{ $colors: any }>`
   height: 100%;
   background: linear-gradient(
     to bottom,
-    ${(props) => props.$colors.primary} 0%,
-    ${(props) => props.$colors.secondary} 50%,
-    ${(props) => props.$colors.accent} 100%
+    ${(props) => props.$colors[0]} 0%,
+    ${(props) => props.$colors[1]} 50%,
+    ${(props) => props.$colors[2]} 100%
   );
 `;
 
@@ -899,6 +957,13 @@ const ThemeName = styled.div`
   font-size: 12px;
   color: #ffffff;
   text-align: center;
+`;
+
+const ThemeDescription = styled.div`
+  font-size: 10px;
+  color: #666666;
+  text-align: center;
+  text-wrap: balance;
 `;
 
 const ThemeStatus = styled.div<{ $purchased: boolean }>`

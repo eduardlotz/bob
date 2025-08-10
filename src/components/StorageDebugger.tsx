@@ -11,8 +11,15 @@ import {
   clearAllData,
 } from "../store/migration";
 import { toast } from "sonner";
+import { useMessageStore } from "@/store/messageStore";
+import {
+  DebugBlock,
+  DevActionButton,
+  DevActionDescription,
+} from "@/layout/atoms";
 
 export const StorageDebugger: React.FC = () => {
+  const { clearShownFlags } = useMessageStore();
   const [storageInfo, setStorageInfo] = useState({
     storageType: "unknown",
     indexedDBAvailable: false,
@@ -82,23 +89,7 @@ export const StorageDebugger: React.FC = () => {
   };
 
   return (
-    <div
-      className="storage-debugger"
-      style={{
-        position: "fixed",
-        bottom: "20px",
-        right: "20px",
-        background: "rgba(0, 0, 0, 0.8)",
-        color: "white",
-        padding: "15px",
-        borderRadius: "8px",
-        fontSize: "12px",
-        fontFamily: "monospace",
-        maxWidth: "300px",
-        zIndex: 1000,
-        pointerEvents: "auto",
-      }}
-    >
+    <DebugBlock>
       <h4 style={{ margin: "0 0 10px 0", fontSize: "14px" }}>
         Storage Debugger
       </h4>
@@ -134,87 +125,80 @@ export const StorageDebugger: React.FC = () => {
         )}
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-        <button
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        <DevActionButton
           onClick={handleForceLocalStorage}
+          $variant="accent"
           disabled={isLoading}
-          style={{
-            padding: "5px 10px",
-            fontSize: "10px",
-            background: "#2196F3",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
         >
           Force localStorage
-        </button>
+        </DevActionButton>
+        <DevActionDescription>
+          Switch to localStorage (useful when IndexedDB is unavailable or for
+          debugging persistence).
+        </DevActionDescription>
 
-        <button
-          onClick={handleForceMigration}
-          disabled={isLoading}
-          style={{
-            padding: "5px 10px",
-            fontSize: "10px",
-            background: "#FF9800",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
+        <DevActionButton
+          onClick={() => {
+            if (confirm("Clear message 'already shown' flags?")) {
+              clearShownFlags();
+              toast.success("Message shown flags cleared");
+            }
           }}
+          disabled={isLoading}
+        >
+          Clear Message Flags
+        </DevActionButton>
+        <DevActionDescription>
+          Reset once-per-session/persist message flags.
+        </DevActionDescription>
+
+        <DevActionButton
+          onClick={handleForceMigration}
+          $variant="primary"
+          disabled={isLoading}
         >
           Force Migration
-        </button>
+        </DevActionButton>
+        <DevActionDescription>
+          Execute storage migration manually. Use when schema changes are not
+          auto-applied.
+        </DevActionDescription>
 
-        <button
+        <DevActionButton
           onClick={handleClearAllData}
+          $variant="danger"
           disabled={isLoading}
-          style={{
-            padding: "5px 10px",
-            fontSize: "10px",
-            background: "#f44336",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
         >
           Clear All Data
-        </button>
+        </DevActionButton>
+        <DevActionDescription>
+          Remove all application data across storages. This cannot be undone.
+        </DevActionDescription>
 
-        <button
-          onClick={handleClearStores}
-          disabled={isLoading}
-          style={{
-            padding: "5px 10px",
-            fontSize: "10px",
-            background: "#9C27B0",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
-        >
+        <DevActionButton onClick={handleClearStores} disabled={isLoading}>
           Clear Stores
-        </button>
+        </DevActionButton>
+        <DevActionDescription>
+          Clear IndexedDB/localStorage stores only; leaves other browser data
+          intact.
+        </DevActionDescription>
 
-        <button
-          onClick={updateStorageInfo}
-          disabled={isLoading}
-          style={{
-            padding: "5px 10px",
-            fontSize: "10px",
-            background: "#607D8B",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
-        >
+        <DevActionButton onClick={updateStorageInfo}>
           Refresh Info
-        </button>
+        </DevActionButton>
       </div>
+
+      {/* Example of cohesive slider styling for dev tools if needed later */}
+      {/*
+      <DevSettingsGroup>
+        <DevSliderRow>
+          <DevSliderLabel>Example</DevSliderLabel>
+          <DevSlider type="range" min={0} max={1} step={0.01} />
+          <DevSliderValue>50%</DevSliderValue>
+        </DevSliderRow>
+      </DevSettingsGroup>
+      */}
 
       {isLoading && (
         <div
@@ -227,7 +211,7 @@ export const StorageDebugger: React.FC = () => {
           Loading...
         </div>
       )}
-    </div>
+    </DebugBlock>
   );
 };
 

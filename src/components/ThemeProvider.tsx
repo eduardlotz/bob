@@ -88,14 +88,13 @@ const GlobalStyle = createGlobalStyle<{ theme: StyledTheme | undefined }>`
     font-family: var(--font-family), Aria, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 
-  /* Apply theme colors to common elements */
-  button {
-    background-color: var(--primary-color);
-    color: white;
-  }
-
-  button:hover {
-    background-color: var(--secondary-color);
+  a, button {
+    &:focus {
+      outline-color: var(--text-color);
+      outline-width: 2px;
+      outline-style: solid;
+      outline-offset: 3px;
+    }
   }
 
   a {

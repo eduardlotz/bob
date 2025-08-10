@@ -1,25 +1,21 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { persist } from "zustand/middleware";
-import { THEME_CONFIG } from "./upgradesConfig";
 import { match } from "ts-pattern";
 import { ROUTE_PATHS, ROUTE_IDS, ROUTE_CONFIG } from "./routeConfig";
 import { toast } from "sonner";
-import { THEME_IDS } from "./themeConfig";
 import { checkAndMigrate } from "./migration";
 import {
-  playTapSound,
   setMasterVolume as engineSetMasterVolume,
   setCurrentTapSound as engineSetCurrentTapSound,
   setTapEnabled as engineSetTapEnabled,
   setWorldEnabled as engineSetWorldEnabled,
   setWorldMusic as engineSetWorldMusic,
 } from "@/utils/soundSystem";
-import {
-  getTapSoundById,
-  resolveTapSoundForEffect,
-} from "@/utils/sound/configs";
+import { resolveTapSoundForEffect } from "@/utils/sound/configs";
 import { getWorldSoundById } from "@/utils/sound/configs";
+import { THEME_IDS, THEME_CONFIG } from "./themeConfig";
+import { initialUpgrades } from "@/shop-items/upgrades";
 
 export enum GAME_STORE_VERSIONS {
   V1 = 1,
@@ -35,7 +31,10 @@ export enum GAME_STORE_VERSIONS {
   V11 = 11,
   V12 = 12,
   V13 = 13,
-  LATEST = 13,
+  V14 = 14,
+  V15 = 15,
+  V16 = 16,
+  LATEST = 16,
 }
 
 // Constants
@@ -44,7 +43,9 @@ const AUTO_TAP_INTERVAL_MS = 1000;
 const MAX_PARTICLES_PER_AUTO_TAP = 5;
 const PARTICLE_STAGGER_MS = 100;
 
-// Migration functions
+const PURGE_DATE = new Date("08/10/2025"); // utility to purge data created before this date
+
+// main migration function
 function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
   console.log(
     `Migration triggered: oldState version=${oldState.version}, migration version=${version}`
@@ -178,7 +179,11 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
   }
 
   // Migration V5 → V6: Ensure themes are properly initialized
-  if (currentVersion < GAME_STORE_VERSIONS.V6) {
+  if (
+    currentVersion < GAME_STORE_VERSIONS.V6 ||
+    !migratedState.lastSchemaUpdate ||
+    migratedState.lastSchemaUpdate < new Date("2025-08-10")
+  ) {
     if (!Array.isArray(migratedState.themes)) {
       migratedState.themes = initialThemes;
     }
@@ -343,6 +348,42 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
     currentVersion = GAME_STORE_VERSIONS.V13;
   }
 
+  // Migration V13 → V14: Introduce textVolume and reduce worldVolume by 0.1
+  if (currentVersion < GAME_STORE_VERSIONS.V14) {
+    const clamp01 = (v: any) => {
+      const n = typeof v === "number" ? v : 1;
+      return Math.max(0, Math.min(1, n));
+    };
+    const sound = migratedState.soundSystem || {};
+    const newWorld = clamp01((sound.worldVolume ?? 1) - 0.1);
+    migratedState.soundSystem = {
+      enabled: sound.enabled !== false,
+      masterVolume: clamp01(sound.masterVolume ?? 0),
+      tapVolume: clamp01(sound.tapVolume ?? 1),
+      worldVolume: newWorld,
+      uiVolume: clamp01(sound.uiVolume ?? 1),
+      tapEnabled: sound.tapEnabled !== false,
+      worldEnabled: sound.worldEnabled !== false,
+      textVolume: clamp01(sound.textVolume ?? 0.8),
+    };
+    currentVersion = GAME_STORE_VERSIONS.V14;
+  }
+
+  // Migration V14 → V15: Introduce soundPreferences (enabled/muted) and stop persisting per-type volumes
+  if (currentVersion < GAME_STORE_VERSIONS.V15) {
+    const sound = migratedState.soundSystem || {};
+    migratedState.soundPreferences = {
+      enabled: sound.enabled !== false,
+      muted: (sound.masterVolume ?? 0) === 0,
+    };
+    currentVersion = GAME_STORE_VERSIONS.V15;
+  }
+
+  // Migration Vx → V16: reset entire store
+  if (currentVersion < GAME_STORE_VERSIONS.V16) {
+    currentVersion = GAME_STORE_VERSIONS.V16;
+  }
+
   // Set the final version to the latest
   migratedState.version = GAME_STORE_VERSIONS.LATEST;
 
@@ -427,6 +468,7 @@ export interface Route {
   cost: number;
   purchased: boolean;
   unlocked: boolean;
+  isLocked?: boolean; // for routes that are not available yet
   path: string;
   icon: string;
   category: "pages";
@@ -438,6 +480,7 @@ export interface SoundSystemState {
   tapVolume: number;
   worldVolume: number;
   uiVolume: number;
+  textVolume: number;
   tapEnabled?: boolean;
   worldEnabled?: boolean;
 }
@@ -487,6 +530,12 @@ interface GameStore {
   // Sound system state
   soundSystem: SoundSystemState;
 
+  // Only persist minimal audio prefs
+  soundPreferences?: {
+    enabled: boolean;
+    muted: boolean;
+  };
+
   // Audio selections (ids only)
   audioSelections: {
     worldMusicId: string;
@@ -526,6 +575,7 @@ interface GameStore {
   setTapVolume: (volume: number) => void;
   setWorldVolume: (volume: number) => void;
   setUIVolume: (volume: number) => void;
+  setTextVolume: (volume: number) => void;
 
   // Audio selection actions
   setWorldMusicId: (id: string) => void;
@@ -549,148 +599,6 @@ interface GameStore {
   calculateOfflineTaps: () => number;
   checkUnlockedRoutes: (routePath: string) => boolean;
 }
-
-// Initial upgrades
-const initialUpgrades: Upgrade[] = [
-  {
-    id: "auto_tap_1",
-    name: "Auto Tapper",
-    description: "Automatically taps once per second",
-    baseCost: 15,
-    costMultiplier: 1.3,
-    level: 0,
-    maxLevel: 5,
-    effect: { type: "autoTap", value: 1 },
-    unlocked: true,
-    icon: "🤖",
-    category: "upgrades",
-  },
-  {
-    id: "tap_multiplier_1",
-    name: "Tap Power",
-    description: "Doubles your tap power",
-    baseCost: 50,
-    costMultiplier: 1.8,
-    level: 0,
-    maxLevel: 3,
-    effect: { type: "tapMultiplier", value: 2 },
-    unlocked: false,
-    icon: "💪",
-    category: "upgrades",
-  },
-  {
-    id: "auto_tap_2",
-    name: "Super Auto Tapper",
-    description: "Automatically taps 3 times per second",
-    baseCost: 200,
-    costMultiplier: 1.5,
-    level: 0,
-    maxLevel: 3,
-    effect: { type: "autoTap", value: 3 },
-    unlocked: false,
-    icon: "⚡",
-    category: "upgrades",
-  },
-  {
-    id: "tap_multiplier_2",
-    name: "Mega Tap Power",
-    description: "Triples your tap power",
-    baseCost: 1000,
-    costMultiplier: 2.5,
-    level: 0,
-    maxLevel: 2,
-    effect: { type: "tapMultiplier", value: 3 },
-    unlocked: false,
-    icon: "🔥",
-    category: "upgrades",
-  },
-  // Tap Effects
-  {
-    id: "tap_effect_default",
-    name: "Default Tap Effect",
-    description: "Classic white, grey, and black dots",
-    baseCost: 0,
-    costMultiplier: 1,
-    level: 1,
-    maxLevel: 1,
-    effect: { type: "tapEffect", value: 0 },
-    unlocked: true,
-    icon: "⚪",
-    category: "tapEffects",
-    selected: true, // Default selected
-  },
-  {
-    id: "tap_effect_confetti",
-    name: "Confetti Effect",
-    description: "Colorful confetti pieces",
-    baseCost: 1500,
-    costMultiplier: 1,
-    level: 0,
-    maxLevel: 1,
-    effect: { type: "tapEffect", value: 1 },
-    unlocked: false,
-    icon: "🎉",
-    category: "tapEffects",
-    selected: false,
-  },
-  {
-    id: "tap_effect_hearts",
-    name: "Heart Effect",
-    description: "Floating heart particles",
-    baseCost: 2500,
-    costMultiplier: 1,
-    level: 0,
-    maxLevel: 1,
-    effect: { type: "tapEffect", value: 2 },
-    unlocked: false,
-    icon: "💖",
-    category: "tapEffects",
-    selected: false,
-  },
-  {
-    id: "tap_effect_stars",
-    name: "Star Effect",
-    description: "Shining star particles",
-    baseCost: 3500,
-    costMultiplier: 1,
-    level: 0,
-    maxLevel: 1,
-    effect: { type: "tapEffect", value: 3 },
-    unlocked: false,
-    icon: "⭐",
-    category: "tapEffects",
-    selected: false,
-  },
-  // Environment Effects
-  {
-    id: "environment_rain",
-    name: "Rain Effect",
-    description: "Adds a gentle rain particle effect",
-    baseCost: 100,
-    costMultiplier: 1,
-    level: 0,
-    maxLevel: 1,
-    effect: { type: "environment", value: 0 },
-    unlocked: false,
-    icon: "🌧️",
-    category: "environment",
-    selected: false,
-  },
-  {
-    id: "environment_clouds",
-    name: "Cloud Effect",
-    description: "Adds floating cloud particles",
-    baseCost: 150,
-    costMultiplier: 1,
-    level: 0,
-    maxLevel: 1,
-    effect: { type: "environment", value: 1 },
-    unlocked: false,
-    icon: "☁️",
-    category: "environment",
-    selected: false,
-  },
-];
 
 // Initial decorations (keeping only fisheye for now)
 const initialDecorations: Decoration[] = [
@@ -749,6 +657,7 @@ const initialRoutes: Route[] = [
     unlocked: true,
     path: ROUTE_PATHS.HOME,
     icon: ROUTE_CONFIG[ROUTE_PATHS.HOME].icon,
+    isLocked: false,
     category: "pages",
   },
   {
@@ -760,6 +669,7 @@ const initialRoutes: Route[] = [
     unlocked: false,
     path: ROUTE_PATHS.ABOUT,
     icon: ROUTE_CONFIG[ROUTE_PATHS.ABOUT].icon,
+    isLocked: ROUTE_CONFIG[ROUTE_PATHS.ABOUT].isLocked,
     category: "pages",
   },
   {
@@ -771,6 +681,7 @@ const initialRoutes: Route[] = [
     unlocked: false,
     path: ROUTE_PATHS.PORTFOLIO,
     icon: ROUTE_CONFIG[ROUTE_PATHS.PORTFOLIO].icon,
+    isLocked: ROUTE_CONFIG[ROUTE_PATHS.PORTFOLIO].isLocked,
     category: "pages",
   },
   {
@@ -782,6 +693,7 @@ const initialRoutes: Route[] = [
     unlocked: false,
     path: ROUTE_PATHS.TECHNICAL,
     icon: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].icon,
+    isLocked: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].isLocked,
     category: "pages",
   },
   {
@@ -793,6 +705,7 @@ const initialRoutes: Route[] = [
     unlocked: false,
     path: ROUTE_PATHS.CREATIVE,
     icon: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].icon,
+    isLocked: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].isLocked,
     category: "pages",
   },
   {
@@ -804,6 +717,19 @@ const initialRoutes: Route[] = [
     unlocked: false,
     path: ROUTE_PATHS.GUESTBOOK,
     icon: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].icon,
+    isLocked: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].isLocked,
+    category: "pages",
+  },
+  {
+    id: ROUTE_IDS.MINIGAMES,
+    name: ROUTE_CONFIG[ROUTE_PATHS.MINIGAMES].name,
+    description: ROUTE_CONFIG[ROUTE_PATHS.MINIGAMES].description,
+    cost: ROUTE_CONFIG[ROUTE_PATHS.MINIGAMES].cost,
+    purchased: false,
+    unlocked: false,
+    path: ROUTE_PATHS.MINIGAMES,
+    icon: ROUTE_CONFIG[ROUTE_PATHS.MINIGAMES].icon,
+    isLocked: ROUTE_CONFIG[ROUTE_PATHS.MINIGAMES].isLocked,
     category: "pages",
   },
 ];
@@ -849,11 +775,13 @@ export const useGameStore = create<GameStore>()(
           enabled: true,
           masterVolume: 0.0,
           tapVolume: 1.0,
-          worldVolume: 1.0,
+          worldVolume: 0.9,
           uiVolume: 1.0,
+          textVolume: 0.8,
           tapEnabled: true,
           worldEnabled: true,
         },
+        soundPreferences: { enabled: true, muted: true },
 
         // Audio selections
         audioSelections: {
@@ -1135,7 +1063,11 @@ export const useGameStore = create<GameStore>()(
         checkUnlockedRoutes: (routePath: string) => {
           const routes = get().routes;
           return routes.some(
-            (route) => route.path === routePath && route.unlocked
+            (route) =>
+              route.path === routePath &&
+              route.unlocked &&
+              route.purchased &&
+              !route.isLocked
           );
         },
 
@@ -1394,6 +1326,16 @@ export const useGameStore = create<GameStore>()(
             soundSystem: {
               ...state.soundSystem,
               uiVolume: Math.max(0, Math.min(1, volume)),
+            },
+          }));
+        },
+
+        setTextVolume: (volume: number) => {
+          set((state) => ({
+            ...state,
+            soundSystem: {
+              ...state.soundSystem,
+              textVolumne: Math.max(0, Math.min(1, volume)),
             },
           }));
         },
@@ -1676,14 +1618,10 @@ export const useGameStore = create<GameStore>()(
           fisheyeIntensity: state.fisheyeIntensity,
           lastAutoTapTime: state.lastAutoTapTime,
           // Do not persist previous masterVolume; always persist 0 so app starts muted
-          soundSystem: {
+          // Only persist minimal audio prefs
+          soundPreferences: state.soundPreferences || {
             enabled: state.soundSystem.enabled,
-            masterVolume: 0,
-            tapVolume: state.soundSystem.tapVolume,
-            worldVolume: state.soundSystem.worldVolume,
-            uiVolume: state.soundSystem.uiVolume,
-            tapEnabled: state.soundSystem.tapEnabled,
-            worldEnabled: state.soundSystem.worldEnabled,
+            muted: state.soundSystem.masterVolume === 0,
           },
           audioSelections: state.audioSelections,
         }),
@@ -1692,47 +1630,60 @@ export const useGameStore = create<GameStore>()(
 
           // Check for storage migration (localStorage → IndexedDB)
           checkAndMigrate().catch(console.error);
+          const needsPurge = new Date(state?.lastSchemaUpdate) < PURGE_DATE;
 
           // Check if store version migration is needed
           if (
             state &&
             state.version &&
-            (state.version < GAME_STORE_VERSIONS.LATEST ||
-              state.lastSchemaUpdate < new Date("08/07/2025"))
+            (state.version < GAME_STORE_VERSIONS.LATEST || needsPurge)
           ) {
             console.log(
-              `Store version ${state.version} detected, triggering migration to ${GAME_STORE_VERSIONS.LATEST}`
+              `Store version ${state.version} and last schema update ${state.lastSchemaUpdate} detected, triggering migration to ${GAME_STORE_VERSIONS.LATEST}`
             );
-            const migratedState = migrateStore(
-              state,
-              GAME_STORE_VERSIONS.LATEST
-            );
+            try {
+              const migratedState = migrateStore(
+                state,
+                GAME_STORE_VERSIONS.LATEST
+              );
 
-            // Update the store with migrated data
-            useGameStore.setState({
-              ...state,
-              ...migratedState,
-            });
+              // Update the store with migrated data
+              useGameStore.setState({
+                ...state,
+                ...migratedState,
+              });
 
-            toast.success(
-              `Store migrated from V${state.version} to V${GAME_STORE_VERSIONS.LATEST}`
-            );
+              toast.success(
+                `Store migrated from V${state.version} to V${GAME_STORE_VERSIONS.LATEST}`
+              );
+            } catch (error) {
+              console.error("Error during store migration:", error);
+              toast.error(
+                "Store Migration fehlgeschlagen, manche Inhalte könnten fehlen."
+              );
+            }
           }
 
-          // Always enforce masterVolume = 0 on rehydrate so unmute acts as user gesture
+          // Restore enabled/muted preference; keep volumes from config
           try {
+            const prefs = state.soundPreferences;
+            const enabled = prefs?.enabled ?? true;
+            const muted = prefs?.muted ?? false;
             useGameStore.setState((s) => ({
               ...s,
               soundSystem: {
                 ...s.soundSystem,
-                masterVolume: 0,
+                enabled,
+                masterVolume: muted ? 0 : s.soundSystem.masterVolume,
               },
+              soundPreferences: { enabled, muted },
             }));
-          } catch {}
-
-          // Also ensure engine reflects muted state at boot
-          try {
-            engineSetMasterVolume(0);
+            try {
+              const current = useGameStore.getState();
+              engineSetMasterVolume(
+                muted ? 0 : current.soundSystem?.masterVolume || 1
+              );
+            } catch {}
           } catch {}
 
           // Sync per-type enable flags and current selections with engine after rehydrate
@@ -1847,6 +1798,7 @@ export const triggerStoreMigration = () => {
 };
 
 // Utility function to force V9 migration specifically
+// check if still needed after all other migrations
 export const forceV9Migration = () => {
   const store = useGameStore.getState();
 

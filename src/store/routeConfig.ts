@@ -6,6 +6,7 @@ export const ROUTE_PATHS = {
   TECHNICAL: "/technical",
   CREATIVE: "/creative",
   GUESTBOOK: "/guestbook",
+  MINIGAMES: "/mini",
 } as const;
 
 export const ROUTE_IDS = {
@@ -15,6 +16,7 @@ export const ROUTE_IDS = {
   TECHNICAL: "route_technical",
   CREATIVE: "route_creative",
   GUESTBOOK: "route_guestbook",
+  MINIGAMES: "route_minigames",
 } as const;
 
 // Route configuration
@@ -22,50 +24,67 @@ export const ROUTE_CONFIG = {
   [ROUTE_PATHS.HOME]: {
     id: ROUTE_IDS.HOME,
     name: "Home",
-    description: "Welcome to your game!",
+    description:
+      "Hier kannst du Taps sammeln und die Effekte aus dem Shop nutzen.",
     cost: 0,
     icon: "🏠",
+    isLocked: false,
     component: "home" as const,
   },
   [ROUTE_PATHS.ABOUT]: {
     id: ROUTE_IDS.ABOUT,
-    name: "About",
-    description: "Learn more about me",
+    name: "Über mich",
+    description:
+      "Die gute alte 'Über Mich-Seite'. Darf natürlich nicht fehlen.",
     cost: 50,
     icon: "👤",
+    isLocked: false,
     component: "about" as const,
   },
   [ROUTE_PATHS.PORTFOLIO]: {
     id: ROUTE_IDS.PORTFOLIO,
     name: "Portfolio",
-    description: "View my work",
-    cost: 100,
+    description: "Noch nicht verfügbar.",
+    cost: 0,
     icon: "💼",
+    isLocked: true,
     component: "portfolio" as const,
   },
   [ROUTE_PATHS.TECHNICAL]: {
     id: ROUTE_IDS.TECHNICAL,
-    name: "Technical",
-    description: "Technical details",
-    cost: 150,
+    name: "Technisches",
+    description: "Noch nicht verfügbar.",
+    cost: 0,
     icon: "⚙️",
+    isLocked: true,
     component: "technical" as const,
   },
   [ROUTE_PATHS.CREATIVE]: {
     id: ROUTE_IDS.CREATIVE,
-    name: "Creative",
-    description: "Creative projects",
-    cost: 200,
+    name: "Kreatives",
+    description: "Noch nicht verfügbar.",
+    cost: 0,
     icon: "🎨",
+    isLocked: true,
     component: "creative" as const,
   },
   [ROUTE_PATHS.GUESTBOOK]: {
     id: ROUTE_IDS.GUESTBOOK,
-    name: "Guestbook",
-    description: "Leave a message",
-    cost: 250,
+    name: "Gästebuch",
+    description: "Noch nicht verfügbar.",
+    cost: 0,
     icon: "📝",
+    isLocked: true,
     component: "guestbook" as const,
+  },
+  [ROUTE_PATHS.MINIGAMES]: {
+    id: ROUTE_IDS.MINIGAMES,
+    name: "Minispiele",
+    description: "Noch nicht verfügbar.",
+    cost: 0,
+    icon: "🎮",
+    isLocked: true,
+    component: "minigames" as const,
   },
 } as const;
 
@@ -100,6 +119,11 @@ export const ROUTES = [
     path: ROUTE_PATHS.GUESTBOOK,
     label: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].name,
     component: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].component,
+  },
+  {
+    path: ROUTE_PATHS.MINIGAMES,
+    label: ROUTE_CONFIG[ROUTE_PATHS.MINIGAMES].name,
+    component: ROUTE_CONFIG[ROUTE_PATHS.MINIGAMES].component,
   },
 ] as const;
 

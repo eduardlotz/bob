@@ -43,6 +43,20 @@ export const useQuestSystem = () => {
     [quests, routeId]
   );
 
+  const completedQuests = useMemo(
+    () => currentQuests.filter((q: any) => q.completed).length,
+    [currentQuests]
+  );
+
+  const totalReward = useMemo(
+    () =>
+      currentQuests.reduce(
+        (sum: number, q: any) => sum + (q.completed ? q.reward : 0),
+        0
+      ),
+    [currentQuests]
+  );
+
   // Note: Removed useEffect that was causing infinite loop
   // Quest activation is now handled directly in the store when needed
 
@@ -126,6 +140,8 @@ export const useQuestSystem = () => {
 
   return {
     currentQuests,
+    completedQuests,
+    totalReward,
     triggerQuest,
     triggerInteraction,
     triggerViewProject,

@@ -4,9 +4,12 @@ import {
   DEFAULT_TAP_VOLUME,
   DEFAULT_WORLD_VOLUME,
   DEFAULT_UI_VOLUME,
+  DEFAULT_TEXT_VOLUME,
   DEBUG_LOGS,
   DEFAULT_WORLD_MUSIC,
   DEFAULT_TAP_SOUND,
+  DEFAULT_UI_SOUND,
+  DEFAULT_UI_SOUND_2,
 } from "./defaults";
 import { DEFAULT_SOUND_CONFIGS } from "./configs";
 import { SoundConfig, SoundInstance, SoundSystemState } from "./types";
@@ -23,6 +26,7 @@ let state: SoundSystemState = {
   tapVolume: DEFAULT_TAP_VOLUME,
   worldVolume: DEFAULT_WORLD_VOLUME,
   uiVolume: DEFAULT_UI_VOLUME,
+  textVolume: DEFAULT_TEXT_VOLUME,
   tapEnabled: true,
   worldEnabled: true,
 };
@@ -211,6 +215,8 @@ const getTypeVolume = (type: SoundConfig["type"]): number => {
       return state.worldVolume;
     case "ui":
       return state.uiVolume;
+    case "text":
+      return state.textVolume ?? 0.6;
     default:
       return 1.0;
   }
@@ -631,6 +637,9 @@ export const setTypeVolume = (
     case "ui":
       state.uiVolume = safe;
       break;
+    case "text":
+      state.textVolume = safe;
+      break;
   }
 
   updateAllVolumes();
@@ -731,6 +740,14 @@ export const stopAllTapSounds = () => {
 export const stopAllWorldSounds = () => {
   stopSoundsByType("world");
 };
+
+export const playUISound = (soundId: string = DEFAULT_UI_SOUND.id) => {
+  // UI sounds do not have a dedicated enable flag; respect master and uiVolume
+  playSound(soundId);
+};
+
+export const getDefaultUISoundId = () => DEFAULT_UI_SOUND.id;
+export const getSecondaryUISoundId = () => DEFAULT_UI_SOUND_2.id;
 
 // Stop all instances for a specific sound config id (e.g., layered world sounds)
 export const stopSoundsById = (soundConfigId: string): void => {
