@@ -94,8 +94,10 @@ export const useRouteStore = create<RouteStore>()(
         } as unknown as RouteStore),
       onRehydrateStorage: (state) => {
         console.log("Route store rehydrated:", state);
-        // Queue migration instead of running immediately
-        queueStorageMigration();
+        // Queue migration lazily via dynamic import to avoid circular deps
+        import("./migration")
+          .then((m) => m.queueStorageMigration())
+          .catch((e) => console.error("Failed to queue storage migration", e));
       },
     }
   )

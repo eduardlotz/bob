@@ -5,7 +5,6 @@ import { createIndexedDBStorage } from "./indexedDB";
 import { match } from "ts-pattern";
 import { ROUTE_PATHS, ROUTE_IDS, ROUTE_CONFIG } from "./routeConfig";
 import { toast } from "sonner";
-import { queueStorageMigration } from "./migration";
 import {
   setMasterVolume as engineSetMasterVolume,
   setCurrentTapSound as engineSetCurrentTapSound,
@@ -1630,8 +1629,12 @@ export const useGameStore = create<GameStore>()(
         onRehydrateStorage: (state) => {
           console.log("Game store rehydrated:", state);
 
-          // Queue storage migration instead of running immediately
-          queueStorageMigration();
+          // Queue storage migration lazily to avoid circular import during init
+          import("./migration")
+            .then((m) => m.queueStorageMigration())
+            .catch((e) =>
+              console.error("Failed to queue storage migration", e)
+            );
 
           const needsPurge = new Date(state?.lastSchemaUpdate) < PURGE_DATE;
 

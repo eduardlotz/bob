@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { createIndexedDBStorage } from "./indexedDB";
-import { queueStorageMigration } from "./migration";
 
 export interface Quest {
   id: string;
@@ -298,8 +297,10 @@ export const useQuestStore = create<QuestStore>()(
       }),
       onRehydrateStorage: (state) => {
         console.log("Quest store rehydrated:", state);
-        // Queue migration instead of running immediately
-        queueStorageMigration();
+        // Queue migration lazily via dynamic import to avoid circular deps
+        import("./migration")
+          .then((m) => m.queueStorageMigration())
+          .catch((e) => console.error("Failed to queue storage migration", e));
       },
     }
   )
