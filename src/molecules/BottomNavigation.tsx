@@ -9,6 +9,7 @@ import { MenuIcon } from "@/icons/menu";
 import { CloseIcon } from "@/icons/close";
 import { Shop } from "./Shop";
 import { ProgressTracker } from "./ProgressTracker";
+import { useKeyPress } from "@/hooks/useKeyPress";
 
 type NavigationView = "shop" | "upgrades" | "quests" | "menu" | "default";
 
@@ -26,6 +27,12 @@ export function BottomNavigation() {
     getTotalTapMultiplierUncached,
   } = useGameStore();
   const { currentRoute, showOptions, toggleOptions } = useAppStore();
+
+  useKeyPress("Escape", () => {
+    if (currentView !== "default") {
+      setCurrentView("default");
+    }
+  });
 
   // Only show upgrade/shop buttons on home route
   const isHomeRoute = currentRoute === ROUTE_PATHS.HOME;

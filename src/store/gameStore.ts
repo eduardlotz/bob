@@ -1335,7 +1335,7 @@ export const useGameStore = create<GameStore>()(
             ...state,
             soundSystem: {
               ...state.soundSystem,
-              textVolumne: Math.max(0, Math.min(1, volume)),
+              textVolume: Math.max(0, Math.min(1, volume)),
             },
           }));
         },

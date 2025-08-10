@@ -1,6 +1,7 @@
 import {
   executeQueuedMigrations,
   hasFinalResetRun,
+  hasFinalResetRunAsync,
   queueFinalResetMigration,
 } from "./migration";
 
@@ -62,7 +63,9 @@ export const executeMigrationsWhenReady = async (): Promise<void> => {
     await executeQueuedMigrations();
 
     // Enqueue final reset migration once (idempotent) after base migrations
-    if (!hasFinalResetRun()) {
+    const ran = hasFinalResetRun();
+    const ranMeta = await hasFinalResetRunAsync();
+    if (!ran && !ranMeta) {
       console.log("Queuing final reset migration (first-run only)...");
       queueFinalResetMigration(false);
       await executeQueuedMigrations();

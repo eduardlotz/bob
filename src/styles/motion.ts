@@ -178,8 +178,8 @@ export namespace Transitions {
   export const quick = {
     layout: {
       type: "spring" as const,
-      duration: 0.2,
-      bounce: 0.4,
+      duration: 0.3,
+      bounce: 0.3,
     },
   };
 

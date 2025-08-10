@@ -86,7 +86,8 @@ class IndexedDBManager {
 
       const storeData = {
         storeName,
-        data: this.serialize(data),
+        // store as structured object for easier inspection in devtools
+        data,
         metadata: {
           version,
           lastUpdated: Date.now(),
@@ -125,8 +126,10 @@ class IndexedDBManager {
         request.onsuccess = () => {
           if (request.result) {
             const { data, metadata } = request.result;
+            const parsed =
+              typeof data === "string" ? this.deserialize(data) : data;
             resolve({
-              data: this.deserialize(data),
+              data: parsed,
               metadata,
             });
           } else {
@@ -312,11 +315,7 @@ class PersistenceManager {
   // Save data with fallback
   async save(storeName: string, data: any, version: number): Promise<void> {
     try {
-      if (this.useIndexedDB && this.indexedDB.isAvailable()) {
-        await this.indexedDB.save(storeName, data, version);
-      } else {
-        this.localStorage.save(storeName, data, version);
-      }
+      await this.indexedDB.save(storeName, data, version);
     } catch (error) {
       console.warn(
         `IndexedDB save failed for ${storeName}, falling back to localStorage:`,
@@ -332,11 +331,7 @@ class PersistenceManager {
     storeName: string
   ): Promise<{ data: any; metadata: StoreMetadata } | null> {
     try {
-      if (this.useIndexedDB && this.indexedDB.isAvailable()) {
-        return await this.indexedDB.load(storeName);
-      } else {
-        return this.localStorage.load(storeName);
-      }
+      return await this.indexedDB.load(storeName);
     } catch (error) {
       console.warn(
         `IndexedDB load failed for ${storeName}, falling back to localStorage:`,
@@ -350,11 +345,7 @@ class PersistenceManager {
   // Delete data
   async delete(storeName: string): Promise<void> {
     try {
-      if (this.useIndexedDB && this.indexedDB.isAvailable()) {
-        await this.indexedDB.delete(storeName);
-      } else {
-        this.localStorage.delete(storeName);
-      }
+      await this.indexedDB.delete(storeName);
     } catch (error) {
       console.warn(
         `IndexedDB delete failed for ${storeName}, falling back to localStorage:`,
@@ -368,11 +359,7 @@ class PersistenceManager {
   // Clear all data
   async clear(): Promise<void> {
     try {
-      if (this.useIndexedDB && this.indexedDB.isAvailable()) {
-        await this.indexedDB.clear();
-      } else {
-        this.localStorage.clear();
-      }
+      await this.indexedDB.clear();
     } catch (error) {
       console.warn(
         "IndexedDB clear failed, falling back to localStorage:",

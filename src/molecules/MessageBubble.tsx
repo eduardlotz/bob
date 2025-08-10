@@ -7,6 +7,7 @@ import { useMessageStore } from "@/store/messageStore";
 import { useGameStore } from "@/store/gameStore";
 import { textSynth } from "@/utils/sound/textSynth";
 import { resumeAudioContext, unlockAudioContext } from "@/utils/soundSystem";
+import { MotionVariants, Transitions } from "@/styles/motion";
 
 // Typing animation constants
 const DEFAULT_MS_PER_CHAR = 50;
@@ -47,26 +48,25 @@ export const MessageBubble = memo(function MessageBubble({
   const [lineIndex, setLineIndex] = useState(0);
   const [typingKey, setTypingKey] = useState<string | null>(null);
   const [skipRequested, setSkipRequested] = useState(false);
-  const containerRef = useRef<HTMLDivElement | null>(null);
   const [uiScale, setUiScale] = useState(1);
 
   const cfg = activeMessage?.config;
   const options = activeMessage?.options;
 
   // Entry/Exit scale + opacity
-  const [spring, api] = useSpring(() => ({
-    scale: 0,
-    opacity: 0,
-    config: { tension: 300, friction: 18 },
-  }));
+  // const [spring, api] = useSpring(() => ({
+  //   scale: 0,
+  //   opacity: 0,
+  //   config: { tension: 300, friction: 18 },
+  // }));
 
-  useEffect(() => {
-    if (activeMessage) {
-      api.start({ scale: 1, opacity: 1 });
-    } else {
-      api.start({ scale: 0, opacity: 0 });
-    }
-  }, [!!activeMessage]);
+  // useEffect(() => {
+  //   if (activeMessage) {
+  //     api.start({ scale: 1, opacity: 1 });
+  //   } else {
+  //     api.start({ scale: 0, opacity: 0 });
+  //   }
+  // }, [!!activeMessage]);
 
   // Ensure synth is resumed when audio becomes active
   useEffect(() => {
@@ -149,7 +149,7 @@ export const MessageBubble = memo(function MessageBubble({
   const calcSettleDelayMs = (text: string): number => {
     // Char variants delay: i * 0.02s => ~20ms/char; add generous spring settle buffer
     const lastCharExtra = Math.max(0, (text.length - 1) * 20); // ms
-    return Math.min(1500, Math.max(260, lastCharExtra + 320));
+    return Math.min(1800, Math.max(420, lastCharExtra + 420));
   };
 
   const clearRemovalTimer = (key: string) => {
@@ -174,9 +174,31 @@ export const MessageBubble = memo(function MessageBubble({
 
   // Start first line when a message becomes active
   useEffect(() => {
+    // clear any timers from previous message to avoid cross-talk
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+    if (finishTimerRef.current) {
+      clearTimeout(finishTimerRef.current);
+      finishTimerRef.current = null;
+    }
+    if (autoAdvanceTimerRef.current) {
+      clearTimeout(autoAdvanceTimerRef.current);
+      autoAdvanceTimerRef.current = null;
+    }
+    if (dismissTimerRef.current) {
+      clearTimeout(dismissTimerRef.current);
+      dismissTimerRef.current = null;
+    }
+    blipTimeoutsRef.current.forEach((id) => clearTimeout(id));
+    blipTimeoutsRef.current = [];
+    Object.values(removalTimersRef.current).forEach((id) => clearTimeout(id));
+    removalTimersRef.current = {};
+
     if (!activeMessage || lines.length === 0) return;
     // Reset line index for each new message
     setLineIndex(0);
+    // clear previous message thread to avoid old bubbles lingering
+    setThread([]);
     addTypingBubble(activeMessage.config.id, 0, lines[0] ?? "");
   }, [activeMessage, lines.length]);
 
@@ -282,7 +304,7 @@ export const MessageBubble = memo(function MessageBubble({
 
       // Schedule auto-removal based on reading time for this line
       if (currentTypingKey) {
-        const ms = estimateReadingMs(currentLineText);
+        const ms = Math.max(2400, estimateReadingMs(currentLineText));
         clearRemovalTimer(currentTypingKey);
         const timeoutId = window.setTimeout(() => {
           setThread((prev) => prev.filter((x) => x.key !== currentTypingKey));
@@ -316,12 +338,22 @@ export const MessageBubble = memo(function MessageBubble({
         const wholeMessageText = Array.isArray(activeMessage.config.text)
           ? activeMessage.config.text.join(" ")
           : String(activeMessage.config.text ?? "");
-        const nextMs =
+        const nextMsBase =
           typeof cfgDelay === "number" && cfgDelay >= 0
             ? cfgDelay
             : estimateReadingMs(wholeMessageText);
+        // add guard so we never dismiss while any typed thread bubble still exists
+        const nextMs = Math.max(3200, nextMsBase);
         dismissTimerRef.current = window.setTimeout(() => {
-          handleDismiss();
+          // if any thread item still exists, wait a bit more to avoid cutting off
+          if (thread.length > 0) {
+            dismissTimerRef.current = window.setTimeout(
+              () => handleDismiss(),
+              600
+            ) as unknown as number;
+          } else {
+            handleDismiss();
+          }
         }, nextMs) as unknown as number;
       }
     }, settleMs) as unknown as number;
@@ -330,11 +362,8 @@ export const MessageBubble = memo(function MessageBubble({
   if (!activeMessage || !cfg) return null;
 
   const onClickBubble = () => {
-    // On click: if animating, skip to end of current line; if fully typed, advance to next line
-    if (!isFullyTyped) {
-      setSkipRequested(true);
-      return;
-    }
+    // on click: only advance to next line if fully typed; do not skip animation
+    if (!isFullyTyped) return;
     const nextIdx = lineIndex + 1;
     if (nextIdx < lines.length) {
       if (autoAdvanceTimerRef.current) {
@@ -348,9 +377,29 @@ export const MessageBubble = memo(function MessageBubble({
   };
 
   const handleDismiss = () => {
-    api.start({ scale: 0, opacity: 0 });
+    // api.start({ scale: 0, opacity: 0 });
     // Allow exit spring to play briefly before swapping messages
     setTimeout(() => {
+      // cleanup timers to avoid leaking into the next message
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+      if (finishTimerRef.current) {
+        clearTimeout(finishTimerRef.current);
+        finishTimerRef.current = null;
+      }
+      if (autoAdvanceTimerRef.current) {
+        clearTimeout(autoAdvanceTimerRef.current);
+        autoAdvanceTimerRef.current = null;
+      }
+      if (dismissTimerRef.current) {
+        clearTimeout(dismissTimerRef.current);
+        dismissTimerRef.current = null;
+      }
+      blipTimeoutsRef.current.forEach((id) => clearTimeout(id));
+      blipTimeoutsRef.current = [];
+      Object.values(removalTimersRef.current).forEach((id) => clearTimeout(id));
+      removalTimersRef.current = {};
+
       dismissMessage();
       setLineIndex(0);
       setSkipRequested(false);
@@ -358,6 +407,7 @@ export const MessageBubble = memo(function MessageBubble({
       setIsFullyTyped(false);
       setUiScale(1);
       setTypingKey(null);
+      setThread([]);
     }, 180);
   };
 
@@ -369,39 +419,42 @@ export const MessageBubble = memo(function MessageBubble({
   ];
 
   return (
-    <a.group scale={spring.scale as any} position={position}>
+    <a.group
+      // scale={spring.scale as any}
+      position={position}
+    >
       <Html
         style={{
-          maxWidth: "calc(100vw - 32px)",
-          width: "600px",
+          maxWidth: "min(92vw, 420px)",
+          width: "fit-content",
           pointerEvents: "auto",
           transform: "translateX(-50%)",
         }}
       >
         <Container
-          ref={containerRef}
-          style={{ opacity: spring.opacity as any }}
-          onClick={onClickBubble}
-          onPointerDown={() => {
-            try {
-              textSynth.resume();
-              // Help Safari/iOS policies by resuming/unlocking the primary context too
-              resumeAudioContext();
-              unlockAudioContext();
-            } catch {}
-          }}
+        // style={{ opacity: spring.opacity as any }}
+        // onClick={onClickBubble}
+        // onPointerDown={() => {
+        //   try {
+        //     textSynth.resume();
+        //     // Help Safari/iOS policies by resuming/unlocking the primary context too
+        //     resumeAudioContext();
+        //     unlockAudioContext();
+        //   } catch {}
+        // }}
         >
           {cfg.label && <Label>{cfg.label}</Label>}
-          <ThreadContainer>
-            <AnimatePresence initial={false} mode="popLayout">
+          <ThreadContainer as={motion.div} layoutRoot layout>
+            <AnimatePresence mode="popLayout">
               {thread.map((it) => (
                 <ThreadBubble
                   key={it.key}
-                  layout
-                  initial={{ opacity: 0, y: -8, scale: 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -8, scale: 0.98 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 28 }}
+                  layout="position"
+                  variants={MotionVariants.SlideUp}
+                  initial={"initial"}
+                  animate={"animate"}
+                  exit={"exit"}
+                  transition={Transitions.quick.layout as any}
                 >
                   <ThreadText>
                     {it.status === "typing" && typingKey === it.key
@@ -485,7 +538,7 @@ const Container = styled.div`
   pointer-events: auto;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: flex-start;
   align-items: center;
   gap: 6px;
   user-select: none;
@@ -542,10 +595,15 @@ const ThreadBubble = styled(motion.div)`
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
   padding: 10px 14px 22px 14px;
   width: auto;
+
+  max-width: calc(100vw - 32px);
+  min-width: min(92vw, 400px);
+
   display: inline-flex;
-  align-self: flex-start;
-  max-width: min(90vw, 560px);
-  min-width: 48px;
+  align-self: center;
+  /* max-width: 560px;
+  width: 100%;*/
+  /* min-width: 48px; */
 ` as any;
 
 const ThreadText = styled.div`
@@ -553,6 +611,7 @@ const ThreadText = styled.div`
   line-height: 1.35;
   display: inline;
   white-space: pre-wrap;
+  /* white-space: nowrap; */
 `;
 
 const Text = styled.div`
@@ -562,13 +621,11 @@ const Text = styled.div`
 `;
 
 const Space = styled.span`
-  display: inline-block;
-  width: 0.33rem;
+  display: inline;
 `;
 
 const Word = styled.span`
-  display: inline-flex;
-  flex-wrap: nowrap;
+  display: inline;
   white-space: nowrap;
 `;
 
@@ -585,7 +642,7 @@ const charVariants = {
   },
   visible: (i: number) => ({
     opacity: 1,
-    scale: [1.2, 1],
+    scale: [1.1, 1],
     rotateX: [10, 0],
     transition: {
       delay: i * 0.02,

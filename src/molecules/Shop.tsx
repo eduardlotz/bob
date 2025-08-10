@@ -29,6 +29,7 @@ import {
   DevSliderValue,
 } from "@/layout/atoms";
 import { THEME_IDS } from "@/store/themeConfig";
+import { useKeyPress } from "@/hooks/useKeyPress";
 
 interface ShopProps {
   isOpen: boolean;
@@ -55,6 +56,12 @@ export function Shop({ isOpen, onClose }: ShopProps) {
       }
     }
   }, [isOpen, calculateOfflineTaps, addTaps]);
+
+  useKeyPress("Escape", () => {
+    if (isOpen) {
+      onClose();
+    }
+  });
 
   const tabs = [
     {

@@ -6,6 +6,7 @@ import {
 import { useGameStore } from "./gameStore";
 import { useQuestStore } from "./questStore";
 import { useRouteStore } from "./routeStore";
+import { useMessageStore } from "./messageStore";
 import { toast } from "sonner";
 
 // Migration utility to move data from localStorage to IndexedDB
@@ -16,6 +17,7 @@ export class StoreMigration {
   private isProcessingQueue = false;
   // flag for data resets, increase version to trigger
   static readonly FINAL_RESET_FLAG_KEY = "vg-final-reset-v1";
+  static readonly META_STORE_KEY = "migration-meta";
 
   private constructor() {}
 
@@ -40,10 +42,12 @@ export class StoreMigration {
           k === "quest-store" ||
           k === "route-store" ||
           k === "app-store" ||
+          k === "message-store" ||
           k.startsWith("vorgarten-game-store") ||
           k.startsWith("vorgarten-quest-store") ||
           k.startsWith("vorgarten-route-store") ||
-          k.startsWith("vorgarten-app-store")
+          k.startsWith("vorgarten-app-store") ||
+          k.startsWith("vorgarten-message-store")
         ) {
           keys.push(k);
         }
@@ -123,7 +127,14 @@ export class StoreMigration {
     this.isMigrating = true;
 
     try {
-      const stores = ["game-store", "quest-store", "route-store", "app-store"];
+      const stores = [
+        "game-store",
+        "quest-store",
+        "route-store",
+        "app-store",
+        // include message store in migration
+        "message-store",
+      ];
 
       let migratedCount = 0;
       let failedCount = 0;
@@ -282,12 +293,23 @@ export class StoreMigration {
     try {
       await persistenceManager.clear();
 
-      // Also clear localStorage
+      // Also clear localStorage (both prefixed and known plain keys)
       const keys = Object.keys(localStorage);
       keys.forEach((key) => {
         if (key.startsWith("vorgarten-")) {
           localStorage.removeItem(key);
         }
+      });
+      [
+        "game-store",
+        "quest-store",
+        "route-store",
+        "app-store",
+        "message-store",
+      ].forEach((k) => {
+        try {
+          localStorage.removeItem(k);
+        } catch {}
       });
 
       toast.success("All store data cleared");
@@ -399,8 +421,29 @@ export class StoreMigration {
         console.warn("[FINAL RESET] Failed to reset route store state", e);
       }
 
+      try {
+        // reset message store flags so all messages can show again
+        useMessageStore.setState((s) => ({
+          ...s,
+          activeMessage: null,
+          queue: [],
+          seenThisSession: {},
+          repeatFlags: {},
+          preferences: {},
+        }));
+      } catch (e) {
+        console.warn("[FINAL RESET] Failed to reset message store state", e);
+      }
+
       // Mark as done before notifying
       localStorage.setItem(StoreMigration.FINAL_RESET_FLAG_KEY, "1");
+      try {
+        await persistenceManager.save(
+          StoreMigration.META_STORE_KEY,
+          { state: { finalResetRanAt: Date.now() }, version: 1 },
+          1
+        );
+      } catch {}
       toast.success(
         "All user data was RESET to defaults. Your preferences and progress were cleared."
       );
@@ -480,6 +523,19 @@ export const clearMigrationQueue = () => {
 // Final reset migration APIs
 export const hasFinalResetRun = (): boolean => {
   return !!localStorage.getItem(StoreMigration.FINAL_RESET_FLAG_KEY);
+};
+
+// async variant that also checks an IndexedDB meta record as a fallback guard
+export const hasFinalResetRunAsync = async (): Promise<boolean> => {
+  try {
+    if (localStorage.getItem(StoreMigration.FINAL_RESET_FLAG_KEY)) return true;
+  } catch {}
+  try {
+    const meta = await persistenceManager.load(StoreMigration.META_STORE_KEY);
+    return !!meta && !!(meta.data?.state?.finalResetRanAt as number);
+  } catch {
+    return false;
+  }
 };
 
 export const queueFinalResetMigration = (force = false): void => {
