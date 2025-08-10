@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { persist } from "zustand/middleware";
+import { createIndexedDBStorage } from "./indexedDB";
 import { match } from "ts-pattern";
 import { ROUTE_PATHS, ROUTE_IDS, ROUTE_CONFIG } from "./routeConfig";
 import { toast } from "sonner";
@@ -1603,28 +1604,29 @@ export const useGameStore = create<GameStore>()(
       {
         name: "game-store",
         version: GAME_STORE_VERSIONS.LATEST,
+        storage: createIndexedDBStorage<GameStore>(),
         migrate: (persistedState: any, version: number) => {
           return migrateStore(persistedState, version);
         },
-        partialize: (state) => ({
-          version: state.version,
-          lastSchemaUpdate: state.lastSchemaUpdate,
-          taps: state.taps,
-          upgrades: state.upgrades,
-          decorations: state.decorations,
-          themes: state.themes,
-          currentTheme: state.currentTheme,
-          routes: state.routes,
-          fisheyeIntensity: state.fisheyeIntensity,
-          lastAutoTapTime: state.lastAutoTapTime,
-          // Do not persist previous masterVolume; always persist 0 so app starts muted
-          // Only persist minimal audio prefs
-          soundPreferences: state.soundPreferences || {
-            enabled: state.soundSystem.enabled,
-            muted: state.soundSystem.masterVolume === 0,
-          },
-          audioSelections: state.audioSelections,
-        }),
+        partialize: (state) =>
+          ({
+            version: state.version,
+            lastSchemaUpdate: state.lastSchemaUpdate,
+            taps: state.taps,
+            upgrades: state.upgrades,
+            decorations: state.decorations,
+            themes: state.themes,
+            currentTheme: state.currentTheme,
+            routes: state.routes,
+            fisheyeIntensity: state.fisheyeIntensity,
+            lastAutoTapTime: state.lastAutoTapTime,
+            soundSystem: state.soundSystem,
+            soundPreferences: state.soundPreferences || {
+              enabled: state.soundSystem.enabled,
+              muted: state.soundSystem.masterVolume === 0,
+            },
+            audioSelections: state.audioSelections,
+          } as unknown as GameStore),
         onRehydrateStorage: (state) => {
           console.log("Game store rehydrated:", state);
 
@@ -1665,7 +1667,7 @@ export const useGameStore = create<GameStore>()(
             }
           }
 
-          // Restore enabled/muted preference; keep volumes from config
+          // Restore enabled/muted preference; keep persisted volumes intact
           try {
             const prefs = state.soundPreferences;
             const enabled = prefs?.enabled ?? true;
@@ -1675,7 +1677,7 @@ export const useGameStore = create<GameStore>()(
               soundSystem: {
                 ...s.soundSystem,
                 enabled,
-                masterVolume: muted ? 0 : s.soundSystem.masterVolume,
+                // do not overwrite persisted masterVolume here; engine will apply mute
               },
               soundPreferences: { enabled, muted },
             }));

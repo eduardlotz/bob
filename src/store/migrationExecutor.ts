@@ -1,4 +1,8 @@
-import { executeQueuedMigrations } from "./migration";
+import {
+  executeQueuedMigrations,
+  hasFinalResetRun,
+  queueFinalResetMigration,
+} from "./migration";
 
 // This module handles the execution of queued migrations after all stores are ready
 // It should be imported and called from the main App component after stores are initialized
@@ -6,6 +10,7 @@ import { executeQueuedMigrations } from "./migration";
 let hasExecutedMigrations = false;
 let retryCount = 0;
 const MAX_RETRIES = 10;
+const RETRY_DELAY_MS = 250;
 
 /**
  * Execute any queued migrations after all stores are ready
@@ -21,38 +26,48 @@ export const executeMigrationsWhenReady = async (): Promise<void> => {
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Check if we can access the stores safely
-    try {
-      // Try to access a store to see if it's ready
-      const { useGameStore } = await import("./gameStore");
-      const gameState = useGameStore.getState();
+    const { useGameStore } = await import("./gameStore");
+    const { useQuestStore } = await import("./questStore");
+    const { useRouteStore } = await import("./routeStore");
 
-      if (!gameState || typeof gameState.version === "undefined") {
-        retryCount++;
-        if (retryCount >= MAX_RETRIES) {
-          console.warn("Max retries reached, giving up on migration execution");
-          return;
-        }
-        console.log(
-          `Stores not ready yet, retrying in 200ms... (attempt ${retryCount}/${MAX_RETRIES})`
+    const areStoresReady = () => {
+      try {
+        const gameState = useGameStore.getState();
+        const questState = useQuestStore.getState();
+        const routeState = useRouteStore.getState();
+        return (
+          !!gameState &&
+          typeof gameState.version !== "undefined" &&
+          !!questState &&
+          Array.isArray(questState.quests) &&
+          !!routeState &&
+          Array.isArray(routeState.routeConfigs)
         );
-        await new Promise((resolve) => setTimeout(resolve, 200));
-        return executeMigrationsWhenReady();
+      } catch {
+        return false;
       }
-    } catch (error) {
-      retryCount++;
-      if (retryCount >= MAX_RETRIES) {
+    };
+
+    let attempts = 0;
+    while (!areStoresReady()) {
+      attempts++;
+      if (attempts >= MAX_RETRIES) {
         console.warn("Max retries reached, giving up on migration execution");
         return;
       }
-      console.log(
-        `Stores not accessible yet, retrying in 200ms... (attempt ${retryCount}/${MAX_RETRIES})`
-      );
-      await new Promise((resolve) => setTimeout(resolve, 200));
-      return executeMigrationsWhenReady();
+      await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
     }
 
     console.log("Stores are ready, executing queued migrations...");
     await executeQueuedMigrations();
+
+    // Enqueue final reset migration once (idempotent) after base migrations
+    if (!hasFinalResetRun()) {
+      console.log("Queuing final reset migration (first-run only)...");
+      queueFinalResetMigration(false);
+      await executeQueuedMigrations();
+    }
+
     hasExecutedMigrations = true;
     console.log("Queued migrations completed");
   } catch (error) {

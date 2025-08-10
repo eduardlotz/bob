@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { createIndexedDBStorage } from "./indexedDB";
 import { queueStorageMigration } from "./migration";
 
 export interface Quest {
@@ -290,6 +291,7 @@ export const useQuestStore = create<QuestStore>()(
     {
       name: "quest-store",
       version: 1,
+      storage: createIndexedDBStorage<QuestStore>(),
       partialize: (state) => ({
         quests: state.quests,
         activeQuests: state.activeQuests,

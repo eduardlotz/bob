@@ -404,48 +404,51 @@ class PersistenceManager {
 // Create singleton instance
 const persistenceManager = new PersistenceManager();
 
-// Create a storage adapter that works with Zustand persist
-export const createIndexedDBStorage = () => ({
-  getItem: (name: string) => {
-    return new Promise<string | null>((resolve) => {
-      persistenceManager
-        .load(name)
-        .then((result) => {
-          resolve(result ? JSON.stringify(result) : null);
-        })
-        .catch((error) => {
-          console.error(`Failed to load ${name}:`, error);
-          resolve(null);
-        });
-    });
-  },
-  setItem: (name: string, value: string) => {
-    return new Promise<void>((resolve) => {
-      try {
-        const parsed = JSON.parse(value);
-        persistenceManager
-          .save(name, parsed, 1)
-          .then(() => resolve())
-          .catch((error) => {
-            console.error(`Failed to save ${name}:`, error);
-            resolve();
-          });
-      } catch (error) {
-        console.error(`Failed to parse value for ${name}:`, error);
-        resolve();
+// Create a storage adapter compatible with Zustand v5 persist typings
+// It reads/writes the StorageValue<T> object directly via our persistence layer
+export const createIndexedDBStorage = <T extends unknown>() => ({
+  getItem: async (
+    name: string
+  ): Promise<import("zustand/middleware").StorageValue<T> | null> => {
+    try {
+      const result = await persistenceManager.load(name);
+      // We expect our persistence layer to have stored the StorageValue<T> directly
+      // If older shape is found, adapt it
+      if (!result) return null;
+      const data = result.data;
+      if (data && typeof data === "object" && "state" in data) {
+        return data as import("zustand/middleware").StorageValue<T>;
       }
-    });
+      // Fallback: wrap raw data as state
+      return {
+        state: data as T,
+        version: (result.metadata?.version as number) ?? 0,
+      } as import("zustand/middleware").StorageValue<T>;
+    } catch (error) {
+      console.error(`Failed to load ${name}:`, error);
+      return null;
+    }
   },
-  removeItem: (name: string) => {
-    return new Promise<void>((resolve) => {
-      persistenceManager
-        .delete(name)
-        .then(() => resolve())
-        .catch((error) => {
-          console.error(`Failed to remove ${name}:`, error);
-          resolve();
-        });
-    });
+  setItem: async (
+    name: string,
+    value: import("zustand/middleware").StorageValue<T>
+  ): Promise<void> => {
+    try {
+      await persistenceManager.save(
+        name,
+        value,
+        (value?.version as number) ?? 1
+      );
+    } catch (error) {
+      console.error(`Failed to save ${name}:`, error);
+    }
+  },
+  removeItem: async (name: string): Promise<void> => {
+    try {
+      await persistenceManager.delete(name);
+    } catch (error) {
+      console.error(`Failed to remove ${name}:`, error);
+    }
   },
 });
 
