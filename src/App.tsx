@@ -80,12 +80,12 @@ export default function App() {
       />
       <AnimatePresence mode="sync">
         <RouteChip
-          initial={{ y: -80, filter: "blur(6px)" }}
+          initial={{ y: -120, filter: "blur(6px)" }}
           animate={{
-            y: showRouteChip ? 0 : -80,
+            y: showRouteChip ? 0 : -120,
             filter: showRouteChip ? "blur(0px)" : "blur(6px)",
           }}
-          exit={{ y: -80, filter: "blur(6px)" }}
+          exit={{ y: -120, filter: "blur(6px)" }}
           transition={{ duration: 0.9, ease: "circInOut" }}
         >
           {currentRouteInPretty}
@@ -126,7 +126,7 @@ const ContentWrapper = styled(FillColumn)`
 
 const RouteChip = styled(motion.div)`
   position: absolute;
-  top: 24px;
+  top: 40px;
   left: 0;
   right: 0;
   margin: 0 auto;

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { createIndexedDBStorage } from "./indexedDB";
 import {
   getMessageById,
   MessageConfig,
@@ -45,8 +46,8 @@ export interface MessageStoreState {
 
 const DEFAULT_OPTIONS: Required<MessageOptions> = {
   typingSpeedMs: 50,
-  baseDismissMs: 1000,
-  contentLengthFactorMs: 40,
+  baseDismissMs: 1400,
+  contentLengthFactorMs: 44,
   tailEnabled: false,
 };
 
@@ -183,11 +184,19 @@ export const useMessageStore = create<MessageStoreState>()(
     }),
     {
       name: "message-store",
-      version: 1,
-      partialize: (s) => ({
-        repeatFlags: s.repeatFlags,
-        preferences: s.preferences,
-      }),
+      version: 2,
+      storage: createIndexedDBStorage<MessageStoreState>(),
+      partialize: (s) =>
+        ({
+          repeatFlags: s.repeatFlags,
+          preferences: s.preferences,
+        } as unknown as MessageStoreState),
+      onRehydrateStorage: (_state) => {
+        // lazy load makes sure migration queue can run after message store ready
+        import("./migration")
+          .then((m) => m.queueStorageMigration())
+          .catch(() => {});
+      },
     }
   )
 );

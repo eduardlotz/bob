@@ -86,7 +86,8 @@ class IndexedDBManager {
 
       const storeData = {
         storeName,
-        data: this.serialize(data),
+        // store as structured object for easier inspection in devtools
+        data,
         metadata: {
           version,
           lastUpdated: Date.now(),
@@ -125,8 +126,10 @@ class IndexedDBManager {
         request.onsuccess = () => {
           if (request.result) {
             const { data, metadata } = request.result;
+            const parsed =
+              typeof data === "string" ? this.deserialize(data) : data;
             resolve({
-              data: this.deserialize(data),
+              data: parsed,
               metadata,
             });
           } else {
@@ -312,11 +315,7 @@ class PersistenceManager {
   // Save data with fallback
   async save(storeName: string, data: any, version: number): Promise<void> {
     try {
-      if (this.useIndexedDB && this.indexedDB.isAvailable()) {
-        await this.indexedDB.save(storeName, data, version);
-      } else {
-        this.localStorage.save(storeName, data, version);
-      }
+      await this.indexedDB.save(storeName, data, version);
     } catch (error) {
       console.warn(
         `IndexedDB save failed for ${storeName}, falling back to localStorage:`,
@@ -332,11 +331,7 @@ class PersistenceManager {
     storeName: string
   ): Promise<{ data: any; metadata: StoreMetadata } | null> {
     try {
-      if (this.useIndexedDB && this.indexedDB.isAvailable()) {
-        return await this.indexedDB.load(storeName);
-      } else {
-        return this.localStorage.load(storeName);
-      }
+      return await this.indexedDB.load(storeName);
     } catch (error) {
       console.warn(
         `IndexedDB load failed for ${storeName}, falling back to localStorage:`,
@@ -350,11 +345,7 @@ class PersistenceManager {
   // Delete data
   async delete(storeName: string): Promise<void> {
     try {
-      if (this.useIndexedDB && this.indexedDB.isAvailable()) {
-        await this.indexedDB.delete(storeName);
-      } else {
-        this.localStorage.delete(storeName);
-      }
+      await this.indexedDB.delete(storeName);
     } catch (error) {
       console.warn(
         `IndexedDB delete failed for ${storeName}, falling back to localStorage:`,
@@ -368,11 +359,7 @@ class PersistenceManager {
   // Clear all data
   async clear(): Promise<void> {
     try {
-      if (this.useIndexedDB && this.indexedDB.isAvailable()) {
-        await this.indexedDB.clear();
-      } else {
-        this.localStorage.clear();
-      }
+      await this.indexedDB.clear();
     } catch (error) {
       console.warn(
         "IndexedDB clear failed, falling back to localStorage:",
@@ -404,48 +391,51 @@ class PersistenceManager {
 // Create singleton instance
 const persistenceManager = new PersistenceManager();
 
-// Create a storage adapter that works with Zustand persist
-export const createIndexedDBStorage = () => ({
-  getItem: (name: string) => {
-    return new Promise<string | null>((resolve) => {
-      persistenceManager
-        .load(name)
-        .then((result) => {
-          resolve(result ? JSON.stringify(result) : null);
-        })
-        .catch((error) => {
-          console.error(`Failed to load ${name}:`, error);
-          resolve(null);
-        });
-    });
-  },
-  setItem: (name: string, value: string) => {
-    return new Promise<void>((resolve) => {
-      try {
-        const parsed = JSON.parse(value);
-        persistenceManager
-          .save(name, parsed, 1)
-          .then(() => resolve())
-          .catch((error) => {
-            console.error(`Failed to save ${name}:`, error);
-            resolve();
-          });
-      } catch (error) {
-        console.error(`Failed to parse value for ${name}:`, error);
-        resolve();
+// Create a storage adapter compatible with Zustand v5 persist typings
+// It reads/writes the StorageValue<T> object directly via our persistence layer
+export const createIndexedDBStorage = <T extends unknown>() => ({
+  getItem: async (
+    name: string
+  ): Promise<import("zustand/middleware").StorageValue<T> | null> => {
+    try {
+      const result = await persistenceManager.load(name);
+      // We expect our persistence layer to have stored the StorageValue<T> directly
+      // If older shape is found, adapt it
+      if (!result) return null;
+      const data = result.data;
+      if (data && typeof data === "object" && "state" in data) {
+        return data as import("zustand/middleware").StorageValue<T>;
       }
-    });
+      // Fallback: wrap raw data as state
+      return {
+        state: data as T,
+        version: (result.metadata?.version as number) ?? 0,
+      } as import("zustand/middleware").StorageValue<T>;
+    } catch (error) {
+      console.error(`Failed to load ${name}:`, error);
+      return null;
+    }
   },
-  removeItem: (name: string) => {
-    return new Promise<void>((resolve) => {
-      persistenceManager
-        .delete(name)
-        .then(() => resolve())
-        .catch((error) => {
-          console.error(`Failed to remove ${name}:`, error);
-          resolve();
-        });
-    });
+  setItem: async (
+    name: string,
+    value: import("zustand/middleware").StorageValue<T>
+  ): Promise<void> => {
+    try {
+      await persistenceManager.save(
+        name,
+        value,
+        (value?.version as number) ?? 1
+      );
+    } catch (error) {
+      console.error(`Failed to save ${name}:`, error);
+    }
+  },
+  removeItem: async (name: string): Promise<void> => {
+    try {
+      await persistenceManager.delete(name);
+    } catch (error) {
+      console.error(`Failed to remove ${name}:`, error);
+    }
   },
 });
 

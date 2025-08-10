@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { createIndexedDBStorage } from "./indexedDB";
 import { ROUTE_IDS } from "./routeConfig";
 import { queueStorageMigration } from "./migration";
 
@@ -86,13 +87,17 @@ export const useRouteStore = create<RouteStore>()(
     {
       name: "route-store",
       version: 2,
-      partialize: (state) => ({
-        routeConfigs: state.routeConfigs,
-      }),
+      storage: createIndexedDBStorage<RouteStore>(),
+      partialize: (state) =>
+        ({
+          routeConfigs: state.routeConfigs,
+        } as unknown as RouteStore),
       onRehydrateStorage: (state) => {
         console.log("Route store rehydrated:", state);
-        // Queue migration instead of running immediately
-        queueStorageMigration();
+        // Queue migration lazily via dynamic import to avoid circular deps
+        import("./migration")
+          .then((m) => m.queueStorageMigration())
+          .catch((e) => console.error("Failed to queue storage migration", e));
       },
     }
   )
