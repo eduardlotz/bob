@@ -22,7 +22,6 @@ import { FISHEYE_CONFIG } from "../store/themeConfig";
 import { a, useSpring } from "@react-spring/three";
 import { attachListenerToCamera } from "@/utils/soundSystem";
 import { MessageBubble } from "@/molecules/MessageBubble";
-import { useMessageSystem } from "@/hooks/useMessageSystem";
 import { SceneDecorations } from "@/3d-objects/Decorations";
 
 export const FLOOR_Y_POSITION = -1.5;
@@ -90,8 +89,6 @@ const Scene = ({
       <FullScreenCanvas>
         <Suspense fallback={null}>
           <AudioListenerBinder />
-          {/* Initialize message system triggers */}
-          <MessageSystemBinder />
           <Fisheye zoom={FISHEYE_CONFIG.DEFAULT}>
             <Grid
               args={[8, 8]}
@@ -145,7 +142,7 @@ const Scene = ({
 
               <SceneDecorations />
             </a.group>
-            {/* Route-specific content using pattern matching */}
+
             {match(currentRoute)
               .with(ROUTE_PATHS.ABOUT, () => <AboutScene />)
               .with(ROUTE_PATHS.PORTFOLIO, () => <PortfolioScene />)
@@ -207,10 +204,5 @@ function AudioListenerBinder() {
   useEffect(() => {
     attachListenerToCamera(camera);
   }, [camera]);
-  return null;
-}
-
-function MessageSystemBinder() {
-  useMessageSystem();
   return null;
 }
