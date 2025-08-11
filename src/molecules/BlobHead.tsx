@@ -25,8 +25,6 @@ import { a, useSpring } from "@react-spring/three";
 import { type RapierRigidBody } from "@react-three/rapier";
 import { Star3D } from "@/3d-objects/Star3D";
 import { EmotionState } from "@/hooks/useBlobEmotions";
-import { useRouteStore } from "@/store/routeStore";
-import { useAppStore } from "@/store";
 import { useGameStore } from "@/store/gameStore";
 
 // TODO: Move these constants to a shared config file
@@ -296,7 +294,6 @@ export function BlobHead({
         idleAnimation === "none" &&
         timeSinceLastIdleAnimation > idleTimeout
       ) {
-        // Only choose from spin and tilt
         const animations: ("spin" | "tilt")[] = ["spin", "tilt"];
         const randomAnimation =
           animations[Math.floor(Math.random() * animations.length)];
@@ -333,7 +330,6 @@ export function BlobHead({
       }
     };
 
-    // Desktop interaction events
     window.addEventListener("mousemove", handleActivity);
     window.addEventListener("click", handleActivity);
     window.addEventListener("keydown", handleActivity);
@@ -510,7 +506,7 @@ export function BlobHead({
     const cameraPosition = new Vector3(0, CAMERA_HEIGHT, baseZoom + zoomOffset);
     const target = cameraPosition.clone().add(lookDirection);
 
-    cameraControlsRef.current.setLookAt(
+    cameraControlsRef.current?.setLookAt(
       cameraPosition.x,
       cameraPosition.y,
       cameraPosition.z,
@@ -559,7 +555,7 @@ export function BlobHead({
       ? Math.sin(clock.getElapsedTime() * 20) * 0.5
       : 0;
 
-    cameraControlsRef.current.setLookAt(
+    cameraControlsRef.current?.setLookAt(
       0,
       CAMERA_HEIGHT,
       baseZoom + zoomOffset,

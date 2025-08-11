@@ -232,7 +232,7 @@ export function HeadNavigation({
     if (orientation && acceleration && permissionGranted) {
       const { targetRotX, targetRotY, targetRotZ } =
         calculateAcceleratedRotation(acceleration, orientation);
-      cameraControlsRef.current.setLookAt(
+      cameraControlsRef.current?.setLookAt(
         0,
         showOptions && !isOptionsClosing ? 2 : CAMERA_HEIGHT,
         finalZoom,
@@ -250,7 +250,7 @@ export function HeadNavigation({
           -(mousePosition.y - 0.5) * CAMERA_FOLLOW_OFFSET * 0.2, // Invert Y and center around 0.5
           0
         );
-        cameraControlsRef.current.setLookAt(
+        cameraControlsRef.current?.setLookAt(
           0,
           showOptions && !isOptionsClosing ? 2 : CAMERA_HEIGHT,
           finalZoom,
@@ -261,7 +261,7 @@ export function HeadNavigation({
         );
       } else {
         // On mobile, just set the camera position without following cursor
-        cameraControlsRef.current.setLookAt(
+        cameraControlsRef.current?.setLookAt(
           0,
           showOptions && !isOptionsClosing ? 2 : CAMERA_HEIGHT,
           finalZoom,
@@ -517,7 +517,7 @@ function Option({
   const handleOptionClick = () => {
     match(route)
       .with({ purchased: true }, () => {
-        cameraControlsRef.current.setLookAt(
+        cameraControlsRef.current?.setLookAt(
           0,
           CAMERA_Y_POSITION,
           VISIBLE_OPTIONS_CAMERA_ZOOM,

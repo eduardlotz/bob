@@ -90,7 +90,7 @@ export const TapCounter = () => {
     setNumberWidth(width);
   }, [formattedNumber]);
 
-  const responsivePosition = new Vector3(-numberWidth / 2 - 0.2, -1, -2);
+  const responsivePosition = new Vector3(-numberWidth / 2 - 0.2, -1, -3);
 
   const [spring, api] = useSpring(() => ({
     scale: 1,

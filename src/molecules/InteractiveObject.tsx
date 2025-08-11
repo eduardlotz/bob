@@ -6,9 +6,6 @@ import { Mesh } from "three";
 import { a } from "@react-spring/three";
 
 interface InteractiveObjectProps {
-  position: [number, number, number];
-  rotation?: [number, number, number];
-  scale?: [number, number, number];
   questAction: string;
   questValue?: number;
   children: React.ReactNode;
@@ -16,23 +13,13 @@ interface InteractiveObjectProps {
 }
 
 export function InteractiveObject({
-  position,
-  rotation = [0, 0, 0],
-  scale = [1, 1, 1],
   questAction,
   questValue = 25,
   children,
   onDialogOpen,
 }: InteractiveObjectProps) {
-  const meshRef = useRef<Mesh>(null);
   const [isHovered, setIsHovered] = useState(false);
   const { triggerQuest } = useQuestSystem();
-
-  useFrame(() => {
-    if (meshRef.current && isHovered) {
-      meshRef.current.rotation.y += 0.02;
-    }
-  });
 
   const handleClick = () => {
     triggerQuest(questAction, questValue);
@@ -50,16 +37,12 @@ export function InteractiveObject({
   };
 
   return (
-    <a.group position={position} rotation={rotation} scale={scale}>
-      <mesh
-        ref={meshRef}
-        onClick={handleClick}
-        onPointerEnter={handlePointerEnter}
-        onPointerLeave={handlePointerLeave}
-      >
-        {children}
-        {isHovered && <Outlines thickness={0.03} color="black" screenspace />}
-      </mesh>
+    <a.group
+      onClick={handleClick}
+      onPointerEnter={handlePointerEnter}
+      onPointerLeave={handlePointerLeave}
+    >
+      {children}
     </a.group>
   );
 }

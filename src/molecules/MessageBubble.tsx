@@ -248,11 +248,11 @@ export const MessageBubble = memo(function MessageBubble({
               try {
                 textSynth.resume();
                 // Ensure per-char sound length is slightly shorter than reveal period
-                const charDurMs = Math.max(50, Math.min(220, per * 0.9));
+                const charDurMs = Math.max(100, Math.min(220, per * 0.9));
                 // Scale gain by master * text volume (fallback to 0.8)
                 const textVolume = (soundSystem as any).textVolume ?? 0.8;
                 const gainScale = Math.max(
-                  0.2,
+                  1.5,
                   Math.min(
                     1.2,
                     (soundSystem.masterVolume || 0) * textVolume || 0

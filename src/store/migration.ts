@@ -329,6 +329,7 @@ export class StoreMigration {
   // Final reset migration (idempotent)
   async runFinalResetMigration(force: boolean = false): Promise<void> {
     const flag = localStorage.getItem(StoreMigration.FINAL_RESET_FLAG_KEY);
+    console.group("[FINAL RESET] Migration");
     if (flag && !force) {
       console.log("Final reset migration already executed. Skipping.");
       return;
@@ -443,16 +444,16 @@ export class StoreMigration {
           { state: { finalResetRanAt: Date.now() }, version: 1 },
           1
         );
-      } catch {}
-      toast.success(
-        "All user data was RESET to defaults. Your preferences and progress were cleared."
-      );
+      } catch (error) {
+        console.warn("[FINAL RESET] Failed to save meta store state", error);
+      }
       console.log("[FINAL RESET] Completed. All user data reset to defaults.");
     } catch (error) {
       console.error("[FINAL RESET] Failed:", error);
       throw error;
     } finally {
       this.isMigrating = false;
+      console.groupEnd();
     }
   }
 }

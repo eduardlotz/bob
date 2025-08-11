@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useGameStore } from "@/store/gameStore";
 import { Mesh, MathUtils } from "three";
+import { TreeModel } from "./models/tree";
 
 // 2D Decoration Component
 export function Decoration2D({
@@ -99,6 +100,8 @@ export function Decoration3D({
             <meshStandardMaterial color={color} />
           </mesh>
         );
+      case "tree_3d":
+        return <TreeModel position={position} scale={[scale, scale, scale]} />;
       default:
         return null;
     }
