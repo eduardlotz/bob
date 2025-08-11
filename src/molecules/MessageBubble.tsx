@@ -9,8 +9,10 @@ import { textSynth } from "@/utils/sound/textSynth";
 import { resumeAudioContext, unlockAudioContext } from "@/utils/soundSystem";
 import { MotionVariants, Transitions } from "@/styles/motion";
 
-// Typing animation constants
-const DEFAULT_MS_PER_CHAR = 50;
+// Improved timing constants for smooth animation and audio sync
+const CHAR_REVEAL_INTERVAL = 60; // ms per character (slightly slower for smoothness)
+const CHAR_ANIMATION_DELAY = 15; // ms delay between character animations
+const AUDIO_LEAD_TIME = 10; // ms to play audio before visual reveal
 
 export interface MessageBubbleProps {
   // Anchor relative to avatar head; we assume head at [0,2,0] in this scene
@@ -54,19 +56,19 @@ export const MessageBubble = memo(function MessageBubble({
   const options = activeMessage?.options;
 
   // Entry/Exit scale + opacity
-  // const [spring, api] = useSpring(() => ({
-  //   scale: 0,
-  //   opacity: 0,
-  //   config: { tension: 300, friction: 18 },
-  // }));
+  const [spring, api] = useSpring(() => ({
+    scale: 0,
+    opacity: 0,
+    config: { tension: 300, friction: 18 },
+  }));
 
-  // useEffect(() => {
-  //   if (activeMessage) {
-  //     api.start({ scale: 1, opacity: 1 });
-  //   } else {
-  //     api.start({ scale: 0, opacity: 0 });
-  //   }
-  // }, [!!activeMessage]);
+  useEffect(() => {
+    if (activeMessage) {
+      api.start({ scale: 1, opacity: 1 });
+    } else {
+      api.start({ scale: 0, opacity: 0 });
+    }
+  }, [!!activeMessage]);
 
   // Ensure synth is resumed when audio becomes active
   useEffect(() => {
@@ -147,8 +149,8 @@ export const MessageBubble = memo(function MessageBubble({
 
   // Allow per-character animation to visually settle before swapping to static text
   const calcSettleDelayMs = (text: string): number => {
-    // Char variants delay: i * 0.02s => ~20ms/char; add generous spring settle buffer
-    const lastCharExtra = Math.max(0, (text.length - 1) * 20); // ms
+    // Char variants delay: i * 0.015s => ~15ms/char; add generous spring settle buffer
+    const lastCharExtra = Math.max(0, (text.length - 1) * CHAR_ANIMATION_DELAY); // ms
     return Math.min(1800, Math.max(420, lastCharExtra + 420));
   };
 
@@ -202,78 +204,102 @@ export const MessageBubble = memo(function MessageBubble({
     addTypingBubble(activeMessage.config.id, 0, lines[0] ?? "");
   }, [activeMessage, lines.length]);
 
-  // RAF-driven per-character reveal for the current typing bubble
+  // Improved RAF-driven per-character reveal with better audio sync
   useEffect(() => {
     if (!activeMessage) return;
     const line = lines[lineIndex] ?? "";
     if (!typingKey) return;
+
     // Clear any running RAF
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     // Clear any pending blip timeouts
     blipTimeoutsRef.current.forEach((id) => clearTimeout(id));
     blipTimeoutsRef.current = [];
+
     setIsFullyTyped(false);
     setDisplayText(line);
     setRevealed(0);
     revealedRef.current = 0;
     skipRef.current = false;
-    let last = 0;
-    let acc = 0;
-    const per = options?.typingSpeedMs ?? DEFAULT_MS_PER_CHAR;
 
-    const loop = (t: number) => {
+    let startTime: number | null = null;
+    let audioScheduled = new Set<number>(); // Track which characters have audio scheduled
+
+    const loop = (currentTime: number) => {
+      if (!startTime) startTime = currentTime;
+
       if (skipRef.current) {
         setRevealed(line.length);
         revealedRef.current = line.length;
         setIsFullyTyped(true);
         return;
       }
-      const dt = last ? t - last : 0;
-      last = t;
-      acc += dt;
-      const toReveal = Math.min(line.length, Math.floor(acc / per));
-      if (toReveal > revealedRef.current) {
-        const delta = toReveal - revealedRef.current;
-        setRevealed(toReveal);
-        revealedRef.current = toReveal;
+
+      const elapsed = currentTime - startTime;
+      const shouldBeRevealed = Math.min(
+        line.length,
+        Math.floor(elapsed / CHAR_REVEAL_INTERVAL)
+      );
+
+      if (shouldBeRevealed > revealedRef.current) {
+        // Schedule audio for newly revealed characters
         if (
           cfg?.audioEnabled &&
           soundSystem.enabled &&
           soundSystem.masterVolume > 0
         ) {
-          // Stagger blips when multiple chars revealed in the same frame
-          const baseDelay = Math.max(16, Math.min(80, per * 0.5));
-          for (let i = 0; i < delta; i++) {
-            const timeoutId = window.setTimeout(() => {
-              try {
-                textSynth.resume();
-                // Ensure per-char sound length is slightly shorter than reveal period
-                const charDurMs = Math.max(100, Math.min(220, per * 0.9));
-                // Scale gain by master * text volume (fallback to 0.8)
-                const textVolume = (soundSystem as any).textVolume ?? 0.8;
-                const gainScale = Math.max(
-                  1.5,
-                  Math.min(
-                    1.2,
-                    (soundSystem.masterVolume || 0) * textVolume || 0
-                  )
-                );
-                textSynth.playCharBlip(charDurMs, gainScale || 0.2);
-              } catch {}
-            }, i * baseDelay) as unknown as number;
-            blipTimeoutsRef.current.push(timeoutId);
+          for (let i = revealedRef.current; i < shouldBeRevealed; i++) {
+            if (!audioScheduled.has(i)) {
+              audioScheduled.add(i);
+
+              // Calculate when this character's animation will start
+              const charAnimationStart = i * CHAR_ANIMATION_DELAY;
+              const audioDelay = Math.max(
+                0,
+                charAnimationStart - AUDIO_LEAD_TIME
+              );
+
+              const timeoutId = window.setTimeout(() => {
+                try {
+                  textSynth.resume();
+                  // Match audio duration to character animation timing
+                  const charDurMs = Math.min(200, CHAR_REVEAL_INTERVAL * 0.8);
+                  const textVolume = (soundSystem as any).textVolume ?? 0.8;
+                  const gainScale = Math.max(
+                    0.1,
+                    Math.min(
+                      0.6,
+                      (soundSystem.masterVolume || 0) * textVolume || 0
+                    )
+                  );
+                  textSynth.playCharBlip(charDurMs, gainScale);
+                } catch {}
+              }, audioDelay) as unknown as number;
+
+              blipTimeoutsRef.current.push(timeoutId);
+            }
           }
         }
-        if (toReveal === line.length) setIsFullyTyped(true);
+
+        setRevealed(shouldBeRevealed);
+        revealedRef.current = shouldBeRevealed;
+
+        if (shouldBeRevealed === line.length) {
+          setIsFullyTyped(true);
+          return;
+        }
       }
-      if (revealedRef.current < line.length)
+
+      if (revealedRef.current < line.length) {
         rafRef.current = requestAnimationFrame(loop);
+      }
     };
+
     rafRef.current = requestAnimationFrame(loop);
+
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
-      // Clear blip timeouts on effect cleanup
       blipTimeoutsRef.current.forEach((id) => clearTimeout(id));
       blipTimeoutsRef.current = [];
     };
@@ -359,6 +385,56 @@ export const MessageBubble = memo(function MessageBubble({
     }, settleMs) as unknown as number;
   }, [isFullyTyped, activeMessage, lineIndex, lines, typingKey]);
 
+  // Memoized character rendering for better performance
+  const memoizedCharacterRender = useMemo(() => {
+    if (!displayText) return null;
+
+    const content = displayText;
+    const tokens = content.split(/(\s+)/);
+    let idx = 0;
+    const out: any[] = [];
+
+    tokens.forEach((tok, t) => {
+      if (!tok) return;
+      if (/^\s+$/.test(tok)) {
+        for (let j = 0; j < tok.length; j++) {
+          const ch = tok[j];
+          if (ch === "\n") {
+            out.push(<br key={`br-${lineIndex}-${idx}`} />);
+          } else if (ch === " ") {
+            out.push(<Space key={`sp-${lineIndex}-${idx}`}> </Space>);
+          } else {
+            out.push(<Space key={`spx-${lineIndex}-${idx}`}>{ch}</Space>);
+          }
+          idx += 1;
+        }
+      } else {
+        const chars = Array.from(tok);
+        out.push(
+          <Word key={`w-${lineIndex}-${t}`}>
+            {chars.map((ch, k) => {
+              const thisIndex = idx + k;
+              return (
+                <Char
+                  key={`c-${lineIndex}-${thisIndex}`}
+                  initial="hidden"
+                  animate={thisIndex < revealed ? "visible" : "hidden"}
+                  variants={improvedCharVariants}
+                  custom={thisIndex}
+                >
+                  {ch}
+                </Char>
+              );
+            })}
+          </Word>
+        );
+        idx += chars.length;
+      }
+    });
+
+    return out;
+  }, [displayText, revealed, lineIndex]);
+
   if (!activeMessage || !cfg) return null;
 
   const onClickBubble = () => {
@@ -377,7 +453,7 @@ export const MessageBubble = memo(function MessageBubble({
   };
 
   const handleDismiss = () => {
-    // api.start({ scale: 0, opacity: 0 });
+    api.start({ scale: 0, opacity: 0 });
     // Allow exit spring to play briefly before swapping messages
     setTimeout(() => {
       // cleanup timers to avoid leaking into the next message
@@ -419,10 +495,7 @@ export const MessageBubble = memo(function MessageBubble({
   ];
 
   return (
-    <a.group
-      // scale={spring.scale as any}
-      position={position}
-    >
+    <a.group scale={spring.scale as any} position={position}>
       <Html
         style={{
           maxWidth: "min(92vw, 420px)",
@@ -432,16 +505,16 @@ export const MessageBubble = memo(function MessageBubble({
         }}
       >
         <Container
-        // style={{ opacity: spring.opacity as any }}
-        // onClick={onClickBubble}
-        // onPointerDown={() => {
-        //   try {
-        //     textSynth.resume();
-        //     // Help Safari/iOS policies by resuming/unlocking the primary context too
-        //     resumeAudioContext();
-        //     unlockAudioContext();
-        //   } catch {}
-        // }}
+          style={{ opacity: spring.opacity as any }}
+          onClick={onClickBubble}
+          onPointerDown={() => {
+            try {
+              textSynth.resume();
+              // Help Safari/iOS policies by resuming/unlocking the primary context too
+              resumeAudioContext();
+              unlockAudioContext();
+            } catch {}
+          }}
         >
           {cfg.label && <Label>{cfg.label}</Label>}
           <ThreadContainer as={motion.div} layoutRoot layout>
@@ -450,7 +523,7 @@ export const MessageBubble = memo(function MessageBubble({
                 <ThreadBubble
                   key={it.key}
                   layout="position"
-                  variants={MotionVariants.SlideUp}
+                  variants={improvedBubbleVariants}
                   initial={"initial"}
                   animate={"animate"}
                   exit={"exit"}
@@ -458,64 +531,7 @@ export const MessageBubble = memo(function MessageBubble({
                 >
                   <ThreadText>
                     {it.status === "typing" && typingKey === it.key
-                      ? (() => {
-                          const content = displayText ?? "";
-                          const tokens = content.split(/(\s+)/);
-                          let idx = 0;
-                          const out: any[] = [];
-                          tokens.forEach((tok, t) => {
-                            if (!tok) return;
-                            if (/^\s+$/.test(tok)) {
-                              for (let j = 0; j < tok.length; j++) {
-                                const ch = tok[j];
-                                if (ch === "\n") {
-                                  out.push(
-                                    <br key={`br-${lineIndex}-${idx}`} />
-                                  );
-                                } else if (ch === " ") {
-                                  out.push(
-                                    <Space key={`sp-${lineIndex}-${idx}`}>
-                                      {" "}
-                                    </Space>
-                                  );
-                                } else {
-                                  out.push(
-                                    <Space key={`spx-${lineIndex}-${idx}`}>
-                                      {ch}
-                                    </Space>
-                                  );
-                                }
-                                idx += 1;
-                              }
-                            } else {
-                              const chars = Array.from(tok);
-                              out.push(
-                                <Word key={`w-${lineIndex}-${t}`}>
-                                  {chars.map((ch, k) => {
-                                    const thisIndex = idx + k;
-                                    return (
-                                      <Char
-                                        key={`c-${lineIndex}-${thisIndex}`}
-                                        initial="hidden"
-                                        animate={
-                                          thisIndex < revealed
-                                            ? "visible"
-                                            : "hidden"
-                                        }
-                                        variants={charVariants}
-                                        custom={thisIndex}
-                                      >
-                                        {ch}
-                                      </Char>
-                                    );
-                                  })}
-                                </Word>
-                              );
-                              idx += chars.length;
-                            }
-                          });
-                          return out;
-                        })()
+                      ? memoizedCharacterRender
                       : it.text}
                   </ThreadText>
                   <TimeTag>
@@ -568,24 +584,6 @@ const Label = styled.div`
   margin-bottom: 2px;
 `;
 
-const Bubble = styled.div`
-  position: relative;
-  background: var(--primary-color);
-  color: var(--text-color);
-  border-radius: 16px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
-  padding: 12px 16px;
-  min-width: 200px;
-  max-width: 360px;
-  overflow-wrap: normal;
-  word-break: keep-all;
-  white-space: normal;
-  @media (max-width: 480px) {
-    max-width: 86vw;
-  }
-`;
-
 const ThreadBubble = styled(motion.div)`
   position: relative;
   background: var(--primary-color);
@@ -601,9 +599,6 @@ const ThreadBubble = styled(motion.div)`
 
   display: inline-flex;
   align-self: center;
-  /* max-width: 560px;
-  width: 100%;*/
-  /* min-width: 48px; */
 ` as any;
 
 const ThreadText = styled.div`
@@ -611,13 +606,6 @@ const ThreadText = styled.div`
   line-height: 1.35;
   display: inline;
   white-space: pre-wrap;
-  /* white-space: nowrap; */
-`;
-
-const Text = styled.div`
-  font-size: 16px;
-  line-height: 1.4;
-  color: var(--text-color);
 `;
 
 const Space = styled.span`
@@ -632,26 +620,60 @@ const Word = styled.span`
 const Char = styled(motion.span)`
   display: inline-block;
   will-change: transform, opacity;
+  transform-origin: center bottom;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 ` as any;
 
-const charVariants = {
+// Improved character animation variants with smoother transitions
+const improvedCharVariants = {
   hidden: {
     opacity: 0,
-    scale: 0.6,
-    rotateX: -90,
+    scale: 0.5,
+    y: 8,
+    rotateX: -45,
   },
   visible: (i: number) => ({
     opacity: 1,
-    scale: [1.1, 1],
-    rotateX: [10, 0],
+    scale: 1,
+    y: 0,
+    rotateX: 0,
     transition: {
-      delay: i * 0.02,
+      delay: i * (CHAR_ANIMATION_DELAY / 1000), // Convert to seconds
       type: "spring",
-      stiffness: 500,
-      damping: 24,
-      mass: 0.4,
+      stiffness: 400 + (Math.random() - 0.5) * 100, // Add randomness for organic feel
+      damping: 25,
+      mass: 0.3,
     },
   }),
+};
+
+// Improved bubble entrance/exit animations
+const improvedBubbleVariants = {
+  initial: {
+    opacity: 0,
+    scale: 0.8,
+    y: 20,
+  },
+  animate: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 300,
+      damping: 20,
+      mass: 0.5,
+    },
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.9,
+    y: -10,
+    transition: {
+      duration: 0.3,
+      ease: "easeInOut",
+    },
+  },
 };
 
 const TimeTag = styled.div`
@@ -661,8 +683,6 @@ const TimeTag = styled.div`
   font-size: 12px;
   opacity: 0.8;
 `;
-
-// Remove legacy typewriter cursor
 
 const Close = styled.button`
   position: absolute;
