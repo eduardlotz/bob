@@ -158,9 +158,11 @@ export class StoreMigration {
             : `Successfully migrated ${migratedCount} stores to IndexedDB`;
 
         if (failedCount > 0) {
-          toast.warning(message);
+          // toast.warning(message);
+          console.warn(message);
         } else {
-          toast.success(message);
+          // toast.success(message);
+          console.log(message);
         }
         console.log(
           `Migration completed: ${migratedCount} stores migrated, ${failedCount} failed`

@@ -443,10 +443,11 @@ export const createIndexedDBStorage = <T extends unknown>() => ({
 export const clearAllStores = async (): Promise<void> => {
   try {
     await persistenceManager.clear();
-    toast.success("All stores cleared successfully");
+    // toast.success("All stores cleared successfully");
+    console.log("All stores cleared successfully");
   } catch (error) {
     console.error("Failed to clear stores:", error);
-    toast.error("Failed to clear stores");
+    // toast.error("Failed to clear stores");
   }
 };
 

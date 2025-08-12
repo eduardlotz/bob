@@ -57,7 +57,7 @@ export const MigrationDebugger: React.FC = () => {
   const handleClearData = async () => {
     try {
       await clearAllData();
-      toast.success("All data cleared");
+      console.log("All data cleared");
       // Refresh status
       setMigrationStatus(getMigrationStatus());
     } catch (error) {

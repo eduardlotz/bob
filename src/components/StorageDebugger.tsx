@@ -65,10 +65,11 @@ export const StorageDebugger: React.FC = () => {
     try {
       await clearAllData();
       updateStorageInfo();
-      toast.success("All data cleared");
+      // toast.success("All data cleared");
+      console.log("All data cleared");
     } catch (error) {
       console.error("Clear failed:", error);
-      toast.error("Failed to clear data");
+      // toast.error("Failed to clear data");
     } finally {
       setIsLoading(false);
     }
