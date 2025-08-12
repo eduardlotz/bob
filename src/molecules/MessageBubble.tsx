@@ -744,25 +744,23 @@ const QueueIndicator = styled(motion.div)`
   margin-top: 4px;
 `;
 
-// Enhanced animation variants
+// enhanced animation variants
 const improvedCharVariants: Variants = {
   hidden: {
     opacity: 0,
     scale: 0.7,
-    y: 6,
-    rotate: -20,
+    rotate: -12,
   },
   visible: (i: number) => ({
     opacity: 1,
     scale: 1,
-    y: 0,
     rotate: 0,
     transition: {
       delay: i * (CHAR_ANIMATION_DELAY / 1000),
       type: "spring" as const,
-      stiffness: 450 + (Math.random() - 0.5) * 100,
-      damping: 22,
-      mass: 0.25,
+      stiffness: 460,
+      damping: 20,
+      mass: 0.22,
     },
   }),
 };
