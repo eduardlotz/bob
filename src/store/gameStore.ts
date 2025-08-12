@@ -390,6 +390,7 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
     migratedState.decorations = initialDecorations;
 
     migratedState.soundSystem = { ...migratedState.soundSystem, textVolume: 1 };
+    migratedState.upgrades = initialUpgrades;
 
     currentVersion = GAME_STORE_VERSIONS.V17;
   }

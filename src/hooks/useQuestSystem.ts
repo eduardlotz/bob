@@ -88,7 +88,7 @@ export const useQuestSystem = () => {
         triggerConfetti();
 
         // Show success toast
-        toast.success(`Quest completed! +${quest.reward} taps`, {
+        toast.success(`Quest erledigt! +${quest.reward} taps erhalten`, {
           description: quest.title,
           duration: 3000,
         });

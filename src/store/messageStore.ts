@@ -74,6 +74,7 @@ export interface MessageStoreState {
   resumeSystem: () => void;
   clearQueue: () => void;
   getQueueLength: () => number;
+  getNextQueuedId: () => string | null;
 
   // Enhanced queue management
   reorderQueue: (fromIndex: number, toIndex: number) => void;
@@ -129,19 +130,20 @@ const canShowMessage = (
     .exhaustive();
 };
 
-// Enhanced minimum display time calculation with bounds checking
+// minimum display time tuned to be shorter than reading, no dependency on typing speed
 const calculateMinimumDisplayTime = (
   config: MessageConfig,
   options: Required<MessageOptions>
 ): number => {
-  const contentLength = Math.max(0, config.lines?.join(" ").length || 0);
-  const typingTime = contentLength * Math.max(1, options.typingSpeedMs);
-  const readingTime = contentLength * 50; // ~200 WPM reading speed
-
-  const minDisplay = Math.max(1000, options.minimumDisplayMs || 2000);
-  const calculatedTime = typingTime + Math.max(2000, readingTime * 0.5);
-
-  return Math.min(60000, Math.max(minDisplay, calculatedTime)); // Cap at 60s
+  const text = Array.isArray(config.text)
+    ? config.text.join(" ")
+    : String(config.text ?? "");
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const perWordMs = 240; // ~250ms/word, slightly faster to avoid blocking
+  const readingMs = Math.max(800, Math.round(words * perWordMs + 250));
+  const minDisplay = Math.max(800, options.minimumDisplayMs || 1200);
+  const total = Math.max(minDisplay, readingMs);
+  return Math.min(15000, total); // cap at 15s
 };
 
 // Enhanced queue insertion with duplicate prevention
@@ -464,6 +466,9 @@ export const useMessageStore = create<MessageStoreState>()(
           }),
 
         getQueueLength: () => get().queue.length,
+
+        getNextQueuedId: () =>
+          (get().queue[0]?.id as string | undefined) ?? null,
 
         reorderQueue: (fromIndex: number, toIndex: number) => {
           const state = get();

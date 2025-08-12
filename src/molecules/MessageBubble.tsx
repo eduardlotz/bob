@@ -11,11 +11,11 @@ import { resumeAudioContext, unlockAudioContext } from "@/utils/soundSystem";
 import { MotionVariants, Transitions } from "@/styles/motion";
 
 // Enhanced timing constants
-const CHAR_REVEAL_INTERVAL = 50; // Slightly faster for better flow
-const CHAR_ANIMATION_DELAY = 12; // Reduced for smoother sequences
+const CHAR_REVEAL_INTERVAL = 24; // default ms/char fallback (fast)
+const CHAR_ANIMATION_DELAY = 10; // per-char stagger
 const AUDIO_LEAD_TIME = 8;
-const LINE_PAUSE_MS = 800; // Pause between lines in same message
-const MESSAGE_TRANSITION_MS = 300; // Time between different messages
+const LINE_PAUSE_MS = 600; // shorter pause between lines
+const MESSAGE_TRANSITION_MS = 220; // faster message transition
 
 export interface MessageBubbleProps {
   anchor?: [number, number, number];
@@ -63,6 +63,13 @@ export const MessageBubble = memo(function MessageBubble({
   const rafRef = useRef<number | null>(null);
   const audioScheduleRef = useRef<Map<string, Set<number>>>(new Map());
   const isUnmountingRef = useRef(false);
+  const hardDismissTimerRef = useRef<number | null>(null);
+  // keep latest lines and completion handler in refs to avoid stale closures in timers/RAF
+  const linesRef = useRef<LineState[]>([]);
+  const completeTypingLineRef = useRef<(line: LineState) => void>(() => {});
+  useEffect(() => {
+    linesRef.current = lines;
+  }, [lines]);
 
   // Entry/Exit animations
   const [spring, api] = useSpring(() => ({
@@ -102,6 +109,10 @@ export const MessageBubble = memo(function MessageBubble({
         rafRef.current = null;
       }
       audioScheduleRef.current.clear();
+      if (hardDismissTimerRef.current) {
+        clearTimer(hardDismissTimerRef.current);
+        hardDismissTimerRef.current = null;
+      }
     };
   }, [clearTimer]);
 
@@ -120,14 +131,16 @@ export const MessageBubble = memo(function MessageBubble({
   // Calculate reading time for auto-advance
   const calculateReadingTime = useCallback(
     (text: string, options: any): number => {
-      const baseDismiss = options?.baseDismissMs ?? 1400;
-      const lengthFactor = options?.contentLengthFactorMs ?? 44;
+      const baseDismiss = options?.baseDismissMs ?? 1000;
+      const lengthFactor = options?.contentLengthFactorMs ?? 35;
       const optionBasedMs = baseDismiss + text.length * lengthFactor;
 
-      // Reading speed calculation (220 WPM)
+      // reading speed calculation (~240 WPM)
       const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-      const readingMs = Math.max(1000, Math.round(words * 273 + 500));
+      const perWordMs = 250; // ~240wpm
+      const readingMs = Math.max(800, Math.round(words * perWordMs + 250));
 
+      // choose the larger to be safe but both are tuned faster than before
       return Math.max(optionBasedMs, readingMs);
     },
     []
@@ -136,10 +149,9 @@ export const MessageBubble = memo(function MessageBubble({
   // Handle new message activation
   useEffect(() => {
     if (!activeMessage) {
-      // Clear everything when no active message
+      // no active message; hide bubble but keep thread state until all items auto-remove
       api.start({ scale: 0, opacity: 0 });
       addTimer(() => {
-        setLines([]);
         setCurrentSession(null);
         setIsProcessingQueue(false);
       }, 200);
@@ -174,12 +186,32 @@ export const MessageBubble = memo(function MessageBubble({
       revealedChars: 0,
     }));
 
-    setLines(initialLines);
+    // append new message lines to the thread instead of resetting
+    setLines((prev) => [...prev, ...initialLines]);
 
     // Start first line immediately
     addTimer(() => {
       startTypingLine(initialLines[0]);
-    }, 100);
+    }, 60);
+
+    // schedule a hard fallback auto-dismiss based on total reading time
+    const totalReadingMs = messageLines.reduce((sum, text) => {
+      return (
+        sum + calculateReadingTime(text, activeMessage.options) + LINE_PAUSE_MS
+      );
+    }, 0);
+    if (hardDismissTimerRef.current) {
+      clearTimer(hardDismissTimerRef.current);
+      hardDismissTimerRef.current = null;
+    }
+    hardDismissTimerRef.current = addTimer(async () => {
+      const current = useMessageStore.getState().activeMessage;
+      if (current && current.config.id === activeMessage.config.id) {
+        try {
+          await dismissMessage(true);
+        } catch {}
+      }
+    }, Math.max(5000, totalReadingMs + 1500));
   }, [activeMessage?.config.id, parseMessageLines, api, addTimer]);
 
   // Audio system initialization
@@ -207,6 +239,13 @@ export const MessageBubble = memo(function MessageBubble({
       );
 
       const text = lineState.text;
+      // derive per-message typing cadence from config with sensible defaults
+      const typingMsPerChar = Math.max(
+        10,
+        activeMessage?.options?.typingSpeedMs ?? CHAR_REVEAL_INTERVAL
+      );
+      const revealIntervalMs = typingMsPerChar; // ms per character
+      const charAnimDelayMs = Math.max(8, Math.round(revealIntervalMs * 0.25));
       const audioScheduled = new Set<number>();
       audioScheduleRef.current.set(lineState.id, audioScheduled);
 
@@ -221,7 +260,7 @@ export const MessageBubble = memo(function MessageBubble({
         const elapsed = currentTime - startTime;
         const shouldBeRevealed = Math.min(
           text.length,
-          Math.floor(elapsed / CHAR_REVEAL_INTERVAL)
+          Math.floor(elapsed / revealIntervalMs)
         );
 
         // Update revealed characters
@@ -242,12 +281,15 @@ export const MessageBubble = memo(function MessageBubble({
 
                 const audioDelay = Math.max(
                   0,
-                  i * CHAR_ANIMATION_DELAY - AUDIO_LEAD_TIME
+                  i * charAnimDelayMs - AUDIO_LEAD_TIME
                 );
                 addTimer(() => {
                   try {
                     textSynth.resume();
-                    const duration = Math.min(180, CHAR_REVEAL_INTERVAL * 0.8);
+                    const duration = Math.min(
+                      180,
+                      Math.round(revealIntervalMs * 0.8)
+                    );
                     const volume = Math.max(
                       0.1,
                       Math.min(
@@ -273,13 +315,13 @@ export const MessageBubble = memo(function MessageBubble({
           rafRef.current = requestAnimationFrame(typeLoop);
         } else {
           // Line completed
-          completeTypingLine(lineState);
+          completeTypingLineRef.current(lineState);
         }
       };
 
       rafRef.current = requestAnimationFrame(typeLoop);
     },
-    [soundSystem, addTimer]
+    [soundSystem, addTimer, activeMessage?.options?.typingSpeedMs]
   );
 
   // Complete typing for a line and handle next actions
@@ -287,7 +329,7 @@ export const MessageBubble = memo(function MessageBubble({
     (lineState: LineState) => {
       if (isUnmountingRef.current) return;
 
-      // Mark line as complete
+      // Mark line as complete and schedule its removal after reading time
       setLines((prev) =>
         prev.map((line) =>
           line.id === lineState.id
@@ -295,6 +337,13 @@ export const MessageBubble = memo(function MessageBubble({
             : line
         )
       );
+      const lineReadingMs = calculateReadingTime(
+        lineState.text,
+        activeMessage?.options
+      );
+      addTimer(() => {
+        setLines((prev) => prev.filter((l) => l.id !== lineState.id));
+      }, Math.max(900, lineReadingMs));
 
       const session = currentSession;
       if (!session || session.messageId !== lineState.messageId) return;
@@ -312,32 +361,72 @@ export const MessageBubble = memo(function MessageBubble({
         // Schedule message dismissal
         const message = activeMessage;
         if (message) {
-          const readingTime = calculateReadingTime(
+          // prefer explicit delay if present, otherwise use reading time of whole message as faster default
+          const wholeText = parseMessageLines(message).join(" ");
+          const readingTimeWhole = calculateReadingTime(
+            wholeText,
+            message.options
+          );
+          const readingTimeLast = calculateReadingTime(
             lineState.text,
             message.options
           );
-          const dismissDelay = message.config.nextDelayMs ?? readingTime;
+          const fallbackDelay = Math.max(
+            300,
+            Math.min(
+              1500,
+              Math.max(
+                Math.floor(readingTimeWhole * 0.5),
+                Math.floor(readingTimeLast * 0.5)
+              )
+            )
+          );
+          const baseDelay =
+            typeof message.config.nextDelayMs === "number"
+              ? Math.max(200, message.config.nextDelayMs)
+              : fallbackDelay;
 
           addTimer(() => {
-            handleMessageDismissal();
-          }, Math.max(2000, dismissDelay));
+            // quick motion exit, then dismiss
+            api.start({ scale: 0.95, opacity: 0 });
+            addTimer(() => handleMessageDismissal(), 160);
+          }, baseDelay);
         }
       } else {
-        // Schedule next line
+        // Schedule next line. If 4 visible lines are already used, remove the oldest with exit then add next.
         addTimer(() => {
           const nextLineIndex = lineState.lineIndex + 1;
           setCurrentSession((prev) =>
             prev ? { ...prev, currentLineIndex: nextLineIndex } : null
           );
 
-          const nextLine = lines.find(
+          const nextLine = linesRef.current.find(
             (l) =>
               l.messageId === lineState.messageId &&
               l.lineIndex === nextLineIndex
           );
 
           if (nextLine) {
-            startTypingLine(nextLine);
+            const currentVisible = linesRef.current.filter(
+              (l) => l.status === "typing" || l.status === "complete"
+            );
+            if (currentVisible.length >= 4) {
+              // animate-out oldest visible line before starting next
+              const oldest = currentVisible[0];
+              setLines((prev) =>
+                prev.map((l) =>
+                  l.id === oldest.id ? { ...l, status: "removing" } : l
+                )
+              );
+              api.start({ scale: 0.98 });
+              addTimer(() => {
+                setLines((prev) => prev.filter((l) => l.id !== oldest.id));
+                api.start({ scale: 1 });
+                startTypingLine(nextLine);
+              }, 160);
+            } else {
+              startTypingLine(nextLine);
+            }
           }
         }, LINE_PAUSE_MS);
       }
@@ -351,6 +440,11 @@ export const MessageBubble = memo(function MessageBubble({
       addTimer,
     ]
   );
+
+  // sync latest completion handler to ref
+  useEffect(() => {
+    completeTypingLineRef.current = completeTypingLine;
+  }, [completeTypingLine]);
 
   // Handle message dismissal with queue processing
   const handleMessageDismissal = useCallback(async () => {
@@ -505,9 +599,9 @@ export const MessageBubble = memo(function MessageBubble({
     anchor[2] + offset[2],
   ];
 
-  const visibleLines = lines.filter(
-    (line) => line.status === "typing" || line.status === "complete"
-  );
+  const visibleLines = lines
+    .filter((line) => line.status === "typing" || line.status === "complete")
+    .slice(-4);
 
   return (
     <a.group scale={spring.scale as any} position={position}>
@@ -551,15 +645,17 @@ export const MessageBubble = memo(function MessageBubble({
           </ThreadContainer>
 
           {/* Queue indicator */}
-          {isProcessingQueue && getQueueLength() > 0 && (
-            <QueueIndicator
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-            >
-              +{getQueueLength()} queued
-            </QueueIndicator>
-          )}
+          {isProcessingQueue &&
+            visibleLines.length >= 4 &&
+            getQueueLength() > 0 && (
+              <QueueIndicator
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+              >
+                +{getQueueLength()} queued
+              </QueueIndicator>
+            )}
         </Container>
       </Html>
     </a.group>

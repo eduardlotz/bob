@@ -455,9 +455,9 @@ function EffectsView() {
 
   return (
     <EffectsContainer>
-      <SectionTitle>Tap Effects</SectionTitle>
+      <SectionTitle>Tap Effekte</SectionTitle>
       <ToggleRow>
-        <ToggleLabel>Enable Tap Sound</ToggleLabel>
+        <ToggleLabel>Sound aktivieren</ToggleLabel>
         <ToggleSwitch
           onClick={() => {
             const next = !(soundSystem.tapEnabled !== false);
@@ -466,7 +466,7 @@ function EffectsView() {
           }}
           $active={soundSystem.tapEnabled !== false}
         >
-          {soundSystem.tapEnabled !== false ? "ON" : "OFF"}
+          {soundSystem.tapEnabled !== false ? "JA" : "NEIN"}
         </ToggleSwitch>
       </ToggleRow>
 
