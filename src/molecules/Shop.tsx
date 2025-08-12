@@ -30,19 +30,33 @@ import {
 } from "@/layout/atoms";
 import { THEME_IDS } from "@/store/themeConfig";
 import { useKeyPress } from "@/hooks/useKeyPress";
+import { DecorationIcon } from "@/icons/decoration";
 
 interface ShopProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type ShopTab = "themes" | "effects" | "environment" | "pages" | "dev";
+type ShopTab =
+  | "themes"
+  | "effects"
+  | "environment"
+  | "decorations"
+  | "pages"
+  | "dev";
 
 export function Shop({ isOpen, onClose }: ShopProps) {
   const [activeTab, setActiveTab] = useState<ShopTab>("pages");
   const sound = useSoundSystem();
-  const { themes, upgrades, routes, taps, calculateOfflineTaps, addTaps } =
-    useGameStore();
+  const {
+    decorations,
+    themes,
+    upgrades,
+    routes,
+    taps,
+    calculateOfflineTaps,
+    addTaps,
+  } = useGameStore();
   // const isDevMode = process.env.NODE_ENV === "development";
   const isDevMode = true; // Force dev mode for testing
 
@@ -92,6 +106,13 @@ export function Shop({ isOpen, onClose }: ShopProps) {
       progress:
         upgrades.filter((u) => u.category === "environment" && u.unlocked)
           .length / upgrades.filter((u) => u.category === "environment").length,
+    },
+    {
+      id: "decorations" as ShopTab,
+      name: "Dekorationen",
+      icon: DecorationIcon,
+      progress:
+        decorations.filter((d) => d.purchased).length / decorations.length,
     },
     ...(isDevMode
       ? [
@@ -200,6 +221,17 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                         transition={{ duration: 0.15, ease: "easeOut" }}
                       >
                         <RoutesView />
+                      </motion.div>
+                    )}
+                    {activeTab === "decorations" && (
+                      <motion.div
+                        key="decorations"
+                        animate={{ opacity: 1 }}
+                        initial={{ opacity: 0 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15, ease: "easeOut" }}
+                      >
+                        <DecorationsView />
                       </motion.div>
                     )}
                     {activeTab === "dev" && (
@@ -377,11 +409,14 @@ function ThemesView() {
                   />
                 </ThemePreview>
                 <ThemeName>{theme.name}</ThemeName>
-                <ThemeStatus $purchased={theme.purchased}>
+                <ThemeStatus
+                  $enabled={currentTheme?.id === theme.id}
+                  $purchased={theme.purchased}
+                >
                   {theme.purchased
                     ? currentTheme?.id === theme.id
-                      ? "Active"
-                      : "Available"
+                      ? "Aktiv"
+                      : "Aktiveren"
                     : `${theme.cost} taps`}
                 </ThemeStatus>
               </ThemeCard>
@@ -407,6 +442,7 @@ function EffectsView() {
     const effect = tapEffects.find((e) => e.id === effectId);
     if (effect && effect.unlocked) {
       selectTapEffect(effectId);
+      engineSetCurrentTapSound(effectId);
     }
   };
 
@@ -419,9 +455,9 @@ function EffectsView() {
 
   return (
     <EffectsContainer>
-      <SectionTitle>Tap Effects</SectionTitle>
+      <SectionTitle>Tap Effekte</SectionTitle>
       <ToggleRow>
-        <ToggleLabel>Enable Tap Sound</ToggleLabel>
+        <ToggleLabel>Sound aktivieren</ToggleLabel>
         <ToggleSwitch
           onClick={() => {
             const next = !(soundSystem.tapEnabled !== false);
@@ -430,7 +466,7 @@ function EffectsView() {
           }}
           $active={soundSystem.tapEnabled !== false}
         >
-          {soundSystem.tapEnabled !== false ? "ON" : "OFF"}
+          {soundSystem.tapEnabled !== false ? "JA" : "NEIN"}
         </ToggleSwitch>
       </ToggleRow>
 
@@ -453,8 +489,8 @@ function EffectsView() {
             <EffectStatus $unlocked={effect.unlocked}>
               {effect.unlocked
                 ? effect.selected
-                  ? "Selected"
-                  : "Available"
+                  ? "Aktiv"
+                  : "Aktiveren"
                 : `${effect.baseCost} taps`}
             </EffectStatus>
           </EffectCard>
@@ -495,22 +531,8 @@ function EnvironmentView() {
 
   return (
     <EnvironmentContainer>
-      <SectionTitle>World</SectionTitle>
-      <ToggleRow>
-        <ToggleLabel>Enable Music</ToggleLabel>
-        <ToggleSwitch
-          onClick={() => {
-            const next = !(soundSystem.worldEnabled !== false);
-            setWorldEnabled(next);
-            engineSetWorldEnabled(next);
-            // No primary/secondary: when enabling, resume layers via hook logic
-          }}
-          $active={soundSystem.worldEnabled !== false}
-        >
-          {soundSystem.worldEnabled !== false ? "ON" : "OFF"}
-        </ToggleSwitch>
-      </ToggleRow>
-      <SectionSubtitle>Weather Effects</SectionSubtitle>
+      <SectionTitle>Umwelt & Sound</SectionTitle>
+      <SectionSubtitle>Umgebungseffekte</SectionSubtitle>
       <EnvironmentGrid>
         {environmentEffects.map((effect) => (
           <EnvironmentCard
@@ -529,14 +551,28 @@ function EnvironmentView() {
             <EnvironmentStatus $unlocked={effect.unlocked}>
               {effect.unlocked
                 ? effect.selected
-                  ? "Selected"
-                  : "Available"
+                  ? "Aktiv"
+                  : "Aktiveren"
                 : `${effect.baseCost} taps`}
             </EnvironmentStatus>
           </EnvironmentCard>
         ))}
       </EnvironmentGrid>
-      <SectionSubtitle>Music</SectionSubtitle>
+      <SectionSubtitle>Musik & Sounds</SectionSubtitle>
+      <ToggleRow>
+        <ToggleLabel>Sound aktivieren</ToggleLabel>
+        <ToggleSwitch
+          onClick={() => {
+            const next = !(soundSystem.worldEnabled !== false);
+            setWorldEnabled(next);
+            engineSetWorldEnabled(next);
+            // No primary/secondary: when enabling, resume layers via hook logic
+          }}
+          $active={soundSystem.worldEnabled !== false}
+        >
+          {soundSystem.worldEnabled !== false ? "JA" : "NEIN"}
+        </ToggleSwitch>
+      </ToggleRow>
       <EnvironmentGrid>
         {WORLD_SOUNDS.map((track) => {
           const isLayered = (audioSelections.worldSoundIds || []).includes(
@@ -586,7 +622,7 @@ function EnvironmentView() {
               <EnvironmentIcon>{track.icon}</EnvironmentIcon>
               <EnvironmentName>{track.name}</EnvironmentName>
               <EnvironmentStatus $unlocked={true}>
-                {isLayered ? "Layered" : "Available"}
+                {isLayered ? "Aktiv" : "Aktiveren"}
               </EnvironmentStatus>
             </EnvironmentCard>
           );
@@ -636,7 +672,62 @@ function RoutesView() {
                   {route.cost} taps
                 </div>
               </div>
-              <ThemeStatus $purchased={route.purchased}></ThemeStatus>
+              <ThemeStatus
+                $enabled={route.purchased}
+                $purchased={route.purchased}
+              ></ThemeStatus>
+            </ThemeCard>
+          ))}
+        </ItemsGrid>
+      </ThemesSection>
+    </ThemesContainer>
+  );
+}
+
+function DecorationsView() {
+  const { decorations, purchaseDecoration, canAfford, toggleDecoration } =
+    useGameStore();
+
+  const handleDecorationPurchase = (decorationId: string) => {
+    const decoration = decorations.find((d) => d.id === decorationId);
+    if (decoration && !decoration.purchased && canAfford(decoration.cost)) {
+      purchaseDecoration(decorationId);
+      return;
+    }
+
+    if (decoration && decoration.purchased) {
+      toggleDecoration(decorationId);
+    }
+  };
+
+  return (
+    <ThemesContainer>
+      <ThemesSection>
+        <SectionTitle>Dekorationen</SectionTitle>
+        <ItemsGrid>
+          {decorations.map((decoration) => (
+            <ThemeCard
+              key={decoration.id}
+              $selected={decoration.enabled}
+              $purchased={decoration.purchased}
+              $canAfford={canAfford(decoration.cost)}
+              onClick={() => handleDecorationPurchase(decoration.id)}
+              role="button"
+            >
+              <div style={{ fontSize: "32px" }}>{decoration.icon}</div>
+              <ThemeName>{decoration.name}</ThemeName>
+              <ThemeDescription>{decoration.description}</ThemeDescription>
+
+              <ThemeStatus
+                $purchased={decoration.purchased}
+                $enabled={decoration.enabled}
+              >
+                {decoration.purchased
+                  ? decoration.enabled
+                    ? "Aktiv"
+                    : "Aktiveren"
+                  : `${decoration.cost} taps`}
+              </ThemeStatus>
             </ThemeCard>
           ))}
         </ItemsGrid>
@@ -922,11 +1013,9 @@ const ThemeCard = styled.button<{
   gap: 8px;
   padding: 12px 40px;
   border-radius: 12px;
-  cursor: ${(p) => (p.$canAfford ? "pointer" : "not-allowed")};
+  cursor: ${(p) => (p.$canAfford && !p.$purchased ? "pointer" : "not-allowed")};
   transition: all 0.2s;
-  border: 2px solid
-    ${(props) =>
-      props.$selected && props.$canAfford ? "#ffffff" : "transparent"};
+  border: 2px solid ${(props) => (props.$selected ? "#ffffff" : "transparent")};
   background: ${(props) =>
     props.$selected
       ? "rgba(255, 255, 255, 0.1)"
@@ -973,9 +1062,10 @@ const ThemeDescription = styled.div`
   text-wrap: balance;
 `;
 
-const ThemeStatus = styled.div<{ $purchased: boolean }>`
+const ThemeStatus = styled.div<{ $purchased: boolean; $enabled: boolean }>`
   font-size: 10px;
-  color: ${(props) => (props.$purchased ? "#4CAF50" : "#FF9800")};
+  color: ${(props) =>
+    props.$purchased ? (props.$enabled ? "#4CAF50" : "#FF9800") : "#FF9800"};
   text-align: center;
   font-weight: 500;
 `;
@@ -1066,7 +1156,8 @@ const EffectsContainer = styled.div`
 const ToggleRow = styled.div`
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 16px;
 `;
 
 const ToggleLabel = styled.div`

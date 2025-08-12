@@ -1,10 +1,14 @@
-import { Float } from "@react-three/drei";
 import { useGameStore } from "@/store/gameStore";
 import { ROUTE_PATHS } from "@/store";
 import { useCallback, useEffect } from "react";
 import { InteractiveObject } from "./InteractiveObject";
 import { useDialogStore } from "@/store/dialogStore";
 import { useNavigate } from "react-router-dom";
+import { useSpring } from "@react-spring/three";
+import { DeskModel } from "@/3d-objects/models/desk";
+import { MacbookModel } from "@/3d-objects/models/macbook";
+import { FLOOR_Y_POSITION } from "./Scene";
+import { BookshelfModel } from "@/3d-objects/models/bookshelf";
 
 export function AboutScene() {
   const { checkUnlockedRoutes } = useGameStore();
@@ -19,64 +23,37 @@ export function AboutScene() {
     }
   }, [isAllowedToAcces]);
 
+  const [spring, api] = useSpring(() => ({
+    scale: 1,
+    config: { tension: 300, friction: 15 },
+  }));
+
+  useEffect(() => {
+    api.start({
+      scale: 1,
+      config: { mass: 0.5, tension: 300, friction: 10 },
+    });
+  }, []);
+
   // Dialog content for different objects
   const getDialogContent = useCallback((objectId: string) => {
     switch (objectId) {
-      case "chair":
+      case "desk":
         return (
           <div>
-            <p>
-              This chair represents my journey in web development. It's where I
-              spend countless hours coding, learning, and creating.
-            </p>
-            <p>
-              From my first "Hello World" to building complex applications,
-              every project has been a step forward in my career.
-            </p>
-            <p>
-              I believe in creating comfortable, accessible, and beautiful user
-              experiences - just like a well-designed chair.
-            </p>
+            <p>Hier kommen noch infos hin</p>
+            <p>irgendwann mal</p>
           </div>
         );
-      case "sun":
+      case "books":
         return (
           <div>
-            <p>
-              The sun represents my passion for innovation and growth. It
-              symbolizes the energy I bring to every project.
-            </p>
-            <p>
-              Just as the sun provides light and warmth, I strive to bring
-              clarity and warmth to my work and collaborations.
-            </p>
-            <p>
-              I'm constantly learning and evolving, always seeking to shine
-              brighter and help others grow.
-            </p>
-          </div>
-        );
-      case "lamp":
-        return (
-          <div>
-            <p>
-              This lamp represents my approach to problem-solving. I illuminate
-              complex challenges with clear, elegant solutions.
-            </p>
-            <p>
-              Like a lamp that guides the way, I help teams navigate technical
-              challenges and find the best path forward.
-            </p>
-            <p>
-              I believe in shedding light on opportunities and making the
-              impossible possible.
-            </p>
+            <p>Hier findest du ein paar Bücher, die ich mag</p>
+            <p>(irgendwann wenn's fertig ist)</p>
           </div>
         );
       default:
-        return (
-          <p>This object represents my journey and passion for technology.</p>
-        );
+        return <p>Lorem Ipsum dolor sit amet?</p>;
     }
   }, []);
 
@@ -92,51 +69,34 @@ export function AboutScene() {
 
   return (
     <group>
-      <Float speed={1.5} rotationIntensity={0.5} floatIntensity={0.5}>
-        <InteractiveObject
-          position={[-4, -1, -8]}
+      <InteractiveObject
+        questAction="click_desk"
+        questValue={30}
+        onDialogOpen={() => handleObjectClick("desk")}
+      >
+        <DeskModel
+          position={[-3, FLOOR_Y_POSITION + 1.2, 0]}
           rotation={[0, 0, 0]}
-          scale={[1.2, 1.2, 1.2]}
-          questAction="click_chair"
-          questValue={30}
-          onDialogOpen={() => handleObjectClick("chair")}
-        >
-          <boxGeometry args={[1, 1, 1]} />
-          <meshStandardMaterial color="#8B4513" />
-        </InteractiveObject>
-      </Float>
+          scale={[2, 2, 2]}
+        />
 
-      <Float speed={1.5} rotationIntensity={0.5} floatIntensity={0.5}>
-        <InteractiveObject
-          position={[4, 2, -8]}
-          rotation={[0, 0, 0]}
-          scale={[1.5, 1.5, 1.5]}
-          questAction="click_sun"
-          questValue={25}
-          onDialogOpen={() => handleObjectClick("sun")}
-        >
-          <sphereGeometry args={[0.8, 32, 32]} />
-          <meshStandardMaterial
-            color="#FFD700"
-            emissive="#FFD700"
-            emissiveIntensity={0.3}
-          />
-        </InteractiveObject>
-      </Float>
-
-      <Float speed={1.5} rotationIntensity={0.5} floatIntensity={0.5}>
-        <InteractiveObject
-          position={[0, 0, -10]}
-          rotation={[0, 0, 0]}
-          scale={[1, 1, 1]}
-          questAction="click_lamp"
-          questValue={35}
-          onDialogOpen={() => handleObjectClick("lamp")}
-        >
-          <cylinderGeometry args={[0.1, 0.1, 2, 8]} />
-          <meshStandardMaterial color="#FFD700" />
-        </InteractiveObject>
-      </Float>
+        <MacbookModel
+          position={[-2.85, FLOOR_Y_POSITION + 1.271, 0]}
+          rotation={[0, 1.58, 0]}
+          scale={[0.4, 0.4, 0.4]}
+        />
+      </InteractiveObject>
+      <InteractiveObject
+        questAction="click_books"
+        questValue={30}
+        onDialogOpen={() => handleObjectClick("books")}
+      >
+        <BookshelfModel
+          position={[3, FLOOR_Y_POSITION, -3]}
+          rotation={[0, 2.5, 0]}
+          scale={[2, 2, 2]}
+        />
+      </InteractiveObject>
     </group>
   );
 }

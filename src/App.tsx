@@ -20,6 +20,7 @@ import Creative from "./routes/Creative";
 import Guestbook from "./routes/Guestbook";
 import { AnimatePresence, motion } from "motion/react";
 import MiniGames from "./routes/MiniGames";
+import { useMessageSystem } from "@/hooks/useMessageSystem";
 
 export default function App() {
   const location = useLocation();
@@ -29,6 +30,8 @@ export default function App() {
   const [showRouteChip, setShowRouteChip] = useState(false);
 
   useAnimations();
+  // initialize message system globally so it can enqueue messages on route/tap events
+  useMessageSystem();
 
   useEffect(() => {
     setCurrentRoute(location.pathname);

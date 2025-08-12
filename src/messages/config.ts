@@ -9,6 +9,8 @@ export interface MessageOptions {
   baseDismissMs?: number; // base time before auto-dismiss starts counting content length
   contentLengthFactorMs?: number; // per-character factor
   tailEnabled?: boolean;
+  minimumDisplayMs?: number; // minimum time to display message
+  priority?: number; // priority level for showing messages
 }
 
 export interface MessageConfig {
@@ -22,6 +24,7 @@ export interface MessageConfig {
   audioEnabled?: boolean;
   positionOffset?: Vector3Tuple; // [x,y,z]
   nextDelayMs?: number; // delay after this config finishes typing before the next config shows
+  lines?: string[]; // lines to display
 }
 
 // Sample initial messages. Extend as needed.
@@ -31,7 +34,7 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
     text: [
       "Huuuhuuuu",
       "Ich bin Bob 😊 Eddies erstes 3d-Projekt im Internet.",
-      "Hier ist alles noch work in progress, aber es wird so langsam",
+      "Ist alles noch in Arbeit, aber so langsam wächst es schon",
       "Zum Start kannst du mich ja mal antippen 🫵 macht spaß!",
     ],
     label: "Bob",
@@ -112,8 +115,28 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
   {
     id: "home_features",
     text: [
-      "Die anderen Seiten sind noch in Arbeit, aber der Shop hat schon was zu bieten 🤑",
+      "Die anderen Seiten sind gerade noch in Arbeit, aber der Shop hat schon was zu bieten! 🤑",
       "Schau doch mal rein und schalt ein paar Effekte frei",
+    ],
+    label: "Bob",
+    options: {
+      typingSpeedMs: 25,
+      baseDismissMs: 2000,
+      contentLengthFactorMs: 50,
+      tailEnabled: false,
+    },
+    repeatRule: "oncePerPersist",
+    audioEnabled: true,
+    positionOffset: [0, 0, 0],
+    nextDelayMs: 1800,
+  },
+  {
+    id: "about_welcome",
+    text: [
+      "Hier sind ein paar Infos über die Person hinter der Website",
+      "Eduard Lotz oder auch einfach nur Eddie 🤓",
+      "28 Jahre alt, lebt in Neuss und Software Entwickler",
+      "wobei Software eher so mäßig, weil Webseiten ja keine richtige Software im herkömmlichen Sinne sind oder?",
     ],
     label: "Bob",
     options: {

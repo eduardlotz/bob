@@ -70,6 +70,12 @@ export const WORLD_SOUNDS = [
     icon: "🎵",
   },
   {
+    id: "custom-world-music-01",
+    name: "captainlowie - du fehlst (vip)",
+    filePath: "/audio/du-fehlst-vip.wav",
+    icon: "🖤",
+  },
+  {
     id: "world-rain",
     name: "Rain",
     filePath: "/audio/rain.wav",

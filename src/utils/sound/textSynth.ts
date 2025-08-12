@@ -39,7 +39,7 @@ class TextSynth {
 
   // Short blip with sine + LFO on frequency, plus LPF cutoff ramp
   // durationMs allows syncing to typing speed; optional gainScale tweaks loudness per blip
-  playCharBlip(durationMs: number = 60, gainScale: number = 1) {
+  playCharBlip(durationMs: number = 60, gainScale: number = 10) {
     this.initialize();
     if (!this.audioCtx || !this.masterGain) return;
     const ctx = this.audioCtx;

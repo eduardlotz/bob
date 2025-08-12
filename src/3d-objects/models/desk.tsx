@@ -1,0 +1,56 @@
+import * as THREE from "three";
+import React, { useEffect, useRef } from "react";
+import { useGLTF } from "@react-three/drei";
+import { GLTF } from "three-stdlib";
+import { a, useSpring } from "@react-spring/three";
+
+type GLTFResult = GLTF & {
+  nodes: {
+    Cube007: THREE.Mesh;
+    Cube007_1: THREE.Mesh;
+  };
+  materials: {
+    MetalBlack: THREE.MeshStandardMaterial;
+    DeskWood: THREE.MeshStandardMaterial;
+  };
+};
+
+const PATH = "gltf/desk.gltf";
+
+interface Props {
+  position: [number, number, number];
+  rotation?: [number, number, number];
+  scale?: [number, number, number];
+}
+
+export const DeskModel = ({ scale = [1, 1, 1], ...props }: Props) => {
+  const group = useRef<THREE.Group>(null!);
+  const { nodes, materials } = useGLTF(PATH) as GLTFResult;
+  const [spring, api] = useSpring(() => ({
+    scale: [0, 0, 0], // start invisible
+    config: { tension: 200, friction: 15 },
+  }));
+
+  useEffect(() => {
+    api.start({
+      scale: scale,
+      config: { tension: 300, friction: 10 },
+    });
+  }, []);
+
+  return (
+    <a.group
+      ref={group}
+      scale={spring.scale.get() as [number, number, number]}
+      castShadow
+      receiveShadow
+      position={props.position}
+      rotation={props.rotation}
+    >
+      <mesh geometry={nodes.Cube007.geometry} material={materials.MetalBlack} />
+      <mesh geometry={nodes.Cube007_1.geometry} material={materials.DeskWood} />
+    </a.group>
+  );
+};
+
+useGLTF.preload(PATH);

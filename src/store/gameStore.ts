@@ -34,7 +34,8 @@ export enum GAME_STORE_VERSIONS {
   V14 = 14,
   V15 = 15,
   V16 = 16,
-  LATEST = 16,
+  V17 = 17,
+  LATEST = V17,
 }
 
 // Constants
@@ -384,6 +385,16 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
     currentVersion = GAME_STORE_VERSIONS.V16;
   }
 
+  // Migration V16 → V17: decorations in shop
+  if (currentVersion < GAME_STORE_VERSIONS.V17) {
+    migratedState.decorations = initialDecorations;
+
+    migratedState.soundSystem = { ...migratedState.soundSystem, textVolume: 1 };
+    migratedState.upgrades = initialUpgrades;
+
+    currentVersion = GAME_STORE_VERSIONS.V17;
+  }
+
   // Set the final version to the latest
   migratedState.version = GAME_STORE_VERSIONS.LATEST;
 
@@ -507,36 +518,26 @@ interface GameStore {
   _cachedTapMultiplier?: number;
   _lastUpgradeHash?: string;
 
-  // Upgrades
+  // shop
   upgrades: Upgrade[];
-
-  // Decorations
   decorations: Decoration[];
-
-  // Themes
   themes: Theme[];
   currentTheme: Theme | null;
-
-  // Routes
   routes: Route[];
 
-  // Fisheye slider
+  // from previous version, might come back
   fisheyeIntensity: number;
 
-  // Dev state
+  // dev state
   animationsEnabled: boolean;
   statisticsVisible: boolean;
 
-  // Sound system state
+  // sound system
   soundSystem: SoundSystemState;
-
-  // Only persist minimal audio prefs
   soundPreferences?: {
     enabled: boolean;
     muted: boolean;
   };
-
-  // Audio selections (ids only)
   audioSelections: {
     worldMusicId: string;
     tapEffectId: string;
@@ -600,21 +601,21 @@ interface GameStore {
   checkUnlockedRoutes: (routePath: string) => boolean;
 }
 
-// Initial decorations (keeping only fisheye for now)
+// room decorations
 const initialDecorations: Decoration[] = [
   {
-    id: "fisheye_intensity",
-    name: "Fisheye Intensity",
-    description: "Increases the fisheye lens effect",
-    cost: 500,
+    id: "tree_3d",
+    name: "Tree",
+    description: "A tree",
+    cost: 1000,
     purchased: false,
     enabled: false,
-    type: "2d",
-    position: [0, 0, 0],
-    scale: 1,
+    type: "3d",
+    position: [0, -2, -7],
+    scale: 0.7,
     rotation: 0,
     color: "#FFD700",
-    icon: "🔍",
+    icon: "🌳",
   },
 ];
 
