@@ -314,10 +314,9 @@ export class StoreMigration {
         } catch {}
       });
 
-      toast.success("All store data cleared");
+      console.log("All store data cleared");
     } catch (error) {
       console.error("Failed to clear data:", error);
-      toast.error("Failed to clear data");
     }
   }
 

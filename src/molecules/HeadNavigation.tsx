@@ -538,9 +538,7 @@ function Option({
       .otherwise(() => {
         // route is not hard locked - notify user about shop
         toast.custom((id) => (
-          <CustomToast>
-            Besuch den Shop, um diesen Bereich freizuschalten!
-          </CustomToast>
+          <CustomToast>Schalte diesen Bereich im Shop frei!</CustomToast>
         ));
       });
   };
@@ -583,12 +581,7 @@ export const CustomToast = styled.div`
 
   padding: 12px 28px;
   min-height: 52px;
-  width: min-content;
-  min-width: min-content;
   max-width: calc(100vw - 32px);
-
-  white-space: nowrap;
-
   background-color: rgba(0, 0, 0, 0.8);
   color: white;
 
@@ -596,8 +589,10 @@ export const CustomToast = styled.div`
   backdrop-filter: blur(32px);
 
   border-radius: 50px;
+  text-align: center;
 
-  font-size: 14px;
+  font-size: 16px;
+  line-height: 1.3;
   font-weight: 500;
   letter-spacing: 0.5px;
 

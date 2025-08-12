@@ -647,37 +647,39 @@ function RoutesView() {
       <ThemesSection>
         <SectionTitle>Seiten</SectionTitle>
         <ItemsGrid>
-          {routes.map((route) => (
-            <ThemeCard
-              key={route.id}
-              $selected={route.purchased}
-              $purchased={route.purchased}
-              $canAfford={!route.isLocked && canAfford(route.cost)}
-              onClick={() => handleRoutePurchase(route.id)}
-              role="button"
-              disabled={route.isLocked}
-            >
-              <div style={{ fontSize: "32px" }}>{route.icon}</div>
-              <div>
-                <ThemeName>{route.name}</ThemeName>
-                <ThemeDescription>{route.description}</ThemeDescription>
-                <div
-                  style={{
-                    fontSize: "10px",
-                    color: "#FFD700",
-                    textAlign: "center",
-                    marginTop: "4px",
-                  }}
-                >
-                  {route.cost} taps
-                </div>
-              </div>
-              <ThemeStatus
-                $enabled={route.purchased}
+          {routes
+            .filter((r) => !r.isLocked)
+            .map((route) => (
+              <ThemeCard
+                key={route.id}
+                $selected={route.purchased}
                 $purchased={route.purchased}
-              ></ThemeStatus>
-            </ThemeCard>
-          ))}
+                $canAfford={!route.isLocked && canAfford(route.cost)}
+                onClick={() => handleRoutePurchase(route.id)}
+                role="button"
+                disabled={route.isLocked}
+              >
+                <div style={{ fontSize: "32px" }}>{route.icon}</div>
+                <div>
+                  <ThemeName>{route.name}</ThemeName>
+                  <ThemeDescription>{route.description}</ThemeDescription>
+                  <div
+                    style={{
+                      fontSize: "10px",
+                      color: "#FFD700",
+                      textAlign: "center",
+                      marginTop: "4px",
+                    }}
+                  >
+                    {route.cost} taps
+                  </div>
+                </div>
+                <ThemeStatus
+                  $enabled={route.purchased}
+                  $purchased={route.purchased}
+                ></ThemeStatus>
+              </ThemeCard>
+            ))}
         </ItemsGrid>
       </ThemesSection>
     </ThemesContainer>
