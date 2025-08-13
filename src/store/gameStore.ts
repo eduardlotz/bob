@@ -559,7 +559,6 @@ interface GameStore {
   toggleDecoration: (decorationId: string) => void;
   selectTapEffect: (upgradeId: string) => void;
   toggleEnvironmentEffect: (upgradeId: string) => void;
-  setFisheyeIntensity: (intensity: number) => void;
   resetGame: () => void;
   pauseGame: () => void;
   resumeGame: () => void;
@@ -1029,6 +1028,18 @@ export const useGameStore = create<GameStore>()(
               canAfford: route ? state.canAfford(route.cost) : false,
               force,
             })
+              .with({ force: true }, () => {
+                const updatedRoutes = state.routes.map((r) =>
+                  r.id === routeId
+                    ? { ...r, purchased: true, unlocked: true }
+                    : r
+                );
+
+                return {
+                  ...state,
+                  routes: updatedRoutes,
+                };
+              })
               .with(
                 { route: { purchased: false }, canAfford: true },
                 ({ route }) => {
@@ -1045,18 +1056,6 @@ export const useGameStore = create<GameStore>()(
                   };
                 }
               )
-              .with({ force: true }, () => {
-                const updatedRoutes = state.routes.map((r) =>
-                  r.id === routeId
-                    ? { ...r, purchased: true, unlocked: true }
-                    : r
-                );
-
-                return {
-                  ...state,
-                  routes: updatedRoutes,
-                };
-              })
               .otherwise(() => state);
           });
         },
@@ -1171,13 +1170,6 @@ export const useGameStore = create<GameStore>()(
               upgrades: updatedUpgrades,
             };
           });
-        },
-
-        setFisheyeIntensity: (intensity: number) => {
-          set((state) => ({
-            ...state,
-            fisheyeIntensity: intensity,
-          }));
         },
 
         resetGame: () => {

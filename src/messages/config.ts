@@ -95,6 +95,21 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
     nextDelayMs: 2200,
   },
   {
+    id: "return_greeting_4",
+    text: ["Moin Meister"],
+    label: "Bob",
+    options: {
+      typingSpeedMs: 28,
+      baseDismissMs: 1600,
+      contentLengthFactorMs: 40,
+      tailEnabled: false,
+    },
+    repeatRule: "oncePerSession",
+    audioEnabled: true,
+    positionOffset: [0, 0, 0],
+    nextDelayMs: 2200,
+  },
+  {
     id: "first_tap_hint",
     text: [
       "Übrigenski: für nur 15 taps 🫵 kannst du den Auto-Tapper aktivieren",
@@ -102,9 +117,9 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
     ],
     label: "Bob",
     options: {
-      typingSpeedMs: 28,
+      typingSpeedMs: 30,
       baseDismissMs: 1800,
-      contentLengthFactorMs: 40,
+      contentLengthFactorMs: 50,
       tailEnabled: false,
     },
     repeatRule: "oncePerPersist",
@@ -133,12 +148,14 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
   {
     id: "about_welcome",
     text: [
-      "Hier sind ein paar Infos über die Person hinter der Website",
-      "Eduard Lotz oder auch einfach nur Eddie 🤓",
-      "28 Jahre alt, lebt in Neuss und Software Entwickler",
-      "wobei Software eher so mäßig, weil Webseiten ja keine richtige Software im herkömmlichen Sinne sind oder?",
+      "Hier gibts leider nicht viel spannendes zu sehen",
+      "Die Möbel hier um mich herum sind nur Platzhalter",
+      "Sorry 🥀😔",
+      "Aber bald kommen dann ein paar Infos über die Person hinter der Website",
+      "Und generell so der Sinn der Website",
+      "gucken wir mal, was wird",
     ],
-    label: "Bob",
+    label: "Eddie",
     options: {
       typingSpeedMs: 25,
       baseDismissMs: 2000,

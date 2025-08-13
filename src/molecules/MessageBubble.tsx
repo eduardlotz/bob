@@ -131,16 +131,17 @@ export const MessageBubble = memo(function MessageBubble({
   // Calculate reading time for auto-advance
   const calculateReadingTime = useCallback(
     (text: string, options: any): number => {
+      // manual dismiss time config per message
       const baseDismiss = options?.baseDismissMs ?? 1000;
-      const lengthFactor = options?.contentLengthFactorMs ?? 35;
+      const lengthFactor = options?.contentLengthFactorMs ?? 1;
       const optionBasedMs = baseDismiss + text.length * lengthFactor;
 
-      // reading speed calculation (~240 WPM)
+      // average reading speed calculation (~240 words per minute)
       const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-      const perWordMs = 250; // ~240wpm
+      const perWordMs = 240;
       const readingMs = Math.max(800, Math.round(words * perWordMs + 250));
 
-      // choose the larger to be safe but both are tuned faster than before
+      // choose the larger to be safe
       return Math.max(optionBasedMs, readingMs);
     },
     []
@@ -615,8 +616,8 @@ export const MessageBubble = memo(function MessageBubble({
       >
         <Container
           style={{ opacity: spring.opacity as any }}
-          onClick={handleClick}
-          onPointerDown={handleUserInteraction}
+          // onClick={handleClick}
+          // onPointerDown={handleUserInteraction}
         >
           {cfg.label && <Label>{cfg.label}</Label>}
 
@@ -645,7 +646,7 @@ export const MessageBubble = memo(function MessageBubble({
           </ThreadContainer>
 
           {/* Queue indicator */}
-          {isProcessingQueue &&
+          {/* {isProcessingQueue &&
             visibleLines.length >= 4 &&
             getQueueLength() > 0 && (
               <QueueIndicator
@@ -655,7 +656,7 @@ export const MessageBubble = memo(function MessageBubble({
               >
                 +{getQueueLength()} queued
               </QueueIndicator>
-            )}
+            )} */}
         </Container>
       </Html>
     </a.group>
@@ -744,7 +745,6 @@ const QueueIndicator = styled(motion.div)`
   margin-top: 4px;
 `;
 
-// enhanced animation variants
 const improvedCharVariants: Variants = {
   hidden: {
     opacity: 0,
@@ -769,14 +769,12 @@ const improvedBubbleVariants: Variants = {
   initial: {
     opacity: 0,
     scale: 0.9,
-    filter: "blur(4px)",
     y: 2,
   },
   animate: {
     opacity: 1,
     scale: 1,
     y: 0,
-    filter: "blur(0px)",
     transition: {
       type: "spring" as const,
       stiffness: 350,
@@ -787,7 +785,6 @@ const improvedBubbleVariants: Variants = {
   exit: {
     opacity: 0,
     scale: 0.9,
-    filter: "blur(4px)",
     y: 0,
     transition: {
       duration: 0.25,

@@ -114,11 +114,11 @@ export function Decoration3D({
 export function SceneDecorations() {
   const { decorations } = useGameStore();
 
-  const purchasedDecorations = decorations.filter((d) => d.purchased);
+  const activeDecorations = decorations.filter((d) => d.enabled);
 
   return (
     <group>
-      {purchasedDecorations.map((decoration) => {
+      {activeDecorations.map((decoration) => {
         if (decoration.type === "2d") {
           return (
             <Decoration2D
