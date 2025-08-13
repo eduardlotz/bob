@@ -35,32 +35,41 @@ export function AboutScene() {
     });
   }, []);
 
-  // Dialog content for different objects
+  //TODO: refactor
+  const getDialogTitle = useCallback((objectId: string) => {
+    switch (objectId) {
+      case "desk":
+        return "Mein Arbeitsplatz";
+      case "books":
+        return "Mein Bücherregal";
+      default:
+        return "Hä?";
+    }
+  }, []);
+
   const getDialogContent = useCallback((objectId: string) => {
     switch (objectId) {
       case "desk":
         return (
           <div>
-            <p>Hier kommen noch infos hin</p>
-            <p>irgendwann mal</p>
+            <p>Noch kein Inhalt verfügbar</p>
           </div>
         );
       case "books":
         return (
           <div>
-            <p>Hier findest du ein paar Bücher, die ich mag</p>
-            <p>(irgendwann wenn's fertig ist)</p>
+            <p>Noch kein Inhalt verfügbar</p>
           </div>
         );
       default:
-        return <p>Lorem Ipsum dolor sit amet?</p>;
+        return <p>Noch kein Inhalt verfügbar</p>;
     }
   }, []);
 
   const handleObjectClick = useCallback(
     (objectId: string) => {
       openDialog({
-        title: `About ${objectId.charAt(0).toUpperCase() + objectId.slice(1)}`,
+        title: getDialogTitle(objectId),
         content: getDialogContent(objectId),
       });
     },

@@ -19,7 +19,7 @@ export const CustomLoader = () => {
     if (progress >= 100) {
       const timer = setTimeout(() => {
         setIsLoading(false);
-      }, 500); // small delay to ensure everything is ready
+      }, 100); // small delay to ensure everything is ready
 
       return () => clearTimeout(timer);
     }

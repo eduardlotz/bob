@@ -37,6 +37,18 @@ interface AppStore {
 
   // Emotion/Blob state
   emotionData: EmotionState | null;
+  // dispatch emotion cues to blob
+  requestEmotion: (
+    emotion:
+      | "normal"
+      | "happy"
+      | "dizzy"
+      | "mad"
+      | "thinking"
+      | "suspicious"
+      | "sad",
+    durationMs?: number
+  ) => void;
 
   // Actions
   setCurrentRoute: (route: string) => void;
@@ -92,6 +104,17 @@ export const useAppStore = create<AppStore>()(
       setPermissionGranted: (granted) => set({ permissionGranted: granted }),
       setIsMobile: (mobile) => set({ isMobile: mobile }),
       setEmotionData: (data) => set({ emotionData: data }),
+      requestEmotion: (emotion, durationMs) => {
+        // store only provides a lightweight signal; HeadNavigation consumes and triggers on change
+        set((s) => ({ emotionData: s.emotionData }));
+        // use a global event to avoid tight coupling
+        try {
+          const ev = new CustomEvent("vg-request-emotion", {
+            detail: { emotion, durationMs },
+          });
+          window.dispatchEvent(ev);
+        } catch {}
+      },
 
       // Complex actions
       navigateToRoute: (route) => {

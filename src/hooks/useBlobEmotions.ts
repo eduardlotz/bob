@@ -4,7 +4,13 @@ import { useAppStore, ROUTE_PATHS } from "@/store";
 import { useSoundSystem } from "./useSoundSystem";
 import { isEnabled, resumeAudioContext } from "@/utils/soundSystem";
 
-export type EmotionState = "normal" | "happy" | "dizzy" | "mad";
+export type EmotionState =
+  | "normal"
+  | "happy"
+  | "dizzy"
+  | "mad"
+  | "thinking"
+  | "suspicious";
 
 export interface BlobEmotionData {
   currentEmotion: EmotionState;
@@ -12,10 +18,13 @@ export interface BlobEmotionData {
   lastEmotionTime: number;
 }
 
-const EMOTION_DURATIONS = {
+const EMOTION_DURATIONS: Record<EmotionState, number> = {
+  normal: 0,
   happy: 1000,
   dizzy: 4000,
   mad: 5000,
+  thinking: 2500,
+  suspicious: 1800,
 };
 
 const COOLDOWN_DURATION = 1000; // Cooldown between emotional state changes
@@ -113,6 +122,17 @@ export function useBlobEmotions() {
     }
   }, [emotionState, setEmotionWithTimeout, currentRoute]);
 
+  const triggerEmotion = useCallback(
+    (emotion: EmotionState, durationMs?: number) => {
+      const duration =
+        typeof durationMs === "number"
+          ? Math.max(200, durationMs)
+          : EMOTION_DURATIONS[emotion] || 1200;
+      setEmotionWithTimeout(emotion, duration);
+    },
+    [setEmotionWithTimeout]
+  );
+
   const getEmotionIcon = useCallback((emotion: EmotionState): string => {
     switch (emotion) {
       case "happy":
@@ -121,6 +141,10 @@ export function useBlobEmotions() {
         return "😠";
       case "dizzy":
         return "😵";
+      case "thinking":
+        return "🤔";
+      case "suspicious":
+        return "🧐";
       case "normal":
       default:
         return "🙂";
@@ -144,6 +168,7 @@ export function useBlobEmotions() {
     tapCount,
     handleTap,
     getEmotionIcon,
+    triggerEmotion,
     // resetTapCount,
     isInCooldown: Date.now() - cooldownRef.current < COOLDOWN_DURATION,
   };

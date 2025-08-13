@@ -195,8 +195,26 @@ export function HeadNavigation({
   const [cameraZoomAnimation, setCameraZoomAnimation] = useState(false);
 
   // Blob emotion system
-  const { emotionState, tapCount, handleTap, getEmotionIcon } =
+  const { emotionState, tapCount, handleTap, getEmotionIcon, triggerEmotion } =
     useBlobEmotions();
+
+  // listen for global emotion requests (from message system or elsewhere)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as
+        | { emotion: any; durationMs?: number }
+        | undefined;
+      if (detail && detail.emotion) {
+        triggerEmotion(detail.emotion, detail.durationMs);
+      }
+    };
+    window.addEventListener("vg-request-emotion", handler as EventListener);
+    return () =>
+      window.removeEventListener(
+        "vg-request-emotion",
+        handler as EventListener
+      );
+  }, [triggerEmotion]);
 
   // Pass emotion data up to parent
   useEffect(() => {

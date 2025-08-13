@@ -47,7 +47,7 @@ export function useMessageSystem() {
               );
             } else {
               // returning visit: random greeting
-              const randomGreeting = (Math.floor(Math.random() * 10) % 3) + 1;
+              const randomGreeting = (Math.floor(Math.random() * 10) % 4) + 1;
               return showMessage(`return_greeting_${randomGreeting}`).then(
                 (ok) => {
                   if (ok) routeShownRef.current[ROUTE_PATHS.HOME] = true;

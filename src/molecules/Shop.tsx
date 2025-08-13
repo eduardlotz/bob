@@ -385,7 +385,7 @@ function ThemesView() {
                 key={theme.id}
                 $selected={currentTheme?.id === theme.id}
                 $purchased={theme.purchased}
-                $canAfford={canAfford(theme.cost)}
+                $canAfford={theme.purchased || canAfford(theme.cost)}
                 onClick={() =>
                   theme.purchased
                     ? handleThemeSelect(theme.id)
@@ -395,6 +395,20 @@ function ThemesView() {
               >
                 <ThemePreview $colors={theme.colors}>
                   <ThemeGradient $colors={theme.planetColors} />
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      height: "40px",
+                      width: "40px",
+                      margin: "auto",
+                      borderRadius: "50%",
+                      background: theme.blobColor,
+                    }}
+                  />
                   <div
                     style={{
                       position: "absolute",

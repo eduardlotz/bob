@@ -277,6 +277,21 @@ export function BlobHead({
     return () => clearInterval(blinkInterval);
   }, []);
 
+  // micro "happy" jump when emotion switches to happy (also used when triggered by messages)
+  useEffect(() => {
+    if (emotionState === "happy") {
+      api.start({
+        scale: [1.35, 1.35, 1.35],
+        config: { tension: 420, friction: 10 },
+      });
+      api.start({
+        scale: [1.2, 1.2, 1.2],
+        config: { tension: 300, friction: 12 },
+        delay: 140,
+      });
+    }
+  }, [emotionState]);
+
   // Improved idle animation logic - only triggers every 15 seconds
   useEffect(() => {
     const checkIdleAnimation = () => {
@@ -756,6 +771,16 @@ export function BlobHead({
         case "dizzy":
           // Use dizzy geometry (squeezed from sides like ><)
           targetGeometry = eyeGeometries.current.dizzyGeometry;
+          eyeOffsetY = -0.02;
+          break;
+        case "thinking":
+          // thinking: slight upward offset and subtle squeeze
+          targetGeometry = eyeGeometries.current.baseGeometry;
+          eyeOffsetY = 0.03;
+          break;
+        case "suspicious":
+          // suspicious: slight downward offset
+          targetGeometry = eyeGeometries.current.baseGeometry;
           eyeOffsetY = -0.02;
           break;
         case "normal":

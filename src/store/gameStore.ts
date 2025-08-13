@@ -35,7 +35,8 @@ export enum GAME_STORE_VERSIONS {
   V15 = 15,
   V16 = 16,
   V17 = 17,
-  LATEST = V17,
+  V18 = 18,
+  LATEST = V18,
 }
 
 // Constants
@@ -44,7 +45,7 @@ const AUTO_TAP_INTERVAL_MS = 1000;
 const MAX_PARTICLES_PER_AUTO_TAP = 5;
 const PARTICLE_STAGGER_MS = 100;
 
-const PURGE_DATE = new Date("08/10/2025"); // utility to purge data created before this date
+const PURGE_DATE = new Date("08/10/2025"); // utility to purge states created before this date
 
 // main migration function
 function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
@@ -395,6 +396,12 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
     currentVersion = GAME_STORE_VERSIONS.V17;
   }
 
+  if (currentVersion < GAME_STORE_VERSIONS.V18) {
+    migratedState.themes = initialThemes;
+
+    currentVersion = GAME_STORE_VERSIONS.V18;
+  }
+
   // Set the final version to the latest
   migratedState.version = GAME_STORE_VERSIONS.LATEST;
 
@@ -462,7 +469,6 @@ export interface Theme {
     danger?: string;
     warning?: string;
   };
-  icon: string;
   planetColors: string[];
   counterColor: string;
   blobColor: string;
@@ -624,20 +630,10 @@ const initialThemes: Theme[] = Object.values(THEME_CONFIG).map(
     id: themeConfig.id,
     name: themeConfig.name,
     description: themeConfig.description,
-    cost:
-      themeConfig.id === THEME_IDS.DEFAULT
-        ? 0
-        : themeConfig.id === THEME_IDS.DARK
-        ? 1000
-        : themeConfig.id === THEME_IDS.PASTEL
-        ? 2000
-        : themeConfig.id === THEME_IDS.NEON
-        ? 3000
-        : 0,
+    cost: themeConfig.id === THEME_IDS.DEFAULT ? 0 : 50,
     purchased: themeConfig.id === THEME_IDS.DEFAULT,
     active: themeConfig.id === THEME_IDS.DEFAULT,
     colors: themeConfig.colors,
-    icon: themeConfig.id === THEME_IDS.DEFAULT ? "🎨" : "🎨",
     planetColors: themeConfig.planetColors,
     counterColor: themeConfig.counterColor,
     blobColor: themeConfig.blobColor,

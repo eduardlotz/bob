@@ -11,6 +11,11 @@ export interface MessageOptions {
   tailEnabled?: boolean;
   minimumDisplayMs?: number; // minimum time to display message
   priority?: number; // priority level for showing messages
+  // optional emotion cue for the blob while this message is active
+  emotion?: {
+    state: "normal" | "happy" | "dizzy" | "mad" | "thinking" | "suspicious";
+    durationMs?: number;
+  };
 }
 
 export interface MessageConfig {
@@ -43,6 +48,7 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
       baseDismissMs: 1800,
       contentLengthFactorMs: 40,
       tailEnabled: false,
+      emotion: { state: "happy", durationMs: 3000 },
     },
     repeatRule: "oncePerPersist",
     audioEnabled: true,
@@ -58,6 +64,7 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
       baseDismissMs: 1600,
       contentLengthFactorMs: 40,
       tailEnabled: false,
+      emotion: { state: "dizzy", durationMs: 3000 },
     },
     repeatRule: "oncePerSession",
     audioEnabled: true,
@@ -73,6 +80,7 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
       baseDismissMs: 1600,
       contentLengthFactorMs: 40,
       tailEnabled: false,
+      emotion: { state: "happy", durationMs: 4000 },
     },
     repeatRule: "oncePerSession",
     audioEnabled: true,
@@ -103,6 +111,7 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
       baseDismissMs: 1600,
       contentLengthFactorMs: 40,
       tailEnabled: false,
+      emotion: { state: "suspicious", durationMs: 4000 },
     },
     repeatRule: "oncePerSession",
     audioEnabled: true,
@@ -121,6 +130,7 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
       baseDismissMs: 1800,
       contentLengthFactorMs: 50,
       tailEnabled: false,
+      emotion: { state: "thinking", durationMs: 4000 },
     },
     repeatRule: "oncePerPersist",
     audioEnabled: true,
@@ -148,10 +158,10 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
   {
     id: "about_welcome",
     text: [
-      "Hier gibts leider nicht viel spannendes zu sehen",
-      "Die Möbel hier um mich herum sind nur Platzhalter",
+      "Hier gibts leider noch nicht viel spannendes zu sehen",
+      "Die Möbel sind erstmal nur Platzhalter",
       "Sorry 🥀😔",
-      "Aber bald kommen dann ein paar Infos über die Person hinter der Website",
+      "Aber bald kommen ein paar Infos über mich",
       "Und generell so der Sinn der Website",
       "gucken wir mal, was wird",
     ],
@@ -161,6 +171,7 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
       baseDismissMs: 2000,
       contentLengthFactorMs: 50,
       tailEnabled: false,
+      emotion: { state: "happy", durationMs: 3000 },
     },
     repeatRule: "oncePerPersist",
     audioEnabled: true,
