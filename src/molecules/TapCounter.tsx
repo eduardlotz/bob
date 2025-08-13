@@ -66,11 +66,11 @@ export const TapCounter = () => {
   // Use game store taps instead of emotion tap count
   const gameTapCount = taps;
 
-  // Get theme colors, fallback to default if no theme is active
   const themeConfig = currentTheme
     ? Object.values(THEME_CONFIG).find((t) => t.id === currentTheme.id) ||
       THEME_CONFIG.DEFAULT
     : THEME_CONFIG.DEFAULT;
+
   const formattedNumber = formatNumber(gameTapCount);
   const groupRef = useRef<Group>(null!);
   const prevTapCount = useRef(gameTapCount);
@@ -162,7 +162,11 @@ export const TapCounter = () => {
       >
         {formattedNumber}
         <meshToonMaterial color={themeConfig.counterColor} />
-        <Outlines thickness={0.011} color="black" screenspace />
+        <Outlines
+          thickness={0.011}
+          color={themeConfig.outlineColor}
+          screenspace
+        />
       </Text3D>
     </a.group>
   );

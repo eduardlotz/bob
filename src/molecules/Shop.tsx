@@ -31,6 +31,7 @@ import {
 import { THEME_IDS } from "@/store/themeConfig";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { DecorationIcon } from "@/icons/decoration";
+import { useMessageStore } from "@/store/messageStore";
 
 interface ShopProps {
   isOpen: boolean;
@@ -384,7 +385,7 @@ function ThemesView() {
                 key={theme.id}
                 $selected={currentTheme?.id === theme.id}
                 $purchased={theme.purchased}
-                $canAfford={canAfford(theme.cost)}
+                $canAfford={theme.purchased || canAfford(theme.cost)}
                 onClick={() =>
                   theme.purchased
                     ? handleThemeSelect(theme.id)
@@ -394,6 +395,20 @@ function ThemesView() {
               >
                 <ThemePreview $colors={theme.colors}>
                   <ThemeGradient $colors={theme.planetColors} />
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      height: "40px",
+                      width: "40px",
+                      margin: "auto",
+                      borderRadius: "50%",
+                      background: theme.blobColor,
+                    }}
+                  />
                   <div
                     style={{
                       position: "absolute",
@@ -692,12 +707,12 @@ function DecorationsView() {
 
   const handleDecorationPurchase = (decorationId: string) => {
     const decoration = decorations.find((d) => d.id === decorationId);
-    if (decoration && !decoration.purchased && canAfford(decoration.cost)) {
-      purchaseDecoration(decorationId);
-      return;
-    }
+    if (!decoration) return;
 
-    if (decoration && decoration.purchased) {
+    if (decoration.purchased) {
+      toggleDecoration(decorationId);
+    } else if (canAfford(decoration.cost)) {
+      purchaseDecoration(decorationId);
       toggleDecoration(decorationId);
     }
   };
@@ -746,17 +761,24 @@ function DevView() {
     statisticsVisible,
     pauseGame,
     resumeGame,
-    resetGame,
+    resetGame: resetGameStore,
     isPaused,
     routes,
     purchaseRoute,
   } = useGameStore();
   const { resetQuests } = useQuestSystem();
+  const { clearShownFlags } = useMessageStore();
 
   const unlockAllRoutes = () => {
     routes.forEach((route) => {
       purchaseRoute(route.id, true);
     });
+  };
+
+  const resetGame = () => {
+    resetGameStore();
+    clearShownFlags();
+    resetQuests();
   };
 
   return (
@@ -1015,7 +1037,7 @@ const ThemeCard = styled.button<{
   gap: 8px;
   padding: 12px 40px;
   border-radius: 12px;
-  cursor: ${(p) => (p.$canAfford && !p.$purchased ? "pointer" : "not-allowed")};
+  cursor: ${(p) => (p.$canAfford || !p.$purchased ? "pointer" : "not-allowed")};
   transition: all 0.2s;
   border: 2px solid ${(props) => (props.$selected ? "#ffffff" : "transparent")};
   background: ${(props) =>

@@ -5,10 +5,12 @@ import { a, useSpring } from "@react-spring/three";
 import { motion, AnimatePresence } from "motion/react";
 import type { Variants } from "motion/react";
 import { useMessageStore } from "@/store/messageStore";
+import { useAppStore } from "@/store";
 import { useGameStore } from "@/store/gameStore";
 import { textSynth } from "@/utils/sound/textSynth";
 import { resumeAudioContext, unlockAudioContext } from "@/utils/soundSystem";
 import { MotionVariants, Transitions } from "@/styles/motion";
+import { MOTION_VARIANTS } from "./HeadNavigation";
 
 // Enhanced timing constants
 const CHAR_REVEAL_INTERVAL = 24; // default ms/char fallback (fast)
@@ -48,6 +50,7 @@ export const MessageBubble = memo(function MessageBubble({
     markUserInteraction,
     getQueueLength,
   } = useMessageStore();
+  const { requestEmotion } = useAppStore();
 
   const { soundSystem } = useGameStore();
 
@@ -131,16 +134,17 @@ export const MessageBubble = memo(function MessageBubble({
   // Calculate reading time for auto-advance
   const calculateReadingTime = useCallback(
     (text: string, options: any): number => {
+      // manual dismiss time config per message
       const baseDismiss = options?.baseDismissMs ?? 1000;
-      const lengthFactor = options?.contentLengthFactorMs ?? 35;
+      const lengthFactor = options?.contentLengthFactorMs ?? 1;
       const optionBasedMs = baseDismiss + text.length * lengthFactor;
 
-      // reading speed calculation (~240 WPM)
+      // average reading speed calculation (~240 words per minute)
       const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-      const perWordMs = 250; // ~240wpm
+      const perWordMs = 240;
       const readingMs = Math.max(800, Math.round(words * perWordMs + 250));
 
-      // choose the larger to be safe but both are tuned faster than before
+      // choose the larger to be safe
       return Math.max(optionBasedMs, readingMs);
     },
     []
@@ -160,6 +164,22 @@ export const MessageBubble = memo(function MessageBubble({
 
     const messageLines = parseMessageLines(activeMessage);
     if (messageLines.length === 0) return;
+
+    // trigger optional emotion cue for this message
+    try {
+      const cue = activeMessage.options?.emotion as
+        | { state: any; durationMs?: number }
+        | undefined;
+      if (cue?.state) {
+        requestEmotion(cue.state, cue.durationMs);
+      }
+    } catch (error) {
+      console.warn(
+        "Failed to request emotion:",
+        activeMessage,
+        activeMessage.options.emotion
+      );
+    }
 
     // Show bubble
     api.start({ scale: 1, opacity: 1 });
@@ -192,7 +212,7 @@ export const MessageBubble = memo(function MessageBubble({
     // Start first line immediately
     addTimer(() => {
       startTypingLine(initialLines[0]);
-    }, 60);
+    }, 1200);
 
     // schedule a hard fallback auto-dismiss based on total reading time
     const totalReadingMs = messageLines.reduce((sum, text) => {
@@ -389,7 +409,7 @@ export const MessageBubble = memo(function MessageBubble({
           addTimer(() => {
             // quick motion exit, then dismiss
             api.start({ scale: 0.95, opacity: 0 });
-            addTimer(() => handleMessageDismissal(), 160);
+            addTimer(() => handleMessageDismissal(), 200);
           }, baseDelay);
         }
       } else {
@@ -418,10 +438,10 @@ export const MessageBubble = memo(function MessageBubble({
                   l.id === oldest.id ? { ...l, status: "removing" } : l
                 )
               );
-              api.start({ scale: 0.98 });
+              api.start({ scale: 0.98, opacity: 0 });
               addTimer(() => {
                 setLines((prev) => prev.filter((l) => l.id !== oldest.id));
-                api.start({ scale: 1 });
+                api.start({ scale: 1, opacity: 1 });
                 startTypingLine(nextLine);
               }, 160);
             } else {
@@ -464,7 +484,7 @@ export const MessageBubble = memo(function MessageBubble({
 
     if (!canDismissNow) {
       // Retry dismissal later
-      addTimer(() => handleMessageDismissal(), 500);
+      addTimer(() => handleMessageDismissal(), 1000);
       return;
     }
 
@@ -615,10 +635,19 @@ export const MessageBubble = memo(function MessageBubble({
       >
         <Container
           style={{ opacity: spring.opacity as any }}
-          onClick={handleClick}
-          onPointerDown={handleUserInteraction}
+          // onClick={handleClick}
+          // onPointerDown={handleUserInteraction}
         >
-          {cfg.label && <Label>{cfg.label}</Label>}
+          {cfg.label && (
+            <Label
+              variants={MOTION_VARIANTS}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+            >
+              {cfg.label}
+            </Label>
+          )}
 
           <ThreadContainer as={motion.div} layoutRoot layout>
             <AnimatePresence mode="popLayout">
@@ -645,7 +674,7 @@ export const MessageBubble = memo(function MessageBubble({
           </ThreadContainer>
 
           {/* Queue indicator */}
-          {isProcessingQueue &&
+          {/* {isProcessingQueue &&
             visibleLines.length >= 4 &&
             getQueueLength() > 0 && (
               <QueueIndicator
@@ -655,7 +684,7 @@ export const MessageBubble = memo(function MessageBubble({
               >
                 +{getQueueLength()} queued
               </QueueIndicator>
-            )}
+            )} */}
         </Container>
       </Html>
     </a.group>
@@ -681,7 +710,7 @@ const ThreadContainer = styled.div`
   margin-bottom: 8px;
 `;
 
-const Label = styled.div`
+const Label = styled(motion.div)`
   font-size: 16px;
   color: var(--text-color);
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
@@ -744,7 +773,6 @@ const QueueIndicator = styled(motion.div)`
   margin-top: 4px;
 `;
 
-// enhanced animation variants
 const improvedCharVariants: Variants = {
   hidden: {
     opacity: 0,
@@ -769,26 +797,23 @@ const improvedBubbleVariants: Variants = {
   initial: {
     opacity: 0,
     scale: 0.9,
-    filter: "blur(4px)",
-    y: 2,
+    y: 10,
   },
   animate: {
     opacity: 1,
     scale: 1,
     y: 0,
-    filter: "blur(0px)",
     transition: {
       type: "spring" as const,
-      stiffness: 350,
-      damping: 25,
-      mass: 0.4,
+      stiffness: 300,
+      damping: 20,
+      mass: 0.2,
     },
   },
   exit: {
     opacity: 0,
     scale: 0.9,
-    filter: "blur(4px)",
-    y: 0,
+    y: -4,
     transition: {
       duration: 0.25,
       ease: "easeInOut",

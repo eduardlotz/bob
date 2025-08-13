@@ -100,6 +100,7 @@ const DEFAULT_OPTIONS: Required<MessageOptions> = {
   tailEnabled: false,
   minimumDisplayMs: 2000,
   priority: 0,
+  emotion: { state: "normal" },
 } as const;
 
 // Enhanced validation
@@ -195,7 +196,6 @@ export const useMessageStore = create<MessageStoreState>()(
   subscribeWithSelector(
     persist(
       (set, get) => ({
-        // Initial state
         activeMessage: null,
         queue: [],
         seenThisSession: {},
@@ -274,7 +274,6 @@ export const useMessageStore = create<MessageStoreState>()(
                 lastError: null,
               });
 
-              // Persist flag if needed
               if (cfg.repeatRule === "oncePerPersist") {
                 set({ repeatFlags: { ...state.repeatFlags, [cfg.id]: true } });
               }
@@ -293,7 +292,6 @@ export const useMessageStore = create<MessageStoreState>()(
 
             if (!current) return false;
 
-            // Enhanced dismissal logic
             const now = Date.now();
             const timingMet = now >= current.minimumDisplayUntil;
             const interactionMet =
@@ -307,7 +305,6 @@ export const useMessageStore = create<MessageStoreState>()(
               return false;
             }
 
-            // Process next in queue
             const nextItem = state.queue[0];
             if (!nextItem) {
               set({

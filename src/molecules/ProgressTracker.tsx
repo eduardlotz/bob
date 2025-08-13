@@ -41,62 +41,11 @@ MemoizedQuestItem.displayName = "MemoizedQuestItem";
 
 export function ProgressTracker() {
   const [isOpen, setIsOpen] = useState(false);
-  const questStore = useQuestStore();
   const { currentQuests, completedQuests, totalReward } = useQuestSystem();
-
-  const completeQuest = questStore.completeQuest;
-  const updateQuestProgress = questStore.updateQuestProgress;
-
-  // Memoized handlers
-  const handleQuestComplete = useCallback(
-    (questId: string) => {
-      const quest = currentQuests.find((q: any) => q.id === questId);
-      if (quest && !quest.completed && quest.progress >= quest.maxProgress) {
-        // Complete the quest (toast is handled in useQuestSystem)
-        completeQuest(questId);
-      }
-    },
-    [currentQuests, completeQuest]
-  );
-
-  // Auto-complete quests for testing (only in development)
-  const handleAutoComplete = useCallback(
-    (questId: string) => {
-      const quest = currentQuests.find((q: any) => q.id === questId);
-      if (quest && !quest.completed) {
-        updateQuestProgress(questId, quest.maxProgress);
-      }
-    },
-    [currentQuests, updateQuestProgress]
-  );
 
   const toggleOpen = useCallback(() => {
     setIsOpen((prev) => !prev);
   }, []);
-
-  // Memoized quest click handler
-  // const handleQuestClick = useCallback(
-  //   (quest: any) => {
-  //     if (quest.completed) {
-  //       // Show completion message
-  //       toast.info("Quest already completed!", {
-  //         description: quest.title,
-  //         duration: 2000,
-  //       });
-  //     } else if (quest.progress >= quest.maxProgress) {
-  //       // Complete the quest if progress is full
-  //       handleQuestComplete(quest.id);
-  //     }
-  //     // Show progress message
-  //     else {
-  //       toast.info("Quest in progress...", {
-  //         description: `${quest.title} - ${quest.progress}/${quest.maxProgress}`,
-  //         duration: 2000,
-  //       });
-  //     }
-  //   },
-  //   [handleQuestComplete]
-  // );
 
   return (
     <>
@@ -158,9 +107,6 @@ export function ProgressTracker() {
               <TrackerHeader>
                 <TrackerTitle>Quests</TrackerTitle>
 
-                <TotalReward>
-                  {completedQuests}/{currentQuests.length}
-                </TotalReward>
                 {totalReward > 0 && (
                   <TotalReward>+{totalReward} taps</TotalReward>
                 )}
@@ -168,11 +114,7 @@ export function ProgressTracker() {
 
               <QuestsList>
                 {currentQuests.map((quest) => (
-                  <MemoizedQuestItem
-                    key={quest.id}
-                    quest={quest}
-                    // onQuestClick={handleQuestClick}
-                  />
+                  <MemoizedQuestItem key={quest.id} quest={quest} />
                 ))}
               </QuestsList>
             </TrackerContent>

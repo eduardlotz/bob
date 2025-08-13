@@ -26,7 +26,6 @@ export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
     cost: 0,
     purchased: false,
     active: true,
-    icon: "🌟",
     colors: {
       primary: "#2979FF",
       secondary: "#4285F4",
@@ -47,7 +46,6 @@ export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
     cost: 0,
     purchased: false,
     active: false,
-    icon: "🌑",
     colors: {
       primary: "#BB86FC",
       secondary: "#03DAC6",
@@ -56,9 +54,9 @@ export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
       text: "#ffffff",
     },
     planetColors: ["#1a1a1a", "#2d2d2d", "#404040"],
-    counterColor: "#BB86FC",
+    counterColor: "#25212B",
     blobColor: "#000000",
-    outlineColor: "#ffffff",
+    outlineColor: "#545454",
     eyeColor: "#ffffff",
   },
   [THEME_IDS.PASTEL]: {
@@ -68,7 +66,6 @@ export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
     cost: 0,
     purchased: false,
     active: false,
-    icon: "🎨",
     colors: {
       primary: "#FFB3BA",
       secondary: "#BAFFC9",
@@ -77,10 +74,10 @@ export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
       text: "#212121",
     },
     planetColors: ["#FFE5E5", "#E5FFE5", "#E5F0FF"],
-    counterColor: "#FFB3BA",
-    blobColor: "#FFB3BA",
-    outlineColor: "#000000",
-    eyeColor: "#000000",
+    counterColor: "#CCF4B6",
+    blobColor: "#FEF8DF",
+    outlineColor: "#5B482A",
+    eyeColor: "#5B482A",
   },
   [THEME_IDS.NEON]: {
     id: THEME_IDS.NEON,
@@ -89,7 +86,6 @@ export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
     cost: 0,
     purchased: false,
     active: false,
-    icon: "💡",
     colors: {
       primary: "#FFFF00",
       secondary: "#FF3FF9",
@@ -97,11 +93,11 @@ export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
       background: "#FFFF00",
       text: "#000000",
     },
-    planetColors: ["#3F3F3F", "#000000", "#2a2a2a"], // Dark planet
-    counterColor: "#FFFF00",
-    blobColor: "#FFFF00",
+    planetColors: ["#ADECDE", "#FF00EE", "#2a2a2a"], // Dark planet
+    counterColor: "#ffffff",
+    blobColor: "#FEFF55",
     outlineColor: "#000000",
-    eyeColor: "#000000",
+    eyeColor: "#ffffff",
   },
   [THEME_IDS.CUSTOM]: {
     id: THEME_IDS.CUSTOM,
@@ -110,7 +106,6 @@ export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
     cost: 0,
     purchased: false,
     active: false,
-    icon: "🎨",
     colors: {
       primary: "#2979FF",
       secondary: "#4285F4",
