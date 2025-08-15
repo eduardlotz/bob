@@ -47,7 +47,7 @@ export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
     purchased: false,
     active: false,
     colors: {
-      primary: "#BB86FC",
+      primary: "#723db3ff",
       secondary: "#03DAC6",
       accent: "#FFD700",
       background: "#121212",

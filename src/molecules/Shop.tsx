@@ -1303,7 +1303,7 @@ const ToggleSwitch = styled.button<{ $active: boolean }>`
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: ${({ $active }) =>
     $active ? "var(--primary-color)" : "rgba(255,255,255,0.1)"};
-  color: #ffffff;
+  color: ${(props) => (props.$active ? "var(--text-color)" : "#ffffff")};
   cursor: pointer;
 `;
 

@@ -46,7 +46,7 @@ const AUTO_TAP_INTERVAL_MS = 1000;
 const MAX_PARTICLES_PER_AUTO_TAP = 5;
 const PARTICLE_STAGGER_MS = 100;
 
-const PURGE_DATE = new Date("08/10/2025"); // utility to purge states created before this date
+const PURGE_DATE = new Date("08/15/2025"); // utility to purge states created before this date
 
 // main migration function
 function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
@@ -617,8 +617,8 @@ interface GameStore {
 const initialDecorations: Decoration[] = [
   {
     id: "tree_3d",
-    name: "Tree",
-    description: "A tree",
+    name: "Baum",
+    description: "Ein Baum",
     cost: 1000,
     purchased: false,
     enabled: false,

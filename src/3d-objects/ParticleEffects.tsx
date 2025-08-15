@@ -84,7 +84,10 @@ const SHARED_MATERIALS = {
     side: THREE.DoubleSide,
   }),
   rain: new THREE.MeshStandardMaterial({ color: "#87CEEB", transparent: true }),
-  cloud: new THREE.MeshToonMaterial({ color: "#ffffff", transparent: true }),
+  cloud: new THREE.MeshStandardMaterial({
+    color: "#ffffff",
+    transparent: true,
+  }),
 };
 
 // Constants for limits
@@ -217,95 +220,93 @@ export function RainEffect() {
 }
 
 // Cloud Effect using instanced spheres for better performance
+// Cloud Effect using instanced spheres for better performance
 export function CloudEffect() {
   const { upgrades } = useGameStore();
   const cloudUpgrade = upgrades.find((u) => u.id === "environment_clouds");
   const cloudEnabled = cloudUpgrade?.unlocked && cloudUpgrade?.selected;
 
-  const [cloudParticles, setCloudParticles] = React.useState<
-    Array<{
-      id: number;
-      position: [number, number, number];
-      velocity: [number, number, number];
-      scale: number;
-      opacity: number;
-    }>
-  >([]);
+  const [clouds] = React.useState(() => {
+    if (!cloudEnabled) return [];
 
-  const particleIdCounter = useRef(0);
+    // Create 3-5 static clouds at random positions
+    const cloudCount = 3 + Math.floor(Math.random() * 3);
+    return Array.from({ length: cloudCount }, (_, index) => {
+      // Random position around the scene
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 4 + Math.random() * 4;
+      const x = Math.cos(angle) * radius;
+      const y = 2 + Math.random() * 3; // Height variation
+      const z = Math.sin(angle) * radius - 1;
 
-  // Create cloud particles
-  const createCloudParticles = React.useCallback(() => {
-    if (!cloudEnabled) return;
+      // Create cloud bubbles in organic cluster pattern
+      const bubbleCount = 6 + Math.floor(Math.random() * 8); // 6-13 bubbles per cloud
+      const bubbles = [];
 
-    setCloudParticles((prev) => {
-      if (prev.length >= MAX_CLOUD_PARTICLES) return prev; // Limit check
-
-      const newParticles = Array.from({ length: 8 }, () => {
-        // Spawn from center (where blob head is) with small radius
-        const radius = 1 + Math.random() * 3; // Small radius around center
-        const angle = Math.random() * Math.PI * 2;
-        const x = Math.cos(angle) * radius;
-        const y = 1 + Math.random() * 4; // Height range behind the counter
-        const z = Math.sin(angle) * radius - 2; // Slightly behind the counter
-
-        return {
-          id: particleIdCounter.current++,
-          position: [x, y, z] as [number, number, number],
-          velocity: [
-            (Math.random() - 0.5) * 0.15, // Even slower horizontal movement
-            0, // No vertical movement - clouds stay at same height
-            (Math.random() - 0.5) * 0.15,
-          ] as [number, number, number],
-          scale: 0.6 + Math.random() * 0.8, // Even smaller scale
-          opacity: 0.15 + Math.random() * 0.25, // Lower opacity
-        };
+      // Main central bubble
+      bubbles.push({
+        offset: [0, 0, 0] as [number, number, number],
+        scale: 1.2 + Math.random() * 0.8,
+        opacity: 0.3 + Math.random() * 0.2,
       });
 
-      return [...prev, ...newParticles];
-    });
-  }, [cloudEnabled]);
+      // Surrounding bubbles in organic pattern
+      for (let i = 0; i < bubbleCount - 1; i++) {
+        const bubbleAngle =
+          (i / (bubbleCount - 1)) * Math.PI * 2 + Math.random() * 0.5;
+        const bubbleRadius = 0.8 + Math.random() * 1.2;
+        const bubbleHeight = (Math.random() - 0.5) * 0.8;
 
-  // Update cloud particles
-  useFrame((state, delta) => {
-    // Create new particles periodically (slower)
-    if (state.clock.getElapsedTime() % 4 < delta) {
-      createCloudParticles();
-    }
-
-    setCloudParticles((prev) =>
-      prev
-        .map((particle) => ({
-          ...particle,
-          position: [
-            particle.position[0] + particle.velocity[0] * delta * 60,
-            particle.position[1] + particle.velocity[1] * delta * 60,
-            particle.position[2] + particle.velocity[2] * delta * 60,
+        bubbles.push({
+          offset: [
+            Math.cos(bubbleAngle) * bubbleRadius,
+            bubbleHeight,
+            Math.sin(bubbleAngle) * bubbleRadius,
           ] as [number, number, number],
-        }))
-        .filter((particle) => {
-          // Remove particles that go too far from center
-          const distance = Math.sqrt(
-            particle.position[0] ** 2 + particle.position[2] ** 2
-          );
-          return distance < 8; // Much smaller area
-        })
-    );
+          scale: 0.6 + Math.random() * 0.8,
+          opacity: 0.2 + Math.random() * 0.25,
+        });
+      }
+
+      // Add some random smaller bubbles for fluffiness
+      const fluffCount = Math.floor(Math.random() * 4);
+      for (let i = 0; i < fluffCount; i++) {
+        bubbles.push({
+          offset: [
+            (Math.random() - 0.5) * 3,
+            (Math.random() - 0.5) * 1.5,
+            (Math.random() - 0.5) * 3,
+          ] as [number, number, number],
+          scale: 0.3 + Math.random() * 0.4,
+          opacity: 0.1 + Math.random() * 0.15,
+        });
+      }
+
+      return {
+        id: index,
+        position: [x, y, z] as [number, number, number],
+        bubbles,
+      };
+    });
   });
 
   if (!cloudEnabled) return null;
 
   return (
     <group>
-      {cloudParticles.map((particle) => (
-        <mesh
-          key={particle.id}
-          position={particle.position}
-          scale={[particle.scale, particle.scale, particle.scale]}
-          geometry={SHARED_GEOMETRIES.cloudSphere}
-          material={SHARED_MATERIALS.cloud}
-          material-opacity={particle.opacity}
-        />
+      {clouds.map((cloud) => (
+        <group key={cloud.id} position={cloud.position}>
+          {cloud.bubbles.map((bubble, index) => (
+            <mesh
+              key={index}
+              position={bubble.offset}
+              scale={[bubble.scale, bubble.scale, bubble.scale]}
+              geometry={SHARED_GEOMETRIES.cloudSphere}
+              material={SHARED_MATERIALS.cloud}
+              material-opacity={bubble.opacity * 0.5}
+            />
+          ))}
+        </group>
       ))}
     </group>
   );
