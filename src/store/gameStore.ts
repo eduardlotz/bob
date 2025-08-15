@@ -36,7 +36,8 @@ export enum GAME_STORE_VERSIONS {
   V16 = 16,
   V17 = 17,
   V18 = 18,
-  LATEST = V18,
+  V19 = 19,
+  LATEST = V19,
 }
 
 // Constants
@@ -400,6 +401,12 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
     migratedState.themes = initialThemes;
 
     currentVersion = GAME_STORE_VERSIONS.V18;
+  }
+
+  if (currentVersion < GAME_STORE_VERSIONS.V19) {
+    migratedState.upgrades = initialUpgrades;
+
+    currentVersion = GAME_STORE_VERSIONS.V19;
   }
 
   // Set the final version to the latest

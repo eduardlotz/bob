@@ -93,15 +93,24 @@ const MAX_RAIN_DROPS = 100;
 const MAX_CLOUD_PARTICLES = 50;
 const TAP_PARTICLE_COUNT = 15;
 
-// Star Effect - Permanent background stars
-export function StarEffect() {
+// Stars Effect - Permanent background stars
+export function StarsEffect() {
+  const { upgrades } = useGameStore();
+  const starsUpgrade = upgrades.find((u) => u.id === "environment_stars");
+  const starsEnabled = useMemo(
+    () => starsUpgrade?.unlocked && starsUpgrade?.selected,
+    [starsUpgrade]
+  );
+
+  if (!starsEnabled) return null;
+
   return (
     <Sparkles
-      count={200}
+      count={400}
       scale={[60, 30, 50]}
       size={2}
       speed={0.1}
-      opacity={0.8}
+      opacity={0.5}
       color="#FFFFFF"
       position={[0, 1, 0]}
     />
@@ -602,6 +611,7 @@ export function ParticleEffects() {
     <group>
       <RainEffect />
       <CloudEffect />
+      <StarsEffect />
       <TapEffect />
     </group>
   );
