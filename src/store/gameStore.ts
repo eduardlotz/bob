@@ -36,7 +36,8 @@ export enum GAME_STORE_VERSIONS {
   V16 = 16,
   V17 = 17,
   V18 = 18,
-  LATEST = V18,
+  V19 = 19,
+  LATEST = V19,
 }
 
 // Constants
@@ -45,7 +46,7 @@ const AUTO_TAP_INTERVAL_MS = 1000;
 const MAX_PARTICLES_PER_AUTO_TAP = 5;
 const PARTICLE_STAGGER_MS = 100;
 
-const PURGE_DATE = new Date("08/10/2025"); // utility to purge states created before this date
+const PURGE_DATE = new Date("08/15/2025"); // utility to purge states created before this date
 
 // main migration function
 function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
@@ -402,6 +403,12 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
     currentVersion = GAME_STORE_VERSIONS.V18;
   }
 
+  if (currentVersion < GAME_STORE_VERSIONS.V19) {
+    migratedState.upgrades = initialUpgrades;
+
+    currentVersion = GAME_STORE_VERSIONS.V19;
+  }
+
   // Set the final version to the latest
   migratedState.version = GAME_STORE_VERSIONS.LATEST;
 
@@ -610,8 +617,8 @@ interface GameStore {
 const initialDecorations: Decoration[] = [
   {
     id: "tree_3d",
-    name: "Tree",
-    description: "A tree",
+    name: "Baum",
+    description: "Ein Baum",
     cost: 1000,
     purchased: false,
     enabled: false,

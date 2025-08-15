@@ -10,6 +10,8 @@ import { CloseIcon } from "@/icons/close";
 import { Shop } from "./Shop";
 import { ProgressTracker } from "./ProgressTracker";
 import { useKeyPress } from "@/hooks/useKeyPress";
+import { match } from "ts-pattern";
+import { formatNumber } from "./TapCounter";
 
 type NavigationView = "shop" | "upgrades" | "quests" | "menu" | "default";
 
@@ -243,17 +245,24 @@ export function BottomNavigation() {
                         {upgrade.description}
                       </UpgradeDescription>
                       <UpgradeLevel>
-                        {upgrade.unlocked
-                          ? `Level ${upgrade.level}/${upgrade.maxLevel}`
-                          : "Locked"}
+                        {match(upgrade)
+                          .with({ level: upgrade.maxLevel }, () => "Max Level")
+                          .with(
+                            { unlocked: true },
+                            () => `Level ${upgrade.level}/${upgrade.maxLevel}`
+                          )
+                          .otherwise(() => "Locked")}
                       </UpgradeLevel>
                     </UpgradeInfo>
                     <UpgradeCost>
-                      {Math.floor(
-                        upgrade.baseCost *
-                          Math.pow(upgrade.costMultiplier, upgrade.level)
+                      {upgrade.level === upgrade.maxLevel ? "" : ""}
+                      {formatNumber(
+                        Math.floor(
+                          upgrade.baseCost *
+                            Math.pow(upgrade.costMultiplier, upgrade.level)
+                        )
                       )}
-                      {" taps"}
+                      {" 🫵"}
                     </UpgradeCost>
                   </UpgradeItem>
                 ))}

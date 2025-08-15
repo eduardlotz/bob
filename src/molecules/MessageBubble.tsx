@@ -124,8 +124,13 @@ export const MessageBubble = memo(function MessageBubble({
     (message: typeof activeMessage): string[] => {
       if (!message) return [];
       const text = message.config.text;
-      if (Array.isArray(text)) return text;
-      if (typeof text === "string") return [text];
+      // normalize to an array of lines; split on explicit line breaks so timing respects visual lines
+      if (Array.isArray(text)) {
+        return text.flatMap((t) => String(t).split(/\r?\n/));
+      }
+      if (typeof text === "string") {
+        return text.split(/\r?\n/);
+      }
       return [];
     },
     []
@@ -391,16 +396,8 @@ export const MessageBubble = memo(function MessageBubble({
             lineState.text,
             message.options
           );
-          const fallbackDelay = Math.max(
-            300,
-            Math.min(
-              1500,
-              Math.max(
-                Math.floor(readingTimeWhole * 0.5),
-                Math.floor(readingTimeLast * 0.5)
-              )
-            )
-          );
+          // for multiline content, prefer giving at least the full reading time of the last line
+          const fallbackDelay = Math.max(600, readingTimeLast);
           const baseDelay =
             typeof message.config.nextDelayMs === "number"
               ? Math.max(200, message.config.nextDelayMs)

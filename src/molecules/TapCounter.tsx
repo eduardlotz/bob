@@ -8,7 +8,7 @@ import { THEME_CONFIG } from "@/store/themeConfig";
 
 const FONT_PATH = "/fonts/OpenRundeBold.json";
 
-const formatNumber = (num: number): string => {
+export const formatNumber = (num: number): string => {
   if (num < 10000) {
     // For numbers below 10k, use German locale formatting (dots for thousands)
     return num.toLocaleString("de-DE", {

@@ -116,7 +116,6 @@ const Scene = ({
             <Environment preset="city" />
             <BackgroundPlanet />
             {/* TODO: add back in as upgrade */}
-            {/* <StarEffect />  */}
             <HeadNavigation
               showOptions={showOptions || false}
               setShowOptions={setShowOptions || (() => {})}

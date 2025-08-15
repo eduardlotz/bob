@@ -72,15 +72,7 @@ export default function App() {
     <ThemeProvider>
       <GlobalStyle />
 
-      <Toaster
-        duration={5000}
-        position="top-center"
-        // style={
-        //   {
-        //     "--width": "360px",
-        //   } as React.CSSProperties
-        // }
-      />
+      <Toaster duration={5000} position="top-center" />
       <AnimatePresence mode="sync">
         <RouteChip
           initial={{ y: -120, filter: "blur(6px)" }}

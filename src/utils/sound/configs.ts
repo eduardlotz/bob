@@ -69,12 +69,12 @@ export const WORLD_SOUNDS = [
     filePath: DEFAULT_WORLD_MUSIC.filePath,
     icon: "🎵",
   },
-  {
-    id: "custom-world-music-01",
-    name: "captainlowie - du fehlst (vip)",
-    filePath: "/audio/du-fehlst-vip.wav",
-    icon: "🖤",
-  },
+  // {
+  //   id: "custom-world-music-01",
+  //   name: "captainlowie - du fehlst (vip)",
+  //   filePath: "/audio/du-fehlst-vip.wav",
+  //   icon: "🖤",
+  // },
   {
     id: "world-rain",
     name: "Rain",
@@ -108,7 +108,7 @@ export const getTapSoundById = (id: string) =>
 export const TAP_EFFECT_TO_DEFAULT_TAP_SOUND: Record<string, string> = {
   tap_effect_default: DEFAULT_TAP_SOUND.id,
   tap_effect_confetti: DEFAULT_TAP_SOUND.id,
-  tap_effect_hearts: "tap-pop",
+  tap_effect_hearts: DEFAULT_TAP_SOUND.id,
   tap_effect_stars: DEFAULT_TAP_SOUND.id,
 };
 
