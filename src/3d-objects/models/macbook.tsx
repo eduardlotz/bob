@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import React, { useEffect, useRef } from "react";
-import { useGLTF } from "@react-three/drei";
+import { Outlines, useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
 
@@ -115,10 +115,11 @@ export const MacbookModel = ({ scale = [1, 1, 1], ...props }: Props) => {
           geometry={nodes.Circle001_5.geometry}
           material={materials.TouchbarBorder}
         />
-        <mesh
+        {/* black keyboard background */}
+        {/* <mesh
           geometry={nodes.Circle001_6.geometry}
           material={materials.Keyboard}
-        />
+        /> */}
         <mesh
           geometry={nodes.FrontCameraRing001.geometry}
           material={materials["CameraRIngBlack.002"]}
@@ -176,7 +177,9 @@ export const MacbookModel = ({ scale = [1, 1, 1], ...props }: Props) => {
           <mesh
             geometry={nodes.Circle002.geometry}
             material={nodes.Circle002.material}
-          />
+          >
+            {/* <Outlines thickness={0.05} color={"#000000"} screenspace /> */}
+          </mesh>
           <mesh
             geometry={nodes.Circle002_1.geometry}
             material={materials.Screen}
@@ -192,13 +195,6 @@ export const MacbookModel = ({ scale = [1, 1, 1], ...props }: Props) => {
           <mesh
             geometry={nodes.Circle002_4.geometry}
             material={materials.DisplayGlass}
-          />
-          <mesh
-            geometry={nodes.AppleLogo000.geometry}
-            material={materials["AppleLogo.004"]}
-            position={[0, -0.11, -1.8]}
-            rotation={[-Math.PI, 0, -Math.PI]}
-            scale={[0.58, 0.58, 0.58]}
           />
         </group>
         <group position={[-15.03, 0.03, 0.6]} scale={5.8}>

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import styled from "styled-components";
-import { motion, AnimatePresence, stagger } from "motion/react";
+import { motion, AnimatePresence, stagger, LayoutGroup } from "motion/react";
 import { useGameStore } from "@/store/gameStore";
 import { useAppStore, ROUTE_PATHS } from "@/store";
 import { UpgradesIcon } from "@/icons/upgrades";
@@ -71,67 +71,86 @@ export function BottomNavigation() {
 
   return (
     <>
-      <NavigationContainer
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 40 }}
-        transition={{
-          duration: 0.5,
-          type: "spring",
-          mass: 0.5,
-        }}
-      >
-        {isHomeRoute ? (
-          <NavButton
-            onClick={() => handleNavigationClick("upgrades")}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            $isActive={currentView === "upgrades"}
-            data-ui-sound-id="ui-tap-2"
-          >
-            <AnimatePresence mode="popLayout">
-              {currentView === "upgrades" ? (
-                <motion.span
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0, opacity: 0 }}
-                  transition={{
-                    duration: 0.25,
-                    type: "spring" as const,
-                    bounce: 0.5,
-                  }}
-                >
-                  <CloseIcon color="#ffffff" />
-                </motion.span>
-              ) : (
-                <motion.span
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0, opacity: 0 }}
-                  transition={{
-                    duration: 0.25,
-                    type: "spring" as const,
-                    bounce: 0.5,
-                  }}
-                >
-                  <UpgradeButtonContent>
-                    <FingerIcon>🫵</FingerIcon>
-                    <TapMultiplier>{totalTapsPerSecond}/s</TapMultiplier>
-                  </UpgradeButtonContent>
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </NavButton>
-        ) : (
-          <ProgressTracker />
-        )}
-
+      <NavigationContainer>
+        <DynamicButtonsContainer>
+          <AnimatePresence mode="wait">
+            {isHomeRoute ? (
+              <NavButton
+                key="upgrades-button"
+                onClick={() => handleNavigationClick("upgrades")}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                $isActive={currentView === "upgrades"}
+                initial={{ filter: "blur(10px)", opacity: 0, y: 40 }}
+                animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
+                exit={{
+                  filter: "blur(10px)",
+                  opacity: 0,
+                  y: 40,
+                  transition: { delay: 0 },
+                }}
+                transition={{
+                  // duration: 0.25,
+                  type: "spring" as const,
+                  bounce: 0.5,
+                  delay: 0.05,
+                }}
+              >
+                <AnimatePresence mode="popLayout">
+                  {currentView === "upgrades" ? (
+                    <motion.span
+                      key="close-upgrades-icon"
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      transition={{
+                        duration: 0.25,
+                        type: "spring" as const,
+                        bounce: 0.5,
+                      }}
+                    >
+                      <CloseIcon color="#ffffff" />
+                    </motion.span>
+                  ) : (
+                    <motion.span
+                      key="show-upgrades-icon"
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      transition={{
+                        duration: 0.25,
+                        type: "spring" as const,
+                        bounce: 0.5,
+                      }}
+                    >
+                      <UpgradeButtonContent>
+                        <FingerIcon>🫵</FingerIcon>
+                        <TapMultiplier>{totalTapsPerSecond}/s</TapMultiplier>
+                      </UpgradeButtonContent>
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </NavButton>
+            ) : (
+              <ProgressTracker />
+            )}
+          </AnimatePresence>
+        </DynamicButtonsContainer>
         <MenuButton
+          key="menu-button"
           onClick={handleMenuButtonClick}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           $isActive={showOptions}
-          data-ui-sound-id="ui-tap-2"
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 40 }}
+          transition={{
+            // duration: 0.25,
+            type: "spring" as const,
+            bounce: 0.5,
+            // delay: 0.2,
+          }}
         >
           <AnimatePresence mode="popLayout">
             {showOptions ? (
@@ -167,11 +186,20 @@ export function BottomNavigation() {
         </MenuButton>
 
         <NavButton
+          key="shop-button"
           onClick={() => handleNavigationClick("shop")}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           $isActive={currentView === "shop"}
-          data-ui-sound-id="ui-tap-2"
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 40 }}
+          transition={{
+            // duration: 0.25,
+            type: "spring" as const,
+            bounce: 0.5,
+            delay: 0.1,
+          }}
         >
           <AnimatePresence mode="popLayout">
             {currentView === "shop" ? (
@@ -284,6 +312,20 @@ const NavigationContainer = styled(motion.div)`
   gap: 16px;
   z-index: 1000;
   pointer-events: auto;
+`;
+
+const DynamicButtonsContainer = styled(motion.div)`
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-end;
+  bottom: 0;
+  height: 58px;
+  min-width: 64px;
+  width: 64px;
+  max-width: 64px;
+  justify-self: flex-end;
 `;
 
 export const NavButton = styled(motion.button)<{ $isActive?: boolean }>`

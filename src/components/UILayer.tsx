@@ -7,7 +7,7 @@ import { SoundToggle } from "@/components/SoundToggle";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 
 import { requestMotionPermission } from "@/utils/permission";
-import { useGameStore, startAutoTap, stopAutoTap } from "@/store/gameStore";
+import { useGameStore } from "@/store/gameStore";
 
 import { useAnimations } from "@/hooks/useAnimations";
 import { AnimatePresence, motion } from "motion/react";
@@ -21,7 +21,7 @@ interface UILayerProps {
 }
 
 export function UILayer({ setPermissionGranted }: UILayerProps) {
-  const { statisticsVisible, isPaused } = useGameStore();
+  const { statisticsVisible } = useGameStore();
   const [soundHintDismissed, setSoundHintDismissed] = useState(false);
   const sound = useSoundSystem();
 
@@ -34,21 +34,6 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
 
   // Initialize animations hook
   useAnimations();
-
-  // Start auto-tap when component mounts
-  useEffect(() => {
-    startAutoTap();
-    return () => stopAutoTap();
-  }, []);
-
-  // Pause/resume auto-tap based on game state
-  useEffect(() => {
-    if (isPaused) {
-      stopAutoTap();
-    } else {
-      startAutoTap();
-    }
-  }, [isPaused]);
 
   // Cleanup manual taps periodically
   useEffect(() => {
@@ -73,10 +58,11 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
         const attrId = clickable.getAttribute("data-ui-sound-id");
         // defer slightly to avoid interfering with UI thread
         setTimeout(() => {
-          if (attrId && (window as any).__playUISoundById) {
-            // Use engine directly to avoid type widening in hook
-            (window as any).__playUISoundById(attrId);
+          if (attrId) {
+            // play the specific UI sound by ID
+            sound.playUISound(attrId);
           } else {
+            // play default UI sound
             sound.playUISound();
           }
         }, 0);

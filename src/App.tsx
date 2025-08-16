@@ -119,7 +119,7 @@ const ContentWrapper = styled(FillColumn)`
   padding-top: 100px;
 `;
 
-const RouteChip = styled(motion.div)`
+export const RouteChip = styled(motion.div)`
   position: absolute;
   top: 40px;
   left: 0;

@@ -216,7 +216,7 @@ const getTypeVolume = (type: SoundConfig["type"]): number => {
     case "ui":
       return state.uiVolume;
     case "text":
-      return state.textVolume ?? 0.6;
+      return state.textVolume ?? 1;
     default:
       return 1.0;
   }

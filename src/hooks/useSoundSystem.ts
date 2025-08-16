@@ -346,8 +346,13 @@ export function useSoundSystem(): SoundSystemHook {
   return {
     playTapSound: playTapSoundWithGameIntegration,
     playWorldSound: playWorldSoundWithOptions,
-    playUISound: (soundId?: string) =>
-      soundId ? enginePlayUISound(soundId as any) : enginePlayUISound(),
+    playUISound: (soundId?: string) => {
+      if (soundId) {
+        enginePlayUISound(soundId);
+      } else {
+        enginePlayUISound();
+      }
+    },
     stopAllTapSounds,
     stopAllWorldSounds,
     setMasterVolume: setMasterVolumeCallback,

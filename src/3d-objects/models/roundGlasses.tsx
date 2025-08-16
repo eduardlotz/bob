@@ -6,26 +6,30 @@ import { a, useSpring } from "@react-spring/three";
 
 type GLTFResult = GLTF & {
   nodes: {
-    Cube007: THREE.Mesh;
-    Cube007_1: THREE.Mesh;
+    Object_3001: THREE.Mesh;
   };
   materials: {
-    MetalBlack: THREE.MeshStandardMaterial;
-    DeskWood: THREE.MeshStandardMaterial;
+    ["Material.002"]: THREE.MeshPhysicalMaterial;
   };
 };
 
-const PATH = "gltf/desk.gltf";
+const PATH = "gltf/chicken-little-glasses.glb";
 
 interface Props {
   position: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
+  outlineColor?: string;
 }
 
-export const DeskModel = ({ scale = [1, 1, 1], ...props }: Props) => {
+export const RoundGlasses = ({
+  scale = [1, 1, 1],
+  outlineColor = "#000000",
+  ...props
+}: Props) => {
   const group = useRef<THREE.Group>(null!);
   const { nodes, materials } = useGLTF(PATH) as GLTFResult;
+
   const [spring, api] = useSpring(() => ({
     scale: [0, 0, 0], // start invisible
     config: { tension: 200, friction: 15 },
@@ -47,12 +51,22 @@ export const DeskModel = ({ scale = [1, 1, 1], ...props }: Props) => {
       position={props.position}
       rotation={props.rotation}
     >
-      <mesh geometry={nodes.Cube007.geometry} material={materials.MetalBlack}>
-        <Outlines thickness={0.01} color={"#000000"} screenspace />
-      </mesh>
-      <mesh geometry={nodes.Cube007_1.geometry} material={materials.DeskWood}>
-        <Outlines thickness={0.01} color={"#000000"} screenspace />
-      </mesh>
+      <group
+      // position={[-1.005, 0, -0.675]}
+      // rotation={[-Math.PI / 2, 0, 0]}
+      // scale={[0.823, 0.773, 1]}
+      >
+        <mesh
+          castShadow
+          receiveShadow
+          geometry={nodes.Object_3001.geometry}
+          // material={materials['Material.002']}
+          rotation={[-1.65, 0, 0]}
+        >
+          <meshToonMaterial color={"#191919"} />
+          {/* <Outlines thickness={0.01} color={"#ffffff"} screenspace /> */}
+        </mesh>
+      </group>
     </a.group>
   );
 };

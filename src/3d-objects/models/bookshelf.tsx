@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import React, { useEffect, useRef } from "react";
-import { useGLTF } from "@react-three/drei";
+import { Outlines, useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
 
@@ -66,7 +66,10 @@ export const BookshelfModel = ({ scale = [1, 1, 1], ...props }: Props) => {
         <mesh
           geometry={nodes.Cube033.geometry}
           material={materials["BrownDark.049"]}
-        />
+        >
+          {/* <meshToonMaterial color={"#9a5c55"} /> */}
+          <Outlines thickness={0.01} color={"#000000"} screenspace />
+        </mesh>
         <mesh
           geometry={nodes.Cube033_1.geometry}
           material={materials["PurpleDark.003"]}

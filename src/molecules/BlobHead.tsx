@@ -26,6 +26,11 @@ import { type RapierRigidBody } from "@react-three/rapier";
 import { Star3D } from "@/3d-objects/Star3D";
 import { EmotionState } from "@/hooks/useBlobEmotions";
 import { useGameStore } from "@/store/gameStore";
+import { useViewStore } from "@/store/viewStore";
+import { KrustyKrabHat } from "@/3d-objects/models/krustyKrabHat";
+import { match } from "ts-pattern";
+import { RoundGlasses } from "@/3d-objects/models/roundGlasses";
+import { AfroHair } from "@/3d-objects/models/afroHair";
 
 // TODO: Move these constants to a shared config file
 // Default head position Y
@@ -180,7 +185,7 @@ export function BlobHead({
   emotionState: EmotionState;
   onCameraZoomAnimation?: (isAnimating: boolean) => void;
 }) {
-  const { currentTheme } = useGameStore();
+  const { currentTheme, bobItems } = useGameStore();
 
   // Get theme-specific blob colors
   const blobColor = currentTheme?.blobColor;
@@ -223,6 +228,9 @@ export function BlobHead({
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const { orientation, acceleration } = useDeviceOrientation();
 
+  // view store to check if we should control camera
+  const { isBlobView } = useViewStore();
+
   // Keep a ref to spring api for fine-grained control
   const [spring, api] = useSpring(() => ({
     scale: [0, 0, 0], // start invisible
@@ -256,17 +264,20 @@ export function BlobHead({
     }
   }, [showOptions, isClosing]);
 
-  // Track mouse position for head rotation
+  // Track mouse position for head rotation (only in blob view mode)
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
-      setMousePosition({
-        x: (event.clientX / window.innerWidth) * 2 - 1,
-        y: (event.clientY / window.innerHeight) * 2 - 1,
-      });
+      // only update mouse position when in blob view mode
+      if (isBlobView()) {
+        setMousePosition({
+          x: (event.clientX / window.innerWidth) * 2 - 1,
+          y: (event.clientY / window.innerHeight) * 2 - 1,
+        });
+      }
     };
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
+  }, [isBlobView]);
 
   // Blinking animation every 4-5 seconds
   useEffect(() => {
@@ -521,15 +532,18 @@ export function BlobHead({
     const cameraPosition = new Vector3(0, CAMERA_HEIGHT, baseZoom + zoomOffset);
     const target = cameraPosition.clone().add(lookDirection);
 
-    cameraControlsRef.current?.setLookAt(
-      cameraPosition.x,
-      cameraPosition.y,
-      cameraPosition.z,
-      target.x,
-      target.y,
-      target.z,
-      true
-    );
+    // only control camera when in blob view mode
+    if (isBlobView()) {
+      cameraControlsRef.current?.setLookAt(
+        cameraPosition.x,
+        cameraPosition.y,
+        cameraPosition.z,
+        target.x,
+        target.y,
+        target.z,
+        true
+      );
+    }
   };
 
   // Handle desktop mouse movement
@@ -570,15 +584,18 @@ export function BlobHead({
       ? Math.sin(clock.getElapsedTime() * 20) * 0.5
       : 0;
 
-    cameraControlsRef.current?.setLookAt(
-      0,
-      CAMERA_HEIGHT,
-      baseZoom + zoomOffset,
-      cursorPos.x,
-      cursorPos.y + 2,
-      cursorPos.z,
-      true
-    );
+    // only control camera when in blob view mode
+    if (isBlobView()) {
+      cameraControlsRef.current?.setLookAt(
+        0,
+        CAMERA_HEIGHT,
+        baseZoom + zoomOffset,
+        cursorPos.x,
+        cursorPos.y + 2,
+        cursorPos.z,
+        true
+      );
+    }
   };
 
   // Common function to apply head rotation
@@ -890,6 +907,47 @@ export function BlobHead({
     document.body.style.cursor = "auto";
   };
 
+  const renderBobItems = () => {
+    const hats = bobItems.filter(
+      (item) => item.equipped && item.type === "hat"
+    );
+    const accessories = bobItems.filter(
+      (item) => item.equipped && item.type === "accessory"
+    );
+
+    const allItems = [...hats, ...accessories];
+
+    const ModelsToRender = allItems.map((item) => {
+      if (item.id === "krustyKrabHat")
+        return (
+          <KrustyKrabHat
+            key={item.id}
+            position={[0, 0.9, 0]}
+            scale={[0.006, 0.006, 0.006]}
+            outlineColor={outlineColor}
+          />
+        );
+      if (item.id === "chickenLittleGlasses")
+        return (
+          <RoundGlasses
+            key={item.id}
+            position={[0, 0.1, 0.7]}
+            scale={[1.6, 1.6, 1.6]}
+          />
+        );
+      if (item.id === "afroHair")
+        return (
+          <AfroHair
+            key={item.id}
+            position={[0, -0.7, -0.05]}
+            scale={[0.9, 0.9, 0.9]}
+          />
+        );
+    });
+
+    return ModelsToRender;
+  };
+
   const content = (
     <>
       <a.group
@@ -920,6 +978,8 @@ export function BlobHead({
             <meshToonMaterial color={eyeColor} />
           </mesh>
         </group>
+
+        <>{renderBobItems()}</>
 
         {emotionState === "dizzy" &&
           dizzyStars.map((star) => {

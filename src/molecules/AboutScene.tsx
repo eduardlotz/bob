@@ -78,10 +78,12 @@ export function AboutScene() {
 
   return (
     <group>
+      {/* desk with view mode - click to focus on desk */}
       <InteractiveObject
         questAction="click_desk"
         questValue={30}
-        onDialogOpen={() => handleObjectClick("desk")}
+        mode="view"
+        viewId="desk"
       >
         <DeskModel
           position={[-3, FLOOR_Y_POSITION + 1.2, 0]}
@@ -95,9 +97,12 @@ export function AboutScene() {
           scale={[0.4, 0.4, 0.4]}
         />
       </InteractiveObject>
+
+      {/* bookshelf with dialog mode - click to open dialog */}
       <InteractiveObject
         questAction="click_books"
         questValue={30}
+        mode="dialog"
         onDialogOpen={() => handleObjectClick("books")}
       >
         <BookshelfModel

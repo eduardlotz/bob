@@ -20,6 +20,7 @@ import { useNavigate } from "react-router-dom";
 import { match } from "ts-pattern";
 import { LockIcon } from "@/icons/lock";
 import { useAppStore } from "@/store";
+import { useViewStore } from "@/store/viewStore";
 
 //#region constants
 export const CAMERA_Y_POSITION = 1;
@@ -146,6 +147,32 @@ export function HeadNavigation({
     getEmotionIcon: any;
   }) => void;
 }) {
+  // view store integration
+  const {
+    currentView,
+    isDefaultView,
+    isBlobView,
+    getCurrentViewConfig,
+    isTransitioning,
+    resetToDefaultView,
+  } = useViewStore();
+
+  // close options menu when entering a custom view
+  useEffect(() => {
+    if (!isDefaultView() && showOptions) {
+      setShowOptions(false);
+    }
+  }, [currentView, isDefaultView, showOptions, setShowOptions]);
+
+  // return to default view when options menu is opened (if not already in default view)
+  useEffect(() => {
+    if (showOptions && !isDefaultView()) {
+      // small delay to ensure smooth transition
+      setTimeout(() => {
+        resetToDefaultView();
+      }, 100);
+    }
+  }, [showOptions, isDefaultView, resetToDefaultView]);
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const { orientation, acceleration, sensorsAvailable } =
@@ -182,14 +209,17 @@ export function HeadNavigation({
 
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
-      setMousePosition({
-        x: event.clientX / window.innerWidth,
-        y: event.clientY / window.innerHeight,
-      });
+      // only update mouse position when in blob view mode
+      if (isBlobView()) {
+        setMousePosition({
+          x: event.clientX / window.innerWidth,
+          y: event.clientY / window.innerHeight,
+        });
+      }
     };
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
+  }, [isBlobView]);
 
   const { isOptionsClosing, closeOptionsWithAnimation } = useAppStore();
   const [cameraZoomAnimation, setCameraZoomAnimation] = useState(false);
@@ -233,14 +263,29 @@ export function HeadNavigation({
   };
 
   useFrame(() => {
-    // Add camera zoom animation on tap
+    // camera control re-enabled with proper guards
+
+    // don't override camera during view transitions
+    if (isTransitioning) {
+      return;
+    }
+
+    // get current view configuration
+    const viewConfig = getCurrentViewConfig();
+
+    // if we're in object view mode, let the view store handle the camera
+    if (!isBlobView()) {
+      return;
+    }
+
+    // default view behavior (original logic for home/menu states)
     const baseZoom =
       showOptions && !isOptionsClosing
         ? VISIBLE_OPTIONS_CAMERA_ZOOM
         : HIDDEN_OPTIONS_CAMERA_ZOOM;
     const zoomOffset = cameraZoomAnimation ? 1 : 0;
 
-    // Add calibration feedback animation
+    // add calibration feedback animation
     const calibrationOffset = calibrationFeedback
       ? Math.sin(Date.now() * 0.01) * 0.3
       : 0;
@@ -260,12 +305,12 @@ export function HeadNavigation({
         true
       );
     } else {
-      // Only follow cursor on desktop, not on mobile
+      // only follow cursor on desktop, not on mobile
       if (!isMobile) {
-        // Fix camera Y-axis inversion to match head movement
+        // fix camera Y-axis inversion to match head movement
         const cursorPos = new THREE.Vector3(
           (mousePosition.x - 0.5) * CAMERA_FOLLOW_OFFSET * 0.1,
-          -(mousePosition.y - 0.5) * CAMERA_FOLLOW_OFFSET * 0.2, // Invert Y and center around 0.5
+          -(mousePosition.y - 0.5) * CAMERA_FOLLOW_OFFSET * 0.2, // invert Y and center around 0.5
           0
         );
         cameraControlsRef.current?.setLookAt(
@@ -278,7 +323,7 @@ export function HeadNavigation({
           true
         );
       } else {
-        // On mobile, just set the camera position without following cursor
+        // on mobile, just set the camera position without following cursor
         cameraControlsRef.current?.setLookAt(
           0,
           showOptions && !isOptionsClosing ? 2 : CAMERA_HEIGHT,
@@ -582,6 +627,7 @@ function Option({
           whileTap={MotionVariants.OptionButton.tap}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={handleOptionClick}
+          data-ui-sound-id="ui-tap-2"
         >
           {route.isLocked && <LockIcon />}
           {route.name}

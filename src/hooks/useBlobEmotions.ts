@@ -3,6 +3,7 @@ import { useGameStore } from "@/store/gameStore";
 import { useAppStore, ROUTE_PATHS } from "@/store";
 import { useSoundSystem } from "./useSoundSystem";
 import { isEnabled, resumeAudioContext } from "@/utils/soundSystem";
+import { resolveTapSoundForEffect } from "@/utils/sound/configs";
 
 export type EmotionState =
   | "normal"
@@ -84,7 +85,25 @@ export function useBlobEmotions() {
 
     // ensure audio context is resumed on first interaction
     // resumeAudioContext().catch(() => {});
-    playTapSound();
+
+    // get the correct tap sound ID from game store
+    const gameStore = useGameStore.getState();
+    const selectedTapEffect = gameStore.upgrades.find(
+      (u) => u.category === "tapEffects" && u.selected
+    );
+    const tapEffectId = selectedTapEffect?.id || "tap_effect_default";
+
+    // resolve the actual sound ID using the resolver
+    const soundConfig = resolveTapSoundForEffect(
+      tapEffectId,
+      gameStore.audioSelections.tapEffectAudioId
+    );
+
+    if (soundConfig?.id) {
+      playTapSound(soundConfig.id);
+    } else {
+      playTapSound(); // fallback to default
+    }
 
     // only increment tap count on home route
     if (currentRoute === ROUTE_PATHS.HOME) {
