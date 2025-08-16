@@ -209,14 +209,17 @@ export function HeadNavigation({
 
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
-      setMousePosition({
-        x: event.clientX / window.innerWidth,
-        y: event.clientY / window.innerHeight,
-      });
+      // only update mouse position when in blob view mode
+      if (isBlobView()) {
+        setMousePosition({
+          x: event.clientX / window.innerWidth,
+          y: event.clientY / window.innerHeight,
+        });
+      }
     };
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
+  }, [isBlobView]);
 
   const { isOptionsClosing, closeOptionsWithAnimation } = useAppStore();
   const [cameraZoomAnimation, setCameraZoomAnimation] = useState(false);

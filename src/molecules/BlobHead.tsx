@@ -260,17 +260,20 @@ export function BlobHead({
     }
   }, [showOptions, isClosing]);
 
-  // Track mouse position for head rotation
+  // Track mouse position for head rotation (only in blob view mode)
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
-      setMousePosition({
-        x: (event.clientX / window.innerWidth) * 2 - 1,
-        y: (event.clientY / window.innerHeight) * 2 - 1,
-      });
+      // only update mouse position when in blob view mode
+      if (isBlobView()) {
+        setMousePosition({
+          x: (event.clientX / window.innerWidth) * 2 - 1,
+          y: (event.clientY / window.innerHeight) * 2 - 1,
+        });
+      }
     };
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
+  }, [isBlobView]);
 
   // Blinking animation every 4-5 seconds
   useEffect(() => {
