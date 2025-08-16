@@ -48,7 +48,8 @@ export function InteractiveObject({
   // check if this object's view is currently active
   const isViewActive = mode === "view" && currentView === viewId;
 
-  const handleClick = async () => {
+  const handleClick = async (e: any) => {
+    e.stopPropagation();
     // play ui sound for interactive objects
     playUISound("ui-tap-2");
 

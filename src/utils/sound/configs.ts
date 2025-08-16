@@ -122,6 +122,5 @@ export const resolveTapSoundForEffect = (
     TAP_EFFECT_TO_DEFAULT_TAP_SOUND[effectUpgradeId] ||
     DEFAULT_TAP_SOUND.id;
   const cfg = getTapSoundById(resolvedId);
-  console.log("🚀 ~ resolveTapSoundForEffect ~ cfg:", cfg);
   return cfg;
 };
