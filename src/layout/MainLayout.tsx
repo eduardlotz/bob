@@ -1,5 +1,6 @@
 import { SceneWithLoader } from "@/molecules/SceneWithLoader";
 import { BottomNavigation } from "@/molecules/BottomNavigation";
+import { ViewControls } from "@/molecules/ViewControls";
 import { useEffect, useState } from "react";
 import styled from "styled-components";
 import { useAppStore } from "@/store";
@@ -41,6 +42,7 @@ export default function MainLayout({ children }: any) {
           onLoaded={() => setSceneLoaded(true)}
         />
       </Background>
+      <ViewControls />
       {children}
     </Container>
   );

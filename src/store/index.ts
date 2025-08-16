@@ -151,3 +151,4 @@ export const useAppStore = create<AppStore>()(
 export * from "./gameStore";
 export * from "./questStore";
 export * from "./routeStore";
+export * from "./viewStore";

@@ -8,6 +8,7 @@ import {
 } from "@react-three/drei";
 import { Suspense, useRef, useState, useEffect } from "react";
 import { useAppStore } from "../store";
+import { useViewStore } from "../store/viewStore";
 import { ROUTE_PATHS } from "../store/routeConfig";
 import { HeadNavigation } from "./HeadNavigation";
 import { TapCounter } from "./TapCounter";
@@ -38,6 +39,7 @@ const Scene = ({
   }) => void;
 }) => {
   const cameraControlsRef = useRef<CameraControls>(null!);
+  const { setCameraControlsRef, resetToDefaultView } = useViewStore();
 
   const {
     currentRoute,
@@ -50,6 +52,24 @@ const Scene = ({
   const isHome = currentRoute === ROUTE_PATHS.HOME;
 
   const [visible, setVisible] = useState(isHome);
+
+  // initialize view store with camera controls reference
+  useEffect(() => {
+    setCameraControlsRef(cameraControlsRef);
+  }, [setCameraControlsRef]);
+
+  // reset to default view when navigating to home (only if not already in default view)
+  useEffect(() => {
+    if (isHome) {
+      // only reset if we're not already in default view to avoid unnecessary transitions
+      setTimeout(() => {
+        const { isDefaultView } = useViewStore.getState();
+        if (!isDefaultView()) {
+          resetToDefaultView();
+        }
+      }, 200);
+    }
+  }, [isHome, resetToDefaultView]);
 
   // Handle auto-tap - continue on all routes since shop is accessible everywhere
   useEffect(() => {

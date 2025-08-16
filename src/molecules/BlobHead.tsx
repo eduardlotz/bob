@@ -26,6 +26,7 @@ import { type RapierRigidBody } from "@react-three/rapier";
 import { Star3D } from "@/3d-objects/Star3D";
 import { EmotionState } from "@/hooks/useBlobEmotions";
 import { useGameStore } from "@/store/gameStore";
+import { useViewStore } from "@/store/viewStore";
 
 // TODO: Move these constants to a shared config file
 // Default head position Y
@@ -222,6 +223,9 @@ export function BlobHead({
   // Ref for physics body
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const { orientation, acceleration } = useDeviceOrientation();
+
+  // view store to check if we should control camera
+  const { isBlobView } = useViewStore();
 
   // Keep a ref to spring api for fine-grained control
   const [spring, api] = useSpring(() => ({
@@ -521,15 +525,18 @@ export function BlobHead({
     const cameraPosition = new Vector3(0, CAMERA_HEIGHT, baseZoom + zoomOffset);
     const target = cameraPosition.clone().add(lookDirection);
 
-    cameraControlsRef.current?.setLookAt(
-      cameraPosition.x,
-      cameraPosition.y,
-      cameraPosition.z,
-      target.x,
-      target.y,
-      target.z,
-      true
-    );
+    // only control camera when in blob view mode
+    if (isBlobView()) {
+      cameraControlsRef.current?.setLookAt(
+        cameraPosition.x,
+        cameraPosition.y,
+        cameraPosition.z,
+        target.x,
+        target.y,
+        target.z,
+        true
+      );
+    }
   };
 
   // Handle desktop mouse movement
@@ -570,15 +577,18 @@ export function BlobHead({
       ? Math.sin(clock.getElapsedTime() * 20) * 0.5
       : 0;
 
-    cameraControlsRef.current?.setLookAt(
-      0,
-      CAMERA_HEIGHT,
-      baseZoom + zoomOffset,
-      cursorPos.x,
-      cursorPos.y + 2,
-      cursorPos.z,
-      true
-    );
+    // only control camera when in blob view mode
+    if (isBlobView()) {
+      cameraControlsRef.current?.setLookAt(
+        0,
+        CAMERA_HEIGHT,
+        baseZoom + zoomOffset,
+        cursorPos.x,
+        cursorPos.y + 2,
+        cursorPos.z,
+        true
+      );
+    }
   };
 
   // Common function to apply head rotation
