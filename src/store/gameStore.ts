@@ -654,10 +654,21 @@ const initialDecorations: Decoration[] = [
 // bob items (wearable items for the blob head)
 const initialBobItems: BobItem[] = [
   {
+    id: "builderHelmet",
+    name: "Schutzhelm",
+    description: "Jo wir schaffen das!",
+    cost: 100,
+    purchased: false,
+    equipped: false,
+    type: "hat",
+    icon: "👨‍🍳",
+    category: "bob",
+  },
+  {
     id: "krustyKrabHat",
     name: "Arbeitskleidung",
     description: "Ist da die Krosse Krabbe?",
-    cost: 500,
+    cost: 100,
     purchased: false,
     equipped: false,
     type: "hat",
@@ -668,7 +679,7 @@ const initialBobItems: BobItem[] = [
     id: "afroHair",
     name: "Afro",
     description: "Happy little accidents",
-    cost: 500,
+    cost: 100,
     purchased: false,
     equipped: false,
     type: "hat",
@@ -678,8 +689,8 @@ const initialBobItems: BobItem[] = [
   {
     id: "chickenLittleGlasses",
     name: "Sehhilfe",
-    description: "Dem Bob seine Brille",
-    cost: 500,
+    description: "Eddie's Brille",
+    cost: 100,
     purchased: false,
     equipped: false,
     type: "accessory",
@@ -1763,6 +1774,7 @@ export const useGameStore = create<GameStore>()(
               console.error("Failed to queue storage migration", e)
             );
 
+          // TODO: check safer purge method or if even needed
           const needsPurge = new Date(state?.lastSchemaUpdate) < PURGE_DATE;
 
           // Check if store version migration is needed
@@ -1789,6 +1801,20 @@ export const useGameStore = create<GameStore>()(
               toast.success(
                 `Store migrated from V${state.version} to V${GAME_STORE_VERSIONS.LATEST}`
               );
+
+              // ensure message store hydration state is preserved after game store migration
+              setTimeout(() => {
+                try {
+                  import("./messageStore").then((messageStore) => {
+                    messageStore.useMessageStore.setState({ isHydrated: true });
+                    console.log(
+                      "Re-hydrated message store after game store migration"
+                    );
+                  });
+                } catch (e) {
+                  console.warn("Failed to re-hydrate message store:", e);
+                }
+              }, 100);
             } catch (error) {
               console.error("Error during store migration:", error);
               toast.error(

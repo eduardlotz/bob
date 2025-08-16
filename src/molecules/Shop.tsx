@@ -714,7 +714,7 @@ function BobView() {
               <div style={{ fontSize: "32px" }}>{bobItem.icon}</div>
               <ThemeName>{bobItem.name}</ThemeName>
               <ThemeDescription>{bobItem.description}</ThemeDescription>
-              <div
+              {/* <div
                 style={{
                   fontSize: "10px",
                   color: "#999",
@@ -724,7 +724,7 @@ function BobView() {
                 }}
               >
                 {bobItem.type}
-              </div>
+              </div> */}
 
               <ThemeStatus
                 $purchased={bobItem.purchased}
