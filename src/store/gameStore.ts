@@ -46,7 +46,7 @@ const AUTO_TAP_INTERVAL_MS = 1000;
 const MAX_PARTICLES_PER_AUTO_TAP = 5;
 const PARTICLE_STAGGER_MS = 100;
 
-const PURGE_DATE = new Date("08/15/2025"); // utility to purge states created before this date
+const PURGE_DATE = new Date("08/17/2025"); // utility to purge states created before this date
 
 // main migration function
 function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
@@ -408,6 +408,8 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
     migratedState.bobItems = initialBobItems;
     migratedState.decorations = initialDecorations;
     migratedState.themes = initialThemes;
+
+    migratedState.lastSchemaUpdate = new Date();
 
     currentVersion = GAME_STORE_VERSIONS.V19;
   }
