@@ -627,6 +627,7 @@ function Option({
           whileTap={MotionVariants.OptionButton.tap}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={handleOptionClick}
+          data-ui-sound-id="ui-tap-2"
         >
           {route.isLocked && <LockIcon />}
           {route.name}

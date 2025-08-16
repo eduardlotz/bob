@@ -1259,7 +1259,6 @@ export const useGameStore = create<GameStore>()(
             try {
               const overrideId = get().audioSelections.tapEffectAudioId;
               const cfg = resolveTapSoundForEffect(upgradeId, overrideId);
-              console.log("🚀 ~ cfg:", cfg);
               if (cfg && cfg.id) {
                 if (cfg.filePath)
                   engineSetCurrentTapSound(cfg.id, cfg.filePath);

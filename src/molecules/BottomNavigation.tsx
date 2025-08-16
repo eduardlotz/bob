@@ -81,7 +81,6 @@ export function BottomNavigation() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 $isActive={currentView === "upgrades"}
-                data-ui-sound-id="ui-tap-2"
                 initial={{ filter: "blur(10px)", opacity: 0, y: 40 }}
                 animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
                 exit={{
@@ -143,7 +142,6 @@ export function BottomNavigation() {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           $isActive={showOptions}
-          data-ui-sound-id="ui-tap-2"
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 40 }}
@@ -193,7 +191,6 @@ export function BottomNavigation() {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           $isActive={currentView === "shop"}
-          data-ui-sound-id="ui-tap-2"
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 40 }}

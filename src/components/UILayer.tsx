@@ -58,10 +58,11 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
         const attrId = clickable.getAttribute("data-ui-sound-id");
         // defer slightly to avoid interfering with UI thread
         setTimeout(() => {
-          if (attrId && (window as any).__playUISoundById) {
-            // Use engine directly to avoid type widening in hook
-            (window as any).__playUISoundById(attrId);
+          if (attrId) {
+            // play the specific UI sound by ID
+            sound.playUISound(attrId);
           } else {
+            // play default UI sound
             sound.playUISound();
           }
         }, 0);

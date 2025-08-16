@@ -3,6 +3,7 @@ import { Outlines } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { useViewStore } from "@/store/viewStore";
+import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { Mesh } from "three";
 import { a } from "@react-spring/three";
 import { match } from "ts-pattern";
@@ -42,11 +43,15 @@ export function InteractiveObject({
   const { triggerQuest } = useQuestSystem();
   const { transitionToView, currentView, isTransitioning, resetToDefaultView } =
     useViewStore();
+  const { playUISound } = useSoundSystem();
 
   // check if this object's view is currently active
   const isViewActive = mode === "view" && currentView === viewId;
 
   const handleClick = async () => {
+    // play ui sound for interactive objects
+    playUISound("ui-tap-2");
+
     // trigger quest system
     triggerQuest(questAction, questValue);
 
