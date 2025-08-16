@@ -76,7 +76,6 @@ export function useMessageSystem() {
       return;
     }
     lastRouteRef.current = currentRoute;
-
     handleRouteChange(currentRoute);
 
     return () => {
@@ -100,6 +99,47 @@ export function useMessageSystem() {
       setTimeout(() => showMessage("first_tap_hint"), 1500);
     }
   }, [manualTaps, showMessage, systemPaused]);
+
+  // Listen for final reset completion to re-trigger message logic
+  useEffect(() => {
+    const handleFinalResetComplete = (event: CustomEvent) => {
+      console.log(
+        "[MESSAGE SYSTEM] Final reset completed, re-checking messages for route:",
+        event.detail?.route
+      );
+      // clear the route shown flag and directly trigger welcome messages
+      if (event.detail?.route === ROUTE_PATHS.HOME) {
+        routeShownRef.current = {};
+        lastRouteRef.current = null;
+
+        // directly trigger welcome messages since we know repeatFlags are cleared
+        console.log(
+          "[MESSAGE SYSTEM] Directly triggering welcome messages after final reset"
+        );
+        showMessages(["welcome_home", "home_features"]).then((results) => {
+          if (results.some(Boolean)) {
+            routeShownRef.current[ROUTE_PATHS.HOME] = true;
+          }
+        });
+      } else if (event.detail?.route) {
+        // for other routes, use normal flow
+        routeShownRef.current = {};
+        lastRouteRef.current = null;
+        handleRouteChange(event.detail.route);
+      }
+    };
+
+    window.addEventListener(
+      "finalResetComplete",
+      handleFinalResetComplete as EventListener
+    );
+    return () => {
+      window.removeEventListener(
+        "finalResetComplete",
+        handleFinalResetComplete as EventListener
+      );
+    };
+  }, [handleRouteChange, showMessages]);
 
   // Pause system during critical interactions
   // useEffect(() => {
