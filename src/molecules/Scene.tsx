@@ -6,18 +6,17 @@ import {
   PerspectiveCamera,
   Grid,
 } from "@react-three/drei";
-import { Suspense, useRef, useState, useEffect } from "react";
-import { useAppStore } from "../store";
+import { Suspense, useRef, useState, useEffect, useMemo } from "react";
+import { useAppStore, useGameStore } from "../store";
 import { useViewStore } from "../store/viewStore";
 import { ROUTE_PATHS } from "../store/routeConfig";
 import { HeadNavigation } from "./HeadNavigation";
 import { TapCounter } from "./TapCounter";
 import { AboutScene } from "./AboutScene";
-import { PortfolioScene } from "./PortfolioScene";
 import { BackgroundPlanet } from "../3d-objects/BackgroundPlanet";
 import { ParticleEffects } from "../3d-objects/ParticleEffects";
 import { match } from "ts-pattern";
-import { startAutoTap } from "../store/gameStore";
+import { startAutoTap, stopAutoTap } from "../store/gameStore";
 import { useKeyPress } from "../hooks/useKeyPress";
 import { FISHEYE_CONFIG } from "../store/themeConfig";
 import { a, useSpring } from "@react-spring/three";
@@ -40,6 +39,7 @@ const Scene = ({
 }) => {
   const cameraControlsRef = useRef<CameraControls>(null!);
   const { setCameraControlsRef, resetToDefaultView } = useViewStore();
+  const { upgrades, isPaused } = useGameStore();
 
   const {
     currentRoute,
@@ -50,6 +50,12 @@ const Scene = ({
   } = useAppStore();
 
   const isHome = currentRoute === ROUTE_PATHS.HOME;
+
+  const autoTapEnabled = useMemo(() => {
+    return upgrades.some(
+      (upgrade) => upgrade.id === "auto_tap_1" && upgrade.level > 0
+    );
+  }, [upgrades]);
 
   const [visible, setVisible] = useState(isHome);
 
@@ -74,8 +80,21 @@ const Scene = ({
   // Handle auto-tap - continue on all routes since shop is accessible everywhere
   useEffect(() => {
     // Always start auto-tap regardless of route
-    startAutoTap();
+    if (autoTapEnabled) {
+      startAutoTap();
+      return () => stopAutoTap();
+    }
   }, [currentRoute]);
+
+  // Pause/resume auto-tap based on game state
+  // dev only
+  useEffect(() => {
+    if (isPaused) {
+      stopAutoTap();
+    } else {
+      startAutoTap();
+    }
+  }, [isPaused]);
 
   const [spring, api] = useSpring(() => ({
     scale: 1,
@@ -164,7 +183,6 @@ const Scene = ({
 
             {match(currentRoute)
               .with(ROUTE_PATHS.ABOUT, () => <AboutScene />)
-              .with(ROUTE_PATHS.PORTFOLIO, () => <PortfolioScene />)
               .otherwise(() => null)}
           </Fisheye>
         </Suspense>

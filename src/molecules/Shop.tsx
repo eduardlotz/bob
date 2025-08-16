@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
 import { useGameStore, triggerStoreMigration } from "@/store/gameStore";
-import { WORLD_SOUNDS, getWorldSoundById } from "@/utils/sound/configs";
+import { WORLD_SOUNDS } from "@/utils/sound/configs";
 import {
   setWorldEnabled as engineSetWorldEnabled,
   setTapEnabled as engineSetTapEnabled,
@@ -32,6 +32,7 @@ import { THEME_IDS } from "@/store/themeConfig";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { DecorationIcon } from "@/icons/decoration";
 import { useMessageStore } from "@/store/messageStore";
+import { formatNumber } from "./TapCounter";
 
 interface ShopProps {
   isOpen: boolean;
@@ -43,14 +44,15 @@ type ShopTab =
   | "effects"
   | "environment"
   | "decorations"
+  | "bob"
   | "pages"
   | "dev";
 
 export function Shop({ isOpen, onClose }: ShopProps) {
   const [activeTab, setActiveTab] = useState<ShopTab>("pages");
-  const sound = useSoundSystem();
   const {
     decorations,
+    bobItems,
     themes,
     upgrades,
     routes,
@@ -58,8 +60,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
     calculateOfflineTaps,
     addTaps,
   } = useGameStore();
-  // const isDevMode = process.env.NODE_ENV === "development";
-  const isDevMode = true; // Force dev mode for testing
+  const isDevMode = process.env.NODE_ENV === "development";
 
   // Calculate and add offline taps when shop opens
   useEffect(() => {
@@ -86,6 +87,12 @@ export function Shop({ isOpen, onClose }: ShopProps) {
       progress: routes.filter((r) => r.purchased).length / routes.length,
     },
     {
+      id: "bob" as ShopTab,
+      name: "Bob",
+      icon: CartIcon, // temporary icon, we can change this later
+      progress: bobItems.filter((b) => b.purchased).length / bobItems.length,
+    },
+    {
       id: "themes" as ShopTab,
       name: "Themes",
       icon: ThemeIcon,
@@ -93,7 +100,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
     },
     {
       id: "effects" as ShopTab,
-      name: "Effekte",
+      name: "Tap Effekt",
       icon: EffectsIcon,
       progress:
         upgrades.filter((u) => u.category === "tapEffects" && u.unlocked)
@@ -102,7 +109,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
     },
     {
       id: "environment" as ShopTab,
-      name: "Umwelt & Sound",
+      name: "Umgebungseffekte",
       icon: EnvironmentIconComponent,
       progress:
         upgrades.filter((u) => u.category === "environment" && u.unlocked)
@@ -154,7 +161,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                 Shop
               </ShopTitle>
               <TapCountDisplay>
-                {Math.floor(taps).toLocaleString("de-DE")} taps
+                {formatNumber(Math.floor(taps))} 🫵
               </TapCountDisplay>
             </ShopHeader>
 
@@ -235,6 +242,17 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                         <DecorationsView />
                       </motion.div>
                     )}
+                    {activeTab === "bob" && (
+                      <motion.div
+                        key="bob"
+                        animate={{ opacity: 1 }}
+                        initial={{ opacity: 0 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15, ease: "easeOut" }}
+                      >
+                        <BobView />
+                      </motion.div>
+                    )}
                     {activeTab === "dev" && (
                       <motion.div
                         key="dev"
@@ -244,104 +262,6 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                         transition={{ duration: 0.15, ease: "easeOut" }}
                       >
                         <DevView />
-                        <Divider />
-                        <DevSettingsGroup>
-                          <GroupHeader>
-                            <GroupTitle>Music & Sound</GroupTitle>
-                            <ToggleSwitch
-                              onClick={
-                                sound.isEnabled ? sound.disable : sound.enable
-                              }
-                              $active={sound.isEnabled}
-                            >
-                              {sound.isEnabled ? "ON" : "OFF"}
-                            </ToggleSwitch>
-                          </GroupHeader>
-                          <DevSliderRow>
-                            <DevSliderLabel>Master</DevSliderLabel>
-                            <DevSlider
-                              type="range"
-                              min={0}
-                              max={1}
-                              step={0.01}
-                              value={sound.masterVolume}
-                              onChange={(e) =>
-                                sound.setMasterVolume(
-                                  parseFloat(e.target.value)
-                                )
-                              }
-                            />
-                            <DevSliderValue>
-                              {Math.round(sound.masterVolume * 100)}%
-                            </DevSliderValue>
-                          </DevSliderRow>
-                          <DevSliderRow>
-                            <DevSliderLabel>World</DevSliderLabel>
-                            <DevSlider
-                              type="range"
-                              min={0}
-                              max={1}
-                              step={0.01}
-                              value={sound.worldVolume}
-                              onChange={(e) =>
-                                sound.setWorldVolume(parseFloat(e.target.value))
-                              }
-                            />
-                            <DevSliderValue>
-                              {Math.round(sound.worldVolume * 100)}%
-                            </DevSliderValue>
-                          </DevSliderRow>
-                          <DevSliderRow>
-                            <DevSliderLabel>Tap</DevSliderLabel>
-                            <DevSlider
-                              type="range"
-                              min={0}
-                              max={1}
-                              step={0.01}
-                              value={sound.tapVolume}
-                              onChange={(e) =>
-                                sound.setTapVolume(parseFloat(e.target.value))
-                              }
-                            />
-                            <DevSliderValue>
-                              {Math.round(sound.tapVolume * 100)}%
-                            </DevSliderValue>
-                          </DevSliderRow>
-                          <DevSliderRow>
-                            <DevSliderLabel>UI</DevSliderLabel>
-                            <DevSlider
-                              type="range"
-                              min={0}
-                              max={1}
-                              step={0.01}
-                              value={sound.uiVolume}
-                              onChange={(e) =>
-                                sound.setUIVolume(parseFloat(e.target.value))
-                              }
-                            />
-                            <DevSliderValue>
-                              {Math.round(sound.uiVolume * 100)}%
-                            </DevSliderValue>
-                          </DevSliderRow>
-                          <DevSliderRow>
-                            <DevSliderLabel>Text</DevSliderLabel>
-                            <DevSlider
-                              type="range"
-                              min={0}
-                              max={1}
-                              step={0.01}
-                              value={sound.textVolume ?? 0.8}
-                              onChange={(e) =>
-                                sound.setTextVolume?.(
-                                  parseFloat(e.target.value)
-                                )
-                              }
-                            />
-                            <DevSliderValue>
-                              {Math.round((sound.textVolume ?? 0.8) * 100)}%
-                            </DevSliderValue>
-                          </DevSliderRow>
-                        </DevSettingsGroup>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -546,8 +466,8 @@ function EnvironmentView() {
 
   return (
     <EnvironmentContainer>
-      <SectionTitle>Umwelt & Sound</SectionTitle>
-      <SectionSubtitle>Umgebungseffekte</SectionSubtitle>
+      <SectionTitle>Umgebungseffekte</SectionTitle>
+      <SectionSubtitle>Partikeleffekte und Sound</SectionSubtitle>
       <EnvironmentGrid>
         {environmentEffects.map((effect) => (
           <EnvironmentCard
@@ -753,6 +673,77 @@ function DecorationsView() {
   );
 }
 
+function BobView() {
+  const { bobItems, purchaseBobItem, equipBobItem, unequipBobItem, canAfford } =
+    useGameStore();
+
+  const handleBobItemClick = (bobItemId: string) => {
+    const bobItem = bobItems.find((b) => b.id === bobItemId);
+    if (!bobItem) return;
+
+    if (bobItem.purchased) {
+      // if already purchased, equip/unequip it
+      if (bobItem.equipped) {
+        unequipBobItem(bobItemId);
+      } else {
+        equipBobItem(bobItemId);
+      }
+    } else if (canAfford(bobItem.cost)) {
+      // purchase and equip
+      purchaseBobItem(bobItemId);
+      // auto-equip after purchase
+      setTimeout(() => equipBobItem(bobItemId), 100);
+    }
+  };
+
+  return (
+    <ThemesContainer>
+      <ThemesSection>
+        <SectionTitle>Bob</SectionTitle>
+        <ContentSubtitle>Kostüme für Bob</ContentSubtitle>
+        <ItemsGrid>
+          {bobItems.map((bobItem) => (
+            <ThemeCard
+              key={bobItem.id}
+              $selected={bobItem.equipped}
+              $purchased={bobItem.purchased}
+              $canAfford={canAfford(bobItem.cost)}
+              onClick={() => handleBobItemClick(bobItem.id)}
+              role="button"
+            >
+              <div style={{ fontSize: "32px" }}>{bobItem.icon}</div>
+              <ThemeName>{bobItem.name}</ThemeName>
+              <ThemeDescription>{bobItem.description}</ThemeDescription>
+              <div
+                style={{
+                  fontSize: "10px",
+                  color: "#999",
+                  textAlign: "center",
+                  marginTop: "4px",
+                  textTransform: "capitalize",
+                }}
+              >
+                {bobItem.type}
+              </div>
+
+              <ThemeStatus
+                $purchased={bobItem.purchased}
+                $enabled={bobItem.equipped}
+              >
+                {bobItem.purchased
+                  ? bobItem.equipped
+                    ? "Aktiv"
+                    : "Aktiveren"
+                  : `${bobItem.cost} 🫵`}
+              </ThemeStatus>
+            </ThemeCard>
+          ))}
+        </ItemsGrid>
+      </ThemesSection>
+    </ThemesContainer>
+  );
+}
+
 function DevView() {
   const {
     addDevTaps,
@@ -768,6 +759,7 @@ function DevView() {
   } = useGameStore();
   const { resetQuests } = useQuestSystem();
   const { clearShownFlags } = useMessageStore();
+  const sound = useSoundSystem();
 
   const unlockAllRoutes = () => {
     routes.forEach((route) => {
@@ -831,6 +823,85 @@ function DevView() {
           🗑️ Reset Game
         </DevButton>
       </DevGrid>
+
+      <Divider />
+      <DevSettingsGroup>
+        <GroupHeader>
+          <GroupTitle>Music & Sound</GroupTitle>
+          <ToggleSwitch
+            onClick={sound.isEnabled ? sound.disable : sound.enable}
+            $active={sound.isEnabled}
+          >
+            {sound.isEnabled ? "AN" : "AUS"}
+          </ToggleSwitch>
+        </GroupHeader>
+        <DevSliderRow>
+          <DevSliderLabel>Master</DevSliderLabel>
+          <DevSlider
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={sound.masterVolume}
+            onChange={(e) => sound.setMasterVolume(parseFloat(e.target.value))}
+          />
+          <DevSliderValue>
+            {Math.round(sound.masterVolume * 100)}%
+          </DevSliderValue>
+        </DevSliderRow>
+        <DevSliderRow>
+          <DevSliderLabel>World</DevSliderLabel>
+          <DevSlider
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={sound.worldVolume}
+            onChange={(e) => sound.setWorldVolume(parseFloat(e.target.value))}
+          />
+          <DevSliderValue>
+            {Math.round(sound.worldVolume * 100)}%
+          </DevSliderValue>
+        </DevSliderRow>
+        <DevSliderRow>
+          <DevSliderLabel>Tap</DevSliderLabel>
+          <DevSlider
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={sound.tapVolume}
+            onChange={(e) => sound.setTapVolume(parseFloat(e.target.value))}
+          />
+          <DevSliderValue>{Math.round(sound.tapVolume * 100)}%</DevSliderValue>
+        </DevSliderRow>
+        <DevSliderRow>
+          <DevSliderLabel>UI</DevSliderLabel>
+          <DevSlider
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={sound.uiVolume}
+            onChange={(e) => sound.setUIVolume(parseFloat(e.target.value))}
+          />
+          <DevSliderValue>{Math.round(sound.uiVolume * 100)}%</DevSliderValue>
+        </DevSliderRow>
+        <DevSliderRow>
+          <DevSliderLabel>Text</DevSliderLabel>
+          <DevSlider
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={sound.textVolume ?? 0.8}
+            onChange={(e) => sound.setTextVolume?.(parseFloat(e.target.value))}
+          />
+          <DevSliderValue>
+            {Math.round((sound.textVolume ?? 0.8) * 100)}%
+          </DevSliderValue>
+        </DevSliderRow>
+      </DevSettingsGroup>
     </DevContainer>
   );
 }
@@ -931,11 +1002,13 @@ const TabPanel = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
+  overflow-y: auto;
 
   @media (max-width: 768px) {
     flex-direction: row;
     width: 100%;
     overflow-x: auto;
+    overflow-y: hidden;
     padding: 12px;
 
     order: 2;
@@ -956,7 +1029,7 @@ const TabButton = styled.button<{ $active: boolean }>`
   transition: all 0.2s ease-in;
   border-radius: 12px;
   width: 100%;
-  min-width: 80px;
+  min-width: 100px;
 
   &:hover {
     background: rgba(255, 255, 255, 0.05);
@@ -985,6 +1058,11 @@ const TabIcon = styled.div`
 const TabName = styled.div`
   font-size: 12px;
   font-weight: 500;
+  max-width: 100%;
+  /* word-break: break-word; */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 const ProgressBar = styled.div<{ $progress: number }>`

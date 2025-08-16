@@ -27,6 +27,10 @@ import { Star3D } from "@/3d-objects/Star3D";
 import { EmotionState } from "@/hooks/useBlobEmotions";
 import { useGameStore } from "@/store/gameStore";
 import { useViewStore } from "@/store/viewStore";
+import { KrustyKrabHat } from "@/3d-objects/models/krustyKrabHat";
+import { match } from "ts-pattern";
+import { RoundGlasses } from "@/3d-objects/models/roundGlasses";
+import { AfroHair } from "@/3d-objects/models/afroHair";
 
 // TODO: Move these constants to a shared config file
 // Default head position Y
@@ -181,7 +185,7 @@ export function BlobHead({
   emotionState: EmotionState;
   onCameraZoomAnimation?: (isAnimating: boolean) => void;
 }) {
-  const { currentTheme } = useGameStore();
+  const { currentTheme, bobItems } = useGameStore();
 
   // Get theme-specific blob colors
   const blobColor = currentTheme?.blobColor;
@@ -903,6 +907,47 @@ export function BlobHead({
     document.body.style.cursor = "auto";
   };
 
+  const renderBobItems = () => {
+    const hats = bobItems.filter(
+      (item) => item.equipped && item.type === "hat"
+    );
+    const accessories = bobItems.filter(
+      (item) => item.equipped && item.type === "accessory"
+    );
+
+    const allItems = [...hats, ...accessories];
+
+    const ModelsToRender = allItems.map((item) => {
+      if (item.id === "krustyKrabHat")
+        return (
+          <KrustyKrabHat
+            key={item.id}
+            position={[0, 0.9, 0]}
+            scale={[0.006, 0.006, 0.006]}
+            outlineColor={outlineColor}
+          />
+        );
+      if (item.id === "chickenLittleGlasses")
+        return (
+          <RoundGlasses
+            key={item.id}
+            position={[0, 0.1, 0.7]}
+            scale={[1.6, 1.6, 1.6]}
+          />
+        );
+      if (item.id === "afroHair")
+        return (
+          <AfroHair
+            key={item.id}
+            position={[0, -0.7, -0.05]}
+            scale={[0.9, 0.9, 0.9]}
+          />
+        );
+    });
+
+    return ModelsToRender;
+  };
+
   const content = (
     <>
       <a.group
@@ -933,6 +978,8 @@ export function BlobHead({
             <meshToonMaterial color={eyeColor} />
           </mesh>
         </group>
+
+        <>{renderBobItems()}</>
 
         {emotionState === "dizzy" &&
           dizzyStars.map((star) => {

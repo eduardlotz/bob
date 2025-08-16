@@ -77,7 +77,7 @@ export const useQuestSystem = () => {
       updateQuestProgress(quest.id, newProgress);
 
       // Check if quest is now complete and handle completion
-      if (newProgress >= quest.maxProgress) {
+      if (newProgress >= quest.maxProgress && !quest.completed) {
         // Mark as completed immediately to prevent double completion
         completeQuest(quest.id);
 

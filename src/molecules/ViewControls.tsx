@@ -3,6 +3,14 @@ import { useKeyPress } from "@/hooks/useKeyPress";
 import { motion, AnimatePresence } from "motion/react";
 import styled from "styled-components";
 import { useEffect, useState } from "react";
+import { ArrowLeftIcon } from "@/icons/arrow";
+
+const VIEWID_TITLE_MAP = {
+  default: "Über mich",
+  desk: "Mein Arbeitsplatz",
+  books: "Meine Lieblingsbücher",
+  computer: "Mein Computer",
+};
 
 export function ViewControls() {
   const { currentView, isDefaultView, resetToDefaultView, isTransitioning } =
@@ -30,31 +38,36 @@ export function ViewControls() {
   return (
     <AnimatePresence>
       {isVisible && (
-        <ViewControlsWrapper
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
-        >
-          <ViewControlsContainer key="view-controls-current-container">
-            <ViewInfo>
-              {currentView.charAt(0).toUpperCase() + currentView.slice(1)} View
-            </ViewInfo>
-          </ViewControlsContainer>
-          {!isTransitioning && (
-            <BackButton
-              onClick={handleBackClick}
-              disabled={isTransitioning}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-              key="view-controls-back-button"
+        <ViewControlsWrapper>
+          <BackButton
+            onClick={handleBackClick}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            key="view-controls-back-button"
+            initial={{ y: -40, filter: "blur(6px)" }}
+            animate={{
+              y: 0,
+              filter: "blur(0px)",
+            }}
+            exit={{ y: -40, filter: "blur(6px)" }}
+            transition={{ duration: 0.5, ease: "circInOut" }}
+          >
+            <ArrowLeftIcon />
+          </BackButton>
+          {currentView !== "default" && (
+            <CurrentViewChip
+              key="view-controls-current-view-chip"
+              initial={{ scale: 0.9, opacity: 0, filter: "blur(6px)" }}
+              animate={{
+                scale: 1,
+                opacity: 1,
+                filter: "blur(0px)",
+              }}
+              exit={{ scale: 0.9, opacity: 0, filter: "blur(6px)" }}
+              transition={{ duration: 0.5, ease: "circInOut", delay: 0.3 }}
             >
-              ←
-            </BackButton>
+              {VIEWID_TITLE_MAP[currentView as keyof typeof VIEWID_TITLE_MAP]}
+            </CurrentViewChip>
           )}
         </ViewControlsWrapper>
       )}
@@ -73,55 +86,43 @@ const ViewControlsWrapper = styled(motion.div)`
   align-items: center;
   justify-content: center;
   gap: 12px;
-  margin: 0 auto;
 `;
 
-const ViewControlsContainer = styled(motion.div)`
-  position: absolute;
-  top: 40px;
-  left: 0;
-  right: 0;
-  margin: 0 auto;
-  z-index: 100;
-
+const CurrentViewChip = styled(motion.div)`
   min-width: fit-content;
   width: fit-content;
   max-width: calc(100vw - 32px);
   word-wrap: nowrap;
 
-  display: flex;
-  align-items: center;
-  gap: 12px;
   color: #ffffff;
   padding: 12px 16px;
   border-radius: 24px;
   background-color: rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  -webkit-backdrop-filter: blur(32px);
+  backdrop-filter: blur(32px);
+  border-radius: 50px;
+  font-size: 16px;
+  letter-spacing: -2%;
+  font-weight: 600;
+  z-index: 1000;
 `;
 
-const BackButton = styled(motion.button)<{ disabled: boolean }>`
-  background: ${(props) =>
-    props.disabled ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0.2)"};
-  color: #ffffff;
+const BackButton = styled(motion.button)`
+  background: #ffffff;
+  color: #121212;
   border: none;
-  border-radius: 16px;
-  padding: 6px 12px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  cursor: ${(props) => (props.disabled ? "not-allowed" : "pointer")};
-  transition: all 0.2s ease;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  width: fit-content;
+  border-radius: 50px;
+  height: 40px;
+  width: 40px;
+  aspect-ratio: 1/1;
 
-  &:hover {
-    background: ${(props) =>
-      props.disabled ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0.3)"};
+  box-shadow: 0 -2px 10px 0 rgba(0, 0, 0, 0.1);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  svg {
+    height: 14px;
   }
-`;
-
-const ViewInfo = styled.div`
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 0.9rem;
-  font-weight: 500;
 `;

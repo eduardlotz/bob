@@ -40,7 +40,8 @@ export function InteractiveObject({
   const [isHovered, setIsHovered] = useState(false);
   const [isActive, setIsActive] = useState(false);
   const { triggerQuest } = useQuestSystem();
-  const { transitionToView, currentView, isTransitioning } = useViewStore();
+  const { transitionToView, currentView, isTransitioning, resetToDefaultView } =
+    useViewStore();
 
   // check if this object's view is currently active
   const isViewActive = mode === "view" && currentView === viewId;
@@ -56,11 +57,15 @@ export function InteractiveObject({
       })
       .with("view", async () => {
         if (viewId) {
-          setIsActive(true);
-          try {
-            await transitionToView(viewId);
-          } finally {
-            setIsActive(false);
+          if (isViewActive) {
+            resetToDefaultView();
+          } else {
+            setIsActive(true);
+            try {
+              await transitionToView(viewId);
+            } finally {
+              setIsActive(false);
+            }
           }
         }
       })
@@ -88,10 +93,10 @@ export function InteractiveObject({
     >
       {shouldShowOutline && (
         <Outlines
-          thickness={isViewActive ? 0.08 : 0.05}
-          color={isViewActive ? "#4ade80" : "#60a5fa"}
-          transparent
-          opacity={isViewActive ? 0.8 : 0.6}
+          thickness={isViewActive ? 1.2 : 1}
+          color={isViewActive ? "#ffffff" : "#00000000"}
+          opacity={isViewActive ? 0.8 : 1}
+          screenspace
         />
       )}
       {children}

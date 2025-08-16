@@ -97,7 +97,7 @@ export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
     counterColor: "#ffffff",
     blobColor: "#FEFF55",
     outlineColor: "#000000",
-    eyeColor: "#ffffff",
+    eyeColor: "#191919",
   },
   [THEME_IDS.CUSTOM]: {
     id: THEME_IDS.CUSTOM,

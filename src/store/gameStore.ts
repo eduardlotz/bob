@@ -405,6 +405,9 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
 
   if (currentVersion < GAME_STORE_VERSIONS.V19) {
     migratedState.upgrades = initialUpgrades;
+    migratedState.bobItems = initialBobItems;
+    migratedState.decorations = initialDecorations;
+    migratedState.themes = initialThemes;
 
     currentVersion = GAME_STORE_VERSIONS.V19;
   }
@@ -454,6 +457,19 @@ export interface Decoration {
   rotation: number;
   color: string;
   icon: string;
+}
+
+// Bob item types (for wearable items like hats)
+export interface BobItem {
+  id: string;
+  name: string;
+  description: string;
+  cost: number;
+  purchased: boolean;
+  equipped: boolean;
+  type: "hat" | "accessory" | "outfit";
+  icon: string;
+  category: "bob";
 }
 
 // Theme types
@@ -534,6 +550,7 @@ interface GameStore {
   // shop
   upgrades: Upgrade[];
   decorations: Decoration[];
+  bobItems: BobItem[];
   themes: Theme[];
   currentTheme: Theme | null;
   routes: Route[];
@@ -565,6 +582,9 @@ interface GameStore {
   cleanupManualTaps: () => void;
   purchaseUpgrade: (upgradeId: string) => void;
   purchaseDecoration: (decorationId: string) => void;
+  purchaseBobItem: (bobItemId: string) => void;
+  equipBobItem: (bobItemId: string) => void;
+  unequipBobItem: (bobItemId: string) => void;
   purchaseTheme: (themeId: string) => void;
   purchaseRoute: (routeId: string, force?: boolean) => void;
   checkRouteUnlocks: () => void;
@@ -628,6 +648,43 @@ const initialDecorations: Decoration[] = [
     rotation: 0,
     color: "#FFD700",
     icon: "🌳",
+  },
+];
+
+// bob items (wearable items for the blob head)
+const initialBobItems: BobItem[] = [
+  {
+    id: "krustyKrabHat",
+    name: "Arbeitskleidung",
+    description: "Ist da die Krosse Krabbe?",
+    cost: 500,
+    purchased: false,
+    equipped: false,
+    type: "hat",
+    icon: "👨‍🍳",
+    category: "bob",
+  },
+  {
+    id: "afroHair",
+    name: "Afro",
+    description: "Happy little accidents",
+    cost: 500,
+    purchased: false,
+    equipped: false,
+    type: "hat",
+    icon: "👨‍🎨",
+    category: "bob",
+  },
+  {
+    id: "chickenLittleGlasses",
+    name: "Sehhilfe",
+    description: "Dem Bob seine Brille",
+    cost: 500,
+    purchased: false,
+    equipped: false,
+    type: "accessory",
+    icon: "🤓",
+    category: "bob",
   },
 ];
 
@@ -766,6 +823,7 @@ export const useGameStore = create<GameStore>()(
 
         upgrades: initialUpgrades,
         decorations: initialDecorations,
+        bobItems: initialBobItems,
         themes: initialThemes,
         currentTheme: initialThemes[0],
         routes: initialRoutes,
@@ -942,22 +1000,23 @@ export const useGameStore = create<GameStore>()(
                 ...u,
                 unlocked: u.id === upgradeId ? true : u.unlocked,
               }));
-            } else {
-              // For regular upgrades, update unlocked status based on tap count
-              updatedUpgrades = updatedUpgrades.map((u) => {
-                if (u.id === "auto_tap_2" && state.taps >= 50) {
-                  return { ...u, unlocked: true };
-                }
-                if (u.id === "tap_multiplier_2" && state.taps >= 200) {
-                  return { ...u, unlocked: true };
-                }
-                // Unlock "Tap Power" when player can afford it
-                if (u.id === "tap_multiplier_1" && state.taps >= u.baseCost) {
-                  return { ...u, unlocked: true };
-                }
-                return u;
-              });
             }
+            // else {
+            //   // For regular upgrades, update unlocked status based on tap count
+            //   updatedUpgrades = updatedUpgrades.map((u) => {
+            //     if (u.id === "auto_tap_2" && state.taps >= 50) {
+            //       return { ...u, unlocked: true };
+            //     }
+            //     if (u.id === "tap_multiplier_2" && state.taps >= 200) {
+            //       return { ...u, unlocked: true };
+            //     }
+            //     // Unlock "Tap Power" when player can afford it
+            //     if (u.id === "tap_multiplier_1" && state.taps >= u.baseCost) {
+            //       return { ...u, unlocked: true };
+            //     }
+            //     return u;
+            //   });
+            // }
 
             // Invalidate cache when upgrades change
             return {
@@ -999,6 +1058,70 @@ export const useGameStore = create<GameStore>()(
               ...state,
               taps: state.taps - decoration.cost,
               decorations: updatedDecorations,
+            };
+          });
+        },
+
+        purchaseBobItem: (bobItemId: string) => {
+          set((state) => {
+            const bobItem = state.bobItems.find((b) => b.id === bobItemId);
+            if (
+              !bobItem ||
+              bobItem.purchased ||
+              !state.canAfford(bobItem.cost)
+            ) {
+              return state;
+            }
+
+            const updatedBobItems = state.bobItems.map((b) =>
+              b.id === bobItemId ? { ...b, purchased: true } : b
+            );
+
+            return {
+              ...state,
+              taps: state.taps - bobItem.cost,
+              bobItems: updatedBobItems,
+            };
+          });
+        },
+
+        equipBobItem: (bobItemId: string) => {
+          set((state) => {
+            const bobItem = state.bobItems.find((b) => b.id === bobItemId);
+            if (!bobItem || !bobItem.purchased) {
+              return state;
+            }
+
+            // unequip all items of the same type, then equip the selected one
+            const updatedBobItems = state.bobItems.map((b) => ({
+              ...b,
+              equipped:
+                b.type === bobItem.type ? b.id === bobItemId : b.equipped,
+            }));
+
+            return {
+              ...state,
+              bobItems: updatedBobItems,
+            };
+          });
+        },
+
+        unequipBobItem: (bobItemId: string) => {
+          set((state) => {
+            const bobItem = state.bobItems.find((b) => b.id === bobItemId);
+            if (!bobItem || !bobItem.purchased) {
+              return state;
+            }
+
+            // unequip all items of the same type
+            const updatedBobItems = state.bobItems.map((b) => ({
+              ...b,
+              equipped: b.id === bobItem.id ? false : b.equipped,
+            }));
+
+            return {
+              ...state,
+              bobItems: updatedBobItems,
             };
           });
         },
@@ -1136,6 +1259,7 @@ export const useGameStore = create<GameStore>()(
             try {
               const overrideId = get().audioSelections.tapEffectAudioId;
               const cfg = resolveTapSoundForEffect(upgradeId, overrideId);
+              console.log("🚀 ~ cfg:", cfg);
               if (cfg && cfg.id) {
                 if (cfg.filePath)
                   engineSetCurrentTapSound(cfg.id, cfg.filePath);
@@ -1188,6 +1312,7 @@ export const useGameStore = create<GameStore>()(
             upgrades: initialUpgrades,
             decorations: initialDecorations,
             themes: initialThemes,
+            bobItems: initialBobItems,
             currentTheme: initialThemes[0],
             routes: initialRoutes,
             fisheyeIntensity: 0,
@@ -1248,12 +1373,18 @@ export const useGameStore = create<GameStore>()(
               purchased: true,
             }));
 
+            const updatedBobItems = state.bobItems.map((bobItem) => ({
+              ...bobItem,
+              purchased: true,
+            }));
+
             return {
               ...state,
               upgrades: updatedUpgrades,
               decorations: updatedDecorations,
               themes: updatedThemes,
               routes: updatedRoutes,
+              bobItems: updatedBobItems,
               _cachedTapsPerSecond: undefined,
               _cachedTapMultiplier: undefined,
               _lastUpgradeHash: undefined,
@@ -1610,6 +1741,7 @@ export const useGameStore = create<GameStore>()(
             taps: state.taps,
             upgrades: state.upgrades,
             decorations: state.decorations,
+            bobItems: state.bobItems,
             themes: state.themes,
             currentTheme: state.currentTheme,
             routes: state.routes,
