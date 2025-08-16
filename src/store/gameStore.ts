@@ -1786,7 +1786,11 @@ export const useGameStore = create<GameStore>()(
             (state.version < GAME_STORE_VERSIONS.LATEST || needsPurge)
           ) {
             console.log(
-              `Store version ${state.version} and last schema update ${state.lastSchemaUpdate} detected, triggering migration to ${GAME_STORE_VERSIONS.LATEST}`
+              `Store version ${state.version} and last schema update ${
+                state.lastSchemaUpdate
+              } detected, triggering migration to ${
+                GAME_STORE_VERSIONS.LATEST
+              }${needsPurge ? " (auto-purge triggered)" : ""}`
             );
             try {
               const migratedState = migrateStore(
@@ -1804,13 +1808,18 @@ export const useGameStore = create<GameStore>()(
                 `Store migrated from V${state.version} to V${GAME_STORE_VERSIONS.LATEST}`
               );
 
-              // ensure message store hydration state is preserved after game store migration
+              // ensure message store hydration state is preserved and reset repeat flags after game store migration
               setTimeout(() => {
                 try {
                   import("./messageStore").then((messageStore) => {
-                    messageStore.useMessageStore.setState({ isHydrated: true });
+                    messageStore.useMessageStore.setState({
+                      isHydrated: true,
+                      // clear repeat flags so messages can show again after auto-purge migration
+                      repeatFlags: {},
+                      seenThisSession: {},
+                    });
                     console.log(
-                      "Re-hydrated message store after game store migration"
+                      "Re-hydrated message store and cleared repeat flags after game store migration"
                     );
                   });
                 } catch (e) {
