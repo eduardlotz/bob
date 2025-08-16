@@ -424,17 +424,20 @@ export class StoreMigration {
       }
 
       try {
-        // reset message store flags so all messages can show again
-        useMessageStore.setState((s) => ({
-          ...s,
-          activeMessage: null,
-          queue: [],
-          seenThisSession: {},
-          repeatFlags: {},
-          preferences: {},
-        }));
+        // For first-time runs, skip message store reset to avoid interfering with welcome messages
+        const currentMessageState = useMessageStore.getState();
+        console.log("[FINAL RESET] Current message state:", {
+          activeMessage: currentMessageState.activeMessage?.config.id,
+          queueLength: currentMessageState.queue.length,
+          repeatFlags: currentMessageState.repeatFlags,
+        });
+
+        // Skip message store reset entirely on first run to avoid interfering with initial welcome messages
+        console.log(
+          "[FINAL RESET] Skipping message store reset on first run to preserve welcome messages"
+        );
       } catch (e) {
-        console.warn("[FINAL RESET] Failed to reset message store state", e);
+        console.warn("[FINAL RESET] Failed to check message store state", e);
       }
 
       // Mark as done before notifying

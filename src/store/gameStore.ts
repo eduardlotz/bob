@@ -46,7 +46,7 @@ const AUTO_TAP_INTERVAL_MS = 1000;
 const MAX_PARTICLES_PER_AUTO_TAP = 5;
 const PARTICLE_STAGGER_MS = 100;
 
-const PURGE_DATE = new Date("08/15/2025"); // utility to purge states created before this date
+const PURGE_DATE = new Date("08/17/2025"); // utility to purge states created before this date
 
 // main migration function
 function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
@@ -409,6 +409,8 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
     migratedState.decorations = initialDecorations;
     migratedState.themes = initialThemes;
 
+    migratedState.lastSchemaUpdate = new Date();
+
     currentVersion = GAME_STORE_VERSIONS.V19;
   }
 
@@ -654,10 +656,21 @@ const initialDecorations: Decoration[] = [
 // bob items (wearable items for the blob head)
 const initialBobItems: BobItem[] = [
   {
+    id: "builderHelmet",
+    name: "Schutzhelm",
+    description: "Jo wir schaffen das!",
+    cost: 100,
+    purchased: false,
+    equipped: false,
+    type: "hat",
+    icon: "👨‍🍳",
+    category: "bob",
+  },
+  {
     id: "krustyKrabHat",
     name: "Arbeitskleidung",
     description: "Ist da die Krosse Krabbe?",
-    cost: 500,
+    cost: 100,
     purchased: false,
     equipped: false,
     type: "hat",
@@ -668,7 +681,7 @@ const initialBobItems: BobItem[] = [
     id: "afroHair",
     name: "Afro",
     description: "Happy little accidents",
-    cost: 500,
+    cost: 100,
     purchased: false,
     equipped: false,
     type: "hat",
@@ -678,8 +691,8 @@ const initialBobItems: BobItem[] = [
   {
     id: "chickenLittleGlasses",
     name: "Sehhilfe",
-    description: "Dem Bob seine Brille",
-    cost: 500,
+    description: "Eddie's Brille",
+    cost: 100,
     purchased: false,
     equipped: false,
     type: "accessory",
@@ -1763,6 +1776,7 @@ export const useGameStore = create<GameStore>()(
               console.error("Failed to queue storage migration", e)
             );
 
+          // TODO: check safer purge method or if even needed
           const needsPurge = new Date(state?.lastSchemaUpdate) < PURGE_DATE;
 
           // Check if store version migration is needed
@@ -1772,7 +1786,11 @@ export const useGameStore = create<GameStore>()(
             (state.version < GAME_STORE_VERSIONS.LATEST || needsPurge)
           ) {
             console.log(
-              `Store version ${state.version} and last schema update ${state.lastSchemaUpdate} detected, triggering migration to ${GAME_STORE_VERSIONS.LATEST}`
+              `Store version ${state.version} and last schema update ${
+                state.lastSchemaUpdate
+              } detected, triggering migration to ${
+                GAME_STORE_VERSIONS.LATEST
+              }${needsPurge ? " (auto-purge triggered)" : ""}`
             );
             try {
               const migratedState = migrateStore(
@@ -1789,6 +1807,25 @@ export const useGameStore = create<GameStore>()(
               toast.success(
                 `Store migrated from V${state.version} to V${GAME_STORE_VERSIONS.LATEST}`
               );
+
+              // ensure message store hydration state is preserved and reset repeat flags after game store migration
+              setTimeout(() => {
+                try {
+                  import("./messageStore").then((messageStore) => {
+                    messageStore.useMessageStore.setState({
+                      isHydrated: true,
+                      // clear repeat flags so messages can show again after auto-purge migration
+                      repeatFlags: {},
+                      seenThisSession: {},
+                    });
+                    console.log(
+                      "Re-hydrated message store and cleared repeat flags after game store migration"
+                    );
+                  });
+                } catch (e) {
+                  console.warn("Failed to re-hydrate message store:", e);
+                }
+              }, 100);
             } catch (error) {
               console.error("Error during store migration:", error);
               toast.error(

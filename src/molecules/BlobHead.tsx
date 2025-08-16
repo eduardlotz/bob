@@ -31,6 +31,7 @@ import { KrustyKrabHat } from "@/3d-objects/models/krustyKrabHat";
 import { match } from "ts-pattern";
 import { RoundGlasses } from "@/3d-objects/models/roundGlasses";
 import { AfroHair } from "@/3d-objects/models/afroHair";
+import { BuilderHelmet } from "@/3d-objects/models/builderHelmet";
 
 // TODO: Move these constants to a shared config file
 // Default head position Y
@@ -933,6 +934,15 @@ export function BlobHead({
             key={item.id}
             position={[0, 0.1, 0.7]}
             scale={[1.6, 1.6, 1.6]}
+          />
+        );
+      if (item.id === "builderHelmet")
+        return (
+          <BuilderHelmet
+            key={item.id}
+            position={[0, 0.7, 0]}
+            scale={[1.25, 1.25, 1.25]}
+            rotation={[Math.PI * -0.05, 0, 0]}
           />
         );
       if (item.id === "afroHair")
