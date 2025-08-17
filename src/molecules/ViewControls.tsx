@@ -44,12 +44,12 @@ export function ViewControls() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             key="view-controls-back-button"
-            initial={{ y: -40, filter: "blur(6px)" }}
+            initial={{ y: -120, filter: "blur(6px)" }}
             animate={{
               y: 0,
               filter: "blur(0px)",
             }}
-            exit={{ y: -40, filter: "blur(6px)" }}
+            exit={{ y: -120, filter: "blur(6px)" }}
             transition={{ duration: 0.5, ease: "circInOut" }}
           >
             <ArrowLeftIcon />

@@ -220,75 +220,87 @@ export function RainEffect() {
 }
 
 // Cloud Effect using instanced spheres for better performance
-// Cloud Effect using instanced spheres for better performance
 export function CloudEffect() {
   const { upgrades } = useGameStore();
   const cloudUpgrade = upgrades.find((u) => u.id === "environment_clouds");
   const cloudEnabled = cloudUpgrade?.unlocked && cloudUpgrade?.selected;
 
-  const [clouds] = React.useState(() => {
-    if (!cloudEnabled) return [];
+  const [clouds, setClouds] = React.useState<any[]>([]);
 
-    // Create 3-5 static clouds at random positions
-    const cloudCount = 3 + Math.floor(Math.random() * 3);
-    return Array.from({ length: cloudCount }, (_, index) => {
-      // Random position around the scene
-      const angle = Math.random() * Math.PI * 2;
-      const radius = 4 + Math.random() * 4;
-      const x = Math.cos(angle) * radius;
-      const y = 2 + Math.random() * 3; // Height variation
-      const z = Math.sin(angle) * radius - 1;
+  // Generate clouds when the effect is first enabled
+  React.useEffect(() => {
+    if (cloudEnabled && clouds.length === 0) {
+      // Create 3-5 static clouds at random positions
+      const cloudCount = 3 + Math.floor(Math.random() * 3);
+      const newClouds = Array.from({ length: cloudCount }, (_, index) => {
+        // Generate position with safe area around camera (avoid 0,0,0 area)
+        let x, z;
+        do {
+          const angle = Math.random() * Math.PI * 2;
+          const radius = 4 + Math.random() * 4; // Minimum radius of 4 units from center
+          x = Math.cos(angle) * radius;
+          z = Math.sin(angle) * radius - 1;
+          // ensure clouds don't spawn too close to camera position (0,0,0)
+        } while (Math.sqrt(x * x + z * z) < 3); // minimum 3 unit safe area
 
-      // Create cloud bubbles in organic cluster pattern
-      const bubbleCount = 6 + Math.floor(Math.random() * 8); // 6-13 bubbles per cloud
-      const bubbles = [];
+        const y = 2 + Math.random() * 3; // Height variation
 
-      // Main central bubble
-      bubbles.push({
-        offset: [0, 0, 0] as [number, number, number],
-        scale: 1.2 + Math.random() * 0.8,
-        opacity: 0.3 + Math.random() * 0.2,
+        // Create cloud bubbles in organic cluster pattern
+        const bubbleCount = 6 + Math.floor(Math.random() * 8); // 6-13 bubbles per cloud
+        const bubbles = [];
+
+        // Main central bubble
+        bubbles.push({
+          offset: [0, 0, 0] as [number, number, number],
+          scale: 1.2 + Math.random() * 0.8,
+          opacity: 0.3 + Math.random() * 0.2,
+        });
+
+        // Surrounding bubbles in organic pattern
+        for (let i = 0; i < bubbleCount - 1; i++) {
+          const bubbleAngle =
+            (i / (bubbleCount - 1)) * Math.PI * 2 + Math.random() * 0.5;
+          const bubbleRadius = 0.8 + Math.random() * 1.2;
+          const bubbleHeight = (Math.random() - 0.5) * 0.8;
+
+          bubbles.push({
+            offset: [
+              Math.cos(bubbleAngle) * bubbleRadius,
+              bubbleHeight,
+              Math.sin(bubbleAngle) * bubbleRadius,
+            ] as [number, number, number],
+            scale: 0.6 + Math.random() * 0.8,
+            opacity: 0.2 + Math.random() * 0.25,
+          });
+        }
+
+        // Add some random smaller bubbles for fluffiness
+        const fluffCount = Math.floor(Math.random() * 4);
+        for (let i = 0; i < fluffCount; i++) {
+          bubbles.push({
+            offset: [
+              (Math.random() - 0.5) * 3,
+              (Math.random() - 0.5) * 1.5,
+              (Math.random() - 0.5) * 3,
+            ] as [number, number, number],
+            scale: 0.3 + Math.random() * 0.4,
+            opacity: 0.1 + Math.random() * 0.15,
+          });
+        }
+
+        return {
+          id: index,
+          position: [x, y, z] as [number, number, number],
+          bubbles,
+        };
       });
 
-      // Surrounding bubbles in organic pattern
-      for (let i = 0; i < bubbleCount - 1; i++) {
-        const bubbleAngle =
-          (i / (bubbleCount - 1)) * Math.PI * 2 + Math.random() * 0.5;
-        const bubbleRadius = 0.8 + Math.random() * 1.2;
-        const bubbleHeight = (Math.random() - 0.5) * 0.8;
-
-        bubbles.push({
-          offset: [
-            Math.cos(bubbleAngle) * bubbleRadius,
-            bubbleHeight,
-            Math.sin(bubbleAngle) * bubbleRadius,
-          ] as [number, number, number],
-          scale: 0.6 + Math.random() * 0.8,
-          opacity: 0.2 + Math.random() * 0.25,
-        });
-      }
-
-      // Add some random smaller bubbles for fluffiness
-      const fluffCount = Math.floor(Math.random() * 4);
-      for (let i = 0; i < fluffCount; i++) {
-        bubbles.push({
-          offset: [
-            (Math.random() - 0.5) * 3,
-            (Math.random() - 0.5) * 1.5,
-            (Math.random() - 0.5) * 3,
-          ] as [number, number, number],
-          scale: 0.3 + Math.random() * 0.4,
-          opacity: 0.1 + Math.random() * 0.15,
-        });
-      }
-
-      return {
-        id: index,
-        position: [x, y, z] as [number, number, number],
-        bubbles,
-      };
-    });
-  });
+      setClouds(newClouds);
+    } else if (!cloudEnabled && clouds.length > 0) {
+      // Clear clouds when effect is disabled
+      setClouds([]);
+    }
+  }, [cloudEnabled, clouds.length]);
 
   if (!cloudEnabled) return null;
 
