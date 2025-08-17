@@ -532,7 +532,7 @@ function EnvironmentView() {
                       type: "world",
                       volume: 0.1,
                       loop: true,
-                      stopPrevious: false,
+                      stopPrevious: true, // prevent duplicates when adding layers
                       distanceAttenuation: false,
                       detune: {
                         enabled: false,
@@ -545,7 +545,7 @@ function EnvironmentView() {
                   } catch {}
                   enginePlayWorldSound(track.id, {
                     loop: true,
-                    stopPrevious: false,
+                    stopPrevious: true, // prevent duplicates when playing layers
                   });
                 } else {
                   try {

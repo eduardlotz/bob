@@ -61,42 +61,58 @@ export const useQuestSystem = () => {
   // Quest activation is now handled directly in the store when needed
 
   // Quest trigger handler
-  const triggerQuest = useCallback((action: string, value?: number) => {
-    const relevantQuests = currentQuests.filter(
-      (quest) => !quest.completed && quest.trigger?.action === action
-    );
-
-    relevantQuests.forEach((quest) => {
-      const progressIncrement = value || quest.trigger?.value || 1;
-      const newProgress = Math.min(
-        quest.progress + progressIncrement,
-        quest.maxProgress
+  const triggerQuest = useCallback(
+    (action: string, value?: number) => {
+      // Get fresh quest state to ensure we have the latest completion status
+      const freshQuests = useQuestStore.getState().quests;
+      const relevantQuests = freshQuests.filter(
+        (quest) =>
+          quest.routeId === routeId &&
+          !quest.completed &&
+          quest.trigger?.action === action
       );
 
-      // Update progress first
-      updateQuestProgress(quest.id, newProgress);
+      relevantQuests.forEach((quest) => {
+        // Double-check completion status right before processing
+        const currentQuestState = useQuestStore
+          .getState()
+          .quests.find((q) => q.id === quest.id);
+        if (currentQuestState?.completed) {
+          return; // skip if already completed
+        }
 
-      // Check if quest is now complete and handle completion
-      if (newProgress >= quest.maxProgress && !quest.completed) {
-        // Mark as completed immediately to prevent double completion
-        completeQuest(quest.id);
+        const progressIncrement = value || quest.trigger?.value || 1;
+        const newProgress = Math.min(
+          quest.progress + progressIncrement,
+          quest.maxProgress
+        );
 
-        // Add reward to taps
-        addTaps(quest.reward);
+        // Update progress first
+        updateQuestProgress(quest.id, newProgress);
 
-        // Trigger confetti
-        triggerConfetti();
+        // Check if quest is now complete and handle completion
+        if (newProgress >= quest.maxProgress && !currentQuestState?.completed) {
+          // Mark as completed immediately to prevent double completion
+          completeQuest(quest.id);
 
-        // Show success toast
-        toast.success(`Quest erledigt! +${quest.reward} taps erhalten`, {
-          description: quest.title,
-          duration: 3000,
-        });
+          // Add reward to taps
+          addTaps(quest.reward);
 
-        console.log("Quest completed!", quest.title);
-      }
-    });
-  }, []);
+          // Trigger confetti
+          triggerConfetti();
+
+          // Show success toast
+          toast.success(`Quest erledigt! +${quest.reward} taps erhalten`, {
+            description: quest.title,
+            duration: 3000,
+          });
+
+          console.log("Quest completed!", quest.title);
+        }
+      });
+    },
+    [routeId, updateQuestProgress, completeQuest, addTaps]
+  );
 
   // Specific quest triggers
   const triggerInteraction = useCallback(

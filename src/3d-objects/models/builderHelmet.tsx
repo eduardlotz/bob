@@ -45,19 +45,18 @@ export const BuilderHelmet = ({
     <a.group
       ref={group}
       scale={spring.scale.get() as [number, number, number]}
-      castShadow
-      receiveShadow
       position={props.position}
       rotation={props.rotation}
     >
       <mesh
+        castShadow
+        receiveShadow
         geometry={nodes.Object_4001.geometry}
-        material={materials["Material.017"]}
         position={[0.015, 0.053, 0.171]}
         rotation={[-Math.PI / 2, 0, 0]}
+        // material={materials["Material.017"]}
       >
-        {/* <meshToonMaterial color="##FFED55" /> */}
-        {/* <Outlines thickness={0.1} color={"#000000"} screenspace /> */}
+        <meshToonMaterial color="#FFED55" side={THREE.BackSide} />
       </mesh>
     </a.group>
   );

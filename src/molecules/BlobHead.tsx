@@ -940,8 +940,8 @@ export function BlobHead({
         return (
           <BuilderHelmet
             key={item.id}
-            position={[0, 0.7, 0]}
-            scale={[1.25, 1.25, 1.25]}
+            position={[0, 0.6, 0]}
+            scale={[1.2, 1.2, 1.2]}
             rotation={[Math.PI * -0.05, 0, 0]}
           />
         );
