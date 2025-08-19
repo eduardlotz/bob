@@ -758,7 +758,7 @@ function DevView() {
     purchaseRoute,
   } = useGameStore();
   const { resetQuests } = useQuestSystem();
-  const { clearShownFlags } = useMessageStore();
+  const { clearShownFlags, showMessages, showMessage } = useMessageStore();
   const sound = useSoundSystem();
 
   const unlockAllRoutes = () => {
@@ -773,6 +773,10 @@ function DevView() {
     resetQuests();
   };
 
+  const triggerMessage = () => {
+    showMessages(["dev_message", "dev_message_2"]);
+  };
+
   return (
     <DevContainer>
       <SectionTitle>Development</SectionTitle>
@@ -780,6 +784,7 @@ function DevView() {
         For debugging or testing — use with caution
       </ContentSubtitle>
       <DevGrid>
+        <DevButton onClick={triggerMessage}>💬 Show Test Message</DevButton>
         <DevButton onClick={() => addDevTaps(100)}>💰 Add 100 Taps</DevButton>
         <DevButton onClick={buyAllUpgrades}>🛒 Buy All Upgrades</DevButton>
         <DevButton onClick={unlockAllRoutes}>🌐 Unlock All Pages</DevButton>
