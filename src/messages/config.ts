@@ -178,6 +178,44 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
     positionOffset: [0, 0, 0],
     nextDelayMs: 1800,
   },
+  {
+    id: "dev_message",
+    text: [
+      "hey you 🫵🤓",
+      "this is a test message",
+      "the messages should feel like a mix between animal crossing and iMessage",
+      "basically a chat between friends, like me and you 🙂",
+    ],
+    label: "Bob",
+    options: {
+      typingSpeedMs: 25,
+      baseDismissMs: 2000,
+      contentLengthFactorMs: 50,
+      tailEnabled: false,
+      emotion: { state: "happy", durationMs: 4000 },
+    },
+    repeatRule: "always",
+    audioEnabled: true,
+    positionOffset: [0, 0, 0],
+    nextDelayMs: 1800,
+  },
+  {
+    id: "dev_message_2",
+    text: [
+      "okay this message will be way too long i guess but we will see how it looks and sounds, because the code for this text synth is not finished",
+    ],
+    label: "Bob",
+    options: {
+      typingSpeedMs: 25,
+      baseDismissMs: 2000,
+      contentLengthFactorMs: 50,
+      tailEnabled: false,
+    },
+    repeatRule: "always",
+    audioEnabled: true,
+    positionOffset: [0, 0, 0],
+    nextDelayMs: 1800,
+  },
 ];
 
 export const getMessageById = (id: string): MessageConfig | undefined =>

@@ -58,7 +58,7 @@ export interface MessageStoreState {
   readonly lastError: string | null;
   readonly isHydrated: boolean;
 
-  // Actions with better error handling
+  // Actions
   showMessage: (
     id: string,
     overrides?: Partial<MessageOptions>
@@ -76,7 +76,7 @@ export interface MessageStoreState {
   getQueueLength: () => number;
   getNextQueuedId: () => string | null;
 
-  // Enhanced queue management
+  // queue management
   reorderQueue: (fromIndex: number, toIndex: number) => void;
   removeFromQueue: (id: string) => boolean;
   getQueuedMessage: (id: string) => QueueItem | null;
