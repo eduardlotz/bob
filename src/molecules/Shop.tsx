@@ -33,6 +33,7 @@ import { useKeyPress } from "@/hooks/useKeyPress";
 import { DecorationIcon } from "@/icons/decoration";
 import { useMessageStore } from "@/store/messageStore";
 import { formatNumber } from "./TapCounter";
+import { BlobFormCustomization } from "@/components/BlobFormCustomization";
 
 interface ShopProps {
   isOpen: boolean;
@@ -84,7 +85,9 @@ export function Shop({ isOpen, onClose }: ShopProps) {
       id: "pages" as ShopTab,
       name: "Seiten",
       icon: PagesIcon,
-      progress: routes.filter((r) => r.purchased).length / routes.length,
+      progress:
+        routes.filter((r) => r.purchased).length /
+        routes.filter((r) => !r.isLocked).length,
     },
     {
       id: "bob" as ShopTab,
@@ -663,7 +666,7 @@ function DecorationsView() {
                   ? decoration.enabled
                     ? "Aktiv"
                     : "Aktiveren"
-                  : `${decoration.cost} taps`}
+                  : `${decoration.cost} 🫵`}
               </ThemeStatus>
             </ThemeCard>
           ))}
@@ -676,6 +679,9 @@ function DecorationsView() {
 function BobView() {
   const { bobItems, purchaseBobItem, equipBobItem, unequipBobItem, canAfford } =
     useGameStore();
+  const [activeSubTab, setActiveSubTab] = useState<"costumes" | "forms">(
+    "costumes"
+  );
 
   const handleBobItemClick = (bobItemId: string) => {
     const bobItem = bobItems.find((b) => b.id === bobItemId);
@@ -699,46 +705,62 @@ function BobView() {
   return (
     <ThemesContainer>
       <ThemesSection>
-        <SectionTitle>Bob</SectionTitle>
-        <ContentSubtitle>Kostüme für Bob</ContentSubtitle>
-        <ItemsGrid>
-          {bobItems.map((bobItem) => (
-            <ThemeCard
-              key={bobItem.id}
-              $selected={bobItem.equipped}
-              $purchased={bobItem.purchased}
-              $canAfford={canAfford(bobItem.cost)}
-              onClick={() => handleBobItemClick(bobItem.id)}
-              role="button"
-            >
-              <div style={{ fontSize: "32px" }}>{bobItem.icon}</div>
-              <ThemeName>{bobItem.name}</ThemeName>
-              <ThemeDescription>{bobItem.description}</ThemeDescription>
-              {/* <div
-                style={{
-                  fontSize: "10px",
-                  color: "#999",
-                  textAlign: "center",
-                  marginTop: "4px",
-                  textTransform: "capitalize",
-                }}
-              >
-                {bobItem.type}
-              </div> */}
+        <SectionTitle>Build a Bob</SectionTitle>
+        <ContentSubtitle>Kostüme und Körper für Bob</ContentSubtitle>
 
-              <ThemeStatus
-                $purchased={bobItem.purchased}
-                $enabled={bobItem.equipped}
-              >
-                {bobItem.purchased
-                  ? bobItem.equipped
-                    ? "Aktiv"
-                    : "Aktiveren"
-                  : `${bobItem.cost} 🫵`}
-              </ThemeStatus>
-            </ThemeCard>
-          ))}
-        </ItemsGrid>
+        {/* Sub-tab navigation */}
+        <SubTabContainer>
+          <SubTabButton
+            $active={activeSubTab === "costumes"}
+            onClick={() => setActiveSubTab("costumes")}
+          >
+            Kostüm
+          </SubTabButton>
+          <SubTabButton
+            $active={activeSubTab === "forms"}
+            onClick={() => setActiveSubTab("forms")}
+          >
+            Körper
+          </SubTabButton>
+        </SubTabContainer>
+
+        {activeSubTab === "costumes" && (
+          <>
+            <ItemsGrid>
+              {bobItems.map((bobItem) => (
+                <ThemeCard
+                  key={bobItem.id}
+                  $selected={bobItem.equipped}
+                  $purchased={bobItem.purchased}
+                  $canAfford={canAfford(bobItem.cost)}
+                  onClick={() => handleBobItemClick(bobItem.id)}
+                  role="button"
+                >
+                  <div style={{ fontSize: "32px" }}>{bobItem.icon}</div>
+                  <ThemeName>{bobItem.name}</ThemeName>
+                  <ThemeDescription>{bobItem.description}</ThemeDescription>
+
+                  <ThemeStatus
+                    $purchased={bobItem.purchased}
+                    $enabled={bobItem.equipped}
+                  >
+                    {bobItem.purchased
+                      ? bobItem.equipped
+                        ? "Aktiv"
+                        : "Aktiveren"
+                      : `${bobItem.cost} 🫵`}
+                  </ThemeStatus>
+                </ThemeCard>
+              ))}
+            </ItemsGrid>
+          </>
+        )}
+
+        {activeSubTab === "forms" && (
+          <>
+            <BlobFormCustomization />
+          </>
+        )}
       </ThemesSection>
     </ThemesContainer>
   );
@@ -1388,6 +1410,34 @@ const ToggleSwitch = styled.button<{ $active: boolean }>`
     $active ? "var(--primary-color)" : "rgba(255,255,255,0.1)"};
   color: ${(props) => (props.$active ? "var(--text-color)" : "#ffffff")};
   cursor: pointer;
+`;
+
+// Sub-tab navigation styling
+const SubTabContainer = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  /* margin-bottom: 1.5rem; */
+  /* border-bottom: 1px solid rgba(255, 255, 255, 0.1); */
+  padding-bottom: 0.5rem;
+`;
+
+const SubTabButton = styled.button<{ $active: boolean }>`
+  padding: 0.5rem 1rem;
+  border: none;
+  background: ${({ $active }) =>
+    $active ? "var(--primary-color)" : "rgba(255,255,255,0.05)"};
+  color: ${({ $active }) =>
+    $active ? "var(--background-color)" : "var(--text-color)"};
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: ${({ $active }) => ($active ? "600" : "400")};
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: ${({ $active }) =>
+      $active ? "var(--primary-color)" : "rgba(255, 255, 255, 0.1)"};
+  }
 `;
 
 const SliderRow = styled.div`

@@ -3,7 +3,7 @@ import {
   DeviceOrientation,
 } from "@/hooks/useDeviceOrientation";
 import { useFrame } from "@react-three/fiber";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo, useCallback } from "react";
 import {
   Group,
   Mesh,
@@ -19,7 +19,7 @@ import {
   HIDDEN_OPTIONS_CAMERA_ZOOM,
   VISIBLE_OPTIONS_CAMERA_ZOOM,
 } from "./HeadNavigation";
-import { CameraControls, Outlines } from "@react-three/drei";
+import { CameraControls, Outlines, RoundedBox } from "@react-three/drei";
 import { calculateAcceleratedRotation } from "@/utils/math";
 import { a, useSpring } from "@react-spring/three";
 import { type RapierRigidBody } from "@react-three/rapier";
@@ -32,6 +32,9 @@ import { match } from "ts-pattern";
 import { RoundGlasses } from "@/3d-objects/models/roundGlasses";
 import { AfroHair } from "@/3d-objects/models/afroHair";
 import { BuilderHelmet } from "@/3d-objects/models/builderHelmet";
+import { BlobForm } from "@/components/BlobForm";
+import { getSelectedBlobForm, getBlobFormType } from "@/types/blobForms";
+import { SimsPlumbob } from "@/3d-objects/models/simsPlumbob";
 
 // TODO: Move these constants to a shared config file
 // Default head position Y
@@ -186,7 +189,7 @@ export function BlobHead({
   emotionState: EmotionState;
   onCameraZoomAnimation?: (isAnimating: boolean) => void;
 }) {
-  const { currentTheme, bobItems } = useGameStore();
+  const { currentTheme, bobItems, blobForms } = useGameStore();
 
   // Get theme-specific blob colors
   const blobColor = currentTheme?.blobColor;
@@ -908,22 +911,168 @@ export function BlobHead({
     document.body.style.cursor = "auto";
   };
 
+  // memoize selected blob form and type
+  const selectedBlobForm = useMemo(
+    () => getSelectedBlobForm(blobForms),
+    [blobForms]
+  );
+  const blobFormType = useMemo(
+    () => getBlobFormType(selectedBlobForm.id),
+    [selectedBlobForm.id]
+  );
+
+  // memoize costume position calculation function
+  const calculateCostumePosition = useCallback(
+    (
+      basePosition: [number, number, number],
+      itemType: "hat" | "accessory",
+      itemId?: string
+    ): [number, number, number] => {
+      const [baseX, baseY, baseZ] = basePosition;
+      const { parameters } = selectedBlobForm;
+
+      let adjustedX = baseX;
+      let adjustedY = baseY;
+      let adjustedZ = baseZ;
+
+      // calculate adjustments based on form type
+      if (blobFormType === "sphere") {
+        const radiusDiff = (parameters.sphereRadius || 1) - 1; // default sphere radius is 1
+        if (itemType === "hat") {
+          adjustedY += radiusDiff; // hats move up with larger radius
+        } else if (itemType === "accessory" && itemId) {
+          // for spheres, radius affects both height and depth
+          const axisConfig = ACCESSORY_AXIS_CONFIG[itemId];
+          if (axisConfig) {
+            if (axisConfig.y) {
+              adjustedY += radiusDiff * (axisConfig.yMultiplier || 0.5); // y-axis with radius changes
+            }
+            if (axisConfig.z) {
+              adjustedZ += radiusDiff * (axisConfig.zMultiplier || 0.3); // z-axis with radius changes
+            }
+          }
+        }
+      } else if (blobFormType === "cube") {
+        const heightDiff = (parameters.cubeHeight || 1.75) - 1.75; // default cube height
+        const depthDiff = (parameters.cubeDepth || 1.65) - 1.65; // default cube depth
+
+        if (itemType === "hat") {
+          adjustedY += heightDiff * 0.5; // hats move up with greater height
+        } else if (itemType === "accessory" && itemId) {
+          // use configurable axis system for accessories
+          const axisConfig = ACCESSORY_AXIS_CONFIG[itemId];
+          if (axisConfig) {
+            if (axisConfig.y) {
+              adjustedY += heightDiff * (axisConfig.yMultiplier || 0.5); // y-axis with height changes
+            }
+            if (axisConfig.z) {
+              adjustedZ += depthDiff * (axisConfig.zMultiplier || 0.3); // z-axis with depth changes
+            }
+          }
+        }
+      } else if (blobFormType === "pill") {
+        const heightDiff = (parameters.pillHeight || 1.6) - 1.6; // default pill height
+        const radiusDiff =
+          ((parameters.pillRadiusTop || 0.8) +
+            (parameters.pillRadiusBottom || 0.8)) /
+            2 -
+          0.8; // average radius
+
+        if (itemType === "hat") {
+          adjustedY += heightDiff * 0.5; // hats move up with greater height
+        } else if (itemType === "accessory" && itemId) {
+          // use configurable axis system for accessories
+          const axisConfig = ACCESSORY_AXIS_CONFIG[itemId];
+          if (axisConfig) {
+            if (axisConfig.y) {
+              adjustedY += heightDiff * (axisConfig.yMultiplier || 0.5); // y-axis with height changes
+            }
+            if (axisConfig.z) {
+              adjustedZ += radiusDiff * (axisConfig.zMultiplier || 0.3); // z-axis with radius changes
+            }
+          }
+        }
+      }
+
+      return [adjustedX, adjustedY, adjustedZ];
+    },
+    [selectedBlobForm, blobFormType]
+  );
+
+  // accessory axis configuration - defines which axes each accessory type should move on
+  const ACCESSORY_AXIS_CONFIG: Record<
+    string,
+    {
+      x: boolean;
+      y: boolean;
+      z: boolean;
+      yMultiplier?: number;
+      zMultiplier?: number;
+    }
+  > = {
+    chickenLittleGlasses: {
+      x: false,
+      y: true,
+      z: true,
+      yMultiplier: 0.5,
+      zMultiplier: 0.7,
+    }, // glasses move on both y and z axes
+    // add more accessories here as needed
+  };
+
+  // memoize eye position calculation function
+  const calculateEyePosition = useCallback(
+    (basePosition: [number, number, number]): [number, number, number] => {
+      const [baseX, baseY, baseZ] = basePosition;
+      const { parameters } = selectedBlobForm;
+
+      let adjustedX = baseX;
+      let adjustedY = baseY;
+      let adjustedZ = baseZ;
+
+      // for spheres, radius acts as both height and depth
+      if (blobFormType === "sphere") {
+        const radiusDiff = (parameters.sphereRadius || 1) - 1; // default sphere radius is 1
+        adjustedY += radiusDiff * 0.4; // eyes move up/down with radius changes
+        adjustedZ += radiusDiff * 1.2; // eyes move forward/back with radius changes
+      } else if (blobFormType === "cube") {
+        const heightDiff = (parameters.cubeHeight || 1.75) - 1.75; // default cube height
+        const depthDiff = (parameters.cubeDepth || 1.65) - 1.65; // default cube depth
+        adjustedY += heightDiff * 0.4; // eyes move up/down with height changes
+        adjustedZ += depthDiff * 0.5; // eyes move forward/back with depth changes
+      } else if (blobFormType === "pill") {
+        const heightDiff = (parameters.pillHeight || 1.6) - 1.6; // default pill height
+        const radiusDiff =
+          ((parameters.pillRadiusTop || 0.8) +
+            (parameters.pillRadiusBottom || 0.8)) /
+            2 -
+          0.8; // average radius
+        adjustedY += heightDiff * 0.3; // eyes move up/down with height changes
+        adjustedZ += radiusDiff * 0.5; // eyes move forward/back with radius changes
+      }
+
+      return [adjustedX, adjustedY, adjustedZ];
+    },
+    [selectedBlobForm, blobFormType]
+  );
+
   const renderBobItems = () => {
-    const hats = bobItems.filter(
-      (item) => item.equipped && item.type === "hat"
+    const allEquippedItems = bobItems.filter((item) => item.equipped);
+
+    const detachedItems = allEquippedItems.filter(
+      (item) => item.detached === true
     );
-    const accessories = bobItems.filter(
-      (item) => item.equipped && item.type === "accessory"
+    const attachedItems = allEquippedItems.filter(
+      (item) => item.detached !== true
     );
 
-    const allItems = [...hats, ...accessories];
-
-    const ModelsToRender = allItems.map((item) => {
+    // Render attached items (these move with the head)
+    const attachedModels = attachedItems.map((item) => {
       if (item.id === "krustyKrabHat")
         return (
           <KrustyKrabHat
             key={item.id}
-            position={[0, 0.9, 0]}
+            position={calculateCostumePosition([0, 0.9, 0], "hat")}
             scale={[0.006, 0.006, 0.006]}
             outlineColor={outlineColor}
           />
@@ -932,7 +1081,11 @@ export function BlobHead({
         return (
           <RoundGlasses
             key={item.id}
-            position={[0, 0.1, 0.7]}
+            position={calculateCostumePosition(
+              [0, 0.1, 0.7],
+              "accessory",
+              item.id
+            )}
             scale={[1.6, 1.6, 1.6]}
           />
         );
@@ -940,7 +1093,7 @@ export function BlobHead({
         return (
           <BuilderHelmet
             key={item.id}
-            position={[0, 0.6, 0]}
+            position={calculateCostumePosition([0, 0.6, 0], "hat")}
             scale={[1.2, 1.2, 1.2]}
             rotation={[Math.PI * -0.05, 0, 0]}
           />
@@ -949,17 +1102,46 @@ export function BlobHead({
         return (
           <AfroHair
             key={item.id}
-            position={[0, -0.7, -0.05]}
+            position={calculateCostumePosition([0, -0.7, -0.05], "hat")}
             scale={[0.9, 0.9, 0.9]}
           />
         );
+      return null;
     });
 
-    return ModelsToRender;
+    const detachedModels = detachedItems.map((item) => {
+      if (item.id === "simsPlumbob") {
+        //TODO: move to plumbob and animate with easing + scale changes
+        const emotionColor = match(emotionState)
+          .with("mad", () => "#ce1111")
+          .with("dizzy", () => "#d3a937")
+          .with("normal", () => "#b7e822")
+          .otherwise(() => undefined);
+
+        return (
+          <SimsPlumbob
+            key={item.id}
+            position={[0, 3.5, 0]}
+            scale={[0.4, 0.4, 0.4]}
+            color={emotionColor}
+          />
+        );
+      }
+      return null;
+    });
+
+    return {
+      attached: attachedModels,
+      detached: detachedModels,
+    };
   };
+
+  const { attached: attachedItems, detached: detachedItems } = renderBobItems();
 
   const content = (
     <>
+      {detachedItems}
+
       <a.group
         ref={headRef}
         onClick={onClick}
@@ -970,15 +1152,16 @@ export function BlobHead({
         rotation={[0, Math.PI, 0]}
         position={[0, 2, 0]}
       >
-        {/* Head */}
-        <mesh castShadow>
-          <sphereGeometry args={[1, 64, 64]} />
-          <meshToonMaterial color={blobColor} />
-          <Outlines thickness={0.005} color={outlineColor} screenspace />
-        </mesh>
+        {/* Head - using selected blob form */}
+        <BlobForm
+          formType={blobFormType}
+          parameters={selectedBlobForm.parameters}
+          blobColor={blobColor || "#ff6b9d"}
+          outlineColor={outlineColor || "#000000"}
+        />
 
         {/* Eyes */}
-        <group position={[0, 0.2, 0.85]}>
+        <group position={calculateEyePosition([0, 0.2, 0.85])}>
           <mesh ref={leftEyeRef} position={[-0.45, 0, 0]}>
             <sphereGeometry args={[0.1, 16, 16]} />
             <meshToonMaterial color={eyeColor} />
@@ -989,7 +1172,7 @@ export function BlobHead({
           </mesh>
         </group>
 
-        <>{renderBobItems()}</>
+        {attachedItems}
 
         {emotionState === "dizzy" &&
           dizzyStars.map((star) => {
