@@ -1111,12 +1111,19 @@ export function BlobHead({
 
     const detachedModels = detachedItems.map((item) => {
       if (item.id === "simsPlumbob") {
+        //TODO: move to plumbob and animate with easing + scale changes
+        const emotionColor = match(emotionState)
+          .with("mad", () => "#ce1111")
+          .with("dizzy", () => "#d3a937")
+          .with("normal", () => "#b7e822")
+          .otherwise(() => undefined);
+
         return (
           <SimsPlumbob
             key={item.id}
             position={[0, 3.5, 0]}
             scale={[0.4, 0.4, 0.4]}
-            color={emotionState === "mad" ? "#ce1111" : undefined}
+            color={emotionColor}
           />
         );
       }
