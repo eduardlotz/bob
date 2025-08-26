@@ -5,9 +5,7 @@ import {
   forceMigration,
   clearAllData,
 } from "@/store/migration";
-import { forceV9Migration } from "@/store/gameStore";
 import { toast } from "sonner";
-import styled from "styled-components";
 import {
   DebugBlock,
   DevActionButton,
@@ -41,19 +39,6 @@ export const MigrationDebugger: React.FC = () => {
     }
   };
 
-  const handleForceV9Migration = () => {
-    try {
-      forceV9Migration();
-      toast.success("V9 migration completed");
-      // Refresh store version
-      const store = useGameStore.getState();
-      setStoreVersion(store.version || 0);
-    } catch (error) {
-      toast.error("V9 migration failed");
-      console.error(error);
-    }
-  };
-
   const handleClearData = async () => {
     try {
       await clearAllData();
@@ -78,21 +63,6 @@ export const MigrationDebugger: React.FC = () => {
     } catch (error) {
       toast.error("Failed to set schema migration trigger");
       console.error(error);
-    }
-  };
-
-  const checkThemeColors = () => {
-    const themesWithIssues = themes.filter(
-      (theme) => !theme.outlineColor || !theme.eyeColor
-    );
-
-    if (themesWithIssues.length > 0) {
-      toast.error(
-        `${themesWithIssues.length} themes missing outlineColor or eyeColor`
-      );
-      console.log("Themes with issues:", themesWithIssues);
-    } else {
-      toast.success("All themes have proper outlineColor and eyeColor");
     }
   };
 
@@ -135,20 +105,6 @@ export const MigrationDebugger: React.FC = () => {
         </DevActionButton>
         <DevActionDescription>
           Apply current storage migration logic.
-        </DevActionDescription>
-
-        <DevActionButton onClick={handleForceV9Migration}>
-          Force V9 Migration
-        </DevActionButton>
-        <DevActionDescription>
-          Test older migration path (V9) specifically.
-        </DevActionDescription>
-
-        <DevActionButton onClick={checkThemeColors}>
-          Check Theme Colors
-        </DevActionButton>
-        <DevActionDescription>
-          Verifies themes for required color fields after migrations.
         </DevActionDescription>
 
         <DevActionButton onClick={handleClearData} $variant="danger">

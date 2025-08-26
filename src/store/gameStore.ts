@@ -43,7 +43,8 @@ export enum GAME_STORE_VERSIONS {
   V18 = 18,
   V19 = 19,
   V20 = 20,
-  LATEST = V20,
+  V21 = 21,
+  LATEST = V21,
 }
 
 // Constants
@@ -440,14 +441,53 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
   // Migration V19 → V20: Add blob forms system
   if (currentVersion < GAME_STORE_VERSIONS.V20) {
     migratedState.blobForms = INITIAL_BLOB_FORMS;
-    migratedState.initialBobItems = {
-      ...migratedState.initialBobItems,
-      ...initialBobItems,
-    };
+
+    // properly merge bobItems with new items while preserving purchased/equipped state
+    const existingBobItems = migratedState.bobItems || [];
+    const updatedBobItems = initialBobItems.map((newItem) => {
+      const existingItem = existingBobItems.find(
+        (item: BobItem) => item.id === newItem.id
+      );
+      if (existingItem) {
+        return {
+          ...newItem,
+          purchased: existingItem.purchased,
+          equipped: existingItem.equipped,
+          detached: existingItem.detached,
+        };
+      }
+      return newItem;
+    });
+    migratedState.bobItems = updatedBobItems;
 
     migratedState.lastSchemaUpdate = new Date();
 
     currentVersion = GAME_STORE_VERSIONS.V20;
+  }
+
+  // Migration V20 → V21: Fix bobItems for users affected by broken V20 migration
+  if (currentVersion < GAME_STORE_VERSIONS.V21) {
+    // ensure all bobItems from initialBobItems are present, preserving purchased state
+    const existingBobItems = migratedState.bobItems || [];
+    const updatedBobItems = initialBobItems.map((newItem) => {
+      const existingItem = existingBobItems.find(
+        (item: BobItem) => item.id === newItem.id
+      );
+      if (existingItem) {
+        return {
+          ...newItem,
+          purchased: existingItem.purchased,
+          equipped: existingItem.equipped,
+          detached: existingItem.detached,
+        };
+      }
+      return newItem;
+    });
+    migratedState.bobItems = updatedBobItems;
+
+    migratedState.lastSchemaUpdate = new Date();
+
+    currentVersion = GAME_STORE_VERSIONS.V21;
   }
 
   // Set the final version to the latest
@@ -681,7 +721,7 @@ interface GameStore {
 }
 
 // room decorations
-const initialDecorations: Decoration[] = [
+export const initialDecorations: Decoration[] = [
   {
     id: "tree_3d",
     name: "Baum",
@@ -699,7 +739,7 @@ const initialDecorations: Decoration[] = [
 ];
 
 // bob items (wearable items for the blob head)
-const initialBobItems: BobItem[] = [
+export const initialBobItems: BobItem[] = [
   {
     id: "builderHelmet",
     name: "Schutzhelm",
@@ -759,7 +799,7 @@ const initialBobItems: BobItem[] = [
 ];
 
 // Initial themes based on config
-const initialThemes: Theme[] = Object.values(THEME_CONFIG).map(
+export const initialThemes: Theme[] = Object.values(THEME_CONFIG).map(
   (themeConfig) => ({
     id: themeConfig.id,
     name: themeConfig.name,
@@ -777,7 +817,7 @@ const initialThemes: Theme[] = Object.values(THEME_CONFIG).map(
 );
 
 // Initial routes using constants
-const initialRoutes: Route[] = [
+export const initialRoutes: Route[] = [
   {
     id: ROUTE_IDS.HOME,
     name: ROUTE_CONFIG[ROUTE_PATHS.HOME].name,
@@ -2105,32 +2145,6 @@ export const triggerStoreMigration = () => {
 
   const migratedState = migrateStore(currentState, GAME_STORE_VERSIONS.V9);
   toast.success(`Store migrated to VERSION_${GAME_STORE_VERSIONS.LATEST}`);
-
-  // Update the store with migrated data
-  useGameStore.setState({
-    ...store,
-    ...migratedState,
-  });
-};
-
-// Utility function to force V9 migration specifically
-// check if still needed after all other migrations
-export const forceV9Migration = () => {
-  const store = useGameStore.getState();
-
-  // Force migration from V8 to V9
-  const currentState = {
-    version: 8, // Force V8 to trigger V9 migration
-    taps: store.taps,
-    upgrades: store.upgrades,
-    decorations: store.decorations,
-    themes: store.themes,
-    currentTheme: store.currentTheme,
-    fisheyeIntensity: store.fisheyeIntensity,
-  };
-
-  const migratedState = migrateStore(currentState, 6);
-  toast.success("Forced V7 migration completed");
 
   // Update the store with migrated data
   useGameStore.setState({

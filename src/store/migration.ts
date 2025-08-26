@@ -3,11 +3,18 @@ import {
   getStorageType,
   isIndexedDBAvailable,
 } from "./indexedDB";
-import { useGameStore } from "./gameStore";
+import {
+  initialBobItems,
+  initialDecorations,
+  initialRoutes,
+  initialThemes,
+  useGameStore,
+} from "./gameStore";
 import { useQuestStore } from "./questStore";
 import { useRouteStore } from "./routeStore";
 import { useMessageStore } from "./messageStore";
 import { toast } from "sonner";
+import { initialUpgrades } from "@/shop-items/upgrades";
 
 // Migration utility to move data from localStorage to IndexedDB
 export class StoreMigration {
@@ -369,12 +376,30 @@ export class StoreMigration {
           isPaused: false,
           recentManualTaps: [],
           lastAutoTapTime: Date.now(),
-          // Preserve initial arrays from current running store (which were created from config)
-          upgrades: useGameStore.getState().upgrades,
-          decorations: useGameStore.getState().decorations,
-          themes: useGameStore.getState().themes,
-          currentTheme: useGameStore.getState().themes[0] || null,
-          routes: useGameStore.getState().routes,
+          upgrades: initialUpgrades,
+          decorations: initialDecorations,
+          themes: initialThemes,
+          currentTheme: initialThemes[0] || null,
+          routes: initialRoutes,
+          blobForms: useGameStore.getState().blobForms,
+          // preserve purchased bobItems during final reset to avoid losing progress
+          bobItems: (() => {
+            const currentBobItems = useGameStore.getState().bobItems || [];
+            return initialBobItems.map((newItem) => {
+              const existingItem = currentBobItems.find(
+                (item) => item.id === newItem.id
+              );
+              if (existingItem && existingItem.purchased) {
+                return {
+                  ...newItem,
+                  purchased: existingItem.purchased,
+                  equipped: existingItem.equipped,
+                  detached: existingItem.detached,
+                };
+              }
+              return newItem;
+            });
+          })(),
           fisheyeIntensity: 0,
           animationsEnabled: true,
           statisticsVisible: false,
