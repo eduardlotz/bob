@@ -85,7 +85,9 @@ export function Shop({ isOpen, onClose }: ShopProps) {
       id: "pages" as ShopTab,
       name: "Seiten",
       icon: PagesIcon,
-      progress: routes.filter((r) => r.purchased).length / routes.length,
+      progress:
+        routes.filter((r) => r.purchased).length /
+        routes.filter((r) => !r.isLocked).length,
     },
     {
       id: "bob" as ShopTab,
@@ -664,7 +666,7 @@ function DecorationsView() {
                   ? decoration.enabled
                     ? "Aktiv"
                     : "Aktiveren"
-                  : `${decoration.cost} taps`}
+                  : `${decoration.cost} 🫵`}
               </ThemeStatus>
             </ThemeCard>
           ))}
@@ -703,8 +705,8 @@ function BobView() {
   return (
     <ThemesContainer>
       <ThemesSection>
-        <SectionTitle>Bob Anpassung</SectionTitle>
-        <ContentSubtitle>Kostüme und Formen für Bob</ContentSubtitle>
+        <SectionTitle>Build a Bob</SectionTitle>
+        <ContentSubtitle>Kostüme und Körper für Bob</ContentSubtitle>
 
         {/* Sub-tab navigation */}
         <SubTabContainer>
@@ -712,19 +714,18 @@ function BobView() {
             $active={activeSubTab === "costumes"}
             onClick={() => setActiveSubTab("costumes")}
           >
-            👔 Kostüme
+            Kostüm
           </SubTabButton>
           <SubTabButton
             $active={activeSubTab === "forms"}
             onClick={() => setActiveSubTab("forms")}
           >
-            🔵 Formen
+            Körper
           </SubTabButton>
         </SubTabContainer>
 
         {activeSubTab === "costumes" && (
           <>
-            <ContentSubtitle>Kostüme für Bob</ContentSubtitle>
             <ItemsGrid>
               {bobItems.map((bobItem) => (
                 <ThemeCard
@@ -738,17 +739,6 @@ function BobView() {
                   <div style={{ fontSize: "32px" }}>{bobItem.icon}</div>
                   <ThemeName>{bobItem.name}</ThemeName>
                   <ThemeDescription>{bobItem.description}</ThemeDescription>
-                  {/* <div
-                style={{
-                  fontSize: "10px",
-                  color: "#999",
-                  textAlign: "center",
-                  marginTop: "4px",
-                  textTransform: "capitalize",
-                }}
-              >
-                {bobItem.type}
-              </div> */}
 
                   <ThemeStatus
                     $purchased={bobItem.purchased}
@@ -768,7 +758,6 @@ function BobView() {
 
         {activeSubTab === "forms" && (
           <>
-            <ContentSubtitle>Blob Formen</ContentSubtitle>
             <BlobFormCustomization />
           </>
         )}
@@ -1426,9 +1415,9 @@ const ToggleSwitch = styled.button<{ $active: boolean }>`
 // Sub-tab navigation styling
 const SubTabContainer = styled.div`
   display: flex;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 0.5rem;
+  /* margin-bottom: 1.5rem; */
+  /* border-bottom: 1px solid rgba(255, 255, 255, 0.1); */
   padding-bottom: 0.5rem;
 `;
 
@@ -1436,7 +1425,7 @@ const SubTabButton = styled.button<{ $active: boolean }>`
   padding: 0.5rem 1rem;
   border: none;
   background: ${({ $active }) =>
-    $active ? "var(--primary-color)" : "transparent"};
+    $active ? "var(--primary-color)" : "rgba(255,255,255,0.05)"};
   color: ${({ $active }) =>
     $active ? "var(--background-color)" : "var(--text-color)"};
   border-radius: 0.375rem;

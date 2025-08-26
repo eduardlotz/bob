@@ -1015,7 +1015,7 @@ export function BlobHead({
       y: true,
       z: true,
       yMultiplier: 0.5,
-      zMultiplier: 0.3,
+      zMultiplier: 0.7,
     }, // glasses move on both y and z axes
     // add more accessories here as needed
   };
@@ -1034,7 +1034,7 @@ export function BlobHead({
       if (blobFormType === "sphere") {
         const radiusDiff = (parameters.sphereRadius || 1) - 1; // default sphere radius is 1
         adjustedY += radiusDiff * 0.4; // eyes move up/down with radius changes
-        adjustedZ += radiusDiff * 0.5; // eyes move forward/back with radius changes
+        adjustedZ += radiusDiff * 1.2; // eyes move forward/back with radius changes
       } else if (blobFormType === "cube") {
         const heightDiff = (parameters.cubeHeight || 1.75) - 1.75; // default cube height
         const depthDiff = (parameters.cubeDepth || 1.65) - 1.65; // default cube depth
@@ -1114,8 +1114,9 @@ export function BlobHead({
         return (
           <SimsPlumbob
             key={item.id}
-            position={[0, 3, 0]}
-            scale={[0.35, 0.35, 0.35]}
+            position={[0, 3.5, 0]}
+            scale={[0.4, 0.4, 0.4]}
+            color={emotionState === "mad" ? "#ce1111" : undefined}
           />
         );
       }

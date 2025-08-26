@@ -18,12 +18,40 @@ const SectionTitle = styled.h3`
   color: var(--text-color);
 `;
 
+const SectionHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+`;
+
+const ResetButton = styled.button`
+  background: var(--primary-color);
+  color: var(--background-color);
+  border: none;
+  border-radius: 50px;
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+`;
+
 const FormGrid = styled.div`
   display: flex;
   gap: 1rem;
   margin-bottom: 1.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 0.5rem;
+  padding-bottom: 1rem;
 `;
 
 const FormCard = styled.button<{
@@ -58,7 +86,7 @@ const FormCard = styled.button<{
 
 const FormCost = styled.span`
   margin-left: 0.5rem;
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   background: var(--warning-color);
   color: var(--background-color);
   padding: 0.125rem 0.375rem;
@@ -175,10 +203,10 @@ export const BlobFormCustomization = React.memo(
       purchaseBlobForm,
       selectBlobForm,
       updateBlobFormParameters,
+      resetBlobFormParameters,
       canAfford,
     } = useGameStore();
 
-    // memoize selected form and form type to prevent unnecessary recalculations
     const selectedForm = useMemo(
       () => blobForms.find((form) => form.selected) || blobForms[0],
       [blobForms]
@@ -189,7 +217,6 @@ export const BlobFormCustomization = React.memo(
       [selectedForm.id]
     );
 
-    // memoize handlers to prevent unnecessary re-renders
     const handleFormSelect = useCallback(
       (form: BlobFormConfig) => {
         if (!form.unlocked) {
@@ -211,7 +238,12 @@ export const BlobFormCustomization = React.memo(
       [selectedForm.id, updateBlobFormParameters]
     );
 
-    // memoize parameter sliders to prevent unnecessary re-renders
+    const handleResetForm = useCallback(() => {
+      if (window.confirm("Bist du dir sicher?")) {
+        resetBlobFormParameters(selectedForm.id);
+      }
+    }, [selectedForm.id, resetBlobFormParameters]);
+
     const renderParameterSliders = useMemo(() => {
       const parameterRanges = FORM_PARAMETER_RANGES[formType];
       if (!parameterRanges) return null;
@@ -246,9 +278,9 @@ export const BlobFormCustomization = React.memo(
 
     return (
       <div className={className}>
-        {/* Form Selection */}
         <FormSection>
-          <SectionTitle>Blob Form</SectionTitle>
+          <PreviewTitle>{selectedForm.name}</PreviewTitle>
+          <PreviewDescription>{selectedForm.description}</PreviewDescription>
           <FormGrid>
             {blobForms.map((form) => (
               <FormCard
@@ -268,19 +300,13 @@ export const BlobFormCustomization = React.memo(
         {/* Parameter Customization */}
         {selectedForm.unlocked && (
           <ParameterSection>
-            <SectionTitle>Customize {selectedForm.name}</SectionTitle>
+            <SectionHeader>
+              <SectionTitle>Fine-Tuning</SectionTitle>
+              <ResetButton onClick={handleResetForm}>Reset</ResetButton>
+            </SectionHeader>
             <ParameterGrid>{renderParameterSliders}</ParameterGrid>
           </ParameterSection>
         )}
-
-        {/* Form Preview Info */}
-        <PreviewCard>
-          <PreviewTitle>Current Form: {selectedForm.name}</PreviewTitle>
-          <PreviewDescription>{selectedForm.description}</PreviewDescription>
-          {!selectedForm.unlocked && (
-            <PreviewCost>Cost: {selectedForm.cost} taps to unlock</PreviewCost>
-          )}
-        </PreviewCard>
       </div>
     );
   }

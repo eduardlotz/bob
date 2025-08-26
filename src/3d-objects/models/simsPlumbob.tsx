@@ -21,11 +21,13 @@ interface Props {
   rotation?: [number, number, number];
   scale?: [number, number, number];
   outlineColor?: string;
+  color?: string;
 }
 
 export const SimsPlumbob = ({
   scale = [1, 1, 1],
   outlineColor = "#000000",
+  color = "#b7e822",
   ...props
 }: Props) => {
   const group = useRef<THREE.Group>(null!);
@@ -78,7 +80,12 @@ export const SimsPlumbob = ({
           // material={materials["Material.001"]}
         >
           {/* <meshToonMaterial color="#A0BF3F" /> */}
-          <MeshTransmissionMaterial color="#b7e822" />
+          <MeshTransmissionMaterial
+            color={color}
+            thickness={1.5}
+            distortion={0.5}
+            transmission={0.9}
+          />
           {/* <Outlines thickness={0.5} color={"#697f28"} screenspace /> */}
         </mesh>
       </group>

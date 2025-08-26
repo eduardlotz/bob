@@ -16,7 +16,11 @@ import { resolveTapSoundForEffect } from "@/utils/sound/configs";
 import { getWorldSoundById } from "@/utils/sound/configs";
 import { THEME_IDS, THEME_CONFIG } from "./themeConfig";
 import { initialUpgrades } from "@/shop-items/upgrades";
-import { BlobFormConfig, INITIAL_BLOB_FORMS } from "@/types/blobForms";
+import {
+  BlobFormConfig,
+  INITIAL_BLOB_FORMS,
+  DEFAULT_FORM_PARAMETERS,
+} from "@/types/blobForms";
 
 export enum GAME_STORE_VERSIONS {
   V1 = 1,
@@ -501,7 +505,7 @@ export interface BobItem {
   cost: number;
   purchased: boolean;
   equipped: boolean;
-  type: "hat" | "accessory" | "outfit";
+  type: "hat" | "accessory" | "outfit" | "decoration";
   icon: string;
   category: "bob";
   detached?: boolean; // If true, item stays at initial position and doesn't follow head movements
@@ -627,6 +631,7 @@ interface GameStore {
     blobFormId: string,
     parameters: Partial<import("@/types/blobForms").BlobFormParameters>
   ) => void;
+  resetBlobFormParameters: (blobFormId: string) => void;
   purchaseTheme: (themeId: string) => void;
   purchaseRoute: (routeId: string, force?: boolean) => void;
   checkRouteUnlocks: () => void;
@@ -746,7 +751,7 @@ const initialBobItems: BobItem[] = [
     cost: 50,
     purchased: false,
     equipped: false,
-    type: "hat",
+    type: "decoration",
     icon: "💎",
     category: "bob",
     detached: true,
@@ -1243,6 +1248,25 @@ export const useGameStore = create<GameStore>()(
             const updatedBlobForms = state.blobForms.map((f) =>
               f.id === blobFormId
                 ? { ...f, parameters: { ...f.parameters, ...parameters } }
+                : f
+            );
+
+            return {
+              ...state,
+              blobForms: updatedBlobForms,
+            };
+          });
+        },
+
+        resetBlobFormParameters: (blobFormId: string) => {
+          set((state) => {
+            const formType =
+              blobFormId as import("@/types/blobForms").BlobFormType;
+            const defaultParameters = DEFAULT_FORM_PARAMETERS[formType];
+
+            const updatedBlobForms = state.blobForms.map((f) =>
+              f.id === blobFormId
+                ? { ...f, parameters: { ...defaultParameters } }
                 : f
             );
 
