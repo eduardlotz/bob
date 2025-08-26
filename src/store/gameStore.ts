@@ -16,6 +16,7 @@ import { resolveTapSoundForEffect } from "@/utils/sound/configs";
 import { getWorldSoundById } from "@/utils/sound/configs";
 import { THEME_IDS, THEME_CONFIG } from "./themeConfig";
 import { initialUpgrades } from "@/shop-items/upgrades";
+import { BlobFormConfig, INITIAL_BLOB_FORMS } from "@/types/blobForms";
 
 export enum GAME_STORE_VERSIONS {
   V1 = 1,
@@ -37,7 +38,8 @@ export enum GAME_STORE_VERSIONS {
   V17 = 17,
   V18 = 18,
   V19 = 19,
-  LATEST = V19,
+  V20 = 20,
+  LATEST = V20,
 }
 
 // Constants
@@ -405,13 +407,43 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
 
   if (currentVersion < GAME_STORE_VERSIONS.V19) {
     migratedState.upgrades = initialUpgrades;
-    migratedState.bobItems = initialBobItems;
+
+    const existingBobItems = migratedState.bobItems || [];
+    const updatedBobItems = initialBobItems.map((newItem) => {
+      const existingItem = existingBobItems.find(
+        (item: BobItem) => item.id === newItem.id
+      );
+      if (existingItem) {
+        return {
+          ...newItem,
+          purchased: existingItem.purchased,
+          equipped: existingItem.equipped,
+          detached: existingItem.detached,
+        };
+      }
+      return newItem;
+    });
+
+    migratedState.bobItems = updatedBobItems;
     migratedState.decorations = initialDecorations;
     migratedState.themes = initialThemes;
 
     migratedState.lastSchemaUpdate = new Date();
 
     currentVersion = GAME_STORE_VERSIONS.V19;
+  }
+
+  // Migration V19 → V20: Add blob forms system
+  if (currentVersion < GAME_STORE_VERSIONS.V20) {
+    migratedState.blobForms = INITIAL_BLOB_FORMS;
+    migratedState.initialBobItems = {
+      ...migratedState.initialBobItems,
+      ...initialBobItems,
+    };
+
+    migratedState.lastSchemaUpdate = new Date();
+
+    currentVersion = GAME_STORE_VERSIONS.V20;
   }
 
   // Set the final version to the latest
@@ -472,6 +504,7 @@ export interface BobItem {
   type: "hat" | "accessory" | "outfit";
   icon: string;
   category: "bob";
+  detached?: boolean; // If true, item stays at initial position and doesn't follow head movements
 }
 
 // Theme types
@@ -553,6 +586,7 @@ interface GameStore {
   upgrades: Upgrade[];
   decorations: Decoration[];
   bobItems: BobItem[];
+  blobForms: BlobFormConfig[];
   themes: Theme[];
   currentTheme: Theme | null;
   routes: Route[];
@@ -587,6 +621,12 @@ interface GameStore {
   purchaseBobItem: (bobItemId: string) => void;
   equipBobItem: (bobItemId: string) => void;
   unequipBobItem: (bobItemId: string) => void;
+  purchaseBlobForm: (blobFormId: string) => void;
+  selectBlobForm: (blobFormId: string) => void;
+  updateBlobFormParameters: (
+    blobFormId: string,
+    parameters: Partial<import("@/types/blobForms").BlobFormParameters>
+  ) => void;
   purchaseTheme: (themeId: string) => void;
   purchaseRoute: (routeId: string, force?: boolean) => void;
   checkRouteUnlocks: () => void;
@@ -698,6 +738,18 @@ const initialBobItems: BobItem[] = [
     type: "accessory",
     icon: "🤓",
     category: "bob",
+  },
+  {
+    id: "simsPlumbob",
+    name: "Plumbob",
+    description: "Sul Sul",
+    cost: 50,
+    purchased: false,
+    equipped: false,
+    type: "hat",
+    icon: "💎",
+    category: "bob",
+    detached: true,
   },
 ];
 
@@ -837,6 +889,7 @@ export const useGameStore = create<GameStore>()(
         upgrades: initialUpgrades,
         decorations: initialDecorations,
         bobItems: initialBobItems,
+        blobForms: INITIAL_BLOB_FORMS,
         themes: initialThemes,
         currentTheme: initialThemes[0],
         routes: initialRoutes,
@@ -1139,6 +1192,67 @@ export const useGameStore = create<GameStore>()(
           });
         },
 
+        purchaseBlobForm: (blobFormId: string) => {
+          set((state) => {
+            const blobForm = state.blobForms.find((f) => f.id === blobFormId);
+            if (
+              !blobForm ||
+              blobForm.unlocked ||
+              !state.canAfford(blobForm.cost)
+            ) {
+              return state;
+            }
+
+            const updatedBlobForms = state.blobForms.map((f) =>
+              f.id === blobFormId ? { ...f, unlocked: true } : f
+            );
+
+            return {
+              ...state,
+              taps: state.taps - blobForm.cost,
+              blobForms: updatedBlobForms,
+            };
+          });
+        },
+
+        selectBlobForm: (blobFormId: string) => {
+          set((state) => {
+            const blobForm = state.blobForms.find((f) => f.id === blobFormId);
+            if (!blobForm || !blobForm.unlocked) {
+              return state;
+            }
+
+            // deselect all blob forms and select the chosen one
+            const updatedBlobForms = state.blobForms.map((f) => ({
+              ...f,
+              selected: f.id === blobFormId,
+            }));
+
+            return {
+              ...state,
+              blobForms: updatedBlobForms,
+            };
+          });
+        },
+
+        updateBlobFormParameters: (
+          blobFormId: string,
+          parameters: Partial<import("@/types/blobForms").BlobFormParameters>
+        ) => {
+          set((state) => {
+            const updatedBlobForms = state.blobForms.map((f) =>
+              f.id === blobFormId
+                ? { ...f, parameters: { ...f.parameters, ...parameters } }
+                : f
+            );
+
+            return {
+              ...state,
+              blobForms: updatedBlobForms,
+            };
+          });
+        },
+
         purchaseTheme: (themeId: string) => {
           set((state) => {
             const theme = state.themes.find((t) => t.id === themeId);
@@ -1325,6 +1439,7 @@ export const useGameStore = create<GameStore>()(
             decorations: initialDecorations,
             themes: initialThemes,
             bobItems: initialBobItems,
+            blobForms: INITIAL_BLOB_FORMS,
             currentTheme: initialThemes[0],
             routes: initialRoutes,
             fisheyeIntensity: 0,
@@ -1390,6 +1505,11 @@ export const useGameStore = create<GameStore>()(
               purchased: true,
             }));
 
+            const updatedBlobForms = state.blobForms.map((blobForm) => ({
+              ...blobForm,
+              unlocked: true,
+            }));
+
             return {
               ...state,
               upgrades: updatedUpgrades,
@@ -1397,6 +1517,7 @@ export const useGameStore = create<GameStore>()(
               themes: updatedThemes,
               routes: updatedRoutes,
               bobItems: updatedBobItems,
+              blobForms: updatedBlobForms,
               _cachedTapsPerSecond: undefined,
               _cachedTapMultiplier: undefined,
               _lastUpgradeHash: undefined,
@@ -1757,6 +1878,7 @@ export const useGameStore = create<GameStore>()(
             themes: state.themes,
             currentTheme: state.currentTheme,
             routes: state.routes,
+            blobForms: state.blobForms,
             fisheyeIntensity: state.fisheyeIntensity,
             lastAutoTapTime: state.lastAutoTapTime,
             soundSystem: state.soundSystem,

@@ -102,6 +102,7 @@ export function Decoration3D({
         );
       case "tree_3d":
         return <TreeModel position={position} scale={[scale, scale, scale]} />;
+
       default:
         return null;
     }
