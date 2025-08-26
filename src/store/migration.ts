@@ -382,7 +382,24 @@ export class StoreMigration {
           currentTheme: initialThemes[0] || null,
           routes: initialRoutes,
           blobForms: useGameStore.getState().blobForms,
-          bobItems: initialBobItems,
+          // preserve purchased bobItems during final reset to avoid losing progress
+          bobItems: (() => {
+            const currentBobItems = useGameStore.getState().bobItems || [];
+            return initialBobItems.map((newItem) => {
+              const existingItem = currentBobItems.find(
+                (item) => item.id === newItem.id
+              );
+              if (existingItem && existingItem.purchased) {
+                return {
+                  ...newItem,
+                  purchased: existingItem.purchased,
+                  equipped: existingItem.equipped,
+                  detached: existingItem.detached,
+                };
+              }
+              return newItem;
+            });
+          })(),
           fisheyeIntensity: 0,
           animationsEnabled: true,
           statisticsVisible: false,

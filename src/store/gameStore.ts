@@ -43,7 +43,8 @@ export enum GAME_STORE_VERSIONS {
   V18 = 18,
   V19 = 19,
   V20 = 20,
-  LATEST = V20,
+  V21 = 21,
+  LATEST = V21,
 }
 
 // Constants
@@ -440,14 +441,53 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
   // Migration V19 → V20: Add blob forms system
   if (currentVersion < GAME_STORE_VERSIONS.V20) {
     migratedState.blobForms = INITIAL_BLOB_FORMS;
-    migratedState.initialBobItems = {
-      ...migratedState.initialBobItems,
-      ...initialBobItems,
-    };
+
+    // properly merge bobItems with new items while preserving purchased/equipped state
+    const existingBobItems = migratedState.bobItems || [];
+    const updatedBobItems = initialBobItems.map((newItem) => {
+      const existingItem = existingBobItems.find(
+        (item: BobItem) => item.id === newItem.id
+      );
+      if (existingItem) {
+        return {
+          ...newItem,
+          purchased: existingItem.purchased,
+          equipped: existingItem.equipped,
+          detached: existingItem.detached,
+        };
+      }
+      return newItem;
+    });
+    migratedState.bobItems = updatedBobItems;
 
     migratedState.lastSchemaUpdate = new Date();
 
     currentVersion = GAME_STORE_VERSIONS.V20;
+  }
+
+  // Migration V20 → V21: Fix bobItems for users affected by broken V20 migration
+  if (currentVersion < GAME_STORE_VERSIONS.V21) {
+    // ensure all bobItems from initialBobItems are present, preserving purchased state
+    const existingBobItems = migratedState.bobItems || [];
+    const updatedBobItems = initialBobItems.map((newItem) => {
+      const existingItem = existingBobItems.find(
+        (item: BobItem) => item.id === newItem.id
+      );
+      if (existingItem) {
+        return {
+          ...newItem,
+          purchased: existingItem.purchased,
+          equipped: existingItem.equipped,
+          detached: existingItem.detached,
+        };
+      }
+      return newItem;
+    });
+    migratedState.bobItems = updatedBobItems;
+
+    migratedState.lastSchemaUpdate = new Date();
+
+    currentVersion = GAME_STORE_VERSIONS.V21;
   }
 
   // Set the final version to the latest
