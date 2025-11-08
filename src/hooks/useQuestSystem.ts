@@ -4,18 +4,6 @@ import { useGameStore } from "@/store/gameStore";
 import { useAppStore } from "@/store";
 import { toast } from "sonner";
 
-// Helper function to trigger confetti
-const triggerConfetti = () => {
-  if ((window as any).createTapParticles) {
-    // Create multiple confetti bursts
-    for (let i = 0; i < 5; i++) {
-      setTimeout(() => {
-        (window as any).createTapParticles(-1, 0.5, -1, 1);
-      }, i * 100);
-    }
-  }
-};
-
 export const useQuestSystem = () => {
   const { currentRoute } = useAppStore();
   const { addTaps } = useGameStore();
@@ -98,16 +86,11 @@ export const useQuestSystem = () => {
           // Add reward to taps
           addTaps(quest.reward);
 
-          // Trigger confetti
-          triggerConfetti();
-
           // Show success toast
           toast.success(`Quest erledigt! +${quest.reward} taps erhalten`, {
             description: quest.title,
             duration: 3000,
           });
-
-          console.log("Quest completed!", quest.title);
         }
       });
     },
@@ -122,52 +105,12 @@ export const useQuestSystem = () => {
     [triggerQuest]
   );
 
-  const triggerViewProject = useCallback(() => {
-    triggerQuest("view_project");
-  }, [triggerQuest]);
-
-  const triggerDownloadResume = useCallback(() => {
-    triggerQuest("download_resume");
-  }, [triggerQuest]);
-
-  const triggerViewArtwork = useCallback(() => {
-    triggerQuest("view_artwork");
-  }, [triggerQuest]);
-
-  const triggerViewProcess = useCallback(() => {
-    triggerQuest("view_process");
-  }, [triggerQuest]);
-
-  const triggerReadDocs = useCallback(() => {
-    triggerQuest("read_docs");
-  }, [triggerQuest]);
-
-  const triggerReviewCode = useCallback(() => {
-    triggerQuest("review_code");
-  }, [triggerQuest]);
-
-  const triggerSignGuestbook = useCallback(() => {
-    triggerQuest("sign_guestbook");
-  }, [triggerQuest]);
-
-  const triggerReadMessages = useCallback(() => {
-    triggerQuest("read_messages");
-  }, [triggerQuest]);
-
   return {
     currentQuests,
     completedQuests,
     totalReward,
     triggerQuest,
     triggerInteraction,
-    triggerViewProject,
-    triggerDownloadResume,
-    triggerViewArtwork,
-    triggerViewProcess,
-    triggerReadDocs,
-    triggerReviewCode,
-    triggerSignGuestbook,
-    triggerReadMessages,
     // Debug function to reset quests
     resetQuests: () => {
       const questStore = useQuestStore.getState();

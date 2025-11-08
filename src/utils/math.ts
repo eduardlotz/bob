@@ -1,10 +1,6 @@
 import { DeviceOrientation } from "@/hooks/useDeviceOrientation";
 import { MathUtils, Quaternion, Euler, Vector3 } from "three";
 
-export function clamp(val: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, val));
-}
-
 // Calibration state for device orientation
 let isCalibrated = false;
 let calibrationQuaternion = new Quaternion();
