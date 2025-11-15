@@ -4,7 +4,8 @@ import { Sparkles } from "@react-three/drei";
 import { useGameStore } from "@/store/gameStore";
 import * as THREE from "three";
 
-// Pre-create and reuse geometries (CRITICAL for performance)
+// TODO: check performance impact
+// calculate all shapes geometries once and reuse
 const SHARED_GEOMETRIES = {
   heart: (() => {
     const shape = new THREE.Shape();
@@ -90,13 +91,17 @@ const SHARED_MATERIALS = {
   }),
 };
 
-// Constants for limits
+// #region CONSTANTS
 const MAX_TAP_PARTICLES = 150;
 const MAX_RAIN_DROPS = 100;
-const MAX_CLOUD_PARTICLES = 50;
 const TAP_PARTICLE_COUNT = 15;
+const CLOUD_COUNT_MIN = 3;
+const CLOUD_COUNT_MAX = 5;
+const BUBBLES_COUNT_MIN = 6;
+const BUBBLES_COUNT_MAX = 13;
+// #endregion
 
-// Stars Effect - Permanent background stars
+// Stars Effect using Sparkles from drei
 export function StarsEffect() {
   const { upgrades } = useGameStore();
   const starsUpgrade = upgrades.find((u) => u.id === "environment_stars");
@@ -138,26 +143,25 @@ export function RainEffect() {
 
   const dropIdCounter = useRef(0);
 
-  // Create rain drops from rectangular plane emitter
+  // Create rain drops from circular emitter
   const createRainDrops = React.useCallback(() => {
     if (!rainEnabled) return;
 
     setRainDrops((prev) => {
-      if (prev.length >= MAX_RAIN_DROPS) return prev; // Limit check
+      if (prev.length >= MAX_RAIN_DROPS) return prev; // limit check for performance
 
       const newDrops = Array.from({ length: 5 }, () => {
-        // Random position on rectangular plane (emitter) - constrained to sphere radius
-        const radius = 5.5; // Slightly smaller than the sphere radius (6)
+        // calculate a random position on a circle
+        const radius = 5.5;
         const angle = Math.random() * Math.PI * 2;
         const distance = Math.random() * radius;
-
         const x = Math.cos(angle) * distance;
         const y = 15; // Start from top
         const z = Math.sin(angle) * distance;
 
-        // Falling velocity (mostly downward with slight randomness)
+        // calculate falling velocity with slight randomness for natural effect
         const vx = (Math.random() - 0.5) * 0.5;
-        const vy = -(2 + Math.random() * 2); // Fall downward
+        const vy = -(2 + Math.random() * 2);
         const vz = (Math.random() - 0.5) * 0.5;
 
         return {
@@ -173,26 +177,25 @@ export function RainEffect() {
     });
   }, [rainEnabled]);
 
-  // Update rain drops in animation frame
   useFrame((state, delta) => {
-    // Create new drops periodically
+    // create new drops infinitely
     if (state.clock.getElapsedTime() % 0.1 < delta) {
       createRainDrops();
     }
 
-    setRainDrops(
-      (prev) =>
-        prev
-          .map((drop) => ({
-            ...drop,
-            position: [
-              drop.position[0] + drop.velocity[0] * delta * 60,
-              drop.position[1] + drop.velocity[1] * delta * 60,
-              drop.position[2] + drop.velocity[2] * delta * 60,
-            ] as [number, number, number],
-            life: drop.life - delta,
-          }))
-          .filter((drop) => drop.life > 0 && drop.position[1] > -10) // Remove when below ground or expired
+    // move raindrops down and remove when below ground or expired
+    setRainDrops((prev) =>
+      prev
+        .map((drop) => ({
+          ...drop,
+          position: [
+            drop.position[0] + drop.velocity[0] * delta * 60,
+            drop.position[1] + drop.velocity[1] * delta * 60,
+            drop.position[2] + drop.velocity[2] * delta * 60,
+          ] as [number, number, number],
+          life: drop.life - delta,
+        }))
+        .filter((drop) => drop.life > 0 && drop.position[1] > -4)
     );
   });
 
@@ -208,7 +211,7 @@ export function RainEffect() {
           <mesh
             key={drop.id}
             position={drop.position}
-            scale={[scale, scale * 3, scale]} // Elongated drop shape
+            scale={[scale, scale * 3, scale]}
             geometry={SHARED_GEOMETRIES.cylinder}
             material={SHARED_MATERIALS.rain}
             material-opacity={lifeRatio}
@@ -219,7 +222,6 @@ export function RainEffect() {
   );
 }
 
-// Cloud Effect using instanced spheres for better performance
 export function CloudEffect() {
   const { upgrades } = useGameStore();
   const cloudUpgrade = upgrades.find((u) => u.id === "environment_clouds");
@@ -227,36 +229,41 @@ export function CloudEffect() {
 
   const [clouds, setClouds] = React.useState<any[]>([]);
 
-  // Generate clouds when the effect is first enabled
-  React.useEffect(() => {
+  useEffect(() => {
+    // generate clouds if enabled and not created yet
     if (cloudEnabled && clouds.length === 0) {
-      // Create 3-5 static clouds at random positions
-      const cloudCount = 3 + Math.floor(Math.random() * 3);
+      // create static clouds at random positions
+      const cloudCount =
+        CLOUD_COUNT_MIN +
+        Math.floor(Math.random() * (CLOUD_COUNT_MAX - CLOUD_COUNT_MIN + 1));
+
+      // generate safe position with offset area around camera (avoid 0,0,0 area)
       const newClouds = Array.from({ length: cloudCount }, (_, index) => {
-        // Generate position with safe area around camera (avoid 0,0,0 area)
+        // TODO: fix cloud/camera overlapping
         let x, z;
-        do {
-          const angle = Math.random() * Math.PI * 2;
-          const radius = 4 + Math.random() * 4; // Minimum radius of 4 units from center
-          x = Math.cos(angle) * radius;
-          z = Math.sin(angle) * radius - 1;
-          // ensure clouds don't spawn too close to camera position (0,0,0)
-        } while (Math.sqrt(x * x + z * z) < 3); // minimum 3 unit safe area
+
+        const angle = Math.random() * Math.PI * 2;
+        const radius = 4 + Math.random() * 4; // Minimum radius of 4 units from center
+        x = Math.cos(angle) * radius;
+        z = Math.sin(angle) * radius - 1;
 
         const y = 2 + Math.random() * 3; // Height variation
 
-        // Create cloud bubbles in organic cluster pattern
-        const bubbleCount = 6 + Math.floor(Math.random() * 8); // 6-13 bubbles per cloud
-        const bubbles = [];
+        // create main bubbles for each cloud
+        const bubbleCount =
+          BUBBLES_COUNT_MIN +
+          Math.floor(
+            Math.random() * (BUBBLES_COUNT_MAX - BUBBLES_COUNT_MIN + 1)
+          );
 
-        // Main central bubble
+        const bubbles = [];
         bubbles.push({
           offset: [0, 0, 0] as [number, number, number],
           scale: 1.2 + Math.random() * 0.8,
-          opacity: 0.3 + Math.random() * 0.2,
+          opacity: 0.1 + Math.random() * 0.2,
         });
 
-        // Surrounding bubbles in organic pattern
+        // surround main bubbles with more random bubbles
         for (let i = 0; i < bubbleCount - 1; i++) {
           const bubbleAngle =
             (i / (bubbleCount - 1)) * Math.PI * 2 + Math.random() * 0.5;
@@ -270,21 +277,7 @@ export function CloudEffect() {
               Math.sin(bubbleAngle) * bubbleRadius,
             ] as [number, number, number],
             scale: 0.6 + Math.random() * 0.8,
-            opacity: 0.2 + Math.random() * 0.25,
-          });
-        }
-
-        // Add some random smaller bubbles for fluffiness
-        const fluffCount = Math.floor(Math.random() * 4);
-        for (let i = 0; i < fluffCount; i++) {
-          bubbles.push({
-            offset: [
-              (Math.random() - 0.5) * 3,
-              (Math.random() - 0.5) * 1.5,
-              (Math.random() - 0.5) * 3,
-            ] as [number, number, number],
-            scale: 0.3 + Math.random() * 0.4,
-            opacity: 0.1 + Math.random() * 0.15,
+            opacity: 0.1 + Math.random() * 0.05,
           });
         }
 
@@ -297,7 +290,7 @@ export function CloudEffect() {
 
       setClouds(newClouds);
     } else if (!cloudEnabled && clouds.length > 0) {
-      // Clear clouds when effect is disabled
+      // remove clouds when disabled
       setClouds([]);
     }
   }, [cloudEnabled, clouds.length]);
@@ -308,14 +301,14 @@ export function CloudEffect() {
     <group>
       {clouds.map((cloud) => (
         <group key={cloud.id} position={cloud.position}>
-          {cloud.bubbles.map((bubble, index) => (
+          {cloud.bubbles.map((bubble: any, index: number) => (
             <mesh
               key={index}
               position={bubble.offset}
               scale={[bubble.scale, bubble.scale, bubble.scale]}
               geometry={SHARED_GEOMETRIES.cloudSphere}
               material={SHARED_MATERIALS.cloud}
-              material-opacity={bubble.opacity * 0.5}
+              material-opacity={bubble.opacity}
             />
           ))}
         </group>
@@ -324,11 +317,9 @@ export function CloudEffect() {
   );
 }
 
-// Tap Effect using upgrade-based effects
 export function TapEffect() {
   const { upgrades } = useGameStore();
 
-  // Find the selected tap effect
   const selectedTapEffect = upgrades.find(
     (u) => u.category === "tapEffects" && u.selected
   );
@@ -359,7 +350,7 @@ export function TapEffect() {
 
   const particleIdCounter = useRef(0);
 
-  // Memoize color arrays
+  // TODO: move colorConfigs to a separate file + fix color pick logic
   const colorConfigs = useMemo(
     () => ({
       confetti: [
@@ -458,54 +449,38 @@ export function TapEffect() {
     []
   );
 
-  // Function to create tap particles
   const createTapParticles = React.useCallback(
     (x: number, y: number, z: number, count: number = TAP_PARTICLE_COUNT) => {
-      // Always create particles for any valid effect type
-
-      let colors: string[];
-      let particleType: "default" | "confetti" | "hearts" | "stars";
-
-      if (tapEffectType === "confetti") {
-        // Confetti colors
-        colors = colorConfigs.confetti;
-        particleType = "confetti";
-      } else if (tapEffectType === "hearts") {
-        // Heart colors (pink, red, magenta)
-        colors = colorConfigs.hearts;
-        particleType = "hearts";
-      } else if (tapEffectType === "stars") {
-        // Star colors (gold, yellow, orange)
-        colors = colorConfigs.stars;
-        particleType = "stars";
-      } else {
-        // Default colors (white, grey, black)
-        colors = colorConfigs.default;
-        particleType = "default";
-      }
+      const colors = colorConfigs[tapEffectType as keyof typeof colorConfigs];
+      const particleType = tapEffectType as
+        | "default"
+        | "confetti"
+        | "hearts"
+        | "stars";
 
       setTapParticles((prev) => {
-        // Remove oldest particles if we're at the limit
+        // remove oldest particles first if max reached
         const currentParticles =
           prev.length >= MAX_TAP_PARTICLES
             ? prev.slice(-(MAX_TAP_PARTICLES - count))
             : prev;
 
         const newParticles = Array.from({ length: count }, (_, i) => {
-          // Random direction in 3D space (all directions)
-          const theta = Math.random() * Math.PI * 2; // Random angle around Y axis
-          const phi = Math.acos(Math.random() * 2 - 1); // Random angle from Y axis
+          // calculate random vector in any direction
+          const theta = Math.random() * Math.PI * 2;
+          const phi = Math.acos(Math.random() * 2 - 1);
           const speed = 0.2 + Math.random() * 0.4;
-          // Ensure each particle gets a different random color
+
+          // pick a random color from effect config
           const colorIndex = Math.floor(Math.random() * colors.length);
           const color = colors[colorIndex];
 
-          // Calculate velocity in all directions
+          // calculate velocity
           const vx = Math.sin(phi) * Math.cos(theta) * speed;
           const vy = Math.cos(phi) * speed;
           const vz = Math.sin(phi) * Math.sin(theta) * speed;
 
-          // Random rotation speeds for each axis
+          // calculate random rotation speeds
           const rotationSpeedX = (Math.random() - 0.5) * 10;
           const rotationSpeedY = (Math.random() - 0.5) * 10;
           const rotationSpeedZ = (Math.random() - 0.5) * 10;
@@ -556,7 +531,7 @@ export function TapEffect() {
     );
   });
 
-  // Expose the create function globally for other components to use
+  // TODO: check if exposing is necessary (currently only used for auto-tap particles)
   useEffect(() => {
     (window as any).createTapParticles = createTapParticles;
     return () => {
@@ -564,7 +539,6 @@ export function TapEffect() {
     };
   }, [createTapParticles]);
 
-  // Always render the effect component, but particles are created based on theme
   return (
     <group>
       {tapParticles.map((particle) => {
@@ -579,7 +553,6 @@ export function TapEffect() {
             scale={[scale, scale, scale]}
           >
             {particle.particleType === "confetti" ? (
-              // 2D confetti piece - a simple plane
               <mesh
                 geometry={SHARED_GEOMETRIES.plane}
                 material={SHARED_MATERIALS.confetti}
@@ -587,7 +560,6 @@ export function TapEffect() {
                 material-opacity={lifeRatio}
               />
             ) : particle.particleType === "hearts" ? (
-              // Heart shape using custom geometry
               <mesh
                 geometry={SHARED_GEOMETRIES.heart}
                 material={SHARED_MATERIALS.heart}
@@ -595,7 +567,6 @@ export function TapEffect() {
                 material-opacity={lifeRatio}
               />
             ) : particle.particleType === "stars" ? (
-              // Star shape using custom geometry
               <mesh
                 geometry={SHARED_GEOMETRIES.star}
                 material={SHARED_MATERIALS.star}
@@ -603,7 +574,6 @@ export function TapEffect() {
                 material-opacity={lifeRatio}
               />
             ) : (
-              // Default particles - small spheres
               <mesh
                 geometry={SHARED_GEOMETRIES.sphere}
                 material={SHARED_MATERIALS.sphere}
@@ -618,7 +588,6 @@ export function TapEffect() {
   );
 }
 
-// Main Particle Effects Container
 export function ParticleEffects() {
   return (
     <group>

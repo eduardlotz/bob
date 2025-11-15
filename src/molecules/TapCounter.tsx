@@ -132,20 +132,6 @@ export const TapCounter = () => {
   // feels better when the update is in useFrame 🤷
   // check later if this is a performance issue
 
-  // useEffect(() => {
-  //   if (gameTapCount !== prevTapCount.current) {
-  //     api.start({
-  //       scale: 1.4,
-  //       immediate: true,
-  //     });
-  //     api.start({
-  //       scale: 1,
-  //       config: { tension: 300, friction: 15 },
-  //     });
-  //     prevTapCount.current = gameTapCount;
-  //   }
-  // }, [gameTapCount]);
-
   return (
     <a.group ref={groupRef} scale={spring.scale} position={responsivePosition}>
       <Text3D

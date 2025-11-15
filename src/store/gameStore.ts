@@ -15,7 +15,7 @@ import {
 import { resolveTapSoundForEffect } from "@/utils/sound/configs";
 import { getWorldSoundById } from "@/utils/sound/configs";
 import { THEME_IDS, THEME_CONFIG } from "./themeConfig";
-import { initialUpgrades } from "@/shop-items/upgrades";
+import { initialTapEffects, initialUpgrades } from "@/shop-items/upgrades";
 import {
   BlobFormConfig,
   INITIAL_BLOB_FORMS,
@@ -493,11 +493,8 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
 
   // Migration V21 → V22: bobForm refactor, price adjustments
   if (currentVersion < GAME_STORE_VERSIONS.V22) {
-    const updatedUpgrades = initialUpgrades;
-    const existingUpgrades = migratedState.upgrades || [];
-
-    migratedState.upgrades = updatedUpgrades.map((newUpgrade) => {
-      const existingUpgrade = existingUpgrades.find(
+    migratedState.upgrades = initialUpgrades.map((newUpgrade) => {
+      const existingUpgrade = migratedState.upgrades.find(
         (upg: Upgrade) => upg.id === newUpgrade.id
       );
       if (existingUpgrade) {
@@ -508,6 +505,20 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
         };
       }
       return newUpgrade;
+    });
+
+    migratedState.tapEffects = initialTapEffects.map((newEffect) => {
+      const existingEffect = migratedState.tapEffects.find(
+        (eff: Upgrade) => eff.id === newEffect.id
+      );
+      if (existingEffect) {
+        return {
+          ...newEffect,
+          unlocked: existingEffect.unlocked,
+          level: existingEffect.level,
+        };
+      }
+      return newEffect;
     });
 
     migratedState.lastSchemaUpdate = new Date();
@@ -1735,6 +1746,8 @@ export const useGameStore = create<GameStore>()(
         toggleWorldSoundId: (id: string) => {
           set((state) => {
             const current = state.audioSelections.worldSoundIds || [];
+            console.log("🚀 ~ id:", id);
+            console.log("🚀 ~ current:", current);
             const next = current.includes(id)
               ? current.filter((x) => x !== id)
               : [...current, id];

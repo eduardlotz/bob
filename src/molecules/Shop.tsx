@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
 import { useGameStore, triggerStoreMigration } from "@/store/gameStore";
-import { WORLD_SOUNDS } from "@/utils/sound/configs";
+import { getWeatherSoundById, WORLD_SOUNDS } from "@/utils/sound/configs";
 import {
   setWorldEnabled as engineSetWorldEnabled,
   setTapEnabled as engineSetTapEnabled,
@@ -112,7 +112,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
     },
     {
       id: "environment" as ShopTab,
-      name: "Umgebungseffekte",
+      name: "Wetter",
       icon: EnvironmentIconComponent,
       progress:
         upgrades.filter((u) => u.category === "environment" && u.unlocked)
@@ -394,19 +394,6 @@ function EffectsView() {
   return (
     <EffectsContainer>
       <SectionTitle>Tap Effekte</SectionTitle>
-      <ToggleRow>
-        <ToggleLabel>Sound aktivieren</ToggleLabel>
-        <ToggleSwitch
-          onClick={() => {
-            const next = !(soundSystem.tapEnabled !== false);
-            setTapEnabled(next);
-            engineSetTapEnabled(next);
-          }}
-          $active={soundSystem.tapEnabled !== false}
-        >
-          {soundSystem.tapEnabled !== false ? "JA" : "NEIN"}
-        </ToggleSwitch>
-      </ToggleRow>
 
       <EffectsGrid>
         {tapEffects.map((effect) => (
@@ -457,6 +444,17 @@ function EnvironmentView() {
     const effect = environmentEffects.find((e) => e.id === effectId);
     if (effect && effect.unlocked) {
       toggleEnvironmentEffect(effectId);
+      const soundConfig = getWeatherSoundById(effectId);
+
+      if (soundConfig) {
+        if (effect.selected) {
+          toggleWorldSoundId?.(soundConfig.id);
+        } else {
+          try {
+            stopSoundsById(soundConfig.id);
+          } catch {}
+        }
+      }
     }
   };
 
@@ -464,13 +462,13 @@ function EnvironmentView() {
     const effect = environmentEffects.find((e) => e.id === effectId);
     if (effect && !effect.unlocked && canAfford(effect.baseCost)) {
       purchaseUpgrade(effectId);
+      toggleEnvironmentEffect(effectId);
     }
   };
 
   return (
     <EnvironmentContainer>
-      <SectionTitle>Umgebungseffekte</SectionTitle>
-      <SectionSubtitle>Partikeleffekte und Sound</SectionSubtitle>
+      <SectionTitle>Wettereffekte</SectionTitle>
       <EnvironmentGrid>
         {environmentEffects.map((effect) => (
           <EnvironmentCard
@@ -496,21 +494,7 @@ function EnvironmentView() {
           </EnvironmentCard>
         ))}
       </EnvironmentGrid>
-      <SectionSubtitle>Musik & Sounds</SectionSubtitle>
-      <ToggleRow>
-        <ToggleLabel>Sound aktivieren</ToggleLabel>
-        <ToggleSwitch
-          onClick={() => {
-            const next = !(soundSystem.worldEnabled !== false);
-            setWorldEnabled(next);
-            engineSetWorldEnabled(next);
-            // No primary/secondary: when enabling, resume layers via hook logic
-          }}
-          $active={soundSystem.worldEnabled !== false}
-        >
-          {soundSystem.worldEnabled !== false ? "JA" : "NEIN"}
-        </ToggleSwitch>
-      </ToggleRow>
+      <SectionSubtitle>Musik</SectionSubtitle>
       <EnvironmentGrid>
         {WORLD_SOUNDS.map((track) => {
           const isLayered = (audioSelections.worldSoundIds || []).includes(
@@ -706,9 +690,7 @@ function BobView() {
     <ThemesContainer>
       <ThemesSection>
         <SectionTitle>Build a Bob</SectionTitle>
-        <ContentSubtitle>Kostüme und Körper für Bob</ContentSubtitle>
 
-        {/* Sub-tab navigation */}
         <SubTabContainer>
           <SubTabButton
             $active={activeSubTab === "costumes"}

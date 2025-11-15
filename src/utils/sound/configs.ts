@@ -75,13 +75,19 @@ export const WORLD_SOUNDS = [
   //   filePath: "/audio/du-fehlst-vip.wav",
   //   icon: "🖤",
   // },
-  {
+];
+
+const EFFECT_SOUNDS = {
+  rain: {
     id: "world-rain",
     name: "Rain",
     filePath: "/audio/rain.wav",
     icon: "🌧️",
   },
-];
+};
+
+export const getWeatherSoundById = (id: string) =>
+  EFFECT_SOUNDS[id as keyof typeof EFFECT_SOUNDS] || EFFECT_SOUNDS["rain"];
 
 export const getWorldSoundById = (id: string) =>
   WORLD_SOUNDS.find((t) => t.id === id) || WORLD_SOUNDS[0];

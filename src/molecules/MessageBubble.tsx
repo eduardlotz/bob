@@ -1,5 +1,5 @@
 import { Html } from "@react-three/drei";
-import { memo, useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { memo, useEffect, useRef, useState, useCallback } from "react";
 import styled from "styled-components";
 import { a, useSpring } from "@react-spring/three";
 import { motion, AnimatePresence } from "motion/react";
@@ -12,10 +12,9 @@ import { resumeAudioContext, unlockAudioContext } from "@/utils/soundSystem";
 import { Transitions } from "@/styles/motion";
 import { MOTION_VARIANTS } from "./HeadNavigation";
 
-// Precise timing constants - all values carefully calculated for sync
-const DEFAULT_CHAR_REVEAL_MS = 28; // Slightly slower for better audio sync
-const AUDIO_CHAR_DURATION_MS = 85; // How long each character sound plays
-const AUDIO_LEAD_TIME_MS = 5; // Start audio slightly before visual reveal
+const DEFAULT_CHAR_REVEAL_MS = 28;
+const AUDIO_CHAR_DURATION_MS = 85;
+const AUDIO_LEAD_TIME_MS = 5;
 const LINE_PAUSE_MS = 650;
 const MESSAGE_TRANSITION_MS = 220;
 
@@ -64,14 +63,14 @@ export const MessageBubble = memo(function MessageBubble({
   const { requestEmotion } = useAppStore();
   const { soundSystem } = useGameStore();
 
-  // Enhanced state management
+  // #region state & refs
   const [lines, setLines] = useState<LineState[]>([]);
   const [currentSession, setCurrentSession] = useState<MessageSession | null>(
     null
   );
+  // only used for debugging, maybe removed later
   const [isProcessingQueue, setIsProcessingQueue] = useState(false);
 
-  // Refs for cleanup and precise timing control
   const timersRef = useRef<Set<number>>(new Set());
   const rafRef = useRef<number | null>(null);
   const isUnmountingRef = useRef(false);
@@ -80,19 +79,18 @@ export const MessageBubble = memo(function MessageBubble({
   const completeTypingLineRef = useRef<(line: LineState) => void>(() => {});
   const audioContextReadyRef = useRef<boolean>(false);
 
-  // Keep refs in sync
+  // sync refs
   useEffect(() => {
     linesRef.current = lines;
   }, [lines]);
+  // #endregion
 
-  // Entry/Exit animations
   const [spring, api] = useSpring(() => ({
     scale: 0,
     opacity: 0,
     config: { tension: 300, friction: 18 },
   }));
 
-  // Enhanced cleanup helper
   const clearTimer = useCallback((timerId: number) => {
     clearTimeout(timerId);
     timersRef.current.delete(timerId);
@@ -112,7 +110,6 @@ export const MessageBubble = memo(function MessageBubble({
     []
   );
 
-  // Initialize audio context properly
   const initializeAudioContext = useCallback(async () => {
     if (audioContextReadyRef.current) return true;
 
@@ -128,7 +125,7 @@ export const MessageBubble = memo(function MessageBubble({
     }
   }, []);
 
-  // Cleanup on unmount
+  // timer cleanup
   useEffect(() => {
     return () => {
       isUnmountingRef.current = true;
@@ -145,7 +142,6 @@ export const MessageBubble = memo(function MessageBubble({
     };
   }, [clearTimer]);
 
-  // Parse message text into lines with character initialization
   const parseMessageLines = useCallback(
     (message: typeof activeMessage): LineState[] => {
       if (!message) return [];
@@ -178,7 +174,6 @@ export const MessageBubble = memo(function MessageBubble({
     []
   );
 
-  // Calculate reading time for auto-advance
   const calculateReadingTime = useCallback(
     (text: string, options: any): number => {
       const baseDismiss = options?.baseDismissMs ?? 1000;
@@ -194,7 +189,6 @@ export const MessageBubble = memo(function MessageBubble({
     []
   );
 
-  // Enhanced audio playback with better timing
   const playCharacterAudio = useCallback(
     async (char: string, volume: number) => {
       if (!soundSystem.enabled || soundSystem.masterVolume <= 0) return;
@@ -224,12 +218,10 @@ export const MessageBubble = memo(function MessageBubble({
     [soundSystem, initializeAudioContext]
   );
 
-  // Precise typing animation with synchronized audio and guaranteed animation
   const startTypingLine = useCallback(
     (lineState: LineState) => {
       if (isUnmountingRef.current) return;
 
-      // Mark line as typing and initialize timing
       const startTime = performance.now();
       const typingMsPerChar = Math.max(
         10,
@@ -270,14 +262,14 @@ export const MessageBubble = memo(function MessageBubble({
           Math.floor(elapsed / typingMsPerChar)
         );
 
-        // Queue up character reveals that need to happen
+        // queue up character reveals
         for (let i = lastProcessedIndex + 1; i < shouldBeRevealed; i++) {
           const revealTime = startTime + i * typingMsPerChar;
           characterRevealQueue.push({ index: i, scheduleTime: revealTime });
         }
         lastProcessedIndex = Math.max(lastProcessedIndex, shouldBeRevealed - 1);
 
-        // Process character reveals from queue with proper animation timing
+        // process character reveals queue
         const currentRevealTime = currentTime;
         let hasUpdates = false;
 
@@ -286,7 +278,7 @@ export const MessageBubble = memo(function MessageBubble({
             if (line.id !== lineState.id) return line;
 
             const updatedCharacters = line.characters.map((char, index) => {
-              // Check if this character should be revealed based on queue
+              // check if this char should be revealed
               const queueEntry = characterRevealQueue.find(
                 (q) => q.index === index
               );
@@ -297,9 +289,8 @@ export const MessageBubble = memo(function MessageBubble({
               if (shouldReveal && !wasRevealed) {
                 hasUpdates = true;
 
-                // Schedule audio immediately when character is revealed
+                // play audio if not scheduled
                 if (!char.audioScheduled) {
-                  // Use immediate audio playback for better sync
                   setTimeout(() => {
                     playCharacterAudio(char.char, 0.8);
                   }, Math.max(0, AUDIO_LEAD_TIME_MS));
@@ -316,7 +307,7 @@ export const MessageBubble = memo(function MessageBubble({
               return char;
             });
 
-            // Remove processed items from queue
+            // remove from queue
             characterRevealQueue.splice(
               0,
               characterRevealQueue.findIndex(
@@ -334,11 +325,9 @@ export const MessageBubble = memo(function MessageBubble({
           })
         );
 
-        // Continue typing or complete
         if (shouldBeRevealed < lineState.characters.length) {
           rafRef.current = requestAnimationFrame(typeLoop);
         } else {
-          // Ensure all characters are properly revealed with animation states
           setLines((prev) =>
             prev.map((line) =>
               line.id === lineState.id
@@ -356,10 +345,9 @@ export const MessageBubble = memo(function MessageBubble({
             )
           );
 
-          // Line completed - add small delay before marking complete
           addTimer(() => {
             completeTypingLineRef.current(lineState);
-          }, 150); // Slightly longer delay to ensure animations finish
+          }, 150);
         }
       };
 
@@ -368,7 +356,6 @@ export const MessageBubble = memo(function MessageBubble({
     [activeMessage?.options?.typingSpeedMs, addTimer, playCharacterAudio]
   );
 
-  // Handle new message activation
   useEffect(() => {
     if (!activeMessage) {
       api.start({ scale: 0, opacity: 0 });
@@ -382,10 +369,9 @@ export const MessageBubble = memo(function MessageBubble({
     const messageLines = parseMessageLines(activeMessage);
     if (messageLines.length === 0) return;
 
-    // Initialize audio context early
     initializeAudioContext();
 
-    // Trigger emotion cue
+    // handle emotion for each message
     try {
       const cue = activeMessage.options?.emotion as
         | { state: any; durationMs?: number }
@@ -401,10 +387,8 @@ export const MessageBubble = memo(function MessageBubble({
       );
     }
 
-    // Show bubble
     api.start({ scale: 1, opacity: 1 });
 
-    // Create session
     const session: MessageSession = {
       messageId: activeMessage.config.id,
       totalLines: messageLines.length,
@@ -415,15 +399,13 @@ export const MessageBubble = memo(function MessageBubble({
     setCurrentSession(session);
     setIsProcessingQueue(true);
 
-    // Add lines to thread
+    // add message lines and start first line after delay
     setLines((prev) => [...prev, ...messageLines]);
 
-    // Start first line
     addTimer(() => {
       startTypingLine(messageLines[0]);
     }, 1200);
 
-    // Hard fallback dismiss
     const totalReadingMs = messageLines.reduce((sum, line) => {
       return (
         sum +
@@ -453,12 +435,11 @@ export const MessageBubble = memo(function MessageBubble({
     initializeAudioContext,
   ]);
 
-  // Complete typing for a line and handle next actions
   const completeTypingLine = useCallback(
     (lineState: LineState) => {
       if (isUnmountingRef.current) return;
 
-      // Mark line as complete
+      // mark line as revealed
       setLines((prev) =>
         prev.map((line) =>
           line.id === lineState.id
@@ -475,7 +456,6 @@ export const MessageBubble = memo(function MessageBubble({
         )
       );
 
-      // Schedule line removal
       const lineReadingMs = calculateReadingTime(
         lineState.text,
         activeMessage?.options
@@ -490,14 +470,14 @@ export const MessageBubble = memo(function MessageBubble({
       const isLastLine = lineState.lineIndex >= session.totalLines - 1;
 
       if (isLastLine) {
-        // Mark message as fully revealed
+        // message is fully revealed
         try {
           markFullyRevealed();
         } catch (error) {
           console.warn("Failed to mark fully revealed:", error);
         }
 
-        // Schedule message dismissal
+        // prepare message dismissal
         const message = activeMessage;
         if (message) {
           const wholeText = linesRef.current
@@ -524,7 +504,7 @@ export const MessageBubble = memo(function MessageBubble({
           }, baseDelay);
         }
       } else {
-        // Schedule next line
+        // prepare next line
         addTimer(() => {
           const nextLineIndex = lineState.lineIndex + 1;
           setCurrentSession((prev) =>
@@ -572,12 +552,10 @@ export const MessageBubble = memo(function MessageBubble({
     ]
   );
 
-  // Sync completion handler
   useEffect(() => {
     completeTypingLineRef.current = completeTypingLine;
   }, [completeTypingLine]);
 
-  // Handle message dismissal
   const handleMessageDismissal = useCallback(async () => {
     if (isUnmountingRef.current) return;
 
@@ -612,7 +590,6 @@ export const MessageBubble = memo(function MessageBubble({
     }, MESSAGE_TRANSITION_MS);
   }, [api, dismissMessage, addTimer]);
 
-  // Handle user interaction
   const handleUserInteraction = useCallback(async () => {
     try {
       await initializeAudioContext();
@@ -622,7 +599,6 @@ export const MessageBubble = memo(function MessageBubble({
     }
   }, [markUserInteraction, initializeAudioContext]);
 
-  // Handle click to advance
   const handleClick = useCallback(() => {
     if (!currentSession || !activeMessage) return;
 
@@ -664,13 +640,12 @@ export const MessageBubble = memo(function MessageBubble({
     handleMessageDismissal,
   ]);
 
-  // Enhanced character rendering with animation guarantees
   const renderCharacter = useCallback(
     (char: CharacterState, lineId: string, lineStartTime?: number) => {
-      // Calculate staggered delay based on character index and line start time
+      // calculate staggered delay based on character index and line start time
       const baseDelay = char.index * (12 / 1000); // 12ms stagger between characters
 
-      // If we have a reveal time, use it to calculate precise animation delay
+      // use revealTime if available for more precise timing
       const animationDelay =
         char.revealTime && lineStartTime
           ? Math.max(0, (char.revealTime - lineStartTime) / 1000) // Convert to seconds
@@ -684,7 +659,7 @@ export const MessageBubble = memo(function MessageBubble({
           key={`${lineId}-char-${char.index}`}
           initial="hidden"
           animate={animationState}
-          variants={guaranteedCharVariants}
+          variants={charVariants}
           custom={animationDelay}
           // Force re-animation when reveal state changes
           transition={{
@@ -702,28 +677,8 @@ export const MessageBubble = memo(function MessageBubble({
     []
   );
 
-  // Render line content with guaranteed character animations
   const renderLineContent = useCallback(
     (line: LineState) => {
-      // For completed lines, still render with character components to maintain consistency
-      // but skip animation delays
-      if (line.status === "complete") {
-        return (
-          <span>
-            {line.characters.map((char) => (
-              <Char
-                key={`${line.id}-char-${char.index}-complete`}
-                initial="visible"
-                animate="visible"
-                variants={guaranteedCharVariants}
-              >
-                {char.char === " " ? "\u00A0" : char.char}
-              </Char>
-            ))}
-          </span>
-        );
-      }
-
       return (
         <span>
           {line.characters.map((char) =>
@@ -777,7 +732,7 @@ export const MessageBubble = memo(function MessageBubble({
                 <ThreadBubble
                   key={line.id}
                   layout="position"
-                  variants={improvedBubbleVariants}
+                  variants={bubbleVariants}
                   initial="initial"
                   animate="animate"
                   exit="exit"
@@ -801,7 +756,6 @@ export const MessageBubble = memo(function MessageBubble({
   );
 });
 
-// Styled components (same as before)
 const Container = styled.div`
   pointer-events: auto;
   display: flex;
@@ -874,11 +828,10 @@ const TimeTag = styled.div`
   color: var(--text-secondary);
 `;
 
-// Enhanced animation variants with guaranteed animation completion
-const guaranteedCharVariants: Variants = {
+const charVariants: Variants = {
   hidden: {
     opacity: 0,
-    scale: 0.7,
+    scale: 0.9,
     rotateX: -20,
     y: 12,
   },
@@ -892,13 +845,12 @@ const guaranteedCharVariants: Variants = {
       stiffness: 420,
       damping: 28,
       mass: 0.25,
-      // Ensure animation always completes
-      duration: undefined, // Let spring physics determine duration
+      duration: undefined,
     },
   },
 };
 
-const improvedBubbleVariants: Variants = {
+const bubbleVariants: Variants = {
   initial: {
     opacity: 0,
     scale: 0.9,

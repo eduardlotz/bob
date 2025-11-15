@@ -866,7 +866,6 @@ export function BlobHead({
   };
 
   const createParticles = (x: number, y: number, z: number) => {
-    // Use the new tap effect system
     if ((window as any).createTapParticles) {
       (window as any).createTapParticles(x, y, z, 15);
     }
