@@ -9,7 +9,6 @@ import {
   setMasterVolume as engineSetMasterVolume,
   setCurrentTapSound as engineSetCurrentTapSound,
   setTapEnabled as engineSetTapEnabled,
-  setWorldEnabled as engineSetWorldEnabled,
   setWorldMusic as engineSetWorldMusic,
 } from "@/utils/soundSystem";
 import { resolveTapSoundForEffect } from "@/utils/sound/configs";
@@ -63,10 +62,8 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
   );
   let migratedState = { ...oldState };
 
-  // Handle case where version field is missing (old saves)
-  let currentVersion = oldState.version || 1;
+  let currentVersion = oldState.version || GAME_STORE_VERSIONS.V1;
 
-  // Helper function to safely check and transform arrays
   const safeArrayTransform = <T>(
     array: T[] | undefined,
     transform: (item: T, index: number) => T
@@ -75,13 +72,12 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
     return array.map(transform);
   };
 
-  // Helper function to merge route objects while preserving existing fields
+  // merge route objects while preserving existing fields
   const mergeRoute = (existingRoute: any, initialRoute: any): any => {
     if (!existingRoute) return initialRoute;
     return {
       ...initialRoute,
       ...existingRoute,
-      // Preserve specific fields from existing route unless explicitly overridden
       unlocked: existingRoute.unlocked ?? initialRoute.unlocked,
       purchased: existingRoute.purchased ?? initialRoute.purchased,
     };
@@ -89,7 +85,6 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
 
   // Migration V1 → V2: Update theme and effect prices
   if (currentVersion < GAME_STORE_VERSIONS.V2) {
-    // Update theme prices in a single pass
     migratedState.themes = safeArrayTransform(
       migratedState.themes,
       (theme: any) => {
@@ -107,7 +102,6 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
       }
     );
 
-    // Update effect prices in a single pass
     migratedState.upgrades = safeArrayTransform(
       migratedState.upgrades,
       (upgrade: any) => {
@@ -1078,14 +1072,13 @@ export const useGameStore = create<GameStore>()(
           });
         },
 
-        // Optimized cleanup with early return
+        // TODO: remove dead code
         cleanupManualTaps: () => {
           set((state) => {
             const now = Date.now();
             const recentTaps = state.recentManualTaps || [];
             const oneSecondAgo = now - ONE_SECOND_MS;
 
-            // Early return if no cleanup needed
             if (recentTaps.length === 0) {
               return state;
             }
@@ -1097,7 +1090,6 @@ export const useGameStore = create<GameStore>()(
               }
             }
 
-            // Early return if no cleanup needed
             if (filteredTaps.length === recentTaps.length) {
               return state;
             }
@@ -1148,24 +1140,7 @@ export const useGameStore = create<GameStore>()(
                 unlocked: u.id === upgradeId ? true : u.unlocked,
               }));
             }
-            // else {
-            //   // For regular upgrades, update unlocked status based on tap count
-            //   updatedUpgrades = updatedUpgrades.map((u) => {
-            //     if (u.id === "auto_tap_2" && state.taps >= 50) {
-            //       return { ...u, unlocked: true };
-            //     }
-            //     if (u.id === "tap_multiplier_2" && state.taps >= 200) {
-            //       return { ...u, unlocked: true };
-            //     }
-            //     // Unlock "Tap Power" when player can afford it
-            //     if (u.id === "tap_multiplier_1" && state.taps >= u.baseCost) {
-            //       return { ...u, unlocked: true };
-            //     }
-            //     return u;
-            //   });
-            // }
 
-            // Invalidate cache when upgrades change
             return {
               ...state,
               taps: state.taps - cost,
@@ -2081,7 +2056,6 @@ export const useGameStore = create<GameStore>()(
           try {
             const s = useGameStore.getState();
             engineSetTapEnabled(!!s.soundSystem.tapEnabled);
-            engineSetWorldEnabled(!!s.soundSystem.worldEnabled);
             const worldId = s.audioSelections.worldMusicId;
             if (worldId) {
               const track = getWorldSoundById(worldId);

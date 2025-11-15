@@ -5,28 +5,20 @@ import {
   queueFinalResetMigration,
 } from "./migration";
 
-// This module handles the execution of queued migrations after all stores are ready
-// It should be imported and called from the main App component after stores are initialized
-
 let hasExecutedMigrations = false;
 let retryCount = 0;
 const MAX_RETRIES = 10;
 const RETRY_DELAY_MS = 250;
 
-/**
- * Execute any queued migrations after all stores are ready
- * This should be called from the main App component after the initial render
- */
 export const executeMigrationsWhenReady = async (): Promise<void> => {
   if (hasExecutedMigrations) {
     return;
   }
 
   try {
-    // Wait a bit to ensure all stores are fully initialized
+    // delay to ensure all stores are fully initialized
     await new Promise((resolve) => setTimeout(resolve, 100));
 
-    // Check if we can access the stores safely
     const { useGameStore } = await import("./gameStore");
     const { useQuestStore } = await import("./questStore");
     const { useRouteStore } = await import("./routeStore");
@@ -62,7 +54,6 @@ export const executeMigrationsWhenReady = async (): Promise<void> => {
     console.log("Stores are ready, executing queued migrations...");
     await executeQueuedMigrations();
 
-    // Enqueue final reset migration once (idempotent) after base migrations
     const ran = hasFinalResetRun();
     const ranMeta = await hasFinalResetRunAsync();
     if (!ran && !ranMeta) {
@@ -78,24 +69,8 @@ export const executeMigrationsWhenReady = async (): Promise<void> => {
   }
 };
 
-/**
- * Reset the migration execution flag (useful for testing)
- */
+// testing utility to reset migrations
 export const resetMigrationExecution = (): void => {
   hasExecutedMigrations = false;
   retryCount = 0;
-};
-
-/**
- * Check if migrations have been executed
- */
-export const getMigrationExecutionStatus = (): boolean => {
-  return hasExecutedMigrations;
-};
-
-/**
- * Get the current retry count
- */
-export const getRetryCount = (): number => {
-  return retryCount;
 };

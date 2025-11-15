@@ -8,8 +8,7 @@ import { useProgress } from "@react-three/drei";
 import Scene from "@/molecules/Scene";
 import { UILayer } from "@/components/UILayer";
 import { useAppStore } from "@/store";
-import { useAnimations } from "@/hooks/useAnimations";
-import { initializeSoundSystemAsync } from "@/utils/soundSystem";
+import { initializeSoundSystem } from "@/utils/soundSystem";
 
 export const CustomLoader = () => {
   const { progress } = useProgress();
@@ -69,7 +68,6 @@ export const CustomLoader = () => {
   );
 };
 
-// Main SceneWithLoader component
 export const SceneWithLoader = ({
   permissionGranted,
   onEmotionUpdate,
@@ -87,13 +85,10 @@ export const SceneWithLoader = ({
   const [sceneLoaded, setSceneLoaded] = useState(false);
   const { isMobile, emotionData, setPermissionGranted } = useAppStore();
 
-  // Initialize animations hook
-  useAnimations();
-
   useEffect(() => {
     const timer = setTimeout(async () => {
       try {
-        await initializeSoundSystemAsync();
+        await initializeSoundSystem();
       } catch (error) {
         console.error("failed to initialize sound system:", error);
       }

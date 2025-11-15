@@ -267,6 +267,7 @@ function ThemesView() {
     const theme = themes.find((t) => t.id === themeId);
     if (theme && !theme.purchased && canAfford(theme.cost)) {
       purchaseTheme(themeId);
+      activateTheme(themeId);
     }
   };
 
@@ -407,22 +408,12 @@ function EnvironmentView() {
   const environmentEffects = upgrades.filter(
     (u) => u.category === "environment"
   );
+  const filteredSounds = WORLD_SOUNDS.filter((t) => t.showInShop);
 
   const handleEnvironmentToggle = (effectId: string) => {
     const effect = environmentEffects.find((e) => e.id === effectId);
     if (effect && effect.unlocked) {
       toggleEnvironmentEffect(effectId);
-      const soundConfig = getWeatherSoundById(effectId);
-
-      if (soundConfig) {
-        if (effect.selected) {
-          toggleWorldSoundId?.(soundConfig.id);
-        } else {
-          try {
-            stopSoundsById(soundConfig.id);
-          } catch {}
-        }
-      }
     }
   };
 
@@ -430,7 +421,7 @@ function EnvironmentView() {
     const effect = environmentEffects.find((e) => e.id === effectId);
     if (effect && !effect.unlocked && canAfford(effect.baseCost)) {
       purchaseUpgrade(effectId);
-      toggleEnvironmentEffect(effectId);
+      handleEnvironmentToggle(effectId);
     }
   };
 
@@ -462,62 +453,66 @@ function EnvironmentView() {
           </EnvironmentCard>
         ))}
       </EnvironmentGrid>
-      <SectionSubtitle>Musik</SectionSubtitle>
-      <EnvironmentGrid>
-        {WORLD_SOUNDS.map((track) => {
-          const isLayered = (audioSelections.worldSoundIds || []).includes(
-            track.id
-          );
-          return (
-            <EnvironmentCard
-              key={track.id}
-              $enabled={isLayered}
-              $unlocked={true}
-              $canAfford={true}
-              onClick={() => {
-                // Toggle layered selection in store
-                toggleWorldSoundId?.(track.id);
+      {filteredSounds.length > 0 && (
+        <>
+          <SectionSubtitle>Musik</SectionSubtitle>
+          <EnvironmentGrid>
+            {filteredSounds.map((track) => {
+              const isLayered = (audioSelections.worldSoundIds || []).includes(
+                track.id
+              );
+              return (
+                <EnvironmentCard
+                  key={track.id}
+                  $enabled={isLayered}
+                  $unlocked={true}
+                  $canAfford={true}
+                  onClick={() => {
+                    // Toggle layered selection in store
+                    toggleWorldSoundId?.(track.id);
 
-                // Play or stop the clicked layer immediately
-                if (!isLayered) {
-                  try {
-                    engineAddSoundConfig({
-                      id: track.id,
-                      filePath: track.filePath,
-                      type: "world",
-                      volume: 0.1,
-                      loop: true,
-                      stopPrevious: true, // prevent duplicates when adding layers
-                      distanceAttenuation: false,
-                      detune: {
-                        enabled: false,
-                        minSemitones: 0,
-                        maxSemitones: 0,
-                      },
-                      fadeIn: 2000,
-                      fadeOut: 1000,
-                    } as any);
-                  } catch {}
-                  enginePlayWorldSound(track.id, {
-                    loop: true,
-                    stopPrevious: true, // prevent duplicates when playing layers
-                  });
-                } else {
-                  try {
-                    stopSoundsById(track.id);
-                  } catch {}
-                }
-              }}
-            >
-              <EnvironmentIcon>{track.icon}</EnvironmentIcon>
-              <EnvironmentName>{track.name}</EnvironmentName>
-              <EnvironmentStatus $unlocked={true}>
-                {isLayered ? "Aktiv" : "Aktiveren"}
-              </EnvironmentStatus>
-            </EnvironmentCard>
-          );
-        })}
-      </EnvironmentGrid>
+                    // Play or stop the clicked layer immediately
+                    if (!isLayered) {
+                      try {
+                        engineAddSoundConfig({
+                          id: track.id,
+                          filePath: track.filePath,
+                          type: "world",
+                          volume: 0.1,
+                          loop: true,
+                          stopPrevious: true, // prevent duplicates when adding layers
+                          distanceAttenuation: false,
+                          detune: {
+                            enabled: false,
+                            minSemitones: 0,
+                            maxSemitones: 0,
+                          },
+                          fadeIn: 2000,
+                          fadeOut: 1000,
+                        } as any);
+                      } catch {}
+                      enginePlayWorldSound(track.id, {
+                        loop: true,
+                        stopPrevious: true, // prevent duplicates when playing layers
+                      });
+                    } else {
+                      try {
+                        stopSoundsById(track.id);
+                      } catch {}
+                    }
+                  }}
+                >
+                  <EnvironmentIcon>{track.icon}</EnvironmentIcon>
+                  <EnvironmentName>{track.name}</EnvironmentName>
+                  <EnvironmentStatus $unlocked={true}>
+                    {isLayered ? "Aktiv" : "Aktiveren"}
+                  </EnvironmentStatus>
+                </EnvironmentCard>
+              );
+            })}
+          </EnvironmentGrid>
+        </>
+      )}
     </EnvironmentContainer>
   );
 }
@@ -730,7 +725,7 @@ function DevView() {
     purchaseRoute,
   } = useGameStore();
   const { resetQuests } = useQuestSystem();
-  const { clearShownFlags, showMessages, showMessage } = useMessageStore();
+  const { clearShownFlags, showMessages } = useMessageStore();
   const sound = useSoundSystem();
 
   const unlockAllRoutes = () => {
