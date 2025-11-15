@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useGameStore } from "@/store/gameStore";
 import { useAppStore, ROUTE_PATHS } from "@/store";
 import { useSoundSystem } from "./useSoundSystem";
-import { isEnabled, resumeAudioContext } from "@/utils/soundSystem";
 import { resolveTapSoundForEffect } from "@/utils/sound/configs";
 
 export type EmotionState =
@@ -29,12 +28,15 @@ const EMOTION_DURATIONS: Record<EmotionState, number> = {
 };
 
 const COOLDOWN_DURATION = 1000; // Cooldown between emotional state changes
+const TAP_WINDOW = 5000; // 5s
+const TAP_THRESHOLD = 30; // taps within window to trigger dizzy
+// trigger dizzy/mad when hitting 6 taps/second (on average over 5s)
 
 export function useBlobEmotions() {
   const [emotionState, setEmotionState] = useState<EmotionState>("normal");
   const [tapCount, setTapCount] = useState(0);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [dizzyCounter, setDizzyCounter] = useState(0); // Separate counter for dizzy detection
+  const tapTimesRef = useRef<number[]>([]); // recent tap timestamps
   const { currentRoute } = useAppStore();
   const { playTapSound } = useSoundSystem();
 
@@ -83,9 +85,6 @@ export function useBlobEmotions() {
   const handleTap = useCallback(() => {
     const now = Date.now();
 
-    // ensure audio context is resumed on first interaction
-    // resumeAudioContext().catch(() => {});
-
     // get the correct tap sound ID from game store
     const gameStore = useGameStore.getState();
     const selectedTapEffect = gameStore.upgrades.find(
@@ -112,27 +111,25 @@ export function useBlobEmotions() {
       gameStore.addManualTap();
     }
 
-    // Increment dizzy counter (separate from persistent tap count)
-    setDizzyCounter((prev) => prev + 1);
+    // add current tap and remove old taps outside the time window
+    tapTimesRef.current.push(now);
+    tapTimesRef.current = tapTimesRef.current.filter(
+      (t) => now - t <= TAP_WINDOW
+    );
 
-    // check dizzy threshold every 10 taps
-    const shouldTriggerDizzy = dizzyCounter + 1 >= 10;
-
-    // handle dizzy trigger
-    if (shouldTriggerDizzy) {
-      setDizzyCounter(0);
-
+    // check if threshold reached
+    if (tapTimesRef.current.length >= TAP_THRESHOLD) {
+      tapTimesRef.current = []; // reset
       // trigger dizzy -> mad sequence
       setEmotionWithTimeout("dizzy", EMOTION_DURATIONS.dizzy);
       setTimeout(() => {
         setEmotionWithTimeout("mad", EMOTION_DURATIONS.mad);
       }, EMOTION_DURATIONS.dizzy);
 
-      // set cooldown after sequence
       cooldownRef.current =
         now + EMOTION_DURATIONS.dizzy + EMOTION_DURATIONS.mad;
 
-      return; // exit early, don't process normal emotion changes
+      return; // exit early
     }
 
     // if normal, show short happiness animation
@@ -170,11 +167,6 @@ export function useBlobEmotions() {
     }
   }, []);
 
-  // const resetTapCount = useCallback(() => {
-  //   setTapCount(0);
-  //   localStorage.removeItem("bobTapCount");
-  // }, []);
-
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -188,7 +180,6 @@ export function useBlobEmotions() {
     handleTap,
     getEmotionIcon,
     triggerEmotion,
-    // resetTapCount,
     isInCooldown: Date.now() - cooldownRef.current < COOLDOWN_DURATION,
   };
 }
