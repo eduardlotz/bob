@@ -1,11 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
 import { useGameStore, triggerStoreMigration } from "@/store/gameStore";
-import { WORLD_SOUNDS } from "@/utils/sound/configs";
+import { getWeatherSoundById, WORLD_SOUNDS } from "@/utils/sound/configs";
 import {
-  setWorldEnabled as engineSetWorldEnabled,
-  setTapEnabled as engineSetTapEnabled,
   setCurrentTapSound as engineSetCurrentTapSound,
   stopSoundsById,
   playWorldSound as enginePlayWorldSound,
@@ -51,28 +49,9 @@ type ShopTab =
 
 export function Shop({ isOpen, onClose }: ShopProps) {
   const [activeTab, setActiveTab] = useState<ShopTab>("pages");
-  const {
-    decorations,
-    bobItems,
-    themes,
-    upgrades,
-    routes,
-    taps,
-    calculateOfflineTaps,
-    addTaps,
-  } = useGameStore();
+  const { decorations, bobItems, themes, upgrades, routes, taps } =
+    useGameStore();
   const isDevMode = process.env.NODE_ENV === "development";
-
-  // Calculate and add offline taps when shop opens
-  useEffect(() => {
-    if (isOpen) {
-      const offlineTaps = calculateOfflineTaps();
-      if (offlineTaps > 0) {
-        addTaps(offlineTaps);
-        console.log(`Added ${offlineTaps} offline taps`);
-      }
-    }
-  }, [isOpen, calculateOfflineTaps, addTaps]);
 
   useKeyPress("Escape", () => {
     if (isOpen) {
@@ -92,14 +71,14 @@ export function Shop({ isOpen, onClose }: ShopProps) {
     {
       id: "bob" as ShopTab,
       name: "Bob",
-      icon: CartIcon, // temporary icon, we can change this later
+      icon: CartIcon,
       progress: bobItems.filter((b) => b.purchased).length / bobItems.length,
     },
     {
       id: "themes" as ShopTab,
       name: "Themes",
       icon: ThemeIcon,
-      progress: themes.filter((t) => t.purchased).length / themes.length, // Exclude default,
+      progress: themes.filter((t) => t.purchased).length / themes.length,
     },
     {
       id: "effects" as ShopTab,
@@ -108,11 +87,10 @@ export function Shop({ isOpen, onClose }: ShopProps) {
       progress:
         upgrades.filter((u) => u.category === "tapEffects" && u.unlocked)
           .length / upgrades.filter((u) => u.category === "tapEffects").length,
-      // Exclude default
     },
     {
       id: "environment" as ShopTab,
-      name: "Umgebungseffekte",
+      name: "Wetter",
       icon: EnvironmentIconComponent,
       progress:
         upgrades.filter((u) => u.category === "environment" && u.unlocked)
@@ -125,16 +103,12 @@ export function Shop({ isOpen, onClose }: ShopProps) {
       progress:
         decorations.filter((d) => d.purchased).length / decorations.length,
     },
-    ...(isDevMode
-      ? [
-          {
-            id: "dev" as ShopTab,
-            name: "Debugging",
-            icon: DebuggingIcon,
-            progress: 0, // Dev tab is always 100% complete
-          },
-        ]
-      : []),
+    {
+      id: "dev" as ShopTab,
+      name: "Debugging",
+      icon: DebuggingIcon,
+      progress: 0,
+    },
   ];
 
   return (
@@ -293,6 +267,7 @@ function ThemesView() {
     const theme = themes.find((t) => t.id === themeId);
     if (theme && !theme.purchased && canAfford(theme.cost)) {
       purchaseTheme(themeId);
+      activateTheme(themeId);
     }
   };
 
@@ -366,14 +341,8 @@ function ThemesView() {
 }
 
 function EffectsView() {
-  const {
-    upgrades,
-    selectTapEffect,
-    purchaseUpgrade,
-    canAfford,
-    soundSystem,
-    setTapEnabled,
-  } = useGameStore();
+  const { upgrades, selectTapEffect, purchaseUpgrade, canAfford } =
+    useGameStore();
   const tapEffects = upgrades.filter((u) => u.category === "tapEffects");
 
   const handleEffectSelect = (effectId: string) => {
@@ -394,19 +363,6 @@ function EffectsView() {
   return (
     <EffectsContainer>
       <SectionTitle>Tap Effekte</SectionTitle>
-      <ToggleRow>
-        <ToggleLabel>Sound aktivieren</ToggleLabel>
-        <ToggleSwitch
-          onClick={() => {
-            const next = !(soundSystem.tapEnabled !== false);
-            setTapEnabled(next);
-            engineSetTapEnabled(next);
-          }}
-          $active={soundSystem.tapEnabled !== false}
-        >
-          {soundSystem.tapEnabled !== false ? "JA" : "NEIN"}
-        </ToggleSwitch>
-      </ToggleRow>
 
       <EffectsGrid>
         {tapEffects.map((effect) => (
@@ -438,20 +394,21 @@ function EffectsView() {
   );
 }
 
+// TODO: move background music to different view
+// TODO: replace weather effects with in-game weather + new ui elements + correct sounds
 function EnvironmentView() {
   const {
     upgrades,
     toggleEnvironmentEffect,
     purchaseUpgrade,
     canAfford,
-    soundSystem,
     audioSelections,
-    setWorldEnabled,
     toggleWorldSoundId,
   } = useGameStore();
   const environmentEffects = upgrades.filter(
     (u) => u.category === "environment"
   );
+  const filteredSounds = WORLD_SOUNDS.filter((t) => t.showInShop);
 
   const handleEnvironmentToggle = (effectId: string) => {
     const effect = environmentEffects.find((e) => e.id === effectId);
@@ -469,8 +426,7 @@ function EnvironmentView() {
 
   return (
     <EnvironmentContainer>
-      <SectionTitle>Umgebungseffekte</SectionTitle>
-      <SectionSubtitle>Partikeleffekte und Sound</SectionSubtitle>
+      <SectionTitle>Wettereffekte</SectionTitle>
       <EnvironmentGrid>
         {environmentEffects.map((effect) => (
           <EnvironmentCard
@@ -496,76 +452,66 @@ function EnvironmentView() {
           </EnvironmentCard>
         ))}
       </EnvironmentGrid>
-      <SectionSubtitle>Musik & Sounds</SectionSubtitle>
-      <ToggleRow>
-        <ToggleLabel>Sound aktivieren</ToggleLabel>
-        <ToggleSwitch
-          onClick={() => {
-            const next = !(soundSystem.worldEnabled !== false);
-            setWorldEnabled(next);
-            engineSetWorldEnabled(next);
-            // No primary/secondary: when enabling, resume layers via hook logic
-          }}
-          $active={soundSystem.worldEnabled !== false}
-        >
-          {soundSystem.worldEnabled !== false ? "JA" : "NEIN"}
-        </ToggleSwitch>
-      </ToggleRow>
-      <EnvironmentGrid>
-        {WORLD_SOUNDS.map((track) => {
-          const isLayered = (audioSelections.worldSoundIds || []).includes(
-            track.id
-          );
-          return (
-            <EnvironmentCard
-              key={track.id}
-              $enabled={isLayered}
-              $unlocked={true}
-              $canAfford={true}
-              onClick={() => {
-                // Toggle layered selection in store
-                toggleWorldSoundId?.(track.id);
+      {filteredSounds.length > 0 && (
+        <>
+          <SectionSubtitle>Musik</SectionSubtitle>
+          <EnvironmentGrid>
+            {filteredSounds.map((track) => {
+              const isLayered = (audioSelections.worldSoundIds || []).includes(
+                track.id
+              );
+              return (
+                <EnvironmentCard
+                  key={track.id}
+                  $enabled={isLayered}
+                  $unlocked={true}
+                  $canAfford={true}
+                  onClick={() => {
+                    // Toggle layered selection in store
+                    toggleWorldSoundId?.(track.id);
 
-                // Play or stop the clicked layer immediately
-                if (!isLayered) {
-                  try {
-                    engineAddSoundConfig({
-                      id: track.id,
-                      filePath: track.filePath,
-                      type: "world",
-                      volume: 0.1,
-                      loop: true,
-                      stopPrevious: true, // prevent duplicates when adding layers
-                      distanceAttenuation: false,
-                      detune: {
-                        enabled: false,
-                        minSemitones: 0,
-                        maxSemitones: 0,
-                      },
-                      fadeIn: 2000,
-                      fadeOut: 1000,
-                    } as any);
-                  } catch {}
-                  enginePlayWorldSound(track.id, {
-                    loop: true,
-                    stopPrevious: true, // prevent duplicates when playing layers
-                  });
-                } else {
-                  try {
-                    stopSoundsById(track.id);
-                  } catch {}
-                }
-              }}
-            >
-              <EnvironmentIcon>{track.icon}</EnvironmentIcon>
-              <EnvironmentName>{track.name}</EnvironmentName>
-              <EnvironmentStatus $unlocked={true}>
-                {isLayered ? "Aktiv" : "Aktiveren"}
-              </EnvironmentStatus>
-            </EnvironmentCard>
-          );
-        })}
-      </EnvironmentGrid>
+                    // Play or stop the clicked layer immediately
+                    if (!isLayered) {
+                      try {
+                        engineAddSoundConfig({
+                          id: track.id,
+                          filePath: track.filePath,
+                          type: "world",
+                          volume: 0.1,
+                          loop: true,
+                          stopPrevious: true, // prevent duplicates when adding layers
+                          distanceAttenuation: false,
+                          detune: {
+                            enabled: false,
+                            minSemitones: 0,
+                            maxSemitones: 0,
+                          },
+                          fadeIn: 2000,
+                          fadeOut: 1000,
+                        } as any);
+                      } catch {}
+                      enginePlayWorldSound(track.id, {
+                        loop: true,
+                        stopPrevious: true, // prevent duplicates when playing layers
+                      });
+                    } else {
+                      try {
+                        stopSoundsById(track.id);
+                      } catch {}
+                    }
+                  }}
+                >
+                  <EnvironmentIcon>{track.icon}</EnvironmentIcon>
+                  <EnvironmentName>{track.name}</EnvironmentName>
+                  <EnvironmentStatus $unlocked={true}>
+                    {isLayered ? "Aktiv" : "Aktiveren"}
+                  </EnvironmentStatus>
+                </EnvironmentCard>
+              );
+            })}
+          </EnvironmentGrid>
+        </>
+      )}
     </EnvironmentContainer>
   );
 }
@@ -706,9 +652,7 @@ function BobView() {
     <ThemesContainer>
       <ThemesSection>
         <SectionTitle>Build a Bob</SectionTitle>
-        <ContentSubtitle>Kostüme und Körper für Bob</ContentSubtitle>
 
-        {/* Sub-tab navigation */}
         <SubTabContainer>
           <SubTabButton
             $active={activeSubTab === "costumes"}
@@ -780,7 +724,7 @@ function DevView() {
     purchaseRoute,
   } = useGameStore();
   const { resetQuests } = useQuestSystem();
-  const { clearShownFlags, showMessages, showMessage } = useMessageStore();
+  const { clearShownFlags, showMessages } = useMessageStore();
   const sound = useSoundSystem();
 
   const unlockAllRoutes = () => {

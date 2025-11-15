@@ -3,23 +3,16 @@ import { useEffect, useState } from "react";
 import { FullScreen, ContentWidth, FillColumn } from "@/layout";
 import MainLayout from "@/layout/MainLayout";
 import { GlobalStyle } from "@/styles/global";
-import { toast, Toaster } from "sonner";
+import { Toaster } from "sonner";
 import styled from "styled-components";
 import { getRouteLabelByPath, ROUTE_PATHS, useAppStore } from "@/store";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { useAnimations } from "@/hooks/useAnimations";
 import { DialogRoot } from "@/molecules/DialogRoot";
 import { executeMigrationsWhenReady } from "@/store/migrationExecutor";
 
-// Route Components
 import Home from "./routes/Home";
 import About from "./routes/About";
-import Portfolio from "./routes/Portfolio";
-import Technical from "./routes/Technical";
-import Creative from "./routes/Creative";
-import Guestbook from "./routes/Guestbook";
 import { AnimatePresence, motion } from "motion/react";
-import MiniGames from "./routes/MiniGames";
 import { useMessageSystem } from "@/hooks/useMessageSystem";
 
 export default function App() {
@@ -29,8 +22,7 @@ export default function App() {
   const [currentRouteInPretty, setCurrentRouteInPretty] = useState("");
   const [showRouteChip, setShowRouteChip] = useState(false);
 
-  useAnimations();
-  // initialize message system globally so it can enqueue messages on route/tap events
+  // init message system globally
   useMessageSystem();
 
   useEffect(() => {
@@ -38,10 +30,9 @@ export default function App() {
     setMounted(true);
   }, []);
 
-  // Execute queued migrations after stores are ready
+  // run queued migrations after small delay to ensure all stores are initialized
   useEffect(() => {
     if (mounted) {
-      // Execute migrations after a short delay to ensure all stores are initialized
       const timer = setTimeout(() => {
         executeMigrationsWhenReady().catch(console.error);
       }, 500);
@@ -50,8 +41,7 @@ export default function App() {
     }
   }, [mounted]);
 
-  // sync router location with store
-  // fix potential access to locked pages
+  // sync router with store
   useEffect(() => {
     if (currentRoute !== location.pathname) {
       setCurrentRoute(location.pathname);
@@ -92,17 +82,12 @@ export default function App() {
           <ContentWrapper>
             <ContentWidth>
               <Routes>
-                <Route
-                  path="/"
-                  element={<Navigate to={ROUTE_PATHS.HOME} replace />}
-                />
                 <Route path={ROUTE_PATHS.HOME} element={<Home />} />
                 <Route path={ROUTE_PATHS.ABOUT} element={<About />} />
-                <Route path={ROUTE_PATHS.TECHNICAL} element={<Technical />} />
-                <Route path={ROUTE_PATHS.CREATIVE} element={<Creative />} />
-                <Route path={ROUTE_PATHS.PORTFOLIO} element={<Portfolio />} />
-                <Route path={ROUTE_PATHS.GUESTBOOK} element={<Guestbook />} />
-                <Route path={ROUTE_PATHS.MINIGAMES} element={<MiniGames />} />
+                <Route
+                  path="*"
+                  element={<Navigate to={ROUTE_PATHS.HOME} replace />}
+                />
               </Routes>
             </ContentWidth>
           </ContentWrapper>

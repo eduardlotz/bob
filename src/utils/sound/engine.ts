@@ -17,8 +17,7 @@ import { SoundConfig, SoundInstance, SoundSystemState } from "./types";
 // global state
 let sounds = new Map<string, SoundInstance>();
 let configs = new Map<string, SoundConfig>();
-let audioBuffers = new Map<string, AudioBuffer>(); // preloaded audio buffers
-// track instance ids by sound id for fast stopPrevious handling
+let audioBuffers = new Map<string, AudioBuffer>();
 const instancesBySoundId = new Map<string, Set<string>>();
 let state: SoundSystemState = {
   enabled: true,
@@ -31,22 +30,18 @@ let state: SoundSystemState = {
   worldEnabled: true,
 };
 
-// Track last non-zero master volume to support proper unmute behavior
 let lastNonZeroMasterVolume = state.masterVolume > 0 ? state.masterVolume : 1;
 
-// Three.js Audio Listener (singleton)
 let audioListener: THREE.AudioListener | null = null;
 let listenerAttachedToCamera = false;
 
-// Current default sound selections (runtime switchable)
 let currentWorldMusicId: string = DEFAULT_WORLD_MUSIC.id;
 let currentWorldMusicFilePath: string = DEFAULT_WORLD_MUSIC.filePath;
 let currentTapSoundId: string = DEFAULT_TAP_SOUND.id;
 let isStartingBackgroundMusic = false;
 
-// Ensure audio context is resumed (required for browser autoplay policies)
+// resume audio context (required for browser autoplay policies)
 export const resumeAudioContext = async () => {
-  // Ensure listener exists (create within gesture when called from unmute)
   const listener = initializeAudioListener();
   if (!listener?.context) {
     console.log("No audio context available");
@@ -93,7 +88,6 @@ export const suspendAudioContext = async () => {
   }
 };
 
-// Runtime status helpers for consumers
 export const getAudioContextState = (): string | null => {
   try {
     return audioListener?.context?.state ?? null;
@@ -110,8 +104,7 @@ export const isAudioContextRunning = (): boolean => {
   }
 };
 
-// Preload all audio files
-const preloadAudioFiles = async () => {
+const preloadDefaultAudioFiles = async () => {
   const listener = initializeAudioListener();
   if (!listener) return;
 
@@ -146,14 +139,13 @@ const preloadAudioFiles = async () => {
     );
 };
 
-// Initialize Three.js audio listener
+// TODO: check if really needed
 const initializeAudioListener = () => {
   if (audioListener) return audioListener;
 
   try {
     audioListener = new THREE.AudioListener();
 
-    // Load default configs
     DEFAULT_SOUND_CONFIGS.forEach((config) => {
       configs.set(config.id, config);
     });
@@ -172,7 +164,6 @@ const initializeAudioListener = () => {
   }
 };
 
-// Public API to access/attach the AudioListener
 export const getAudioListener = (): THREE.AudioListener | null => {
   return initializeAudioListener();
 };
@@ -196,7 +187,6 @@ export const attachListenerToCamera = (camera: THREE.Camera): void => {
   }
 };
 
-// Get random detune value
 const getRandomDetune = (
   detuneConfig: NonNullable<SoundConfig["detune"]>
 ): number => {
@@ -206,7 +196,6 @@ const getRandomDetune = (
   );
 };
 
-// Get volume for sound type
 const getTypeVolume = (type: SoundConfig["type"]): number => {
   switch (type) {
     case "tap":
@@ -222,7 +211,6 @@ const getTypeVolume = (type: SoundConfig["type"]): number => {
   }
 };
 
-// Calculate final volume (safe against non-finite values)
 const toFinite = (n: any, fallback = 0): number =>
   Number.isFinite(n) ? (n as number) : fallback;
 
@@ -235,7 +223,6 @@ const calculateFinalVolume = (config: SoundConfig): number => {
   const baseVolume = clamp01Safe((config as any).volume);
   const typeVolume = clamp01Safe(getTypeVolume(config.type));
   const master = clamp01Safe(state.masterVolume);
-  // Respect per-type enable flags by zeroing volume when disabled
   const typeEnabled =
     config.type === "world"
       ? state.worldEnabled !== false
@@ -246,11 +233,9 @@ const calculateFinalVolume = (config: SoundConfig): number => {
   return Number.isFinite(v) ? v : 0;
 };
 
-// Apply volume without smoothing to avoid perceived delay
 const applyVolumeImmediate = (audio: any, volume: number) => {
   try {
     const v = Number.isFinite(volume) ? volume : 0;
-    // Try to set via underlying GainNode for immediate effect
     const gainParam: any = (audio as any)?.gain?.gain as any;
     const ctx: AudioContext | undefined = (audio as any)?.context;
     if (gainParam && ctx) {
@@ -265,13 +250,12 @@ const applyVolumeImmediate = (audio: any, volume: number) => {
       } catch {}
     }
   } catch {}
-  // Fallback to Three.js API (may smooth slightly)
   try {
     audio.setVolume(volume);
   } catch {}
 };
 
-// Clean up sound instance
+// TODO: fix cleanup
 const cleanupSound = (instanceId: string): void => {
   const instance = sounds.get(instanceId);
   if (instance) {
@@ -296,7 +280,6 @@ const cleanupSound = (instanceId: string): void => {
         instance.sound.stop();
       } catch {}
     } finally {
-      // Remove instance id index
       const byId = instancesBySoundId.get(instance.config.id);
       if (byId) {
         byId.delete(instanceId);
@@ -307,7 +290,6 @@ const cleanupSound = (instanceId: string): void => {
   sounds.delete(instanceId);
 };
 
-// Helper to fetch buffer from cache or load on demand
 const getOrLoadBuffer = async (
   cfg: SoundConfig
 ): Promise<AudioBuffer | null> => {
@@ -330,7 +312,6 @@ const getOrLoadBuffer = async (
   });
 };
 
-// Core sound management functions
 export const playSound = async (
   soundId: string,
   options?: Partial<SoundConfig>
@@ -347,7 +328,6 @@ export const playSound = async (
     return;
   }
 
-  // Ensure audio context is resumed on first user interaction
   if (listener.context.state === "suspended") {
     console.log("Resuming audio context on first user interaction...");
     await listener.context.resume();
@@ -360,11 +340,9 @@ export const playSound = async (
     return;
   }
 
-  // Merge options with base config
   const finalConfig = { ...config, ...options };
 
   try {
-    // Stop previous instance(s) if requested
     if (finalConfig.stopPrevious) {
       const existing = instancesBySoundId.get(finalConfig.id);
       if (existing) {
@@ -372,14 +350,11 @@ export const playSound = async (
       }
     }
 
-    // Create Three.js Audio
     const sound = new THREE.Audio(listener);
 
-    // Fetch buffer (cache or load)
     const buffer = await getOrLoadBuffer(finalConfig);
     if (!buffer) return;
 
-    // Configure sound node
     sound.setBuffer(buffer);
     if (finalConfig.detune?.enabled) {
       const detune = getRandomDetune(finalConfig.detune);
@@ -387,9 +362,8 @@ export const playSound = async (
     }
 
     const finalVolume = calculateFinalVolume(finalConfig);
-    if (!(finalVolume > 0)) return; // avoid work when muted or invalid
+    if (!(finalVolume > 0)) return;
 
-    // Apply volume, supporting optional fadeIn
     const anySound = sound as any;
     const ctx: AudioContext | undefined = anySound?.context;
     const gainParam: any = anySound?.gain?.gain;
@@ -415,7 +389,6 @@ export const playSound = async (
     }
     if (finalConfig.loop) sound.setLoop(true);
 
-    // Track instance
     const instance: SoundInstance = {
       id: `${soundId}-${Date.now()}`,
       listener,
@@ -436,7 +409,6 @@ export const playSound = async (
     }
     setForId.add(instance.id);
 
-    // Play and auto-cleanup
     sound.play();
     if (anySound.source) {
       anySound.source.onended = () => cleanupSound(instance.id);
@@ -458,7 +430,6 @@ const stopSoundInternal = (instanceId: string, fadeOutMs?: number): void => {
 
   try {
     const anySound = instance.sound as any;
-    // Optional fade-out before stopping
     const fadeMs = Math.max(
       0,
       fadeOutMs || (instance.config as any).fadeOut || 0
@@ -473,7 +444,6 @@ const stopSoundInternal = (instanceId: string, fadeOutMs?: number): void => {
     ) {
       try {
         const currentTime = ctx.currentTime;
-        // Capture current gain if possible, then ramp to 0
         gainParam.cancelScheduledValues(currentTime);
         const currentValue = ((): number => {
           try {
@@ -485,7 +455,6 @@ const stopSoundInternal = (instanceId: string, fadeOutMs?: number): void => {
         gainParam.setValueAtTime(currentValue, currentTime);
         gainParam.linearRampToValueAtTime(0, currentTime + fadeMs / 1000);
       } catch {}
-      // Stop the buffer a bit after fade completes
       try {
         if (anySound?.source?.stop) {
           anySound.source.stop(ctx.currentTime + fadeMs / 1000 + 0.01);
@@ -535,7 +504,6 @@ export const stopAllSounds = (): void => {
   }
 };
 
-// aggressive stop that ensures all WebAudio nodes are disconnected and maps cleared
 export const forceStopAllSounds = (): void => {
   for (const [instanceId, instance] of Array.from(sounds)) {
     try {
@@ -566,7 +534,6 @@ export const forceStopAllSounds = (): void => {
   instancesBySoundId.clear();
 };
 
-// Aggressive stop by type
 const forceStopSoundsByType = (type: SoundConfig["type"]): void => {
   for (const [instanceId, instance] of Array.from(sounds)) {
     if (instance.config.type !== type) continue;
@@ -596,20 +563,17 @@ const forceStopSoundsByType = (type: SoundConfig["type"]): void => {
   }
 };
 
-// Volume control functions
 export const setMasterVolume = (volume: number): void => {
   const safe = clamp01Safe(volume);
   state.masterVolume = safe;
   if (state.masterVolume > 0) {
     lastNonZeroMasterVolume = state.masterVolume;
   }
-  // Also apply to the global AudioListener master gain for immediate effect
   try {
     const listener = getAudioListener();
     if (listener && typeof (listener as any).setMasterVolume === "function") {
       (listener as any).setMasterVolume(safe);
     } else if ((listener as any)?.gain?.gain) {
-      // Fallback in case setMasterVolume API differs in this three version
       const ctx: AudioContext | undefined = (listener as any)?.context;
       const gainParam: any = (listener as any)?.gain?.gain;
       if (ctx && gainParam?.setValueAtTime) {
@@ -655,7 +619,6 @@ const updateAllVolumes = (): void => {
   }
 };
 
-// Configuration functions
 export const addSoundConfig = (config: SoundConfig): void => {
   configs.set(config.id, config);
 };
@@ -668,20 +631,17 @@ export const getSoundConfig = (soundId: string): SoundConfig | undefined => {
   return configs.get(soundId);
 };
 
-// State management functions
 export const enable = (): void => {
   state.enabled = true;
-  // If enabling, resume context but do not auto-start any music; UI decides what to play
   resumeAudioContext().catch(() => {});
 };
 
 export const disable = (): void => {
   state.enabled = false;
-  // Use a hard stop to guarantee looped background music is silenced
   forceStopAllSounds();
 };
 
-// Start/Stop aliases for clarity (keep contexts running; just stop sounds)
+// sound actions for clarity (keep contexts running; just stop sounds)
 export const start = enable;
 export const stop = disable;
 
@@ -707,18 +667,17 @@ export const updateWorldSoundVolumes = (isMenuOpen: boolean): void => {
   }
 };
 
-// Initialize sound system early
-export const initializeSoundSystemAsync = async () => {
+// init audio listeners and preload sound
+export const initializeSoundSystem = async () => {
   const listener = initializeAudioListener();
   if (listener) {
     console.log("Three.js sound system initialized successfully");
-    await preloadAudioFiles();
+    await preloadDefaultAudioFiles();
   } else {
     console.error("Failed to initialize Three.js sound system");
   }
 };
 
-// Convenience functions for common use cases
 export const playTapSound = (soundId: string = currentTapSoundId) => {
   if (state.tapEnabled === false) return;
   playSound(soundId);
@@ -729,7 +688,6 @@ export const playWorldSound = (
   options?: Partial<SoundConfig>
 ) => {
   if (state.worldEnabled === false) return;
-  // Allow layered world sounds: do not enforce stopPrevious unless requested
   playSound(soundId, { loop: true, fadeIn: 5000, fadeOut: 5000, ...options });
 };
 
@@ -742,14 +700,12 @@ export const stopAllWorldSounds = () => {
 };
 
 export const playUISound = (soundId: string = DEFAULT_UI_SOUND.id) => {
-  // UI sounds do not have a dedicated enable flag; respect master and uiVolume
   playSound(soundId);
 };
 
 export const getDefaultUISoundId = () => DEFAULT_UI_SOUND.id;
 export const getSecondaryUISoundId = () => DEFAULT_UI_SOUND_2.id;
 
-// Stop all instances for a specific sound config id (e.g., layered world sounds)
 export const stopSoundsById = (soundConfigId: string): void => {
   const setForId = instancesBySoundId.get(soundConfigId);
   if (!setForId || setForId.size === 0) return;
@@ -764,7 +720,6 @@ export const setTapVolume = (volume: number) => {
 
 export const setWorldVolume = (volume: number) => {
   setTypeVolume("world", volume);
-  // Ensure immediate gain update for any active world instances
   try {
     for (const [_, instance] of Array.from(sounds)) {
       if (instance.config.type !== "world") continue;
@@ -777,76 +732,19 @@ export const setWorldVolume = (volume: number) => {
   } catch {}
 };
 
-const isSoundActive = (soundId: string): boolean => {
-  const setForId = instancesBySoundId.get(soundId);
-  if (!setForId || setForId.size === 0) return false;
-  let active = false;
-  setForId.forEach((id) => {
-    if (active) return;
-    const instance = sounds.get(id);
-    if (!instance) return;
-    const anySound = instance.sound as any;
-    // consider active if the internal source node still exists or isPlaying is true
-    if (anySound?.source || anySound?.isPlaying) active = true;
-  });
-  return active;
-};
-
-export const startBackgroundMusic = async (): Promise<void> => {
-  if (!state.enabled || state.worldEnabled === false) return;
-  // respect user gesture policies
-  await resumeAudioContext();
-  if (isStartingBackgroundMusic) return;
-  // Ensure any prior world instances are fully stopped to avoid layering
-  try {
-    stopBackgroundMusic();
-  } catch {}
-  // ensure config exists even if DEFAULT_SOUND_CONFIGS changed
-  if (!configs.get(currentWorldMusicId)) {
-    addSoundConfig({
-      id: currentWorldMusicId,
-      filePath: currentWorldMusicFilePath,
-      type: "world",
-      volume: DEFAULT_WORLD_VOLUME,
-      loop: true,
-      stopPrevious: false,
-      distanceAttenuation: false,
-      detune: { enabled: false, minSemitones: 0, maxSemitones: 0 },
-      fadeIn: 5000,
-      fadeOut: 5000,
-    });
-  }
-  // If there is no active instance for the selected background id already, start it.
-  isStartingBackgroundMusic = true;
-  try {
-    await playSound(currentWorldMusicId, {
-      loop: true,
-      stopPrevious: false,
-      fadeIn: 5000,
-      fadeOut: 5000,
-    });
-  } finally {
-    isStartingBackgroundMusic = false;
-  }
-};
-
 export const stopBackgroundMusic = (): void => {
   const setForId = instancesBySoundId.get(currentWorldMusicId);
   if (!setForId || setForId.size === 0) return;
   for (const instanceId of Array.from(setForId)) {
-    // Use a gentle fade-out for music to avoid artifacts
     stopSoundInternal(instanceId, 400);
   }
 };
 
-// Mute/Unmute controls (preferred for frontend use)
 export const mute = (): void => {
   if (state.masterVolume > 0) {
     lastNonZeroMasterVolume = state.masterVolume;
   }
-  // Volume-only approach: keep instances alive, just zero final output
   setMasterVolume(0);
-  // Explicitly stop ALL world sounds (primary + layered) while muted to avoid stale instances
   try {
     stopAllWorldSounds();
   } catch {}
@@ -855,7 +753,6 @@ export const mute = (): void => {
 export const unmute = (): void => {
   const restore = lastNonZeroMasterVolume > 0 ? lastNonZeroMasterVolume : 1;
   setMasterVolume(restore);
-  // Do not auto-start background music on unmute; let explicit enable/gesture logic handle it
 };
 
 export const toggleMute = (): void => {
@@ -866,31 +763,12 @@ export const toggleMute = (): void => {
   }
 };
 
-// Per-type enable/disable
 export const setTapEnabled = (enabled: boolean): void => {
   state.tapEnabled = !!enabled;
   if (!state.tapEnabled) stopAllTapSounds();
 };
 
-export const setWorldEnabled = (enabled: boolean): void => {
-  state.worldEnabled = !!enabled;
-  if (!state.worldEnabled) {
-    try {
-      stopBackgroundMusic();
-    } catch {
-      forceStopSoundsByType("world");
-    }
-  } else {
-    // Do not auto-start here to avoid double-start on the same user gesture.
-    // The UI can call setWorldMusic or a gesture handler can start it.
-  }
-};
-
-// Runtime selection
-export const setWorldMusic = (
-  filePath: string,
-  id: string = DEFAULT_WORLD_MUSIC.id
-): void => {
+export const setWorldMusic = (filePath: string, id: string): void => {
   currentWorldMusicId = id;
   currentWorldMusicFilePath = filePath;
   addSoundConfig({
@@ -903,7 +781,6 @@ export const setWorldMusic = (
     distanceAttenuation: false,
     detune: { enabled: false, minSemitones: 0, maxSemitones: 0 },
   });
-  // Do not auto-start here; caller can choose to startBackgroundMusic if desired
 };
 
 export const setCurrentTapSound = (id: string, filePath?: string): void => {
@@ -919,9 +796,6 @@ export const setCurrentTapSound = (id: string, filePath?: string): void => {
     });
   }
 };
-
-let autoStartBound = false;
-// Removed auto-start binding; we now resume audio context explicitly upon unmute
 
 // play a simple beep sound using threejs oscillator
 export const testSoundSystem = () => {

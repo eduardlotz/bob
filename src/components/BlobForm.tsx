@@ -43,22 +43,6 @@ export const BlobForm = React.memo(
           </RoundedBox>
         );
 
-      case "pill":
-        return (
-          <mesh castShadow>
-            <cylinderGeometry
-              args={[
-                parameters.pillRadiusTop || 0.8,
-                parameters.pillRadiusBottom || 0.8,
-                parameters.pillHeight || 1.6,
-                parameters.pillRadialSegments || 32,
-              ]}
-            />
-            <meshToonMaterial color={blobColor} />
-            <Outlines thickness={0.005} color={outlineColor} screenspace />
-          </mesh>
-        );
-
       default:
         // fallback to sphere
         return (

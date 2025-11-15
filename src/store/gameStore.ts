@@ -9,13 +9,15 @@ import {
   setMasterVolume as engineSetMasterVolume,
   setCurrentTapSound as engineSetCurrentTapSound,
   setTapEnabled as engineSetTapEnabled,
-  setWorldEnabled as engineSetWorldEnabled,
   setWorldMusic as engineSetWorldMusic,
 } from "@/utils/soundSystem";
-import { resolveTapSoundForEffect } from "@/utils/sound/configs";
+import {
+  resolveTapSoundForEffect,
+  tryGetWorldSoundById,
+} from "@/utils/sound/configs";
 import { getWorldSoundById } from "@/utils/sound/configs";
 import { THEME_IDS, THEME_CONFIG } from "./themeConfig";
-import { initialUpgrades } from "@/shop-items/upgrades";
+import { initialTapEffects, initialUpgrades } from "@/shop-items/upgrades";
 import {
   BlobFormConfig,
   INITIAL_BLOB_FORMS,
@@ -44,7 +46,8 @@ export enum GAME_STORE_VERSIONS {
   V19 = 19,
   V20 = 20,
   V21 = 21,
-  LATEST = V21,
+  V22 = 22,
+  LATEST = V22,
 }
 
 // Constants
@@ -62,10 +65,8 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
   );
   let migratedState = { ...oldState };
 
-  // Handle case where version field is missing (old saves)
-  let currentVersion = oldState.version || 1;
+  let currentVersion = oldState.version || GAME_STORE_VERSIONS.V1;
 
-  // Helper function to safely check and transform arrays
   const safeArrayTransform = <T>(
     array: T[] | undefined,
     transform: (item: T, index: number) => T
@@ -74,13 +75,12 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
     return array.map(transform);
   };
 
-  // Helper function to merge route objects while preserving existing fields
+  // merge route objects while preserving existing fields
   const mergeRoute = (existingRoute: any, initialRoute: any): any => {
     if (!existingRoute) return initialRoute;
     return {
       ...initialRoute,
       ...existingRoute,
-      // Preserve specific fields from existing route unless explicitly overridden
       unlocked: existingRoute.unlocked ?? initialRoute.unlocked,
       purchased: existingRoute.purchased ?? initialRoute.purchased,
     };
@@ -88,7 +88,6 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
 
   // Migration V1 → V2: Update theme and effect prices
   if (currentVersion < GAME_STORE_VERSIONS.V2) {
-    // Update theme prices in a single pass
     migratedState.themes = safeArrayTransform(
       migratedState.themes,
       (theme: any) => {
@@ -106,7 +105,6 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
       }
     );
 
-    // Update effect prices in a single pass
     migratedState.upgrades = safeArrayTransform(
       migratedState.upgrades,
       (upgrade: any) => {
@@ -490,6 +488,41 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
     currentVersion = GAME_STORE_VERSIONS.V21;
   }
 
+  // Migration V21 → V22: bobForm refactor, price adjustments
+  if (currentVersion < GAME_STORE_VERSIONS.V22) {
+    migratedState.upgrades = initialUpgrades.map((newUpgrade) => {
+      const existingUpgrade = migratedState.upgrades.find(
+        (upg: Upgrade) => upg.id === newUpgrade.id
+      );
+      if (existingUpgrade) {
+        return {
+          ...newUpgrade,
+          unlocked: existingUpgrade.unlocked,
+          level: existingUpgrade.level,
+        };
+      }
+      return newUpgrade;
+    });
+
+    migratedState.tapEffects = initialTapEffects.map((newEffect) => {
+      const existingEffect = migratedState.tapEffects.find(
+        (eff: Upgrade) => eff.id === newEffect.id
+      );
+      if (existingEffect) {
+        return {
+          ...newEffect,
+          unlocked: existingEffect.unlocked,
+          level: existingEffect.level,
+        };
+      }
+      return newEffect;
+    });
+
+    migratedState.lastSchemaUpdate = new Date();
+
+    currentVersion = GAME_STORE_VERSIONS.V22;
+  }
+
   // Set the final version to the latest
   migratedState.version = GAME_STORE_VERSIONS.LATEST;
 
@@ -606,11 +639,9 @@ export interface SoundSystemState {
 
 // Game state interface
 interface GameStore {
-  // Store version for migrations
   version: number;
   lastSchemaUpdate: Date; // Timestamp for manual migration triggers
 
-  // Core game state
   taps: number;
   manualTaps: number;
   manualTapsPerSecond: number;
@@ -621,12 +652,10 @@ interface GameStore {
   recentManualTaps: number[];
   lastAutoTapTime: number;
 
-  // Cached computed values for performance
   _cachedTapsPerSecond?: number;
   _cachedTapMultiplier?: number;
   _lastUpgradeHash?: string;
 
-  // shop
   upgrades: Upgrade[];
   decorations: Decoration[];
   bobItems: BobItem[];
@@ -635,14 +664,11 @@ interface GameStore {
   currentTheme: Theme | null;
   routes: Route[];
 
-  // from previous version, might come back
   fisheyeIntensity: number;
 
-  // dev state
   animationsEnabled: boolean;
   statisticsVisible: boolean;
 
-  // sound system
   soundSystem: SoundSystemState;
   soundPreferences?: {
     enabled: boolean;
@@ -655,7 +681,6 @@ interface GameStore {
     tapEffectAudioId?: string; // optional override for selected tap effect
   };
 
-  // Actions
   addTaps: (amount: number) => void;
   addAutoTaps: (amount: number) => void;
   addManualTap: () => void;
@@ -674,7 +699,6 @@ interface GameStore {
   resetBlobFormParameters: (blobFormId: string) => void;
   purchaseTheme: (themeId: string) => void;
   purchaseRoute: (routeId: string, force?: boolean) => void;
-  checkRouteUnlocks: () => void;
   activateTheme: (themeId: string) => void;
   toggleDecoration: (decorationId: string) => void;
   selectTapEffect: (upgradeId: string) => void;
@@ -683,13 +707,11 @@ interface GameStore {
   pauseGame: () => void;
   resumeGame: () => void;
 
-  // Dev Actions
   addDevTaps: (amount: number) => void;
   buyAllUpgrades: () => void;
   toggleAnimations: () => void;
   toggleStatistics: () => void;
 
-  // Sound system actions
   setSoundEnabled: (enabled: boolean) => void;
   setMasterVolume: (volume: number) => void;
   setTapVolume: (volume: number) => void;
@@ -697,7 +719,6 @@ interface GameStore {
   setUIVolume: (volume: number) => void;
   setTextVolume: (volume: number) => void;
 
-  // Audio selection actions
   setWorldMusicId: (id: string) => void;
   setTapEffectId: (id: string) => void;
   setTapEnabled: (enabled: boolean) => void;
@@ -706,21 +727,19 @@ interface GameStore {
   toggleWorldSoundId?: (id: string) => void;
   setTapEffectAudioId?: (id?: string) => void;
 
-  // Computed values
   getTotalTapsPerSecond: () => number;
   getTotalTapMultiplier: () => number;
   getAutoTapRate: () => number;
-  // Non-caching versions for use during render
+
   getAutoTapRateUncached: () => number;
   getTotalTapMultiplierUncached: () => number;
-  // Cache management
+
   updateComputedValueCache: () => void;
   canAfford: (cost: number) => boolean;
   calculateOfflineTaps: () => number;
   checkUnlockedRoutes: (routePath: string) => boolean;
 }
 
-// room decorations
 export const initialDecorations: Decoration[] = [
   {
     id: "tree_3d",
@@ -738,7 +757,6 @@ export const initialDecorations: Decoration[] = [
   },
 ];
 
-// bob items (wearable items for the blob head)
 export const initialBobItems: BobItem[] = [
   {
     id: "builderHelmet",
@@ -798,7 +816,6 @@ export const initialBobItems: BobItem[] = [
   },
 ];
 
-// Initial themes based on config
 export const initialThemes: Theme[] = Object.values(THEME_CONFIG).map(
   (themeConfig) => ({
     id: themeConfig.id,
@@ -816,7 +833,6 @@ export const initialThemes: Theme[] = Object.values(THEME_CONFIG).map(
   })
 );
 
-// Initial routes using constants
 export const initialRoutes: Route[] = [
   {
     id: ROUTE_IDS.HOME,
@@ -904,7 +920,6 @@ export const initialRoutes: Route[] = [
   },
 ];
 
-// Helper function to generate upgrade hash for caching
 const generateUpgradeHash = (upgrades: Upgrade[]): string => {
   return JSON.stringify(upgrades.map((u) => ({ id: u.id, level: u.level })));
 };
@@ -913,7 +928,6 @@ export const useGameStore = create<GameStore>()(
   devtools(
     persist(
       (set, get) => ({
-        // Initial state
         version: GAME_STORE_VERSIONS.LATEST,
         lastSchemaUpdate: new Date(),
         taps: 0,
@@ -926,7 +940,6 @@ export const useGameStore = create<GameStore>()(
         recentManualTaps: [],
         lastAutoTapTime: Date.now(),
 
-        // Cache properties
         _cachedTapsPerSecond: undefined,
         _cachedTapMultiplier: undefined,
         _lastUpgradeHash: undefined,
@@ -942,7 +955,6 @@ export const useGameStore = create<GameStore>()(
         animationsEnabled: true,
         statisticsVisible: false,
 
-        // Sound system state
         soundSystem: {
           enabled: true,
           masterVolume: 0.0,
@@ -955,7 +967,6 @@ export const useGameStore = create<GameStore>()(
         },
         soundPreferences: { enabled: true, muted: true },
 
-        // Audio selections
         audioSelections: {
           worldMusicId: "world-lofi",
           tapEffectId: "tap_effect_default",
@@ -963,7 +974,6 @@ export const useGameStore = create<GameStore>()(
           tapEffectAudioId: undefined,
         },
 
-        // Actions
         addTaps: (amount: number) => {
           set((state) => ({
             taps: state.taps + amount,
@@ -983,11 +993,9 @@ export const useGameStore = create<GameStore>()(
             const now = Date.now();
             const oneSecondAgo = now - ONE_SECOND_MS;
 
-            // Optimize array operations by pre-allocating
             const recentTaps = state.recentManualTaps || [];
             const filteredTaps: number[] = [];
 
-            // Manual filtering for better performance
             for (let i = recentTaps.length - 1; i >= 0; i--) {
               if (recentTaps[i] > oneSecondAgo) {
                 filteredTaps.unshift(recentTaps[i]);
@@ -999,14 +1007,12 @@ export const useGameStore = create<GameStore>()(
 
             const newState = {
               ...state,
-              taps: state.taps + 1 * tapMultiplier, // Apply multiplier to manual taps
+              taps: state.taps + 1 * tapMultiplier,
               manualTaps: state.manualTaps + 1,
               manualTapsPerSecond: newTaps.length,
               recentManualTaps: newTaps,
             };
 
-            // Check for route unlocks after adding taps using pattern matching
-            // Only update routes if there are any changes to prevent unnecessary re-renders
             let hasRouteChanges = false;
             const updatedRoutes = newState.routes.map((route) => {
               const shouldUnlock = match({
@@ -1027,7 +1033,6 @@ export const useGameStore = create<GameStore>()(
               return route;
             });
 
-            // Only update state if there are actual changes
             if (hasRouteChanges) {
               return {
                 ...newState,
@@ -1042,14 +1047,12 @@ export const useGameStore = create<GameStore>()(
           });
         },
 
-        // Optimized cleanup with early return
         cleanupManualTaps: () => {
           set((state) => {
             const now = Date.now();
             const recentTaps = state.recentManualTaps || [];
             const oneSecondAgo = now - ONE_SECOND_MS;
 
-            // Early return if no cleanup needed
             if (recentTaps.length === 0) {
               return state;
             }
@@ -1061,7 +1064,6 @@ export const useGameStore = create<GameStore>()(
               }
             }
 
-            // Early return if no cleanup needed
             if (filteredTaps.length === recentTaps.length) {
               return state;
             }
@@ -1096,9 +1098,7 @@ export const useGameStore = create<GameStore>()(
               u.id === upgradeId ? { ...u, level: u.level + 1 } : u
             );
 
-            // Handle special upgrade types
             if (upgrade.category === "tapEffects") {
-              // For tap effects, unlock and select the new one
               updatedUpgrades = updatedUpgrades.map((u) => ({
                 ...u,
                 unlocked: u.id === upgradeId ? true : u.unlocked,
@@ -1106,30 +1106,13 @@ export const useGameStore = create<GameStore>()(
                   u.category === "tapEffects" ? u.id === upgradeId : u.selected,
               }));
             } else if (upgrade.category === "environment") {
-              // For environment effects, just unlock them
               updatedUpgrades = updatedUpgrades.map((u) => ({
                 ...u,
                 unlocked: u.id === upgradeId ? true : u.unlocked,
+                selected: u.id === upgradeId ? true : u.unlocked,
               }));
             }
-            // else {
-            //   // For regular upgrades, update unlocked status based on tap count
-            //   updatedUpgrades = updatedUpgrades.map((u) => {
-            //     if (u.id === "auto_tap_2" && state.taps >= 50) {
-            //       return { ...u, unlocked: true };
-            //     }
-            //     if (u.id === "tap_multiplier_2" && state.taps >= 200) {
-            //       return { ...u, unlocked: true };
-            //     }
-            //     // Unlock "Tap Power" when player can afford it
-            //     if (u.id === "tap_multiplier_1" && state.taps >= u.baseCost) {
-            //       return { ...u, unlocked: true };
-            //     }
-            //     return u;
-            //   });
-            // }
 
-            // Invalidate cache when upgrades change
             return {
               ...state,
               taps: state.taps - cost,
@@ -1140,7 +1123,7 @@ export const useGameStore = create<GameStore>()(
             };
           });
 
-          // Update cache after state change
+          // update cache after state change
           setTimeout(() => {
             get().updateComputedValueCache();
           }, 0);
@@ -1749,25 +1732,6 @@ export const useGameStore = create<GameStore>()(
             },
           }));
         },
-
-        // Route unlocking logic
-        checkRouteUnlocks: () => {
-          set((state) => {
-            const updatedRoutes = state.routes.map((route) => {
-              // Auto-unlock routes when affordable
-              if (!route.purchased && state.canAfford(route.cost)) {
-                return { ...route, unlocked: true };
-              }
-              return route;
-            });
-
-            return {
-              ...state,
-              routes: updatedRoutes,
-            };
-          });
-        },
-
         // Computed values with caching
         getTotalTapsPerSecond: () => {
           const state = get();
@@ -1786,7 +1750,6 @@ export const useGameStore = create<GameStore>()(
               return total + upgrade.effect.value * upgrade.level;
             }, 0);
 
-          // Cache the result - this is safe because we're not in a React render cycle
           set((s) => ({
             ...s,
             _cachedTapsPerSecond: result,
@@ -1813,7 +1776,6 @@ export const useGameStore = create<GameStore>()(
 
           if (multiplierUpgrades.length === 0) {
             const result = 1;
-            // Cache the result - this is safe because we're not in a React render cycle
             set((s) => ({
               ...s,
               _cachedTapMultiplier: result,
@@ -1823,13 +1785,9 @@ export const useGameStore = create<GameStore>()(
           }
 
           const result = multiplierUpgrades.reduce((total, upgrade) => {
-            // Each level of the upgrade applies the multiplier
-            // So if you have level 2 of a "double tap power" upgrade (value: 2),
-            // you get 2^2 = 4x multiplier
             return total * Math.pow(upgrade.effect.value, upgrade.level);
           }, 1);
 
-          // Cache the result - this is safe because we're not in a React render cycle
           set((s) => ({
             ...s,
             _cachedTapMultiplier: result,
@@ -1848,7 +1806,6 @@ export const useGameStore = create<GameStore>()(
             }, 0);
         },
 
-        // Non-caching versions for use during render
         getAutoTapRateUncached: () => {
           const state = get();
           return state.upgrades
@@ -1873,12 +1830,10 @@ export const useGameStore = create<GameStore>()(
           }, 1);
         },
 
-        // Update cache when upgrades change (called from actions, not during render)
         updateComputedValueCache: () => {
           const state = get();
           const upgradeHash = generateUpgradeHash(state.upgrades);
 
-          // Only update if hash changed
           if (state._lastUpgradeHash === upgradeHash) {
             return;
           }
@@ -1909,7 +1864,6 @@ export const useGameStore = create<GameStore>()(
           const timeSinceLastTap = now - state.lastAutoTapTime;
           const secondsSinceLastTap = timeSinceLastTap / 1000;
 
-          // Calculate how many taps should have been generated
           const tapsPerSecond = state.getTotalTapsPerSecond();
           const tapMultiplier = state.getTotalTapMultiplier();
           const baseOfflineTaps = Math.floor(
@@ -1955,7 +1909,6 @@ export const useGameStore = create<GameStore>()(
         onRehydrateStorage: (state) => {
           console.log("Game store rehydrated:", state);
 
-          // Queue storage migration lazily to avoid circular import during init
           import("./migration")
             .then((m) => m.queueStorageMigration())
             .catch((e) =>
@@ -2020,7 +1973,6 @@ export const useGameStore = create<GameStore>()(
             }
           }
 
-          // Restore enabled/muted preference; keep persisted volumes intact
           try {
             const prefs = state.soundPreferences;
             const enabled = prefs?.enabled ?? true;
@@ -2030,7 +1982,6 @@ export const useGameStore = create<GameStore>()(
               soundSystem: {
                 ...s.soundSystem,
                 enabled,
-                // do not overwrite persisted masterVolume here; engine will apply mute
               },
               soundPreferences: { enabled, muted },
             }));
@@ -2042,18 +1993,14 @@ export const useGameStore = create<GameStore>()(
             } catch {}
           } catch {}
 
-          // Sync per-type enable flags and current selections with engine after rehydrate
           try {
             const s = useGameStore.getState();
             engineSetTapEnabled(!!s.soundSystem.tapEnabled);
-            engineSetWorldEnabled(!!s.soundSystem.worldEnabled);
-            // Apply selected primary world music id to engine without forcing start
             const worldId = s.audioSelections.worldMusicId;
             if (worldId) {
-              const track = getWorldSoundById(worldId);
+              const track = tryGetWorldSoundById(worldId);
               if (track) engineSetWorldMusic(track.filePath, track.id);
             }
-            // Apply currently selected tap effect audio using resolver
             const selectedTap = s.upgrades.find(
               (u) => u.category === "tapEffects" && u.selected
             );
@@ -2075,7 +2022,6 @@ export const useGameStore = create<GameStore>()(
   )
 );
 
-// Auto-tap effect with improved performance and cleanup
 let autoTapInterval: NodeJS.Timeout | null = null;
 let particleTimeouts: NodeJS.Timeout[] = [];
 
@@ -2084,14 +2030,12 @@ export const startAutoTap = () => {
     clearInterval(autoTapInterval);
   }
 
-  // Clear any existing particle timeouts
   particleTimeouts.forEach((timeout) => clearTimeout(timeout));
   particleTimeouts = [];
 
   autoTapInterval = setInterval(() => {
     const store = useGameStore.getState();
 
-    // Check if game is paused
     if (store.isPaused) {
       return;
     }
@@ -2104,7 +2048,6 @@ export const startAutoTap = () => {
       if ((window as any).createTapParticles) {
         const tapCount = Math.min(tapsPerSecond, MAX_PARTICLES_PER_AUTO_TAP);
 
-        // Clear old timeouts before creating new ones
         particleTimeouts.forEach((timeout) => clearTimeout(timeout));
         particleTimeouts = [];
 
@@ -2125,12 +2068,11 @@ export const stopAutoTap = () => {
     autoTapInterval = null;
   }
 
-  // Clear all particle timeouts
   particleTimeouts.forEach((timeout) => clearTimeout(timeout));
   particleTimeouts = [];
 };
 
-// Utility function to manually trigger store migration
+// manually trigger store migration in dev tools
 export const triggerStoreMigration = () => {
   const store = useGameStore.getState();
   const currentState = {

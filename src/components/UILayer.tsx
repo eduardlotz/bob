@@ -9,7 +9,6 @@ import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { requestMotionPermission } from "@/utils/permission";
 import { useGameStore } from "@/store/gameStore";
 
-import { useAnimations } from "@/hooks/useAnimations";
 import { AnimatePresence, motion } from "motion/react";
 
 interface UILayerProps {
@@ -32,10 +31,8 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
     return () => clearTimeout(timeout);
   }, []);
 
-  // Initialize animations hook
-  useAnimations();
-
-  // Cleanup manual taps periodically
+  // cleanup manual taps every second
+  // TODO: check if this is optimal -> without it the steps/s is not resetting
   useEffect(() => {
     const cleanupInterval = setInterval(() => {
       const gameStore = useGameStore.getState();
@@ -45,7 +42,7 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
     return () => clearInterval(cleanupInterval);
   }, []);
 
-  // Global UI click sound handler (plays for any button-like element)
+  // TODO: exten audio system to support different UI sounds
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       const target = e.target as Element | null;
@@ -68,11 +65,11 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
         }, 0);
       }
     };
-    // Capture to ensure we hear it before stopPropagation in components
     document.addEventListener("click", handleClick, true);
     return () => document.removeEventListener("click", handleClick, true);
   }, [sound]);
 
+  // TODO: fix or remove every device motion related
   const handlePermissionRequest = async () => {
     const granted = await requestMotionPermission();
     setPermissionGranted(granted);

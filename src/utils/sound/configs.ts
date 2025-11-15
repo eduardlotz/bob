@@ -8,7 +8,6 @@ import {
 import { SoundConfig } from "./types";
 
 export const DEFAULT_SOUND_CONFIGS: SoundConfig[] = [
-  // Defaults only
   {
     id: DEFAULT_TAP_SOUND.id,
     filePath: DEFAULT_TAP_SOUND.filePath,
@@ -60,31 +59,42 @@ export const DEFAULT_SOUND_CONFIGS: SoundConfig[] = [
   },
 ];
 
-// Curated library for world music selection at runtime
-// Catalogs for selectable sounds (UI + engine resolution)
 export const WORLD_SOUNDS = [
   {
     id: DEFAULT_WORLD_MUSIC.id,
     name: "Lo-Fi Ambient",
     filePath: DEFAULT_WORLD_MUSIC.filePath,
     icon: "🎵",
+    showInShop: true,
   },
-  // {
-  //   id: "custom-world-music-01",
-  //   name: "captainlowie - du fehlst (vip)",
-  //   filePath: "/audio/du-fehlst-vip.wav",
-  //   icon: "🖤",
-  // },
   {
-    id: "world-rain",
+    id: "world_rain",
     name: "Rain",
     filePath: "/audio/rain.wav",
     icon: "🌧️",
   },
 ];
 
+const EFFECT_SOUNDS = {
+  rain: {
+    id: "environment_rain",
+    name: "Rain",
+    filePath: "/audio/rain.wav",
+    icon: "🌧️",
+  },
+};
+
+export const getWeatherSoundById = (id: string) =>
+  EFFECT_SOUNDS[id as keyof typeof EFFECT_SOUNDS] || EFFECT_SOUNDS["rain"];
+
+export const tryGetWeatherSoundById = (id: string) =>
+  EFFECT_SOUNDS[id as keyof typeof EFFECT_SOUNDS];
+
 export const getWorldSoundById = (id: string) =>
   WORLD_SOUNDS.find((t) => t.id === id) || WORLD_SOUNDS[0];
+
+export const tryGetWorldSoundById = (id: string) =>
+  WORLD_SOUNDS.find((t) => t.id === id);
 
 export const TAP_SOUNDS = [
   {
@@ -104,7 +114,6 @@ export const TAP_SOUNDS = [
 export const getTapSoundById = (id: string) =>
   TAP_SOUNDS.find((t) => t.id === id) || TAP_SOUNDS[0];
 
-// Mapping from tap effect upgrade ids to default tap audio ids
 export const TAP_EFFECT_TO_DEFAULT_TAP_SOUND: Record<string, string> = {
   tap_effect_default: DEFAULT_TAP_SOUND.id,
   tap_effect_confetti: DEFAULT_TAP_SOUND.id,
@@ -112,7 +121,6 @@ export const TAP_EFFECT_TO_DEFAULT_TAP_SOUND: Record<string, string> = {
   tap_effect_stars: DEFAULT_TAP_SOUND.id,
 };
 
-// Resolve which tap sound to use for a given effect upgrade id, optionally overridden
 export const resolveTapSoundForEffect = (
   effectUpgradeId: string,
   overrideTapAudioId?: string

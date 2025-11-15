@@ -257,11 +257,6 @@ export function HeadNavigation({
     toast.custom((id) => <CustomToast>Calibration reset</CustomToast>);
   };
 
-  const handleHeadClick = () => {
-    // Always call handleTap for animation, but tap counting is handled by the hook
-    handleTap();
-  };
-
   useFrame(() => {
     // camera control re-enabled with proper guards
 
@@ -401,7 +396,7 @@ export function HeadNavigation({
   return (
     <>
       <BlobHead
-        onHeadClick={handleHeadClick}
+        onHeadClick={handleTap}
         motionPermissionGranted={permissionGranted}
         isMobile={isMobile}
         cameraControlsRef={cameraControlsRef}

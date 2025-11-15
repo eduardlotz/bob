@@ -1,10 +1,8 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Outlines } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { useViewStore } from "@/store/viewStore";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
-import { Mesh } from "three";
 import { a } from "@react-spring/three";
 import { match } from "ts-pattern";
 

@@ -8,22 +8,17 @@ import {
 } from "@/messages/config";
 import { match } from "ts-pattern";
 
-// Enhanced types with better validation
 export interface ActiveMessage {
   readonly config: MessageConfig;
   readonly options: Required<MessageOptions>;
   readonly startedAt: number;
-  // Runtime UI state
   currentLineIndex: number;
   revealedChars: number;
   isSkipping: boolean;
-  // Timing controls
   readonly minimumDisplayUntil: number;
   hasBeenFullyRevealed: boolean;
   userHasInteracted: boolean;
-  // Add animation state tracking
   isAnimating: boolean;
-  // Add error state
   error?: string;
 }
 
@@ -35,7 +30,6 @@ export interface MessageRepeatFlags {
   readonly [messageId: string]: boolean;
 }
 
-// Add queue item with metadata
 export interface QueueItem {
   readonly id: string;
   readonly priority: number;
@@ -44,7 +38,7 @@ export interface QueueItem {
 }
 
 export interface MessageStoreState {
-  // Core state
+  // core state
   readonly activeMessage: ActiveMessage | null;
   readonly queue: readonly QueueItem[];
   readonly seenThisSession: Readonly<Record<string, boolean>>;
@@ -53,12 +47,12 @@ export interface MessageStoreState {
   readonly typingSpeedDefaultMs: number;
   readonly systemPaused: boolean;
 
-  // Add analytics/debug state
+  // debug state
   readonly messageHistory: readonly string[];
   readonly lastError: string | null;
   readonly isHydrated: boolean;
 
-  // Actions
+  // core actions
   showMessage: (
     id: string,
     overrides?: Partial<MessageOptions>
@@ -76,19 +70,19 @@ export interface MessageStoreState {
   getQueueLength: () => number;
   getNextQueuedId: () => string | null;
 
-  // queue management
+  // queue actions
   reorderQueue: (fromIndex: number, toIndex: number) => void;
   removeFromQueue: (id: string) => boolean;
   getQueuedMessage: (id: string) => QueueItem | null;
 
-  // Batch operations
+  // batch actions
   showMessages: (
     ids: readonly string[],
     overrides?: Partial<MessageOptions>
   ) => Promise<boolean[]>;
   clearAllMessages: () => void;
 
-  // Debug utilities
+  // debug actions
   getDebugInfo: () => Record<string, unknown>;
   clearError: () => void;
 }
@@ -103,7 +97,8 @@ const DEFAULT_OPTIONS: Required<MessageOptions> = {
   emotion: { state: "normal" },
 } as const;
 
-// Enhanced validation
+const QUEUE_LIMIT = 50;
+
 const validateMessageConfig = (
   config: MessageConfig | null | undefined
 ): config is MessageConfig => {
@@ -131,7 +126,7 @@ const canShowMessage = (
     .exhaustive();
 };
 
-// minimum display time tuned to be shorter than reading, no dependency on typing speed
+// calculate minimum display time based on message length and options
 const calculateMinimumDisplayTime = (
   config: MessageConfig,
   options: Required<MessageOptions>
@@ -147,19 +142,18 @@ const calculateMinimumDisplayTime = (
   return Math.min(15000, total); // cap at 15s
 };
 
-// Enhanced queue insertion with duplicate prevention
 const insertIntoQueue = (
   currentQueue: readonly QueueItem[],
   newItem: QueueItem
 ): readonly QueueItem[] => {
-  // Prevent duplicates
+  // prevent duplicate entries
   if (currentQueue.some((item) => item.id === newItem.id)) {
     return currentQueue;
   }
 
   const queue = [...currentQueue];
 
-  // Find insertion point based on priority (higher = earlier)
+  // insert message based on priority
   let insertIndex = queue.length;
   for (let i = 0; i < queue.length; i++) {
     if (queue[i].priority < newItem.priority) {
@@ -170,11 +164,9 @@ const insertIntoQueue = (
 
   queue.splice(insertIndex, 0, newItem);
 
-  // Limit queue size to prevent memory issues
-  return queue.slice(0, 50);
+  return queue.slice(0, QUEUE_LIMIT);
 };
 
-// Error handling wrapper
 const withErrorHandling = <T extends any[], R>(
   fn: (...args: T) => R,
   fallback: R,
@@ -225,7 +217,6 @@ export const useMessageStore = create<MessageStoreState>()(
               return false;
             }
 
-            // Check for existing
             const alreadyQueued = state.queue.some((item) => item.id === id);
             const isActive = state.activeMessage?.config.id === id;
             if (alreadyQueued || isActive) return false;
@@ -238,8 +229,8 @@ export const useMessageStore = create<MessageStoreState>()(
 
             const current = state.activeMessage;
 
+            // queue message if one is currently active/revealing
             if (current && !current.error) {
-              // Add to queue
               const newItem: QueueItem = {
                 id,
                 priority: cfg.options?.priority || 0,
@@ -251,8 +242,10 @@ export const useMessageStore = create<MessageStoreState>()(
                 queue: insertIntoQueue(state.queue, newItem),
                 lastError: null,
               });
-            } else {
-              // Set as active
+            }
+            // if no active message, show immediately
+            // gets called for every queued message
+            else {
               const minimumDisplayUntil =
                 Date.now() + calculateMinimumDisplayTime(cfg, mergedOptions);
 
@@ -372,7 +365,7 @@ export const useMessageStore = create<MessageStoreState>()(
               return await get().dismissMessage(force);
             }
 
-            // Remove from queue
+            // remove from queue if it was there for some reason
             const wasInQueue = state.queue.some((item) => item.id === id);
             if (wasInQueue) {
               set({
@@ -507,7 +500,6 @@ export const useMessageStore = create<MessageStoreState>()(
           return get().queue.find((item) => item.id === id) || null;
         },
 
-        // Batch operations
         showMessages: async (
           ids: readonly string[],
           overrides?: Partial<MessageOptions>
@@ -584,9 +576,7 @@ export const useMessageStore = create<MessageStoreState>()(
             "repeatFlags" | "preferences"
           > as unknown as MessageStoreState),
         onRehydrateStorage: () => (state) => {
-          // Mark as hydrated
           if (state) {
-            // avoid direct mutation of readonly state
             queueMicrotask(() => {
               try {
                 useMessageStore.setState({ isHydrated: true } as any);
@@ -594,7 +584,7 @@ export const useMessageStore = create<MessageStoreState>()(
             });
           }
 
-          // Lazy load migration
+          // lazy load migration queue
           import("./migration")
             .then((m) => m.queueStorageMigration())
             .catch(console.warn);
@@ -604,7 +594,7 @@ export const useMessageStore = create<MessageStoreState>()(
   )
 );
 
-// Selector hooks for better performance
+// store helper
 export const useActiveMessage = () =>
   useMessageStore((state) => state.activeMessage);
 export const useQueue = () => useMessageStore((state) => state.queue);

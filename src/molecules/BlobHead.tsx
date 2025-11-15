@@ -866,21 +866,19 @@ export function BlobHead({
   };
 
   const createParticles = (x: number, y: number, z: number) => {
-    // Use the new tap effect system
     if ((window as any).createTapParticles) {
       (window as any).createTapParticles(x, y, z, 15);
     }
   };
 
   const onClick = (event: any) => {
-    // Stop event propagation to prevent double counting from activity listeners
     event.stopPropagation();
 
-    // Create particles at the counter text position instead of cursor
+    // create particles at the counter text position
     const COUNTER_POS: [number, number, number] = [0, 0, 0];
     createParticles(COUNTER_POS[0], COUNTER_POS[1], COUNTER_POS[2]);
 
-    // Trigger bounce animation on tap
+    // trigger head bounce animation
     api.start({
       scale: [1.4, 1.4, 1.4],
       config: { tension: 400, friction: 8 },
@@ -891,7 +889,7 @@ export function BlobHead({
       delay: 150,
     });
 
-    // Trigger camera zoom animation on tap
+    // trigger camera zoom in/out
     setCameraZoomAnimation(true);
     onCameraZoomAnimation?.(true);
     setTimeout(() => {
@@ -899,7 +897,7 @@ export function BlobHead({
       onCameraZoomAnimation?.(false);
     }, 300);
 
-    // Trigger both game tap and emotion animation
+    // trigger head click callback for audio or other effects
     onHeadClick();
   };
 
@@ -999,7 +997,6 @@ export function BlobHead({
     [selectedBlobForm, blobFormType]
   );
 
-  // accessory axis configuration - defines which axes each accessory type should move on
   const ACCESSORY_AXIS_CONFIG: Record<
     string,
     {
@@ -1017,10 +1014,8 @@ export function BlobHead({
       yMultiplier: 0.5,
       zMultiplier: 0.7,
     }, // glasses move on both y and z axes
-    // add more accessories here as needed
   };
 
-  // memoize eye position calculation function
   const calculateEyePosition = useCallback(
     (basePosition: [number, number, number]): [number, number, number] => {
       const [baseX, baseY, baseZ] = basePosition;
@@ -1066,7 +1061,7 @@ export function BlobHead({
       (item) => item.detached !== true
     );
 
-    // Render attached items (these move with the head)
+    // attached items (parented to the head)
     const attachedModels = attachedItems.map((item) => {
       if (item.id === "krustyKrabHat")
         return (
@@ -1140,6 +1135,7 @@ export function BlobHead({
 
   const content = (
     <>
+      {/* Global Items */}
       {detachedItems}
 
       <a.group
@@ -1152,7 +1148,7 @@ export function BlobHead({
         rotation={[0, Math.PI, 0]}
         position={[0, 2, 0]}
       >
-        {/* Head - using selected blob form */}
+        {/* Head */}
         <BlobForm
           formType={blobFormType}
           parameters={selectedBlobForm.parameters}
@@ -1172,8 +1168,10 @@ export function BlobHead({
           </mesh>
         </group>
 
+        {/* Bob Items */}
         {attachedItems}
 
+        {/* Dizzy Stars */}
         {emotionState === "dizzy" &&
           dizzyStars.map((star) => {
             if (!star.visible) return null;
