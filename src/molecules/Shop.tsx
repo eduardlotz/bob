@@ -1,11 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
 import { useGameStore, triggerStoreMigration } from "@/store/gameStore";
 import { getWeatherSoundById, WORLD_SOUNDS } from "@/utils/sound/configs";
 import {
-  setWorldEnabled as engineSetWorldEnabled,
-  setTapEnabled as engineSetTapEnabled,
   setCurrentTapSound as engineSetCurrentTapSound,
   stopSoundsById,
   playWorldSound as enginePlayWorldSound,
@@ -51,28 +49,9 @@ type ShopTab =
 
 export function Shop({ isOpen, onClose }: ShopProps) {
   const [activeTab, setActiveTab] = useState<ShopTab>("pages");
-  const {
-    decorations,
-    bobItems,
-    themes,
-    upgrades,
-    routes,
-    taps,
-    calculateOfflineTaps,
-    addTaps,
-  } = useGameStore();
+  const { decorations, bobItems, themes, upgrades, routes, taps } =
+    useGameStore();
   const isDevMode = process.env.NODE_ENV === "development";
-
-  // Calculate and add offline taps when shop opens
-  useEffect(() => {
-    if (isOpen) {
-      const offlineTaps = calculateOfflineTaps();
-      if (offlineTaps > 0) {
-        addTaps(offlineTaps);
-        console.log(`Added ${offlineTaps} offline taps`);
-      }
-    }
-  }, [isOpen, calculateOfflineTaps, addTaps]);
 
   useKeyPress("Escape", () => {
     if (isOpen) {
@@ -92,14 +71,14 @@ export function Shop({ isOpen, onClose }: ShopProps) {
     {
       id: "bob" as ShopTab,
       name: "Bob",
-      icon: CartIcon, // temporary icon, we can change this later
+      icon: CartIcon,
       progress: bobItems.filter((b) => b.purchased).length / bobItems.length,
     },
     {
       id: "themes" as ShopTab,
       name: "Themes",
       icon: ThemeIcon,
-      progress: themes.filter((t) => t.purchased).length / themes.length, // Exclude default,
+      progress: themes.filter((t) => t.purchased).length / themes.length,
     },
     {
       id: "effects" as ShopTab,
@@ -108,7 +87,6 @@ export function Shop({ isOpen, onClose }: ShopProps) {
       progress:
         upgrades.filter((u) => u.category === "tapEffects" && u.unlocked)
           .length / upgrades.filter((u) => u.category === "tapEffects").length,
-      // Exclude default
     },
     {
       id: "environment" as ShopTab,
@@ -125,16 +103,12 @@ export function Shop({ isOpen, onClose }: ShopProps) {
       progress:
         decorations.filter((d) => d.purchased).length / decorations.length,
     },
-    ...(isDevMode
-      ? [
-          {
-            id: "dev" as ShopTab,
-            name: "Debugging",
-            icon: DebuggingIcon,
-            progress: 0, // Dev tab is always 100% complete
-          },
-        ]
-      : []),
+    {
+      id: "dev" as ShopTab,
+      name: "Debugging",
+      icon: DebuggingIcon,
+      progress: 0,
+    },
   ];
 
   return (
@@ -366,14 +340,8 @@ function ThemesView() {
 }
 
 function EffectsView() {
-  const {
-    upgrades,
-    selectTapEffect,
-    purchaseUpgrade,
-    canAfford,
-    soundSystem,
-    setTapEnabled,
-  } = useGameStore();
+  const { upgrades, selectTapEffect, purchaseUpgrade, canAfford } =
+    useGameStore();
   const tapEffects = upgrades.filter((u) => u.category === "tapEffects");
 
   const handleEffectSelect = (effectId: string) => {

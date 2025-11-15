@@ -1746,8 +1746,6 @@ export const useGameStore = create<GameStore>()(
         toggleWorldSoundId: (id: string) => {
           set((state) => {
             const current = state.audioSelections.worldSoundIds || [];
-            console.log("🚀 ~ id:", id);
-            console.log("🚀 ~ current:", current);
             const next = current.includes(id)
               ? current.filter((x) => x !== id)
               : [...current, id];
@@ -2080,18 +2078,15 @@ export const useGameStore = create<GameStore>()(
             } catch {}
           } catch {}
 
-          // Sync per-type enable flags and current selections with engine after rehydrate
           try {
             const s = useGameStore.getState();
             engineSetTapEnabled(!!s.soundSystem.tapEnabled);
             engineSetWorldEnabled(!!s.soundSystem.worldEnabled);
-            // Apply selected primary world music id to engine without forcing start
             const worldId = s.audioSelections.worldMusicId;
             if (worldId) {
               const track = getWorldSoundById(worldId);
               if (track) engineSetWorldMusic(track.filePath, track.id);
             }
-            // Apply currently selected tap effect audio using resolver
             const selectedTap = s.upgrades.find(
               (u) => u.category === "tapEffects" && u.selected
             );

@@ -26,7 +26,6 @@ import {
 } from "@/utils/soundSystem";
 import { useGameStore } from "../store/gameStore";
 import { match } from "ts-pattern";
-import { toast } from "sonner";
 
 // global flag to prevent music reinitialization across hook instances
 let globalMusicInitialized = false;

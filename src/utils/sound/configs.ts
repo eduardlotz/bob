@@ -8,7 +8,6 @@ import {
 import { SoundConfig } from "./types";
 
 export const DEFAULT_SOUND_CONFIGS: SoundConfig[] = [
-  // Defaults only
   {
     id: DEFAULT_TAP_SOUND.id,
     filePath: DEFAULT_TAP_SOUND.filePath,
@@ -21,18 +20,18 @@ export const DEFAULT_SOUND_CONFIGS: SoundConfig[] = [
     },
     stopPrevious: true,
   },
-  {
-    id: DEFAULT_WORLD_MUSIC.id,
-    filePath: DEFAULT_WORLD_MUSIC.filePath,
-    type: "world",
-    volume: 0.5,
-    loop: true,
-    stopPrevious: true,
-    distanceAttenuation: false,
-    detune: { enabled: false, minSemitones: 0, maxSemitones: 0 },
-    fadeIn: 5000,
-    fadeOut: 5000,
-  },
+  // {
+  //   id: DEFAULT_WORLD_MUSIC.id,
+  //   filePath: DEFAULT_WORLD_MUSIC.filePath,
+  //   type: "world",
+  //   volume: 0.5,
+  //   loop: true,
+  //   stopPrevious: true,
+  //   distanceAttenuation: false,
+  //   detune: { enabled: false, minSemitones: 0, maxSemitones: 0 },
+  //   fadeIn: 5000,
+  //   fadeOut: 5000,
+  // },
   {
     id: DEFAULT_TEXT_SOUND.id,
     filePath: DEFAULT_TEXT_SOUND.filePath,
@@ -60,8 +59,6 @@ export const DEFAULT_SOUND_CONFIGS: SoundConfig[] = [
   },
 ];
 
-// Curated library for world music selection at runtime
-// Catalogs for selectable sounds (UI + engine resolution)
 export const WORLD_SOUNDS = [
   {
     id: DEFAULT_WORLD_MUSIC.id,
@@ -69,12 +66,6 @@ export const WORLD_SOUNDS = [
     filePath: DEFAULT_WORLD_MUSIC.filePath,
     icon: "🎵",
   },
-  // {
-  //   id: "custom-world-music-01",
-  //   name: "captainlowie - du fehlst (vip)",
-  //   filePath: "/audio/du-fehlst-vip.wav",
-  //   icon: "🖤",
-  // },
 ];
 
 const EFFECT_SOUNDS = {
@@ -110,7 +101,6 @@ export const TAP_SOUNDS = [
 export const getTapSoundById = (id: string) =>
   TAP_SOUNDS.find((t) => t.id === id) || TAP_SOUNDS[0];
 
-// Mapping from tap effect upgrade ids to default tap audio ids
 export const TAP_EFFECT_TO_DEFAULT_TAP_SOUND: Record<string, string> = {
   tap_effect_default: DEFAULT_TAP_SOUND.id,
   tap_effect_confetti: DEFAULT_TAP_SOUND.id,
@@ -118,7 +108,6 @@ export const TAP_EFFECT_TO_DEFAULT_TAP_SOUND: Record<string, string> = {
   tap_effect_stars: DEFAULT_TAP_SOUND.id,
 };
 
-// Resolve which tap sound to use for a given effect upgrade id, optionally overridden
 export const resolveTapSoundForEffect = (
   effectUpgradeId: string,
   overrideTapAudioId?: string

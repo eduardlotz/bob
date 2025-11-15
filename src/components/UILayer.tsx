@@ -73,6 +73,7 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
     return () => document.removeEventListener("click", handleClick, true);
   }, [sound]);
 
+  // TODO: fix or remove every device motion related
   const handlePermissionRequest = async () => {
     const granted = await requestMotionPermission();
     setPermissionGranted(granted);
