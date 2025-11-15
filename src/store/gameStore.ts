@@ -44,7 +44,8 @@ export enum GAME_STORE_VERSIONS {
   V19 = 19,
   V20 = 20,
   V21 = 21,
-  LATEST = V21,
+  V22 = 22,
+  LATEST = V22,
 }
 
 // Constants
@@ -488,6 +489,30 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
     migratedState.lastSchemaUpdate = new Date();
 
     currentVersion = GAME_STORE_VERSIONS.V21;
+  }
+
+  // Migration V21 → V22: bobForm refactor, price adjustments
+  if (currentVersion < GAME_STORE_VERSIONS.V22) {
+    const updatedUpgrades = initialUpgrades;
+    const existingUpgrades = migratedState.upgrades || [];
+
+    migratedState.upgrades = updatedUpgrades.map((newUpgrade) => {
+      const existingUpgrade = existingUpgrades.find(
+        (upg: Upgrade) => upg.id === newUpgrade.id
+      );
+      if (existingUpgrade) {
+        return {
+          ...newUpgrade,
+          unlocked: existingUpgrade.unlocked,
+          level: existingUpgrade.level,
+        };
+      }
+      return newUpgrade;
+    });
+
+    migratedState.lastSchemaUpdate = new Date();
+
+    currentVersion = GAME_STORE_VERSIONS.V22;
   }
 
   // Set the final version to the latest
