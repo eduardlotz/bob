@@ -394,15 +394,15 @@ function EffectsView() {
   );
 }
 
+// TODO: move background music to different view
+// TODO: replace weather effects with in-game weather + new ui elements + correct sounds
 function EnvironmentView() {
   const {
     upgrades,
     toggleEnvironmentEffect,
     purchaseUpgrade,
     canAfford,
-    soundSystem,
     audioSelections,
-    setWorldEnabled,
     toggleWorldSoundId,
   } = useGameStore();
   const environmentEffects = upgrades.filter(
@@ -421,7 +421,6 @@ function EnvironmentView() {
     const effect = environmentEffects.find((e) => e.id === effectId);
     if (effect && !effect.unlocked && canAfford(effect.baseCost)) {
       purchaseUpgrade(effectId);
-      handleEnvironmentToggle(effectId);
     }
   };
 

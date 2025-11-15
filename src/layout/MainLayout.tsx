@@ -10,14 +10,7 @@ export default function MainLayout({ children }: any) {
   const [windowHeight, setWindowHeight] = useState(0);
   const [sceneLoaded, setSceneLoaded] = useState(false);
 
-  const {
-    permissionGranted,
-    setIsMobile,
-    setEmotionData,
-    showOptions,
-    setShowOptions,
-  } = useAppStore();
-  const { checkRouteUnlocks } = useGameStore();
+  const { permissionGranted, setIsMobile, setEmotionData } = useAppStore();
 
   // Initialize mobile detection and window height
   useEffect(() => {
@@ -27,11 +20,6 @@ export default function MainLayout({ children }: any) {
     setIsMobile(mobile);
     setWindowHeight(window.innerHeight);
   }, [setIsMobile]);
-
-  // Check route unlocks on mount
-  useEffect(() => {
-    checkRouteUnlocks();
-  }, [checkRouteUnlocks]);
 
   return (
     <Container>

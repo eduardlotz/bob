@@ -31,7 +31,18 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
     return () => clearTimeout(timeout);
   }, []);
 
-  // TODO: extend audio system to support different UI sounds
+  // cleanup manual taps every second
+  // TODO: check if this is optimal -> without it the steps/s is not resetting
+  useEffect(() => {
+    const cleanupInterval = setInterval(() => {
+      const gameStore = useGameStore.getState();
+      gameStore.cleanupManualTaps();
+    }, 1000);
+
+    return () => clearInterval(cleanupInterval);
+  }, []);
+
+  // TODO: exten audio system to support different UI sounds
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       const target = e.target as Element | null;
