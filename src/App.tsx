@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { FullScreen, ContentWidth, FillColumn } from "@/layout";
 import MainLayout from "@/layout/MainLayout";
 import { GlobalStyle } from "@/styles/global";
-import { toast, Toaster } from "sonner";
+import { Toaster } from "sonner";
 import styled from "styled-components";
 import { getRouteLabelByPath, ROUTE_PATHS, useAppStore } from "@/store";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -38,10 +38,9 @@ export default function App() {
     setMounted(true);
   }, []);
 
-  // Execute queued migrations after stores are ready
+  // run queued migrations after small delay to ensure all stores are initialized
   useEffect(() => {
     if (mounted) {
-      // Execute migrations after a short delay to ensure all stores are initialized
       const timer = setTimeout(() => {
         executeMigrationsWhenReady().catch(console.error);
       }, 500);

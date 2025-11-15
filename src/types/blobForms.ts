@@ -30,8 +30,8 @@ export interface BlobFormParameters {
 }
 
 export type BlobFormType = "sphere" | "cube";
-// | "pill";
 
+// TODO: fix default value mixup
 // default parameter configurations for each form type
 export const DEFAULT_FORM_PARAMETERS: Record<BlobFormType, BlobFormParameters> =
   {
@@ -46,12 +46,6 @@ export const DEFAULT_FORM_PARAMETERS: Record<BlobFormType, BlobFormParameters> =
       cubeDepth: 1.65,
       cubeRadius: 0.05,
     },
-    // pill: {
-    //   pillRadiusTop: 0.8,
-    //   pillRadiusBottom: 0.8,
-    //   pillHeight: 1.6,
-    //   pillRadialSegments: 32,
-    // },
   };
 
 // parameter ranges for sliders
@@ -76,14 +70,6 @@ export const FORM_PARAMETER_RANGES: Record<
       default: 1,
       label: "Größe",
       description: "Höhe und Breite von Bobs Körper",
-    },
-    sphereWidthSegments: {
-      min: 8,
-      max: 64,
-      step: 8,
-      default: 32,
-      label: "Auflösung",
-      description: "Je höher der Wert, desto glatter wird Bobs Körper.",
     },
   },
   cube: {
@@ -113,47 +99,13 @@ export const FORM_PARAMETER_RANGES: Record<
     },
     cubeRadius: {
       min: 0.05,
-      max: 0.8,
+      max: 0.4,
       step: 0.05,
-      default: 0.2,
+      default: 0.05,
       label: "Abrundung",
       description: "Wie rund die Ecken von Bobs Körper sind",
     },
   },
-  // pill: {
-  //   pillRadiusTop: {
-  //     min: 0.4,
-  //     max: 1.5,
-  //     step: 0.1,
-  //     default: 0.8,
-  //     label: "Top Radius",
-  //     description: "Radius of the top cap",
-  //   },
-  //   pillRadiusBottom: {
-  //     min: 0.4,
-  //     max: 1.5,
-  //     step: 0.1,
-  //     default: 0.8,
-  //     label: "Bottom Radius",
-  //     description: "Radius of the bottom cap",
-  //   },
-  //   pillHeight: {
-  //     min: 0.8,
-  //     max: 2.5,
-  //     step: 0.1,
-  //     default: 1.6,
-  //     label: "Height",
-  //     description: "Height of the pill",
-  //   },
-  //   pillRadialSegments: {
-  //     min: 8,
-  //     max: 64,
-  //     step: 8,
-  //     default: 32,
-  //     label: "Smoothness",
-  //     description: "Cylinder detail level",
-  //   },
-  // },
 };
 
 // initial blob form configurations
@@ -176,15 +128,6 @@ export const INITIAL_BLOB_FORMS: BlobFormConfig[] = [
     selected: false,
     parameters: DEFAULT_FORM_PARAMETERS.cube,
   },
-  // {
-  //   id: "pill",
-  //   name: "Pill",
-  //   description: "Smooth and rounded",
-  //   cost: 1000,
-  //   unlocked: false,
-  //   selected: false,
-  //   parameters: DEFAULT_FORM_PARAMETERS.pill,
-  // },
 ];
 
 // utility functions
