@@ -104,7 +104,7 @@ export const isAudioContextRunning = (): boolean => {
   }
 };
 
-const preloadAudioFiles = async () => {
+const preloadDefaultAudioFiles = async () => {
   const listener = initializeAudioListener();
   if (!listener) return;
 
@@ -139,6 +139,7 @@ const preloadAudioFiles = async () => {
     );
 };
 
+// TODO: check if really needed
 const initializeAudioListener = () => {
   if (audioListener) return audioListener;
 
@@ -254,6 +255,7 @@ const applyVolumeImmediate = (audio: any, volume: number) => {
   } catch {}
 };
 
+// TODO: fix cleanup
 const cleanupSound = (instanceId: string): void => {
   const instance = sounds.get(instanceId);
   if (instance) {
@@ -665,12 +667,12 @@ export const updateWorldSoundVolumes = (isMenuOpen: boolean): void => {
   }
 };
 
-// Initialize sound system early
-export const initializeSoundSystemAsync = async () => {
+// init audio listeners and preload sound
+export const initializeSoundSystem = async () => {
   const listener = initializeAudioListener();
   if (listener) {
     console.log("Three.js sound system initialized successfully");
-    await preloadAudioFiles();
+    await preloadDefaultAudioFiles();
   } else {
     console.error("Failed to initialize Three.js sound system");
   }
@@ -730,28 +732,6 @@ export const setWorldVolume = (volume: number) => {
   } catch {}
 };
 
-export const startBackgroundMusic = async (): Promise<void> => {
-  if (!state.enabled || state.worldEnabled === false) return;
-  await resumeAudioContext();
-  if (isStartingBackgroundMusic) return;
-  // Ensure any prior world instances are fully stopped to avoid layering
-  try {
-    stopBackgroundMusic();
-  } catch {}
-  // If there is no active instance for the selected background id already, start it.
-  isStartingBackgroundMusic = true;
-  try {
-    await playSound(currentWorldMusicId, {
-      loop: true,
-      stopPrevious: false,
-      fadeIn: 5000,
-      fadeOut: 5000,
-    });
-  } finally {
-    isStartingBackgroundMusic = false;
-  }
-};
-
 export const stopBackgroundMusic = (): void => {
   const setForId = instancesBySoundId.get(currentWorldMusicId);
   if (!setForId || setForId.size === 0) return;
@@ -786,18 +766,6 @@ export const toggleMute = (): void => {
 export const setTapEnabled = (enabled: boolean): void => {
   state.tapEnabled = !!enabled;
   if (!state.tapEnabled) stopAllTapSounds();
-};
-
-export const setWorldEnabled = (enabled: boolean): void => {
-  state.worldEnabled = !!enabled;
-  if (!state.worldEnabled) {
-    try {
-      stopBackgroundMusic();
-    } catch {
-      forceStopSoundsByType("world");
-    }
-  } else {
-  }
 };
 
 export const setWorldMusic = (filePath: string, id: string): void => {

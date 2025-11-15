@@ -20,18 +20,18 @@ export const DEFAULT_SOUND_CONFIGS: SoundConfig[] = [
     },
     stopPrevious: true,
   },
-  // {
-  //   id: DEFAULT_WORLD_MUSIC.id,
-  //   filePath: DEFAULT_WORLD_MUSIC.filePath,
-  //   type: "world",
-  //   volume: 0.5,
-  //   loop: true,
-  //   stopPrevious: true,
-  //   distanceAttenuation: false,
-  //   detune: { enabled: false, minSemitones: 0, maxSemitones: 0 },
-  //   fadeIn: 5000,
-  //   fadeOut: 5000,
-  // },
+  {
+    id: DEFAULT_WORLD_MUSIC.id,
+    filePath: DEFAULT_WORLD_MUSIC.filePath,
+    type: "world",
+    volume: 0.5,
+    loop: true,
+    stopPrevious: true,
+    distanceAttenuation: false,
+    detune: { enabled: false, minSemitones: 0, maxSemitones: 0 },
+    fadeIn: 5000,
+    fadeOut: 5000,
+  },
   {
     id: DEFAULT_TEXT_SOUND.id,
     filePath: DEFAULT_TEXT_SOUND.filePath,
@@ -65,12 +65,20 @@ export const WORLD_SOUNDS = [
     name: "Lo-Fi Ambient",
     filePath: DEFAULT_WORLD_MUSIC.filePath,
     icon: "🎵",
+    showInShop: true,
+  },
+  {
+    id: "environment_rain",
+    name: "Rain",
+    filePath: "/audio/rain.wav",
+    icon: "🌧️",
+    showInShopw: true,
   },
 ];
 
 const EFFECT_SOUNDS = {
   rain: {
-    id: "world-rain",
+    id: "environment_rain",
     name: "Rain",
     filePath: "/audio/rain.wav",
     icon: "🌧️",
@@ -82,6 +90,9 @@ export const getWeatherSoundById = (id: string) =>
 
 export const getWorldSoundById = (id: string) =>
   WORLD_SOUNDS.find((t) => t.id === id) || WORLD_SOUNDS[0];
+
+export const tryGetWorldSoundById = (id: string) =>
+  WORLD_SOUNDS.find((t) => t.id === id);
 
 export const TAP_SOUNDS = [
   {
