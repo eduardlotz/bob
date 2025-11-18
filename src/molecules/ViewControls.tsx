@@ -2,13 +2,14 @@ import { useViewStore } from "@/store/viewStore";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { motion, AnimatePresence } from "motion/react";
 import styled from "styled-components";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeftIcon } from "@/icons/arrow";
 
+// TODO: make type safe and use correctly
 const VIEWID_TITLE_MAP = {
   default: "Über mich",
   desk: "Mein Arbeitsplatz",
-  books: "Meine Lieblingsbücher",
+  bookshelf: "Mein Bücherregal",
   computer: "Mein Computer",
 };
 
@@ -17,7 +18,11 @@ export function ViewControls() {
     useViewStore();
   const [isVisible, setIsVisible] = useState(false);
 
-  // show controls when not in default view
+  const currentViewTitle = useMemo(() => {
+    return VIEWID_TITLE_MAP[currentView as keyof typeof VIEWID_TITLE_MAP] || "";
+  }, [isVisible]);
+
+  // show controls when not default view
   useEffect(() => {
     setIsVisible(!isDefaultView());
   }, [currentView, isDefaultView]);
@@ -54,21 +59,20 @@ export function ViewControls() {
           >
             <ArrowLeftIcon />
           </BackButton>
-          {currentView !== "default" && (
-            <CurrentViewChip
-              key="view-controls-current-view-chip"
-              initial={{ scale: 0.9, opacity: 0, filter: "blur(6px)" }}
-              animate={{
-                scale: 1,
-                opacity: 1,
-                filter: "blur(0px)",
-              }}
-              exit={{ scale: 0.9, opacity: 0, filter: "blur(6px)" }}
-              transition={{ duration: 0.5, ease: "circInOut", delay: 0.3 }}
-            >
-              {VIEWID_TITLE_MAP[currentView as keyof typeof VIEWID_TITLE_MAP]}
-            </CurrentViewChip>
-          )}
+          <CurrentViewChip
+            key="view-controls-current-view-chip"
+            initial={{ y: -20, scale: 0.9, opacity: 0, filter: "blur(6px)" }}
+            animate={{
+              y: 0,
+              scale: 1,
+              opacity: 1,
+              filter: "blur(0px)",
+            }}
+            exit={{ y: -120, scale: 0.9, opacity: 0, filter: "blur(6px)" }}
+            transition={{ duration: 0.5, ease: "circInOut", delay: 0.15 }}
+          >
+            {currentViewTitle}
+          </CurrentViewChip>
         </ViewControlsWrapper>
       )}
     </AnimatePresence>

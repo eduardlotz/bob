@@ -1,6 +1,5 @@
 import { Theme } from "./gameStore";
 
-// Fisheye Slider Configuration
 export const FISHEYE_CONFIG = {
   MIN: 0.1,
   MAX: 0.8,
@@ -8,7 +7,6 @@ export const FISHEYE_CONFIG = {
   STEP: 0.05,
 } as const;
 
-// Theme configuration constants
 export const THEME_IDS = {
   DEFAULT: "DEFAULT",
   DARK: "DARK",
@@ -17,7 +15,6 @@ export const THEME_IDS = {
   CUSTOM: "CUSTOM",
 } as const;
 
-// Theme Configuration
 export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
   [THEME_IDS.DEFAULT]: {
     id: THEME_IDS.DEFAULT,

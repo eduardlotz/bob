@@ -11,7 +11,7 @@ export interface Quest {
   reward: number;
   completed: boolean;
   routeId: string;
-  type: "interaction" | "tap" | "time" | "custom";
+  type: "interaction" | "tap" | "time" | "custom"; // TODO: expand store with hooks for diff types
   trigger?: {
     action: string;
     value?: any;
@@ -20,7 +20,7 @@ export interface Quest {
 
 export interface QuestStore {
   quests: Quest[];
-  activeQuests: string[]; // Track active quests for current route
+  activeQuests: string[];
   addQuest: (quest: Quest) => void;
   updateQuestProgress: (questId: string, progress: number) => void;
   completeQuest: (questId: string) => void;
@@ -31,9 +31,7 @@ export interface QuestStore {
   resetAllQuests: () => void;
 }
 
-// Initial quests for each route
 const initialQuests: Quest[] = [
-  // About route quests
   {
     id: "about_quest_1",
     title: "Mein Arbeitsplatz",
@@ -142,8 +140,7 @@ export const useQuestStore = create<QuestStore>()(
           activeQuests: state.activeQuests,
         } as QuestStore),
       onRehydrateStorage: (state) => {
-        console.log("Quest store rehydrated:", state);
-        // Queue migration lazily via dynamic import to avoid circular deps
+        console.log("rehydrating quest store:", state);
         import("./migration")
           .then((m) => m.queueStorageMigration())
           .catch((e) => console.error("Failed to queue storage migration", e));

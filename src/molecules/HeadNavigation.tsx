@@ -5,14 +5,7 @@ import { Html, Float, CameraControls } from "@react-three/drei";
 import { motion } from "motion/react";
 import { MotionVariants } from "@/styles/motion";
 import { BlobHead } from "./BlobHead";
-import {
-  useDeviceOrientation,
-  DeviceOrientation,
-} from "@/hooks/useDeviceOrientation";
-import { calculateAcceleratedRotation, resetCalibration } from "@/utils/math";
 import { useBlobEmotions } from "@/hooks/useBlobEmotions";
-// Magnet functionality removed for now
-// import { useMagneticAttraction, MagneticConfig } from "@/hooks/useMagnets";
 import { toast } from "sonner";
 import styled from "styled-components";
 import { Route, useGameStore } from "@/store/gameStore";
@@ -21,12 +14,13 @@ import { match } from "ts-pattern";
 import { LockIcon } from "@/icons/lock";
 import { useAppStore } from "@/store";
 import { useViewStore } from "@/store/viewStore";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 //#region constants
 export const CAMERA_Y_POSITION = 1;
-export const CAMERA_HEIGHT = 2; // New constant for camera height only
+export const CAMERA_HEIGHT = 2;
 export const CAMERA_FOLLOW_OFFSET = 2.5;
-export const OPTIONS_Y_OFFSET = -1.5; // Y offset for options positioning
+export const OPTIONS_Y_OFFSET = -1.5;
 
 export const VISIBLE_OPTIONS_CAMERA_ZOOM = 8;
 export const HIDDEN_OPTIONS_CAMERA_ZOOM = 4;
@@ -147,12 +141,10 @@ export function HeadNavigation({
     getEmotionIcon: any;
   }) => void;
 }) {
-  // view store integration
   const {
     currentView,
     isDefaultView,
     isBlobView,
-    getCurrentViewConfig,
     isTransitioning,
     resetToDefaultView,
   } = useViewStore();
@@ -175,22 +167,8 @@ export function HeadNavigation({
   }, [showOptions, isDefaultView, resetToDefaultView]);
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const { orientation, acceleration, sensorsAvailable } =
-    useDeviceOrientation();
-  const isMobile =
-    typeof window !== "undefined" && /Mobi|Android/i.test(navigator.userAgent);
 
-  // Auto-calibration state
-  const [lastPermissionState, setLastPermissionState] =
-    useState(permissionGranted);
-  const [lastOrientationValues, setLastOrientationValues] = useState({
-    alpha: 0,
-    beta: 0,
-    gamma: 0,
-  });
-  const [calibrationResetCount, setCalibrationResetCount] = useState(0);
-  const [lastSensorsAvailable, setLastSensorsAvailable] = useState(false);
-  const [calibrationFeedback, setCalibrationFeedback] = useState(false);
+  const isMobile = typeof screen.orientation !== "undefined";
 
   useEffect(() => {
     setWindowSize({
@@ -207,9 +185,9 @@ export function HeadNavigation({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // mouse position tracking on desktop
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
-      // only update mouse position when in blob view mode
       if (isBlobView()) {
         setMousePosition({
           x: event.clientX / window.innerWidth,
@@ -224,11 +202,10 @@ export function HeadNavigation({
   const { isOptionsClosing, closeOptionsWithAnimation } = useAppStore();
   const [cameraZoomAnimation, setCameraZoomAnimation] = useState(false);
 
-  // Blob emotion system
   const { emotionState, tapCount, handleTap, getEmotionIcon, triggerEmotion } =
     useBlobEmotions();
 
-  // listen for global emotion requests (from message system or elsewhere)
+  // listen for global emotion requests
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail as
@@ -246,152 +223,60 @@ export function HeadNavigation({
       );
   }, [triggerEmotion]);
 
-  // Pass emotion data up to parent
   useEffect(() => {
     if (onEmotionUpdate) {
       onEmotionUpdate({ emotionState, tapCount, getEmotionIcon });
     }
   }, [emotionState, tapCount, getEmotionIcon, onEmotionUpdate]);
 
-  const showCalibrationResetToast = () => {
-    toast.custom((id) => <CustomToast>Calibration reset</CustomToast>);
-  };
-
   useFrame(() => {
-    // camera control re-enabled with proper guards
-
     // don't override camera during view transitions
     if (isTransitioning) {
       return;
     }
-
-    // get current view configuration
-    const viewConfig = getCurrentViewConfig();
 
     // if we're in object view mode, let the view store handle the camera
     if (!isBlobView()) {
       return;
     }
 
-    // default view behavior (original logic for home/menu states)
+    // default view behavior (home/menu)
     const baseZoom =
       showOptions && !isOptionsClosing
         ? VISIBLE_OPTIONS_CAMERA_ZOOM
         : HIDDEN_OPTIONS_CAMERA_ZOOM;
     const zoomOffset = cameraZoomAnimation ? 1 : 0;
 
-    // add calibration feedback animation
-    const calibrationOffset = calibrationFeedback
-      ? Math.sin(Date.now() * 0.01) * 0.3
-      : 0;
+    const finalZoom = baseZoom + zoomOffset;
 
-    const finalZoom = baseZoom + zoomOffset + calibrationOffset;
-
-    if (orientation && acceleration && permissionGranted) {
-      const { targetRotX, targetRotY, targetRotZ } =
-        calculateAcceleratedRotation(acceleration, orientation);
+    // only follow cursor on desktop
+    if (!isMobile) {
+      const cursorPos = new THREE.Vector3(
+        (mousePosition.x - 0.5) * CAMERA_FOLLOW_OFFSET * 0.1,
+        -(mousePosition.y - 0.5) * CAMERA_FOLLOW_OFFSET * 0.2,
+        0
+      );
       cameraControlsRef.current?.setLookAt(
         0,
         showOptions && !isOptionsClosing ? 2 : CAMERA_HEIGHT,
         finalZoom,
-        -targetRotX,
-        targetRotY + CAMERA_Y_POSITION,
-        -targetRotZ,
+        cursorPos.x,
+        cursorPos.y + CAMERA_Y_POSITION,
+        cursorPos.z,
         true
       );
     } else {
-      // only follow cursor on desktop, not on mobile
-      if (!isMobile) {
-        // fix camera Y-axis inversion to match head movement
-        const cursorPos = new THREE.Vector3(
-          (mousePosition.x - 0.5) * CAMERA_FOLLOW_OFFSET * 0.1,
-          -(mousePosition.y - 0.5) * CAMERA_FOLLOW_OFFSET * 0.2, // invert Y and center around 0.5
-          0
-        );
-        cameraControlsRef.current?.setLookAt(
-          0,
-          showOptions && !isOptionsClosing ? 2 : CAMERA_HEIGHT,
-          finalZoom,
-          cursorPos.x,
-          cursorPos.y + CAMERA_Y_POSITION,
-          cursorPos.z,
-          true
-        );
-      } else {
-        // on mobile, just set the camera position without following cursor
-        cameraControlsRef.current?.setLookAt(
-          0,
-          showOptions && !isOptionsClosing ? 2 : CAMERA_HEIGHT,
-          finalZoom,
-          0,
-          CAMERA_Y_POSITION,
-          0,
-          true
-        );
-      }
+      cameraControlsRef.current?.setLookAt(
+        0,
+        showOptions && !isOptionsClosing ? 2 : CAMERA_HEIGHT,
+        finalZoom,
+        0,
+        CAMERA_Y_POSITION,
+        0,
+        true
+      );
     }
   });
-
-  // Auto-calibration logic
-  useEffect(() => {
-    // Reset calibration when permission is first granted
-    if (permissionGranted && !lastPermissionState && isMobile) {
-      resetCalibration();
-      setCalibrationResetCount((prev) => prev + 1);
-      showCalibrationResetToast();
-      // Visual feedback
-      setCalibrationFeedback(true);
-      setTimeout(() => setCalibrationFeedback(false), 1000);
-    }
-    setLastPermissionState(permissionGranted);
-  }, [permissionGranted, lastPermissionState, isMobile]);
-
-  // Auto-calibration when sensors first become available
-  useEffect(() => {
-    if (
-      sensorsAvailable &&
-      !lastSensorsAvailable &&
-      isMobile &&
-      permissionGranted
-    ) {
-      resetCalibration();
-      setCalibrationResetCount((prev) => prev + 1);
-      showCalibrationResetToast();
-      // Visual feedback
-      setCalibrationFeedback(true);
-      setTimeout(() => setCalibrationFeedback(false), 1000);
-    }
-    setLastSensorsAvailable(sensorsAvailable);
-  }, [sensorsAvailable, lastSensorsAvailable, isMobile, permissionGranted]);
-
-  // Auto-calibration on significant orientation changes
-  useEffect(() => {
-    if (!permissionGranted || !orientation || !isMobile) return;
-
-    const currentOrientation = {
-      alpha: orientation.alpha ?? 0,
-      beta: orientation.beta ?? 0,
-      gamma: orientation.gamma ?? 0,
-    };
-
-    // Calculate total orientation change
-    const orientationChange =
-      Math.abs(currentOrientation.alpha - lastOrientationValues.alpha) +
-      Math.abs(currentOrientation.beta - lastOrientationValues.beta) +
-      Math.abs(currentOrientation.gamma - lastOrientationValues.gamma);
-
-    // Reset calibration if orientation changes significantly (>30 degrees total)
-    if (orientationChange > 30) {
-      resetCalibration();
-      setCalibrationResetCount((prev) => prev + 1);
-      showCalibrationResetToast();
-      // Visual feedback
-      setCalibrationFeedback(true);
-      setTimeout(() => setCalibrationFeedback(false), 1000);
-    }
-
-    setLastOrientationValues(currentOrientation);
-  }, [orientation, permissionGranted, isMobile, lastOrientationValues]);
 
   return (
     <>
@@ -412,11 +297,7 @@ export function HeadNavigation({
           windowHeight={windowSize.height}
           cameraControlsRef={cameraControlsRef}
           hideOptions={closeOptionsWithAnimation}
-          isMobile={isMobile}
           isClosing={isOptionsClosing}
-          orientation={orientation}
-          acceleration={acceleration}
-          permissionGranted={permissionGranted}
         />
       )}
     </>
@@ -428,85 +309,64 @@ function OptionsGroup({
   windowHeight,
   cameraControlsRef,
   hideOptions,
-  isMobile,
   isClosing,
-  orientation,
-  permissionGranted,
-  acceleration,
 }: {
   windowWidth: number;
   windowHeight: number;
   cameraControlsRef: React.RefObject<CameraControls>;
   hideOptions: () => void;
-  isMobile: boolean;
   isClosing: boolean;
-  orientation: DeviceOrientation;
-  permissionGranted: boolean;
-  acceleration: DeviceMotionEventAcceleration;
 }) {
   const routes = useGameStore((state) => state.routes);
   const count = routes.length;
 
-  // Early return if no routes to improve performance
   if (count === 0) {
     return <group />;
   }
 
-  // Memoize calculations to improve performance
-  const screenCenter = useMemo(
-    () => new THREE.Vector3(-0.5, OPTIONS_Y_OFFSET, 0),
-    []
-  );
+  const screenCenter = new THREE.Vector3(-0.5, OPTIONS_Y_OFFSET, 0);
 
-  // Memoize route positions to prevent unnecessary recalculations
   const routePositions = useMemo(() => {
     if (!routes.length || !windowWidth || !windowHeight) {
       return [];
     }
 
-    // Convert screen dimensions to Three.js world coordinates
     const aspect = windowWidth / windowHeight;
-    const fov = 50; // Assuming default camera FOV, adjust if different
-    const distance = 7; // Assuming camera distance, adjust if different
+    const fov = 50;
+    const distance = 7;
 
-    // Calculate visible world dimensions at camera distance
     const vFOV = (fov * Math.PI) / 180;
     const worldHeight = 2 * Math.tan(vFOV / 2) * distance;
     const worldWidth = worldHeight * aspect;
 
-    // Define safe margins (as percentage of world dimensions)
     const marginPercent = 0.1; // 10% margin from edges
-    const bottomNavPercent = 0.15; // Increased from 15% to 25% to account for navigation + potential panels
+    const bottomNavPercent = 0.15;
 
     const safeWidth = worldWidth * (1 - 2 * marginPercent);
     const safeHeight = worldHeight * (1 - marginPercent - bottomNavPercent);
 
-    // Calculate optimal ellipse radii that fit within safe bounds
     const maxXRadius = safeWidth / 2;
     const maxYRadius = safeHeight / 2;
 
-    // Dynamic radius calculation based on number of items
-    // More items = larger ellipse to prevent overlap
-    const baseRadiusMultiplier = Math.min(1, Math.sqrt(count / 6)); // Scale with item count
+    // radius based on number of items
+    const baseRadiusMultiplier = Math.min(1, Math.sqrt(count / 6));
     const xRadius = maxXRadius * baseRadiusMultiplier;
     const yRadius = maxYRadius * baseRadiusMultiplier;
 
-    // Calculate positions
     return routes.map((route, index) => {
-      // Even distribution around ellipse
+      // calculate angle for even distribution
       const angle = (index / count) * Math.PI * 2;
-      const adjustedAngle = angle - Math.PI / 2; // Start from top
+      const adjustedAngle = angle - Math.PI / 2;
 
-      // Calculate ellipse position
+      // calculate ellipse position
       let x = Math.cos(adjustedAngle) * xRadius;
       let y = Math.sin(adjustedAngle) * yRadius;
 
-      // Apply strict boundary clamping with additional safety margins
+      // safety margin for bottom button and edges
       const halfSafeWidth = safeWidth / 2;
       const halfSafeHeight = safeHeight / 2;
       const bottomOffset = worldHeight * bottomNavPercent;
 
-      // Add extra safety margin for bottom area to account for navigation buttons and potential panels
       const extraBottomMargin = worldHeight * 0.05; // 5% extra margin
       const effectiveBottomOffset = bottomOffset + extraBottomMargin;
 
@@ -516,10 +376,9 @@ function OptionsGroup({
         Math.min(halfSafeHeight, y)
       );
 
-      // Offset by screen center
       return new THREE.Vector3(x, y, 0).add(screenCenter);
     });
-  }, [routes, count, windowWidth, windowHeight, screenCenter]);
+  }, [routes, count, windowWidth, windowHeight]);
 
   return (
     <group>
@@ -557,7 +416,7 @@ function Option({
   isClosing,
 }: {
   initialPosition: THREE.Vector3;
-  route: Route; // Route type from game store
+  route: Route;
   index: number;
   cameraControlsRef: React.RefObject<CameraControls>;
   hideOptions: () => void;
@@ -569,7 +428,7 @@ function Option({
 
   const isActive = currentRoute === route.path;
 
-  // position is fixed for now (magnet functionality disabled)
+  // TODO: add magnetic effect back in
   const position = initialPosition;
 
   const handleOptionClick = () => {
@@ -594,7 +453,6 @@ function Option({
         ));
       })
       .otherwise(() => {
-        // route is not hard locked - notify user about shop
         toast.custom((id) => (
           <CustomToast>Schalte diesen Bereich im Shop frei!</CustomToast>
         ));
@@ -660,7 +518,6 @@ export const CustomToast = styled.div`
   }
 
   // pulse animation for attention
-
   box-shadow: 0 0 0 0px rgba(0, 0, 0, 0.5);
   transition: box-shadow 0.5s ease-in-out;
   animation: pulse 2.5s infinite ease-in-out;
