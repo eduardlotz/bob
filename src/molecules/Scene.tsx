@@ -12,7 +12,7 @@ import { useViewStore } from "../store/viewStore";
 import { ROUTE_PATHS } from "../store/routeConfig";
 import { HeadNavigation } from "./HeadNavigation";
 import { TapCounter } from "./TapCounter";
-import { AboutScene } from "./AboutScene";
+import { AboutScene } from "../routes/AboutScene";
 import { BackgroundPlanet } from "../3d-objects/BackgroundPlanet";
 import { ParticleEffects } from "../3d-objects/ParticleEffects";
 import { match } from "ts-pattern";
@@ -24,6 +24,7 @@ import { attachListenerToCamera } from "@/utils/soundSystem";
 import { MessageBubble } from "@/molecules/MessageBubble";
 import { SceneDecorations } from "@/3d-objects/Decorations";
 
+// TODO: make proper constant file
 export const FLOOR_Y_POSITION = -1.5;
 
 const Scene = ({
@@ -38,7 +39,8 @@ const Scene = ({
   }) => void;
 }) => {
   const cameraControlsRef = useRef<CameraControls>(null!);
-  const { setCameraControlsRef, resetToDefaultView } = useViewStore();
+  const { setCameraControlsRef, resetToDefaultView, isDefaultView } =
+    useViewStore();
   const { upgrades, isPaused } = useGameStore();
 
   const {
@@ -49,27 +51,23 @@ const Scene = ({
     closeOptionsWithAnimation,
   } = useAppStore();
 
-  const isHome = currentRoute === ROUTE_PATHS.HOME;
-
   const autoTapEnabled = useMemo(() => {
     return upgrades.some(
       (upgrade) => upgrade.id === "auto_tap_1" && upgrade.level > 0
     );
   }, [upgrades]);
 
+  // shop items are only visible on home route
+  const isHome = currentRoute === ROUTE_PATHS.HOME;
   const [visible, setVisible] = useState(isHome);
 
-  // initialize view store with camera controls reference
   useEffect(() => {
     setCameraControlsRef(cameraControlsRef);
   }, [setCameraControlsRef]);
 
-  // reset to default view when navigating to home (only if not already in default view)
   useEffect(() => {
     if (isHome) {
-      // only reset if we're not already in default view to avoid unnecessary transitions
       setTimeout(() => {
-        const { isDefaultView } = useViewStore.getState();
         if (!isDefaultView()) {
           resetToDefaultView();
         }
@@ -77,16 +75,14 @@ const Scene = ({
     }
   }, [isHome, resetToDefaultView]);
 
-  // Handle auto-tap - continue on all routes since shop is accessible everywhere
+  // handle auto-tap on all routes
   useEffect(() => {
-    // Always start auto-tap regardless of route
     if (autoTapEnabled) {
       startAutoTap();
       return () => stopAutoTap();
     }
   }, [currentRoute]);
 
-  // Pause/resume auto-tap based on game state
   // dev only
   useEffect(() => {
     if (isPaused) {
@@ -154,13 +150,13 @@ const Scene = ({
             <directionalLight intensity={1.2} position={[2, 4, 5]} />
             <Environment preset="city" />
             <BackgroundPlanet />
-            {/* TODO: add back in as upgrade */}
             <HeadNavigation
               showOptions={showOptions || false}
               setShowOptions={setShowOptions || (() => {})}
-              cameraControlsRef={cameraControlsRef} // pass down for portal click
+              cameraControlsRef={cameraControlsRef}
               permissionGranted={permissionGranted}
               onEmotionUpdate={(data) => {
+                // TODO: check if this true
                 // Only update emotion state on home route to prevent auto-tap effects
                 if (currentRoute === ROUTE_PATHS.HOME) {
                   setEmotionData(data.emotionState);

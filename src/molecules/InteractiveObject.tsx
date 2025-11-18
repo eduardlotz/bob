@@ -6,24 +6,15 @@ import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { a } from "@react-spring/three";
 import { match } from "ts-pattern";
 
-// interaction mode types
 export type InteractionMode = "dialog" | "view";
 
 interface InteractiveObjectProps {
   questAction: string;
   questValue?: number;
   children: React.ReactNode;
-
-  // interaction mode configuration
   mode: InteractionMode;
-
-  // dialog mode props
   onDialogOpen?: () => void;
-
-  // view mode props
   viewId?: string;
-
-  // optional hover effects
   showOutline?: boolean;
 }
 
@@ -43,18 +34,15 @@ export function InteractiveObject({
     useViewStore();
   const { playUISound } = useSoundSystem();
 
-  // check if this object's view is currently active
+  // go back to normal view if view is currently active
   const isViewActive = mode === "view" && currentView === viewId;
 
   const handleClick = async (e: any) => {
     e.stopPropagation();
-    // play ui sound for interactive objects
     playUISound("ui-tap-2");
 
-    // trigger quest system
     triggerQuest(questAction, questValue);
 
-    // handle interaction based on mode
     await match(mode)
       .with("dialog", async () => {
         onDialogOpen?.();
