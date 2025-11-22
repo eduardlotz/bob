@@ -357,6 +357,7 @@ function EffectsView() {
     const effect = tapEffects.find((e) => e.id === effectId);
     if (effect && !effect.unlocked && canAfford(effect.baseCost)) {
       purchaseUpgrade(effectId);
+      selectTapEffect(effectId);
     }
   };
 

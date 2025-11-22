@@ -1,10 +1,14 @@
-import React, { useRef } from "react";
+import React, { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useGameStore } from "@/store/gameStore";
-import { Mesh, MathUtils } from "three";
+import { Mesh, MeshBasicMaterial, PlaneGeometry } from "three";
 import { TreeModel } from "./models/tree";
 
-// 2D Decoration Component
+const sharedStarGeo = new PlaneGeometry(1, 1);
+const sharedStarMat = new MeshBasicMaterial({
+  transparent: true,
+  opacity: 0.8,
+});
 export function Decoration2D({
   type,
   position,
@@ -19,6 +23,12 @@ export function Decoration2D({
   color: string;
 }) {
   const meshRef = useRef<Mesh>(null);
+
+  const material = useMemo(() => {
+    const m = sharedStarMat.clone();
+    m.color.set(color);
+    return m;
+  }, [color]);
 
   useFrame((state) => {
     if (meshRef.current) {
@@ -35,10 +45,12 @@ export function Decoration2D({
     switch (type) {
       case "star_2d":
         return (
-          <mesh ref={meshRef} position={position}>
-            <planeGeometry args={[1, 1]} />
-            <meshBasicMaterial color={color} transparent opacity={0.8} />
-          </mesh>
+          <mesh
+            ref={meshRef}
+            geometry={sharedStarGeo}
+            material={material}
+            position={position}
+          />
         );
       case "heart_2d":
         return (

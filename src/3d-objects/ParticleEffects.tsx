@@ -1,8 +1,16 @@
-import React, { useRef, useEffect, useMemo } from "react";
+import React, { useRef, useEffect, useMemo, useLayoutEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Sparkles } from "@react-three/drei";
 import { useGameStore } from "@/store/gameStore";
 import * as THREE from "three";
+import {
+  Object3D,
+  Color,
+  InstancedMesh,
+  DynamicDrawUsage,
+  BufferGeometry,
+  Material,
+} from "three";
 
 // TODO: check performance impact
 // calculate all shapes geometries once and reuse
@@ -58,8 +66,8 @@ const SHARED_GEOMETRIES = {
   star: (() => {
     const shape = new THREE.Shape();
     const spikes = 5;
-    const outerRadius = 0.5;
-    const innerRadius = 0.2;
+    const outerRadius = 0.9;
+    const innerRadius = 0.4;
     const step = (Math.PI * 2) / (spikes * 2);
     shape.moveTo(outerRadius, 0);
     for (let i = 1; i < spikes * 2; i++) {
@@ -69,7 +77,7 @@ const SHARED_GEOMETRIES = {
     shape.closePath();
     return new THREE.ShapeGeometry(shape);
   })(),
-  sphere: new THREE.SphereGeometry(0.1, 8, 8),
+  sphere: new THREE.SphereGeometry(0.18, 8, 8),
   plane: new THREE.PlaneGeometry(1, 1),
   cylinder: new THREE.CylinderGeometry(0.02, 0.02, 0.3),
   cloudSphere: new THREE.SphereGeometry(1, 8, 8),
@@ -317,6 +325,86 @@ export function CloudEffect() {
   );
 }
 
+const MAX_COUNT = 200;
+const GRAVITY = -10;
+const DRAG = 0.95;
+const PARTICLES_Y_OFFSET = 1;
+
+// TODO: move colorConfigs to a separate file + fix color pick logic
+const colorConfigs = {
+  confetti: [
+    "#FF6B6B",
+    "#4ECDC4",
+    "#45B7D1",
+    "#96CEB4",
+    "#FFEAA7",
+    "#DDA0DD",
+    "#98D8C8",
+    "#FFB6C1",
+    "#FFD93D",
+    "#6BCF7F",
+    "#4D96FF",
+    "#FF9A8B",
+    "#FF6B9D",
+    "#4ECDC4",
+    "#45B7D1",
+    "#96CEB4",
+    "#FFEAA7",
+    "#DDA0DD",
+    "#98D8C8",
+    "#FFB6C1",
+    "#FFD93D",
+    "#6BCF7F",
+    "#4D96FF",
+    "#FF9A8B",
+    "#FF6B6B",
+    "#4ECDC4",
+    "#45B7D1",
+    "#96CEB4",
+    "#FFEAA7",
+    "#DDA0DD",
+  ],
+  hearts: [
+    "#FF69B4",
+    "#FF1493",
+    "#DC143C",
+    "#FF007F",
+    "#FF69B4",
+    "#FF1493",
+    "#FF69B4",
+    "#FF1493",
+    "#DC143C",
+    "#FF007F",
+    "#FF69B4",
+    "#FF1493",
+    "#FF69B4",
+    "#FF1493",
+    "#DC143C",
+    "#FF007F",
+    "#FF69B4",
+    "#FF1493",
+  ],
+  stars: [
+    "#fff700",
+    "#FFD700",
+    "#FFD700",
+    "#f2ff00",
+    "#FFD700",
+    "#f7ef1f",
+    "#FFA500",
+    "#f2ff00",
+    "#FFD700",
+    "#FFA500",
+    "#FFD700",
+    "#FFA500",
+    "#ffc400",
+    "#FFD700",
+    "#FFA500",
+    "#d9ff00",
+  ],
+  default: ["#ffffff", "#cccccc", "#212121", "#000000", "#297AFF"],
+};
+
 export function TapEffect() {
   const { upgrades } = useGameStore();
 
@@ -324,267 +412,221 @@ export function TapEffect() {
     (u) => u.category === "tapEffects" && u.selected
   );
 
-  const tapEffectType =
-    selectedTapEffect?.effect.value === 1
-      ? "confetti"
-      : selectedTapEffect?.effect.value === 2
-      ? "hearts"
-      : selectedTapEffect?.effect.value === 3
-      ? "stars"
-      : "default";
+  const effectValue = selectedTapEffect?.effect.value ?? 0;
 
-  const [tapParticles, setTapParticles] = React.useState<
-    Array<{
-      id: number;
-      position: [number, number, number];
-      velocity: [number, number, number];
-      life: number;
-      maxLife: number;
-      color: string;
-      rotation: [number, number, number];
-      rotationSpeed: [number, number, number];
-      scale: number;
-      particleType: "default" | "confetti" | "hearts" | "stars";
-    }>
-  >([]);
+  let activeConfig: {
+    geo: BufferGeometry;
+    mat: Material;
+    colors: string[];
+  } = {
+    geo: SHARED_GEOMETRIES.sphere,
+    mat: SHARED_MATERIALS.sphere,
+    colors: colorConfigs.default,
+  };
 
-  const particleIdCounter = useRef(0);
+  if (effectValue === 1) {
+    // Confetti
+    activeConfig = {
+      geo: SHARED_GEOMETRIES.plane,
+      mat: SHARED_MATERIALS.confetti,
+      colors: colorConfigs.confetti,
+    };
+  } else if (effectValue === 2) {
+    // Hearts
+    activeConfig = {
+      geo: SHARED_GEOMETRIES.heart,
+      mat: SHARED_MATERIALS.heart,
+      colors: colorConfigs.hearts,
+    };
+  } else if (effectValue === 3) {
+    // Stars
+    activeConfig = {
+      geo: SHARED_GEOMETRIES.star,
+      mat: SHARED_MATERIALS.star,
+      colors: colorConfigs.stars,
+    };
+  }
 
-  // TODO: move colorConfigs to a separate file + fix color pick logic
-  const colorConfigs = useMemo(
-    () => ({
-      confetti: [
-        "#FF6B6B",
-        "#4ECDC4",
-        "#45B7D1",
-        "#96CEB4",
-        "#FFEAA7",
-        "#DDA0DD",
-        "#98D8C8",
-        "#FFB6C1",
-        "#FFD93D",
-        "#6BCF7F",
-        "#4D96FF",
-        "#FF9A8B",
-        "#FF6B9D",
-        "#4ECDC4",
-        "#45B7D1",
-        "#96CEB4",
-        "#FFEAA7",
-        "#DDA0DD",
-        "#98D8C8",
-        "#FFB6C1",
-        "#FFD93D",
-        "#6BCF7F",
-        "#4D96FF",
-        "#FF9A8B",
-        "#FF6B6B",
-        "#4ECDC4",
-        "#45B7D1",
-        "#96CEB4",
-        "#FFEAA7",
-        "#DDA0DD",
-      ],
-      hearts: [
-        "#FF69B4",
-        "#FF1493",
-        "#DC143C",
-        "#FF007F",
-        "#FF69B4",
-        "#FF1493",
-        "#FF69B4",
-        "#FF1493",
-        "#DC143C",
-        "#FF007F",
-        "#FF69B4",
-        "#FF1493",
-        "#FF69B4",
-        "#FF1493",
-        "#DC143C",
-        "#FF007F",
-        "#FF69B4",
-        "#FF1493",
-      ],
-      stars: [
-        "#FFD700",
-        "#FFA500",
-        "#FF8C00",
-        "#FFD700",
-        "#FFA500",
-        "#FF8C00",
-        "#FFD700",
-        "#FFA500",
-        "#FF8C00",
-        "#FFD700",
-        "#FFA500",
-        "#FF8C00",
-        "#FFD700",
-        "#FFA500",
-        "#FF8C00",
-        "#FFD700",
-        "#FFA500",
-        "#FF8C00",
-      ],
-      default: [
-        "#ffffff",
-        "#cccccc",
-        "#999999",
-        "#666666",
-        "#333333",
-        "#000000",
-        "#ffffff",
-        "#cccccc",
-        "#999999",
-        "#666666",
-        "#333333",
-        "#000000",
-        "#ffffff",
-        "#cccccc",
-        "#999999",
-        "#666666",
-        "#333333",
-        "#000000",
-      ],
-    }),
-    []
-  );
+  const meshRef = useRef<InstancedMesh>(null);
+  const dummy = useMemo(() => new Object3D(), []);
 
-  const createTapParticles = React.useCallback(
-    (x: number, y: number, z: number, count: number = TAP_PARTICLE_COUNT) => {
-      const colors = colorConfigs[tapEffectType as keyof typeof colorConfigs];
-      const particleType = tapEffectType as
-        | "default"
-        | "confetti"
-        | "hearts"
-        | "stars";
+  // Create the object pool
+  const particles = useMemo(() => {
+    return new Array(MAX_COUNT).fill(0).map(() => ({
+      life: 0,
+      x: 0,
+      y: 0,
+      z: 0,
+      vx: 0,
+      vy: 0,
+      vz: 0,
+      rx: 0,
+      ry: 0,
+      rz: 0,
+      rvx: 0,
+      rvy: 0,
+      rvz: 0,
+      scale: 1,
+      color: new Color(),
+    }));
+  }, []);
 
-      setTapParticles((prev) => {
-        // remove oldest particles first if max reached
-        const currentParticles =
-          prev.length >= MAX_TAP_PARTICLES
-            ? prev.slice(-(MAX_TAP_PARTICLES - count))
-            : prev;
+  const spawn = (x: number, y: number, z: number, count: number) => {
+    if (!meshRef.current) return;
 
-        const newParticles = Array.from({ length: count }, (_, i) => {
-          // calculate random vector in any direction
-          const theta = Math.random() * Math.PI * 2;
-          const phi = Math.acos(Math.random() * 2 - 1);
-          const speed = 0.2 + Math.random() * 0.4;
+    let spawned = 0;
+    for (let i = 0; i < MAX_COUNT; i++) {
+      if (spawned >= count) break;
 
-          // pick a random color from effect config
-          const colorIndex = Math.floor(Math.random() * colors.length);
-          const color = colors[colorIndex];
+      if (particles[i].life <= 0) {
+        const p = particles[i];
+        p.life = 1.0 + Math.random() * 0.5;
+        p.x = x;
+        p.y = y;
+        p.z = z;
 
-          // calculate velocity
-          const vx = Math.sin(phi) * Math.cos(theta) * speed;
-          const vy = Math.cos(phi) * speed;
-          const vz = Math.sin(phi) * Math.sin(theta) * speed;
+        // Random spherical direction (maybe used for future effect)
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(Math.random() * 2 - 1);
 
-          // calculate random rotation speeds
-          const rotationSpeedX = (Math.random() - 0.5) * 10;
-          const rotationSpeedY = (Math.random() - 0.5) * 10;
-          const rotationSpeedZ = (Math.random() - 0.5) * 10;
+        // const speed = 0.2 + Math.random() * 0.4;
+        // p.vx = Math.sin(phi) * Math.cos(theta) * speed * 20;
+        // p.vy = Math.cos(phi) * speed * 20;
+        // p.vz = Math.sin(phi) * Math.sin(theta) * speed * 20;
 
-          return {
-            id: particleIdCounter.current++,
-            position: [x, y, z] as [number, number, number],
-            velocity: [vx, vy, vz] as [number, number, number],
-            life: 2.0,
-            maxLife: 2.0,
-            color,
-            rotation: [0, 0, 0] as [number, number, number],
-            rotationSpeed: [rotationSpeedX, rotationSpeedY, rotationSpeedZ] as [
-              number,
-              number,
-              number
-            ],
-            scale: (0.8 + Math.random() * 0.4) * 0.5, // Decreased by 0.5
-            particleType,
-          };
-        });
+        // TODO: fix using correct maps and stuff
+        if (effectValue <= 1) {
+          // Spread factor: (0.2 is narrow, 2 is wide)
+          const spread = 2;
 
-        return [...currentParticles, ...newParticles];
-      });
-    },
-    [tapEffectType, colorConfigs]
-  );
+          // Explosive force
+          const force = 12 + Math.random() * 10;
 
-  // Update particles in animation frame
-  useFrame((state, delta) => {
-    setTapParticles((prev) =>
-      prev
-        .map((particle) => ({
-          ...particle,
-          position: [
-            particle.position[0] + particle.velocity[0] * delta * 60,
-            particle.position[1] + particle.velocity[1] * delta * 60,
-            particle.position[2] + particle.velocity[2] * delta * 60,
-          ] as [number, number, number],
-          rotation: [
-            particle.rotation[0] + particle.rotationSpeed[0] * delta,
-            particle.rotation[1] + particle.rotationSpeed[1] * delta,
-            particle.rotation[2] + particle.rotationSpeed[2] * delta,
-          ] as [number, number, number],
-          life: particle.life - delta,
-        }))
-        .filter((particle) => particle.life > 0)
-    );
-  });
+          p.y = y + PARTICLES_Y_OFFSET;
 
-  // TODO: check if exposing is necessary (currently only used for auto-tap particles)
+          // p.vx = (Math.random() - 0.5) * force * spread;
+          p.vy = force * 0.8 + Math.random() * force * 0.2;
+          p.vz = (Math.random() - 0.5) * force * spread;
+
+          p.vx = Math.sin(phi) * Math.cos(theta) * force * spread;
+          // p.vy = Math.cos(phi) * speed * 20;
+          // p.vz = Math.sin(phi) * Math.sin(theta) * speed * 20;
+
+          // Apply extra rotation for confetti
+          p.rvx = (Math.random() - 0.5) * 30;
+          p.rvy = (Math.random() - 0.5) * 30;
+          p.rvz = (Math.random() - 0.5) * 30;
+        } else {
+          // more narrow spred
+          const spread = 2;
+
+          // less explosive force
+          const force = 8 + Math.random() * 10;
+
+          p.y = y + PARTICLES_Y_OFFSET - 0.15;
+
+          p.vx = (Math.random() - 0.5) * force * spread;
+          p.vy = force * 0.8 + Math.random() * force * 0.2;
+          p.vz = (Math.random() - 0.5) * force * spread;
+
+          // less rotation
+          p.rvx = (Math.random() - 0.5) * 10;
+          p.rvy = (Math.random() - 0.5) * 10;
+          p.rvz = (Math.random() - 0.5) * 10;
+        }
+
+        p.scale = (0.8 + Math.random() * 0.4) * 0.5;
+
+        const colorHex =
+          activeConfig.colors[
+            Math.floor(Math.random() * activeConfig.colors.length)
+          ];
+        p.color.set(colorHex);
+
+        meshRef.current.setColorAt(i, p.color);
+        meshRef.current.instanceColor!.needsUpdate = true;
+
+        spawned++;
+      }
+    }
+  };
+
   useEffect(() => {
-    (window as any).createTapParticles = createTapParticles;
+    (window as any).createTapParticles = spawn;
     return () => {
       delete (window as any).createTapParticles;
     };
-  }, [createTapParticles]);
+  }, [activeConfig]);
+
+  useLayoutEffect(() => {
+    if (meshRef.current) {
+      // prepare GPU for position updates
+      meshRef.current.instanceMatrix.setUsage(DynamicDrawUsage);
+
+      // init color Buffer
+      // fixes potential crashes when calling setColorAt
+      if (!meshRef.current.instanceColor) {
+        meshRef.current.instanceColor = new THREE.InstancedBufferAttribute(
+          new Float32Array(MAX_COUNT * 3),
+          3
+        );
+      }
+    }
+  }, []);
+
+  useFrame((state, delta) => {
+    if (!meshRef.current) return;
+
+    const d = Math.min(delta, 0.1);
+    let activeParticles = 0;
+
+    for (let i = 0; i < MAX_COUNT; i++) {
+      const p = particles[i];
+
+      if (p.life > 0) {
+        p.life -= d;
+        p.vy += GRAVITY * d;
+        p.x += p.vx * d;
+        p.y += p.vy * d;
+        p.z += p.vz * d;
+
+        p.vx *= DRAG;
+        p.vy *= DRAG;
+        p.vz *= DRAG;
+
+        p.rx += p.rvx * d;
+        p.ry += p.rvy * d;
+        p.rz += p.rvz * d;
+
+        const lifeRatio = p.life / 1.5;
+        const currentScale = p.scale * Math.max(0, lifeRatio);
+
+        dummy.position.set(p.x, p.y, p.z);
+        dummy.rotation.set(p.rx, p.ry, p.rz);
+        dummy.scale.set(currentScale, currentScale, currentScale);
+        dummy.updateMatrix();
+
+        meshRef.current.setMatrixAt(i, dummy.matrix);
+        activeParticles++;
+      } else {
+        meshRef.current.setMatrixAt(
+          i,
+          new Object3D().matrix.scale(new Object3D().scale.set(0, 0, 0))
+        );
+      }
+    }
+
+    if (activeParticles > 0 || meshRef.current.count > 0) {
+      meshRef.current.instanceMatrix.needsUpdate = true;
+    }
+  });
 
   return (
-    <group>
-      {tapParticles.map((particle) => {
-        const lifeRatio = Math.max(0, particle.life / particle.maxLife);
-        const scale = particle.scale * (0.3 + 0.7 * lifeRatio);
-
-        return (
-          <group
-            key={particle.id}
-            position={particle.position}
-            rotation={particle.rotation}
-            scale={[scale, scale, scale]}
-          >
-            {particle.particleType === "confetti" ? (
-              <mesh
-                geometry={SHARED_GEOMETRIES.plane}
-                material={SHARED_MATERIALS.confetti}
-                material-color={particle.color}
-                material-opacity={lifeRatio}
-              />
-            ) : particle.particleType === "hearts" ? (
-              <mesh
-                geometry={SHARED_GEOMETRIES.heart}
-                material={SHARED_MATERIALS.heart}
-                material-color={particle.color}
-                material-opacity={lifeRatio}
-              />
-            ) : particle.particleType === "stars" ? (
-              <mesh
-                geometry={SHARED_GEOMETRIES.star}
-                material={SHARED_MATERIALS.star}
-                material-color={particle.color}
-                material-opacity={lifeRatio}
-              />
-            ) : (
-              <mesh
-                geometry={SHARED_GEOMETRIES.sphere}
-                material={SHARED_MATERIALS.sphere}
-                material-color={particle.color}
-                material-opacity={lifeRatio}
-              />
-            )}
-          </group>
-        );
-      })}
-    </group>
+    <instancedMesh
+      ref={meshRef}
+      args={[activeConfig.geo, activeConfig.mat, MAX_COUNT]}
+      frustumCulled={false}
+    />
   );
 }
 
