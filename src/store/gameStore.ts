@@ -1140,10 +1140,7 @@ export const useGameStore = create<GameStore>()(
             };
           });
 
-          // update cache after state change
-          setTimeout(() => {
-            get().recalculateStats();
-          }, 0);
+          get().recalculateStats();
         },
 
         purchaseDecoration: (decorationId: string) => {
@@ -1439,26 +1436,25 @@ export const useGameStore = create<GameStore>()(
               return state;
             }
 
-            // Deselect all tap effects and select the chosen one
             const updatedUpgrades = state.upgrades.map((u) => ({
               ...u,
               selected:
                 u.category === "tapEffects" ? u.id === upgradeId : u.selected,
             }));
 
-            // Resolve tap audio from selected effect id with optional override; fall back to defaults
-            try {
-              const overrideId = get().audioSelections.tapEffectAudioId;
-              const cfg = resolveTapSoundForEffect(upgradeId, overrideId);
-              if (cfg && cfg.id) {
-                if (cfg.filePath)
-                  engineSetCurrentTapSound(cfg.id, cfg.filePath);
-                else engineSetCurrentTapSound(cfg.id);
-              }
-            } catch (e) {
-              console.error("Error setting current tap sound", e);
-              toast.error("Error setting current tap sound");
-            }
+            // fix individual tap sound settings
+            // try {
+            //   const overrideId = get().audioSelections.tapEffectAudioId;
+            //   const cfg = resolveTapSoundForEffect(upgradeId, overrideId);
+            //   if (cfg && cfg.id) {
+            //     if (cfg.filePath)
+            //       engineSetCurrentTapSound(cfg.id, cfg.filePath);
+            //     else engineSetCurrentTapSound(cfg.id);
+            //   }
+            // } catch (e) {
+            //   console.error("Error setting current tap sound", e);
+            //   toast.error("Error setting current tap sound");
+            // }
 
             return {
               ...state,
@@ -1489,9 +1485,6 @@ export const useGameStore = create<GameStore>()(
           });
         },
 
-        // 1. THE RECALCULATOR
-        // CRITICAL: Call this function inside your 'purchaseUpgrade' action!
-        // This replaces the "Hash" check. We only do math when we actually buy something.
         recalculateStats: () => {
           const state = get();
 
@@ -1768,11 +1761,10 @@ export const useGameStore = create<GameStore>()(
             },
           }));
         },
-        // 2. GETTERS (Now instant, O(1) complexity)
         getTotalTapsPerSecond: () => get()._cachedAutoTapRate,
         getTotalTapMultiplier: () => get()._cachedTapMultiplier,
 
-        // Legacy support if you need them elsewhere
+        // TODO: check if needed or delete
         getAutoTapRate: () => get()._cachedAutoTapRate,
         getTotalTapMultiplierUncached: () => get()._cachedTapMultiplier,
 
@@ -2064,34 +2056,23 @@ export const startAutoTap = () => {
 
     // Use the cached value directly
     const tapsPerSecond = store._cachedAutoTapRate;
+    console.log("🚀 ~ startAutoTap ~ tapsPerSecond:", tapsPerSecond);
 
     if (tapsPerSecond > 0) {
-      // 1. Add Gold
       store.addAutoTaps(tapsPerSecond);
 
-      // 2. Trigger Particles (Optimized)
       if ((window as any).createTapParticles) {
-        // Don't spawn more than 5 particle bursts per second to save GPU
-        // If they have 1000 auto-taps, just make the burst bigger, not more frequent
-        const particleCount = Math.min(tapsPerSecond, 5);
+        const particleCount = Math.min(tapsPerSecond * 5, 25);
 
-        // Just one call, no setTimeout loop needed
-        (window as any).createTapParticles(
-          0,
-          0,
-          0, // Position (Center)
-          particleCount // Count
-        );
+        (window as any).createTapParticles(0, 0, 0, particleCount);
       }
     }
 
-    // 3. Maintenance
     store.cleanupManualTaps();
 
-    // 4. Route Check (Moved from click handler)
-    // Checking routes 1x per second is much better than 10x per second
+    // TODO: maybe optimze even further by refactoring all checks depending on prio
     store.checkRouteUnlocks?.();
-  }, 1000); // Run every 1 second
+  }, 1000);
 };
 
 export const stopAutoTap = () => {

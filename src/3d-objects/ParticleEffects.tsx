@@ -66,8 +66,8 @@ const SHARED_GEOMETRIES = {
   star: (() => {
     const shape = new THREE.Shape();
     const spikes = 5;
-    const outerRadius = 0.5;
-    const innerRadius = 0.2;
+    const outerRadius = 0.9;
+    const innerRadius = 0.4;
     const step = (Math.PI * 2) / (spikes * 2);
     shape.moveTo(outerRadius, 0);
     for (let i = 1; i < spikes * 2; i++) {
@@ -77,7 +77,7 @@ const SHARED_GEOMETRIES = {
     shape.closePath();
     return new THREE.ShapeGeometry(shape);
   })(),
-  sphere: new THREE.SphereGeometry(0.1, 8, 8),
+  sphere: new THREE.SphereGeometry(0.18, 8, 8),
   plane: new THREE.PlaneGeometry(1, 1),
   cylinder: new THREE.CylinderGeometry(0.02, 0.02, 0.3),
   cloudSphere: new THREE.SphereGeometry(1, 8, 8),
@@ -330,6 +330,81 @@ const GRAVITY = -10;
 const DRAG = 0.95;
 const PARTICLES_Y_OFFSET = 1;
 
+// TODO: move colorConfigs to a separate file + fix color pick logic
+const colorConfigs = {
+  confetti: [
+    "#FF6B6B",
+    "#4ECDC4",
+    "#45B7D1",
+    "#96CEB4",
+    "#FFEAA7",
+    "#DDA0DD",
+    "#98D8C8",
+    "#FFB6C1",
+    "#FFD93D",
+    "#6BCF7F",
+    "#4D96FF",
+    "#FF9A8B",
+    "#FF6B9D",
+    "#4ECDC4",
+    "#45B7D1",
+    "#96CEB4",
+    "#FFEAA7",
+    "#DDA0DD",
+    "#98D8C8",
+    "#FFB6C1",
+    "#FFD93D",
+    "#6BCF7F",
+    "#4D96FF",
+    "#FF9A8B",
+    "#FF6B6B",
+    "#4ECDC4",
+    "#45B7D1",
+    "#96CEB4",
+    "#FFEAA7",
+    "#DDA0DD",
+  ],
+  hearts: [
+    "#FF69B4",
+    "#FF1493",
+    "#DC143C",
+    "#FF007F",
+    "#FF69B4",
+    "#FF1493",
+    "#FF69B4",
+    "#FF1493",
+    "#DC143C",
+    "#FF007F",
+    "#FF69B4",
+    "#FF1493",
+    "#FF69B4",
+    "#FF1493",
+    "#DC143C",
+    "#FF007F",
+    "#FF69B4",
+    "#FF1493",
+  ],
+  stars: [
+    "#fff700",
+    "#FFD700",
+    "#FFD700",
+    "#f2ff00",
+    "#FFD700",
+    "#f7ef1f",
+    "#FFA500",
+    "#f2ff00",
+    "#FFD700",
+    "#FFA500",
+    "#FFD700",
+    "#FFA500",
+    "#ffc400",
+    "#FFD700",
+    "#FFA500",
+    "#d9ff00",
+  ],
+  default: ["#ffffff", "#cccccc", "#212121", "#000000", "#297AFF"],
+};
+
 export function TapEffect() {
   const { upgrades } = useGameStore();
 
@@ -346,7 +421,7 @@ export function TapEffect() {
   } = {
     geo: SHARED_GEOMETRIES.sphere,
     mat: SHARED_MATERIALS.sphere,
-    colors: ["#ffffff", "#cccccc", "#212121", "#000000", "#297AFF"], // Default colors
+    colors: colorConfigs.default,
   };
 
   if (effectValue === 1) {
@@ -354,22 +429,21 @@ export function TapEffect() {
     activeConfig = {
       geo: SHARED_GEOMETRIES.plane,
       mat: SHARED_MATERIALS.confetti,
-      // You can copy your full color array here or import it
-      colors: ["#FF6B6B", "#4ECDC4", "#45B7D1", "#FFEAA7", "#FFD93D"],
+      colors: colorConfigs.confetti,
     };
   } else if (effectValue === 2) {
     // Hearts
     activeConfig = {
       geo: SHARED_GEOMETRIES.heart,
       mat: SHARED_MATERIALS.heart,
-      colors: ["#FF69B4", "#FF1493", "#DC143C"],
+      colors: colorConfigs.hearts,
     };
   } else if (effectValue === 3) {
     // Stars
     activeConfig = {
       geo: SHARED_GEOMETRIES.star,
       mat: SHARED_MATERIALS.star,
-      colors: ["#FFD700", "#FFA500", "#FF8C00"],
+      colors: colorConfigs.stars,
     };
   }
 
