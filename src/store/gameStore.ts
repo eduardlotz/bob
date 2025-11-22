@@ -1429,19 +1429,19 @@ export const useGameStore = create<GameStore>()(
                 u.category === "tapEffects" ? u.id === upgradeId : u.selected,
             }));
 
-            // Resolve tap audio from selected effect id with optional override; fall back to defaults
-            try {
-              const overrideId = get().audioSelections.tapEffectAudioId;
-              const cfg = resolveTapSoundForEffect(upgradeId, overrideId);
-              if (cfg && cfg.id) {
-                if (cfg.filePath)
-                  engineSetCurrentTapSound(cfg.id, cfg.filePath);
-                else engineSetCurrentTapSound(cfg.id);
-              }
-            } catch (e) {
-              console.error("Error setting current tap sound", e);
-              toast.error("Error setting current tap sound");
-            }
+            // TODO: fix individual tap sounds
+            // try {
+            //   const overrideId = get().audioSelections.tapEffectAudioId;
+            //   const cfg = resolveTapSoundForEffect(upgradeId, overrideId);
+            //   if (cfg && cfg.id) {
+            //     if (cfg.filePath)
+            //       engineSetCurrentTapSound(cfg.id, cfg.filePath);
+            //     else engineSetCurrentTapSound(cfg.id);
+            //   }
+            // } catch (e) {
+            //   console.error("Error setting current tap sound", e);
+            //   toast.error("Error setting current tap sound");
+            // }
 
             return {
               ...state,
