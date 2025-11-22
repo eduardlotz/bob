@@ -10,52 +10,43 @@ const FONT_PATH = "/fonts/OpenRundeBold.json";
 
 export const formatNumber = (num: number): string => {
   if (num < 10000) {
-    // For numbers below 10k, use German locale formatting (dots for thousands)
+    // number below 10k, use German locale formatting (dots for thousands)
     return num.toLocaleString("de-DE", {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0, // This will floor the decimals
     });
   } else if (num < 1000000) {
-    // For numbers 10k to 1M, convert to K format
-    // Floor to the nearest hundred first
+    // number 10k to 1M, convert to nearest hundred in K format
     const flooredToHundreds = Math.floor(num / 100) * 100;
     const inK = flooredToHundreds / 1000;
 
-    // Format with one decimal place and use dot as decimal separator
     const formatted = inK.toLocaleString("en-US", {
       minimumFractionDigits: 1,
       maximumFractionDigits: 1,
     });
 
-    // Replace comma with dot for German formatting (though there shouldn't be commas in K format)
     return formatted.replace(/,/g, ".") + "K";
   } else if (num < 1000000000) {
-    // For numbers 1M to 1B, convert to M format
-    // Floor to the nearest thousand first
+    // number 1M to 1B, convert to nearest thousand in M format
     const flooredToThousands = Math.floor(num / 1000) * 1000;
     const inM = flooredToThousands / 1000000;
 
-    // Format with one decimal place and use dot as decimal separator
     const formatted = inM.toLocaleString("en-US", {
       minimumFractionDigits: 1,
       maximumFractionDigits: 1,
     });
 
-    // Replace comma with dot for German formatting
     return formatted.replace(/,/g, ".") + "M";
   } else {
-    // For numbers 1B and above, convert to B format
-    // Floor to the nearest million first
+    // number 1B and above, convert to nearest million in B format
     const flooredToMillions = Math.floor(num / 1000000) * 1000000;
     const inB = flooredToMillions / 1000000000;
 
-    // Format with one decimal place and use dot as decimal separator
     const formatted = inB.toLocaleString("en-US", {
       minimumFractionDigits: 1,
       maximumFractionDigits: 1,
     });
 
-    // Replace comma with dot for German formatting
     return formatted.replace(/,/g, ".") + "B";
   }
 };
@@ -63,7 +54,6 @@ export const formatNumber = (num: number): string => {
 export const TapCounter = () => {
   const { taps, currentTheme } = useGameStore();
 
-  // Use game store taps instead of emotion tap count
   const gameTapCount = taps;
 
   const themeConfig = currentTheme
@@ -97,23 +87,11 @@ export const TapCounter = () => {
     config: { tension: 300, friction: 10 },
   }));
 
-  // Floating animation for each character
-  useFrame((state) => {
-    if (groupRef.current) {
-      const time = state.clock.getElapsedTime();
+  // MAYDO: test if by-passing react render is better
+  // best practice would be useEffect to handle animation updates with dependencies
+  // but manually tapping while auto-tap is active feels better when the update is in useFrame 🤷
 
-      // Base floating motion
-      const baseFloat = Math.sin(time * 0.5) * 0.05;
-      groupRef.current.position.y = responsivePosition.y + baseFloat;
-
-      // Gentle rotation
-      groupRef.current.rotation.z = Math.sin(time * 0.3) * 0.02;
-
-      // Additional subtle movement
-      const subtleX = Math.sin(time * 0.2) * 0.02;
-      groupRef.current.position.x = responsivePosition.x + subtleX;
-    }
-
+  useFrame(() => {
     if (gameTapCount !== prevTapCount.current) {
       api.start({
         scale: 1.4,
@@ -127,23 +105,18 @@ export const TapCounter = () => {
     }
   });
 
-  // best practice: useEffect to handle animation updates with dependencies
-  // but manually tapping while auto-tap is active
-  // feels better when the update is in useFrame 🤷
-  // check later if this is a performance issue
-
   return (
     <a.group ref={groupRef} scale={spring.scale} position={responsivePosition}>
       <Text3D
         font={FONT_PATH}
         size={3}
         height={1.5}
-        curveSegments={32}
+        curveSegments={8}
         letterSpacing={-0.15}
         bevelEnabled={true}
         bevelSize={0.03}
         bevelThickness={0.2}
-        bevelSegments={6}
+        bevelSegments={1}
         ref={numberRef}
       >
         {formattedNumber}

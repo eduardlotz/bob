@@ -946,7 +946,10 @@ export function BlobHead({
               adjustedY += radiusDiff * (axisConfig.yMultiplier || 0.5); // y-axis with radius changes
             }
             if (axisConfig.z) {
-              adjustedZ += radiusDiff * (axisConfig.zMultiplier || 0.3); // z-axis with radius changes
+              adjustedZ +=
+                MathUtils.clamp(radiusDiff, -0.4, 5) *
+                1.8 *
+                (axisConfig.zMultiplier || 0.3); // z-axis with radius changes
             }
           }
         }

@@ -50,6 +50,15 @@ export enum GAME_STORE_VERSIONS {
   LATEST = V22,
 }
 
+// TOOD: move to correct space
+export type ClickEvent = {
+  id: number;
+  value: number;
+  x: number;
+  y: number;
+  isCrit: boolean;
+};
+
 // Constants
 const ONE_SECOND_MS = 1000;
 const AUTO_TAP_INTERVAL_MS = 1000;
@@ -638,7 +647,7 @@ export interface SoundSystemState {
 }
 
 // Game state interface
-interface GameStore {
+export interface GameStore {
   version: number;
   lastSchemaUpdate: Date; // Timestamp for manual migration triggers
 
@@ -653,8 +662,10 @@ interface GameStore {
   lastAutoTapTime: number;
 
   _cachedTapsPerSecond?: number;
-  _cachedTapMultiplier?: number;
-  _lastUpgradeHash?: string;
+  _cachedAutoTapRate: number;
+  _cachedTapMultiplier: number;
+
+  lastClickEvent: ClickEvent | null;
 
   upgrades: Upgrade[];
   decorations: Decoration[];
@@ -703,6 +714,11 @@ interface GameStore {
   toggleDecoration: (decorationId: string) => void;
   selectTapEffect: (upgradeId: string) => void;
   toggleEnvironmentEffect: (upgradeId: string) => void;
+
+  recalculateStats: () => void;
+  click: (screenX?: number, screenY?: number) => void;
+  checkRouteUnlocks: () => void;
+
   resetGame: () => void;
   pauseGame: () => void;
   resumeGame: () => void;
@@ -734,7 +750,7 @@ interface GameStore {
   getAutoTapRateUncached: () => number;
   getTotalTapMultiplierUncached: () => number;
 
-  updateComputedValueCache: () => void;
+  // updateComputedValueCache: () => void;
   canAfford: (cost: number) => boolean;
   calculateOfflineTaps: () => number;
   checkUnlockedRoutes: (routePath: string) => boolean;
@@ -924,6 +940,7 @@ const generateUpgradeHash = (upgrades: Upgrade[]): string => {
   return JSON.stringify(upgrades.map((u) => ({ id: u.id, level: u.level })));
 };
 
+// TODO: split up into multiple files / stores
 export const useGameStore = create<GameStore>()(
   devtools(
     persist(
@@ -941,8 +958,9 @@ export const useGameStore = create<GameStore>()(
         lastAutoTapTime: Date.now(),
 
         _cachedTapsPerSecond: undefined,
-        _cachedTapMultiplier: undefined,
-        _lastUpgradeHash: undefined,
+        _cachedAutoTapRate: 0,
+        _cachedTapMultiplier: 1,
+        lastClickEvent: null,
 
         upgrades: initialUpgrades,
         decorations: initialDecorations,
@@ -983,7 +1001,7 @@ export const useGameStore = create<GameStore>()(
 
         addAutoTaps: (amount: number) => {
           set((state) => ({
-            taps: state.taps + amount * state.getTotalTapMultiplier(),
+            taps: state.taps + amount,
             lastAutoTapTime: Date.now(),
           }));
         },
@@ -1050,20 +1068,19 @@ export const useGameStore = create<GameStore>()(
         cleanupManualTaps: () => {
           set((state) => {
             const now = Date.now();
-            const recentTaps = state.recentManualTaps || [];
-            const oneSecondAgo = now - ONE_SECOND_MS;
+            const oneSecondAgo = now - 1000;
 
-            if (recentTaps.length === 0) {
+            // Safety check: if array is empty, do nothing
+            const recentTaps = state.recentManualTaps || [];
+            if (recentTaps.length === 0 && state.manualTapsPerSecond === 0) {
               return state;
             }
 
-            const filteredTaps: number[] = [];
-            for (let i = recentTaps.length - 1; i >= 0; i--) {
-              if (recentTaps[i] > oneSecondAgo) {
-                filteredTaps.unshift(recentTaps[i]);
-              }
-            }
+            // Filter keep only taps from the last second
+            const filteredTaps = recentTaps.filter((t) => t > oneSecondAgo);
 
+            // OPTIMIZATION: Only update state if the count actually changed.
+            // This prevents React from re-rendering the UI if the TPS is steady.
             if (filteredTaps.length === recentTaps.length) {
               return state;
             }
@@ -1125,7 +1142,7 @@ export const useGameStore = create<GameStore>()(
 
           // update cache after state change
           setTimeout(() => {
-            get().updateComputedValueCache();
+            get().recalculateStats();
           }, 0);
         },
 
@@ -1472,6 +1489,26 @@ export const useGameStore = create<GameStore>()(
           });
         },
 
+        // 1. THE RECALCULATOR
+        // CRITICAL: Call this function inside your 'purchaseUpgrade' action!
+        // This replaces the "Hash" check. We only do math when we actually buy something.
+        recalculateStats: () => {
+          const state = get();
+
+          const autoTapRate = state.upgrades
+            .filter((u) => u.effect.type === "autoTap")
+            .reduce((total, u) => total + u.effect.value * u.level, 0);
+
+          const tapMultiplier = state.upgrades
+            .filter((u) => u.effect.type === "tapMultiplier")
+            .reduce((total, u) => total * Math.pow(u.effect.value, u.level), 1);
+
+          set({
+            _cachedAutoTapRate: autoTapRate,
+            _cachedTapMultiplier: tapMultiplier,
+          });
+        },
+
         resetGame: () => {
           set({
             taps: 0,
@@ -1494,7 +1531,6 @@ export const useGameStore = create<GameStore>()(
             statisticsVisible: false,
             _cachedTapsPerSecond: undefined,
             _cachedTapMultiplier: undefined,
-            _lastUpgradeHash: undefined,
           });
         },
 
@@ -1732,79 +1768,13 @@ export const useGameStore = create<GameStore>()(
             },
           }));
         },
-        // Computed values with caching
-        getTotalTapsPerSecond: () => {
-          const state = get();
-          const upgradeHash = generateUpgradeHash(state.upgrades);
+        // 2. GETTERS (Now instant, O(1) complexity)
+        getTotalTapsPerSecond: () => get()._cachedAutoTapRate,
+        getTotalTapMultiplier: () => get()._cachedTapMultiplier,
 
-          if (
-            state._lastUpgradeHash === upgradeHash &&
-            state._cachedTapsPerSecond !== undefined
-          ) {
-            return state._cachedTapsPerSecond;
-          }
-
-          const result = state.upgrades
-            .filter((u) => u.effect.type === "autoTap")
-            .reduce((total, upgrade) => {
-              return total + upgrade.effect.value * upgrade.level;
-            }, 0);
-
-          set((s) => ({
-            ...s,
-            _cachedTapsPerSecond: result,
-            _lastUpgradeHash: upgradeHash,
-          }));
-
-          return result;
-        },
-
-        getTotalTapMultiplier: () => {
-          const state = get();
-          const upgradeHash = generateUpgradeHash(state.upgrades);
-
-          if (
-            state._lastUpgradeHash === upgradeHash &&
-            state._cachedTapMultiplier !== undefined
-          ) {
-            return state._cachedTapMultiplier;
-          }
-
-          const multiplierUpgrades = state.upgrades.filter(
-            (u) => u.effect.type === "tapMultiplier"
-          );
-
-          if (multiplierUpgrades.length === 0) {
-            const result = 1;
-            set((s) => ({
-              ...s,
-              _cachedTapMultiplier: result,
-              _lastUpgradeHash: upgradeHash,
-            }));
-            return result;
-          }
-
-          const result = multiplierUpgrades.reduce((total, upgrade) => {
-            return total * Math.pow(upgrade.effect.value, upgrade.level);
-          }, 1);
-
-          set((s) => ({
-            ...s,
-            _cachedTapMultiplier: result,
-            _lastUpgradeHash: upgradeHash,
-          }));
-
-          return result;
-        },
-
-        getAutoTapRate: () => {
-          const state = get();
-          return state.upgrades
-            .filter((u) => u.effect.type === "autoTap")
-            .reduce((total, upgrade) => {
-              return total + upgrade.effect.value * upgrade.level;
-            }, 0);
-        },
+        // Legacy support if you need them elsewhere
+        getAutoTapRate: () => get()._cachedAutoTapRate,
+        getTotalTapMultiplierUncached: () => get()._cachedTapMultiplier,
 
         getAutoTapRateUncached: () => {
           const state = get();
@@ -1815,48 +1785,33 @@ export const useGameStore = create<GameStore>()(
             }, 0);
         },
 
-        getTotalTapMultiplierUncached: () => {
-          const state = get();
-          const multiplierUpgrades = state.upgrades.filter(
-            (u) => u.effect.type === "tapMultiplier"
-          );
+        // updateComputedValueCache: () => {
+        //   const state = get();
+        //   const upgradeHash = generateUpgradeHash(state.upgrades);
 
-          if (multiplierUpgrades.length === 0) {
-            return 1;
-          }
+        //   if (state._lastUpgradeHash === upgradeHash) {
+        //     return;
+        //   }
 
-          return multiplierUpgrades.reduce((total, upgrade) => {
-            return total * Math.pow(upgrade.effect.value, upgrade.level);
-          }, 1);
-        },
+        //   const tapsPerSecond = state.upgrades
+        //     .filter((u) => u.effect.type === "autoTap")
+        //     .reduce((total, upgrade) => {
+        //       return total + upgrade.effect.value * upgrade.level;
+        //     }, 0);
 
-        updateComputedValueCache: () => {
-          const state = get();
-          const upgradeHash = generateUpgradeHash(state.upgrades);
+        //   const tapMultiplier = state.upgrades
+        //     .filter((u) => u.effect.type === "tapMultiplier")
+        //     .reduce((total, upgrade) => {
+        //       return total * Math.pow(upgrade.effect.value, upgrade.level);
+        //     }, 1);
 
-          if (state._lastUpgradeHash === upgradeHash) {
-            return;
-          }
-
-          const tapsPerSecond = state.upgrades
-            .filter((u) => u.effect.type === "autoTap")
-            .reduce((total, upgrade) => {
-              return total + upgrade.effect.value * upgrade.level;
-            }, 0);
-
-          const tapMultiplier = state.upgrades
-            .filter((u) => u.effect.type === "tapMultiplier")
-            .reduce((total, upgrade) => {
-              return total * Math.pow(upgrade.effect.value, upgrade.level);
-            }, 1);
-
-          set((s) => ({
-            ...s,
-            _cachedTapsPerSecond: tapsPerSecond,
-            _cachedTapMultiplier: tapMultiplier,
-            _lastUpgradeHash: upgradeHash,
-          }));
-        },
+        //   set((s) => ({
+        //     ...s,
+        //     _cachedTapsPerSecond: tapsPerSecond,
+        //     _cachedTapMultiplier: tapMultiplier,
+        //     _lastUpgradeHash: upgradeHash,
+        //   }));
+        // },
 
         calculateOfflineTaps: () => {
           const state = get();
@@ -1874,6 +1829,81 @@ export const useGameStore = create<GameStore>()(
           return offlineTaps;
         },
 
+        // 3. THE CLICK ACTION (Optimized)
+        click: (screenX = 0, screenY = 0) => {
+          set((state) => {
+            const now = Date.now();
+
+            // Calculate Value
+            const multiplier = state._cachedTapMultiplier;
+            const baseValue = 1;
+
+            // RPG Crit Logic (Optional: 5% chance to do 2x damage)
+            const isCrit = Math.random() < 0.05;
+            const finalValue = Math.floor(
+              baseValue * multiplier * (isCrit ? 2 : 1)
+            );
+
+            // Update Taps History (For calculating Manual TPS)
+            // Optimization: Only keep last 20 taps to prevent array from growing infinitely on fast clickers
+            const recentTaps = state.recentManualTaps || [];
+            // Simple filter to keep array small
+            const newHistory = [...recentTaps, now].slice(-20);
+
+            // NOTE: I removed the Route Unlocking logic from here.
+            // Route checking should be done in a separate 'tick' loop or
+            // only when 'taps' reaches a specific milestone, not every ms.
+
+            return {
+              taps: state.taps + finalValue,
+              manualTaps: state.manualTaps + 1,
+              recentManualTaps: newHistory,
+
+              // DISPATCH EVENT (Triggers Floating Text)
+              lastClickEvent: {
+                id: Math.random(),
+                value: finalValue,
+                x: screenX,
+                y: screenY,
+                isCrit,
+              },
+            };
+          });
+        },
+        checkRouteUnlocks: () => {
+          set((state) => {
+            let hasChanges = false;
+
+            // Iterate through all routes
+            const updatedRoutes = state.routes.map((route) => {
+              // If already unlocked, skip logic
+              if (route.unlocked) return route;
+
+              // Logic: If not purchased, but we can afford it, and it's not unlocked
+              // (Adjust this logic to match your specific game rules)
+              const shouldUnlock =
+                !route.purchased &&
+                state.canAfford(route.cost) &&
+                !route.unlocked; // Add other dependencies here (e.g. level requirements)
+
+              if (shouldUnlock) {
+                hasChanges = true;
+                return { ...route, unlocked: true };
+              }
+              return route;
+            });
+
+            // Only trigger a state update if we actually unlocked something
+            if (hasChanges) {
+              return {
+                ...state,
+                routes: updatedRoutes,
+              };
+            }
+
+            return state; // No changes
+          });
+        },
         canAfford: (cost: number) => {
           return get().taps >= cost;
         },
@@ -2026,40 +2056,42 @@ let autoTapInterval: NodeJS.Timeout | null = null;
 let particleTimeouts: NodeJS.Timeout[] = [];
 
 export const startAutoTap = () => {
-  if (autoTapInterval) {
-    clearInterval(autoTapInterval);
-  }
-
-  particleTimeouts.forEach((timeout) => clearTimeout(timeout));
-  particleTimeouts = [];
+  if (autoTapInterval) clearInterval(autoTapInterval);
 
   autoTapInterval = setInterval(() => {
     const store = useGameStore.getState();
+    if (store.isPaused) return;
 
-    if (store.isPaused) {
-      return;
-    }
+    // Use the cached value directly
+    const tapsPerSecond = store._cachedAutoTapRate;
 
-    const tapsPerSecond = store.getTotalTapsPerSecond();
     if (tapsPerSecond > 0) {
+      // 1. Add Gold
       store.addAutoTaps(tapsPerSecond);
 
-      // trigger tap effects for auto-taps
+      // 2. Trigger Particles (Optimized)
       if ((window as any).createTapParticles) {
-        const tapCount = Math.min(tapsPerSecond, MAX_PARTICLES_PER_AUTO_TAP);
+        // Don't spawn more than 5 particle bursts per second to save GPU
+        // If they have 1000 auto-taps, just make the burst bigger, not more frequent
+        const particleCount = Math.min(tapsPerSecond, 5);
 
-        particleTimeouts.forEach((timeout) => clearTimeout(timeout));
-        particleTimeouts = [];
-
-        for (let i = 0; i < tapCount; i++) {
-          const timeout = setTimeout(() => {
-            (window as any).createTapParticles(-1, 0.5, -1, 1);
-          }, i * PARTICLE_STAGGER_MS);
-          particleTimeouts.push(timeout);
-        }
+        // Just one call, no setTimeout loop needed
+        (window as any).createTapParticles(
+          0,
+          0,
+          0, // Position (Center)
+          particleCount // Count
+        );
       }
     }
-  }, AUTO_TAP_INTERVAL_MS);
+
+    // 3. Maintenance
+    store.cleanupManualTaps();
+
+    // 4. Route Check (Moved from click handler)
+    // Checking routes 1x per second is much better than 10x per second
+    store.checkRouteUnlocks?.();
+  }, 1000); // Run every 1 second
 };
 
 export const stopAutoTap = () => {
