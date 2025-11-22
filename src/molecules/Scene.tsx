@@ -41,7 +41,7 @@ const Scene = ({
   const cameraControlsRef = useRef<CameraControls>(null!);
   const { setCameraControlsRef, resetToDefaultView, isDefaultView } =
     useViewStore();
-  const { isPaused, getTotalTapsPerSecond, recalculateStats } = useGameStore();
+  const { upgrades, isPaused } = useGameStore();
 
   const {
     currentRoute,
@@ -50,6 +50,12 @@ const Scene = ({
     setEmotionData,
     closeOptionsWithAnimation,
   } = useAppStore();
+
+  const autoTapEnabled = useMemo(() => {
+    return upgrades.some(
+      (upgrade) => upgrade.id === "auto_tap_1" && upgrade.level > 0
+    );
+  }, [upgrades]);
 
   // shop items are only visible on home route
   const isHome = currentRoute === ROUTE_PATHS.HOME;
@@ -69,21 +75,13 @@ const Scene = ({
     }
   }, [isHome, resetToDefaultView]);
 
-  const autoTapRate = getTotalTapsPerSecond();
-
-  // initial stats calculation
-  // TODO: check if this is the right place
-  useEffect(() => {
-    recalculateStats();
-  }, []);
-
   // handle auto-tap on all routes
   useEffect(() => {
-    if (autoTapRate > 0) {
+    if (autoTapEnabled) {
       startAutoTap();
       return () => stopAutoTap();
     }
-  }, [currentRoute, autoTapRate]);
+  }, [currentRoute]);
 
   // dev only
   useEffect(() => {

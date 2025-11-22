@@ -40,13 +40,8 @@ export function BottomNavigation() {
   const isHomeRoute = currentRoute === ROUTE_PATHS.HOME;
 
   const totalTapsPerSecond = useMemo(() => {
-    // const autoTapRate =
-    //   getAutoTapRateUncached() * getTotalTapMultiplierUncached();
-    const gat = getAutoTapRateUncached();
-
-    const gtt = getTotalTapMultiplierUncached();
-    const autoTapRate = gat * gtt;
-    const tps = autoTapRate + manualTapsPerSecond;
+    const autoTapRate =
+      getAutoTapRateUncached() * getTotalTapMultiplierUncached();
     return autoTapRate + manualTapsPerSecond;
   }, [
     getAutoTapRateUncached,
