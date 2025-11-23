@@ -151,7 +151,7 @@ export const MessageBubble = memo(function MessageBubble({
       if (Array.isArray(text)) {
         textLines = text.flatMap((t) => String(t).split(/\r?\n/));
       } else if (typeof text === "string") {
-        textLines = text.split(/\r?\n/);
+        textLines = text.split(/\r?\n/).map((line) => line.trimEnd());
       }
 
       return textLines.map((lineText, index) => ({
@@ -529,10 +529,8 @@ export const MessageBubble = memo(function MessageBubble({
                   l.id === oldest.id ? { ...l, status: "removing" } : l
                 )
               );
-              api.start({ scale: 0.98, opacity: 0 });
               addTimer(() => {
                 setLines((prev) => prev.filter((l) => l.id !== oldest.id));
-                api.start({ scale: 1, opacity: 1 });
                 startTypingLine(nextLine);
               }, 160);
             } else {

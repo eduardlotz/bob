@@ -2030,8 +2030,8 @@ export const startAutoTap = () => {
     clearInterval(autoTapInterval);
   }
 
-  particleTimeouts.forEach((timeout) => clearTimeout(timeout));
-  particleTimeouts = [];
+  // particleTimeouts.forEach((timeout) => clearTimeout(timeout));
+  // particleTimeouts = [];
 
   autoTapInterval = setInterval(() => {
     const store = useGameStore.getState();
@@ -2046,17 +2046,7 @@ export const startAutoTap = () => {
 
       // trigger tap effects for auto-taps
       if ((window as any).createTapParticles) {
-        const tapCount = Math.min(tapsPerSecond, MAX_PARTICLES_PER_AUTO_TAP);
-
-        particleTimeouts.forEach((timeout) => clearTimeout(timeout));
-        particleTimeouts = [];
-
-        for (let i = 0; i < tapCount; i++) {
-          const timeout = setTimeout(() => {
-            (window as any).createTapParticles(-1, 0.5, -1, 1);
-          }, i * PARTICLE_STAGGER_MS);
-          particleTimeouts.push(timeout);
-        }
+        (window as any).createTapParticles(0, 0, 0, 15);
       }
     }
   }, AUTO_TAP_INTERVAL_MS);
@@ -2068,8 +2058,8 @@ export const stopAutoTap = () => {
     autoTapInterval = null;
   }
 
-  particleTimeouts.forEach((timeout) => clearTimeout(timeout));
-  particleTimeouts = [];
+  // particleTimeouts.forEach((timeout) => clearTimeout(timeout));
+  // particleTimeouts = [];
 };
 
 // manually trigger store migration in dev tools
