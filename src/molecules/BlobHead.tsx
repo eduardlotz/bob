@@ -865,9 +865,9 @@ export function BlobHead({
     );
   };
 
-  const createParticles = (x: number, y: number, z: number) => {
+  const createParticles = (x: number, y: number, z: number, count = 15) => {
     if ((window as any).createTapParticles) {
-      (window as any).createTapParticles(x, y, z, 15);
+      (window as any).createTapParticles(x, y, z, count);
     }
   };
 

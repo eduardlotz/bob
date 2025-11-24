@@ -1422,7 +1422,6 @@ export const useGameStore = create<GameStore>()(
               return state;
             }
 
-            // Deselect all tap effects and select the chosen one
             const updatedUpgrades = state.upgrades.map((u) => ({
               ...u,
               selected:
@@ -2023,15 +2022,11 @@ export const useGameStore = create<GameStore>()(
 );
 
 let autoTapInterval: NodeJS.Timeout | null = null;
-let particleTimeouts: NodeJS.Timeout[] = [];
 
 export const startAutoTap = () => {
   if (autoTapInterval) {
     clearInterval(autoTapInterval);
   }
-
-  particleTimeouts.forEach((timeout) => clearTimeout(timeout));
-  particleTimeouts = [];
 
   autoTapInterval = setInterval(() => {
     const store = useGameStore.getState();
@@ -2045,18 +2040,9 @@ export const startAutoTap = () => {
       store.addAutoTaps(tapsPerSecond);
 
       // trigger tap effects for auto-taps
+      // TODO: use hook instead of global functions
       if ((window as any).createTapParticles) {
-        const tapCount = Math.min(tapsPerSecond, MAX_PARTICLES_PER_AUTO_TAP);
-
-        particleTimeouts.forEach((timeout) => clearTimeout(timeout));
-        particleTimeouts = [];
-
-        for (let i = 0; i < tapCount; i++) {
-          const timeout = setTimeout(() => {
-            (window as any).createTapParticles(-1, 0.5, -1, 1);
-          }, i * PARTICLE_STAGGER_MS);
-          particleTimeouts.push(timeout);
-        }
+        (window as any).createTapParticles(0, 0, 0, 15);
       }
     }
   }, AUTO_TAP_INTERVAL_MS);
@@ -2067,9 +2053,6 @@ export const stopAutoTap = () => {
     clearInterval(autoTapInterval);
     autoTapInterval = null;
   }
-
-  particleTimeouts.forEach((timeout) => clearTimeout(timeout));
-  particleTimeouts = [];
 };
 
 // manually trigger store migration in dev tools
@@ -2088,7 +2071,6 @@ export const triggerStoreMigration = () => {
   const migratedState = migrateStore(currentState, GAME_STORE_VERSIONS.V9);
   toast.success(`Store migrated to VERSION_${GAME_STORE_VERSIONS.LATEST}`);
 
-  // Update the store with migrated data
   useGameStore.setState({
     ...store,
     ...migratedState,

@@ -5,13 +5,12 @@ export type MessageRepeatRule = "always" | "oncePerSession" | "oncePerPersist";
 export type MessageText = string | string[];
 
 export interface MessageOptions {
-  typingSpeedMs?: number; // ms per character
-  baseDismissMs?: number; // base time before auto-dismiss starts counting content length
-  contentLengthFactorMs?: number; // per-character factor
+  typingSpeedMs?: number;
+  baseDismissMs?: number;
+  contentLengthFactorMs?: number;
   tailEnabled?: boolean;
-  minimumDisplayMs?: number; // minimum time to display message
-  priority?: number; // priority level for showing messages
-  // optional emotion cue for the blob while this message is active
+  minimumDisplayMs?: number;
+  priority?: number;
   emotion?: {
     state: "normal" | "happy" | "dizzy" | "mad" | "thinking" | "suspicious";
     durationMs?: number;
@@ -24,23 +23,24 @@ export interface MessageConfig {
   label?: string;
   options?: MessageOptions;
   repeatRule: MessageRepeatRule;
-  dismissTimeout?: number; // explicit override
-  persistKey?: string; // for storing user choices/preferences
+  dismissTimeout?: number;
+  persistKey?: string;
   audioEnabled?: boolean;
-  positionOffset?: Vector3Tuple; // [x,y,z]
-  nextDelayMs?: number; // delay after this config finishes typing before the next config shows
-  lines?: string[]; // lines to display
+  positionOffset?: Vector3Tuple;
+  nextDelayMs?: number;
+  lines?: string[];
 }
 
-// Sample initial messages. Extend as needed.
+// simplify this mess
 export const MESSAGE_CONFIG: MessageConfig[] = [
   {
     id: "welcome_home",
     text: [
-      "Huuuhuuuu",
-      "Ich bin Bob 😊 Eddies erstes 3d-Projekt im Internet.",
-      "Ist alles noch in Arbeit, aber so langsam wächst es schon",
-      "Zum Start kannst du mich ja mal antippen 🫵 macht spaß!",
+      "Hallöchen Popöchen",
+      "Ich bin Bob 😊",
+      "Ist leider alles noch in Arbeit hier, aber der Kern steht schonmal",
+      "Am Ende soll es ein Mix aus persönlicher Website und einem Clicker-Game werden ✨",
+      "Tipp mich doch mal 🫵 macht spaß!",
     ],
     label: "Bob",
     options: {
@@ -57,7 +57,7 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
   },
   {
     id: "return_greeting_1",
-    text: ["Du auch hier?? 👁️👄👁️"],
+    text: ["Ja hallooo", "Du auch hier?? 👁️👄👁️"],
     label: "Bob",
     options: {
       typingSpeedMs: 28,
@@ -73,7 +73,7 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
   },
   {
     id: "return_greeting_2",
-    text: ["Zurück für mehr taps? 🫶"],
+    text: ["Na du", "Zurück für mehr taps? 🫶"],
     label: "Bob",
     options: {
       typingSpeedMs: 28,
@@ -89,7 +89,7 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
   },
   {
     id: "return_greeting_3",
-    text: ["lets gooooooo 🫵"],
+    text: ["JAWOOOLL", "lets gooooooo 🫵"],
     label: "Bob",
     options: {
       typingSpeedMs: 28,
@@ -104,7 +104,7 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
   },
   {
     id: "return_greeting_4",
-    text: ["Moin Meister"],
+    text: ["Moin Meister", "alles fit?"],
     label: "Bob",
     options: {
       typingSpeedMs: 28,
@@ -140,8 +140,12 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
   {
     id: "home_features",
     text: [
-      "Die anderen Seiten sind gerade noch in Arbeit, aber der Shop hat schon was zu bieten! 🤑",
-      "Schau doch mal rein und schalt ein paar Effekte frei",
+      "ach und noch was",
+      "Der große blaue Knopf unten öffnet das Menü zu den anderen Unterseiten",
+      "Aber die musst du erstmal freischalten (mit taps 🫵 natürlich)",
+      "Ansonsten kannst du im Shop NATÜRLICH AUCH SKINS kaufen",
+      "jedes spiel braucht doch skins oder nicht??",
+      "sonst wird das ja langweilig hier 🥱",
     ],
     label: "Bob",
     options: {
@@ -158,12 +162,11 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
   {
     id: "about_welcome",
     text: [
-      "Hier gibts leider noch nicht viel spannendes zu sehen",
-      "Die Möbel sind erstmal nur Platzhalter",
+      "Hier gibts leider noch nicht viel zu sehen",
       "Sorry 🥀😔",
       "Aber bald kommen ein paar Infos über mich",
       "Und generell so der Sinn der Website",
-      "gucken wir mal, was wird",
+      "wird schon noch alles",
     ],
     label: "Eddie",
     options: {
@@ -181,12 +184,15 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
   {
     id: "dev_message",
     text: [
-      "hey you 🫵🤓",
-      "this is a test message",
-      "the messages should feel like a mix between animal crossing and iMessage",
-      "basically a chat between friends, like me and you 🙂",
+      "hey du 🫵🤓",
+      "JA GENAU DU",
+      "die nachrichten sollen sich anfühlen wie eine mischung aus animal crossing und iMessage",
+      "quasi ein chat zwischen freunden",
+      "nur dass du nicht antworten kannst hehe",
+      "aber das kommt vielleicht noch irgendwann. in form von vorauswahlen oder so, mal gucken",
+      "tüdelüüüü",
     ],
-    label: "Bob",
+    label: "Bob (dev)",
     options: {
       typingSpeedMs: 25,
       baseDismissMs: 2000,
@@ -202,7 +208,7 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
   {
     id: "dev_message_2",
     text: [
-      "okay this message will be way too long i guess but we will see how it looks and sounds, because the code for this text synth is not finished",
+      "und jetzt kommt nochmal eine so richtig lange nachricht die den schönen text sound testet hmmmmmmmmmmmm cool wow",
     ],
     label: "Bob",
     options: {

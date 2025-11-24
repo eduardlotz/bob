@@ -75,15 +75,6 @@ const Scene = ({
     }
   }, [isHome, resetToDefaultView]);
 
-  // handle auto-tap on all routes
-  useEffect(() => {
-    if (autoTapEnabled) {
-      startAutoTap();
-      return () => stopAutoTap();
-    }
-  }, [currentRoute]);
-
-  // dev only
   useEffect(() => {
     if (isPaused) {
       stopAutoTap();
