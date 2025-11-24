@@ -583,7 +583,6 @@ function DecorationsView() {
       toggleDecoration(decorationId);
     } else if (canAfford(decoration.cost)) {
       purchaseDecoration(decorationId);
-      toggleDecoration(decorationId);
     }
   };
 

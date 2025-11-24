@@ -5,13 +5,12 @@ export type MessageRepeatRule = "always" | "oncePerSession" | "oncePerPersist";
 export type MessageText = string | string[];
 
 export interface MessageOptions {
-  typingSpeedMs?: number; // ms per character
-  baseDismissMs?: number; // base time before auto-dismiss starts counting content length
-  contentLengthFactorMs?: number; // per-character factor
+  typingSpeedMs?: number;
+  baseDismissMs?: number;
+  contentLengthFactorMs?: number;
   tailEnabled?: boolean;
-  minimumDisplayMs?: number; // minimum time to display message
-  priority?: number; // priority level for showing messages
-  // optional emotion cue for the blob while this message is active
+  minimumDisplayMs?: number;
+  priority?: number;
   emotion?: {
     state: "normal" | "happy" | "dizzy" | "mad" | "thinking" | "suspicious";
     durationMs?: number;
@@ -24,15 +23,15 @@ export interface MessageConfig {
   label?: string;
   options?: MessageOptions;
   repeatRule: MessageRepeatRule;
-  dismissTimeout?: number; // explicit override
-  persistKey?: string; // for storing user choices/preferences
+  dismissTimeout?: number;
+  persistKey?: string;
   audioEnabled?: boolean;
-  positionOffset?: Vector3Tuple; // [x,y,z]
-  nextDelayMs?: number; // delay after this config finishes typing before the next config shows
-  lines?: string[]; // lines to display
+  positionOffset?: Vector3Tuple;
+  nextDelayMs?: number;
+  lines?: string[];
 }
 
-// Sample initial messages. Extend as needed.
+// simplify this mess
 export const MESSAGE_CONFIG: MessageConfig[] = [
   {
     id: "welcome_home",

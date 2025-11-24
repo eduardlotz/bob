@@ -1,7 +1,7 @@
 import { Html } from "@react-three/drei";
-import { memo, useEffect, useRef, useState, useCallback } from "react";
+import { memo, useEffect, useMemo, useState, useRef, useCallback } from "react";
 import styled from "styled-components";
-import { a, useSpring } from "@react-spring/three";
+import { a } from "@react-spring/three";
 import { motion, AnimatePresence } from "motion/react";
 import type { Variants } from "motion/react";
 import { useMessageStore } from "@/store/messageStore";
@@ -9,46 +9,127 @@ import { useAppStore } from "@/store";
 import { useGameStore } from "@/store/gameStore";
 import { textSynth } from "@/utils/sound/textSynth";
 import { resumeAudioContext, unlockAudioContext } from "@/utils/soundSystem";
-import { Transitions } from "@/styles/motion";
-import { MOTION_VARIANTS } from "./HeadNavigation";
 
-const DEFAULT_CHAR_REVEAL_MS = 28;
 const AUDIO_CHAR_DURATION_MS = 85;
 const AUDIO_LEAD_TIME_MS = 5;
-const LINE_PAUSE_MS = 650;
-const MESSAGE_TRANSITION_MS = 220;
+const TYPING_SPEED_MS = 18;
+const BASE_LINE_DELAY_MS = 800;
+const CHAR_READING_MS = 25;
+const MIN_DISMISS_MS = 3000;
 
 export interface MessageBubbleProps {
   anchor?: [number, number, number];
 }
 
-interface CharacterState {
-  char: string;
-  index: number;
-  isRevealed: boolean;
-  revealTime?: number;
-  audioScheduled: boolean;
-  audioPlayed: boolean;
-}
+const useTypewriterAudio = (text: string, isTyping: boolean) => {
+  const { soundSystem } = useGameStore();
+  const audioRef = useRef<{ index: number; timeout: number | null }>({
+    index: 0,
+    timeout: null,
+  });
 
-interface LineState {
-  readonly id: string;
-  readonly messageId: string;
-  readonly lineIndex: number;
-  readonly text: string;
-  readonly timestamp: Date;
-  status: "queued" | "typing" | "complete" | "removing";
-  characters: CharacterState[];
-  revealedChars: number;
-  startTime?: number;
-}
+  useEffect(() => {
+    if (!isTyping || !text) return;
+    if (audioRef.current.index >= text.length) audioRef.current.index = 0;
 
-interface MessageSession {
-  readonly messageId: string;
-  readonly totalLines: number;
-  currentLineIndex: number;
-  readonly startedAt: number;
-}
+    const playNext = async () => {
+      try {
+        await resumeAudioContext();
+        await unlockAudioContext();
+      } catch (e) {}
+
+      if (audioRef.current.index < text.length) {
+        const char = text[audioRef.current.index];
+        if (
+          char !== " " &&
+          soundSystem.enabled &&
+          soundSystem.masterVolume > 0
+        ) {
+          try {
+            const duration = AUDIO_CHAR_DURATION_MS;
+            const adjustedVolume = Math.max(
+              0.1,
+              Math.min(0.6, 0.8 * (soundSystem.textVolume ?? 0.8))
+            );
+            textSynth.playCharBlip(duration, adjustedVolume);
+          } catch (e) {}
+        }
+        audioRef.current.index++;
+        audioRef.current.timeout = window.setTimeout(
+          playNext,
+          AUDIO_LEAD_TIME_MS
+        );
+      }
+    };
+    playNext();
+    return () => {
+      if (audioRef.current.timeout) clearTimeout(audioRef.current.timeout);
+    };
+  }, [text, isTyping, soundSystem.enabled, soundSystem.masterVolume]);
+};
+
+const TypingIndicator = () => {
+  return (
+    <IndicatorBubble
+      initial={{ opacity: 0, scale: 0.8, y: 10 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
+    >
+      <Dot $delay={0} />
+      <Dot $delay={0.15} />
+      <Dot $delay={0.3} />
+    </IndicatorBubble>
+  );
+};
+
+const TypewriterWord = ({
+  word,
+  globalIndexOffset,
+}: {
+  word: string;
+  globalIndexOffset: number;
+}) => {
+  const chars = useMemo(() => Array.from(word), [word]);
+
+  return (
+    <WordWrapper>
+      {chars.map((char, i) => (
+        <Char
+          key={i}
+          custom={globalIndexOffset + i}
+          variants={charVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          {char}
+        </Char>
+      ))}
+      <Space>&nbsp;</Space>
+    </WordWrapper>
+  );
+};
+
+const TypewriterText = ({ text }: { text: string }) => {
+  useTypewriterAudio(text, true);
+  const words = useMemo(() => text.split(" "), [text]);
+  let charCount = 0;
+
+  return (
+    <TextContainer>
+      {words.map((word, i) => {
+        const currentOffset = charCount;
+        charCount += Array.from(word).length + 1;
+        return (
+          <TypewriterWord
+            key={`${word}-${i}`}
+            word={word}
+            globalIndexOffset={currentOffset}
+          />
+        );
+      })}
+    </TextContainer>
+  );
+};
 
 export const MessageBubble = memo(function MessageBubble({
   anchor = [0, 1.5, 0],
@@ -61,817 +142,322 @@ export const MessageBubble = memo(function MessageBubble({
     getQueueLength,
   } = useMessageStore();
   const { requestEmotion } = useAppStore();
-  const { soundSystem } = useGameStore();
 
-  // #region state & refs
-  const [lines, setLines] = useState<LineState[]>([]);
-  const [currentSession, setCurrentSession] = useState<MessageSession | null>(
-    null
-  );
-  // only used for debugging, maybe removed later
-  const [isProcessingQueue, setIsProcessingQueue] = useState(false);
+  const [visibleLines, setVisibleLines] = useState<
+    Array<{ id: string; text: string; time: Date }>
+  >([]);
+  const [isTyping, setIsTyping] = useState(false);
+  const dismissTimerRef = useRef<number | null>(null);
 
-  const timersRef = useRef<Set<number>>(new Set());
-  const rafRef = useRef<number | null>(null);
-  const isUnmountingRef = useRef(false);
-  const hardDismissTimerRef = useRef<number | null>(null);
-  const linesRef = useRef<LineState[]>([]);
-  const completeTypingLineRef = useRef<(line: LineState) => void>(() => {});
-  const audioContextReadyRef = useRef<boolean>(false);
+  const queueLength = getQueueLength();
 
-  // sync refs
-  useEffect(() => {
-    linesRef.current = lines;
-  }, [lines]);
-  // #endregion
-
-  const [spring, api] = useSpring(() => ({
-    scale: 0,
-    opacity: 0,
-    config: { tension: 300, friction: 18 },
-  }));
-
-  const clearTimer = useCallback((timerId: number) => {
-    clearTimeout(timerId);
-    timersRef.current.delete(timerId);
-  }, []);
-
-  const addTimer = useCallback(
-    (callback: () => void, delay: number): number => {
-      const timerId = window.setTimeout(() => {
-        timersRef.current.delete(timerId);
-        if (!isUnmountingRef.current) {
-          callback();
-        }
-      }, delay);
-      timersRef.current.add(timerId);
-      return timerId;
-    },
-    []
-  );
-
-  const initializeAudioContext = useCallback(async () => {
-    if (audioContextReadyRef.current) return true;
-
-    try {
-      await resumeAudioContext();
-      await unlockAudioContext();
-      await textSynth.resume();
-      audioContextReadyRef.current = true;
-      return true;
-    } catch (error) {
-      console.warn("Failed to initialize audio context:", error);
-      return false;
-    }
-  }, []);
-
-  // timer cleanup
   useEffect(() => {
     return () => {
-      isUnmountingRef.current = true;
-      timersRef.current.forEach(clearTimer);
-      timersRef.current.clear();
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-      if (hardDismissTimerRef.current) {
-        clearTimer(hardDismissTimerRef.current);
-        hardDismissTimerRef.current = null;
-      }
+      if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
     };
-  }, [clearTimer]);
-
-  const parseMessageLines = useCallback(
-    (message: typeof activeMessage): LineState[] => {
-      if (!message) return [];
-      const text = message.config.text;
-
-      let textLines: string[] = [];
-      if (Array.isArray(text)) {
-        textLines = text.flatMap((t) => String(t).split(/\r?\n/));
-      } else if (typeof text === "string") {
-        textLines = text.split(/\r?\n/).map((line) => line.trimEnd());
-      }
-
-      return textLines.map((lineText, index) => ({
-        id: `${message.config.id}-${index}-${Date.now()}`,
-        messageId: message.config.id,
-        lineIndex: index,
-        text: lineText,
-        timestamp: new Date(),
-        status: "queued" as const,
-        revealedChars: 0,
-        characters: Array.from(lineText).map((char, charIndex) => ({
-          char,
-          index: charIndex,
-          isRevealed: false,
-          audioScheduled: false,
-          audioPlayed: false,
-        })),
-      }));
-    },
-    []
-  );
-
-  const calculateReadingTime = useCallback(
-    (text: string, options: any): number => {
-      const baseDismiss = options?.baseDismissMs ?? 1000;
-      const lengthFactor = options?.contentLengthFactorMs ?? 1;
-      const optionBasedMs = baseDismiss + text.length * lengthFactor;
-
-      const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-      const perWordMs = 240;
-      const readingMs = Math.max(800, Math.round(words * perWordMs + 250));
-
-      return Math.max(optionBasedMs, readingMs);
-    },
-    []
-  );
-
-  const playCharacterAudio = useCallback(
-    async (char: string, volume: number) => {
-      if (!soundSystem.enabled || soundSystem.masterVolume <= 0) return;
-
-      try {
-        if (!audioContextReadyRef.current) {
-          const ready = await initializeAudioContext();
-          if (!ready) return;
-        }
-
-        const duration = AUDIO_CHAR_DURATION_MS;
-        const adjustedVolume = Math.max(
-          0.1,
-          Math.min(
-            0.6,
-            volume *
-              (soundSystem.masterVolume || 0) *
-              ((soundSystem as any).textVolume ?? 0.8)
-          )
-        );
-
-        await textSynth.playCharBlip(duration, adjustedVolume);
-      } catch (error) {
-        console.warn("Audio playback failed:", error);
-      }
-    },
-    [soundSystem, initializeAudioContext]
-  );
-
-  const startTypingLine = useCallback(
-    (lineState: LineState) => {
-      if (isUnmountingRef.current) return;
-
-      const startTime = performance.now();
-      const typingMsPerChar = Math.max(
-        10,
-        activeMessage?.options?.typingSpeedMs ?? DEFAULT_CHAR_REVEAL_MS
-      );
-
-      setLines((prev) =>
-        prev.map((line) =>
-          line.id === lineState.id
-            ? {
-                ...line,
-                status: "typing",
-                revealedChars: 0,
-                startTime,
-                characters: line.characters.map((char) => ({
-                  ...char,
-                  isRevealed: false,
-                  audioScheduled: false,
-                  audioPlayed: false,
-                })),
-              }
-            : line
-        )
-      );
-
-      let lastProcessedIndex = -1;
-      const characterRevealQueue: Array<{
-        index: number;
-        scheduleTime: number;
-      }> = [];
-
-      const typeLoop = (currentTime: number) => {
-        if (isUnmountingRef.current) return;
-
-        const elapsed = currentTime - startTime;
-        const shouldBeRevealed = Math.min(
-          lineState.characters.length,
-          Math.floor(elapsed / typingMsPerChar)
-        );
-
-        // queue up character reveals
-        for (let i = lastProcessedIndex + 1; i < shouldBeRevealed; i++) {
-          const revealTime = startTime + i * typingMsPerChar;
-          characterRevealQueue.push({ index: i, scheduleTime: revealTime });
-        }
-        lastProcessedIndex = Math.max(lastProcessedIndex, shouldBeRevealed - 1);
-
-        // process character reveals queue
-        const currentRevealTime = currentTime;
-        let hasUpdates = false;
-
-        setLines((prev) =>
-          prev.map((line) => {
-            if (line.id !== lineState.id) return line;
-
-            const updatedCharacters = line.characters.map((char, index) => {
-              // check if this char should be revealed
-              const queueEntry = characterRevealQueue.find(
-                (q) => q.index === index
-              );
-              const shouldReveal =
-                queueEntry && currentRevealTime >= queueEntry.scheduleTime;
-              const wasRevealed = char.isRevealed;
-
-              if (shouldReveal && !wasRevealed) {
-                hasUpdates = true;
-
-                // play audio if not scheduled
-                if (!char.audioScheduled) {
-                  setTimeout(() => {
-                    playCharacterAudio(char.char, 0.8);
-                  }, Math.max(0, AUDIO_LEAD_TIME_MS));
-
-                  return {
-                    ...char,
-                    isRevealed: true,
-                    revealTime: currentRevealTime,
-                    audioScheduled: true,
-                  };
-                }
-              }
-
-              return char;
-            });
-
-            // remove from queue
-            characterRevealQueue.splice(
-              0,
-              characterRevealQueue.findIndex(
-                (q) => currentRevealTime < q.scheduleTime
-              )
-            );
-
-            return hasUpdates
-              ? {
-                  ...line,
-                  revealedChars: shouldBeRevealed,
-                  characters: updatedCharacters,
-                }
-              : line;
-          })
-        );
-
-        if (shouldBeRevealed < lineState.characters.length) {
-          rafRef.current = requestAnimationFrame(typeLoop);
-        } else {
-          setLines((prev) =>
-            prev.map((line) =>
-              line.id === lineState.id
-                ? {
-                    ...line,
-                    revealedChars: line.characters.length,
-                    characters: line.characters.map((char, index) => ({
-                      ...char,
-                      isRevealed: true,
-                      revealTime:
-                        char.revealTime || startTime + index * typingMsPerChar,
-                    })),
-                  }
-                : line
-            )
-          );
-
-          addTimer(() => {
-            completeTypingLineRef.current(lineState);
-          }, 150);
-        }
-      };
-
-      rafRef.current = requestAnimationFrame(typeLoop);
-    },
-    [activeMessage?.options?.typingSpeedMs, addTimer, playCharacterAudio]
-  );
+  }, []);
 
   useEffect(() => {
     if (!activeMessage) {
-      api.start({ scale: 0, opacity: 0 });
-      addTimer(() => {
-        setCurrentSession(null);
-        setIsProcessingQueue(false);
-      }, 200);
-      return;
+      const t = setTimeout(() => setVisibleLines([]), 300);
+      return () => clearTimeout(t);
     }
 
-    const messageLines = parseMessageLines(activeMessage);
-    if (messageLines.length === 0) return;
+    if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
 
-    initializeAudioContext();
-
-    // handle emotion for each message
-    try {
-      const cue = activeMessage.options?.emotion as
-        | { state: any; durationMs?: number }
-        | undefined;
-      if (cue?.state) {
-        requestEmotion(cue.state, cue.durationMs);
-      }
-    } catch (error) {
-      console.warn(
-        "Failed to request emotion:",
-        activeMessage,
-        activeMessage.options.emotion
-      );
+    if (activeMessage.options?.emotion?.state) {
+      requestEmotion(activeMessage.options.emotion.state);
     }
 
-    api.start({ scale: 1, opacity: 1 });
+    const rawText = activeMessage.config.text;
+    const lines = Array.isArray(rawText)
+      ? rawText
+      : String(rawText).split(/\r?\n/);
 
-    const session: MessageSession = {
-      messageId: activeMessage.config.id,
-      totalLines: messageLines.length,
-      currentLineIndex: 0,
-      startedAt: Date.now(),
-    };
+    setVisibleLines([]);
+    processLinesRecursive(lines, 0, activeMessage.config.id);
+  }, [activeMessage?.config.id]);
 
-    setCurrentSession(session);
-    setIsProcessingQueue(true);
+  const processLinesRecursive = useCallback(
+    (allLines: string[], index: number, messageId: string) => {
+      if (useMessageStore.getState().activeMessage?.config.id !== messageId)
+        return;
 
-    // add message lines and start first line after delay
-    setLines((prev) => [...prev, ...messageLines]);
+      if (index >= allLines.length) {
+        setIsTyping(false);
+        markFullyRevealed();
 
-    addTimer(() => {
-      startTypingLine(messageLines[0]);
-    }, 1200);
-
-    const totalReadingMs = messageLines.reduce((sum, line) => {
-      return (
-        sum +
-        calculateReadingTime(line.text, activeMessage.options) +
-        LINE_PAUSE_MS
-      );
-    }, 0);
-
-    if (hardDismissTimerRef.current) {
-      clearTimer(hardDismissTimerRef.current);
-      hardDismissTimerRef.current = null;
-    }
-
-    hardDismissTimerRef.current = addTimer(async () => {
-      const current = useMessageStore.getState().activeMessage;
-      if (current && current.config.id === activeMessage.config.id) {
-        try {
-          await dismissMessage(true);
-        } catch {}
-      }
-    }, Math.max(5000, totalReadingMs + 1500));
-  }, [
-    activeMessage?.config.id,
-    parseMessageLines,
-    api,
-    addTimer,
-    initializeAudioContext,
-  ]);
-
-  const completeTypingLine = useCallback(
-    (lineState: LineState) => {
-      if (isUnmountingRef.current) return;
-
-      // mark line as revealed
-      setLines((prev) =>
-        prev.map((line) =>
-          line.id === lineState.id
-            ? {
-                ...line,
-                status: "complete",
-                revealedChars: line.text.length,
-                characters: line.characters.map((char) => ({
-                  ...char,
-                  isRevealed: true,
-                })),
-              }
-            : line
-        )
-      );
-
-      const lineReadingMs = calculateReadingTime(
-        lineState.text,
-        activeMessage?.options
-      );
-      addTimer(() => {
-        setLines((prev) => prev.filter((l) => l.id !== lineState.id));
-      }, Math.max(900, lineReadingMs));
-
-      const session = currentSession;
-      if (!session || session.messageId !== lineState.messageId) return;
-
-      const isLastLine = lineState.lineIndex >= session.totalLines - 1;
-
-      if (isLastLine) {
-        // message is fully revealed
-        try {
-          markFullyRevealed();
-        } catch (error) {
-          console.warn("Failed to mark fully revealed:", error);
-        }
-
-        // prepare message dismissal
-        const message = activeMessage;
-        if (message) {
-          const wholeText = linesRef.current
-            .filter((l) => l.messageId === message.config.id)
-            .map((l) => l.text)
-            .join(" ");
-          const readingTimeWhole = calculateReadingTime(
-            wholeText,
-            message.options
-          );
-          const readingTimeLast = calculateReadingTime(
-            lineState.text,
-            message.options
-          );
-          const fallbackDelay = Math.max(600, readingTimeLast);
-          const baseDelay =
-            typeof message.config.nextDelayMs === "number"
-              ? Math.max(200, message.config.nextDelayMs)
-              : fallbackDelay;
-
-          addTimer(() => {
-            api.start({ scale: 0.95, opacity: 0 });
-            addTimer(() => handleMessageDismissal(), 200);
-          }, baseDelay);
-        }
-      } else {
-        // prepare next line
-        addTimer(() => {
-          const nextLineIndex = lineState.lineIndex + 1;
-          setCurrentSession((prev) =>
-            prev ? { ...prev, currentLineIndex: nextLineIndex } : null
-          );
-
-          const nextLine = linesRef.current.find(
-            (l) =>
-              l.messageId === lineState.messageId &&
-              l.lineIndex === nextLineIndex
-          );
-
-          if (nextLine) {
-            const currentVisible = linesRef.current.filter(
-              (l) => l.status === "typing" || l.status === "complete"
-            );
-
-            if (currentVisible.length >= 4) {
-              const oldest = currentVisible[0];
-              setLines((prev) =>
-                prev.map((l) =>
-                  l.id === oldest.id ? { ...l, status: "removing" } : l
-                )
-              );
-              addTimer(() => {
-                setLines((prev) => prev.filter((l) => l.id !== oldest.id));
-                startTypingLine(nextLine);
-              }, 160);
-            } else {
-              startTypingLine(nextLine);
-            }
-          }
-        }, LINE_PAUSE_MS);
-      }
-    },
-    [
-      currentSession,
-      activeMessage,
-      markFullyRevealed,
-      calculateReadingTime,
-      addTimer,
-      api,
-    ]
-  );
-
-  useEffect(() => {
-    completeTypingLineRef.current = completeTypingLine;
-  }, [completeTypingLine]);
-
-  const handleMessageDismissal = useCallback(async () => {
-    if (isUnmountingRef.current) return;
-
-    const state = useMessageStore.getState();
-    const current = state.activeMessage;
-    if (!current) return;
-
-    const now = Date.now();
-    const canDismissNow =
-      now >= current.minimumDisplayUntil &&
-      current.hasBeenFullyRevealed &&
-      (current.userHasInteracted || now >= current.minimumDisplayUntil + 1000);
-
-    if (!canDismissNow) {
-      addTimer(() => handleMessageDismissal(), 1000);
-      return;
-    }
-
-    api.start({ scale: 0.95, opacity: 0 });
-    addTimer(async () => {
-      setLines([]);
-      setCurrentSession(null);
-      try {
-        const success = await dismissMessage();
-        if (!success) {
-          console.warn("Message dismissal was blocked by store");
-        }
-      } catch (error) {
-        console.error("Failed to dismiss message:", error);
-      }
-      setIsProcessingQueue(false);
-    }, MESSAGE_TRANSITION_MS);
-  }, [api, dismissMessage, addTimer]);
-
-  const handleUserInteraction = useCallback(async () => {
-    try {
-      await initializeAudioContext();
-      markUserInteraction();
-    } catch (error) {
-      console.warn("Failed to handle user interaction:", error);
-    }
-  }, [markUserInteraction, initializeAudioContext]);
-
-  const handleClick = useCallback(() => {
-    if (!currentSession || !activeMessage) return;
-
-    handleUserInteraction();
-
-    const currentLine = lines.find(
-      (l) =>
-        l.messageId === currentSession.messageId &&
-        l.lineIndex === currentSession.currentLineIndex
-    );
-
-    if (!currentLine || currentLine.status !== "complete") return;
-
-    const isLastLine = currentLine.lineIndex >= currentSession.totalLines - 1;
-
-    if (!isLastLine) {
-      const nextLineIndex = currentLine.lineIndex + 1;
-      const nextLine = lines.find(
-        (l) =>
-          l.messageId === currentSession.messageId &&
-          l.lineIndex === nextLineIndex
-      );
-
-      if (nextLine && nextLine.status === "queued") {
-        setCurrentSession((prev) =>
-          prev ? { ...prev, currentLineIndex: nextLineIndex } : null
+        const totalChars = allLines.join("").length;
+        const readingTime = Math.max(
+          MIN_DISMISS_MS,
+          totalChars * CHAR_READING_MS + 1500
         );
-        startTypingLine(nextLine);
+
+        // TODO: don't dismiss if user is hovering
+        dismissTimerRef.current = window.setTimeout(() => {
+          dismissMessage();
+        }, readingTime);
+        return;
       }
-    } else {
-      handleMessageDismissal();
-    }
-  }, [
-    currentSession,
-    activeMessage,
-    lines,
-    handleUserInteraction,
-    startTypingLine,
-    handleMessageDismissal,
-  ]);
 
-  const renderCharacter = useCallback(
-    (char: CharacterState, lineId: string, lineStartTime?: number) => {
-      // calculate staggered delay based on character index and line start time
-      const baseDelay = char.index * (12 / 1000); // 12ms stagger between characters
+      setIsTyping(true);
+      const currentLineText = allLines[index];
 
-      // use revealTime if available for more precise timing
-      const animationDelay =
-        char.revealTime && lineStartTime
-          ? Math.max(0, (char.revealTime - lineStartTime) / 1000) // Convert to seconds
-          : baseDelay;
+      setVisibleLines((prev) => {
+        return [
+          ...prev,
+          {
+            id: `${messageId}-${index}`,
+            text: currentLineText,
+            time: new Date(),
+          },
+        ].slice(-3);
+      });
 
-      // Force animation state based on reveal status
-      const animationState = char.isRevealed ? "visible" : "hidden";
+      const typingDuration = currentLineText.length * TYPING_SPEED_MS;
+      const nextStepDelay = typingDuration + BASE_LINE_DELAY_MS;
 
-      return (
-        <Char
-          key={`${lineId}-char-${char.index}`}
-          initial="hidden"
-          animate={animationState}
-          variants={charVariants}
-          custom={animationDelay}
-          // Force re-animation when reveal state changes
-          transition={{
-            delay: animationDelay,
-            type: "spring",
-            stiffness: 450,
-            damping: 25,
-            mass: 0.2,
-          }}
-        >
-          {char.char === " " ? "\u00A0" : char.char}
-        </Char>
-      );
+      setTimeout(() => {
+        processLinesRecursive(allLines, index + 1, messageId);
+      }, nextStepDelay);
     },
-    []
+    [markFullyRevealed]
   );
 
-  const renderLineContent = useCallback(
-    (line: LineState) => {
-      return (
-        <span>
-          {line.characters.map((char) =>
-            renderCharacter(char, line.id, line.startTime)
-          )}
-        </span>
-      );
-    },
-    [renderCharacter]
-  );
+  // TODO: check usecase for this or delete
+  const handleClick = () => markUserInteraction();
 
-  if (!activeMessage) return null;
-
-  const cfg = activeMessage.config;
-  const offset = cfg.positionOffset ?? [0, 0, 0];
-  const position: [number, number, number] = [
+  const offset = activeMessage?.config.positionOffset ?? [0, 0, 0];
+  const finalPos: [number, number, number] = [
     anchor[0] + offset[0],
     anchor[1] + offset[1],
     anchor[2] + offset[2],
   ];
 
-  const visibleLines = lines
-    .filter((line) => line.status === "typing" || line.status === "complete")
-    .slice(-4);
-
   return (
-    <a.group scale={spring.scale as any} position={position}>
+    <a.group position={finalPos}>
       <Html
         style={{
-          maxWidth: "min(92vw, 420px)",
-          width: "fit-content",
-          pointerEvents: "auto",
-          transform: "translateX(-50%)",
+          width: "29.5rem",
+          maxWidth: "92vw",
+          pointerEvents: "none",
+          transform: "translate3d(-50%, 0, 0)",
         }}
+        zIndexRange={[100, 0]}
       >
-        <Container style={{ opacity: spring.opacity as any }}>
-          {cfg.label && (
-            <Label
-              variants={MOTION_VARIANTS}
-              initial="initial"
-              animate="animate"
-              exit="exit"
+        <AnimatePresence mode="popLayout">
+          {activeMessage && (
+            <Container
+              initial={{ y: 10, scale: 0.9, opacity: 0 }}
+              animate={{ y: 0, scale: 1, opacity: 1 }}
+              exit={{ y: -10, scale: 0.9, opacity: 0 }}
+              transition={{
+                type: "spring",
+                bounce: 0.2,
+                duration: 0.4,
+              }}
             >
-              {cfg.label}
-            </Label>
-          )}
-
-          <ThreadContainer as={motion.div} layoutRoot layout>
-            <AnimatePresence mode="popLayout">
-              {visibleLines.map((line) => (
-                <ThreadBubble
-                  key={line.id}
-                  layout="position"
-                  variants={bubbleVariants}
-                  initial="initial"
-                  animate="animate"
-                  exit="exit"
-                  transition={Transitions.quick.layout as any}
-                  onClick={handleClick}
+              {activeMessage?.config.label && (
+                <Label
+                  variants={labelVariants}
+                  initial="hidden"
+                  animate="visible"
                 >
-                  <ThreadText>{renderLineContent(line)}</ThreadText>
-                  <TimeTag>
-                    {line.timestamp.toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </TimeTag>
-                </ThreadBubble>
-              ))}
-            </AnimatePresence>
-          </ThreadContainer>
-        </Container>
+                  {activeMessage.config.label}
+                </Label>
+              )}
+
+              <BubbleContainer onClick={handleClick}>
+                <AnimatePresence mode="popLayout">
+                  {visibleLines.map((line) => (
+                    <BubbleLine
+                      key={line.id}
+                      layout
+                      initial={{ opacity: 0, scale: 0.9, x: -15 }}
+                      animate={{ opacity: 1, scale: 1, x: 0 }}
+                      exit={{
+                        opacity: 0,
+                        scale: 0.9,
+                        transition: { duration: 0.2 },
+                      }}
+                      transition={{
+                        type: "spring",
+                        bounce: 0.2,
+                        duration: 0.4,
+                      }}
+                    >
+                      <TypewriterText text={line.text} />
+                      <TimeTag>
+                        {line.time.toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </TimeTag>
+                    </BubbleLine>
+                  ))}
+
+                  {queueLength > 0 && !isTyping && (
+                    <TypingIndicator key="typing-indicator" />
+                  )}
+                </AnimatePresence>
+              </BubbleContainer>
+            </Container>
+          )}
+        </AnimatePresence>
       </Html>
     </a.group>
   );
 });
 
-const Container = styled.div`
-  pointer-events: auto;
+const Container = styled(motion.div)`
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
   align-items: center;
-  gap: 8px;
-  user-select: none;
-`;
-
-const ThreadContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
-  margin-bottom: 8px;
+  justify-content: flex-start;
+  pointer-events: auto;
+  gap: 4px;
 `;
 
 const Label = styled(motion.div)`
   font-size: 16px;
-  color: var(--text-color);
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  color: var(--text-color, #333);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 6px 12px;
-  background: rgba(0, 0, 0, 0.1);
+  padding: 6px 16px;
+  background: rgba(33, 33, 33, 0.1);
   border-radius: 50px;
   backdrop-filter: blur(8px);
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 `;
 
-const ThreadBubble = styled(motion.div)`
+const BubbleContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  align-items: flex-start;
+  padding: 4px;
+  border-radius: 28px;
+  background: rgba(33, 33, 33, 0.1);
+  backdrop-filter: blur(16px);
+`;
+
+const BubbleLine = styled(motion.div)`
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 15px 20px;
+
   background: var(--primary-color);
   color: var(--text-color);
-  border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
-  padding: 12px 16px 24px 16px;
-  width: auto;
-  max-width: calc(100vw - 32px);
-  min-width: min(92vw, 400px);
-  display: inline-flex;
-  align-self: center;
-  cursor: pointer;
+  border-radius: 24px;
+  box-shadow: 0 4px 20px rgba(33, 33, 33, 0.1);
+
+  width: fit-content;
+  min-width: 90px;
+  max-width: 100%;
 `;
 
-const ThreadText = styled.div`
-  font-size: 15px;
+const IndicatorBubble = styled(motion.div)`
+  background: rgba(33, 33, 33, 0.15);
+  backdrop-filter: blur(12px);
+  padding: 12px 16px;
+  border-radius: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  height: 36px;
+`;
+
+const Dot = styled(motion.div)<{ $delay: number }>`
+  width: 6px;
+  height: 6px;
+  background: var(--text-color);
+  border-radius: 50%;
+  opacity: 0.75;
+  animation: bounce 1.4s infinite ease-in-out both;
+  animation-delay: ${(props) => props.$delay}s;
+
+  @keyframes bounce {
+    0%,
+    80%,
+    100% {
+      transform: scale(0);
+    }
+    40% {
+      transform: scale(1);
+    }
+  }
+`;
+
+const TextContainer = styled.div`
+  display: block;
   line-height: 1.4;
-  display: inline;
+  font-size: 1.125rem;
+  font-weight: 500;
+  letter-spacing: -2%;
+  color: var(--text-color);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   white-space: pre-wrap;
-  word-wrap: break-word;
+`;
+
+const WordWrapper = styled.span`
+  display: inline-block;
+  white-space: nowrap;
+`;
+
+const Space = styled.span`
+  display: inline;
+  font-size: 1em;
 `;
 
 const Char = styled(motion.span)`
   display: inline-block;
-  will-change: transform, opacity;
-  transform-origin: center bottom;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  backface-visibility: hidden;
+  will-change: opacity, transform;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 `;
 
 const TimeTag = styled.div`
-  position: absolute;
-  right: 12px;
-  bottom: 6px;
-  font-size: 11px;
-  opacity: 0.7;
-  color: var(--text-secondary);
+  font-size: 0.875rem;
+  opacity: 0.75;
+  font-weight: 500;
+  color: var(--text-color);
+  letter-spacing: -2%;
 `;
+
+const labelVariants: Variants = {
+  hidden: { opacity: 0, y: 10 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: "easeOut" },
+  },
+};
 
 const charVariants: Variants = {
   hidden: {
     opacity: 0,
-    scale: 0.9,
-    rotateX: -20,
-    y: 12,
+    y: 8,
+    scale: 0.8,
+    rotateX: -15,
   },
-  visible: {
+  visible: (i: number) => ({
     opacity: 1,
+    y: 0,
     scale: 1,
     rotateX: 0,
-    y: 0,
     transition: {
-      type: "spring" as const,
-      stiffness: 420,
-      damping: 28,
-      mass: 0.25,
-      duration: undefined,
-    },
-  },
-};
-
-const bubbleVariants: Variants = {
-  initial: {
-    opacity: 0,
-    scale: 0.9,
-    y: 10,
-  },
-  animate: {
-    opacity: 1,
-    scale: 1,
-    y: 0,
-    transition: {
-      type: "spring" as const,
-      stiffness: 300,
+      delay: i * (TYPING_SPEED_MS / 1000),
+      type: "spring",
       damping: 20,
-      mass: 0.2,
+      stiffness: 450,
+      mass: 0.5,
     },
-  },
-  exit: {
-    opacity: 0,
-    scale: 0.9,
-    y: -4,
-    transition: {
-      duration: 0.25,
-      ease: "easeInOut",
-    },
-  },
+  }),
 };
