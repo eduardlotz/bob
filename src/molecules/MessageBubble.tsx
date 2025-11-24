@@ -398,8 +398,8 @@ const Dot = styled(motion.div)<{ $delay: number }>`
 const TextContainer = styled.div`
   display: block;
   line-height: 1.4;
-  font-size: 1.125rem;
-  font-weight: 500;
+  font-size: 1rem;
+  font-weight: 400;
   letter-spacing: -2%;
   color: var(--text-color);
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -420,13 +420,13 @@ const Char = styled(motion.span)`
   display: inline-block;
   backface-visibility: hidden;
   will-change: opacity, transform;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 `;
 
 const TimeTag = styled.div`
   font-size: 0.875rem;
   opacity: 0.75;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--text-color);
   letter-spacing: -2%;
 `;
