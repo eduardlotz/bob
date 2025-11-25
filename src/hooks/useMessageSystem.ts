@@ -16,6 +16,9 @@ export function useMessageSystem() {
   const routeShownRef = useRef<Record<string, boolean>>({});
   const routeChangeTimeoutRef = useRef<NodeJS.Timeout>();
 
+  // show welcome message on first visit, else random greeting
+  // show about message on first /about visit
+  // TODO: refactor for scalability
   const handleRouteChange = useCallback(
     async (route: string) => {
       if (routeChangeTimeoutRef.current) {
@@ -58,7 +61,7 @@ export function useMessageSystem() {
             });
           })
           .otherwise(() => Promise.resolve());
-      }, 100);
+      }, 2000);
     },
     [showMessage, showMessages, isHydrated]
   );
@@ -90,7 +93,7 @@ export function useMessageSystem() {
     const threshold = 10;
     if (prev < threshold && manualTaps >= threshold) {
       hasShownFirstTapRef.current = true;
-      setTimeout(() => showMessage("first_tap_hint"), 1500);
+      showMessage("first_tap_hint");
     }
   }, [manualTaps, showMessage, systemPaused]);
 }

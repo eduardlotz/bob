@@ -147,15 +147,8 @@ const Scene = ({
               cameraControlsRef={cameraControlsRef}
               permissionGranted={permissionGranted}
               onEmotionUpdate={(data) => {
-                // TODO: check if this true
-                // Only update emotion state on home route to prevent auto-tap effects
-                if (currentRoute === ROUTE_PATHS.HOME) {
-                  setEmotionData(data.emotionState);
-                  onEmotionUpdate?.(data);
-                } else {
-                  // Just pass through emotion data without updating tap count
-                  onEmotionUpdate?.(data);
-                }
+                // TODO: check if it actually works?
+                onEmotionUpdate?.(data);
               }}
             />
 

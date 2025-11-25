@@ -335,7 +335,7 @@ const Label = styled(motion.div)`
 const BubbleContainer = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 4px;
   width: 100%;
   align-items: flex-start;
   padding: 4px;
@@ -371,7 +371,8 @@ const IndicatorBubble = styled(motion.div)`
   display: flex;
   gap: 4px;
   align-items: center;
-  height: 36px;
+  height: 40px;
+  margin-left: 2px;
 `;
 
 const Dot = styled(motion.div)<{ $delay: number }>`

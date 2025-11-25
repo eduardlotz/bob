@@ -40,7 +40,8 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
       "Ich bin Bob 😊",
       "Ist leider alles noch in Arbeit hier, aber der Kern steht schonmal",
       "Am Ende soll es ein Mix aus persönlicher Website und einem Clicker-Game werden ✨",
-      "Tipp mich doch mal 🫵 macht spaß!",
+      "Der Clicker-Game Part steht schonmal, jetzt kommt so langsam der persönliche Teil 🌚",
+      "Tipp mich doch mal an 🫵 macht Spaß!",
     ],
     label: "Bob",
     options: {
@@ -48,7 +49,7 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
       baseDismissMs: 1800,
       contentLengthFactorMs: 40,
       tailEnabled: false,
-      emotion: { state: "happy", durationMs: 3000 },
+      emotion: { state: "happy", durationMs: 5000 },
     },
     repeatRule: "oncePerPersist",
     audioEnabled: true,
@@ -146,6 +147,8 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
       "Ansonsten kannst du im Shop NATÜRLICH AUCH SKINS kaufen",
       "jedes spiel braucht doch skins oder nicht??",
       "sonst wird das ja langweilig hier 🥱",
+      "aber reicht jetzt von mir, ich lass dich mal in Ruhe gucken",
+      "viel Spaß :)",
     ],
     label: "Bob",
     options: {
@@ -165,7 +168,8 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
       "Hier gibts leider noch nicht viel zu sehen",
       "Sorry 🥀😔",
       "Aber bald kommen ein paar Infos über mich",
-      "Und generell so der Sinn der Website",
+      "Buchempfehlungen, Musik, Filme, alles was einen so inspiriert",
+      "dauert aber noch ein bisschen",
       "wird schon noch alles",
     ],
     label: "Eddie",
@@ -190,7 +194,6 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
       "quasi ein chat zwischen freunden",
       "nur dass du nicht antworten kannst hehe",
       "aber das kommt vielleicht noch irgendwann. in form von vorauswahlen oder so, mal gucken",
-      "tüdelüüüü",
     ],
     label: "Bob (dev)",
     options: {
@@ -209,6 +212,7 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
     id: "dev_message_2",
     text: [
       "und jetzt kommt nochmal eine so richtig lange nachricht die den schönen text sound testet hmmmmmmmmmmmm cool wow",
+      "tüdelüüüü",
     ],
     label: "Bob",
     options: {
