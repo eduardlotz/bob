@@ -36,22 +36,19 @@ import { BlobForm } from "@/components/BlobForm";
 import { getSelectedBlobForm, getBlobFormType } from "@/types/blobForms";
 import { SimsPlumbob } from "@/3d-objects/models/simsPlumbob";
 
-// TODO: Move these constants to a shared config file
-// Default head position Y
-
+// TODO: move constants to a shared config file
 const HEAD_POSITION_Y = 0;
 const MAX_ROTATION_X = 0.9;
 const MAX_ROTATION_Y = 0.9;
 
-// Idle animation constants
-const IDLE_TIMEOUT_MIN = 15000; // 15 seconds
-const IDLE_ANIMATION_DURATION = 3000; // 3 seconds for each animation
+const IDLE_TIMEOUT_MIN = 15000;
+const IDLE_ANIMATION_DURATION = 3000;
 
+// TODO: move to utils file
 const createEyeGeometries = () => {
   const sphereGeometry = new SphereGeometry(0.12, 16, 16);
   const baseGeometry = sphereGeometry.clone();
 
-  // Blinking eye geometry (squeezed from top and bottom)
   const blinkGeometry = sphereGeometry.clone();
   const blinkPositions = [];
   const basePositions = sphereGeometry.getAttribute("position").array;
@@ -61,10 +58,8 @@ const createEyeGeometries = () => {
     const y = basePositions[i + 1];
     const z = basePositions[i + 2];
 
-    // Squeeze from both top and bottom for blinking
     let newY = y;
     if (Math.abs(y) > 0.02) {
-      // Squeeze both top and bottom for closed eye effect
       newY = y * 0.1;
     }
 
@@ -77,7 +72,6 @@ const createEyeGeometries = () => {
   );
   blinkGeometry.computeVertexNormals();
 
-  // Mad eye geometry (squeezed from bottom)
   const madGeometry = sphereGeometry.clone();
   const madPositions = [];
 
@@ -86,13 +80,10 @@ const createEyeGeometries = () => {
     const y = basePositions[i + 1];
     const z = basePositions[i + 2];
 
-    // Squeeze bottom half more than top half
     let newY = y;
     if (y < 0) {
-      // Bottom half - squeeze more
       newY = y * 0.3;
     } else if (y > 0.02) {
-      // Top half - squeeze less
       newY = y * 0.8;
     }
 
@@ -105,7 +96,6 @@ const createEyeGeometries = () => {
   );
   madGeometry.computeVertexNormals();
 
-  // Happy eye geometry (squeezed from top)
   const happyGeometry = sphereGeometry.clone();
   const happyPositions = [];
 
@@ -114,13 +104,10 @@ const createEyeGeometries = () => {
     const y = basePositions[i + 1];
     const z = basePositions[i + 2];
 
-    // Squeeze top half more than bottom half
     let newY = y;
     if (y > 0) {
-      // Top half - squeeze more
       newY = y * 0.3;
     } else if (y < -0.02) {
-      // Bottom half - squeeze less
       newY = y * 0.8;
     }
 
@@ -133,7 +120,6 @@ const createEyeGeometries = () => {
   );
   happyGeometry.computeVertexNormals();
 
-  // Dizzy eye geometry (squeezed from sides like ><)
   const dizzyGeometry = sphereGeometry.clone();
   const dizzyPositions = [];
 
@@ -142,13 +128,10 @@ const createEyeGeometries = () => {
     const y = basePositions[i + 1];
     const z = basePositions[i + 2];
 
-    // Squeeze from sides (left and right)
     let newY = y;
     if (y < 0) {
-      // Bottom side - squeeze more
       newY = y * 0.3;
     } else if (y > 0.02) {
-      // Top side - squeeze more
       newY = y * 0.3;
     }
 
@@ -170,6 +153,7 @@ const createEyeGeometries = () => {
   };
 };
 
+// TODO: refactor with animation manager
 export function BlobHead({
   onHeadClick,
   motionPermissionGranted: permissionGranted,
@@ -191,7 +175,6 @@ export function BlobHead({
 }) {
   const { currentTheme, bobItems, blobForms } = useGameStore();
 
-  // Get theme-specific blob colors
   const blobColor = currentTheme?.blobColor;
   const outlineColor = currentTheme?.outlineColor;
   const eyeColor = currentTheme?.eyeColor;
@@ -199,10 +182,8 @@ export function BlobHead({
   const leftEyeRef = useRef<Mesh>(null!);
   const rightEyeRef = useRef<Mesh>(null!);
 
-  // Create eye geometries once
   const eyeGeometries = useRef(createEyeGeometries());
 
-  // Dizzy animation state
   const [dizzyStars, setDizzyStars] = useState<
     Array<{
       id: number;
@@ -223,25 +204,18 @@ export function BlobHead({
   const [idleAnimationStart, setIdleAnimationStart] = useState(0);
   const [lastActivity, setLastActivity] = useState(Date.now());
   const [lastIdleAnimationTime, setLastIdleAnimationTime] = useState(0);
-  const [isJumping, setIsJumping] = useState(false);
-  const [squeezeScale, setSqueezeScale] = useState(1);
-  const particleIdCounter = useRef(0);
   const [cameraZoomAnimation, setCameraZoomAnimation] = useState(false);
 
-  // Ref for physics body
-  const rigidBodyRef = useRef<RapierRigidBody>(null);
   const { orientation, acceleration } = useDeviceOrientation();
 
-  // view store to check if we should control camera
   const { isBlobView } = useViewStore();
 
-  // Keep a ref to spring api for fine-grained control
   const [spring, api] = useSpring(() => ({
-    scale: [0, 0, 0], // start invisible
+    scale: [0, 0, 0],
     config: { tension: 200, friction: 15 },
   }));
 
-  // Trigger spawn animation once on mount
+  // spawn animation
   useEffect(() => {
     api.start({
       scale: [1.2, 1.2, 1.2],
@@ -250,10 +224,8 @@ export function BlobHead({
     });
   }, []);
 
-  // Animate scale when showOptions or isClosing changes
   useEffect(() => {
     if (!showOptions || isClosing) {
-      // Add delay when closing to trigger after all closing animations are done
       const delay = isClosing ? 400 : 0;
       api.start({
         scale: [1.2, 1.2, 1.2],
@@ -262,16 +234,15 @@ export function BlobHead({
       });
     } else {
       api.start({
-        scale: [1.2, 1.2, 1.2], // Keep normal scale when menu is open
+        scale: [1.2, 1.2, 1.2],
         config: { tension: 300, friction: 10 },
       });
     }
   }, [showOptions, isClosing]);
 
-  // Track mouse position for head rotation (only in blob view mode)
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
-      // only update mouse position when in blob view mode
+      // dont update mouse position when in object view mode (/about scene)
       if (isBlobView()) {
         setMousePosition({
           x: (event.clientX / window.innerWidth) * 2 - 1,
@@ -283,7 +254,6 @@ export function BlobHead({
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, [isBlobView]);
 
-  // Blinking animation every 4-5 seconds
   useEffect(() => {
     const blinkInterval = setInterval(() => {
       setBlinking(true);
@@ -292,7 +262,7 @@ export function BlobHead({
     return () => clearInterval(blinkInterval);
   }, []);
 
-  // micro "happy" jump when emotion switches to happy (also used when triggered by messages)
+  // micro "happy" jump when emotion switches to happy
   useEffect(() => {
     if (emotionState === "happy") {
       api.start({
@@ -307,18 +277,17 @@ export function BlobHead({
     }
   }, [emotionState]);
 
-  // Improved idle animation logic - only triggers every 15 seconds
   useEffect(() => {
     const checkIdleAnimation = () => {
       const now = Date.now();
       const timeSinceActivity = now - lastActivity;
       const timeSinceLastIdleAnimation = now - lastIdleAnimationTime;
-      const idleTimeout = IDLE_TIMEOUT_MIN; // 15 seconds
+      const idleTimeout = IDLE_TIMEOUT_MIN;
 
-      // Only trigger if:
-      // 1. User has been idle for 15+ seconds
-      // 2. No animation is currently playing
-      // 3. At least 15 seconds have passed since the last idle animation
+      // trigger one of both idle animations if
+      // user has been idle for 15+ seconds
+      // no animation is currently playing
+      // 15 seconds have passed since the last idle animation
       if (
         timeSinceActivity > idleTimeout &&
         idleAnimation === "none" &&
@@ -330,14 +299,13 @@ export function BlobHead({
 
         setIdleAnimation(randomAnimation);
         setIdleAnimationStart(now);
-        setLastIdleAnimationTime(now); // Track when we started this animation
+        setLastIdleAnimationTime(now);
 
-        // Always reset head to center before animating
+        // reset head to center before animating
         if (headRef.current) {
           headRef.current.rotation.set(0, 0, 0);
         }
 
-        // Reset after animation duration
         setTimeout(() => {
           setIdleAnimation("none");
         }, IDLE_ANIMATION_DURATION);
@@ -348,15 +316,11 @@ export function BlobHead({
     return () => clearInterval(idleCheckInterval);
   }, [lastActivity, idleAnimation, lastIdleAnimationTime]);
 
-  // Update activity timestamp on mouse movement (desktop) OR device motion (mobile)
   useEffect(() => {
     const handleActivity = () => {
       setLastActivity(Date.now());
-      // Cancel current idle animation if user becomes active
       if (idleAnimation !== "none") {
         setIdleAnimation("none");
-        setIsJumping(false);
-        setSqueezeScale(1);
       }
     };
 
@@ -373,57 +337,12 @@ export function BlobHead({
     };
   }, [idleAnimation]);
 
-  // Treat noticeable device motion as activity (mobile)
-  // Ref to remember previous orientation values between renders (mobile)
-  const prevOrientationRef = useRef<DeviceOrientation | null>(null);
-
-  useEffect(() => {
-    if (!isMobile || !permissionGranted) return;
-
-    const movementDetected = () => {
-      setLastActivity(Date.now());
-      if (idleAnimation !== "none") {
-        setIdleAnimation("none");
-        setIsJumping(false);
-        setSqueezeScale(1);
-      }
-    };
-
-    const thresholdAccel = 0.2; // g units (~2 m/s^2)
-    const thresholdDeg = 0.5; // degrees (lower = more sensitive)
-
-    const accelMag =
-      Math.abs(acceleration?.x ?? 0) +
-      Math.abs(acceleration?.y ?? 0) +
-      Math.abs(acceleration?.z ?? 0);
-    const orientChange =
-      orientation && prevOrientationRef.current
-        ? Math.abs(
-            (orientation.alpha ?? 0) - (prevOrientationRef.current.alpha ?? 0)
-          ) +
-          Math.abs(
-            (orientation.beta ?? 0) - (prevOrientationRef.current.beta ?? 0)
-          ) +
-          Math.abs(
-            (orientation.gamma ?? 0) - (prevOrientationRef.current.gamma ?? 0)
-          )
-        : 0;
-
-    if (accelMag > thresholdAccel || orientChange > thresholdDeg) {
-      movementDetected();
-    }
-
-    prevOrientationRef.current = orientation;
-  }, [orientation, acceleration, isMobile, permissionGranted, idleAnimation]);
-
-  // Manage dizzy stars
   useEffect(() => {
     if (emotionState === "dizzy") {
-      // Create 5 stars with different properties
       const newStars = Array.from({ length: 5 }, (_, i) => ({
         id: i,
         visible: false,
-        orbitAngle: i * 72 * (Math.PI / 180), // Spread evenly around circle
+        orbitAngle: i * 72 * (Math.PI / 180),
         orbitRadius: 1.5 + Math.random() * 0.5,
         orbitSpeed: 1 + Math.random() * 2,
         spinSpeed: 2 + Math.random() * 4,
@@ -432,7 +351,6 @@ export function BlobHead({
       }));
       setDizzyStars(newStars);
 
-      // Stagger star appearance
       newStars.forEach((star, index) => {
         setTimeout(() => {
           setDizzyStars((prev) =>
@@ -441,33 +359,24 @@ export function BlobHead({
         }, index * 200);
       });
     } else {
-      // Hide all stars when not dizzy
       setDizzyStars([]);
     }
   }, [emotionState]);
 
-  // Animation for head movement and camera positioning
   useFrame(({ clock }, delta) => {
-    // Handle idle animations first (they take priority)
     if (idleAnimation !== "none") {
       handleIdleAnimation(clock, delta);
     } else {
-      // Handle device motion for mobile
       if (isMobile && orientation && acceleration && permissionGranted) {
         handleMobileMovement(clock, delta);
       } else {
-        // Handle mouse movement for desktop
         handleDesktopMovement(clock, delta, showOptions);
       }
     }
 
-    // Common animations regardless of device
-    // Eye animations based on emotion state
     animateEyes(delta);
 
-    // Animate dizzy state
     if (emotionState === "dizzy") {
-      // Enhanced head wobble
       const wobbleX = Math.sin(clock.getElapsedTime() * 8) * 0.3;
       const wobbleY = Math.cos(clock.getElapsedTime() * 6) * 0.2;
       const wobbleZ = Math.sin(clock.getElapsedTime() * 10) * 0.4;
@@ -476,14 +385,12 @@ export function BlobHead({
       headRef.current.rotation.y += wobbleY * delta;
       headRef.current.rotation.z += wobbleZ * delta;
 
-      // Add some position wobble too
       const posWobbleX = Math.sin(clock.getElapsedTime() * 12) * 0.05;
       const posWobbleY = Math.cos(clock.getElapsedTime() * 9) * 0.03;
 
       headRef.current.position.x += posWobbleX * delta;
       headRef.current.position.y += posWobbleY * delta;
 
-      // Animate orbiting stars
       setDizzyStars((prev) =>
         prev.map((star) => ({
           ...star,
@@ -506,10 +413,8 @@ export function BlobHead({
       orientBeta,
     } = calculateAcceleratedRotation(acceleration, orientation);
 
-    // Apply mobile specific head rotation
     applyHeadRotation(targetRotY, targetRotX, 0, delta);
 
-    // Apply mobile specific head position (shake effect)
     applyMobileHeadPosition(
       clock,
       delta,
@@ -519,14 +424,12 @@ export function BlobHead({
       orientBeta
     );
 
-    // Set camera look-at for mobile
     const lookDirection = new Vector3(
       -targetRotX,
       targetRotY,
       targetRotZ
     ).normalize();
 
-    // Add camera zoom animation on tap
     const baseZoom = showOptions
       ? VISIBLE_OPTIONS_CAMERA_ZOOM
       : HIDDEN_OPTIONS_CAMERA_ZOOM;
@@ -536,7 +439,6 @@ export function BlobHead({
     const cameraPosition = new Vector3(0, CAMERA_HEIGHT, baseZoom + zoomOffset);
     const target = cameraPosition.clone().add(lookDirection);
 
-    // only control camera when in blob view mode
     if (isBlobView()) {
       cameraControlsRef.current?.setLookAt(
         cameraPosition.x,
@@ -550,37 +452,28 @@ export function BlobHead({
     }
   };
 
-  // Handle desktop mouse movement
   const handleDesktopMovement = (
     clock: Clock,
     delta: number,
     showOptions: boolean
   ) => {
-    // Calculate target rotations based on mouse position
-    // Fix Y-axis inversion: cursor at top should make head look up (negative rotation)
     const targetRotY = mousePosition.x * MAX_ROTATION_X;
-    // const targetRotX = mousePosition.y * MAX_ROTATION_Y;
     const targetRotX =
       (mousePosition.y - (showOptions ? 0 : CAMERA_Y_POSITION)) *
       MAX_ROTATION_Y;
     const targetRotZ = -mousePosition.x * MAX_ROTATION_X;
 
-    // Apply desktop specific head rotation
     applyHeadRotation(targetRotX, targetRotY, targetRotZ, delta);
 
-    // Apply breathing animation for head position
     const floatY = Math.sin(clock.getElapsedTime() * 0.5) * 0.1;
     headRef.current.position.y = floatY + HEAD_POSITION_Y;
 
-    // Set camera look-at for desktop
-    // Fix camera Y-axis inversion to match head movement
     const cursorPos = new Vector3(
       mousePosition.x * 0.2,
-      -(mousePosition.y - 0.5) * 0.4, // Invert Y and center around 0.5
+      -(mousePosition.y - 0.5) * 0.4,
       0
     );
 
-    // Add camera zoom animation on tap
     const baseZoom = showOptions
       ? VISIBLE_OPTIONS_CAMERA_ZOOM
       : HIDDEN_OPTIONS_CAMERA_ZOOM;
@@ -588,7 +481,6 @@ export function BlobHead({
       ? Math.sin(clock.getElapsedTime() * 20) * 0.5
       : 0;
 
-    // only control camera when in blob view mode
     if (isBlobView()) {
       cameraControlsRef.current?.setLookAt(
         0,
@@ -602,7 +494,6 @@ export function BlobHead({
     }
   };
 
-  // Common function to apply head rotation
   const applyHeadRotation = (
     rotX: number,
     rotY: number,
@@ -626,7 +517,6 @@ export function BlobHead({
     );
   };
 
-  // Mobile specific head position with shake effect
   const applyMobileHeadPosition = (
     clock: Clock,
     delta: number,
@@ -639,7 +529,6 @@ export function BlobHead({
     const shakeOffsetX = MathUtils.clamp(accelX * shakeStrength, -0.4, 0.4);
     const shakeOffsetY = MathUtils.clamp(accelY * shakeStrength, -0.4, 0.4);
 
-    // const floatY = Math.sin(clock.getElapsedTime() * 0.5) * 0.1;
     const floatY = HEAD_POSITION_Y;
 
     headRef.current.position.x = MathUtils.lerp(
@@ -654,39 +543,32 @@ export function BlobHead({
     );
   };
 
-  // Handle idle animations
   const handleIdleAnimation = (clock: Clock, delta: number) => {
     const animationProgress =
       (Date.now() - idleAnimationStart) / IDLE_ANIMATION_DURATION;
     const easedProgress = 1 - Math.pow(1 - animationProgress, 3); // Ease out
 
     if (idleAnimation === "spin") {
-      // Always reset to center at start
       if (animationProgress < 0.01 && headRef.current) {
         headRef.current.rotation.set(0, 0, 0);
       }
-      // Spin animation: build up motion, spin around y-axis, then settle back
-      const spinPhase = animationProgress * 3; // 3 phases: build up, spin, settle
+
+      const spinPhase = animationProgress * 3;
 
       if (spinPhase < 1) {
-        // Phase 1: Build up motion (0-33% of animation)
         const buildUpProgress = spinPhase;
         const buildUpEase = 1 - Math.pow(1 - buildUpProgress, 2);
-        const rotationY = buildUpEase * Math.PI * 2 * 0.3; // Small rotation to build momentum
+        const rotationY = buildUpEase * Math.PI * 2 * 0.3;
 
         headRef.current.rotation.y = rotationY;
-        // headRef.current.rotation.x = buildUpEase * Math.PI * 0.1; // Slight tilt forward
       } else if (spinPhase < 2) {
-        // Phase 2: Full spin (33-66% of animation)
         const spinProgress = spinPhase - 1;
-        const spinEase = Math.sin(spinProgress * Math.PI); // Smooth spin
-        const fullRotation = Math.PI * 2 * 1.5; // 1.5 full rotations
+        const spinEase = Math.sin(spinProgress * Math.PI);
+        const fullRotation = Math.PI * 2 * 1.5;
 
         headRef.current.rotation.y =
           Math.PI * 2 * 0.3 + fullRotation * spinEase;
-        // headRef.current.rotation.x = Math.PI * 0.1 * (1 - spinEase); // Return to neutral
       } else {
-        // Phase 3: Settle back (66-100% of animation)
         const settleProgress = spinPhase - 2;
         const settleEase = 1 - Math.pow(settleProgress, 2);
 
@@ -697,22 +579,18 @@ export function BlobHead({
         );
       }
     } else if (idleAnimation === "tilt") {
-      // Always reset to center at start
       if (animationProgress < 0.01 && headRef.current) {
         headRef.current.rotation.set(0, 0, 0);
       }
-      // Head tilt animation: look around at different directions
-      const tiltPhase = animationProgress * 4; // 4 phases: look left, up, right, center
+      const tiltPhase = animationProgress * 4;
 
       if (tiltPhase < 1) {
-        // Phase 1: Look left (0-25% of animation)
         const lookLeftProgress = tiltPhase;
         const lookLeftEase = Math.sin(lookLeftProgress * Math.PI * 0.5);
 
         headRef.current.rotation.y = -lookLeftEase * 0.8;
         headRef.current.rotation.x = lookLeftEase * 0.2;
       } else if (tiltPhase < 2) {
-        // Phase 2: Look up (25-50% of animation)
         const lookUpProgress = tiltPhase - 1;
         const lookUpEase = Math.sin(lookUpProgress * Math.PI * 0.5);
 
@@ -723,7 +601,6 @@ export function BlobHead({
         );
         headRef.current.rotation.x = lookUpEase * 0.6;
       } else if (tiltPhase < 3) {
-        // Phase 3: Look right (50-75% of animation)
         const lookRightProgress = tiltPhase - 2;
         const lookRightEase = Math.sin(lookRightProgress * Math.PI * 0.5);
 
@@ -734,7 +611,6 @@ export function BlobHead({
           1 - Math.exp(-4 * delta)
         );
       } else {
-        // Phase 4: Return to center (75-100% of animation)
         const returnProgress = tiltPhase - 3;
         const returnEase = 1 - Math.pow(returnProgress, 2);
 
@@ -752,7 +628,6 @@ export function BlobHead({
     }
   };
 
-  // Eye animation function based on emotion state using morph targets
   const animateEyes = (delta: number) => {
     // Safety checks
     if (!leftEyeRef.current || !rightEyeRef.current || !eyeGeometries.current) {
@@ -762,7 +637,6 @@ export function BlobHead({
     const leftEye = leftEyeRef.current;
     const rightEye = rightEyeRef.current;
 
-    // Check if geometry attributes exist
     if (!leftEye.geometry.getAttribute("position")) {
       return;
     }
@@ -770,37 +644,28 @@ export function BlobHead({
     let targetGeometry = eyeGeometries.current.baseGeometry;
     let eyeOffsetY = 0;
 
-    // Handle blinking first - blinking should always take priority
     if (blinking) {
-      // Use the blink geometry for blinking
       targetGeometry = eyeGeometries.current.blinkGeometry;
-      // Keep eye offset at 0 for blinking
       eyeOffsetY = 0;
     } else {
-      // Handle emotion-based eye changes only when not blinking
       switch (emotionState) {
         case "happy":
-          // Squeeze from bottom (happy eyes like ^_^)
           targetGeometry = eyeGeometries.current.madGeometry;
-          eyeOffsetY = 0.05; // Slight upward offset
+          eyeOffsetY = 0.05;
           break;
         case "mad":
-          // Squeeze from top (angry eyes like >_<)
           targetGeometry = eyeGeometries.current.happyGeometry;
-          eyeOffsetY = -0.03; // Slight downward offset for angry look
+          eyeOffsetY = -0.03;
           break;
         case "dizzy":
-          // Use dizzy geometry (squeezed from sides like ><)
           targetGeometry = eyeGeometries.current.dizzyGeometry;
           eyeOffsetY = -0.02;
           break;
         case "thinking":
-          // thinking: slight upward offset and subtle squeeze
           targetGeometry = eyeGeometries.current.baseGeometry;
           eyeOffsetY = 0.03;
           break;
         case "suspicious":
-          // suspicious: slight downward offset
           targetGeometry = eyeGeometries.current.baseGeometry;
           eyeOffsetY = -0.02;
           break;
@@ -812,12 +677,10 @@ export function BlobHead({
       }
     }
 
-    // Check if target geometry has position attribute
     if (!targetGeometry.getAttribute("position")) {
       return;
     }
 
-    // Interpolate between current and target geometry positions
     const currentPositions = leftEye.geometry.getAttribute("position").array;
     const targetPositions = targetGeometry.getAttribute("position").array;
 
@@ -848,14 +711,12 @@ export function BlobHead({
       new Float32BufferAttribute(newPositions, 3)
     );
 
-    // Recompute normals for proper lighting
     leftEye.geometry.computeVertexNormals();
     rightEye.geometry.computeVertexNormals();
 
-    // Apply eye position offset for emotions
     const currentLeftY = leftEye.position.y;
     const currentRightY = rightEye.position.y;
-    const baseY = 0; // Base eye position
+    const baseY = 0;
 
     leftEye.position.y = MathUtils.lerp(currentLeftY, baseY + eyeOffsetY, 0.2);
     rightEye.position.y = MathUtils.lerp(
@@ -874,11 +735,9 @@ export function BlobHead({
   const onClick = (event: any) => {
     event.stopPropagation();
 
-    // create particles at the counter text position
     const COUNTER_POS: [number, number, number] = [0, 0, 0];
     createParticles(COUNTER_POS[0], COUNTER_POS[1], COUNTER_POS[2]);
 
-    // trigger head bounce animation
     api.start({
       scale: [1.4, 1.4, 1.4],
       config: { tension: 400, friction: 8 },
@@ -889,7 +748,6 @@ export function BlobHead({
       delay: 150,
     });
 
-    // trigger camera zoom in/out
     setCameraZoomAnimation(true);
     onCameraZoomAnimation?.(true);
     setTimeout(() => {
@@ -897,7 +755,6 @@ export function BlobHead({
       onCameraZoomAnimation?.(false);
     }, 300);
 
-    // trigger head click callback for audio or other effects
     onHeadClick();
   };
 
@@ -909,7 +766,6 @@ export function BlobHead({
     document.body.style.cursor = "auto";
   };
 
-  // memoize selected blob form and type
   const selectedBlobForm = useMemo(
     () => getSelectedBlobForm(blobForms),
     [blobForms]
@@ -919,7 +775,6 @@ export function BlobHead({
     [selectedBlobForm.id]
   );
 
-  // memoize costume position calculation function
   const calculateCostumePosition = useCallback(
     (
       basePosition: [number, number, number],
@@ -933,63 +788,59 @@ export function BlobHead({
       let adjustedY = baseY;
       let adjustedZ = baseZ;
 
-      // calculate adjustments based on form type
       if (blobFormType === "sphere") {
-        const radiusDiff = (parameters.sphereRadius || 1) - 1; // default sphere radius is 1
+        const radiusDiff = (parameters.sphereRadius || 1) - 1;
         if (itemType === "hat") {
-          adjustedY += radiusDiff; // hats move up with larger radius
+          adjustedY += radiusDiff;
         } else if (itemType === "accessory" && itemId) {
-          // for spheres, radius affects both height and depth
           const axisConfig = ACCESSORY_AXIS_CONFIG[itemId];
           if (axisConfig) {
             if (axisConfig.y) {
-              adjustedY += radiusDiff * (axisConfig.yMultiplier || 0.5); // y-axis with radius changes
+              adjustedY += radiusDiff * (axisConfig.yMultiplier || 0.5);
             }
             if (axisConfig.z) {
               adjustedZ +=
                 MathUtils.clamp(radiusDiff, -0.4, 5) *
                 1.8 *
-                (axisConfig.zMultiplier || 0.3); // z-axis with radius changes
+                (axisConfig.zMultiplier || 0.3);
             }
           }
         }
       } else if (blobFormType === "cube") {
-        const heightDiff = (parameters.cubeHeight || 1.75) - 1.75; // default cube height
-        const depthDiff = (parameters.cubeDepth || 1.65) - 1.65; // default cube depth
+        const heightDiff = (parameters.cubeHeight || 1.75) - 1.75;
+        const depthDiff = (parameters.cubeDepth || 1.65) - 1.65;
 
         if (itemType === "hat") {
-          adjustedY += heightDiff * 0.5; // hats move up with greater height
+          adjustedY += heightDiff * 0.5;
         } else if (itemType === "accessory" && itemId) {
-          // use configurable axis system for accessories
           const axisConfig = ACCESSORY_AXIS_CONFIG[itemId];
           if (axisConfig) {
             if (axisConfig.y) {
-              adjustedY += heightDiff * (axisConfig.yMultiplier || 0.5); // y-axis with height changes
+              adjustedY += heightDiff * (axisConfig.yMultiplier || 0.5);
             }
             if (axisConfig.z) {
-              adjustedZ += depthDiff * (axisConfig.zMultiplier || 0.3); // z-axis with depth changes
+              adjustedZ += depthDiff * (axisConfig.zMultiplier || 0.3);
             }
           }
         }
       } else if (blobFormType === "pill") {
-        const heightDiff = (parameters.pillHeight || 1.6) - 1.6; // default pill height
+        const heightDiff = (parameters.pillHeight || 1.6) - 1.6; //
         const radiusDiff =
           ((parameters.pillRadiusTop || 0.8) +
             (parameters.pillRadiusBottom || 0.8)) /
             2 -
-          0.8; // average radius
+          0.8;
 
         if (itemType === "hat") {
-          adjustedY += heightDiff * 0.5; // hats move up with greater height
+          adjustedY += heightDiff * 0.5;
         } else if (itemType === "accessory" && itemId) {
-          // use configurable axis system for accessories
           const axisConfig = ACCESSORY_AXIS_CONFIG[itemId];
           if (axisConfig) {
             if (axisConfig.y) {
-              adjustedY += heightDiff * (axisConfig.yMultiplier || 0.5); // y-axis with height changes
+              adjustedY += heightDiff * (axisConfig.yMultiplier || 0.5);
             }
             if (axisConfig.z) {
-              adjustedZ += radiusDiff * (axisConfig.zMultiplier || 0.3); // z-axis with radius changes
+              adjustedZ += radiusDiff * (axisConfig.zMultiplier || 0.3);
             }
           }
         }
@@ -1016,7 +867,7 @@ export function BlobHead({
       z: true,
       yMultiplier: 0.5,
       zMultiplier: 0.7,
-    }, // glasses move on both y and z axes
+    },
   };
 
   const calculateEyePosition = useCallback(
@@ -1028,25 +879,24 @@ export function BlobHead({
       let adjustedY = baseY;
       let adjustedZ = baseZ;
 
-      // for spheres, radius acts as both height and depth
       if (blobFormType === "sphere") {
-        const radiusDiff = (parameters.sphereRadius || 1) - 1; // default sphere radius is 1
-        adjustedY += radiusDiff * 0.4; // eyes move up/down with radius changes
-        adjustedZ += radiusDiff * 1.2; // eyes move forward/back with radius changes
+        const radiusDiff = (parameters.sphereRadius || 1) - 1;
+        adjustedY += radiusDiff * 0.4;
+        adjustedZ += radiusDiff * 1.2;
       } else if (blobFormType === "cube") {
-        const heightDiff = (parameters.cubeHeight || 1.75) - 1.75; // default cube height
-        const depthDiff = (parameters.cubeDepth || 1.65) - 1.65; // default cube depth
-        adjustedY += heightDiff * 0.4; // eyes move up/down with height changes
-        adjustedZ += depthDiff * 0.5; // eyes move forward/back with depth changes
+        const heightDiff = (parameters.cubeHeight || 1.75) - 1.75;
+        const depthDiff = (parameters.cubeDepth || 1.65) - 1.65;
+        adjustedY += heightDiff * 0.4;
+        adjustedZ += depthDiff * 0.5;
       } else if (blobFormType === "pill") {
-        const heightDiff = (parameters.pillHeight || 1.6) - 1.6; // default pill height
+        const heightDiff = (parameters.pillHeight || 1.6) - 1.6;
         const radiusDiff =
           ((parameters.pillRadiusTop || 0.8) +
             (parameters.pillRadiusBottom || 0.8)) /
             2 -
-          0.8; // average radius
-        adjustedY += heightDiff * 0.3; // eyes move up/down with height changes
-        adjustedZ += radiusDiff * 0.5; // eyes move forward/back with radius changes
+          0.8;
+        adjustedY += heightDiff * 0.3;
+        adjustedZ += radiusDiff * 0.5;
       }
 
       return [adjustedX, adjustedY, adjustedZ];
@@ -1064,7 +914,6 @@ export function BlobHead({
       (item) => item.detached !== true
     );
 
-    // attached items (parented to the head)
     const attachedModels = attachedItems.map((item) => {
       if (item.id === "krustyKrabHat")
         return (
@@ -1138,7 +987,6 @@ export function BlobHead({
 
   const content = (
     <>
-      {/* Global Items */}
       {detachedItems}
 
       <a.group
@@ -1151,7 +999,6 @@ export function BlobHead({
         rotation={[0, Math.PI, 0]}
         position={[0, 2, 0]}
       >
-        {/* Head */}
         <BlobForm
           formType={blobFormType}
           parameters={selectedBlobForm.parameters}
@@ -1159,7 +1006,6 @@ export function BlobHead({
           outlineColor={outlineColor || "#000000"}
         />
 
-        {/* Eyes */}
         <group position={calculateEyePosition([0, 0.2, 0.85])}>
           <mesh ref={leftEyeRef} position={[-0.45, 0, 0]}>
             <sphereGeometry args={[0.1, 16, 16]} />
@@ -1171,10 +1017,8 @@ export function BlobHead({
           </mesh>
         </group>
 
-        {/* Bob Items */}
         {attachedItems}
 
-        {/* Dizzy Stars */}
         {emotionState === "dizzy" &&
           dizzyStars.map((star) => {
             if (!star.visible) return null;

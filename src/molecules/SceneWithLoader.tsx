@@ -10,32 +10,38 @@ import { UILayer } from "@/components/UILayer";
 import { useAppStore } from "@/store";
 import { initializeSoundSystem } from "@/utils/soundSystem";
 
-export const CustomLoader = () => {
-  const { progress } = useProgress();
+export const CustomLoader = ({
+  onFadeOutComplete,
+}: {
+  onFadeOutComplete: () => void;
+}) => {
+  const { active, progress } = useProgress();
+  const [percentage, setPercentage] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (progress >= 100) {
+    // prevents progress bar from jumping backwards
+    setPercentage((prev) => Math.max(prev, progress));
+
+    if (!active && progress === 100 && isLoading) {
+      // small delay to make sure its 100% before removing loader
       const timer = setTimeout(() => {
         setIsLoading(false);
-      }, 100); // small delay to ensure everything is ready
-
+      }, 100);
       return () => clearTimeout(timer);
     }
-  }, [progress]);
+  }, [active, progress, isLoading]);
 
   return (
-    <AnimatePresence>
+    <AnimatePresence onExitComplete={onFadeOutComplete}>
       {isLoading && (
         <LoadingWrapper
+          key="loader"
           initial={{ opacity: 1 }}
           animate={{ opacity: 1 }}
           exit={{
             opacity: 0,
-            transition: {
-              duration: 0.8,
-              ease: "easeInOut",
-            },
+            transition: { duration: 0.8, ease: "easeInOut" },
           }}
         >
           <FillColumn $align="center" $justify="center">
@@ -57,9 +63,9 @@ export const CustomLoader = () => {
 
             <ProgressContainer>
               <ProgressBar>
-                <ProgressFill style={{ width: `${progress}%` }} />
+                <ProgressFill style={{ width: `${percentage}%` }} />
               </ProgressBar>
-              <ProgressText>{Math.round(progress)}%</ProgressText>
+              <ProgressText>{Math.round(percentage)}%</ProgressText>
             </ProgressContainer>
           </FillColumn>
         </LoadingWrapper>
@@ -82,28 +88,29 @@ export const SceneWithLoader = ({
   }) => void;
   onLoaded?: () => void;
 }) => {
-  const [sceneLoaded, setSceneLoaded] = useState(false);
+  const [sceneReady, setSceneReady] = useState(false);
+  const [mountLoader, setMountLoader] = useState(true);
   const { isMobile, emotionData, setPermissionGranted } = useAppStore();
 
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      try {
-        await initializeSoundSystem();
-      } catch (error) {
-        console.error("failed to initialize sound system:", error);
-      }
+  const handleLoadingSequenceComplete = async () => {
+    try {
+      await initializeSoundSystem();
+    } catch (error) {
+      console.error("failed to initialize sound system:", error);
+    }
 
-      setSceneLoaded(true);
-      onLoaded?.();
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
+    setMountLoader(false);
+    setSceneReady(true);
+    onLoaded?.();
+  };
 
   return (
     <>
+      {mountLoader && (
+        <CustomLoader onFadeOutComplete={handleLoadingSequenceComplete} />
+      )}
+
       <Suspense fallback={null}>
-        {!sceneLoaded && <CustomLoader />}
         <Scene
           permissionGranted={permissionGranted}
           onEmotionUpdate={onEmotionUpdate}
@@ -111,11 +118,11 @@ export const SceneWithLoader = ({
         />
       </Suspense>
 
-      {sceneLoaded && (
+      {sceneReady && (
         <UILayer
           permissionGranted={permissionGranted}
           isMobile={isMobile}
-          sceneLoaded={sceneLoaded}
+          sceneLoaded={sceneReady}
           setPermissionGranted={setPermissionGranted}
           emotionState={emotionData?.emotionState || "normal"}
         />
