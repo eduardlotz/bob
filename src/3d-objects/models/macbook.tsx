@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import React, { useEffect, useRef } from "react";
-import { Outlines, useGLTF } from "@react-three/drei";
+import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
 
@@ -177,9 +177,7 @@ export const MacbookModel = ({ scale = [1, 1, 1], ...props }: Props) => {
           <mesh
             geometry={nodes.Circle002.geometry}
             material={nodes.Circle002.material}
-          >
-            {/* <Outlines thickness={0.05} color={"#000000"} screenspace /> */}
-          </mesh>
+          />
           <mesh
             geometry={nodes.Circle002_1.geometry}
             material={materials.Screen}

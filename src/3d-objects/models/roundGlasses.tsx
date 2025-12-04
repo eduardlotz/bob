@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import React, { useEffect, useRef } from "react";
-import { Outlines, useGLTF } from "@react-three/drei";
+import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
 
@@ -51,22 +51,14 @@ export const RoundGlasses = ({
       position={props.position}
       rotation={props.rotation}
     >
-      <group
-      // position={[-1.005, 0, -0.675]}
-      // rotation={[-Math.PI / 2, 0, 0]}
-      // scale={[0.823, 0.773, 1]}
+      <mesh
+        castShadow
+        receiveShadow
+        geometry={nodes.Object_3001.geometry}
+        rotation={[-1.65, 0, 0]}
       >
-        <mesh
-          castShadow
-          receiveShadow
-          geometry={nodes.Object_3001.geometry}
-          // material={materials['Material.002']}
-          rotation={[-1.65, 0, 0]}
-        >
-          <meshToonMaterial color={"#191919"} />
-          {/* <Outlines thickness={0.01} color={"#ffffff"} screenspace /> */}
-        </mesh>
-      </group>
+        <meshToonMaterial color={"#191919"} />
+      </mesh>
     </a.group>
   );
 };

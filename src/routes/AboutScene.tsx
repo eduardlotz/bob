@@ -12,6 +12,9 @@ import { Html } from "@react-three/drei";
 import styled from "styled-components";
 import { motion } from "motion/react";
 import { CardboxModel } from "@/3d-objects/models/cardbox";
+import { SkateboardModel } from "@/3d-objects/models/skateboard";
+import { DoubleSide } from "three";
+import { Room } from "@/3d-objects/Room";
 
 export function AboutScene() {
   const { checkUnlockedRoutes } = useGameStore();
@@ -19,9 +22,7 @@ export function AboutScene() {
   const navigate = useNavigate();
 
   const isAllowedToAcces = checkUnlockedRoutes(ROUTE_PATHS.ABOUT);
-  const isInObjectMode =
-    getCurrentViewConfig()?.id === "bookshelf" ||
-    getCurrentViewConfig()?.id === "desk";
+  const isInObjectMode = getCurrentViewConfig()?.id === "bookshelf";
 
   useEffect(() => {
     if (!isAllowedToAcces) {
@@ -52,21 +53,14 @@ export function AboutScene() {
         mode="view"
         viewId="desk"
       >
-        {isInObjectMode && (
-          <InProgressOverlay
-            position={[-3, FLOOR_Y_POSITION + 1.6, 0]}
-            rotation={[0, 1.55, 0]}
-          />
-        )}
-
         <DeskModel
-          position={[-3, FLOOR_Y_POSITION + 1.2, 0]}
+          position={[-4, FLOOR_Y_POSITION + 1.2, 0]}
           rotation={[0, 0, 0]}
           scale={[2, 2, 2]}
         />
 
         <MacbookModel
-          position={[-2.85, FLOOR_Y_POSITION + 1.271, 0]}
+          position={[-3.85, FLOOR_Y_POSITION + 1.271, 0]}
           rotation={[0, 1.58, 0]}
           scale={[0.4, 0.4, 0.4]}
         />
@@ -100,10 +94,18 @@ export function AboutScene() {
       >
         <CardboxModel
           position={[4, FLOOR_Y_POSITION + 0.05, 2]}
-          rotation={[-1.56, 0, 1.6]}
-          scale={[1, 1, 1]}
+          rotation={[-1.56, 0, 1.57]}
+          scale={[0.9, 0.9, 0.9]}
+        />
+
+        <SkateboardModel
+          position={[4.45, FLOOR_Y_POSITION + 0.9, 2.2]}
+          rotation={[1.2, 0.9, -0.2]}
+          scale={[2, 2, 2]}
         />
       </InteractiveObject>
+
+      <Room posterUrls={["/images/test_poster.png"]} />
     </group>
   );
 }

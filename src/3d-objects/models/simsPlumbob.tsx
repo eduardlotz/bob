@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import React, { useEffect, useRef } from "react";
-import { MeshTransmissionMaterial, Outlines, useGLTF } from "@react-three/drei";
+import { MeshTransmissionMaterial, useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
 import { useFrame } from "@react-three/fiber";
@@ -61,32 +61,18 @@ export const SimsPlumbob = ({
       position={props.position}
       rotation={props.rotation}
     >
-      <group
-        name="Sketchfab_model"
-        // position={[-4.756, 0.001, -2.989]}
-        rotation={[-Math.PI / 2, 0, -2.426]}
-      >
-        {/* <mesh
-            name="Plumbob_Material001_0"
-            castShadow
-            receiveShadow
-            geometry={nodes.Plumbob_Material001_0.geometry}
-            material={materials["Material.001"]}
-          /> */}
+      <group rotation={[-Math.PI / 2, 0, 0]}>
         <mesh
           castShadow
           receiveShadow
           geometry={nodes.Plumbob_Material001_0.geometry}
-          // material={materials["Material.001"]}
         >
-          {/* <meshToonMaterial color="#A0BF3F" /> */}
           <MeshTransmissionMaterial
             color={color}
             thickness={1.5}
             distortion={0.5}
             transmission={0.9}
           />
-          {/* <Outlines thickness={0.5} color={"#697f28"} screenspace /> */}
         </mesh>
       </group>
     </a.group>

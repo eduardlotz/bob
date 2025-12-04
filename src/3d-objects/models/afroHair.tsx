@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import React, { useEffect, useRef } from "react";
-import { Outlines, useGLTF } from "@react-three/drei";
+import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
 
@@ -59,9 +59,7 @@ export const AfroHair = ({
         position={[0, 1.406, -0.603]}
         rotation={[0.294, 0, 0]}
         scale={[1.34, 0.966, 1.262]}
-      >
-        {/* <Outlines thickness={0.01} color={"#ffffff"} screenspace /> */}
-      </mesh>
+      />
     </a.group>
   );
 };

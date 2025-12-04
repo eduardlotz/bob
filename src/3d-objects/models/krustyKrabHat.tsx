@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import React, { useEffect, useRef } from "react";
-import { Outlines, useGLTF } from "@react-three/drei";
+import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
 
@@ -67,7 +67,6 @@ export const KrustyKrabHat = ({
           material={materials["02_-_Default"]}
         >
           <meshToonMaterial color={"#191919"} />
-          <Outlines thickness={1} color={"#000000"} screenspace />
         </mesh>
         <mesh
           castShadow
@@ -76,7 +75,6 @@ export const KrustyKrabHat = ({
           material={materials["01_-_Default"]}
         >
           <meshToonMaterial color={"white"} />
-          <Outlines thickness={1} color={"#000000"} screenspace />
         </mesh>
         <mesh
           castShadow
@@ -85,7 +83,6 @@ export const KrustyKrabHat = ({
           material={materials["03_-_Default"]}
         >
           <meshToonMaterial color="#75d1f0" />
-          <Outlines thickness={1} color={"#000000"} screenspace />
         </mesh>
       </group>
     </a.group>
