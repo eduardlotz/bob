@@ -11,6 +11,7 @@ const VIEWID_TITLE_MAP = {
   desk: "Mein Arbeitsplatz",
   bookshelf: "Mein Bücherregal",
   computer: "Mein Computer",
+  cardbox: "Krims Krams",
 };
 
 export function ViewControls() {

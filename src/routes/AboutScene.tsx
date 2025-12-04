@@ -1,6 +1,6 @@
 import { useGameStore } from "@/store/gameStore";
 import { ROUTE_PATHS, useViewStore } from "@/store";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { InteractiveObject } from "../molecules/InteractiveObject";
 import { useNavigate } from "react-router-dom";
 import { useSpring } from "@react-spring/three";
@@ -11,6 +11,7 @@ import { BookshelfModel } from "@/3d-objects/models/bookshelf";
 import { Html } from "@react-three/drei";
 import styled from "styled-components";
 import { motion } from "motion/react";
+import { CardboxModel } from "@/3d-objects/models/cardbox";
 
 export function AboutScene() {
   const { checkUnlockedRoutes } = useGameStore();
@@ -39,6 +40,9 @@ export function AboutScene() {
       config: { mass: 0.5, tension: 300, friction: 10 },
     });
   }, []);
+
+  const leftRB = useRef(null);
+  const rightRB = useRef(null);
 
   return (
     <group>
@@ -86,6 +90,19 @@ export function AboutScene() {
             rotation={[0, -0.75, 0]}
           />
         )}
+      </InteractiveObject>
+
+      <InteractiveObject
+        questAction="click_cardbox"
+        questValue={30}
+        mode="view"
+        viewId="cardbox"
+      >
+        <CardboxModel
+          position={[4, FLOOR_Y_POSITION + 0.05, 2]}
+          rotation={[-1.56, 0, 1.6]}
+          scale={[1, 1, 1]}
+        />
       </InteractiveObject>
     </group>
   );

@@ -5,6 +5,7 @@ import {
   CAMERA_Y_POSITION,
   CAMERA_HEIGHT,
   HIDDEN_OPTIONS_CAMERA_ZOOM,
+  VISIBLE_OPTIONS_CAMERA_ZOOM,
 } from "@/molecules/HeadNavigation";
 
 export interface CameraView {
@@ -54,8 +55,18 @@ export const CAMERA_VIEWS: Record<string, CameraView> = {
   computer: {
     id: "computer",
     name: "Computer View",
-    position: [-1, 1, -5],
-    target: [-3, 1, -8],
+    position: [4, 0, 2],
+    target: [4, 0, 2],
+    transition: {
+      duration: 1200,
+      easing: "easeInOutCubic",
+    },
+  },
+  cardbox: {
+    id: "cardbox",
+    name: "Cardbox View",
+    position: [3, CAMERA_HEIGHT, 2],
+    target: [4.5, -1.5, 2],
     transition: {
       duration: 1200,
       easing: "easeInOutCubic",
