@@ -54,8 +54,28 @@ export const CAMERA_VIEWS: Record<string, CameraView> = {
   computer: {
     id: "computer",
     name: "Computer View",
-    position: [-1, 1, -5],
-    target: [-3, 1, -8],
+    position: [4, 0, 2],
+    target: [4, 0, 2],
+    transition: {
+      duration: 1200,
+      easing: "easeInOutCubic",
+    },
+  },
+  cardbox: {
+    id: "cardbox",
+    name: "Cardbox View",
+    position: [3, CAMERA_HEIGHT, 2],
+    target: [4.5, -1.5, 2],
+    transition: {
+      duration: 1200,
+      easing: "easeInOutCubic",
+    },
+  },
+  portrait: {
+    id: "portrait",
+    name: "Portrait View",
+    position: [-3, CAMERA_HEIGHT, -2],
+    target: [-2.5, 2, -5],
     transition: {
       duration: 1200,
       easing: "easeInOutCubic",

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Outlines } from "@react-three/drei";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { useViewStore } from "@/store/viewStore";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
@@ -83,14 +82,6 @@ export function InteractiveObject({
       onPointerEnter={isDisabled ? undefined : handlePointerEnter}
       onPointerLeave={isDisabled ? undefined : handlePointerLeave}
     >
-      {shouldShowOutline && (
-        <Outlines
-          thickness={isViewActive ? 1.2 : 1}
-          color={isViewActive ? "#ffffff" : "#00000000"}
-          opacity={isViewActive ? 0.8 : 1}
-          screenspace
-        />
-      )}
       {children}
     </a.group>
   );

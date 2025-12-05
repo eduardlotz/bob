@@ -320,13 +320,13 @@ const Container = styled(motion.div)`
 
 const Label = styled(motion.div)`
   font-size: 16px;
-  color: var(--text-color, #333);
+  color: #ffffff;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 6px 16px;
-  background: rgba(33, 33, 33, 0.1);
+  background: #212121;
   border-radius: 50px;
   backdrop-filter: blur(8px);
   margin-bottom: 4px;

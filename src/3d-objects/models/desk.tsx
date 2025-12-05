@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import React, { useEffect, useRef } from "react";
-import { Outlines, useGLTF } from "@react-three/drei";
+import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
 
@@ -47,12 +47,8 @@ export const DeskModel = ({ scale = [1, 1, 1], ...props }: Props) => {
       position={props.position}
       rotation={props.rotation}
     >
-      <mesh geometry={nodes.Cube007.geometry} material={materials.MetalBlack}>
-        <Outlines thickness={0.01} color={"#000000"} screenspace />
-      </mesh>
-      <mesh geometry={nodes.Cube007_1.geometry} material={materials.DeskWood}>
-        <Outlines thickness={0.01} color={"#000000"} screenspace />
-      </mesh>
+      <mesh geometry={nodes.Cube007.geometry} material={materials.MetalBlack} />
+      <mesh geometry={nodes.Cube007_1.geometry} material={materials.DeskWood} />
     </a.group>
   );
 };

@@ -8,9 +8,11 @@ import { ArrowLeftIcon } from "@/icons/arrow";
 // TODO: make type safe and use correctly
 const VIEWID_TITLE_MAP = {
   default: "Über mich",
-  desk: "Mein Arbeitsplatz",
+  desk: "Mein Tisch",
   bookshelf: "Mein Bücherregal",
   computer: "Mein Computer",
+  cardbox: "Hobbies & Interessen",
+  portrait: "Mein Gesicht",
 };
 
 export function ViewControls() {

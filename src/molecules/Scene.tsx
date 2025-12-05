@@ -60,6 +60,8 @@ const Scene = ({
   // shop items are only visible on home route
   const isHome = currentRoute === ROUTE_PATHS.HOME;
   const [visible, setVisible] = useState(isHome);
+  // TODO: add grid options to UI
+  const showGrid = isHome;
 
   useEffect(() => {
     setCameraControlsRef(cameraControlsRef);
@@ -115,16 +117,18 @@ const Scene = ({
       <FullScreenCanvas>
         <Suspense fallback={null}>
           <AudioListenerBinder />
-          <Fisheye zoom={FISHEYE_CONFIG.DEFAULT}>
-            <Grid
-              args={[8, 8]}
-              sectionThickness={2}
-              sectionColor="#E0DEE6"
-              sectionSize={1}
-              cellThickness={0}
-              fadeDistance={4}
-              position={[0, FLOOR_Y_POSITION, 0]}
-            />
+          <Fisheye zoom={FISHEYE_CONFIG.MIN}>
+            {showGrid && (
+              <Grid
+                args={[8, 8]}
+                sectionThickness={2}
+                sectionColor="#E0DEE6"
+                sectionSize={1}
+                cellThickness={0}
+                fadeDistance={4}
+                position={[0, FLOOR_Y_POSITION, 0]}
+              />
+            )}
             <CameraControls
               ref={cameraControlsRef}
               minPolarAngle={0}
@@ -187,7 +191,7 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
     };
 
     window.addEventListener("resize", handleResize);
-    handleResize(); // Call it once to set the initial state
+    handleResize();
 
     return () => {
       window.removeEventListener("resize", handleResize);

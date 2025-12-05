@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import React, { useEffect, useRef } from "react";
-import { Outlines, useGLTF } from "@react-three/drei";
+import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
 
@@ -49,9 +49,7 @@ export const TreeModel = ({ scale = [1, 1, 1], ...props }: Props) => {
       <mesh
         geometry={nodes["tree-lime"].geometry}
         material={materials.color_main}
-      >
-        <Outlines thickness={0.05} color={"#000000"} screenspace />
-      </mesh>
+      />
     </a.group>
   );
 };
