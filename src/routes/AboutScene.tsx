@@ -13,8 +13,11 @@ import styled from "styled-components";
 import { motion } from "motion/react";
 import { CardboxModel } from "@/3d-objects/models/cardbox";
 import { SkateboardModel } from "@/3d-objects/models/skateboard";
-import { DoubleSide } from "three";
 import { Room } from "@/3d-objects/Room";
+import { XboxControllerModel } from "@/3d-objects/models/xbox-controller";
+import { MidiControllerModel } from "@/3d-objects/models/midi-controller";
+import { BasketBox } from "@/physics/BasketBox";
+import { FloatingBar } from "@/layout/FloatingLabel";
 
 export function AboutScene() {
   const { checkUnlockedRoutes } = useGameStore();
@@ -86,6 +89,29 @@ export function AboutScene() {
         )}
       </InteractiveObject>
 
+      <BasketBox
+        position={[4, FLOOR_Y_POSITION + 0.9, 2]}
+        width={1.8}
+        depth={1.8}
+        height={1.8}
+        wallThickness={0.02}
+      />
+
+      <XboxControllerModel
+        position={[3.5, FLOOR_Y_POSITION + 14, 2]}
+        rotation={[1.2, 0.9, -0.2]}
+      />
+
+      <SkateboardModel
+        position={[4, FLOOR_Y_POSITION + 12, 2]}
+        rotation={[1.2, 0.9, -0.2]}
+      />
+
+      <MidiControllerModel
+        position={[4, FLOOR_Y_POSITION + 20, 1]}
+        rotation={[1.2, 0.9, -0.2]}
+      />
+
       <InteractiveObject
         questAction="click_cardbox"
         questValue={30}
@@ -98,11 +124,11 @@ export function AboutScene() {
           scale={[0.9, 0.9, 0.9]}
         />
 
-        <SkateboardModel
-          position={[4.45, FLOOR_Y_POSITION + 0.9, 2.2]}
-          rotation={[1.2, 0.9, -0.2]}
-          scale={[2, 2, 2]}
-        />
+        {/* <BaguetteModel
+          position={[3.6, FLOOR_Y_POSITION + 0.3, 1.6]}
+          rotation={[-1.25, 0, -2.5]}
+          scale={[1, 1, 1]}
+        /> */}
       </InteractiveObject>
 
       <Room posterUrls={["/images/test_poster.png"]} />

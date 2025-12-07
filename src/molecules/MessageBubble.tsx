@@ -224,8 +224,10 @@ export const MessageBubble = memo(function MessageBubble({
     [markFullyRevealed]
   );
 
-  // TODO: check usecase for this or delete
-  const handleClick = () => markUserInteraction();
+  // TODO: dismiss message on click
+  const handleClick = () => {
+    markUserInteraction();
+  };
 
   const offset = activeMessage?.config.positionOffset ?? [0, 0, 0];
   const finalPos: [number, number, number] = [

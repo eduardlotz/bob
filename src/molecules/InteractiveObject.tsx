@@ -48,15 +48,8 @@ export function InteractiveObject({
       })
       .with("view", async () => {
         if (viewId) {
-          if (isViewActive) {
-            resetToDefaultView();
-          } else {
-            setIsActive(true);
-            try {
-              await transitionToView(viewId);
-            } finally {
-              setIsActive(false);
-            }
+          if (!isViewActive) {
+            await transitionToView(viewId);
           }
         }
       })
