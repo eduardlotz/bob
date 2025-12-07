@@ -166,7 +166,7 @@ const Scene = ({
               <SceneDecorations />
             </a.group>
 
-            <Physics debug gravity={[0, -4, 0]}>
+            <Physics gravity={[0, -3.24, 0]}>
               {match(currentRoute)
                 .with(ROUTE_PATHS.ABOUT, () => <AboutScene />)
                 .otherwise(() => null)}

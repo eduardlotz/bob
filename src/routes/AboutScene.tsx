@@ -18,6 +18,7 @@ import { XboxControllerModel } from "@/3d-objects/models/xbox-controller";
 import { MidiControllerModel } from "@/3d-objects/models/midi-controller";
 import { BasketBox } from "@/physics/BasketBox";
 import { DjControllerModel } from "@/3d-objects/models/dj-controller";
+import { DeskSpeakersModel } from "@/3d-objects/models/desk-speakers";
 
 export function AboutScene() {
   const { checkUnlockedRoutes } = useGameStore();
@@ -57,6 +58,12 @@ export function AboutScene() {
           position={[-4, FLOOR_Y_POSITION + 1.2, 0]}
           rotation={[0, 0, 0]}
           scale={[2, 2, 2]}
+        />
+
+        <DeskSpeakersModel
+          position={[-4.3, FLOOR_Y_POSITION + 1.46, 0]}
+          rotation={[-1.58, 0, 0]}
+          scale={[0.146, 0.146, 0.146]}
         />
 
         <MacbookModel
