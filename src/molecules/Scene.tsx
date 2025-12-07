@@ -166,7 +166,7 @@ const Scene = ({
               <SceneDecorations />
             </a.group>
 
-            <Physics debug>
+            <Physics>
               {match(currentRoute)
                 .with(ROUTE_PATHS.ABOUT, () => <AboutScene />)
                 .otherwise(() => null)}

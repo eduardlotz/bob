@@ -17,7 +17,6 @@ import { Room } from "@/3d-objects/Room";
 import { XboxControllerModel } from "@/3d-objects/models/xbox-controller";
 import { MidiControllerModel } from "@/3d-objects/models/midi-controller";
 import { BasketBox } from "@/physics/BasketBox";
-import { FloatingBar } from "@/layout/FloatingLabel";
 
 export function AboutScene() {
   const { checkUnlockedRoutes } = useGameStore();
