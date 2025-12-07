@@ -6,6 +6,7 @@ import { CloseIcon } from "@/icons/close";
 import { toast } from "sonner";
 import { NavButton } from "./BottomNavigation";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
+import { Magnetic } from "@/layout/Magnetic";
 
 const MemoizedQuestItem = memo<{
   quest: any;
@@ -49,65 +50,67 @@ export function ProgressTracker() {
 
   return (
     <>
-      <NavButton
-        key="quests-button"
-        onClick={toggleOpen}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        $isActive={isOpen}
-        initial={{ filter: "blur(10px)", opacity: 0, y: 40 }}
-        animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
-        exit={{
-          filter: "blur(10px)",
-          opacity: 0,
-          y: 40,
-          transition: { delay: 0 },
-        }}
-        transition={{
-          // duration: 0.25,
-          type: "spring" as const,
-          bounce: 0.5,
-          delay: 0.05,
-        }}
-      >
-        <AnimatePresence mode="popLayout">
-          {isOpen ? (
-            <motion.div
-              key="close-quests-icon"
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0, opacity: 0 }}
-              transition={{
-                duration: 0.25,
-                type: "spring" as const,
-                bounce: 0.5,
-              }}
-            >
-              <CloseIcon color="#ffffff" />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="open-quests-icon"
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0, opacity: 0 }}
-              transition={{
-                duration: 0.25,
-                type: "spring" as const,
-                bounce: 0.5,
-              }}
-            >
-              <TrackerContent>
-                {currentQuests.length > 0 && (
-                  <QuestProgress>
-                    {completedQuests}/{currentQuests.length}
-                  </QuestProgress>
-                )}
-              </TrackerContent>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </NavButton>
+      <Magnetic>
+        <NavButton
+          key="quests-button"
+          onClick={toggleOpen}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          $isActive={isOpen}
+          initial={{ filter: "blur(10px)", opacity: 0, y: 40 }}
+          animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
+          exit={{
+            filter: "blur(10px)",
+            opacity: 0,
+            y: 40,
+            transition: { delay: 0 },
+          }}
+          transition={{
+            // duration: 0.25,
+            type: "spring" as const,
+            bounce: 0.5,
+            delay: 0.05,
+          }}
+        >
+          <AnimatePresence mode="popLayout">
+            {isOpen ? (
+              <motion.div
+                key="close-quests-icon"
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                transition={{
+                  duration: 0.25,
+                  type: "spring" as const,
+                  bounce: 0.5,
+                }}
+              >
+                <CloseIcon color="#ffffff" />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="open-quests-icon"
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                transition={{
+                  duration: 0.25,
+                  type: "spring" as const,
+                  bounce: 0.5,
+                }}
+              >
+                <TrackerContent>
+                  {currentQuests.length > 0 && (
+                    <QuestProgress>
+                      {completedQuests}/{currentQuests.length}
+                    </QuestProgress>
+                  )}
+                </TrackerContent>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </NavButton>
+      </Magnetic>
 
       <AnimatePresence>
         {isOpen && (

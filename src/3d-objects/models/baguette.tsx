@@ -2,23 +2,20 @@ import * as THREE from "three";
 import React, { forwardRef, useRef } from "react";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
-import { useFloatingBar } from "@/layout/FloatingBar";
 import {
   DraggableRigidBody,
   DraggableRigidBodyProps,
 } from "@/physics/DraggableRigidBody";
-import { useViewStore } from "@/store";
 
 type GLTFResult = GLTF & {
   nodes: {
-    skateboard: THREE.Mesh;
+    baguette: THREE.Mesh;
   };
   materials: {
-    ["colormap.001"]: THREE.MeshStandardMaterial;
+    tiny_treats_1: THREE.MeshStandardMaterial;
   };
 };
-
-const PATH = "gltf/skateboard.glb";
+const PATH = "gltf/baguette.glb";
 
 interface Props {
   position: [number, number, number];
@@ -26,48 +23,35 @@ interface Props {
   scale?: [number, number, number];
 }
 
-export const SkateboardModel = forwardRef(
+export const BaguetteModel = forwardRef(
   ({ scale = [1, 1, 1], ...props }: Props, ref: any) => {
     const group = useRef<THREE.Group>(null!);
     const { nodes, materials } = useGLTF(PATH) as GLTFResult;
 
-    const { setHoveredObject } = useFloatingBar();
-
-    const handlePointerEnter = (e: any) => {
-      e.stopPropagation();
-
-      setHoveredObject({
-        title: "Skateboarding",
-      });
-    };
-
-    const handlePointerLeave = () => {
-      setHoveredObject(null);
-    };
-
     const DraggableRigidBodyProps: Partial<DraggableRigidBodyProps> = {
-      // rigidBodyProps: {
-      //   gravityScale: 3.5,
-      //   linearDamping: 5,
-      //   angularDamping: 0.2,
-      // },
+      rigidBodyProps: {
+        gravityScale: 3.5,
+        linearDamping: 5,
+        angularDamping: 0.2,
+      },
       groupProps: {
-        ref: group,
         position: props.position,
         rotation: props.rotation,
-        scale: [2, 2, 2],
-        onPointerEnter: handlePointerEnter,
-        onPointerLeave: handlePointerLeave,
+        // scale: [0.02, 0.02, 0.02],
+        scale: 100,
+        ref: group,
+        // onPointerEnter: handlePointerEnter,
+        // onPointerLeave: handlePointerLeave,
       },
-      // boundingBox: [
-      //   [-1, 1],
-      //   [0.5, 1],
-      //   [-1, 1],
-      // ],
+      boundingBox: [
+        [-1, 1],
+        [0.5, 1],
+        [-1, 1],
+      ],
       dragControlsProps: {
         preventOverlap: true,
       },
-      enableSpringJoint: true,
+      // enableSpringJoint: true,
     };
 
     return (
@@ -75,8 +59,9 @@ export const SkateboardModel = forwardRef(
         {...DraggableRigidBodyProps}
         visibleMesh={
           <mesh
-            geometry={nodes.skateboard.geometry}
-            material={materials["colormap.001"]}
+            geometry={nodes.baguette.geometry}
+            material={materials.tiny_treats_1}
+            // scale={100}
           />
         }
       />

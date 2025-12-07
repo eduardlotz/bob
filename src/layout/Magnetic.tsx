@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, useMotionValue, useSpring } from "motion/react";
+import { useAppStore } from "@/store";
 
 const SPRING_CONFIG = { damping: 100, stiffness: 400 };
 
@@ -10,6 +11,10 @@ type MagneticEffectType = {
 
 export function Magnetic({ children, distance = 0.6 }: MagneticEffectType) {
   const [isHovered, setIsHovered] = useState(false);
+  const { isMobile } = useAppStore();
+
+  if (isMobile) return children;
+
   const ref = useRef<HTMLDivElement>(null);
 
   const x = useMotionValue(0);
