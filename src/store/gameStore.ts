@@ -666,6 +666,7 @@ interface GameStore {
 
   fisheyeIntensity: number;
 
+  customCameraControlsEnabled: boolean;
   animationsEnabled: boolean;
   statisticsVisible: boolean;
 
@@ -707,6 +708,7 @@ interface GameStore {
   pauseGame: () => void;
   resumeGame: () => void;
 
+  toggleCustomCameraControls: () => void;
   addDevTaps: (amount: number) => void;
   buyAllUpgrades: () => void;
   toggleAnimations: () => void;
@@ -954,6 +956,7 @@ export const useGameStore = create<GameStore>()(
         fisheyeIntensity: 0,
         animationsEnabled: true,
         statisticsVisible: false,
+        customCameraControlsEnabled: true,
 
         soundSystem: {
           enabled: true,
@@ -1512,6 +1515,12 @@ export const useGameStore = create<GameStore>()(
         },
 
         // Dev Actions
+        toggleCustomCameraControls: () => {
+          set((state) => ({
+            ...state,
+            customCameraControlsEnabled: !state.customCameraControlsEnabled,
+          }));
+        },
         addDevTaps: (amount: number) => {
           set((state) => ({
             taps: state.taps + amount,

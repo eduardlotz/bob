@@ -23,6 +23,7 @@ import { a, useSpring } from "@react-spring/three";
 import { attachListenerToCamera } from "@/utils/soundSystem";
 import { MessageBubble } from "@/molecules/MessageBubble";
 import { SceneDecorations } from "@/3d-objects/Decorations";
+import { Physics } from "@react-three/rapier";
 
 // TODO: make proper constant file
 export const FLOOR_Y_POSITION = -1.5;
@@ -41,7 +42,7 @@ const Scene = ({
   const cameraControlsRef = useRef<CameraControls>(null!);
   const { setCameraControlsRef, resetToDefaultView, isDefaultView } =
     useViewStore();
-  const { upgrades, isPaused } = useGameStore();
+  const { upgrades, isPaused, customCameraControlsEnabled } = useGameStore();
 
   const {
     currentRoute,
@@ -165,9 +166,11 @@ const Scene = ({
               <SceneDecorations />
             </a.group>
 
-            {match(currentRoute)
-              .with(ROUTE_PATHS.ABOUT, () => <AboutScene />)
-              .otherwise(() => null)}
+            <Physics>
+              {match(currentRoute)
+                .with(ROUTE_PATHS.ABOUT, () => <AboutScene />)
+                .otherwise(() => null)}
+            </Physics>
           </Fisheye>
         </Suspense>
       </FullScreenCanvas>

@@ -721,6 +721,8 @@ function DevView() {
     resetGame: resetGameStore,
     isPaused,
     routes,
+    toggleCustomCameraControls,
+    customCameraControlsEnabled,
     purchaseRoute,
   } = useGameStore();
   const { resetQuests } = useQuestSystem();
@@ -759,6 +761,13 @@ function DevView() {
 
         <DevButton onClick={toggleStatistics} $active={statisticsVisible}>
           📊 Toggle Statistics
+        </DevButton>
+        <DevButton
+          onClick={toggleCustomCameraControls}
+          $active={!customCameraControlsEnabled}
+        >
+          {customCameraControlsEnabled ? "▶️" : "⏸️"}{" "}
+          {customCameraControlsEnabled ? "Disable" : "Enable"} Custom Camera
         </DevButton>
         <DevButton
           onClick={isPaused ? resumeGame : pauseGame}

@@ -1,19 +1,20 @@
 import * as THREE from "three";
-import React, { forwardRef, useEffect, useRef } from "react";
+import React, { forwardRef, useRef } from "react";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { RigidBody } from "@react-three/rapier";
 import { useFloatingBar } from "@/layout/FloatingBar";
+
 type GLTFResult = GLTF & {
   nodes: {
-    skateboard: THREE.Mesh;
+    Xbox_Controller: THREE.Mesh;
   };
   materials: {
-    ["colormap.001"]: THREE.MeshStandardMaterial;
+    Mat: THREE.MeshStandardMaterial;
   };
 };
 
-const PATH = "gltf/skateboard.glb";
+const PATH = "gltf/xbox-controller.glb";
 
 interface Props {
   position: [number, number, number];
@@ -21,7 +22,7 @@ interface Props {
   scale?: [number, number, number];
 }
 
-export const SkateboardModel = forwardRef(
+export const XboxControllerModel = forwardRef(
   ({ scale = [1, 1, 1], ...props }: Props, ref: any) => {
     const group = useRef<THREE.Group>(null!);
     const { nodes, materials } = useGLTF(PATH) as GLTFResult;
@@ -33,7 +34,7 @@ export const SkateboardModel = forwardRef(
       document.body.style.cursor = "pointer";
 
       setHoveredObject({
-        title: "Skateboard",
+        title: "Videospiele",
       });
     };
 
@@ -47,14 +48,14 @@ export const SkateboardModel = forwardRef(
         ref={group}
         position={props.position}
         rotation={props.rotation}
-        scale={[2, 2, 2]}
+        scale={[0.02, 0.02, 0.02]}
         onPointerEnter={handlePointerEnter}
         onPointerLeave={handlePointerLeave}
       >
         <RigidBody>
           <mesh
-            geometry={nodes.skateboard.geometry}
-            material={materials["colormap.001"]}
+            geometry={nodes.Xbox_Controller.geometry}
+            material={materials.Mat}
           />
         </RigidBody>
       </group>

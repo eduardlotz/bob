@@ -14,6 +14,7 @@ import Home from "./routes/Home";
 import About from "./routes/About";
 import { AnimatePresence, motion } from "motion/react";
 import { useMessageSystem } from "@/hooks/useMessageSystem";
+import { FloatingBarProvider, FloatingBarUI } from "./layout/FloatingBar";
 
 export default function App() {
   const location = useLocation();
@@ -60,44 +61,58 @@ export default function App() {
 
   return (
     <ThemeProvider>
-      <GlobalStyle />
+      <FloatingBarProvider>
+        <GlobalStyle />
 
-      <Toaster duration={5000} position="top-center" />
-      <AnimatePresence mode="sync">
-        <RouteChip
-          initial={{ y: -120, filter: "blur(6px)" }}
-          animate={{
-            y: showRouteChip ? 0 : -120,
-            filter: showRouteChip ? "blur(0px)" : "blur(6px)",
-          }}
-          exit={{ y: -120, filter: "blur(6px)" }}
-          transition={{ duration: 0.9, ease: "circInOut" }}
-        >
-          {currentRouteInPretty}
-        </RouteChip>
-      </AnimatePresence>
+        <Toaster duration={5000} position="top-center" />
+        <AnimatePresence mode="sync">
+          <RouteChip
+            initial={{ y: -120, filter: "blur(6px)" }}
+            animate={{
+              y: showRouteChip ? 0 : -120,
+              filter: showRouteChip ? "blur(0px)" : "blur(6px)",
+            }}
+            exit={{ y: -120, filter: "blur(6px)" }}
+            transition={{ duration: 0.9, ease: "circInOut" }}
+          >
+            {currentRouteInPretty}
+          </RouteChip>
+        </AnimatePresence>
 
-      <FullScreen>
-        <MainLayout>
-          <ContentWrapper>
-            <ContentWidth>
-              <Routes>
-                <Route path={ROUTE_PATHS.HOME} element={<Home />} />
-                <Route path={ROUTE_PATHS.ABOUT} element={<About />} />
-                <Route
-                  path="*"
-                  element={<Navigate to={ROUTE_PATHS.HOME} replace />}
-                />
-              </Routes>
-            </ContentWidth>
-          </ContentWrapper>
-        </MainLayout>
-      </FullScreen>
+        <FullScreen>
+          <MainLayout>
+            <ContentWrapper>
+              <ContentWidth>
+                <Routes>
+                  <Route path={ROUTE_PATHS.HOME} element={<Home />} />
+                  <Route path={ROUTE_PATHS.ABOUT} element={<About />} />
+                  <Route
+                    path="*"
+                    element={<Navigate to={ROUTE_PATHS.HOME} replace />}
+                  />
+                </Routes>
+              </ContentWidth>
+            </ContentWrapper>
+          </MainLayout>
 
-      <DialogRoot />
+          <FloatingBarUI />
+        </FullScreen>
+
+        <DialogRoot />
+      </FloatingBarProvider>
     </ThemeProvider>
   );
 }
+
+const FixedContainer = styled(motion.div)`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100vw;
+  height: 100dvh;
+  pointer-events: none;
+`;
 
 const ContentWrapper = styled(FillColumn)`
   padding: 16px;

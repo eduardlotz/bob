@@ -1,19 +1,27 @@
 import * as THREE from "three";
-import React, { forwardRef, useEffect, useRef } from "react";
+import React, { forwardRef, useRef } from "react";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { RigidBody } from "@react-three/rapier";
 import { useFloatingBar } from "@/layout/FloatingBar";
+
 type GLTFResult = GLTF & {
   nodes: {
-    skateboard: THREE.Mesh;
+    ["default"]: THREE.Mesh;
+    Object001: THREE.Mesh;
+    Object002: THREE.Mesh;
+    Object003: THREE.Mesh;
+    decals: THREE.Mesh;
+    ["0"]: THREE.Mesh;
+    screen: THREE.Mesh;
+    decals02: THREE.Mesh;
   };
   materials: {
-    ["colormap.001"]: THREE.MeshStandardMaterial;
+    palette: THREE.MeshStandardMaterial;
   };
 };
 
-const PATH = "gltf/skateboard.glb";
+const PATH = "gltf/midi-controller.glb";
 
 interface Props {
   position: [number, number, number];
@@ -21,11 +29,10 @@ interface Props {
   scale?: [number, number, number];
 }
 
-export const SkateboardModel = forwardRef(
+export const MidiControllerModel = forwardRef(
   ({ scale = [1, 1, 1], ...props }: Props, ref: any) => {
     const group = useRef<THREE.Group>(null!);
     const { nodes, materials } = useGLTF(PATH) as GLTFResult;
-
     const { setHoveredObject } = useFloatingBar();
 
     const handlePointerEnter = (e: any) => {
@@ -33,7 +40,7 @@ export const SkateboardModel = forwardRef(
       document.body.style.cursor = "pointer";
 
       setHoveredObject({
-        title: "Skateboard",
+        title: "Musik machen",
       });
     };
 
@@ -47,14 +54,33 @@ export const SkateboardModel = forwardRef(
         ref={group}
         position={props.position}
         rotation={props.rotation}
-        scale={[2, 2, 2]}
+        scale={[0.01, 0.01, 0.01]}
         onPointerEnter={handlePointerEnter}
         onPointerLeave={handlePointerLeave}
       >
         <RigidBody>
           <mesh
-            geometry={nodes.skateboard.geometry}
-            material={materials["colormap.001"]}
+            geometry={nodes["default"].geometry}
+            material={materials.palette}
+          />
+          <mesh
+            geometry={nodes.Object001.geometry}
+            material={materials.palette}
+          />
+          <mesh
+            geometry={nodes.Object002.geometry}
+            material={materials.palette}
+          />
+          <mesh
+            geometry={nodes.Object003.geometry}
+            material={materials.palette}
+          />
+          <mesh geometry={nodes.decals.geometry} material={materials.palette} />
+          <mesh geometry={nodes["0"].geometry} material={materials.palette} />
+          <mesh geometry={nodes.screen.geometry} material={materials.palette} />
+          <mesh
+            geometry={nodes.decals02.geometry}
+            material={materials.palette}
           />
         </RigidBody>
       </group>
