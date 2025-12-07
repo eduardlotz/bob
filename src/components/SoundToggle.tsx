@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { useGameStore } from "@/store/gameStore";
+import { Magnetic } from "@/layout/Magnetic";
 
 function SpeakerIcon({ muted = false }: { muted?: boolean }) {
   return (
@@ -46,34 +47,36 @@ export const SoundToggle = () => {
   };
 
   return (
-    <Button
-      onClick={handleClick}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      aria-label={!isEnabled ? "Audio stopped" : isMuted ? "Unmute" : "Mute"}
-      initial={{
-        opacity: 0,
-        filter: "blur(24px)",
-      }}
-      animate={{
-        opacity: 1,
-        filter: "blur(0px)",
-        transition: { duration: 0.8, ease: "easeInOut", delay: 0.1 },
-      }}
-      exit={{ opacity: 0, filter: "blur(24px)" }}
-    >
-      <AnimatePresence mode="popLayout">
-        <motion.div
-          key={!isMuted ? "on" : "off"}
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0, opacity: 0 }}
-          transition={{ duration: 0.2, type: "spring", bounce: 0.7 }}
-        >
-          <SpeakerIcon muted={isMuted} />
-        </motion.div>
-      </AnimatePresence>
-    </Button>
+    <Magnetic>
+      <Button
+        onClick={handleClick}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        aria-label={!isEnabled ? "Audio stopped" : isMuted ? "Unmute" : "Mute"}
+        initial={{
+          opacity: 0,
+          filter: "blur(24px)",
+        }}
+        animate={{
+          opacity: 1,
+          filter: "blur(0px)",
+          transition: { duration: 0.8, ease: "easeInOut", delay: 0.1 },
+        }}
+        exit={{ opacity: 0, filter: "blur(24px)" }}
+      >
+        <AnimatePresence mode="popLayout">
+          <motion.div
+            key={!isMuted ? "on" : "off"}
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{ duration: 0.2, type: "spring", bounce: 0.7 }}
+          >
+            <SpeakerIcon muted={isMuted} />
+          </motion.div>
+        </AnimatePresence>
+      </Button>
+    </Magnetic>
   );
 };
 

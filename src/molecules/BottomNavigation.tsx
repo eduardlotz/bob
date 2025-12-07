@@ -12,6 +12,7 @@ import { ProgressTracker } from "./ProgressTracker";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { match } from "ts-pattern";
 import { formatNumber } from "./TapCounter";
+import { Magnetic } from "@/layout/Magnetic";
 
 type NavigationView = "shop" | "upgrades" | "quests" | "menu" | "default";
 
@@ -75,164 +76,169 @@ export function BottomNavigation() {
         <DynamicButtonsContainer>
           <AnimatePresence mode="wait">
             {isHomeRoute ? (
-              <NavButton
-                key="upgrades-button"
-                onClick={() => handleNavigationClick("upgrades")}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                $isActive={currentView === "upgrades"}
-                initial={{ filter: "blur(10px)", opacity: 0, y: 40 }}
-                animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
-                exit={{
-                  filter: "blur(10px)",
-                  opacity: 0,
-                  y: 40,
-                  transition: { delay: 0 },
-                }}
-                transition={{
-                  // duration: 0.25,
-                  type: "spring" as const,
-                  bounce: 0.5,
-                  delay: 0.05,
-                }}
-              >
-                <AnimatePresence mode="popLayout">
-                  {currentView === "upgrades" ? (
-                    <motion.span
-                      key="close-upgrades-icon"
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0, opacity: 0 }}
-                      transition={{
-                        duration: 0.25,
-                        type: "spring" as const,
-                        bounce: 0.5,
-                      }}
-                    >
-                      <CloseIcon color="#ffffff" />
-                    </motion.span>
-                  ) : (
-                    <motion.span
-                      key="show-upgrades-icon"
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0, opacity: 0 }}
-                      transition={{
-                        duration: 0.25,
-                        type: "spring" as const,
-                        bounce: 0.5,
-                      }}
-                    >
-                      <UpgradeButtonContent>
-                        <FingerIcon>🫵</FingerIcon>
-                        <TapMultiplier>{totalTapsPerSecond}/s</TapMultiplier>
-                      </UpgradeButtonContent>
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </NavButton>
+              <Magnetic>
+                <NavButton
+                  key="upgrades-button"
+                  onClick={() => handleNavigationClick("upgrades")}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  $isActive={currentView === "upgrades"}
+                  initial={{ filter: "blur(10px)", opacity: 0, y: 40 }}
+                  animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
+                  exit={{
+                    filter: "blur(10px)",
+                    opacity: 0,
+                    y: 40,
+                    transition: { delay: 0 },
+                  }}
+                  transition={{
+                    // duration: 0.25,
+                    type: "spring" as const,
+                    bounce: 0.5,
+                    delay: 0.05,
+                  }}
+                >
+                  <AnimatePresence mode="popLayout">
+                    {currentView === "upgrades" ? (
+                      <motion.span
+                        key="close-upgrades-icon"
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0, opacity: 0 }}
+                        transition={{
+                          duration: 0.25,
+                          type: "spring" as const,
+                          bounce: 0.5,
+                        }}
+                      >
+                        <CloseIcon color="#ffffff" />
+                      </motion.span>
+                    ) : (
+                      <motion.span
+                        key="show-upgrades-icon"
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0, opacity: 0 }}
+                        transition={{
+                          duration: 0.25,
+                          type: "spring" as const,
+                          bounce: 0.5,
+                        }}
+                      >
+                        <UpgradeButtonContent>
+                          <FingerIcon>🫵</FingerIcon>
+                          <TapMultiplier>{totalTapsPerSecond}/s</TapMultiplier>
+                        </UpgradeButtonContent>
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </NavButton>
+              </Magnetic>
             ) : (
               <ProgressTracker />
             )}
           </AnimatePresence>
         </DynamicButtonsContainer>
-        <MenuButton
-          key="menu-button"
-          onClick={handleMenuButtonClick}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          $isActive={showOptions}
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 40 }}
-          transition={{
-            // duration: 0.25,
-            type: "spring" as const,
-            bounce: 0.5,
-            // delay: 0.2,
-          }}
-        >
-          <AnimatePresence mode="popLayout">
-            {showOptions ? (
-              <motion.span
-                key="close-menu-icon"
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{
-                  duration: 0.25,
-                  type: "spring" as const,
-                  bounce: 0.5,
-                }}
-              >
-                <CloseIcon />
-              </motion.span>
-            ) : (
-              <motion.span
-                key="show-menu-icon"
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{
-                  duration: 0.25,
-                  type: "spring" as const,
-                  bounce: 0.5,
-                }}
-              >
-                <MenuIcon />
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </MenuButton>
-
-        <NavButton
-          key="shop-button"
-          onClick={() => handleNavigationClick("shop")}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          $isActive={currentView === "shop"}
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 40 }}
-          transition={{
-            // duration: 0.25,
-            type: "spring" as const,
-            bounce: 0.5,
-            delay: 0.1,
-          }}
-        >
-          <AnimatePresence mode="popLayout">
-            {currentView === "shop" ? (
-              <motion.span
-                key="close-shop-icon"
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{
-                  duration: 0.25,
-                  type: "spring" as const,
-                  bounce: 0.5,
-                }}
-              >
-                <CloseIcon color="#ffffff" />
-              </motion.span>
-            ) : (
-              <motion.span
-                key="show-shop-icon"
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{
-                  duration: 0.25,
-                  type: "spring" as const,
-                  bounce: 0.5,
-                }}
-              >
-                <CartIcon color="#ffffff" />
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </NavButton>
+        <Magnetic>
+          <MenuButton
+            key="menu-button"
+            onClick={handleMenuButtonClick}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            $isActive={showOptions}
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 40 }}
+            transition={{
+              // duration: 0.25,
+              type: "spring" as const,
+              bounce: 0.5,
+              // delay: 0.2,
+            }}
+          >
+            <AnimatePresence mode="popLayout">
+              {showOptions ? (
+                <motion.span
+                  key="close-menu-icon"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{
+                    duration: 0.25,
+                    type: "spring" as const,
+                    bounce: 0.5,
+                  }}
+                >
+                  <CloseIcon />
+                </motion.span>
+              ) : (
+                <motion.span
+                  key="show-menu-icon"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{
+                    duration: 0.25,
+                    type: "spring" as const,
+                    bounce: 0.5,
+                  }}
+                >
+                  <MenuIcon />
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </MenuButton>
+        </Magnetic>
+        <Magnetic>
+          <NavButton
+            key="shop-button"
+            onClick={() => handleNavigationClick("shop")}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            $isActive={currentView === "shop"}
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 40 }}
+            transition={{
+              // duration: 0.25,
+              type: "spring" as const,
+              bounce: 0.5,
+              delay: 0.1,
+            }}
+          >
+            <AnimatePresence mode="popLayout">
+              {currentView === "shop" ? (
+                <motion.span
+                  key="close-shop-icon"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{
+                    duration: 0.25,
+                    type: "spring" as const,
+                    bounce: 0.5,
+                  }}
+                >
+                  <CloseIcon color="#ffffff" />
+                </motion.span>
+              ) : (
+                <motion.span
+                  key="show-shop-icon"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{
+                    duration: 0.25,
+                    type: "spring" as const,
+                    bounce: 0.5,
+                  }}
+                >
+                  <CartIcon color="#ffffff" />
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </NavButton>
+        </Magnetic>
       </NavigationContainer>
 
       <Shop

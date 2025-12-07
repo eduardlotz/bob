@@ -14,7 +14,6 @@ import { match } from "ts-pattern";
 import { LockIcon } from "@/icons/lock";
 import { useAppStore } from "@/store";
 import { useViewStore } from "@/store/viewStore";
-import { useIsMobile } from "@/hooks/useIsMobile";
 import { Magnetic } from "@/layout/Magnetic";
 
 //#region constants

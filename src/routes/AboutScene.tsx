@@ -17,6 +17,8 @@ import { Room } from "@/3d-objects/Room";
 import { XboxControllerModel } from "@/3d-objects/models/xbox-controller";
 import { MidiControllerModel } from "@/3d-objects/models/midi-controller";
 import { BasketBox } from "@/physics/BasketBox";
+import { DjControllerModel } from "@/3d-objects/models/dj-controller";
+import { DeskSpeakersModel } from "@/3d-objects/models/desk-speakers";
 
 export function AboutScene() {
   const { checkUnlockedRoutes } = useGameStore();
@@ -44,9 +46,6 @@ export function AboutScene() {
     });
   }, []);
 
-  const leftRB = useRef(null);
-  const rightRB = useRef(null);
-
   return (
     <group>
       <InteractiveObject
@@ -59,6 +58,12 @@ export function AboutScene() {
           position={[-4, FLOOR_Y_POSITION + 1.2, 0]}
           rotation={[0, 0, 0]}
           scale={[2, 2, 2]}
+        />
+
+        <DeskSpeakersModel
+          position={[-4.3, FLOOR_Y_POSITION + 1.46, 0]}
+          rotation={[-1.58, 0, 0]}
+          scale={[0.146, 0.146, 0.146]}
         />
 
         <MacbookModel
@@ -88,14 +93,6 @@ export function AboutScene() {
         )}
       </InteractiveObject>
 
-      <BasketBox
-        position={[4, FLOOR_Y_POSITION + 0.9, 2]}
-        width={1.8}
-        depth={1.8}
-        height={1.8}
-        wallThickness={0.02}
-      />
-
       <XboxControllerModel
         position={[3.5, FLOOR_Y_POSITION + 14, 2]}
         rotation={[1.2, 0.9, -0.2]}
@@ -107,9 +104,19 @@ export function AboutScene() {
       />
 
       <MidiControllerModel
-        position={[4, FLOOR_Y_POSITION + 20, 1]}
-        rotation={[1.2, 0.9, -0.2]}
+        position={[4, FLOOR_Y_POSITION + 20, 2]}
+        rotation={[1.2, 0, -0.2]}
       />
+
+      <DjControllerModel
+        position={[4, FLOOR_Y_POSITION + 30, 2]}
+        rotation={[1.2, 0, -0.2]}
+      />
+
+      {/* <FootballModel
+        position={[-3, FLOOR_Y_POSITION + 15, -3]}
+        rotation={[1.2, 0, -0.2]}
+      /> */}
 
       <InteractiveObject
         questAction="click_cardbox"
@@ -123,14 +130,29 @@ export function AboutScene() {
           scale={[0.9, 0.9, 0.9]}
         />
 
+        <BasketBox
+          position={[4, FLOOR_Y_POSITION + 0.9, 2]}
+          width={1.9}
+          depth={1.9}
+          height={1.9}
+          wallThickness={0.05}
+        />
+
         {/* <BaguetteModel
-          position={[3.6, FLOOR_Y_POSITION + 0.3, 1.6]}
+          position={[-3.6, FLOOR_Y_POSITION + 5, -1.6]}
           rotation={[-1.25, 0, -2.5]}
-          scale={[1, 1, 1]}
         /> */}
       </InteractiveObject>
 
       <Room posterUrls={["/images/test_poster.png"]} />
+      {/* <BasketBox
+        position={[0, FLOOR_Y_POSITION + 5, 0]}
+        width={10}
+        depth={10}
+        height={10}
+        wallThickness={0.02}
+        debug
+      /> */}
     </group>
   );
 }

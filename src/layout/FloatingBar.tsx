@@ -46,7 +46,6 @@ export const FloatingBar: React.FC<FloatingBarProps> = ({
 
   const handlePointerEnter = (e: any) => {
     e.stopPropagation();
-    document.body.style.cursor = "pointer";
 
     setHoveredObject({
       title,
@@ -54,7 +53,6 @@ export const FloatingBar: React.FC<FloatingBarProps> = ({
   };
 
   const handlePointerLeave = () => {
-    document.body.style.cursor = "default";
     setHoveredObject(null);
   };
 
@@ -74,7 +72,10 @@ export const FloatingBarUI: React.FC = () => {
 
   useEffect(() => {
     const move = (e: MouseEvent) => {
-      setPos({ x: e.clientX + 12, y: e.clientY - 24 });
+      setPos({
+        x: e.clientX + 12,
+        y: e.clientY - 24,
+      });
     };
 
     window.addEventListener("mousemove", move);

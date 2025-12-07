@@ -64,7 +64,7 @@ export default function App() {
       <FloatingBarProvider>
         <GlobalStyle />
 
-        <Toaster duration={5000} position="top-center" />
+        <Toaster duration={5000} position="top-left" />
         <AnimatePresence mode="sync">
           <RouteChip
             initial={{ y: -120, filter: "blur(6px)" }}

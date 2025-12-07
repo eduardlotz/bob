@@ -1,24 +1,24 @@
 import * as THREE from "three";
-import React, { forwardRef, useRef } from "react";
+import React, { forwardRef, useEffect, useRef } from "react";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
-import { useFloatingBar } from "@/layout/FloatingBar";
+import { a, useSpring } from "@react-spring/three";
 import {
   DraggableRigidBody,
   DraggableRigidBodyProps,
 } from "@/physics/DraggableRigidBody";
-import { useViewStore } from "@/store";
+import { useFloatingBar } from "@/layout/FloatingBar";
 
 type GLTFResult = GLTF & {
   nodes: {
-    skateboard: THREE.Mesh;
+    DJGear_mesh: THREE.Mesh;
   };
   materials: {
-    ["colormap.001"]: THREE.MeshStandardMaterial;
+    DJGear_mat: THREE.MeshStandardMaterial;
   };
 };
 
-const PATH = "gltf/skateboard.glb";
+const PATH = "gltf/dj-controller.glb";
 
 interface Props {
   position: [number, number, number];
@@ -26,7 +26,7 @@ interface Props {
   scale?: [number, number, number];
 }
 
-export const SkateboardModel = forwardRef(
+export const DjControllerModel = forwardRef(
   ({ scale = [1, 1, 1], ...props }: Props, ref: any) => {
     const group = useRef<THREE.Group>(null!);
     const { nodes, materials } = useGLTF(PATH) as GLTFResult;
@@ -37,7 +37,7 @@ export const SkateboardModel = forwardRef(
       e.stopPropagation();
 
       setHoveredObject({
-        title: "Skateboarding",
+        title: "Musik mixen",
       });
     };
 
@@ -46,24 +46,15 @@ export const SkateboardModel = forwardRef(
     };
 
     const DraggableRigidBodyProps: Partial<DraggableRigidBodyProps> = {
-      // rigidBodyProps: {
-      //   gravityScale: 3.5,
-      //   linearDamping: 5,
-      //   angularDamping: 0.2,
-      // },
       groupProps: {
         ref: group,
         position: props.position,
         rotation: props.rotation,
-        scale: [2, 2, 2],
+        scale: 0.1,
         onPointerEnter: handlePointerEnter,
         onPointerLeave: handlePointerLeave,
       },
-      // boundingBox: [
-      //   [-1, 1],
-      //   [0.5, 1],
-      //   [-1, 1],
-      // ],
+
       dragControlsProps: {
         preventOverlap: true,
       },
@@ -75,8 +66,8 @@ export const SkateboardModel = forwardRef(
         {...DraggableRigidBodyProps}
         visibleMesh={
           <mesh
-            geometry={nodes.skateboard.geometry}
-            material={materials["colormap.001"]}
+            geometry={nodes.DJGear_mesh.geometry}
+            material={materials.DJGear_mat}
           />
         }
       />

@@ -20,7 +20,7 @@ export const BasketBox: React.FC<CardBoxProps> = ({
   const opacity = debug ? 0.3 : 0;
   return (
     <RigidBody type="fixed" colliders={false} {...props}>
-      {/* Visual Mesh (The Box Look) */}
+      {/* Visual Mesh */}
       <mesh>
         <boxGeometry args={[width, height, depth]} />
         <meshStandardMaterial
@@ -30,9 +30,6 @@ export const BasketBox: React.FC<CardBoxProps> = ({
           wireframe={false}
         />
       </mesh>
-
-      {/* Physics Colliders (Compound Body) */}
-      {/* Note: CuboidCollider args are half-extents (size/2) */}
 
       {/* Floor */}
       <CuboidCollider

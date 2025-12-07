@@ -132,10 +132,10 @@ const Scene = ({
             )}
             <CameraControls
               ref={cameraControlsRef}
-              minPolarAngle={0}
-              maxPolarAngle={Math.PI / 1.6}
-              maxDistance={15}
-              minDistance={1}
+              // minPolarAngle={0}
+              // maxPolarAngle={Math.PI / 1.6}
+              // maxDistance={15}
+              // minDistance={1}
             />
             <ambientLight intensity={2} />
             <PerspectiveCamera
@@ -166,7 +166,7 @@ const Scene = ({
               <SceneDecorations />
             </a.group>
 
-            <Physics>
+            <Physics gravity={[0, -3.24, 0]}>
               {match(currentRoute)
                 .with(ROUTE_PATHS.ABOUT, () => <AboutScene />)
                 .otherwise(() => null)}
