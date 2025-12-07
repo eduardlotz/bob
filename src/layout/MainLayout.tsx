@@ -1,10 +1,8 @@
 import { SceneWithLoader } from "@/molecules/SceneWithLoader";
-import { BottomNavigation } from "@/molecules/BottomNavigation";
 import { ViewControls } from "@/molecules/ViewControls";
 import { useEffect, useState } from "react";
 import styled from "styled-components";
 import { useAppStore } from "@/store";
-import { useGameStore } from "@/store/gameStore";
 
 export default function MainLayout({ children }: any) {
   const [windowHeight, setWindowHeight] = useState(0);

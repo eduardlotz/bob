@@ -15,6 +15,7 @@ import { LockIcon } from "@/icons/lock";
 import { useAppStore } from "@/store";
 import { useViewStore } from "@/store/viewStore";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { Magnetic } from "@/layout/Magnetic";
 
 //#region constants
 export const CAMERA_Y_POSITION = 1;
@@ -462,29 +463,31 @@ function Option({
   return (
     <group ref={optionRef} position={position}>
       <Html position={[0, 1.5, 0]}>
-        <NavigationBubble
-          key={route.id}
-          initial={MotionVariants.OptionButton.initial}
-          animate={
-            isClosing
-              ? MotionVariants.OptionButton.exit
-              : MotionVariants.OptionButton.animate({
-                  delay: index,
-                  isDisabled: !route.purchased,
-                  isLocked: route.isLocked,
-                })
-          }
-          $active={isActive}
-          exit={MotionVariants.OptionButton.exit}
-          whileHover={MotionVariants.OptionButton.hover}
-          whileTap={MotionVariants.OptionButton.tap}
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={handleOptionClick}
-          data-ui-sound-id="ui-tap-2"
-        >
-          {route.isLocked && <LockIcon />}
-          {route.name}
-        </NavigationBubble>
+        <Magnetic>
+          <NavigationBubble
+            key={route.id}
+            initial={MotionVariants.OptionButton.initial}
+            animate={
+              isClosing
+                ? MotionVariants.OptionButton.exit
+                : MotionVariants.OptionButton.animate({
+                    delay: index,
+                    isDisabled: !route.purchased,
+                    isLocked: route.isLocked,
+                  })
+            }
+            $active={isActive}
+            exit={MotionVariants.OptionButton.exit}
+            whileHover={MotionVariants.OptionButton.hover}
+            whileTap={MotionVariants.OptionButton.tap}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={handleOptionClick}
+            data-ui-sound-id="ui-tap-2"
+          >
+            {route.isLocked && <LockIcon />}
+            {route.name}
+          </NavigationBubble>
+        </Magnetic>
       </Html>
     </group>
   );
