@@ -1,6 +1,6 @@
 import { useGameStore } from "@/store/gameStore";
 import { ROUTE_PATHS, useViewStore } from "@/store";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { InteractiveObject } from "../molecules/InteractiveObject";
 import { useNavigate } from "react-router-dom";
 import { useSpring } from "@react-spring/three";
@@ -94,22 +94,22 @@ export function AboutScene() {
       </InteractiveObject>
 
       <XboxControllerModel
-        position={[3.5, FLOOR_Y_POSITION + 14, 2]}
+        position={[3.5, FLOOR_Y_POSITION + 4, 2]}
         rotation={[1.2, 0.9, -0.2]}
       />
 
       <SkateboardModel
-        position={[4, FLOOR_Y_POSITION + 12, 2]}
+        position={[4, FLOOR_Y_POSITION + 2, 2]}
         rotation={[1.2, 0.9, -0.2]}
       />
 
       <MidiControllerModel
-        position={[4, FLOOR_Y_POSITION + 20, 2]}
+        position={[4, FLOOR_Y_POSITION + 6, 2]}
         rotation={[1.2, 0, -0.2]}
       />
 
       <DjControllerModel
-        position={[4, FLOOR_Y_POSITION + 30, 2]}
+        position={[4, FLOOR_Y_POSITION + 1, 2]}
         rotation={[1.2, 0, -0.2]}
       />
 
@@ -145,14 +145,14 @@ export function AboutScene() {
       </InteractiveObject>
 
       <Room posterUrls={["/images/test_poster.png"]} />
-      {/* <BasketBox
+
+      <BasketBox
         position={[0, FLOOR_Y_POSITION + 5, 0]}
         width={10}
         depth={10}
         height={10}
         wallThickness={0.02}
-        debug
-      /> */}
+      />
     </group>
   );
 }

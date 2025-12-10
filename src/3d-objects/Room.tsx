@@ -83,16 +83,16 @@ export const Room = forwardRef(
           ))}
         </mesh>
 
-        {/* BACK WALL */}
-        <mesh position={[0, FLOOR_Y_POSITION + 1.5, 10]}>
+        <mesh
+          rotation={[0, -Math.PI, 0]}
+          position={[0, FLOOR_Y_POSITION + 1.5, 5]}
+        >
           <planeGeometry args={[ROOM_SIZE, 20]} />
-          <meshBasicMaterial side={DoubleSide}>
-            <gridToonMaterial
-              uGridDensity={12}
-              uGridColor1={new THREE.Color("#d8e1e7")}
-              uGridColor2={new THREE.Color("#c1cdd4")}
-            />
-          </meshBasicMaterial>
+          <gridToonMaterial
+            uGridDensity={12}
+            uGridColor1={new THREE.Color("#d8e1e7")}
+            uGridColor2={new THREE.Color("#c1cdd4")}
+          />
         </mesh>
 
         {/* RIGHT WALL */}

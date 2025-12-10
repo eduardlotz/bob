@@ -3,11 +3,9 @@ import React, { forwardRef, useRef } from "react";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { useFloatingBar } from "@/layout/FloatingBar";
-import {
-  DraggableRigidBody,
-  DraggableRigidBodyProps,
-} from "@/physics/DraggableRigidBody";
-import { useViewStore } from "@/store";
+
+import { Grabbable } from "@/physics/Grabbable";
+import { RapierRigidBody, RigidBody } from "@react-three/rapier";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -28,8 +26,8 @@ interface Props {
 
 export const SkateboardModel = forwardRef(
   ({ scale = [1, 1, 1], ...props }: Props, ref: any) => {
-    const group = useRef<THREE.Group>(null!);
     const { nodes, materials } = useGLTF(PATH) as GLTFResult;
+    const api = useRef<RapierRigidBody>(null);
 
     const { setHoveredObject } = useFloatingBar();
 
@@ -45,41 +43,24 @@ export const SkateboardModel = forwardRef(
       setHoveredObject(null);
     };
 
-    const DraggableRigidBodyProps: Partial<DraggableRigidBodyProps> = {
-      // rigidBodyProps: {
-      //   gravityScale: 3.5,
-      //   linearDamping: 5,
-      //   angularDamping: 0.2,
-      // },
-      groupProps: {
-        ref: group,
-        position: props.position,
-        rotation: props.rotation,
-        scale: [2, 2, 2],
-        onPointerEnter: handlePointerEnter,
-        onPointerLeave: handlePointerLeave,
-      },
-      // boundingBox: [
-      //   [-1, 1],
-      //   [0.5, 1],
-      //   [-1, 1],
-      // ],
-      dragControlsProps: {
-        preventOverlap: true,
-      },
-      enableSpringJoint: true,
-    };
-
     return (
-      <DraggableRigidBody
-        {...DraggableRigidBodyProps}
-        visibleMesh={
+      <Grabbable rigidBodyRef={api} mode={"spring"}>
+        <RigidBody
+          {...props}
+          ref={api}
+          colliders="cuboid"
+          restitution={0.5}
+          friction={0.7}
+        >
           <mesh
+            onPointerEnter={handlePointerEnter}
+            onPointerLeave={handlePointerLeave}
             geometry={nodes.skateboard.geometry}
             material={materials["colormap.001"]}
+            scale={2}
           />
-        }
-      />
+        </RigidBody>
+      </Grabbable>
     );
   }
 );

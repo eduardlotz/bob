@@ -83,7 +83,7 @@ export const TapCounter = () => {
   const responsivePosition = new Vector3(-numberWidth / 2 - 0.2, -1, -3);
 
   const [spring, api] = useSpring(() => ({
-    scale: 1,
+    scale: [1, 1, 1],
     config: { tension: 300, friction: 10 },
   }));
 
@@ -92,13 +92,21 @@ export const TapCounter = () => {
   // but manually tapping while auto-tap is active feels better when the update is in useFrame 🤷
 
   useFrame(() => {
+    // hide counter until first few taps?
+    // if (gameTapCount === 0) {
+    //   api.start({
+    //     scale: [0, 0, 0],
+    //     immediate: true,
+    //   });
+    // }
+
     if (gameTapCount !== prevTapCount.current) {
       api.start({
-        scale: 1.4,
+        scale: [1.4, 1.8, 1.2],
         immediate: true,
       });
       api.start({
-        scale: 1,
+        scale: [1, 1, 1],
         config: { tension: 300, friction: 15 },
       });
       prevTapCount.current = gameTapCount;
@@ -106,7 +114,11 @@ export const TapCounter = () => {
   });
 
   return (
-    <a.group ref={groupRef} scale={spring.scale} position={responsivePosition}>
+    <a.group
+      ref={groupRef}
+      scale={spring.scale.get() as [number, number, number]}
+      position={responsivePosition.add(new Vector3(-1, 0, 0))}
+    >
       <Text3D
         font={FONT_PATH}
         size={3}
@@ -118,6 +130,7 @@ export const TapCounter = () => {
         bevelThickness={0.2}
         bevelSegments={1}
         ref={numberRef}
+        position={[1, 0, 0]}
       >
         {formattedNumber}
         <meshToonMaterial color={themeConfig.counterColor} />

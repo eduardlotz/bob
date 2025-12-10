@@ -3,10 +3,9 @@ import React, { forwardRef, useRef } from "react";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { useFloatingBar } from "@/layout/FloatingBar";
-import {
-  DraggableRigidBody,
-  DraggableRigidBodyProps,
-} from "@/physics/DraggableRigidBody";
+
+import { Grabbable } from "@/physics/Grabbable";
+import { RapierRigidBody, RigidBody } from "@react-three/rapier";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -27,7 +26,8 @@ interface Props {
 
 export const XboxControllerModel = forwardRef(
   ({ scale = [1, 1, 1], ...props }: Props, ref: any) => {
-    const group = useRef<THREE.Group>(null!);
+    const api = useRef<RapierRigidBody>(null);
+
     const { nodes, materials } = useGLTF(PATH) as GLTFResult;
     const { setHoveredObject } = useFloatingBar();
 
@@ -43,32 +43,24 @@ export const XboxControllerModel = forwardRef(
       setHoveredObject(null);
     };
 
-    const DraggableRigidBodyProps: Partial<DraggableRigidBodyProps> = {
-      groupProps: {
-        position: props.position,
-        rotation: props.rotation,
-        scale: [0.02, 0.02, 0.02],
-        ref: group,
-        onPointerEnter: handlePointerEnter,
-        onPointerLeave: handlePointerLeave,
-      },
-
-      dragControlsProps: {
-        preventOverlap: true,
-      },
-      enableSpringJoint: true,
-    };
-
     return (
-      <DraggableRigidBody
-        {...DraggableRigidBodyProps}
-        visibleMesh={
+      <Grabbable rigidBodyRef={api} mode={"spring"}>
+        <RigidBody
+          {...props}
+          ref={api}
+          colliders="cuboid"
+          restitution={0.5}
+          friction={0.7}
+        >
           <mesh
+            onPointerEnter={handlePointerEnter}
+            onPointerLeave={handlePointerLeave}
             geometry={nodes.Xbox_Controller.geometry}
             material={materials.Mat}
+            scale={0.02}
           />
-        }
-      />
+        </RigidBody>
+      </Grabbable>
     );
   }
 );

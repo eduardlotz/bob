@@ -3,10 +3,9 @@ import React, { forwardRef, useRef } from "react";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { useFloatingBar } from "@/layout/FloatingBar";
-import {
-  DraggableRigidBody,
-  DraggableRigidBodyProps,
-} from "@/physics/DraggableRigidBody";
+
+import { RapierRigidBody, RigidBody } from "@react-three/rapier";
+import { Grabbable } from "@/physics/Grabbable";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -34,7 +33,7 @@ interface Props {
 
 export const MidiControllerModel = forwardRef(
   ({ scale = [1, 1, 1], ...props }: Props, ref: any) => {
-    const group = useRef<THREE.Group>(null!);
+    const api = useRef<RapierRigidBody>(null);
     const { nodes, materials } = useGLTF(PATH) as GLTFResult;
     const { setHoveredObject } = useFloatingBar();
 
@@ -50,36 +49,20 @@ export const MidiControllerModel = forwardRef(
       setHoveredObject(null);
     };
 
-    const DraggableRigidBodyProps: Partial<DraggableRigidBodyProps> = {
-      // rigidBodyProps: {
-      //   gravityScale: 3.5,
-      //   linearDamping: 5,
-      //   angularDamping: 0.2,
-      // },
-      groupProps: {
-        ref: group,
-        position: props.position,
-        rotation: props.rotation,
-        scale: 0.01,
-        onPointerEnter: handlePointerEnter,
-        onPointerLeave: handlePointerLeave,
-      },
-      // boundingBox: [
-      //   [-1, 1],
-      //   [0.5, 1],
-      //   [-1, 1],
-      // ],
-      dragControlsProps: {
-        preventOverlap: true,
-      },
-      enableSpringJoint: true,
-    };
-
     return (
-      <DraggableRigidBody
-        {...DraggableRigidBodyProps}
-        visibleMesh={
-          <group>
+      <Grabbable rigidBodyRef={api} mode={"spring"}>
+        <RigidBody
+          {...props}
+          ref={api}
+          colliders="cuboid"
+          restitution={0.5}
+          friction={0.7}
+        >
+          <group
+            onPointerEnter={handlePointerEnter}
+            onPointerLeave={handlePointerLeave}
+            scale={0.01}
+          >
             <mesh
               geometry={nodes["default"].geometry}
               material={materials.palette}
@@ -110,8 +93,8 @@ export const MidiControllerModel = forwardRef(
               material={materials.palette}
             />
           </group>
-        }
-      />
+        </RigidBody>
+      </Grabbable>
     );
   }
 );

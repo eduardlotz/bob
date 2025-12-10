@@ -1,7 +1,4 @@
-import {
-  useDeviceOrientation,
-  DeviceOrientation,
-} from "@/hooks/useDeviceOrientation";
+import { useDeviceOrientation } from "@/hooks/useDeviceOrientation";
 import { useFrame } from "@react-three/fiber";
 import { useRef, useState, useEffect, useMemo, useCallback } from "react";
 import {
@@ -19,10 +16,9 @@ import {
   HIDDEN_OPTIONS_CAMERA_ZOOM,
   VISIBLE_OPTIONS_CAMERA_ZOOM,
 } from "./HeadNavigation";
-import { CameraControls, Outlines, RoundedBox } from "@react-three/drei";
+import { CameraControls } from "@react-three/drei";
 import { calculateAcceleratedRotation } from "@/utils/math";
 import { a, useSpring } from "@react-spring/three";
-import { type RapierRigidBody } from "@react-three/rapier";
 import { Star3D } from "@/3d-objects/Star3D";
 import { EmotionState } from "@/hooks/useBlobEmotions";
 import { useGameStore } from "@/store/gameStore";
@@ -215,15 +211,6 @@ export function BlobHead({
     config: { tension: 200, friction: 15 },
   }));
 
-  // spawn animation
-  useEffect(() => {
-    api.start({
-      scale: [1.2, 1.2, 1.2],
-      delay: 1500,
-      config: { tension: 300, friction: 10 },
-    });
-  }, []);
-
   useEffect(() => {
     if (!showOptions || isClosing) {
       const delay = isClosing ? 400 : 0;
@@ -266,7 +253,7 @@ export function BlobHead({
   useEffect(() => {
     if (emotionState === "happy") {
       api.start({
-        scale: [1.35, 1.35, 1.35],
+        scale: [1.35, 1.15, 1.35],
         config: { tension: 420, friction: 10 },
       });
       api.start({
@@ -377,7 +364,7 @@ export function BlobHead({
     animateEyes(delta);
 
     if (emotionState === "dizzy") {
-      const wobbleX = Math.sin(clock.getElapsedTime() * 8) * 0.3;
+      const wobbleX = Math.sin(clock.getElapsedTime() * 8) * 0.6;
       const wobbleY = Math.cos(clock.getElapsedTime() * 6) * 0.2;
       const wobbleZ = Math.sin(clock.getElapsedTime() * 10) * 0.4;
 
@@ -739,8 +726,8 @@ export function BlobHead({
     createParticles(COUNTER_POS[0], COUNTER_POS[1], COUNTER_POS[2]);
 
     api.start({
-      scale: [1.4, 1.4, 1.4],
-      config: { tension: 400, friction: 8 },
+      scale: [1.35, 1.15, 1.35],
+      config: { tension: 420, friction: 10 },
     });
     api.start({
       scale: [1.2, 1.2, 1.2],

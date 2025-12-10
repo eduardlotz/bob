@@ -6,6 +6,7 @@ import {
   PerspectiveCamera,
   Grid,
 } from "@react-three/drei";
+
 import { Suspense, useRef, useState, useEffect, useMemo } from "react";
 import { useAppStore, useGameStore } from "../store";
 import { useViewStore } from "../store/viewStore";
@@ -118,7 +119,7 @@ const Scene = ({
       <FullScreenCanvas>
         <Suspense fallback={null}>
           <AudioListenerBinder />
-          <Fisheye zoom={FISHEYE_CONFIG.MIN}>
+          <Fisheye zoom={FISHEYE_CONFIG.MIN} renderPriority={2}>
             {showGrid && (
               <Grid
                 args={[8, 8]}
@@ -130,43 +131,34 @@ const Scene = ({
                 position={[0, FLOOR_Y_POSITION, 0]}
               />
             )}
-            <CameraControls
-              ref={cameraControlsRef}
-              // minPolarAngle={0}
-              // maxPolarAngle={Math.PI / 1.6}
-              // maxDistance={15}
-              // minDistance={1}
-            />
+            <CameraControls ref={cameraControlsRef} />
             <ambientLight intensity={2} />
-            <PerspectiveCamera
-              makeDefault
-              position={[20, 20, 20]}
-              rotation={[Math.PI * 20, 0, 0]}
-            />
+            <PerspectiveCamera makeDefault position={[0, 0, 3]} />
             <directionalLight intensity={1.2} position={[2, 4, 5]} />
             <Environment preset="city" />
             <BackgroundPlanet />
-            <HeadNavigation
-              showOptions={showOptions || false}
-              setShowOptions={setShowOptions || (() => {})}
-              cameraControlsRef={cameraControlsRef}
-              permissionGranted={permissionGranted}
-              onEmotionUpdate={(data) => {
-                // TODO: check if it actually works?
-                onEmotionUpdate?.(data);
-              }}
-            />
 
-            <MessageBubble anchor={[0, 2.4, 0]} />
+            <Physics gravity={[0, -9.81, 0]}>
+              <HeadNavigation
+                showOptions={showOptions || false}
+                setShowOptions={setShowOptions || (() => {})}
+                cameraControlsRef={cameraControlsRef}
+                permissionGranted={permissionGranted}
+                onEmotionUpdate={(data) => {
+                  // TODO: check if it actually works?
+                  onEmotionUpdate?.(data);
+                }}
+              />
 
-            <a.group visible={visible} scale={spring.scale}>
-              <ParticleEffects />
-              <TapCounter />
+              <MessageBubble anchor={[0, 2.4, 0]} />
 
-              <SceneDecorations />
-            </a.group>
+              <a.group visible={visible} scale={spring.scale}>
+                <ParticleEffects />
+                <TapCounter />
 
-            <Physics gravity={[0, -3.24, 0]}>
+                <SceneDecorations />
+              </a.group>
+
               {match(currentRoute)
                 .with(ROUTE_PATHS.ABOUT, () => <AboutScene />)
                 .otherwise(() => null)}
@@ -215,6 +207,12 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
         top: 0,
         left: 0,
         zIndex: 0,
+      }}
+      onCreated={(state) => {
+        state.camera.position.y = 20;
+        state.camera.position.z = 30;
+        state.camera.lookAt(0, 10, 0);
+        state.camera.updateProjectionMatrix();
       }}
       {...props}
     >
