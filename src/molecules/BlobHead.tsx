@@ -211,15 +211,6 @@ export function BlobHead({
     config: { tension: 200, friction: 15 },
   }));
 
-  // spawn animation
-  useEffect(() => {
-    api.start({
-      scale: [1.6, 1.2, 1.2],
-      delay: 1500,
-      config: { tension: 300, friction: 10 },
-    });
-  }, []);
-
   useEffect(() => {
     if (!showOptions || isClosing) {
       const delay = isClosing ? 400 : 0;

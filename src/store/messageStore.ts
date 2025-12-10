@@ -136,10 +136,11 @@ const calculateMinimumDisplayTime = (
     : String(config.text ?? "");
   const words = text.trim() ? text.trim().split(/\s+/).length : 0;
   const perWordMs = 240; // ~250ms/word, slightly faster to avoid blocking
-  const readingMs = Math.max(800, Math.round(words * perWordMs + 250));
+  const readingMs = Math.max(800, Math.round(words * perWordMs));
   const minDisplay = Math.max(800, options.minimumDisplayMs || 1200);
   const total = Math.max(minDisplay, readingMs);
-  return Math.min(15000, total); // cap at 15s
+  // return Math.min(15000, total); // cap at 15s
+  return total;
 };
 
 const insertIntoQueue = (
@@ -506,7 +507,12 @@ export const useMessageStore = create<MessageStoreState>()(
         ): Promise<boolean[]> => {
           const results: boolean[] = [];
           for (const id of ids) {
-            results.push(await get().showMessage(id, overrides));
+            setTimeout(
+              async () => {
+                results.push(await get().showMessage(id, overrides));
+              },
+              overrides?.baseDismissMs ? overrides?.baseDismissMs : 10
+            );
           }
           return results;
         },

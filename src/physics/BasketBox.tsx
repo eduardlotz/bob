@@ -21,7 +21,7 @@ export const BasketBox: React.FC<CardBoxProps> = ({
   return (
     <RigidBody type="fixed" colliders={false} {...props}>
       {/* Visual Mesh */}
-      <mesh>
+      <mesh visible={debug}>
         <boxGeometry args={[width, height, depth]} />
         <meshStandardMaterial
           color="#f0a500"

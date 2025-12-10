@@ -138,7 +138,7 @@ const Scene = ({
             <Environment preset="city" />
             <BackgroundPlanet />
 
-            <Physics gravity={[0, -9.81, 0]} debug>
+            <Physics gravity={[0, -9.81, 0]}>
               <HeadNavigation
                 showOptions={showOptions || false}
                 setShowOptions={setShowOptions || (() => {})}

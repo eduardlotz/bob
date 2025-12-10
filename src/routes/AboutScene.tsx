@@ -94,22 +94,22 @@ export function AboutScene() {
       </InteractiveObject>
 
       <XboxControllerModel
-        position={[3.5, FLOOR_Y_POSITION + 14, 2]}
+        position={[3.5, FLOOR_Y_POSITION + 4, 2]}
         rotation={[1.2, 0.9, -0.2]}
       />
 
       <SkateboardModel
-        position={[4, FLOOR_Y_POSITION + 12, 2]}
+        position={[4, FLOOR_Y_POSITION + 2, 2]}
         rotation={[1.2, 0.9, -0.2]}
       />
 
       <MidiControllerModel
-        position={[4, FLOOR_Y_POSITION + 20, 2]}
+        position={[4, FLOOR_Y_POSITION + 6, 2]}
         rotation={[1.2, 0, -0.2]}
       />
 
       <DjControllerModel
-        position={[4, FLOOR_Y_POSITION + 30, 2]}
+        position={[4, FLOOR_Y_POSITION + 1, 2]}
         rotation={[1.2, 0, -0.2]}
       />
 
@@ -152,7 +152,6 @@ export function AboutScene() {
         depth={10}
         height={10}
         wallThickness={0.02}
-        debug
       />
     </group>
   );
