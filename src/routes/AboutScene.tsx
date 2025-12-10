@@ -1,6 +1,6 @@
 import { useGameStore } from "@/store/gameStore";
 import { ROUTE_PATHS, useViewStore } from "@/store";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { InteractiveObject } from "../molecules/InteractiveObject";
 import { useNavigate } from "react-router-dom";
 import { useSpring } from "@react-spring/three";
@@ -145,14 +145,15 @@ export function AboutScene() {
       </InteractiveObject>
 
       <Room posterUrls={["/images/test_poster.png"]} />
-      {/* <BasketBox
+
+      <BasketBox
         position={[0, FLOOR_Y_POSITION + 5, 0]}
         width={10}
         depth={10}
         height={10}
         wallThickness={0.02}
         debug
-      /> */}
+      />
     </group>
   );
 }

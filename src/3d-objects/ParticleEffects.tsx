@@ -230,78 +230,98 @@ export function RainEffect() {
   );
 }
 
-export function CloudEffect() {
+const generateClouds = (count: number): CloudData[] => {
+  return Array.from({ length: count }, () => {
+    // 1. Position Logic (Safe Zone)
+    const angle = Math.random() * Math.PI * 2;
+    // Guaranteed distance from center (Camera)
+    const radius =
+      CONFIG.RADIUS.MIN +
+      Math.random() * (CONFIG.RADIUS.MAX - CONFIG.RADIUS.MIN);
+
+    const x = Math.cos(angle) * radius;
+    const y =
+      CONFIG.HEIGHT.MIN +
+      Math.random() * (CONFIG.HEIGHT.MAX - CONFIG.HEIGHT.MIN);
+    const z = Math.sin(angle) * radius;
+
+    // 2. Bubble Generation
+    const bubbleCount =
+      CONFIG.BUBBLE_COUNT.MIN +
+      Math.floor(
+        Math.random() * (CONFIG.BUBBLE_COUNT.MAX - CONFIG.BUBBLE_COUNT.MIN + 1)
+      );
+
+    const bubbles: CloudBubble[] = [];
+
+    // Main central bubble
+    bubbles.push({
+      offset: [0, 0, 0],
+      scale: 1.2 + Math.random() * 0.8,
+      opacity: 0.1 + Math.random() * 0.2,
+    });
+
+    // Satellite bubbles
+    for (let i = 0; i < bubbleCount - 1; i++) {
+      const bubbleAngle =
+        (i / (bubbleCount - 1)) * Math.PI * 2 + Math.random() * 0.5;
+      const bubbleDist = 0.8 + Math.random() * 1.2;
+      const bubbleHeight = (Math.random() - 0.5) * 0.8;
+
+      bubbles.push({
+        offset: [
+          Math.cos(bubbleAngle) * bubbleDist,
+          bubbleHeight,
+          Math.sin(bubbleAngle) * bubbleDist,
+        ],
+        scale: 0.6 + Math.random() * 0.8,
+        opacity: 0.1 + Math.random() * 0.05,
+      });
+    }
+
+    return {
+      id: crypto.randomUUID(),
+      position: [x, y, z],
+      bubbles,
+    };
+  });
+};
+
+const CONFIG = {
+  CLOUD_COUNT: { MIN: 5, MAX: 10 },
+  BUBBLE_COUNT: { MIN: 5, MAX: 12 },
+  RADIUS: { MIN: 8, MAX: 16 },
+  HEIGHT: { MIN: 2, MAX: 6 },
+};
+
+type CloudBubble = {
+  offset: [number, number, number];
+  scale: number;
+  opacity: number;
+};
+
+type CloudData = {
+  id: string;
+  position: [number, number, number];
+  bubbles: CloudBubble[];
+};
+
+export const CloudEffect = () => {
   const { upgrades } = useGameStore();
   const cloudUpgrade = upgrades.find((u) => u.id === "environment_clouds");
   const cloudEnabled = cloudUpgrade?.unlocked && cloudUpgrade?.selected;
 
-  const [clouds, setClouds] = React.useState<any[]>([]);
+  const clouds = useMemo(() => {
+    if (!cloudEnabled) return [];
 
-  useEffect(() => {
-    // generate clouds if enabled and not created yet
-    if (cloudEnabled && clouds.length === 0) {
-      // create static clouds at random positions
-      const cloudCount =
-        CLOUD_COUNT_MIN +
-        Math.floor(Math.random() * (CLOUD_COUNT_MAX - CLOUD_COUNT_MIN + 1));
+    const count =
+      CONFIG.CLOUD_COUNT.MIN +
+      Math.floor(
+        Math.random() * (CONFIG.CLOUD_COUNT.MAX - CONFIG.CLOUD_COUNT.MIN + 1)
+      );
 
-      // generate safe position with offset area around camera (avoid 0,0,0 area)
-      const newClouds = Array.from({ length: cloudCount }, (_, index) => {
-        // TODO: fix cloud/camera overlapping
-        let x, z;
-
-        const angle = Math.random() * Math.PI * 2;
-        const radius = 4 + Math.random() * 4; // Minimum radius of 4 units from center
-        x = Math.cos(angle) * radius;
-        z = Math.sin(angle) * radius - 1;
-
-        const y = 2 + Math.random() * 3; // Height variation
-
-        // create main bubbles for each cloud
-        const bubbleCount =
-          BUBBLES_COUNT_MIN +
-          Math.floor(
-            Math.random() * (BUBBLES_COUNT_MAX - BUBBLES_COUNT_MIN + 1)
-          );
-
-        const bubbles = [];
-        bubbles.push({
-          offset: [0, 0, 0] as [number, number, number],
-          scale: 1.2 + Math.random() * 0.8,
-          opacity: 0.1 + Math.random() * 0.2,
-        });
-
-        // surround main bubbles with more random bubbles
-        for (let i = 0; i < bubbleCount - 1; i++) {
-          const bubbleAngle =
-            (i / (bubbleCount - 1)) * Math.PI * 2 + Math.random() * 0.5;
-          const bubbleRadius = 0.8 + Math.random() * 1.2;
-          const bubbleHeight = (Math.random() - 0.5) * 0.8;
-
-          bubbles.push({
-            offset: [
-              Math.cos(bubbleAngle) * bubbleRadius,
-              bubbleHeight,
-              Math.sin(bubbleAngle) * bubbleRadius,
-            ] as [number, number, number],
-            scale: 0.6 + Math.random() * 0.8,
-            opacity: 0.1 + Math.random() * 0.05,
-          });
-        }
-
-        return {
-          id: index,
-          position: [x, y, z] as [number, number, number],
-          bubbles,
-        };
-      });
-
-      setClouds(newClouds);
-    } else if (!cloudEnabled && clouds.length > 0) {
-      // remove clouds when disabled
-      setClouds([]);
-    }
-  }, [cloudEnabled, clouds.length]);
+    return generateClouds(count);
+  }, [cloudEnabled]);
 
   if (!cloudEnabled) return null;
 
@@ -309,21 +329,27 @@ export function CloudEffect() {
     <group>
       {clouds.map((cloud) => (
         <group key={cloud.id} position={cloud.position}>
-          {cloud.bubbles.map((bubble: any, index: number) => (
+          {cloud.bubbles.map((bubble, index) => (
             <mesh
-              key={index}
+              key={`${cloud.id}-bubble-${index}`}
               position={bubble.offset}
               scale={[bubble.scale, bubble.scale, bubble.scale]}
               geometry={SHARED_GEOMETRIES.cloudSphere}
               material={SHARED_MATERIALS.cloud}
-              material-opacity={bubble.opacity}
-            />
+            >
+              <primitive
+                object={SHARED_MATERIALS.cloud}
+                opacity={bubble.opacity}
+                transparent
+                attach="material"
+              />
+            </mesh>
           ))}
         </group>
       ))}
     </group>
   );
-}
+};
 
 const MAX_COUNT = 200;
 const GRAVITY = -10;

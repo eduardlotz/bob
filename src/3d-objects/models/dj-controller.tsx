@@ -1,13 +1,10 @@
 import * as THREE from "three";
-import React, { forwardRef, useEffect, useRef } from "react";
+import React, { forwardRef, useRef } from "react";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
-import { a, useSpring } from "@react-spring/three";
-import {
-  DraggableRigidBody,
-  DraggableRigidBodyProps,
-} from "@/physics/DraggableRigidBody";
 import { useFloatingBar } from "@/layout/FloatingBar";
+import { RapierRigidBody, RigidBody } from "@react-three/rapier";
+import { Grabbable } from "@/physics/Grabbable";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -28,8 +25,8 @@ interface Props {
 
 export const DjControllerModel = forwardRef(
   ({ scale = [1, 1, 1], ...props }: Props, ref: any) => {
-    const group = useRef<THREE.Group>(null!);
     const { nodes, materials } = useGLTF(PATH) as GLTFResult;
+    const api = useRef<RapierRigidBody>(null);
 
     const { setHoveredObject } = useFloatingBar();
 
@@ -45,32 +42,24 @@ export const DjControllerModel = forwardRef(
       setHoveredObject(null);
     };
 
-    const DraggableRigidBodyProps: Partial<DraggableRigidBodyProps> = {
-      groupProps: {
-        ref: group,
-        position: props.position,
-        rotation: props.rotation,
-        scale: 0.1,
-        onPointerEnter: handlePointerEnter,
-        onPointerLeave: handlePointerLeave,
-      },
-
-      dragControlsProps: {
-        preventOverlap: true,
-      },
-      enableSpringJoint: true,
-    };
-
     return (
-      <DraggableRigidBody
-        {...DraggableRigidBodyProps}
-        visibleMesh={
+      <Grabbable rigidBodyRef={api} mode={"spring"}>
+        <RigidBody
+          {...props}
+          ref={api}
+          colliders="cuboid"
+          restitution={0.5}
+          friction={0.7}
+        >
           <mesh
+            onPointerEnter={handlePointerEnter}
+            onPointerLeave={handlePointerLeave}
             geometry={nodes.DJGear_mesh.geometry}
             material={materials.DJGear_mat}
+            scale={0.1}
           />
-        }
-      />
+        </RigidBody>
+      </Grabbable>
     );
   }
 );

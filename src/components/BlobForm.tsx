@@ -1,6 +1,7 @@
 import React from "react";
 import { RoundedBox, Outlines } from "@react-three/drei";
 import { BlobFormType, BlobFormParameters } from "@/types/blobForms";
+import { RigidBody } from "@react-three/rapier";
 
 interface BlobFormProps {
   formType: BlobFormType;
@@ -14,17 +15,30 @@ export const BlobForm = React.memo(
     switch (formType) {
       case "sphere":
         return (
-          <mesh castShadow>
-            <sphereGeometry
-              args={[
-                parameters.sphereRadius || 1,
-                parameters.sphereWidthSegments || 64,
-                parameters.sphereHeightSegments || 64,
-              ]}
-            />
-            <meshToonMaterial color={blobColor} />
-            <Outlines thickness={0.005} color={outlineColor} screenspace />
-          </mesh>
+          <>
+            <mesh castShadow>
+              <sphereGeometry
+                args={[
+                  parameters.sphereRadius || 1,
+                  parameters.sphereWidthSegments || 64,
+                  parameters.sphereHeightSegments || 64,
+                ]}
+              />
+              <meshToonMaterial color={blobColor} />
+              <Outlines thickness={0.005} color={outlineColor} screenspace />
+            </mesh>
+            <RigidBody colliders="ball">
+              <mesh>
+                <sphereGeometry
+                  args={[
+                    parameters.sphereRadius || 1,
+                    parameters.sphereWidthSegments || 64,
+                    parameters.sphereHeightSegments || 64,
+                  ]}
+                />
+              </mesh>
+            </RigidBody>
+          </>
         );
 
       case "cube":
