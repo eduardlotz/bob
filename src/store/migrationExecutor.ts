@@ -21,20 +21,16 @@ export const executeMigrationsWhenReady = async (): Promise<void> => {
 
     const { useGameStore } = await import("./gameStore");
     const { useQuestStore } = await import("./questStore");
-    const { useRouteStore } = await import("./routeStore");
 
     const areStoresReady = () => {
       try {
         const gameState = useGameStore.getState();
         const questState = useQuestStore.getState();
-        const routeState = useRouteStore.getState();
         return (
           !!gameState &&
           typeof gameState.version !== "undefined" &&
           !!questState &&
-          Array.isArray(questState.quests) &&
-          !!routeState &&
-          Array.isArray(routeState.routeConfigs)
+          Array.isArray(questState.quests)
         );
       } catch {
         return false;

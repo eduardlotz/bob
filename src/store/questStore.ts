@@ -62,6 +62,21 @@ const initialQuests: Quest[] = [
       value: 25,
     },
   },
+  {
+    id: "about_quest_3",
+    title: "Meine Interessen",
+    description: "Klick auf den Karton",
+    progress: 0,
+    maxProgress: 25,
+    reward: 500,
+    completed: false,
+    routeId: "route_about",
+    type: "interaction",
+    trigger: {
+      action: "click_box",
+      value: 25,
+    },
+  },
 ];
 
 export const useQuestStore = create<QuestStore>()(

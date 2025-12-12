@@ -48,7 +48,7 @@ export const SkateboardModel = forwardRef(
         <RigidBody
           {...props}
           ref={api}
-          colliders="cuboid"
+          colliders="hull"
           restitution={0.5}
           friction={0.7}
         >

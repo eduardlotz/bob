@@ -117,7 +117,7 @@ export const TapCounter = () => {
     <a.group
       ref={groupRef}
       scale={spring.scale.get() as [number, number, number]}
-      position={responsivePosition.add(new Vector3(-1, 0, 0))}
+      position={responsivePosition}
     >
       <Text3D
         font={FONT_PATH}
@@ -130,7 +130,6 @@ export const TapCounter = () => {
         bevelThickness={0.2}
         bevelSegments={1}
         ref={numberRef}
-        position={[1, 0, 0]}
       >
         {formattedNumber}
         <meshToonMaterial color={themeConfig.counterColor} />

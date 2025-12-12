@@ -56,17 +56,11 @@ export const SimsPlumbob = ({
     <a.group
       ref={group}
       scale={spring.scale.get() as [number, number, number]}
-      castShadow
-      receiveShadow
       position={props.position}
       rotation={props.rotation}
     >
       <group rotation={[-Math.PI / 2, 0, 0]}>
-        <mesh
-          castShadow
-          receiveShadow
-          geometry={nodes.Plumbob_Material001_0.geometry}
-        >
+        <mesh geometry={nodes.Plumbob_Material001_0.geometry}>
           <MeshTransmissionMaterial
             color={color}
             thickness={1.5}

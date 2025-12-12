@@ -37,13 +37,11 @@ export function useMessageSystem() {
 
             if (!returning) {
               // first visit: queue both in order
-              return showMessages(["welcome_home", "home_features"]).then(
-                (results) => {
-                  if (results.some(Boolean)) {
-                    routeShownRef.current[ROUTE_PATHS.HOME] = true;
-                  }
+              return showMessages(["welcome_home"]).then((results) => {
+                if (results.some(Boolean)) {
+                  routeShownRef.current[ROUTE_PATHS.HOME] = true;
                 }
-              );
+              });
             } else {
               // returning visit: random greeting
               const randomGreeting = (Math.floor(Math.random() * 10) % 4) + 1;

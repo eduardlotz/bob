@@ -19,6 +19,9 @@ import { MidiControllerModel } from "@/3d-objects/models/midi-controller";
 import { BasketBox } from "@/physics/BasketBox";
 import { DjControllerModel } from "@/3d-objects/models/dj-controller";
 import { DeskSpeakersModel } from "@/3d-objects/models/desk-speakers";
+import { PSControllerModel } from "@/3d-objects/models/ps-controller";
+import { CameraModel } from "@/3d-objects/models/camera";
+import { GreenDiamond } from "@/3d-objects/models/greenDiamond";
 
 export function AboutScene() {
   const { checkUnlockedRoutes } = useGameStore();
@@ -113,13 +116,28 @@ export function AboutScene() {
         rotation={[1.2, 0, -0.2]}
       />
 
+      <PSControllerModel
+        position={[4, FLOOR_Y_POSITION + 2, 2]}
+        rotation={[1.2, 0, -0.2]}
+      />
+
+      <CameraModel
+        position={[3.5, FLOOR_Y_POSITION + 2, 2]}
+        rotation={[1.2, 0, -0.2]}
+      />
+
+      <GreenDiamond
+        position={[3.5, FLOOR_Y_POSITION + 2, 2]}
+        rotation={[1.2, 0, -0.2]}
+      />
+
       {/* <FootballModel
         position={[-3, FLOOR_Y_POSITION + 15, -3]}
         rotation={[1.2, 0, -0.2]}
       /> */}
 
       <InteractiveObject
-        questAction="click_cardbox"
+        questAction="click_box"
         questValue={30}
         mode="view"
         viewId="cardbox"
@@ -132,10 +150,10 @@ export function AboutScene() {
 
         <BasketBox
           position={[4, FLOOR_Y_POSITION + 0.9, 2]}
-          width={1.9}
-          depth={1.9}
+          width={2.1}
+          depth={2.1}
           height={1.9}
-          wallThickness={0.05}
+          wallThickness={0.22}
         />
 
         {/* <BaguetteModel
@@ -144,7 +162,8 @@ export function AboutScene() {
         /> */}
       </InteractiveObject>
 
-      <Room posterUrls={["/images/test_poster.png"]} />
+      {/* <Room posterUrls={["/images/portrait.jpg"]} /> */}
+      <Room />
 
       <BasketBox
         position={[0, FLOOR_Y_POSITION + 5, 0]}

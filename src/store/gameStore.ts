@@ -1322,6 +1322,7 @@ export const useGameStore = create<GameStore>()(
           });
         },
 
+        // TODO: use better names (force means for free?)
         purchaseRoute: (routeId: string, force = false) => {
           set((state) => {
             const route = state.routes.find((r) => r.id === routeId);

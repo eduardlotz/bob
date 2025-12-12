@@ -44,8 +44,11 @@ export const GlobalStyle = createGlobalStyle`
         background-color: #000000;
     }
 
-    body, root, button, input, textarea, select {
+    body, root {
         background-color: #000000;
+    }
+    
+    body, root, button, input, textarea, select, p, a {
         font-family: "Open Sauce Two", Helvetica, Arial, sans-serif;
     }
 
@@ -60,6 +63,9 @@ export const GlobalStyle = createGlobalStyle`
         border: none;
         box-shadow: none;
         pointer-events: auto;
-        cursor: pointer;
+
+        &:not(:disabled) {
+            cursor: pointer;
+        }
     }
 `;

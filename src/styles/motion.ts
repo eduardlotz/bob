@@ -130,7 +130,7 @@ export namespace MotionVariants {
     initial: {
       scale: 0.8,
       opacity: 0,
-      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
+      // boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
       filter: "blur(4px)",
       transition: { type: "spring" as const, duration: 0.6, bounce: 0.4 },
     },
@@ -140,30 +140,28 @@ export namespace MotionVariants {
       filter: "blur(4px)",
       transition: { type: "spring" as const, duration: 0.4, bounce: 0.4 },
     },
-    hover: {
-      scale: 1.05,
+    hover: (custom?: {
+      delay?: number;
+      isLocked?: boolean;
+      isDisabled?: boolean;
+    }) => ({
+      scale: custom?.isLocked ? 1 : 1.05,
       zIndex: 1001,
-      filter: "blur(0px)",
-      boxShadow: "0 2px 16px rgba(0, 0, 0, 0.2)",
+      boxShadow: "0 2px 16px rgba(22, 22, 22, 0.13)",
       transition: { type: "spring" as const, duration: 0.3, bounce: 0.5 },
-    },
+    }),
     tap: {
       scale: 0.95,
-      filter: "blur(0px)",
       transition: { type: "spring" as const, duration: 0.3, bounce: 0.5 },
     },
     animate: (custom?: {
       delay?: number;
-      hovered?: boolean;
-      attractionStrength?: number;
       isLocked?: boolean;
       isDisabled?: boolean;
     }) => ({
-      scale: custom?.isDisabled
-        ? 1
-        : 1 + (custom?.attractionStrength || 0) * 0.15,
-      opacity: custom?.isDisabled ? 0.5 : 1,
-      boxShadow: custom?.isDisabled ? `none` : "0 2px 16px rgba(0, 0, 0, 0.2)",
+      scale: 1,
+      opacity: custom?.isLocked ? 0.5 : 1,
+      // boxShadow: custom?.isDisabled ? `none` : "0 2px 16px rgba(0, 0, 0, 0.2)",
       filter: custom?.isLocked ? "blur(2px)" : "blur(0px)",
       transition: {
         type: "spring" as const,
