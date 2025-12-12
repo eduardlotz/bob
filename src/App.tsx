@@ -47,15 +47,15 @@ export default function App() {
     if (currentRoute !== location.pathname) {
       setCurrentRoute(location.pathname);
 
-      if (mounted) {
-        const route = getRouteLabelByPath(location.pathname);
-        setCurrentRouteInPretty(route);
-        setShowRouteChip(true);
+      // if (mounted) {
+      //   const route = getRouteLabelByPath(location.pathname);
+      //   setCurrentRouteInPretty(route);
+      //   setShowRouteChip(true);
 
-        setTimeout(() => {
-          setShowRouteChip(false);
-        }, 1800);
-      }
+      //   setTimeout(() => {
+      //     setShowRouteChip(false);
+      //   }, 1800);
+      // }
     }
   }, [location.pathname, currentRoute, setCurrentRoute]);
 
@@ -64,8 +64,39 @@ export default function App() {
       <FloatingBarProvider>
         <GlobalStyle />
 
-        <Toaster duration={5000} position="top-center" />
-        <AnimatePresence mode="sync">
+        <Toaster
+          duration={5000}
+          position="bottom-center"
+          offset={"7rem"}
+          theme="dark"
+          icons={{
+            success: (
+              <svg
+                width={20}
+                height={20}
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M19.0678 4.9491C23.0378 8.9191 22.9678 15.3991 18.8678 19.2891C15.0778 22.8791 8.92777 22.8791 5.12777 19.2891C1.01777 15.3991 0.947753 8.9191 4.92775 4.9491C8.82775 1.0391 15.1678 1.0391 19.0678 4.9491Z"
+                  stroke="white"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M16.4941 13.0908C16.4941 15.5761 14.4794 17.5908 11.9941 17.5908C9.50886 17.5908 7.49414 15.5761 7.49414 13.0908"
+                  stroke="white"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            ),
+          }}
+        />
+        {/* <AnimatePresence mode="sync">
           <RouteChip
             initial={{ y: -120, filter: "blur(6px)" }}
             animate={{
@@ -77,7 +108,7 @@ export default function App() {
           >
             {currentRouteInPretty}
           </RouteChip>
-        </AnimatePresence>
+        </AnimatePresence> */}
 
         <FullScreen>
           <MainLayout>
@@ -95,7 +126,7 @@ export default function App() {
             </ContentWrapper>
           </MainLayout>
 
-          <FloatingBarUI />
+          {/* <FloatingBarUI /> */}
         </FullScreen>
 
         <DialogRoot />

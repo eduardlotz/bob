@@ -92,6 +92,8 @@ const ViewControlsWrapper = styled(motion.div)`
   align-items: center;
   justify-content: center;
   gap: 12px;
+  width: fit-content;
+  margin: 0 auto;
 `;
 
 const CurrentViewChip = styled(motion.div)`

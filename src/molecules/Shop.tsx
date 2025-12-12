@@ -44,11 +44,11 @@ type ShopTab =
   | "environment"
   | "decorations"
   | "bob"
-  | "pages"
+  // | "pages"
   | "dev";
 
 export function Shop({ isOpen, onClose }: ShopProps) {
-  const [activeTab, setActiveTab] = useState<ShopTab>("pages");
+  const [activeTab, setActiveTab] = useState<ShopTab>("bob");
   const { decorations, bobItems, themes, upgrades, routes, taps } =
     useGameStore();
   const isDevMode = process.env.NODE_ENV === "development";
@@ -60,14 +60,14 @@ export function Shop({ isOpen, onClose }: ShopProps) {
   });
 
   const tabs = [
-    {
-      id: "pages" as ShopTab,
-      name: "Seiten",
-      icon: PagesIcon,
-      progress:
-        routes.filter((r) => r.purchased).length /
-        routes.filter((r) => !r.isLocked).length,
-    },
+    // {
+    //   id: "pages" as ShopTab,
+    //   name: "Seiten",
+    //   icon: PagesIcon,
+    //   progress:
+    //     routes.filter((r) => r.purchased).length /
+    //     routes.filter((r) => !r.isLocked).length,
+    // },
     {
       id: "bob" as ShopTab,
       name: "Bob",
@@ -197,7 +197,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                         <EnvironmentView />
                       </motion.div>
                     )}
-                    {activeTab === "pages" && (
+                    {/* {activeTab === "pages" && (
                       <motion.div
                         key="routes"
                         animate={{ opacity: 1 }}
@@ -207,7 +207,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                       >
                         <RoutesView />
                       </motion.div>
-                    )}
+                    )} */}
                     {activeTab === "decorations" && (
                       <motion.div
                         key="decorations"
@@ -517,59 +517,59 @@ function EnvironmentView() {
   );
 }
 
-function RoutesView() {
-  const { routes, purchaseRoute, canAfford } = useGameStore();
+// function RoutesView() {
+//   const { routes, purchaseRoute, canAfford } = useGameStore();
 
-  const handleRoutePurchase = (routeId: string) => {
-    const route = routes.find((r) => r.id === routeId);
-    if (route && !route.purchased && !route.isLocked && canAfford(route.cost)) {
-      purchaseRoute(routeId);
-    }
-  };
+//   const handleRoutePurchase = (routeId: string) => {
+//     const route = routes.find((r) => r.id === routeId);
+//     if (route && !route.purchased && !route.isLocked && canAfford(route.cost)) {
+//       purchaseRoute(routeId);
+//     }
+//   };
 
-  return (
-    <ThemesContainer>
-      <ThemesSection>
-        <SectionTitle>Seiten</SectionTitle>
-        <ItemsGrid>
-          {routes
-            .filter((r) => !r.isLocked)
-            .map((route) => (
-              <ThemeCard
-                key={route.id}
-                $selected={route.purchased}
-                $purchased={route.purchased}
-                $canAfford={!route.isLocked && canAfford(route.cost)}
-                onClick={() => handleRoutePurchase(route.id)}
-                role="button"
-                disabled={route.isLocked}
-              >
-                <div style={{ fontSize: "32px" }}>{route.icon}</div>
-                <div>
-                  <ThemeName>{route.name}</ThemeName>
-                  <ThemeDescription>{route.description}</ThemeDescription>
-                  <div
-                    style={{
-                      fontSize: "10px",
-                      color: "#FFD700",
-                      textAlign: "center",
-                      marginTop: "4px",
-                    }}
-                  >
-                    {route.cost} taps
-                  </div>
-                </div>
-                <ThemeStatus
-                  $enabled={route.purchased}
-                  $purchased={route.purchased}
-                ></ThemeStatus>
-              </ThemeCard>
-            ))}
-        </ItemsGrid>
-      </ThemesSection>
-    </ThemesContainer>
-  );
-}
+//   return (
+//     <ThemesContainer>
+//       <ThemesSection>
+//         <SectionTitle>Seiten</SectionTitle>
+//         <ItemsGrid>
+//           {routes
+//             .filter((r) => !r.isLocked)
+//             .map((route) => (
+//               <ThemeCard
+//                 key={route.id}
+//                 $selected={route.purchased}
+//                 $purchased={route.purchased}
+//                 $canAfford={!route.isLocked && canAfford(route.cost)}
+//                 onClick={() => handleRoutePurchase(route.id)}
+//                 role="button"
+//                 disabled={route.isLocked}
+//               >
+//                 <div style={{ fontSize: "32px" }}>{route.icon}</div>
+//                 <div>
+//                   <ThemeName>{route.name}</ThemeName>
+//                   <ThemeDescription>{route.description}</ThemeDescription>
+//                   <div
+//                     style={{
+//                       fontSize: "10px",
+//                       color: "#FFD700",
+//                       textAlign: "center",
+//                       marginTop: "4px",
+//                     }}
+//                   >
+//                     {route.cost} taps
+//                   </div>
+//                 </div>
+//                 <ThemeStatus
+//                   $enabled={route.purchased}
+//                   $purchased={route.purchased}
+//                 ></ThemeStatus>
+//               </ThemeCard>
+//             ))}
+//         </ItemsGrid>
+//       </ThemesSection>
+//     </ThemesContainer>
+//   );
+// }
 
 function DecorationsView() {
   const { decorations, purchaseDecoration, canAfford, toggleDecoration } =

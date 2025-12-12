@@ -1,4 +1,3 @@
-// Centralized route configuration to avoid circular dependencies
 export const ROUTE_PATHS = {
   HOME: "/home",
   ABOUT: "/about",
@@ -9,6 +8,7 @@ export const ROUTE_PATHS = {
   MINIGAMES: "/mini",
 } as const;
 
+// TODO: check if paths are enough
 export const ROUTE_IDS = {
   HOME: "route_home",
   ABOUT: "route_about",
@@ -19,7 +19,6 @@ export const ROUTE_IDS = {
   MINIGAMES: "route_minigames",
 } as const;
 
-// Route configuration
 export const ROUTE_CONFIG = {
   [ROUTE_PATHS.HOME]: {
     id: ROUTE_IDS.HOME,
@@ -88,7 +87,6 @@ export const ROUTE_CONFIG = {
   },
 } as const;
 
-// Route definitions
 export const ROUTES = [
   {
     path: ROUTE_PATHS.HOME,
@@ -127,7 +125,6 @@ export const ROUTES = [
   },
 ] as const;
 
-// Route utilities
 export const getRouteLabelByPath = (path: string): string => {
   const route = ROUTES.find((r) => r.path === path);
   return route?.label || "Unknown";

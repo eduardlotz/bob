@@ -7,13 +7,18 @@ const SPRING_CONFIG = { damping: 100, stiffness: 400 };
 type MagneticEffectType = {
   children: React.ReactNode;
   distance?: number;
+  active?: boolean;
 };
 
-export function Magnetic({ children, distance = 0.6 }: MagneticEffectType) {
+export function Magnetic({
+  children,
+  distance = 0.6,
+  active = true,
+}: MagneticEffectType) {
   const [isHovered, setIsHovered] = useState(false);
   const { isMobile } = useAppStore();
 
-  if (isMobile) return children;
+  if (isMobile || !active) return children;
 
   const ref = useRef<HTMLDivElement>(null);
 

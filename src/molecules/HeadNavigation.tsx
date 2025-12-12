@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { Html, Float, CameraControls } from "@react-three/drei";
@@ -15,6 +15,7 @@ import { LockIcon } from "@/icons/lock";
 import { useAppStore } from "@/store";
 import { useViewStore } from "@/store/viewStore";
 import { Magnetic } from "@/layout/Magnetic";
+import { useMessageStore } from "@/store/messageStore";
 
 //#region constants
 export const CAMERA_Y_POSITION = 1;
@@ -425,44 +426,49 @@ function Option({
   const optionRef = useRef<THREE.Group>(null!);
   const navigate = useNavigate();
   const { currentRoute } = useAppStore();
+  const { canAfford, purchaseRoute } = useGameStore();
+  const { showMessage } = useMessageStore();
 
   const isActive = currentRoute === route.path;
 
-  // TODO: add magnetic effect back in
   const position = initialPosition;
 
-  const handleOptionClick = () => {
-    match(route)
-      .with({ purchased: true }, () => {
-        cameraControlsRef.current?.setLookAt(
-          0,
-          CAMERA_Y_POSITION,
-          VISIBLE_OPTIONS_CAMERA_ZOOM,
-          position.x,
-          position.y + 2,
-          position.z,
-          true
-        );
+  const resetCamAndNavigate = useCallback(() => {
+    cameraControlsRef.current?.setLookAt(
+      0,
+      CAMERA_Y_POSITION,
+      VISIBLE_OPTIONS_CAMERA_ZOOM,
+      position.x,
+      position.y + 2,
+      position.z,
+      true
+    );
 
-        navigate(route.path);
-        hideOptions();
+    navigate(route.path);
+    hideOptions();
+  }, [route.path]);
+
+  const handleOptionClick = () => {
+    match({ ...route, canPurchase: canAfford(route.cost) })
+      .with({ isLocked: false, purchased: false, canPurchase: true }, () => {
+        purchaseRoute(route.id);
+        resetCamAndNavigate();
+      })
+      .with({ purchased: true }, () => {
+        resetCamAndNavigate();
       })
       .with({ isLocked: true }, () => {
-        toast.custom((id) => (
-          <CustomToast>Dieser Bereich ist noch nicht fertig ☹️</CustomToast>
-        ));
+        showMessage("route_locked");
       })
       .otherwise(() => {
-        toast.custom((id) => (
-          <CustomToast>Schalte diesen Bereich im Shop frei!</CustomToast>
-        ));
+        showMessage("cannot_afford");
       });
   };
 
   return (
     <group ref={optionRef} position={position}>
       <Html position={[0, 1.5, 0]}>
-        <Magnetic>
+        <Magnetic distance={1} active={route.purchased}>
           <NavigationBubble
             key={route.id}
             initial={MotionVariants.OptionButton.initial}
@@ -476,15 +482,25 @@ function Option({
                   })
             }
             $active={isActive}
+            $locked={!route.isLocked}
             exit={MotionVariants.OptionButton.exit}
-            whileHover={MotionVariants.OptionButton.hover}
+            whileHover={MotionVariants.OptionButton.hover({
+              isDisabled: !route.purchased,
+              isLocked: route.isLocked,
+            })}
             whileTap={MotionVariants.OptionButton.tap}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={handleOptionClick}
             data-ui-sound-id="ui-tap-2"
           >
-            {route.isLocked && <LockIcon />}
-            {route.name}
+            {!route.purchased && <PriceChip>{route.cost} 🫵</PriceChip>}
+            {route.isLocked && (
+              <PriceChip>
+                <LockIcon />
+              </PriceChip>
+            )}
+            <RouteName>{route.name}</RouteName>
+            <BackgroundColor $active={isActive} />
           </NavigationBubble>
         </Magnetic>
       </Html>
@@ -492,74 +508,75 @@ function Option({
   );
 }
 
-export const CustomToast = styled.div`
+const PriceChip = styled.span`
+  position: absolute;
+  bottom: calc(100% - 16px);
+  left: 0;
+  right: 0;
+  z-index: 10000;
+  width: fit-content;
+
+  margin: 0 auto;
   display: flex;
-  justify-content: center;
   align-items: center;
-  gap: 16px;
+  justify-content: center;
 
-  padding: 12px 28px;
-  min-height: 52px;
-  max-width: calc(100vw - 32px);
-  background-color: rgba(0, 0, 0, 0.8);
-  color: white;
+  background: #ffff54;
+  color: #010101;
+  font-size: 0.875rem;
+  font-weight: 900;
 
-  -webkit-backdrop-filter: blur(32px);
-  backdrop-filter: blur(32px);
-
+  padding: 6px 8px;
   border-radius: 50px;
-  text-align: center;
-
-  font-size: 16px;
-  line-height: 1.3;
-  font-weight: 500;
-  letter-spacing: 0.5px;
-
-  @media (max-width: 600px) {
-    width: 100%;
-  }
-
-  // pulse animation for attention
-  box-shadow: 0 0 0 0px rgba(0, 0, 0, 0.5);
-  transition: box-shadow 0.5s ease-in-out;
-  animation: pulse 2.5s infinite ease-in-out;
-  animation-delay: 0.5;
-
-  @keyframes pulse {
-    0% {
-      box-shadow: 0 0 0 0px rgba(0, 0, 0, 0.5);
-    }
-    50% {
-      box-shadow: 0 0 0 10px rgba(255, 255, 255, 0.2);
-    }
-    100% {
-      box-shadow: 0 0 0 14px rgba(0, 0, 0, 0);
-    }
-  }
 `;
 
-const NavigationBubble = styled(motion.button)<{ $active: boolean }>`
+const BackgroundColor = styled.div<{ $active: boolean }>`
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+
+  border-radius: 50px;
+
+  background-color: ${(p) =>
+    p.$active ? "var(--text-color)" : "var(--background-color)"};
+  z-index: 0;
+  border-color: ${(p) => (p.$active ? "var(--text-color)" : "transparent")};
+  border: 2px solid transparent;
+`;
+
+const RouteName = styled.p`
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  z-index: 1;
+`;
+
+const NavigationBubble = styled(motion.button)<{
+  $active: boolean;
+  $locked?: boolean;
+}>`
   color: ${(p) =>
     p.$active ? "var(--background-color)" : "var(--text-color)"};
   background-color: ${(p) =>
     p.$active ? "var(--text-color)" : "var(--background-color)"};
-  border: 2px solid transparent;
-  border-color: ${(p) => (p.$active ? "var(--text-color)" : "transparent")};
 
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  opacity: ${(p) => (p.$locked ? 1 : 0.25)};
+
+  &:not(:disabled) {
+    cursor: pointer;
+  }
 
   padding: 16px 20px;
   border-radius: 50px;
-  font-weight: 400;
   white-space: nowrap;
   gap: 8px;
-  cursor: pointer;
   text-decoration: none;
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
   transform: translate(-50%, -50%);
-  font-size: 22px;
-  letter-spacing: 0.5px;
 `;

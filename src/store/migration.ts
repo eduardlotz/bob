@@ -11,12 +11,11 @@ import {
   useGameStore,
 } from "./gameStore";
 import { useQuestStore } from "./questStore";
-import { useRouteStore } from "./routeStore";
 import { useMessageStore } from "./messageStore";
 import { toast } from "sonner";
 import { initialUpgrades } from "@/shop-items/upgrades";
 
-// Migration utility to move data from localStorage to IndexedDB
+// utility to move data from localStorage to IndexedDB
 export class StoreMigration {
   private static instance: StoreMigration;
   private isMigrating = false;
@@ -438,14 +437,6 @@ export class StoreMigration {
         }));
       } catch (e) {
         console.warn("[FINAL RESET] Failed to reset quest store state", e);
-      }
-
-      try {
-        // Route store is static; ensure it writes current configs once
-        const routeState = useRouteStore.getState();
-        useRouteStore.setState({ routeConfigs: routeState.routeConfigs });
-      } catch (e) {
-        console.warn("[FINAL RESET] Failed to reset route store state", e);
       }
 
       try {

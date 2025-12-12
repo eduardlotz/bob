@@ -31,7 +31,7 @@ export interface MessageConfig {
   lines?: string[];
 }
 
-// simplify this mess
+// TODO: simplify this mess
 export const MESSAGE_CONFIG: MessageConfig[] = [
   {
     id: "welcome_home",
@@ -157,8 +157,8 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
     text: [
       "Hier gibts leider noch nicht viel zu sehen",
       "Sorry 🥀😔",
-      "Aktuell fülle ich die Kiste rechts mit Dingen, die mich interessieren",
-      "dauert aber noch ein bisschen",
+      "ich fülle aktuell noch den Karton mit Dingen, die mich interessieren",
+      "kannst ja mal drin rumwülen",
     ],
     label: "Eddie",
     options: {
@@ -214,6 +214,20 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
     audioEnabled: true,
     positionOffset: [0, 0, 0],
     nextDelayMs: 1800,
+  },
+  {
+    id: "route_locked",
+    text: ["🚧 NOCH IN ARBEIT 🚧"],
+    label: "INFO",
+    repeatRule: "always",
+    audioEnabled: true,
+  },
+  {
+    id: "cannot_afford",
+    text: ["Das kannst du dir nicht leisten :("],
+    label: "Bob",
+    repeatRule: "always",
+    audioEnabled: true,
   },
 ];
 

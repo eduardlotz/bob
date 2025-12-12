@@ -9,14 +9,14 @@ import { RapierRigidBody, RigidBody } from "@react-three/rapier";
 
 type GLTFResult = GLTF & {
   nodes: {
-    Xbox_Controller: THREE.Mesh;
+    M_Camera_T_Camera_0: THREE.Mesh;
   };
   materials: {
-    Mat: THREE.MeshStandardMaterial;
+    T_Camera: THREE.MeshStandardMaterial;
   };
 };
 
-const PATH = "gltf/xbox-controller.glb";
+const PATH = "gltf/camera.glb";
 
 interface Props {
   position: [number, number, number];
@@ -24,7 +24,7 @@ interface Props {
   scale?: [number, number, number];
 }
 
-export const XboxControllerModel = forwardRef(
+export const CameraModel = forwardRef(
   ({ scale = [1, 1, 1], ...props }: Props, ref: any) => {
     const api = useRef<RapierRigidBody>(null);
 
@@ -52,13 +52,17 @@ export const XboxControllerModel = forwardRef(
           restitution={0.5}
           friction={0.7}
         >
-          <mesh
-            onPointerEnter={handlePointerEnter}
-            onPointerLeave={handlePointerLeave}
-            geometry={nodes.Xbox_Controller.geometry}
-            material={materials.Mat}
-            scale={0.02}
-          />
+          <group dispose={null}>
+            <group scale={0.3}>
+              <mesh
+                geometry={nodes.M_Camera_T_Camera_0.geometry}
+                // material={materials.T_Camera}
+                position={[0, 0, -0.033]}
+              >
+                <meshToonMaterial color="#4c4c4f" />
+              </mesh>
+            </group>
+          </group>
         </RigidBody>
       </Grabbable>
     );

@@ -3,6 +3,8 @@ import React, { useEffect, useRef } from "react";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
+import { useLoader } from "@react-three/fiber";
+import { degToRad } from "three/src/math/MathUtils.js";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -68,6 +70,14 @@ interface Props {
 export const MacbookModel = ({ scale = [1, 1, 1], ...props }: Props) => {
   const group = useRef<THREE.Group>(null!);
   const { nodes, materials } = useGLTF(PATH) as GLTFResult;
+  const screenTexture = useLoader(
+    THREE.TextureLoader,
+    "/images/screentexture.jpg"
+  );
+  // const screenTexture = useLoader(
+  //   THREE.TextureLoader,
+  //   "/textures/wood_floor.jpg"
+  // );
 
   const [spring, api] = useSpring(() => ({
     scale: [0, 0, 0], // start invisible
@@ -115,11 +125,10 @@ export const MacbookModel = ({ scale = [1, 1, 1], ...props }: Props) => {
           geometry={nodes.Circle001_5.geometry}
           material={materials.TouchbarBorder}
         />
-        {/* black keyboard background */}
-        {/* <mesh
+        <mesh
           geometry={nodes.Circle001_6.geometry}
           material={materials.Keyboard}
-        /> */}
+        />
         <mesh
           geometry={nodes.FrontCameraRing001.geometry}
           material={materials["CameraRIngBlack.002"]}
@@ -186,14 +195,17 @@ export const MacbookModel = ({ scale = [1, 1, 1], ...props }: Props) => {
             geometry={nodes.Circle002_2.geometry}
             material={materials.ScreenGlass}
           />
+
           <mesh
             geometry={nodes.Circle002_3.geometry}
             material={materials.Rubber}
           />
-          <mesh
-            geometry={nodes.Circle002_4.geometry}
-            material={materials.DisplayGlass}
-          />
+
+          {/* SCREEN  */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, -1.9]}>
+            <planeGeometry args={[5.1, 3]} />
+            <meshStandardMaterial map={screenTexture} />
+          </mesh>
         </group>
         <group position={[-15.03, 0.03, 0.6]} scale={5.8}>
           <mesh

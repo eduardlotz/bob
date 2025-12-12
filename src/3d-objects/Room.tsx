@@ -1,19 +1,13 @@
-import { forwardRef, useRef } from "react";
-import {
-  TextureLoader,
-  RepeatWrapping,
-  BackSide,
-  Mesh,
-  DoubleSide,
-} from "three";
-import { useLoader, extend } from "@react-three/fiber";
-import { Decal, GradientTexture } from "@react-three/drei";
+import { forwardRef, useEffect, useRef } from "react";
+import { TextureLoader, RepeatWrapping, Mesh } from "three";
+import { useLoader, extend, useFrame } from "@react-three/fiber";
+import { Decal } from "@react-three/drei";
 import { FLOOR_Y_POSITION } from "@/molecules/Scene";
 import { GridToonMaterial } from "./GridToonMaterial";
 import { WoodToonMaterial } from "./WoodToonMaterial";
 import * as THREE from "three";
-import { InteractiveObject } from "@/molecules/InteractiveObject";
-import { useViewStore } from "@/store";
+import { useAppStore, useViewStore } from "@/store";
+import { a, useSpring } from "@react-spring/three";
 
 extend({ GridToonMaterial, WoodToonMaterial });
 
@@ -21,16 +15,30 @@ const ROOM_SIZE = 20;
 
 export const Room = forwardRef(
   ({ posterUrls = [] }: { posterUrls?: string[] }, ref) => {
-    const floorTexture = useLoader(TextureLoader, "/textures/wood_floor.jpg");
     const { transitionToView } = useViewStore();
-    floorTexture.wrapS = floorTexture.wrapT = RepeatWrapping;
-    floorTexture.repeat.set(12, 4);
+    const { showOptions } = useAppStore();
+    const [spring, api] = useSpring(() => ({
+      position: [0, FLOOR_Y_POSITION + 1.5, 10],
+      config: { tension: 120, friction: 14 },
+    }));
 
     const wallRef = useRef<Mesh>(null);
 
     const handlePosterClick = () => {
       transitionToView("portrait");
     };
+
+    useFrame(() => {
+      if (showOptions) {
+        api.start({
+          position: [0, 0, 10],
+        });
+      } else {
+        api.start({
+          position: [0, 0, 5],
+        });
+      }
+    });
 
     return (
       <group ref={ref}>
@@ -83,9 +91,9 @@ export const Room = forwardRef(
           ))}
         </mesh>
 
-        <mesh
+        <a.mesh
           rotation={[0, -Math.PI, 0]}
-          position={[0, FLOOR_Y_POSITION + 1.5, 5]}
+          position={spring.position.get() as [number, number, number]}
         >
           <planeGeometry args={[ROOM_SIZE, 20]} />
           <gridToonMaterial
@@ -93,7 +101,7 @@ export const Room = forwardRef(
             uGridColor1={new THREE.Color("#d8e1e7")}
             uGridColor2={new THREE.Color("#c1cdd4")}
           />
-        </mesh>
+        </a.mesh>
 
         {/* RIGHT WALL */}
         <mesh
