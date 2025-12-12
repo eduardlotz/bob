@@ -527,7 +527,7 @@ const PriceChip = styled.span`
   font-weight: 900;
 
   padding: 6px 8px;
-  border-radius: 50px;
+  border-radius: 12px;
 `;
 
 const BackgroundColor = styled.div<{ $active: boolean }>`

@@ -158,7 +158,7 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
       "Hier gibts leider noch nicht viel zu sehen",
       "Sorry 🥀😔",
       "ich fülle aktuell noch den Karton mit Dingen, die mich interessieren",
-      "kannst ja mal drin rumwülen",
+      "schau doch mal rein und wühl ein bisschen rum 👀",
     ],
     label: "Eddie",
     options: {

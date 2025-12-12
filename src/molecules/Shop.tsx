@@ -752,13 +752,6 @@ function DevView() {
         For debugging or testing — use with caution
       </ContentSubtitle>
       <DevGrid>
-        <DevButton onClick={triggerMessage}>💬 Show Test Message</DevButton>
-        <DevButton onClick={() => addDevTaps(100)}>💰 Add 100 Taps</DevButton>
-        <DevButton onClick={buyAllUpgrades}>🛒 Buy All Upgrades</DevButton>
-        <DevButton onClick={unlockAllRoutes}>🌐 Unlock All Pages</DevButton>
-
-        <Divider />
-
         <DevButton onClick={toggleStatistics} $active={statisticsVisible}>
           📊 Toggle Statistics
         </DevButton>
@@ -778,6 +771,13 @@ function DevView() {
         </DevButton>
 
         <StorageDebugger />
+
+        <Divider />
+
+        <DevButton onClick={triggerMessage}>💬 Show Test Message</DevButton>
+        <DevButton onClick={() => addDevTaps(100)}>💰 Add 100 Taps</DevButton>
+        <DevButton onClick={buyAllUpgrades}>🛒 Buy All Upgrades</DevButton>
+        <DevButton onClick={unlockAllRoutes}>🌐 Unlock All Pages</DevButton>
 
         <Divider />
 
@@ -907,18 +907,22 @@ const ShopContainer = styled(motion.div)`
   top: 40px;
   margin: 0 auto;
   width: 880px;
+  padding: 4px;
   max-width: calc(100% - 32px);
-  transform: translateY(-50%);
   height: 80dvh;
   max-height: calc(100svh - 140px);
-  background: rgba(20, 20, 20, 0.95);
+
+  transform: translateY(-50%);
+  background: rgba(20, 20, 20, 0.5);
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  /* border: 1px solid rgba(255, 255, 255, 0.1); */
   z-index: 1001;
   display: flex;
   flex-direction: column;
+  gap: 4px;
+
   overflow: hidden;
   pointer-events: auto;
 `;
@@ -928,8 +932,10 @@ const ShopHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  /* border-bottom: 1px solid rgba(255, 255, 255, 0.1); */
   gap: 16px;
+  background: rgba(20, 20, 20, 1);
+  border-radius: 18px;
 `;
 
 const ShopTitle = styled.div`
@@ -942,12 +948,18 @@ const ShopTitle = styled.div`
 `;
 
 const TapCountDisplay = styled.div`
-  font-size: 14px;
-  color: var(--accent-color);
-  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #ffff54;
+  color: #010101;
+  font-size: 0.875rem;
+  font-weight: 900;
+
+  padding: 6px 8px;
+  border-radius: 12px;
   margin-left: auto;
-  margin-right: 16px;
-  text-align: right;
 `;
 
 const CloseButton = styled.button`
@@ -983,6 +995,7 @@ const TabPanel = styled.div`
   flex-direction: column;
   gap: 8px;
   overflow-y: auto;
+  border-radius: 18px;
 
   @media (max-width: 768px) {
     flex-direction: row;
@@ -1064,7 +1077,7 @@ const ProgressBar = styled.div<{ $progress: number }>`
 
 const ContentView = styled.div`
   flex: 1;
-  padding: 24px;
+  padding: 1rem;
   overflow-y: auto;
 `;
 
@@ -1378,10 +1391,10 @@ const SubTabButton = styled.button<{ $active: boolean }>`
   padding: 0.5rem 1rem;
   border: none;
   background: ${({ $active }) =>
-    $active ? "var(--primary-color)" : "rgba(255,255,255,0.05)"};
+    $active ? "#ffffff" : "rgba(255,255,255,0.05)"};
   color: ${({ $active }) =>
     $active ? "var(--background-color)" : "var(--text-color)"};
-  border-radius: 0.375rem;
+  border-radius: 50px;
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: ${({ $active }) => ($active ? "600" : "400")};
