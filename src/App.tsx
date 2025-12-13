@@ -47,15 +47,15 @@ export default function App() {
     if (currentRoute !== location.pathname) {
       setCurrentRoute(location.pathname);
 
-      // if (mounted) {
-      //   const route = getRouteLabelByPath(location.pathname);
-      //   setCurrentRouteInPretty(route);
-      //   setShowRouteChip(true);
+      if (mounted) {
+        const route = getRouteLabelByPath(location.pathname);
+        setCurrentRouteInPretty(route);
+        setShowRouteChip(true);
 
-      //   setTimeout(() => {
-      //     setShowRouteChip(false);
-      //   }, 1800);
-      // }
+        setTimeout(() => {
+          setShowRouteChip(false);
+        }, 1800);
+      }
     }
   }, [location.pathname, currentRoute, setCurrentRoute]);
 
@@ -96,7 +96,7 @@ export default function App() {
             ),
           }}
         />
-        {/* <AnimatePresence mode="sync">
+        <AnimatePresence mode="sync">
           <RouteChip
             initial={{ y: -120, filter: "blur(6px)" }}
             animate={{
@@ -108,7 +108,7 @@ export default function App() {
           >
             {currentRouteInPretty}
           </RouteChip>
-        </AnimatePresence> */}
+        </AnimatePresence>
 
         <FullScreen>
           <MainLayout>

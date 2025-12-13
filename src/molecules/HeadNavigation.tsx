@@ -549,8 +549,7 @@ const BackgroundColor = styled.div<{ $active: boolean }>`
 
 const RouteName = styled.p`
   font-size: 22px;
-  font-weight: 400;
-  letter-spacing: 0.5px;
+  font-weight: 500;
   z-index: 1;
 `;
 

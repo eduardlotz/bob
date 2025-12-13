@@ -1,34 +1,24 @@
 import React, { useState, useMemo } from "react";
 import styled from "styled-components";
-import { motion, AnimatePresence, stagger, LayoutGroup } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { useGameStore } from "@/store/gameStore";
 import { useAppStore, ROUTE_PATHS } from "@/store";
-import { UpgradesIcon } from "@/icons/upgrades";
 import { CartIcon } from "@/icons/cart";
 import { MenuIcon } from "@/icons/menu";
 import { CloseIcon } from "@/icons/close";
 import { Shop } from "./Shop";
 import { ProgressTracker } from "./ProgressTracker";
 import { useKeyPress } from "@/hooks/useKeyPress";
-import { match } from "ts-pattern";
-import { formatNumber } from "./TapCounter";
 import { Magnetic } from "@/layout/Magnetic";
+import { HugColumn, HugRow } from "@/layout";
+import { TapUpgrades } from "./tapUpgrades";
+import { MenuButton } from "@/layout/atoms";
 
 type NavigationView = "shop" | "upgrades" | "quests" | "menu" | "default";
 
 export function BottomNavigation() {
-  // const [isShopOpen, setIsShopOpen] = useState(false);
-  // const [isUpgradesOpen, setIsUpgradesOpen] = useState(false);
   const [currentView, setCurrentView] = useState<NavigationView>("default");
 
-  const {
-    upgrades,
-    purchaseUpgrade,
-    canAfford,
-    getAutoTapRateUncached,
-    manualTapsPerSecond,
-    getTotalTapMultiplierUncached,
-  } = useGameStore();
   const { currentRoute, showOptions, toggleOptions } = useAppStore();
 
   useKeyPress("Escape", () => {
@@ -37,25 +27,12 @@ export function BottomNavigation() {
     }
   });
 
-  // Only show upgrade/shop buttons on home route
   const isHomeRoute = currentRoute === ROUTE_PATHS.HOME;
 
-  const totalTapsPerSecond = useMemo(() => {
-    const autoTapRate =
-      getAutoTapRateUncached() * getTotalTapMultiplierUncached();
-    return autoTapRate + manualTapsPerSecond;
-  }, [
-    getAutoTapRateUncached,
-    getTotalTapMultiplierUncached,
-    manualTapsPerSecond,
-    upgrades, // add upgrades as dependency so calculation updates when upgrades change
-  ]);
-  const tapUpgrades = upgrades.filter((u) => u.category === "upgrades");
-  const hasAnyUpgrade = tapUpgrades.some((u) => u.unlocked);
+  // const tapUpgrades = upgrades.filter((u) => u.category === "upgrades");
+  // const hasAnyUpgrade = tapUpgrades.some((u) => u.unlocked);
 
-  const handleUpgradePurchase = (upgradeId: string) => {
-    purchaseUpgrade(upgradeId);
-  };
+  const showTapUpgrades = isHomeRoute;
 
   const handleMenuButtonClick = () => {
     toggleOptions();
@@ -71,342 +48,154 @@ export function BottomNavigation() {
   };
 
   return (
-    <>
-      <NavigationContainer>
-        <DynamicButtonsContainer>
-          <AnimatePresence mode="wait">
-            {isHomeRoute ? (
-              <Magnetic>
-                <NavButton
-                  key="upgrades-button"
-                  onClick={() => handleNavigationClick("upgrades")}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  $isActive={currentView === "upgrades"}
-                  initial={{ filter: "blur(10px)", opacity: 0, y: 40 }}
-                  animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
-                  exit={{
-                    filter: "blur(10px)",
-                    opacity: 0,
-                    y: 40,
-                    transition: { delay: 0 },
-                  }}
-                  transition={{
-                    // duration: 0.25,
-                    type: "spring" as const,
-                    bounce: 0.5,
-                    delay: 0.05,
-                  }}
-                >
-                  <AnimatePresence mode="popLayout">
-                    {currentView === "upgrades" ? (
-                      <motion.span
-                        key="close-upgrades-icon"
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0, opacity: 0 }}
-                        transition={{
-                          duration: 0.25,
-                          type: "spring" as const,
-                          bounce: 0.5,
-                        }}
-                      >
-                        <CloseIcon color="#ffffff" />
-                      </motion.span>
-                    ) : (
-                      <motion.span
-                        key="show-upgrades-icon"
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0, opacity: 0 }}
-                        transition={{
-                          duration: 0.25,
-                          type: "spring" as const,
-                          bounce: 0.5,
-                        }}
-                      >
-                        <UpgradeButtonContent>
-                          <FingerIcon>🫵</FingerIcon>
-                          <TapMultiplier>{totalTapsPerSecond}/s</TapMultiplier>
-                        </UpgradeButtonContent>
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-                </NavButton>
-              </Magnetic>
-            ) : (
-              <ProgressTracker />
-            )}
-          </AnimatePresence>
-        </DynamicButtonsContainer>
-        <Magnetic>
-          <MenuButton
-            key="menu-button"
-            onClick={handleMenuButtonClick}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            $isActive={showOptions}
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 40 }}
-            transition={{
-              // duration: 0.25,
-              type: "spring" as const,
-              bounce: 0.5,
-              // delay: 0.2,
-            }}
-          >
-            <AnimatePresence mode="popLayout">
-              {showOptions ? (
-                <motion.span
-                  key="close-menu-icon"
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0, opacity: 0 }}
-                  transition={{
-                    duration: 0.25,
-                    type: "spring" as const,
-                    bounce: 0.5,
-                  }}
-                >
-                  <CloseIcon />
-                </motion.span>
-              ) : (
-                <motion.span
-                  key="show-menu-icon"
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0, opacity: 0 }}
-                  transition={{
-                    duration: 0.25,
-                    type: "spring" as const,
-                    bounce: 0.5,
-                  }}
-                >
-                  <MenuIcon />
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </MenuButton>
-        </Magnetic>
-        <Magnetic>
-          <NavButton
-            key="shop-button"
-            onClick={() => handleNavigationClick("shop")}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            $isActive={currentView === "shop"}
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 40 }}
-            transition={{
-              // duration: 0.25,
-              type: "spring" as const,
-              bounce: 0.5,
-              delay: 0.1,
-            }}
-          >
-            <AnimatePresence mode="popLayout">
-              {currentView === "shop" ? (
-                <motion.span
-                  key="close-shop-icon"
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0, opacity: 0 }}
-                  transition={{
-                    duration: 0.25,
-                    type: "spring" as const,
-                    bounce: 0.5,
-                  }}
-                >
-                  <CloseIcon color="#ffffff" />
-                </motion.span>
-              ) : (
-                <motion.span
-                  key="show-shop-icon"
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0, opacity: 0 }}
-                  transition={{
-                    duration: 0.25,
-                    type: "spring" as const,
-                    bounce: 0.5,
-                  }}
-                >
-                  <CartIcon color="#ffffff" />
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </NavButton>
-        </Magnetic>
-      </NavigationContainer>
+    <HugColumn
+      $align="center"
+      $gap="0.75rem"
+      style={{ position: "fixed", bottom: "20px" }}
+    >
+      <TapUpgrades show={showTapUpgrades} />
+      <HugRow $gap={"8px"} layout>
+        <AnimatePresence mode="popLayout">
+          {!isHomeRoute && <ProgressTracker />}
+
+          <Magnetic key="menu-button-magnet">
+            <MenuButton
+              key="menu-button"
+              onClick={handleMenuButtonClick}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              $isActive={showOptions}
+              initial={{ opacity: 0, y: 40, filter: "blur(6px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: 40, filter: "blur(6px)" }}
+              transition={{
+                type: "spring" as const,
+                bounce: 0.5,
+              }}
+              layout="position"
+            >
+              <AnimatePresence mode="popLayout">
+                {showOptions ? (
+                  <motion.span
+                    key="close-menu-icon"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    transition={{
+                      duration: 0.25,
+                      type: "spring" as const,
+                      bounce: 0.5,
+                    }}
+                  >
+                    <CloseIcon />
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="show-menu-icon"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    transition={{
+                      duration: 0.25,
+                      type: "spring" as const,
+                      bounce: 0.5,
+                    }}
+                  >
+                    <MenuIcon />
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </MenuButton>
+          </Magnetic>
+          <Magnetic key="shop-button-magnet">
+            <NavButton
+              layout="position"
+              key="shop-button"
+              onClick={() => handleNavigationClick("shop")}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              $isActive={currentView === "shop"}
+              initial={{ opacity: 0, y: 40, filter: "blur(6px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: 40, filter: "blur(6px)" }}
+              transition={{
+                // duration: 0.25,
+                type: "spring" as const,
+                bounce: 0.5,
+                delay: 0.1,
+              }}
+            >
+              <AnimatePresence mode="popLayout">
+                {currentView === "shop" ? (
+                  <motion.span
+                    key="close-shop-icon"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    transition={{
+                      duration: 0.25,
+                      type: "spring" as const,
+                      bounce: 0.5,
+                    }}
+                  >
+                    <CloseIcon color="#ffffff" />
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="show-shop-icon"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    transition={{
+                      duration: 0.25,
+                      type: "spring" as const,
+                      bounce: 0.5,
+                    }}
+                  >
+                    <CartIcon color="#ffffff" />
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </NavButton>
+          </Magnetic>
+        </AnimatePresence>
+      </HugRow>
 
       <Shop
         isOpen={currentView === "shop"}
         onClose={() => setCurrentView("default")}
       />
-
-      <AnimatePresence>
-        {currentView === "upgrades" && (
-          <UpgradesPanel
-            key="upgrades-panel"
-            initial={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(10px)" }}
-            animate={{ opacity: 1, scaleX: 1, y: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(10px)" }}
-            transition={{
-              duration: 0.2,
-              ease: "easeInOut",
-            }}
-          >
-            <UpgradesContent>
-              <UpgradesHeader>
-                <UpgradesTitle>Upgrades</UpgradesTitle>
-              </UpgradesHeader>
-              <UpgradesList>
-                {tapUpgrades.map((upgrade) => (
-                  <UpgradeItem
-                    key={upgrade.id}
-                    onClick={() => handleUpgradePurchase(upgrade.id)}
-                    $canAfford={canAfford(
-                      upgrade.baseCost *
-                        Math.pow(upgrade.costMultiplier, upgrade.level)
-                    )}
-                  >
-                    <UpgradeIcon>{upgrade.icon}</UpgradeIcon>
-                    <UpgradeInfo>
-                      <UpgradeName>{upgrade.name}</UpgradeName>
-                      <UpgradeDescription>
-                        {upgrade.description}
-                      </UpgradeDescription>
-                      <UpgradeLevel>
-                        {match(upgrade)
-                          .with({ level: upgrade.maxLevel }, () => "Max Level")
-                          .with(
-                            { unlocked: true },
-                            () => `Level ${upgrade.level}/${upgrade.maxLevel}`
-                          )
-                          .otherwise(() => "Locked")}
-                      </UpgradeLevel>
-                    </UpgradeInfo>
-                    <UpgradeCost>
-                      {upgrade.level === upgrade.maxLevel ? "" : ""}
-                      {formatNumber(
-                        Math.floor(
-                          upgrade.baseCost *
-                            Math.pow(upgrade.costMultiplier, upgrade.level)
-                        )
-                      )}
-                      {" 🫵"}
-                    </UpgradeCost>
-                  </UpgradeItem>
-                ))}
-              </UpgradesList>
-            </UpgradesContent>
-          </UpgradesPanel>
-        )}
-      </AnimatePresence>
-    </>
+    </HugColumn>
   );
 }
 
-// Styled Components
-const NavigationContainer = styled(motion.div)`
-  position: fixed;
-  bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  z-index: 1000;
-  pointer-events: auto;
-`;
-
-const DynamicButtonsContainer = styled(motion.div)`
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: flex-end;
-  bottom: 0;
-  height: 58px;
-  min-width: 64px;
-  width: 64px;
-  max-width: 64px;
-  justify-self: flex-end;
-`;
-
 export const NavButton = styled(motion.button)<{ $isActive?: boolean }>`
   height: 58px;
-  min-width: 64px;
-  width: 64px;
-  max-width: 64px;
-  padding: 20px;
+  padding: 16px 28px;
   border-radius: 24px;
-  background-color: rgba(0, 0, 0, 0.25);
 
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-
-  outline: 2px solid transparent;
-  outline-color: ${(props) => (props.$isActive ? "#ffffff" : "transparent")};
-  outline-offset: ${(props) => (props.$isActive ? "3px" : "0")};
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition-duration: 0.2s;
-  transition-property: box-shadow, opacity, border, background-color, width,
-    height;
-  pointer-events: auto;
-
-  &:hover {
-    background-color: rgba(0, 0, 0, 0.4);
-    border-color: ${(props) =>
-      props.$isActive ? "#ffffff" : "rgba(255, 255, 255, 0.2)"};
-    opacity: 1;
-  }
-`;
-
-const UpgradeButtonContent = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-`;
-
-const TapMultiplier = styled.div`
-  font-size: 12px;
-  font-weight: bold;
-  color: var(--accent-color);
-  line-height: 1;
-`;
-
-const FingerIcon = styled.div`
-  font-size: 16px;
-  line-height: 1;
-`;
-
-const MenuButton = styled(motion.button)<{ $isActive?: boolean }>`
-  padding: 20px 30px;
-  border-radius: 24px;
   background: var(--primary-color);
 
   outline: 2px solid transparent;
   outline-color: ${(props) => (props.$isActive ? "#ffffff" : "transparent")};
   outline-offset: ${(props) => (props.$isActive ? "3px" : "0")};
+
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(41, 121, 255, 0.3);
-  transition-duration: 0.2s;
-  transition-property: box-shadow, opacity, border-color;
+
   pointer-events: auto;
-  color: var(--text-color);
+
+  box-shadow: 0 0px 0px rgba(41, 121, 255, 0.3);
+  transition-duration: ease-out 0.2s box-shadow;
 
   &:hover {
     box-shadow: 0 6px 16px rgba(41, 121, 255, 0.4);
-    opacity: 1;
+  }
+
+  span {
+    max-height: 1.5rem;
   }
 `;
 

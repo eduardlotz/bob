@@ -243,7 +243,7 @@ const StatsContainer = styled(motion.div)`
   color: white;
   font-family: monospace;
   font-size: 12px;
-  z-index: 2000;
+  z-index: 1000;
   min-width: 250px;
   border: 1px solid rgba(255, 255, 255, 0.1);
 `;

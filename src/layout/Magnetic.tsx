@@ -12,7 +12,7 @@ type MagneticEffectType = {
 
 export function Magnetic({
   children,
-  distance = 0.6,
+  distance = 0.3,
   active = true,
 }: MagneticEffectType) {
   const [isHovered, setIsHovered] = useState(false);
