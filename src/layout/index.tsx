@@ -26,18 +26,19 @@ export const HugRow = styled(motion.div)<{
   padding: ${(p) => (p.$padding ? p.$padding : "0px")};
   gap: ${(p) => (p.$gap ? p.$gap : "20px")};
   flex-wrap: ${(p) => p.$wrap && "wrap"};
+  position: relative;
 `;
 
 export const HugColumn = styled(motion.div)<{
   $gap?: NumberWithMeasure;
   $align?: string;
   $justify?: string;
+  $reverse?: boolean;
 }>`
   display: flex;
-  flex-direction: column;
+  flex-direction: ${(p) => (p.$reverse ? "column-reverse" : "column")};
   align-items: ${(p) => (p.$align ? p.$align : "flex-start")};
   justify-content: ${(p) => (p.$justify ? p.$justify : "space-between")};
-
   padding: 0;
   gap: ${(p) => (p.$gap ? p.$gap : "12px")};
 `;

@@ -1,12 +1,12 @@
 import React, { useState, useCallback, useMemo, memo } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
-import { useQuestStore } from "@/store/questStore";
 import { CloseIcon } from "@/icons/close";
-import { toast } from "sonner";
 import { NavButton } from "./BottomNavigation";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { Magnetic } from "@/layout/Magnetic";
+import { useAppStore } from "@/store";
+import { MenuButton } from "@/layout/atoms";
 
 const MemoizedQuestItem = memo<{
   quest: any;
@@ -43,31 +43,36 @@ MemoizedQuestItem.displayName = "MemoizedQuestItem";
 export function ProgressTracker() {
   const [isOpen, setIsOpen] = useState(false);
   const { currentQuests, completedQuests, totalReward } = useQuestSystem();
+  const { currentRoute } = useAppStore();
 
   const toggleOpen = useCallback(() => {
     setIsOpen((prev) => !prev);
   }, []);
 
+  const memomizedQuestProgress = useMemo(() => {
+    return `${completedQuests}/${currentQuests.length}`;
+  }, []);
+
   return (
     <>
-      <Magnetic>
-        <NavButton
+      <Magnetic key="quests-button-magnet">
+        <MenuButton
+          layout="position"
           key="quests-button"
           onClick={toggleOpen}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           $isActive={isOpen}
-          initial={{ filter: "blur(10px)", opacity: 0, y: 40 }}
-          animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
+          initial={{ filter: "blur(6px)", opacity: 0, x: -40 }}
+          animate={{ filter: "blur(0px)", opacity: 1, x: 0 }}
           exit={{
-            filter: "blur(10px)",
+            filter: "blur(6px)",
             opacity: 0,
             y: 40,
             transition: { delay: 0 },
           }}
           transition={{
-            // duration: 0.25,
-            type: "spring" as const,
+            type: "spring",
             bounce: 0.5,
             delay: 0.05,
           }}
@@ -100,16 +105,12 @@ export function ProgressTracker() {
                 }}
               >
                 <TrackerContent>
-                  {currentQuests.length > 0 && (
-                    <QuestProgress>
-                      {completedQuests}/{currentQuests.length}
-                    </QuestProgress>
-                  )}
+                  <QuestProgress>{memomizedQuestProgress}</QuestProgress>
                 </TrackerContent>
               </motion.div>
             )}
           </AnimatePresence>
-        </NavButton>
+        </MenuButton>
       </Magnetic>
 
       <AnimatePresence>

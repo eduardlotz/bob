@@ -166,40 +166,28 @@ export const IconLink = styled(motion.create(Link))`
   text-decoration: none;
 `;
 
-export const MenuButton = styled(Button)`
-  position: absolute;
-  z-index: 100;
-  top: 16px;
-  bottom: unset;
-  right: 0;
-  left: 0;
-  margin: 0 auto;
-  width: fit-content;
+export const MenuButton = styled(motion.button)<{ $isActive?: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-  background: rgba(100, 100, 100, 0.6);
-  -webkit-backdrop-filter: blur(5px);
-  backdrop-filter: blur(5px);
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-  box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.3) inset,
-    0 -1px 6px 0 rgba(0, 0, 0, 0.1) inset;
+  padding: 16px 20px;
+  height: 58px;
+  background-color: rgba(0, 0, 0, 0.25);
+  color: var(--text-color);
 
-  color: #ffffff;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+
+  outline: 2px solid transparent;
+  outline-color: ${(props) => (props.$isActive ? "#ffffff" : "transparent")};
+  outline-offset: ${(props) => (props.$isActive ? "3px" : "0")};
+  cursor: pointer;
   pointer-events: auto;
+  border-radius: 24px;
 
-  &:active,
   &:hover {
-    &:hover {
-      background-color: rgba(0, 0, 0, 0.25);
-      box-shadow: none;
-    }
-  }
-
-  > span {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: fit-content;
-    width: fit-content;
+    background-color: rgba(0, 0, 0, 0.4);
   }
 `;
 
