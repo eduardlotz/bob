@@ -169,7 +169,7 @@ const LevelContainer = styled.div`
   display: flex;
   align-items: center;
 
-  border-radius: 0.5rem;
+  border-radius: 0.625rem;
   padding: 0.25rem 0.4rem;
 
   background-color: #010101;
@@ -183,8 +183,8 @@ const TapCosts = styled.div`
   display: flex;
   align-items: center;
 
-  border-radius: 1rem;
-  padding: 0.25rem 0.5rem;
+  border-radius: 0.625rem;
+  padding: 0.25rem 0.4rem;
 
   background-color: #ffff54;
   color: #010101;
