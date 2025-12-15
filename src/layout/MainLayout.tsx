@@ -5,29 +5,22 @@ import styled from "styled-components";
 import { useAppStore } from "@/store";
 
 export default function MainLayout({ children }: any) {
-  const [windowHeight, setWindowHeight] = useState(0);
-  const [sceneLoaded, setSceneLoaded] = useState(false);
-
   const { permissionGranted, setIsMobile, setEmotionData } = useAppStore();
 
-  // Initialize mobile detection and window height
   useEffect(() => {
-    const mobile =
-      typeof window !== "undefined" &&
-      /Mobi|Android/i.test(navigator.userAgent);
-    setIsMobile(mobile);
-    setWindowHeight(window.innerHeight);
-  }, [setIsMobile]);
+    const isMobile =
+      window.matchMedia("(pointer: coarse)").matches ||
+      navigator.maxTouchPoints > 0;
+
+    setIsMobile(isMobile);
+  }, []);
 
   return (
     <Container>
-      <Background style={{ height: windowHeight }}>
-        <SceneWithLoader
-          permissionGranted={permissionGranted}
-          onEmotionUpdate={setEmotionData}
-          onLoaded={() => setSceneLoaded(true)}
-        />
-      </Background>
+      <SceneWithLoader
+        permissionGranted={permissionGranted}
+        onEmotionUpdate={setEmotionData}
+      />
       <ViewControls />
       {children}
     </Container>
@@ -39,10 +32,4 @@ const Container = styled.div`
   width: 100%;
   height: 100vh;
   overflow: hidden;
-`;
-
-const Background = styled.div`
-  position: absolute;
-  inset: 0;
-  z-index: 0;
 `;

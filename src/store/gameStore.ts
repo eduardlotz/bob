@@ -17,46 +17,25 @@ import {
 } from "@/utils/sound/configs";
 import { getWorldSoundById } from "@/utils/sound/configs";
 import { THEME_IDS, THEME_CONFIG } from "./themeConfig";
-import { initialTapEffects, initialUpgrades } from "@/shop-items/upgrades";
+import { initialTapUpgrades } from "@/shop-items/upgrades";
+import { initialTapEffects } from "@/shop-items/tapEffects";
 import {
   BlobFormConfig,
   INITIAL_BLOB_FORMS,
   DEFAULT_FORM_PARAMETERS,
 } from "@/types/blobForms";
+import { initialWeatherEffects } from "@/shop-items/weatherEffects";
 
 export enum GAME_STORE_VERSIONS {
   V1 = 1,
-  V2 = 2,
-  V3 = 3,
-  V4 = 4,
-  V5 = 5,
-  V6 = 6,
-  V7 = 7,
-  V8 = 8,
-  V9 = 9,
-  V10 = 10,
-  V11 = 11,
-  V12 = 12,
-  V13 = 13,
-  V14 = 14,
-  V15 = 15,
-  V16 = 16,
-  V17 = 17,
-  V18 = 18,
-  V19 = 19,
-  V20 = 20,
-  V21 = 21,
-  V22 = 22,
-  LATEST = V22,
+  LATEST = V1,
 }
 
 // Constants
 const ONE_SECOND_MS = 1000;
 const AUTO_TAP_INTERVAL_MS = 1000;
-const MAX_PARTICLES_PER_AUTO_TAP = 5;
-const PARTICLE_STAGGER_MS = 100;
 
-const PURGE_DATE = new Date("08/17/2025"); // utility to purge states created before this date
+const PURGE_DATE = new Date("12/16/2025"); // utility to purge states created before this date
 
 // main migration function
 function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
@@ -67,469 +46,27 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
 
   let currentVersion = oldState.version || GAME_STORE_VERSIONS.V1;
 
-  const safeArrayTransform = <T>(
-    array: T[] | undefined,
-    transform: (item: T, index: number) => T
-  ): T[] | undefined => {
-    if (!Array.isArray(array)) return array;
-    return array.map(transform);
-  };
-
-  // merge route objects while preserving existing fields
-  const mergeRoute = (existingRoute: any, initialRoute: any): any => {
-    if (!existingRoute) return initialRoute;
-    return {
-      ...initialRoute,
-      ...existingRoute,
-      unlocked: existingRoute.unlocked ?? initialRoute.unlocked,
-      purchased: existingRoute.purchased ?? initialRoute.purchased,
-    };
-  };
-
-  // Migration V1 → V2: Update theme and effect prices
-  if (currentVersion < GAME_STORE_VERSIONS.V2) {
-    migratedState.themes = safeArrayTransform(
-      migratedState.themes,
-      (theme: any) => {
-        if (!theme || typeof theme !== "object") return theme;
-
-        const themeUpdates: Record<string, number> = {
-          [THEME_IDS.DARK]: 1000,
-          [THEME_IDS.PASTEL]: 2000,
-          [THEME_IDS.NEON]: 3000,
-        };
-
-        return themeUpdates[theme.id] !== undefined
-          ? { ...theme, cost: themeUpdates[theme.id] }
-          : theme;
-      }
-    );
-
-    migratedState.upgrades = safeArrayTransform(
-      migratedState.upgrades,
-      (upgrade: any) => {
-        if (!upgrade || typeof upgrade !== "object") return upgrade;
-
-        const effectUpdates: Record<string, number> = {
-          tap_effect_confetti: 1500,
-          tap_effect_hearts: 2500,
-          tap_effect_stars: 3500,
-        };
-
-        return effectUpdates[upgrade.id] !== undefined
-          ? { ...upgrade, baseCost: effectUpdates[upgrade.id] }
-          : upgrade;
-      }
-    );
-
-    currentVersion = GAME_STORE_VERSIONS.V2;
-  }
-
-  // Migration V2 → V3: Fix tap multiplier upgrade levels
-  if (currentVersion < GAME_STORE_VERSIONS.V3) {
-    migratedState.upgrades = safeArrayTransform(
-      migratedState.upgrades,
-      (upgrade: any) => {
-        if (!upgrade || typeof upgrade !== "object") return upgrade;
-
-        if (
-          upgrade.effect?.type === "tapMultiplier" &&
-          upgrade.unlocked &&
-          upgrade.level > 0
-        ) {
-          return { ...upgrade, level: 0 };
-        }
-        return upgrade;
-      }
-    );
-
-    currentVersion = GAME_STORE_VERSIONS.V3;
-  }
-
-  // Migration V3 → V4: Lock "Tap Power" upgrade by default
-  if (currentVersion < GAME_STORE_VERSIONS.V4) {
-    migratedState.upgrades = safeArrayTransform(
-      migratedState.upgrades,
-      (upgrade: any) => {
-        if (!upgrade || typeof upgrade !== "object") return upgrade;
-
-        if (upgrade.id === "tap_multiplier_1") {
-          return { ...upgrade, unlocked: false, level: 0 };
-        }
-        return upgrade;
-      }
-    );
-
-    currentVersion = GAME_STORE_VERSIONS.V4;
-  }
-
-  // Migration V4 → V5: Ensure routes are properly initialized and persisted
-  if (currentVersion < GAME_STORE_VERSIONS.V5) {
-    if (!Array.isArray(migratedState.routes)) {
-      migratedState.routes = initialRoutes;
-    } else {
-      // Merge existing routes with initial routes, preserving all existing fields
-      const existingRoutes = migratedState.routes;
-      migratedState.routes = initialRoutes.map((initialRoute) => {
-        const existingRoute = existingRoutes.find(
-          (r: any) => r && typeof r === "object" && r.id === initialRoute.id
-        );
-        return mergeRoute(existingRoute, initialRoute);
-      });
-    }
-
-    // Initialize lastAutoTapTime if missing
-    if (typeof migratedState.lastAutoTapTime !== "number") {
-      migratedState.lastAutoTapTime = Date.now();
-    }
-
-    currentVersion = GAME_STORE_VERSIONS.V5;
-  }
-
-  // Migration V5 → V6: Ensure themes are properly initialized
-  if (
-    currentVersion < GAME_STORE_VERSIONS.V6 ||
-    !migratedState.lastSchemaUpdate ||
-    migratedState.lastSchemaUpdate < new Date("2025-08-10")
-  ) {
-    if (!Array.isArray(migratedState.themes)) {
-      migratedState.themes = initialThemes;
-    }
-
-    currentVersion = GAME_STORE_VERSIONS.V6;
-  }
-
-  // Migration V6 → V7: Add outlineColor and eyeColor to themes
-  if (currentVersion < GAME_STORE_VERSIONS.V7) {
-    console.log(
-      `Migrating from V${currentVersion} to V7: Adding outlineColor and eyeColor to themes`
-    );
-
-    migratedState.themes = safeArrayTransform(
-      migratedState.themes,
-      (theme: any) => {
-        if (!theme || typeof theme !== "object") return theme;
-
-        // Check if theme already has the new properties (skip if already migrated)
-        if (theme.outlineColor && theme.eyeColor) {
-          console.log(
-            `Theme ${theme.id} already has outlineColor and eyeColor, skipping`
-          );
-          return theme;
-        }
-
-        // Get the corresponding theme config to get the new colors
-        const themeConfig = Object.values(THEME_CONFIG).find(
-          (config) => config.id === theme.id
-        );
-
-        if (themeConfig) {
-          console.log(
-            `Migrating theme ${theme.id}: adding outlineColor=${themeConfig.outlineColor}, eyeColor=${themeConfig.eyeColor}`
-          );
-          return {
-            ...theme,
-            outlineColor: themeConfig.outlineColor,
-            eyeColor: themeConfig.eyeColor,
-          };
-        }
-
-        // Fallback colors if theme config not found
-        console.log(`Migrating theme ${theme.id}: using fallback colors`);
-        return {
-          ...theme,
-          outlineColor: "#000000",
-          eyeColor: "#000000",
-        };
-      }
-    );
-
-    currentVersion = GAME_STORE_VERSIONS.V7;
-  }
-
-  // Migration V7 → V8: Replace all themes with current configuration
-  if (currentVersion < GAME_STORE_VERSIONS.V8) {
-    console.log(
-      `Migrating from V${currentVersion} to V8: Replacing all themes with current configuration`
-    );
-
-    // Get the current active theme ID to preserve it
-    const currentThemeId = migratedState.currentTheme?.id || THEME_IDS.DEFAULT;
-
-    // Replace all themes with the current configuration from THEME_CONFIG
-    migratedState.themes = Object.values(THEME_CONFIG).map((themeConfig) => ({
-      ...themeConfig,
-      purchased:
-        migratedState.themes?.find((t: any) => t.id === themeConfig.id)
-          ?.purchased || false,
-      active: themeConfig.id === currentThemeId,
-    }));
-
-    // Update current theme reference
-    migratedState.currentTheme =
-      migratedState.themes.find((t: any) => t.id === currentThemeId) ||
-      migratedState.themes[0];
-
-    console.log(
-      `V8 Migration: Replaced ${migratedState.themes.length} themes with current configuration`
-    );
-    console.log(`V8 Migration: Preserved active theme: ${currentThemeId}`);
-
-    currentVersion = GAME_STORE_VERSIONS.V8;
-  }
-
-  // Migration V8 → V9: Add lastSchemaUpdate property for manual migration triggers
-  if (currentVersion < GAME_STORE_VERSIONS.V9) {
-    console.log(
-      `Migrating from V${currentVersion} to V9: Adding lastSchemaUpdate property`
-    );
-
-    // Set the lastSchemaUpdate to the current date
-    migratedState.lastSchemaUpdate = new Date();
-
-    console.log(
-      `V9 Migration: Set lastSchemaUpdate to ${migratedState.lastSchemaUpdate}`
-    );
-
-    currentVersion = GAME_STORE_VERSIONS.V9;
-  }
-
-  // Migration V9 → V10: Ensure soundSystem preferences exist and default to 1.0
-  if (currentVersion < GAME_STORE_VERSIONS.V10) {
-    const clamp01 = (v: any) => {
-      const n = typeof v === "number" ? v : 1;
-      return Math.max(0, Math.min(1, n));
-    };
-    const sound = migratedState.soundSystem || {};
-    migratedState.soundSystem = {
-      enabled: sound.enabled !== false,
-      // Default master to 0 so app starts muted
-      masterVolume: clamp01(sound.masterVolume ?? 0),
-      tapVolume: clamp01(sound.tapVolume ?? 1),
-      worldVolume: clamp01(sound.worldVolume ?? 1),
-      uiVolume: clamp01(sound.uiVolume ?? 1),
-      tapEnabled: sound.tapEnabled !== false,
-      worldEnabled: sound.worldEnabled !== false,
-    };
-    currentVersion = GAME_STORE_VERSIONS.V10;
-  }
-
-  // Migration V10 → V11: Initialize audio selections (ids only)
-  if (currentVersion < GAME_STORE_VERSIONS.V11) {
-    migratedState.audioSelections = {
-      worldMusicId: migratedState.audioSelections?.worldMusicId || "world-lofi",
-      tapEffectId:
-        migratedState.audioSelections?.tapEffectId || "tap_effect_default",
-    };
-    currentVersion = GAME_STORE_VERSIONS.V11;
-  }
-
-  // Migration V11 → V12: Add audio selections for multi world sounds and tap effect audio id
-  if (currentVersion < GAME_STORE_VERSIONS.V12) {
-    const now = new Date();
-    migratedState.audioSelections = {
-      ...(migratedState.audioSelections || {}),
-      worldMusicId: migratedState.audioSelections?.worldMusicId || "world-lofi",
-      // Multi-select list for layered world sounds; default to only world-lofi
-      worldSoundIds:
-        Array.isArray(migratedState.audioSelections?.worldSoundIds) &&
-        migratedState.audioSelections.worldSoundIds.length > 0
-          ? migratedState.audioSelections.worldSoundIds
-          : ["world-lofi"],
-      // Tap effect audio per selected effect id; default undefined -> use default tap
-      tapEffectAudioId:
-        migratedState.audioSelections?.tapEffectAudioId || undefined,
-    };
-    migratedState.lastSchemaUpdate = now;
-    currentVersion = GAME_STORE_VERSIONS.V12;
-  }
-
-  // Migration V12 → V13: Start with no layered world sounds selected by default
-  if (currentVersion < GAME_STORE_VERSIONS.V13) {
-    migratedState.audioSelections = {
-      ...(migratedState.audioSelections || {}),
-      // Avoid auto-playing any world sounds until user unmutes and selects
-      worldSoundIds: Array.isArray(migratedState.audioSelections?.worldSoundIds)
-        ? migratedState.audioSelections.worldSoundIds
-        : [],
-    };
-    currentVersion = GAME_STORE_VERSIONS.V13;
-  }
-
-  // Migration V13 → V14: Introduce textVolume and reduce worldVolume by 0.1
-  if (currentVersion < GAME_STORE_VERSIONS.V14) {
-    const clamp01 = (v: any) => {
-      const n = typeof v === "number" ? v : 1;
-      return Math.max(0, Math.min(1, n));
-    };
-    const sound = migratedState.soundSystem || {};
-    const newWorld = clamp01((sound.worldVolume ?? 1) - 0.1);
-    migratedState.soundSystem = {
-      enabled: sound.enabled !== false,
-      masterVolume: clamp01(sound.masterVolume ?? 0),
-      tapVolume: clamp01(sound.tapVolume ?? 1),
-      worldVolume: newWorld,
-      uiVolume: clamp01(sound.uiVolume ?? 1),
-      tapEnabled: sound.tapEnabled !== false,
-      worldEnabled: sound.worldEnabled !== false,
-      textVolume: clamp01(sound.textVolume ?? 0.8),
-    };
-    currentVersion = GAME_STORE_VERSIONS.V14;
-  }
-
-  // Migration V14 → V15: Introduce soundPreferences (enabled/muted) and stop persisting per-type volumes
-  if (currentVersion < GAME_STORE_VERSIONS.V15) {
-    const sound = migratedState.soundSystem || {};
-    migratedState.soundPreferences = {
-      enabled: sound.enabled !== false,
-      muted: (sound.masterVolume ?? 0) === 0,
-    };
-    currentVersion = GAME_STORE_VERSIONS.V15;
-  }
-
-  // Migration Vx → V16: reset entire store
-  if (currentVersion < GAME_STORE_VERSIONS.V16) {
-    currentVersion = GAME_STORE_VERSIONS.V16;
-  }
-
-  // Migration V16 → V17: decorations in shop
-  if (currentVersion < GAME_STORE_VERSIONS.V17) {
-    migratedState.decorations = initialDecorations;
-
-    migratedState.soundSystem = { ...migratedState.soundSystem, textVolume: 1 };
-    migratedState.upgrades = initialUpgrades;
-
-    currentVersion = GAME_STORE_VERSIONS.V17;
-  }
-
-  if (currentVersion < GAME_STORE_VERSIONS.V18) {
-    migratedState.themes = initialThemes;
-
-    currentVersion = GAME_STORE_VERSIONS.V18;
-  }
-
-  if (currentVersion < GAME_STORE_VERSIONS.V19) {
-    migratedState.upgrades = initialUpgrades;
-
-    const existingBobItems = migratedState.bobItems || [];
-    const updatedBobItems = initialBobItems.map((newItem) => {
-      const existingItem = existingBobItems.find(
-        (item: BobItem) => item.id === newItem.id
-      );
-      if (existingItem) {
-        return {
-          ...newItem,
-          purchased: existingItem.purchased,
-          equipped: existingItem.equipped,
-          detached: existingItem.detached,
-        };
-      }
-      return newItem;
-    });
-
-    migratedState.bobItems = updatedBobItems;
-    migratedState.decorations = initialDecorations;
-    migratedState.themes = initialThemes;
-
-    migratedState.lastSchemaUpdate = new Date();
-
-    currentVersion = GAME_STORE_VERSIONS.V19;
-  }
-
-  // Migration V19 → V20: Add blob forms system
-  if (currentVersion < GAME_STORE_VERSIONS.V20) {
-    migratedState.blobForms = INITIAL_BLOB_FORMS;
-
-    // properly merge bobItems with new items while preserving purchased/equipped state
-    const existingBobItems = migratedState.bobItems || [];
-    const updatedBobItems = initialBobItems.map((newItem) => {
-      const existingItem = existingBobItems.find(
-        (item: BobItem) => item.id === newItem.id
-      );
-      if (existingItem) {
-        return {
-          ...newItem,
-          purchased: existingItem.purchased,
-          equipped: existingItem.equipped,
-          detached: existingItem.detached,
-        };
-      }
-      return newItem;
-    });
-    migratedState.bobItems = updatedBobItems;
-
-    migratedState.lastSchemaUpdate = new Date();
-
-    currentVersion = GAME_STORE_VERSIONS.V20;
-  }
-
-  // Migration V20 → V21: Fix bobItems for users affected by broken V20 migration
-  if (currentVersion < GAME_STORE_VERSIONS.V21) {
-    // ensure all bobItems from initialBobItems are present, preserving purchased state
-    const existingBobItems = migratedState.bobItems || [];
-    const updatedBobItems = initialBobItems.map((newItem) => {
-      const existingItem = existingBobItems.find(
-        (item: BobItem) => item.id === newItem.id
-      );
-      if (existingItem) {
-        return {
-          ...newItem,
-          purchased: existingItem.purchased,
-          equipped: existingItem.equipped,
-          detached: existingItem.detached,
-        };
-      }
-      return newItem;
-    });
-    migratedState.bobItems = updatedBobItems;
-
-    migratedState.lastSchemaUpdate = new Date();
-
-    currentVersion = GAME_STORE_VERSIONS.V21;
-  }
-
-  // Migration V21 → V22: bobForm refactor, price adjustments
-  if (currentVersion < GAME_STORE_VERSIONS.V22) {
-    migratedState.upgrades = initialUpgrades.map((newUpgrade) => {
-      const existingUpgrade = migratedState.upgrades.find(
-        (upg: Upgrade) => upg.id === newUpgrade.id
-      );
-      if (existingUpgrade) {
-        return {
-          ...newUpgrade,
-          unlocked: existingUpgrade.unlocked,
-          level: existingUpgrade.level,
-        };
-      }
-      return newUpgrade;
-    });
-
-    migratedState.tapEffects = initialTapEffects.map((newEffect) => {
-      const existingEffect = migratedState.tapEffects.find(
-        (eff: Upgrade) => eff.id === newEffect.id
-      );
-      if (existingEffect) {
-        return {
-          ...newEffect,
-          unlocked: existingEffect.unlocked,
-          level: existingEffect.level,
-        };
-      }
-      return newEffect;
-    });
-
-    migratedState.lastSchemaUpdate = new Date();
-
-    currentVersion = GAME_STORE_VERSIONS.V22;
-  }
-
-  // Set the final version to the latest
+  currentVersion = GAME_STORE_VERSIONS.LATEST;
   migratedState.version = GAME_STORE_VERSIONS.LATEST;
 
   return migratedState;
 }
 
-// Upgrade types
+// TODO: plan refactor to include component inside item properties
+interface BaseItem {
+  id: string;
+  name: string;
+  description?: string;
+  type: string;
+  cost: number;
+  purchased: boolean;
+  enabled: boolean;
+}
+
+export interface WeatherEffect extends BaseItem {}
+
+export type ShopItem = DecorationItem | TapEffect | BobItem | WeatherEffect;
+
 export interface Upgrade {
   id: string;
   name: string;
@@ -539,29 +76,19 @@ export interface Upgrade {
   level: number;
   maxLevel: number;
   effect: {
-    type:
-      | "autoTap"
-      | "tapMultiplier"
-      | "decoration"
-      | "theme"
-      | "tapEffect"
-      | "environment";
+    type: "autoTap" | "tapMultiplier";
     value: number;
   };
   unlocked: boolean;
-  icon: string;
   category: "upgrades" | "effects" | "environment" | "tapEffects";
-  selected?: boolean; // For tap effects and environment effects that can be toggled
+}
+
+export interface TapEffect extends BaseItem {
+  soundId?: string;
 }
 
 // Decoration types
-export interface Decoration {
-  id: string;
-  name: string;
-  description: string;
-  cost: number;
-  purchased: boolean;
-  enabled: boolean;
+export interface DecorationItem extends BaseItem {
   type: "2d" | "3d";
   position: [number, number, number];
   scale: number;
@@ -571,13 +98,7 @@ export interface Decoration {
 }
 
 // Bob item types (for wearable items like hats)
-export interface BobItem {
-  id: string;
-  name: string;
-  description: string;
-  cost: number;
-  purchased: boolean;
-  equipped: boolean;
+export interface BobItem extends BaseItem {
   type: "hat" | "accessory" | "outfit" | "decoration";
   icon: string;
   category: "bob";
@@ -611,8 +132,6 @@ export interface Theme {
   eyeColor: string;
 }
 
-// Route types
-
 export interface Route {
   id: string;
   name: string;
@@ -637,7 +156,6 @@ export interface SoundSystemState {
   worldEnabled?: boolean;
 }
 
-// Game state interface
 interface GameStore {
   version: number;
   lastSchemaUpdate: Date; // Timestamp for manual migration triggers
@@ -657,12 +175,14 @@ interface GameStore {
   _lastUpgradeHash?: string;
 
   upgrades: Upgrade[];
-  decorations: Decoration[];
+  decorations: DecorationItem[];
   bobItems: BobItem[];
   blobForms: BlobFormConfig[];
   themes: Theme[];
   currentTheme: Theme | null;
   routes: Route[];
+  tapEffects: TapEffect[];
+  weatherEffects: WeatherEffect[];
 
   fisheyeIntensity: number;
 
@@ -686,24 +206,27 @@ interface GameStore {
   addAutoTaps: (amount: number) => void;
   addManualTap: () => void;
   cleanupManualTaps: () => void;
-  purchaseUpgrade: (upgradeId: string) => void;
-  purchaseDecoration: (decorationId: string) => void;
-  purchaseBobItem: (bobItemId: string) => void;
   equipBobItem: (bobItemId: string) => void;
   unequipBobItem: (bobItemId: string) => void;
-  purchaseBlobForm: (blobFormId: string) => void;
   selectBlobForm: (blobFormId: string) => void;
   updateBlobFormParameters: (
     blobFormId: string,
     parameters: Partial<import("@/types/blobForms").BlobFormParameters>
   ) => void;
   resetBlobFormParameters: (blobFormId: string) => void;
+
+  purchaseUpgrade: (upgradeId: string) => void;
+  purchaseDecoration: (decorationId: string) => void;
+  purchaseBobItem: (bobItemId: string) => void;
   purchaseTheme: (themeId: string) => void;
   purchaseRoute: (routeId: string, force?: boolean) => void;
+  purchaseBlobForm: (blobFormId: string) => void;
+  purchaseTapEffect: (effectId: string) => void;
+
   activateTheme: (themeId: string) => void;
+  selectTapEffect: (tapEffectId: string) => void;
   toggleDecoration: (decorationId: string) => void;
-  selectTapEffect: (upgradeId: string) => void;
-  toggleEnvironmentEffect: (upgradeId: string) => void;
+  toggleWeatherEffect: (effectId: string) => void;
   resetGame: () => void;
   pauseGame: () => void;
   resumeGame: () => void;
@@ -742,7 +265,7 @@ interface GameStore {
   checkUnlockedRoutes: (routePath: string) => boolean;
 }
 
-export const initialDecorations: Decoration[] = [
+export const initialDecorations: DecorationItem[] = [
   {
     id: "tree_3d",
     name: "Baum",
@@ -766,7 +289,7 @@ export const initialBobItems: BobItem[] = [
     description: "Jo wir schaffen das!",
     cost: 100,
     purchased: false,
-    equipped: false,
+    enabled: false,
     type: "hat",
     icon: "👨‍🍳",
     category: "bob",
@@ -777,7 +300,7 @@ export const initialBobItems: BobItem[] = [
     description: "Ist da die Krosse Krabbe?",
     cost: 100,
     purchased: false,
-    equipped: false,
+    enabled: false,
     type: "hat",
     icon: "👨‍🍳",
     category: "bob",
@@ -788,7 +311,7 @@ export const initialBobItems: BobItem[] = [
     description: "Happy little accidents",
     cost: 100,
     purchased: false,
-    equipped: false,
+    enabled: false,
     type: "hat",
     icon: "👨‍🎨",
     category: "bob",
@@ -799,7 +322,7 @@ export const initialBobItems: BobItem[] = [
     description: "Eddie's Brille",
     cost: 100,
     purchased: false,
-    equipped: false,
+    enabled: false,
     type: "accessory",
     icon: "🤓",
     category: "bob",
@@ -810,7 +333,7 @@ export const initialBobItems: BobItem[] = [
     description: "Sul Sul",
     cost: 50,
     purchased: false,
-    equipped: false,
+    enabled: false,
     type: "decoration",
     icon: "💎",
     category: "bob",
@@ -946,9 +469,11 @@ export const useGameStore = create<GameStore>()(
         _cachedTapMultiplier: undefined,
         _lastUpgradeHash: undefined,
 
-        upgrades: initialUpgrades,
+        upgrades: initialTapUpgrades,
         decorations: initialDecorations,
         bobItems: initialBobItems,
+        tapEffects: initialTapEffects,
+        weatherEffects: initialWeatherEffects,
         blobForms: INITIAL_BLOB_FORMS,
         themes: initialThemes,
         currentTheme: initialThemes[0],
@@ -960,7 +485,7 @@ export const useGameStore = create<GameStore>()(
 
         soundSystem: {
           enabled: true,
-          masterVolume: 0.0,
+          masterVolume: 1.0,
           tapVolume: 1.0,
           worldVolume: 0.9,
           uiVolume: 1.0,
@@ -968,7 +493,7 @@ export const useGameStore = create<GameStore>()(
           tapEnabled: true,
           worldEnabled: true,
         },
-        soundPreferences: { enabled: true, muted: true },
+        soundPreferences: { enabled: true, muted: false },
 
         audioSelections: {
           worldMusicId: "world-lofi",
@@ -1101,25 +626,36 @@ export const useGameStore = create<GameStore>()(
               u.id === upgradeId ? { ...u, level: u.level + 1 } : u
             );
 
-            if (upgrade.category === "tapEffects") {
-              updatedUpgrades = updatedUpgrades.map((u) => ({
-                ...u,
-                unlocked: u.id === upgradeId ? true : u.unlocked,
-                selected:
-                  u.category === "tapEffects" ? u.id === upgradeId : u.selected,
-              }));
-            } else if (upgrade.category === "environment") {
-              updatedUpgrades = updatedUpgrades.map((u) => ({
-                ...u,
-                unlocked: u.id === upgradeId ? true : u.unlocked,
-                selected: u.id === upgradeId ? true : u.unlocked,
-              }));
-            }
-
             return {
               ...state,
               taps: state.taps - cost,
               upgrades: updatedUpgrades,
+              _cachedTapsPerSecond: undefined,
+              _cachedTapMultiplier: undefined,
+              _lastUpgradeHash: undefined,
+            };
+          });
+
+          // update cache after state change
+          setTimeout(() => {
+            get().updateComputedValueCache();
+          }, 0);
+        },
+        purchaseTapEffect: (effectId: string) => {
+          set((state) => {
+            const effect = state.tapEffects.find((t) => t.id === effectId);
+            if (!effect || !state.canAfford(effect.cost)) {
+              return state;
+            }
+
+            let updatedTapEffects = state.tapEffects.map((t) =>
+              t.id === effectId ? { ...t, purchased: true } : t
+            );
+
+            return {
+              ...state,
+              taps: state.taps - effect.cost,
+              tapEffects: updatedTapEffects,
               _cachedTapsPerSecond: undefined,
               _cachedTapMultiplier: undefined,
               _lastUpgradeHash: undefined,
@@ -1193,7 +729,7 @@ export const useGameStore = create<GameStore>()(
             const updatedBobItems = state.bobItems.map((b) => ({
               ...b,
               equipped:
-                b.type === bobItem.type ? b.id === bobItemId : b.equipped,
+                b.type === bobItem.type ? b.id === bobItemId : b.enabled,
             }));
 
             return {
@@ -1213,7 +749,7 @@ export const useGameStore = create<GameStore>()(
             // unequip all items of the same type
             const updatedBobItems = state.bobItems.map((b) => ({
               ...b,
-              equipped: b.id === bobItem.id ? false : b.equipped,
+              equipped: b.id === bobItem.id ? false : b.enabled,
             }));
 
             return {
@@ -1415,22 +951,16 @@ export const useGameStore = create<GameStore>()(
           });
         },
 
-        selectTapEffect: (upgradeId: string) => {
+        selectTapEffect: (tapEffectId: string) => {
           set((state) => {
-            const upgrade = state.upgrades.find((u) => u.id === upgradeId);
-            if (
-              !upgrade ||
-              upgrade.category !== "tapEffects" ||
-              !upgrade.unlocked
-            ) {
+            const effect = state.tapEffects.find((e) => e.id === tapEffectId);
+            if (!effect || !effect.enabled) {
               return state;
             }
 
-            const updatedUpgrades = state.upgrades.map((u) => ({
-              ...u,
-              selected:
-                u.category === "tapEffects" ? u.id === upgradeId : u.selected,
-            }));
+            const updatedEffects = state.tapEffects.map((e) =>
+              e.id === tapEffectId ? { ...e, enabled: !e.enabled } : e
+            );
 
             // TODO: fix individual tap sounds
             // try {
@@ -1448,29 +978,25 @@ export const useGameStore = create<GameStore>()(
 
             return {
               ...state,
-              upgrades: updatedUpgrades,
+              tapEffects: updatedEffects,
             };
           });
         },
 
-        toggleEnvironmentEffect: (upgradeId: string) => {
+        toggleWeatherEffect: (effectId: string) => {
           set((state) => {
-            const upgrade = state.upgrades.find((u) => u.id === upgradeId);
-            if (
-              !upgrade ||
-              upgrade.category !== "environment" ||
-              !upgrade.unlocked
-            ) {
+            const effect = state.weatherEffects.find((w) => w.id === effectId);
+            if (!effect || !effect.purchased) {
               return state;
             }
 
-            const updatedUpgrades = state.upgrades.map((u) =>
-              u.id === upgradeId ? { ...u, selected: !u.selected } : u
+            const updatedWeatherEffects = state.weatherEffects.map((w) =>
+              w.id === effectId ? { ...w, enabled: !w.enabled } : w
             );
 
             return {
               ...state,
-              upgrades: updatedUpgrades,
+              weatherEffects: updatedWeatherEffects,
             };
           });
         },
@@ -1485,7 +1011,7 @@ export const useGameStore = create<GameStore>()(
             autoTapRate: 0,
             isPaused: false,
             recentManualTaps: [],
-            upgrades: initialUpgrades,
+            upgrades: initialTapUpgrades,
             decorations: initialDecorations,
             themes: initialThemes,
             bobItems: initialBobItems,
@@ -1534,10 +1060,6 @@ export const useGameStore = create<GameStore>()(
               ...upgrade,
               unlocked: true,
               level: upgrade.maxLevel,
-              selected:
-                upgrade.category === "tapEffects"
-                  ? upgrade.id === "tap_effect_default"
-                  : upgrade.selected,
             }));
 
             const updatedDecorations = state.decorations.map((decoration) => ({
@@ -1927,42 +1449,19 @@ export const useGameStore = create<GameStore>()(
           // TODO: check safer purge method or if even needed
           const needsPurge = new Date(state?.lastSchemaUpdate) < PURGE_DATE;
 
-          // Check if store version migration is needed
-          if (
-            state &&
-            state.version &&
-            (state.version < GAME_STORE_VERSIONS.LATEST || needsPurge)
-          ) {
-            console.log(
-              `Store version ${state.version} and last schema update ${
-                state.lastSchemaUpdate
-              } detected, triggering migration to ${
-                GAME_STORE_VERSIONS.LATEST
-              }${needsPurge ? " (auto-purge triggered)" : ""}`
-            );
+          if (needsPurge) {
             try {
-              const migratedState = migrateStore(
-                state,
-                GAME_STORE_VERSIONS.LATEST
-              );
-
-              // Update the store with migrated data
-              useGameStore.setState({
-                ...state,
-                ...migratedState,
-              });
+              useGameStore.setState(state);
 
               toast.success(
                 `Store migrated from V${state.version} to V${GAME_STORE_VERSIONS.LATEST}`
               );
 
-              // ensure message store hydration state is preserved and reset repeat flags after game store migration
               setTimeout(() => {
                 try {
                   import("./messageStore").then((messageStore) => {
                     messageStore.useMessageStore.setState({
                       isHydrated: true,
-                      // clear repeat flags so messages can show again after auto-purge migration
                       repeatFlags: {},
                       seenThisSession: {},
                     });
@@ -2010,9 +1509,7 @@ export const useGameStore = create<GameStore>()(
               const track = tryGetWorldSoundById(worldId);
               if (track) engineSetWorldMusic(track.filePath, track.id);
             }
-            const selectedTap = s.upgrades.find(
-              (u) => u.category === "tapEffects" && u.selected
-            );
+            const selectedTap = s.tapEffects.find((u) => u.enabled);
             const cfg = resolveTapSoundForEffect(
               selectedTap?.id || "tap_effect_default",
               s.audioSelections.tapEffectAudioId
@@ -2078,7 +1575,7 @@ export const triggerStoreMigration = () => {
     fisheyeIntensity: store.fisheyeIntensity,
   };
 
-  const migratedState = migrateStore(currentState, GAME_STORE_VERSIONS.V9);
+  const migratedState = migrateStore(currentState, GAME_STORE_VERSIONS.LATEST);
   toast.success(`Store migrated to VERSION_${GAME_STORE_VERSIONS.LATEST}`);
 
   useGameStore.setState({

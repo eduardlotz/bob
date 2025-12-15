@@ -1,4 +1,4 @@
-import { useViewStore } from "@/store/viewStore";
+import { CameraViewId, useViewStore, ViewMode } from "@/store/viewStore";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { motion, AnimatePresence } from "motion/react";
 import styled from "styled-components";
@@ -6,13 +6,14 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeftIcon } from "@/icons/arrow";
 
 // TODO: make type safe and use correctly
-const VIEWID_TITLE_MAP = {
+const VIEWID_TITLE_MAP: Record<CameraViewId, string> = {
   default: "Über mich",
   desk: "Mein Tisch",
   bookshelf: "Mein Bücherregal",
   computer: "Mein Computer",
   cardbox: "Hobbies & Interessen",
-  portrait: "Mein Gesicht",
+  shop: "Shop",
+  upgrades: "Upgrades",
 };
 
 export function ViewControls() {
@@ -42,25 +43,31 @@ export function ViewControls() {
     }
   };
 
+  const showBackButton = !["shop", "upgrads", "default"].includes(currentView);
+
   return (
     <AnimatePresence>
       {isVisible && (
         <ViewControlsWrapper>
-          <BackButton
-            onClick={handleBackClick}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            key="view-controls-back-button"
-            initial={{ y: -120, filter: "blur(6px)" }}
-            animate={{
-              y: 0,
-              filter: "blur(0px)",
-            }}
-            exit={{ y: -120, filter: "blur(6px)" }}
-            transition={{ duration: 0.5, ease: "circInOut" }}
-          >
-            <ArrowLeftIcon />
-          </BackButton>
+          <AnimatePresence>
+            {showBackButton && (
+              <BackButton
+                onClick={handleBackClick}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                key="view-controls-back-button"
+                initial={{ y: -120, filter: "blur(6px)" }}
+                animate={{
+                  y: 0,
+                  filter: "blur(0px)",
+                }}
+                exit={{ y: -120, filter: "blur(6px)" }}
+                transition={{ duration: 0.5, ease: "circInOut" }}
+              >
+                <ArrowLeftIcon />
+              </BackButton>
+            )}
+          </AnimatePresence>
           <CurrentViewChip
             key="view-controls-current-view-chip"
             initial={{ y: -20, scale: 0.9, opacity: 0, filter: "blur(6px)" }}

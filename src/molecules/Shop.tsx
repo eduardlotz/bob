@@ -1,7 +1,15 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
-import { useGameStore, triggerStoreMigration } from "@/store/gameStore";
+import {
+  useGameStore,
+  triggerStoreMigration,
+  Upgrade,
+  BobItem,
+  DecorationItem,
+  WeatherEffect,
+  ShopItem,
+} from "@/store/gameStore";
 import { getWeatherSoundById, WORLD_SOUNDS } from "@/utils/sound/configs";
 import {
   setCurrentTapSound as engineSetCurrentTapSound,
@@ -9,49 +17,82 @@ import {
   playWorldSound as enginePlayWorldSound,
   addSoundConfig as engineAddSoundConfig,
 } from "@/utils/soundSystem";
-import { useQuestSystem } from "@/hooks/useQuestSystem";
-import { CartIcon } from "@/icons/cart";
-import { ThemeIcon } from "@/icons/theme";
-import { EffectsIcon } from "@/icons/effects";
-import { EnvironmentIcon as EnvironmentIconComponent } from "@/icons/environment";
-import { PagesIcon } from "@/icons/pages";
-import { DebuggingIcon } from "@/icons/debugging";
-import { useSoundSystem } from "@/hooks/useSoundSystem";
-import { MigrationDebugger } from "@/components/MigrationDebugger";
-import StorageDebugger from "@/components/StorageDebugger";
-import {
-  DevSettingsGroup,
-  DevSliderRow,
-  DevSliderLabel,
-  DevSlider,
-  DevSliderValue,
-} from "@/layout/atoms";
-import { THEME_IDS } from "@/store/themeConfig";
+
 import { useKeyPress } from "@/hooks/useKeyPress";
-import { DecorationIcon } from "@/icons/decoration";
-import { useMessageStore } from "@/store/messageStore";
 import { formatNumber } from "./TapCounter";
-import { BlobFormCustomization } from "@/components/BlobFormCustomization";
+import { match } from "ts-pattern";
+import { ArrowLeftIcon, ArrowRightIcon } from "@/icons/arrow";
+import { usePagination } from "@/hooks/usePagination";
+import { HugColumn } from "@/layout";
+import { useViewStore } from "@/store";
+import {
+  CAMERA_Y_POSITION,
+  VISIBLE_OPTIONS_CAMERA_ZOOM,
+} from "./HeadNavigation";
 
 interface ShopProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type ShopTab =
-  | "themes"
-  | "effects"
-  | "environment"
-  | "decorations"
-  | "bob"
-  // | "pages"
-  | "dev";
+type ShopTab = "effects" | "decorations" | "bob";
+
+const tabs = [
+  {
+    id: "bob" as ShopTab,
+    name: "Bob",
+  },
+  {
+    id: "effects" as ShopTab,
+    name: "Effekte",
+  },
+  {
+    id: "decorations" as ShopTab,
+    name: "Deko",
+  },
+];
 
 export function Shop({ isOpen, onClose }: ShopProps) {
   const [activeTab, setActiveTab] = useState<ShopTab>("bob");
-  const { decorations, bobItems, themes, upgrades, routes, taps } =
-    useGameStore();
-  const isDevMode = process.env.NODE_ENV === "development";
+  const [currentItems, setCurrentItems] = useState<ShopItem[]>([]);
+
+  // TODO: use record<view, items> with pagination and shared layout
+  const { data, page, pageCount, prev, next, hasNext, hasPrev, goTo } =
+    usePagination(currentItems, 1);
+
+  const setItems = (items: ShopItem[]) => {
+    setCurrentItems(items);
+    goTo(0);
+  };
+
+  const {
+    tapEffects,
+    decorations,
+    bobItems,
+    themes,
+    upgrades,
+    routes,
+    taps,
+    canAfford,
+    purchaseTapEffect,
+    selectTapEffect,
+    unequipBobItem,
+    equipBobItem,
+    purchaseBobItem,
+  } = useGameStore();
+
+  const { cameraControlsRef } = useViewStore();
+
+  const shopViewsWithItems: Record<ShopTab, ShopItem[]> = {
+    bob: bobItems,
+    effects: tapEffects,
+    decorations: decorations,
+  };
+
+  useEffect(() => {
+    setCurrentItems(shopViewsWithItems[activeTab]);
+    goTo(0);
+  }, [activeTab]);
 
   useKeyPress("Escape", () => {
     if (isOpen) {
@@ -59,583 +100,13 @@ export function Shop({ isOpen, onClose }: ShopProps) {
     }
   });
 
-  const tabs = [
-    // {
-    //   id: "pages" as ShopTab,
-    //   name: "Seiten",
-    //   icon: PagesIcon,
-    //   progress:
-    //     routes.filter((r) => r.purchased).length /
-    //     routes.filter((r) => !r.isLocked).length,
-    // },
-    {
-      id: "bob" as ShopTab,
-      name: "Bob",
-      icon: CartIcon,
-      progress: bobItems.filter((b) => b.purchased).length / bobItems.length,
-    },
-    {
-      id: "themes" as ShopTab,
-      name: "Themes",
-      icon: ThemeIcon,
-      progress: themes.filter((t) => t.purchased).length / themes.length,
-    },
-    {
-      id: "effects" as ShopTab,
-      name: "Tap Effekt",
-      icon: EffectsIcon,
-      progress:
-        upgrades.filter((u) => u.category === "tapEffects" && u.unlocked)
-          .length / upgrades.filter((u) => u.category === "tapEffects").length,
-    },
-    {
-      id: "environment" as ShopTab,
-      name: "Wetter",
-      icon: EnvironmentIconComponent,
-      progress:
-        upgrades.filter((u) => u.category === "environment" && u.unlocked)
-          .length / upgrades.filter((u) => u.category === "environment").length,
-    },
-    {
-      id: "decorations" as ShopTab,
-      name: "Dekorationen",
-      icon: DecorationIcon,
-      progress:
-        decorations.filter((d) => d.purchased).length / decorations.length,
-    },
-    {
-      id: "dev" as ShopTab,
-      name: "Debugging",
-      icon: DebuggingIcon,
-      progress: 0,
-    },
-  ];
-
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <Backdrop
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            key="shop-backdrop"
-          />
-          <ShopContainer
-            key="shop-container"
-            initial={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(10px)" }}
-            animate={{ opacity: 1, scaleX: 1, y: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(10px)" }}
-            transition={{
-              duration: 0.2,
-              ease: "easeInOut",
-            }}
-          >
-            <ShopHeader>
-              <ShopTitle>
-                <CartIcon color="#FFD700" />
-                Shop
-              </ShopTitle>
-              <TapCountDisplay>
-                {formatNumber(Math.floor(taps))} 🫵
-              </TapCountDisplay>
-            </ShopHeader>
-
-            <ShopContent>
-              <TabPanel>
-                {tabs.map((tab) => (
-                  <TabButton
-                    key={tab.id}
-                    $active={activeTab === tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                  >
-                    <TabContent>
-                      <TabIcon>
-                        <tab.icon />
-                      </TabIcon>
-                      <TabName>{tab.name}</TabName>
-                      <ProgressBar $progress={tab.progress} />
-                    </TabContent>
-                  </TabButton>
-                ))}
-              </TabPanel>
-
-              <ContentView>
-                <ContentItems>
-                  <AnimatePresence mode="popLayout">
-                    {activeTab === "themes" && (
-                      <motion.div
-                        key="themes"
-                        animate={{ opacity: 1 }}
-                        initial={{ opacity: 0 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.15, ease: "easeOut" }}
-                      >
-                        <ThemesView />
-                      </motion.div>
-                    )}
-                    {activeTab === "effects" && (
-                      <motion.div
-                        key="effects"
-                        animate={{ opacity: 1 }}
-                        initial={{ opacity: 0 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.15, ease: "easeOut" }}
-                      >
-                        <EffectsView />
-                      </motion.div>
-                    )}
-                    {activeTab === "environment" && (
-                      <motion.div
-                        key="environment"
-                        animate={{ opacity: 1 }}
-                        initial={{ opacity: 0 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.15, ease: "easeOut" }}
-                      >
-                        <EnvironmentView />
-                      </motion.div>
-                    )}
-                    {/* {activeTab === "pages" && (
-                      <motion.div
-                        key="routes"
-                        animate={{ opacity: 1 }}
-                        initial={{ opacity: 0 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.15, ease: "easeOut" }}
-                      >
-                        <RoutesView />
-                      </motion.div>
-                    )} */}
-                    {activeTab === "decorations" && (
-                      <motion.div
-                        key="decorations"
-                        animate={{ opacity: 1 }}
-                        initial={{ opacity: 0 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.15, ease: "easeOut" }}
-                      >
-                        <DecorationsView />
-                      </motion.div>
-                    )}
-                    {activeTab === "bob" && (
-                      <motion.div
-                        key="bob"
-                        animate={{ opacity: 1 }}
-                        initial={{ opacity: 0 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.15, ease: "easeOut" }}
-                      >
-                        <BobView />
-                      </motion.div>
-                    )}
-                    {activeTab === "dev" && (
-                      <motion.div
-                        key="dev"
-                        animate={{ opacity: 1 }}
-                        initial={{ opacity: 0 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.15, ease: "easeOut" }}
-                      >
-                        <DevView />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </ContentItems>
-              </ContentView>
-            </ShopContent>
-          </ShopContainer>
-        </>
-      )}
-    </AnimatePresence>
-  );
-}
-
-function ThemesView() {
-  const { themes, currentTheme, activateTheme, purchaseTheme, canAfford } =
-    useGameStore();
-
-  const handleThemeSelect = (themeId: string) => {
-    const theme = themes.find((t) => t.id === themeId);
-    if (theme && theme.purchased) {
-      activateTheme(themeId);
-    }
-  };
-
-  const handleThemePurchase = (themeId: string) => {
-    const theme = themes.find((t) => t.id === themeId);
-    if (theme && !theme.purchased && canAfford(theme.cost)) {
-      purchaseTheme(themeId);
-      activateTheme(themeId);
-    }
-  };
-
-  return (
-    <ThemesContainer>
-      <ThemesSection>
-        <SectionTitle>Themes</SectionTitle>
-        <ItemsGrid>
-          {themes
-            .filter((theme) => theme.id !== THEME_IDS.CUSTOM) // exclude custom theme, not ready yet
-            .map((theme) => (
-              <ThemeCard
-                key={theme.id}
-                $selected={currentTheme?.id === theme.id}
-                $purchased={theme.purchased}
-                $canAfford={theme.purchased || canAfford(theme.cost)}
-                onClick={() =>
-                  theme.purchased
-                    ? handleThemeSelect(theme.id)
-                    : handleThemePurchase(theme.id)
-                }
-                role="button"
-              >
-                <ThemePreview $colors={theme.colors}>
-                  <ThemeGradient $colors={theme.planetColors} />
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      height: "40px",
-                      width: "40px",
-                      margin: "auto",
-                      borderRadius: "50%",
-                      background: theme.blobColor,
-                    }}
-                  />
-                  <div
-                    style={{
-                      position: "absolute",
-                      bottom: "4px",
-                      left: 0,
-                      right: 0,
-                      height: "12px",
-                      width: "16px",
-                      margin: "0 auto",
-                      borderRadius: "20px",
-                      background: theme.colors.primary,
-                    }}
-                  />
-                </ThemePreview>
-                <ThemeName>{theme.name}</ThemeName>
-                <ThemeStatus
-                  $enabled={currentTheme?.id === theme.id}
-                  $purchased={theme.purchased}
-                >
-                  {theme.purchased
-                    ? currentTheme?.id === theme.id
-                      ? "Aktiv"
-                      : "Aktiveren"
-                    : `${theme.cost} taps`}
-                </ThemeStatus>
-              </ThemeCard>
-            ))}
-        </ItemsGrid>
-      </ThemesSection>
-    </ThemesContainer>
-  );
-}
-
-function EffectsView() {
-  const { upgrades, selectTapEffect, purchaseUpgrade, canAfford } =
-    useGameStore();
-  const tapEffects = upgrades.filter((u) => u.category === "tapEffects");
-
-  const handleEffectSelect = (effectId: string) => {
-    const effect = tapEffects.find((e) => e.id === effectId);
-    if (effect && effect.unlocked) {
-      selectTapEffect(effectId);
-      engineSetCurrentTapSound(effectId);
-    }
-  };
-
-  const handleEffectPurchase = (effectId: string) => {
-    const effect = tapEffects.find((e) => e.id === effectId);
-    if (effect && !effect.unlocked && canAfford(effect.baseCost)) {
-      purchaseUpgrade(effectId);
-      selectTapEffect(effectId);
-    }
-  };
-
-  return (
-    <EffectsContainer>
-      <SectionTitle>Tap Effekte</SectionTitle>
-
-      <EffectsGrid>
-        {tapEffects.map((effect) => (
-          <EffectCard
-            key={effect.id}
-            $selected={effect.selected}
-            $unlocked={effect.unlocked}
-            $canAfford={canAfford(effect.baseCost)}
-            onClick={() =>
-              effect.unlocked
-                ? handleEffectSelect(effect.id)
-                : handleEffectPurchase(effect.id)
-            }
-            role="button"
-          >
-            <EffectIcon>{effect.icon}</EffectIcon>
-            <EffectName>{effect.name}</EffectName>
-            <EffectStatus $unlocked={effect.unlocked}>
-              {effect.unlocked
-                ? effect.selected
-                  ? "Aktiv"
-                  : "Aktiveren"
-                : `${effect.baseCost} taps`}
-            </EffectStatus>
-          </EffectCard>
-        ))}
-      </EffectsGrid>
-    </EffectsContainer>
-  );
-}
-
-// TODO: move background music to different view
-// TODO: replace weather effects with in-game weather + new ui elements + correct sounds
-function EnvironmentView() {
-  const {
-    upgrades,
-    toggleEnvironmentEffect,
-    purchaseUpgrade,
-    canAfford,
-    audioSelections,
-    toggleWorldSoundId,
-  } = useGameStore();
-  const environmentEffects = upgrades.filter(
-    (u) => u.category === "environment"
-  );
-  const filteredSounds = WORLD_SOUNDS.filter((t) => t.showInShop);
-
-  const handleEnvironmentToggle = (effectId: string) => {
-    const effect = environmentEffects.find((e) => e.id === effectId);
-    if (effect && effect.unlocked) {
-      toggleEnvironmentEffect(effectId);
-    }
-  };
-
-  const handleEnvironmentPurchase = (effectId: string) => {
-    const effect = environmentEffects.find((e) => e.id === effectId);
-    if (effect && !effect.unlocked && canAfford(effect.baseCost)) {
-      purchaseUpgrade(effectId);
-    }
-  };
-
-  return (
-    <EnvironmentContainer>
-      <SectionTitle>Wettereffekte</SectionTitle>
-      <EnvironmentGrid>
-        {environmentEffects.map((effect) => (
-          <EnvironmentCard
-            key={effect.id}
-            $enabled={effect.selected}
-            $unlocked={effect.unlocked}
-            $canAfford={canAfford(effect.baseCost)}
-            onClick={() =>
-              effect.unlocked
-                ? handleEnvironmentToggle(effect.id)
-                : handleEnvironmentPurchase(effect.id)
-            }
-          >
-            <EnvironmentIcon>{effect.icon}</EnvironmentIcon>
-            <EnvironmentName>{effect.name}</EnvironmentName>
-            <EnvironmentStatus $unlocked={effect.unlocked}>
-              {effect.unlocked
-                ? effect.selected
-                  ? "Aktiv"
-                  : "Aktiveren"
-                : `${effect.baseCost} taps`}
-            </EnvironmentStatus>
-          </EnvironmentCard>
-        ))}
-      </EnvironmentGrid>
-      {filteredSounds.length > 0 && (
-        <>
-          <SectionSubtitle>Musik</SectionSubtitle>
-          <EnvironmentGrid>
-            {filteredSounds.map((track) => {
-              const isLayered = (audioSelections.worldSoundIds || []).includes(
-                track.id
-              );
-              return (
-                <EnvironmentCard
-                  key={track.id}
-                  $enabled={isLayered}
-                  $unlocked={true}
-                  $canAfford={true}
-                  onClick={() => {
-                    // Toggle layered selection in store
-                    toggleWorldSoundId?.(track.id);
-
-                    // Play or stop the clicked layer immediately
-                    if (!isLayered) {
-                      try {
-                        engineAddSoundConfig({
-                          id: track.id,
-                          filePath: track.filePath,
-                          type: "world",
-                          volume: 0.1,
-                          loop: true,
-                          stopPrevious: true, // prevent duplicates when adding layers
-                          distanceAttenuation: false,
-                          detune: {
-                            enabled: false,
-                            minSemitones: 0,
-                            maxSemitones: 0,
-                          },
-                          fadeIn: 2000,
-                          fadeOut: 1000,
-                        } as any);
-                      } catch {}
-                      enginePlayWorldSound(track.id, {
-                        loop: true,
-                        stopPrevious: true, // prevent duplicates when playing layers
-                      });
-                    } else {
-                      try {
-                        stopSoundsById(track.id);
-                      } catch {}
-                    }
-                  }}
-                >
-                  <EnvironmentIcon>{track.icon}</EnvironmentIcon>
-                  <EnvironmentName>{track.name}</EnvironmentName>
-                  <EnvironmentStatus $unlocked={true}>
-                    {isLayered ? "Aktiv" : "Aktiveren"}
-                  </EnvironmentStatus>
-                </EnvironmentCard>
-              );
-            })}
-          </EnvironmentGrid>
-        </>
-      )}
-    </EnvironmentContainer>
-  );
-}
-
-// function RoutesView() {
-//   const { routes, purchaseRoute, canAfford } = useGameStore();
-
-//   const handleRoutePurchase = (routeId: string) => {
-//     const route = routes.find((r) => r.id === routeId);
-//     if (route && !route.purchased && !route.isLocked && canAfford(route.cost)) {
-//       purchaseRoute(routeId);
-//     }
-//   };
-
-//   return (
-//     <ThemesContainer>
-//       <ThemesSection>
-//         <SectionTitle>Seiten</SectionTitle>
-//         <ItemsGrid>
-//           {routes
-//             .filter((r) => !r.isLocked)
-//             .map((route) => (
-//               <ThemeCard
-//                 key={route.id}
-//                 $selected={route.purchased}
-//                 $purchased={route.purchased}
-//                 $canAfford={!route.isLocked && canAfford(route.cost)}
-//                 onClick={() => handleRoutePurchase(route.id)}
-//                 role="button"
-//                 disabled={route.isLocked}
-//               >
-//                 <div style={{ fontSize: "32px" }}>{route.icon}</div>
-//                 <div>
-//                   <ThemeName>{route.name}</ThemeName>
-//                   <ThemeDescription>{route.description}</ThemeDescription>
-//                   <div
-//                     style={{
-//                       fontSize: "10px",
-//                       color: "#FFD700",
-//                       textAlign: "center",
-//                       marginTop: "4px",
-//                     }}
-//                   >
-//                     {route.cost} taps
-//                   </div>
-//                 </div>
-//                 <ThemeStatus
-//                   $enabled={route.purchased}
-//                   $purchased={route.purchased}
-//                 ></ThemeStatus>
-//               </ThemeCard>
-//             ))}
-//         </ItemsGrid>
-//       </ThemesSection>
-//     </ThemesContainer>
-//   );
-// }
-
-function DecorationsView() {
-  const { decorations, purchaseDecoration, canAfford, toggleDecoration } =
-    useGameStore();
-
-  const handleDecorationPurchase = (decorationId: string) => {
-    const decoration = decorations.find((d) => d.id === decorationId);
-    if (!decoration) return;
-
-    if (decoration.purchased) {
-      toggleDecoration(decorationId);
-    } else if (canAfford(decoration.cost)) {
-      purchaseDecoration(decorationId);
-    }
-  };
-
-  return (
-    <ThemesContainer>
-      <ThemesSection>
-        <SectionTitle>Dekorationen</SectionTitle>
-        <ItemsGrid>
-          {decorations.map((decoration) => (
-            <ThemeCard
-              key={decoration.id}
-              $selected={decoration.enabled}
-              $purchased={decoration.purchased}
-              $canAfford={canAfford(decoration.cost)}
-              onClick={() => handleDecorationPurchase(decoration.id)}
-              role="button"
-            >
-              <div style={{ fontSize: "32px" }}>{decoration.icon}</div>
-              <ThemeName>{decoration.name}</ThemeName>
-              <ThemeDescription>{decoration.description}</ThemeDescription>
-
-              <ThemeStatus
-                $purchased={decoration.purchased}
-                $enabled={decoration.enabled}
-              >
-                {decoration.purchased
-                  ? decoration.enabled
-                    ? "Aktiv"
-                    : "Aktiveren"
-                  : `${decoration.cost} 🫵`}
-              </ThemeStatus>
-            </ThemeCard>
-          ))}
-        </ItemsGrid>
-      </ThemesSection>
-    </ThemesContainer>
-  );
-}
-
-function BobView() {
-  const { bobItems, purchaseBobItem, equipBobItem, unequipBobItem, canAfford } =
-    useGameStore();
-  const [activeSubTab, setActiveSubTab] = useState<"costumes" | "forms">(
-    "costumes"
-  );
-
   const handleBobItemClick = (bobItemId: string) => {
     const bobItem = bobItems.find((b) => b.id === bobItemId);
     if (!bobItem) return;
 
     if (bobItem.purchased) {
       // if already purchased, equip/unequip it
-      if (bobItem.equipped) {
+      if (bobItem.enabled) {
         unequipBobItem(bobItemId);
       } else {
         equipBobItem(bobItemId);
@@ -648,414 +119,253 @@ function BobView() {
     }
   };
 
+  const handleButton = (itemId: string) => {
+    switch (activeTab) {
+      case "effects": {
+        console.log("effects handleButton ~ itemId:", itemId);
+        const effect = tapEffects.find((e) => e.id === itemId);
+        if (effect && effect.purchased && !effect.enabled) {
+          selectTapEffect(itemId);
+        } else if (effect && !effect.purchased && canAfford(effect.cost)) {
+          purchaseTapEffect(itemId);
+          selectTapEffect(itemId);
+        }
+      }
+      case "bob": {
+        console.log("bob handleButton ~ itemId:", itemId);
+        handleBobItemClick(itemId);
+      }
+    }
+  };
+
   return (
-    <ThemesContainer>
-      <ThemesSection>
-        <SectionTitle>Build a Bob</SectionTitle>
-
-        <SubTabContainer>
-          <SubTabButton
-            $active={activeSubTab === "costumes"}
-            onClick={() => setActiveSubTab("costumes")}
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <ShopContainer
+            key="shop-container"
+            initial={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(6px)" }}
+            animate={{ opacity: 1, scaleX: 1, y: 0, filter: "blur(0px)" }}
+            exit={{ opacity: 0, scaleX: 0.9, y: 80, filter: "blur(6px)" }}
+            transition={{
+              type: "spring" as const,
+              bounce: 0.5,
+            }}
           >
-            Kostüm
-          </SubTabButton>
-          <SubTabButton
-            $active={activeSubTab === "forms"}
-            onClick={() => setActiveSubTab("forms")}
-          >
-            Körper
-          </SubTabButton>
-        </SubTabContainer>
+            {data[0] && (
+              <HugColumn
+                $gap={"4px"}
+                $align="center"
+                style={{ position: "absolute", top: "30svh" }}
+              >
+                {data[0].purchased ? (
+                  <TapCountDisplay $variant="light">Gekauft </TapCountDisplay>
+                ) : data[0].enabled ? (
+                  <TapCountDisplay $variant="inverted">
+                    Ausgewählt
+                  </TapCountDisplay>
+                ) : (
+                  <TapCountDisplay>{data[0].cost} 🫵</TapCountDisplay>
+                )}
 
-        {activeSubTab === "costumes" && (
-          <>
-            <ItemsGrid>
-              {bobItems.map((bobItem) => (
-                <ThemeCard
-                  key={bobItem.id}
-                  $selected={bobItem.equipped}
-                  $purchased={bobItem.purchased}
-                  $canAfford={canAfford(bobItem.cost)}
-                  onClick={() => handleBobItemClick(bobItem.id)}
-                  role="button"
+                <ItemInformationChip>
+                  <span>{data[0].name}</span>
+                  <span>{data[0].type}</span>
+                </ItemInformationChip>
+              </HugColumn>
+            )}
+
+            <ShopContent>
+              <ContentView>
+                <AnimatePresence>
+                  {data.map((item) => (
+                    <ShopItemButton
+                      key={item.id}
+                      $selected={item.enabled}
+                      $purchased={item.purchased}
+                      $canAfford={canAfford(item.cost)}
+                      onClick={() => handleButton(item.id)}
+                      role="button"
+                    >
+                      {item.enabled
+                        ? "Entfernen"
+                        : item.purchased
+                        ? "Auswählen"
+                        : "Kaufen"}
+                    </ShopItemButton>
+                  ))}
+                </AnimatePresence>
+              </ContentView>
+            </ShopContent>
+
+            <ContentControls>
+              <PaginationButton onClick={prev}>
+                <ArrowLeftIcon />
+              </PaginationButton>
+              <PaginationButton onClick={next}>
+                <ArrowRightIcon />
+              </PaginationButton>
+            </ContentControls>
+
+            <PaginationDots>
+              <span></span>
+            </PaginationDots>
+
+            <TabPanel>
+              {tabs.map((tab) => (
+                <TabButton
+                  key={tab.id}
+                  $active={activeTab === tab.id}
+                  onClick={() => setActiveTab(tab.id)}
                 >
-                  <div style={{ fontSize: "32px" }}>{bobItem.icon}</div>
-                  <ThemeName>{bobItem.name}</ThemeName>
-                  <ThemeDescription>{bobItem.description}</ThemeDescription>
-
-                  <ThemeStatus
-                    $purchased={bobItem.purchased}
-                    $enabled={bobItem.equipped}
-                  >
-                    {bobItem.purchased
-                      ? bobItem.equipped
-                        ? "Aktiv"
-                        : "Aktiveren"
-                      : `${bobItem.cost} 🫵`}
-                  </ThemeStatus>
-                </ThemeCard>
+                  {tab.name}
+                </TabButton>
               ))}
-            </ItemsGrid>
-          </>
-        )}
-
-        {activeSubTab === "forms" && (
-          <>
-            <BlobFormCustomization />
-          </>
-        )}
-      </ThemesSection>
-    </ThemesContainer>
+            </TabPanel>
+          </ShopContainer>
+        </>
+      )}
+    </AnimatePresence>
   );
 }
-
-function DevView() {
-  const {
-    addDevTaps,
-    buyAllUpgrades,
-    toggleStatistics,
-    statisticsVisible,
-    pauseGame,
-    resumeGame,
-    resetGame: resetGameStore,
-    isPaused,
-    routes,
-    toggleCustomCameraControls,
-    customCameraControlsEnabled,
-    purchaseRoute,
-  } = useGameStore();
-  const { resetQuests } = useQuestSystem();
-  const { clearShownFlags, showMessages } = useMessageStore();
-  const sound = useSoundSystem();
-
-  const unlockAllRoutes = () => {
-    routes.forEach((route) => {
-      purchaseRoute(route.id, true);
-    });
-  };
-
-  const resetGame = () => {
-    resetGameStore();
-    clearShownFlags();
-    resetQuests();
-  };
-
-  const triggerMessage = () => {
-    showMessages(["dev_message", "dev_message_2"]);
-  };
-
-  return (
-    <DevContainer>
-      <SectionTitle>Development</SectionTitle>
-      <ContentSubtitle>
-        For debugging or testing — use with caution
-      </ContentSubtitle>
-      <DevGrid>
-        <DevButton onClick={toggleStatistics} $active={statisticsVisible}>
-          📊 Toggle Statistics
-        </DevButton>
-        <DevButton
-          onClick={toggleCustomCameraControls}
-          $active={!customCameraControlsEnabled}
-        >
-          {customCameraControlsEnabled ? "▶️" : "⏸️"}{" "}
-          {customCameraControlsEnabled ? "Disable" : "Enable"} Custom Camera
-        </DevButton>
-        <DevButton
-          onClick={isPaused ? resumeGame : pauseGame}
-          $active={!isPaused}
-        >
-          {isPaused ? "▶️" : "⏸️"}{" "}
-          {isPaused ? "Resume Auto-Tap" : "Pause Auto-Tap"}
-        </DevButton>
-
-        <StorageDebugger />
-
-        <Divider />
-
-        <DevButton onClick={triggerMessage}>💬 Show Test Message</DevButton>
-        <DevButton onClick={() => addDevTaps(100)}>💰 Add 100 Taps</DevButton>
-        <DevButton onClick={buyAllUpgrades}>🛒 Buy All Upgrades</DevButton>
-        <DevButton onClick={unlockAllRoutes}>🌐 Unlock All Pages</DevButton>
-
-        <Divider />
-
-        <DevButton onClick={triggerStoreMigration}>
-          🔄 Migrate Version
-        </DevButton>
-        <MigrationDebugger />
-        <DevButton
-          onClick={() => {
-            confirm("This will reset all quests.\nAre you sure?") &&
-              resetQuests();
-          }}
-        >
-          🎯 Reset Quests
-        </DevButton>
-        <DevButton
-          $variant="destructive"
-          onClick={() =>
-            confirm("This will delete all your progress.\nAre you sure?") &&
-            resetGame()
-          }
-        >
-          🗑️ Reset Game
-        </DevButton>
-      </DevGrid>
-
-      <Divider />
-      <DevSettingsGroup>
-        <GroupHeader>
-          <GroupTitle>Music & Sound</GroupTitle>
-          <ToggleSwitch
-            onClick={sound.isEnabled ? sound.disable : sound.enable}
-            $active={sound.isEnabled}
-          >
-            {sound.isEnabled ? "AN" : "AUS"}
-          </ToggleSwitch>
-        </GroupHeader>
-        <DevSliderRow>
-          <DevSliderLabel>Master</DevSliderLabel>
-          <DevSlider
-            type="range"
-            min={0}
-            max={1}
-            step={0.01}
-            value={sound.masterVolume}
-            onChange={(e) => sound.setMasterVolume(parseFloat(e.target.value))}
-          />
-          <DevSliderValue>
-            {Math.round(sound.masterVolume * 100)}%
-          </DevSliderValue>
-        </DevSliderRow>
-        <DevSliderRow>
-          <DevSliderLabel>World</DevSliderLabel>
-          <DevSlider
-            type="range"
-            min={0}
-            max={1}
-            step={0.01}
-            value={sound.worldVolume}
-            onChange={(e) => sound.setWorldVolume(parseFloat(e.target.value))}
-          />
-          <DevSliderValue>
-            {Math.round(sound.worldVolume * 100)}%
-          </DevSliderValue>
-        </DevSliderRow>
-        <DevSliderRow>
-          <DevSliderLabel>Tap</DevSliderLabel>
-          <DevSlider
-            type="range"
-            min={0}
-            max={1}
-            step={0.01}
-            value={sound.tapVolume}
-            onChange={(e) => sound.setTapVolume(parseFloat(e.target.value))}
-          />
-          <DevSliderValue>{Math.round(sound.tapVolume * 100)}%</DevSliderValue>
-        </DevSliderRow>
-        <DevSliderRow>
-          <DevSliderLabel>UI</DevSliderLabel>
-          <DevSlider
-            type="range"
-            min={0}
-            max={1}
-            step={0.01}
-            value={sound.uiVolume}
-            onChange={(e) => sound.setUIVolume(parseFloat(e.target.value))}
-          />
-          <DevSliderValue>{Math.round(sound.uiVolume * 100)}%</DevSliderValue>
-        </DevSliderRow>
-        <DevSliderRow>
-          <DevSliderLabel>Text</DevSliderLabel>
-          <DevSlider
-            type="range"
-            min={0}
-            max={1}
-            step={0.01}
-            value={sound.textVolume ?? 0.8}
-            onChange={(e) => sound.setTextVolume?.(parseFloat(e.target.value))}
-          />
-          <DevSliderValue>
-            {Math.round((sound.textVolume ?? 0.8) * 100)}%
-          </DevSliderValue>
-        </DevSliderRow>
-      </DevSettingsGroup>
-    </DevContainer>
-  );
-}
-
-// Styled Components
-const Backdrop = styled(motion.div)`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  z-index: 999;
-  pointer-events: auto;
-`;
 
 const ShopContainer = styled(motion.div)`
   position: fixed;
   left: 0;
   right: 0;
-  top: 40px;
+  bottom: 88px;
   margin: 0 auto;
   width: 880px;
   padding: 4px;
   max-width: calc(100% - 32px);
-  height: 80dvh;
-  max-height: calc(100svh - 140px);
+  height: calc(100svh - 140px);
 
-  transform: translateY(-50%);
-  background: rgba(20, 20, 20, 0.5);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
-  border-radius: 20px;
-  /* border: 1px solid rgba(255, 255, 255, 0.1); */
   z-index: 1001;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
   gap: 4px;
 
   overflow: hidden;
   pointer-events: auto;
 `;
 
-const ShopHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 24px;
-  /* border-bottom: 1px solid rgba(255, 255, 255, 0.1); */
-  gap: 16px;
-  background: rgba(20, 20, 20, 1);
-  border-radius: 18px;
-`;
-
-const ShopTitle = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 24px;
-  font-weight: bold;
-  color: #ffffff;
-`;
-
-const TapCountDisplay = styled.div`
+const TapCountDisplay = styled.div<{
+  $variant?: "light" | "dark" | "accent" | "inverted";
+}>`
   display: flex;
   align-items: center;
   justify-content: center;
 
   background: #ffff54;
-  color: #010101;
+  color: #212121;
+
+  ${(p) =>
+    p.$variant === "light" &&
+    `
+    background: #fff;
+    color: #212121;
+  `}
+
+  ${(p) =>
+    p.$variant === "inverted" &&
+    `
+    background: rgba(255,255,255,0.25);
+    color: #fff;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  `}
+
   font-size: 0.875rem;
   font-weight: 900;
 
-  padding: 6px 8px;
-  border-radius: 12px;
-  margin-left: auto;
+  padding: 6px 10px;
+  border-radius: 0.625rem;
 `;
 
-const CloseButton = styled.button`
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 8px;
-  transition: background-color 0.2s;
+const ItemInformationChip = styled(TapCountDisplay)`
+  background: #212121;
+  color: white;
+  font-weight: 500;
+  gap: 0.25rem;
 
-  &:hover {
-    background: rgba(255, 255, 255, 0.1);
+  span:first-child {
+    font-weight: 600;
+  }
+
+  span:last-child {
+    opacity: 0.5;
   }
 `;
 
 const ShopContent = styled.div`
   display: flex;
   flex: 1;
-  overflow: hidden;
-
-  @media (max-width: 768px) {
-    flex: 1;
-    order: 1;
-    flex-direction: column;
-  }
+  width: 100%;
+  padding-bottom: 2.5rem;
 `;
 
 const TabPanel = styled.div`
-  width: 200px;
-  background: rgba(0, 0, 0, 0.3);
-  padding: 8px;
   display: flex;
-  flex-direction: column;
   gap: 8px;
-  overflow-y: auto;
   border-radius: 18px;
-
-  @media (max-width: 768px) {
-    flex-direction: row;
-    width: 100%;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: 12px;
-
-    order: 2;
-  }
 `;
 
 const TabButton = styled.button<{ $active: boolean }>`
   display: flex;
   align-items: center;
-  padding: 12px 20px;
-  background: ${(props) =>
-    props.$active ? "rgba(255, 255, 255, 0.1)" : "transparent"};
+  padding: 0.5rem 0.75rem;
+  background: #fff;
   border: none;
-  color: ${(props) => (props.$active ? "var(--accent-color)" : "#666666")};
+  color: #212121;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: ${(props) => (props.$active ? "600" : "400")};
-  transition: all 0.2s ease-in;
-  border-radius: 12px;
-  width: 100%;
-  min-width: 100px;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 5rem;
+  opacity: ${(p) => (p.$active ? 1 : 0.5)};
 
   &:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: ${(props) => (props.$active ? "var(--accent-color)" : "#ffffff")};
-  }
-
-  @media (max-width: 768px) {
-    padding: 12px 10px;
-    border-left: none;
+    background: rgba(255, 255, 255, 0.9);
   }
 `;
 
-const TabContent = styled.div`
+const ContentControls = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
+  width: min(100%, 500px);
+  align-items: center;
+  justify-content: space-between;
+
+  position: absolute;
+  margin: 0 auto;
+  bottom: 25svh;
+  left: 0;
+  right: 0;
 `;
 
-const TabIcon = styled.div`
+const PaginationDots = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 4px;
 `;
 
-const TabName = styled.div`
-  font-size: 12px;
-  font-weight: 500;
-  max-width: 100%;
-  /* word-break: break-word; */
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+const PaginationButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 2.5rem;
+  width: 2.5rem;
+
+  border-radius: 50%;
+  background: #fff;
+  color: #212121;
+
+  svg {
+    height: 20px;
+    width: 20px;
+  }
 `;
 
 const ProgressBar = styled.div<{ $progress: number }>`
@@ -1077,8 +387,10 @@ const ProgressBar = styled.div<{ $progress: number }>`
 
 const ContentView = styled.div`
   flex: 1;
-  padding: 1rem;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
 `;
 
 const ContentSubtitle = styled.p`
@@ -1097,7 +409,7 @@ const ItemsGrid = styled.div`
   gap: 16px;
 `;
 
-const ThemeCard = styled.button<{
+const ShopItemButton = styled.button<{
   $selected: boolean;
   $purchased: boolean;
   $canAfford: boolean;
@@ -1105,23 +417,25 @@ const ThemeCard = styled.button<{
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 12px 40px;
-  border-radius: 12px;
+
+  padding: 8px 12px;
+  border-radius: 50px;
   cursor: ${(p) => (p.$canAfford || !p.$purchased ? "pointer" : "not-allowed")};
-  transition: all 0.2s;
-  border: 2px solid ${(props) => (props.$selected ? "#ffffff" : "transparent")};
-  background: ${(props) =>
-    props.$selected
-      ? "rgba(255, 255, 255, 0.1)"
-      : props.$purchased
-      ? "rgba(0, 0, 0, 0.3)"
-      : "rgba(0, 0, 0, 0.1)"};
-  opacity: ${(props) => (props.$purchased ? 1 : props.$canAfford ? 1 : 0.5)};
+
+  background: rgba(0, 0, 0, 0.25);
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  opacity: ${(props) => (props.$purchased || props.$canAfford ? 1 : 0.5)};
+
+  width: fit-content;
 
   &:hover {
     background: ${(props) =>
-      props.$purchased ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.1)"};
+      props.$purchased ? "rgba(0, 0, 0, 0.5)" : "rgba(0, 0, 0, 0.25)"};
   }
 `;
 
@@ -1213,11 +527,10 @@ const EnvironmentStatus = styled.div<{ $unlocked: boolean }>`
   font-weight: 500;
 `;
 
-// Color customization styled components
-const ThemesContainer = styled.div`
+const ShopItemContainer = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: 32px;
+  align-items: center;
+  justify-content: center;
 `;
 
 const ThemesSection = styled.div`

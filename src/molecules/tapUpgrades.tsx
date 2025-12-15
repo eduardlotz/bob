@@ -46,126 +46,125 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
   };
 
   return (
-    <AnimatePresence mode="popLayout">
-      <HugColumn>
-        {show && (
-          <HugColumn
-            initial={{ opacity: 0, y: 40, filter: "blur(6px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, y: 40, filter: "blur(6px)" }}
-            transition={{
-              type: "spring" as const,
-              bounce: 0.5,
-            }}
-            $gap={"0.75rem"}
-            $align="center"
-            $justify="flex-end"
-            ref={containerRef}
-          >
-            <AnimatePresence>
-              {showUpgrades && (
-                <HugRow $gap={"0.25rem"} $align="center">
-                  {tapUpgrades.map((upgrade, i) => {
-                    const isMaxLevel = upgrade.level === upgrade.maxLevel;
+    <AnimatePresence>
+      {show && (
+        <HugColumn
+          key="upgrades-column"
+          initial={{ opacity: 0, y: 40, filter: "blur(6px)" }}
+          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          exit={{ opacity: 0, y: 40, filter: "blur(6px)" }}
+          transition={{
+            type: "spring" as const,
+            bounce: 0.5,
+          }}
+          $gap={"0.75rem"}
+          $align="center"
+          $justify="flex-end"
+          ref={containerRef}
+        >
+          <AnimatePresence>
+            {showUpgrades && (
+              <HugRow $gap={"0.25rem"} $align="center">
+                {tapUpgrades.map((upgrade, i) => {
+                  const isMaxLevel = upgrade.level === upgrade.maxLevel;
 
-                    const priceForNextLevel =
-                      upgrade.baseCost *
-                      Math.pow(upgrade.costMultiplier, upgrade.level);
+                  const priceForNextLevel =
+                    upgrade.baseCost *
+                    Math.pow(upgrade.costMultiplier, upgrade.level);
 
-                    const canAffordNextUpgrade = canAfford(priceForNextLevel);
+                  const canAffordNextUpgrade = canAfford(priceForNextLevel);
 
-                    const canBuy = !isMaxLevel && canAffordNextUpgrade;
-                    return (
-                      <UpgradeButton
-                        key={upgrade.id}
-                        initial={{ filter: "blur(6px)", opacity: 0 }}
-                        animate={{
-                          filter: "blur(0px)",
-                          opacity: 1,
-                          transition: {
-                            delay: i * 0.05 + 0.02,
-                          },
+                  const canBuy = !isMaxLevel && canAffordNextUpgrade;
+                  return (
+                    <UpgradeButton
+                      key={upgrade.id}
+                      initial={{ filter: "blur(6px)", opacity: 0 }}
+                      animate={{
+                        filter: "blur(0px)",
+                        opacity: 1,
+                        transition: {
+                          delay: i * 0.05 + 0.02,
+                        },
+                      }}
+                      exit={{ filter: "blur(6px)", opacity: 0 }}
+                      transition={{
+                        type: "spring" as const,
+                        bounce: 0.2,
+                      }}
+                      onClick={() => handleUpgradePurchase(upgrade.id)}
+                      disabled={!canBuy}
+                    >
+                      {upgrade.name}
+
+                      <HugRow
+                        $align="center"
+                        $justify="center"
+                        $gap={"0.325rem"}
+                        style={{
+                          position: "absolute",
+                          bottom: "calc(100% + 4px)",
+                          margin: "0 auto",
+                          left: 0,
+                          right: 0,
                         }}
-                        exit={{ filter: "blur(6px)", opacity: 0 }}
-                        transition={{
-                          type: "spring" as const,
-                          bounce: 0.2,
-                        }}
-                        onClick={() => handleUpgradePurchase(upgrade.id)}
-                        disabled={!canBuy}
                       >
-                        {upgrade.name}
+                        <LevelContainer>
+                          {isMaxLevel
+                            ? "Max Level"
+                            : upgrade.level + "/" + upgrade.maxLevel}
+                        </LevelContainer>
+                        {!isMaxLevel && (
+                          <TapCosts>{priceForNextLevel} 🫵</TapCosts>
+                        )}
+                      </HugRow>
+                    </UpgradeButton>
+                  );
+                })}
+              </HugRow>
+            )}
+          </AnimatePresence>
 
-                        <HugRow
-                          $align="center"
-                          $justify="center"
-                          $gap={"0.325rem"}
-                          style={{
-                            position: "absolute",
-                            bottom: "calc(100% + 4px)",
-                            margin: "0 auto",
-                            left: 0,
-                            right: 0,
-                          }}
-                        >
-                          <LevelContainer>
-                            {isMaxLevel
-                              ? "Max Level"
-                              : upgrade.level + "/" + upgrade.maxLevel}
-                          </LevelContainer>
-                          {!isMaxLevel && (
-                            <TapCosts>{priceForNextLevel} 🫵</TapCosts>
-                          )}
-                        </HugRow>
-                      </UpgradeButton>
-                    );
-                  })}
-                </HugRow>
+          <Magnetic>
+            <TriggerContainer
+              key="tap-upgrades-container"
+              onClick={onTriggerClick}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              layout
+              style={{ borderRadius: "50px" }}
+              ref={triggerRef}
+            >
+              {showUpgrades ? (
+                <motion.span
+                  key="hide-ugprades-icon"
+                  initial={{ filter: "blur(6px)", opacity: 0, y: 20 }}
+                  animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
+                  exit={{ filter: "blur(6px)", opacity: 0, y: -20 }}
+                  transition={{
+                    type: "spring" as const,
+                    bounce: 0.2,
+                  }}
+                >
+                  <CloseIcon />
+                </motion.span>
+              ) : (
+                <motion.span
+                  key="show-ugprades-icon"
+                  initial={{ filter: "blur(6px)", opacity: 0, y: -20 }}
+                  animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
+                  exit={{ filter: "blur(6px)", opacity: 0, y: 20 }}
+                  transition={{
+                    type: "spring" as const,
+                    bounce: 0.2,
+                  }}
+                >
+                  Upgrades
+                </motion.span>
               )}
-            </AnimatePresence>
-
-            <Magnetic>
-              <TriggerContainer
-                key="tap-upgrades-container"
-                onClick={onTriggerClick}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                layout
-                style={{ borderRadius: "50px" }}
-                ref={triggerRef}
-              >
-                {showUpgrades ? (
-                  <motion.span
-                    key="hide-ugprades-icon"
-                    initial={{ filter: "blur(6px)", opacity: 0, y: 20 }}
-                    animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
-                    exit={{ filter: "blur(6px)", opacity: 0, y: -20 }}
-                    transition={{
-                      type: "spring" as const,
-                      bounce: 0.2,
-                    }}
-                  >
-                    <CloseIcon />
-                  </motion.span>
-                ) : (
-                  <motion.span
-                    key="show-ugprades-icon"
-                    initial={{ filter: "blur(6px)", opacity: 0, y: -20 }}
-                    animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
-                    exit={{ filter: "blur(6px)", opacity: 0, y: 20 }}
-                    transition={{
-                      type: "spring" as const,
-                      bounce: 0.2,
-                    }}
-                  >
-                    Upgrades
-                  </motion.span>
-                )}
-              </TriggerContainer>
-            </Magnetic>
-          </HugColumn>
-        )}
-      </HugColumn>
+            </TriggerContainer>
+          </Magnetic>
+        </HugColumn>
+      )}
     </AnimatePresence>
   );
 };

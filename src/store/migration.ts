@@ -13,7 +13,7 @@ import {
 import { useQuestStore } from "./questStore";
 import { useMessageStore } from "./messageStore";
 import { toast } from "sonner";
-import { initialUpgrades } from "@/shop-items/upgrades";
+import { initialTapUpgrades } from "@/shop-items/upgrades";
 
 // utility to move data from localStorage to IndexedDB
 export class StoreMigration {
@@ -34,7 +34,6 @@ export class StoreMigration {
     return StoreMigration.instance;
   }
 
-  // Check if migration is needed
   async checkMigrationNeeded(): Promise<boolean> {
     // If legacy localStorage entries exist, we should migrate them to IndexedDB
     try {
@@ -42,7 +41,6 @@ export class StoreMigration {
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
         if (!k) continue;
-        // Legacy keys may or may not have the "vorgarten-" prefix
         if (
           k === "game-store" ||
           k === "quest-store" ||
@@ -64,16 +62,13 @@ export class StoreMigration {
     }
   }
 
-  // Queue a migration task to be executed after stores are ready
   queueMigration(task: () => Promise<void>): void {
     this.migrationQueue.push(task);
     console.log(
       `Migration task queued. Queue length: ${this.migrationQueue.length}`
     );
-    // Do not auto-run here; the executor will trigger processing deterministically
   }
 
-  // Process the migration queue
   async processMigrationQueue(): Promise<void> {
     if (this.isProcessingQueue || this.migrationQueue.length === 0) {
       return;
@@ -94,7 +89,6 @@ export class StoreMigration {
             console.log("Migration task completed successfully");
           } catch (error) {
             console.error("Migration task failed:", error);
-            // If the task signals a retry, push it back to the end of the queue
             const shouldRetry =
               (error as any)?.retry === true ||
               (error as any)?.message === "IndexedDB not ready";
@@ -102,7 +96,6 @@ export class StoreMigration {
               console.warn("Re-queuing migration task for retry");
               this.migrationQueue.push(task);
             }
-            // Continue with other tasks
           }
         }
       }
@@ -122,7 +115,6 @@ export class StoreMigration {
       return;
     }
 
-    // Check if IndexedDB is available before starting migration
     if (!isIndexedDBAvailable()) {
       console.log("IndexedDB not available, delaying migration (will retry)");
       const err: any = new Error("IndexedDB not ready");
@@ -138,7 +130,6 @@ export class StoreMigration {
         "quest-store",
         "route-store",
         "app-store",
-        // include message store in migration
         "message-store",
       ];
 
@@ -164,10 +155,8 @@ export class StoreMigration {
             : `Successfully migrated ${migratedCount} stores to IndexedDB`;
 
         if (failedCount > 0) {
-          // toast.warning(message);
           console.warn(message);
         } else {
-          // toast.success(message);
           console.log(message);
         }
         console.log(
@@ -187,10 +176,8 @@ export class StoreMigration {
     }
   }
 
-  // Migrate a single store
   private async migrateStore(storeName: string): Promise<boolean> {
     try {
-      // Try multiple legacy key shapes
       const prefixedKey = `vorgarten-${storeName}`;
       const plainKey = storeName;
       let raw = localStorage.getItem(prefixedKey);
@@ -217,10 +204,8 @@ export class StoreMigration {
         return false;
       }
 
-      // Save to IndexedDB
       await persistenceManager.save(storeName, parsedData, 1);
 
-      // Only remove from localStorage after successful save
       try {
         localStorage.removeItem(prefixedKey);
         localStorage.removeItem(plainKey);
@@ -236,7 +221,6 @@ export class StoreMigration {
     }
   }
 
-  // Get migration status
   getMigrationStatus(): {
     isAvailable: boolean;
     currentStorage: "indexeddb" | "localstorage";
@@ -253,7 +237,6 @@ export class StoreMigration {
     };
   }
 
-  // Get detailed migration info for debugging
   getDetailedMigrationInfo(): {
     status: ReturnType<StoreMigration["getMigrationStatus"]>;
     queueDetails: string[];
@@ -267,7 +250,6 @@ export class StoreMigration {
       (_, index) => `Task ${index + 1}`
     );
 
-    // Get localStorage keys for debugging
     const localStorageKeys: string[] = [];
     try {
       for (let i = 0; i < localStorage.length; i++) {
@@ -290,18 +272,15 @@ export class StoreMigration {
     };
   }
 
-  // Force migration
   async forceMigration(): Promise<void> {
     console.log("Forcing migration to IndexedDB");
     await this.migrateAllStores();
   }
 
-  // Clear all data (for testing)
   async clearAllData(): Promise<void> {
     try {
       await persistenceManager.clear();
 
-      // Also clear localStorage (both prefixed and known plain keys)
       const keys = Object.keys(localStorage);
       keys.forEach((key) => {
         if (key.startsWith("vorgarten-")) {
@@ -326,7 +305,6 @@ export class StoreMigration {
     }
   }
 
-  // Clear the migration queue (useful for debugging)
   clearMigrationQueue(): void {
     const queueLength = this.migrationQueue.length;
     this.migrationQueue = [];
@@ -361,10 +339,9 @@ export class StoreMigration {
         "[FINAL RESET] Re-initializing default state for all stores..."
       );
       try {
-        // Game store defaults (align with initializer)
         useGameStore.setState((s) => ({
           ...s,
-          version: useGameStore.getState().version, // keep enum latest
+          version: useGameStore.getState().version,
           lastSchemaUpdate: new Date(),
           taps: 0,
           manualTaps: 0,
@@ -375,7 +352,7 @@ export class StoreMigration {
           isPaused: false,
           recentManualTaps: [],
           lastAutoTapTime: Date.now(),
-          upgrades: initialUpgrades,
+          upgrades: initialTapUpgrades,
           decorations: initialDecorations,
           themes: initialThemes,
           currentTheme: initialThemes[0] || null,
@@ -392,7 +369,7 @@ export class StoreMigration {
                 return {
                   ...newItem,
                   purchased: existingItem.purchased,
-                  equipped: existingItem.equipped,
+                  equipped: existingItem.enabled,
                   detached: existingItem.detached,
                 };
               }
@@ -404,7 +381,7 @@ export class StoreMigration {
           statisticsVisible: false,
           soundSystem: {
             enabled: true,
-            masterVolume: 0.0,
+            masterVolume: 1.0,
             tapVolume: 1.0,
             worldVolume: 0.9,
             uiVolume: 1.0,
@@ -412,7 +389,7 @@ export class StoreMigration {
             tapEnabled: true,
             worldEnabled: true,
           },
-          soundPreferences: { enabled: true, muted: true },
+          soundPreferences: { enabled: true, muted: false },
           audioSelections: {
             worldMusicId: "world-lofi",
             tapEffectId: "tap_effect_default",
@@ -425,7 +402,6 @@ export class StoreMigration {
       }
 
       try {
-        // Quest store defaults
         useQuestStore.setState((s) => ({
           ...s,
           quests: useQuestStore.getState().quests.map((q) => ({
@@ -439,24 +415,6 @@ export class StoreMigration {
         console.warn("[FINAL RESET] Failed to reset quest store state", e);
       }
 
-      try {
-        // For first-time runs, skip message store reset to avoid interfering with welcome messages
-        const currentMessageState = useMessageStore.getState();
-        console.log("[FINAL RESET] Current message state:", {
-          activeMessage: currentMessageState.activeMessage?.config.id,
-          queueLength: currentMessageState.queue.length,
-          repeatFlags: currentMessageState.repeatFlags,
-        });
-
-        // Skip message store reset entirely on first run to avoid interfering with initial welcome messages
-        console.log(
-          "[FINAL RESET] Skipping message store reset on first run to preserve welcome messages"
-        );
-      } catch (e) {
-        console.warn("[FINAL RESET] Failed to check message store state", e);
-      }
-
-      // Mark as done before notifying
       localStorage.setItem(StoreMigration.FINAL_RESET_FLAG_KEY, "1");
       try {
         await persistenceManager.save(
@@ -478,7 +436,6 @@ export class StoreMigration {
   }
 }
 
-// Export singleton instance
 export const storeMigration = StoreMigration.getInstance();
 
 // Safe migration function that queues the migration instead of running immediately
@@ -493,29 +450,17 @@ export const queueStorageMigration = async (): Promise<void> => {
   }
 };
 
-// Function to check if migration is needed without running it
+// check if migration is needed without running it
 export const isMigrationNeeded = async (): Promise<boolean> => {
   return await storeMigration.checkMigrationNeeded();
 };
 
-// Legacy function for backward compatibility - now queues instead of running immediately
-export const checkAndMigrate = async (): Promise<void> => {
-  const needsMigration = await storeMigration.checkMigrationNeeded();
-
-  if (needsMigration) {
-    console.log("Migration needed, queuing for later execution...");
-    storeMigration.queueMigration(async () => {
-      await storeMigration.migrateAllStores();
-    });
-  }
-};
-
-// Function to execute queued migrations (call this after stores are ready)
+// execute all queued migrations (should be called after stores are ready)
 export const executeQueuedMigrations = async (): Promise<void> => {
   await storeMigration.processMigrationQueue();
 };
 
-// Function to manually trigger migration (useful for debugging)
+// manually trigger migration
 export const triggerManualMigration = async (): Promise<void> => {
   console.log("Manually triggering migration...");
   await storeMigration.migrateAllStores();
@@ -541,7 +486,6 @@ export const clearMigrationQueue = () => {
   storeMigration.clearMigrationQueue();
 };
 
-// Final reset migration APIs
 export const hasFinalResetRun = (): boolean => {
   return !!localStorage.getItem(StoreMigration.FINAL_RESET_FLAG_KEY);
 };
