@@ -8,7 +8,7 @@ export const useKeyPress = (key: string, callback: () => void) => {
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyDown);
+    return () => window.removeEventListener("keyup", handleKeyDown);
   }, [key, callback]);
 };

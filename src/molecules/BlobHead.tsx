@@ -31,6 +31,7 @@ import { BuilderHelmet } from "@/3d-objects/models/builderHelmet";
 import { BlobForm } from "@/components/BlobForm";
 import { getSelectedBlobForm, getBlobFormType } from "@/types/blobForms";
 import { SimsPlumbob } from "@/3d-objects/models/simsPlumbob";
+import { useKeyPress } from "@/hooks/useKeyPress";
 
 // TODO: move constants to a shared config file
 const HEAD_POSITION_Y = 0;
@@ -744,6 +745,8 @@ export function BlobHead({
 
     onHeadClick();
   };
+
+  useKeyPress(" ", () => onHeadClick());
 
   const onPointerOver = () => {
     document.body.style.cursor = "pointer";

@@ -44,6 +44,15 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
   );
   let migratedState = { ...oldState };
 
+  migratedState = {
+    ...migratedState,
+    upgrades: initialTapUpgrades,
+    decorations: initialDecorations,
+    bobItems: initialBobItems,
+    tapEffects: initialTapEffects,
+    weatherEffects: initialWeatherEffects,
+  };
+
   let currentVersion = oldState.version || GAME_STORE_VERSIONS.V1;
 
   currentVersion = GAME_STORE_VERSIONS.LATEST;
@@ -85,6 +94,7 @@ export interface Upgrade {
 
 export interface TapEffect extends BaseItem {
   soundId?: string;
+  effectId?: number;
 }
 
 // Decoration types
@@ -965,12 +975,14 @@ export const useGameStore = create<GameStore>()(
         selectTapEffect: (tapEffectId: string) => {
           set((state) => {
             const effect = state.tapEffects.find((e) => e.id === tapEffectId);
-            if (!effect || !effect.enabled) {
+            if (!effect || !effect.purchased) {
               return state;
             }
 
             const updatedEffects = state.tapEffects.map((e) =>
-              e.id === tapEffectId ? { ...e, enabled: !e.enabled } : e
+              e.id === tapEffectId
+                ? { ...e, enabled: !e.enabled }
+                : { ...e, enabled: false }
             );
 
             // TODO: fix individual tap sounds
@@ -1462,7 +1474,10 @@ export const useGameStore = create<GameStore>()(
 
           if (needsPurge) {
             try {
-              useGameStore.setState(state);
+              // TODO: fix
+              // import("./gameStore").then((gameStore) =>
+              //   gameStore.useGameStore.setState(state)
+              // );
 
               toast.success(
                 `Store migrated from V${state.version} to V${GAME_STORE_VERSIONS.LATEST}`

@@ -9,6 +9,7 @@ export const initialTapEffects: TapEffect[] = [
     purchased: true,
     type: "tapEffects",
     enabled: true,
+    effectId: 0,
   },
   {
     id: "tap_effect_confetti",
@@ -18,6 +19,7 @@ export const initialTapEffects: TapEffect[] = [
     purchased: false,
     type: "tapEffects",
     enabled: false,
+    effectId: 1,
   },
   {
     id: "tap_effect_hearts",
@@ -27,6 +29,7 @@ export const initialTapEffects: TapEffect[] = [
     purchased: false,
     type: "tapEffects",
     enabled: false,
+    effectId: 2,
   },
   {
     id: "tap_effect_stars",
@@ -36,5 +39,10 @@ export const initialTapEffects: TapEffect[] = [
     purchased: false,
     type: "tapEffects",
     enabled: false,
+    effectId: 3,
   },
 ];
+
+export const getTapEffectsIds = () => {
+  return initialTapEffects.map((t) => t.id);
+};

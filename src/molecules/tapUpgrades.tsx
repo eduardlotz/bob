@@ -226,7 +226,7 @@ const UpgradeButton = styled(motion.button)`
   background-color: rgba(0, 0, 0, 0.25);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
-  border-radius: 50px;
+  border-radius: 0.875rem;
 
   font-size: 1rem;
   font-weight: 600;
@@ -235,5 +235,9 @@ const UpgradeButton = styled(motion.button)`
   &:disabled {
     color: #ffffff81;
     background: #0000001e;
+  }
+
+  &:hover:not(:disabled) {
+    background: rgba(0, 0, 0, 0.5);
   }
 `;

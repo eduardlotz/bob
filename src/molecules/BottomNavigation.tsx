@@ -56,7 +56,9 @@ export function BottomNavigation() {
   };
 
   const showTapUpgrades =
-    isHomeRoute && ["default", "upgrades"].includes(currentView);
+    !showOptions &&
+    isHomeRoute &&
+    ["default", "upgrades"].includes(currentView);
 
   return (
     <HugColumn

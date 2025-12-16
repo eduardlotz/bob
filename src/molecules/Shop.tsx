@@ -23,7 +23,7 @@ import { formatNumber } from "./TapCounter";
 import { match } from "ts-pattern";
 import { ArrowLeftIcon, ArrowRightIcon } from "@/icons/arrow";
 import { usePagination } from "@/hooks/usePagination";
-import { HugColumn } from "@/layout";
+import { HugColumn, HugRow } from "@/layout";
 import { getShopItemType, useViewStore } from "@/store";
 import {
   CAMERA_Y_POSITION,
@@ -55,18 +55,6 @@ const tabs = [
 
 export function Shop({ isOpen, onClose }: ShopProps) {
   const [activeTab, setActiveTab] = useState<ShopTab>("bob");
-  const [currentItems, setCurrentItems] = useState<ShopItem[]>([]);
-
-  // TODO: use record<view, items> with pagination and shared layout
-  const { data, page, pageCount, prev, next, hasNext, hasPrev, goTo } =
-    usePagination(currentItems, 1);
-
-  const setItems = (items: ShopItem[]) => {
-    setCurrentItems(items);
-    goTo(0);
-  };
-
-  const currentItem = useMemo(() => data[0], [page, data]);
 
   const {
     tapEffects,
@@ -86,10 +74,16 @@ export function Shop({ isOpen, onClose }: ShopProps) {
     decorations: decorations,
   };
 
-  useEffect(() => {
-    setCurrentItems(shopViewsWithItems[activeTab]);
-    goTo(0);
-  }, [activeTab]);
+  // TODO: use record<view, items> with pagination and shared layout
+  const { data, page, pageCount, prev, next, hasNext, hasPrev, goTo } =
+    usePagination(shopViewsWithItems[activeTab], 1);
+
+  // const currentItem = useMemo(
+  //   () => data[0],
+  //   [page, data, tapEffects, decorations, bobItems]
+  // );
+
+  const currentItem = data[0];
 
   useKeyPress("Escape", () => {
     if (isOpen) {
@@ -97,40 +91,61 @@ export function Shop({ isOpen, onClose }: ShopProps) {
     }
   });
 
-  const handleBobItemClick = (bobItemId: string) => {
-    const bobItem = bobItems.find((b) => b.id === bobItemId);
+  const handleBobItemClick = () => {
+    const bobItem = bobItems.find((b) => b.id === currentItem.id);
     if (!bobItem) return;
 
     if (bobItem.purchased) {
       // if already purchased, equip/unequip it
       if (bobItem.enabled) {
-        unequipBobItem(bobItemId);
+        unequipBobItem(bobItem.id);
       } else {
-        equipBobItem(bobItemId);
+        equipBobItem(bobItem.id);
       }
     } else if (canAfford(bobItem.cost)) {
       // purchase and equip
-      purchaseBobItem(bobItemId);
+      purchaseBobItem(bobItem.id);
       // auto-equip after purchase
-      setTimeout(() => equipBobItem(bobItemId), 100);
+      setTimeout(() => equipBobItem(bobItem.id), 100);
     }
+  };
+
+  const handleEffectItemClick = () => {
+    const effect = tapEffects.find((e) => e.id === currentItem.id);
+    if (!effect) return;
+
+    if (effect.purchased) {
+      selectTapEffect(currentItem.id);
+    } else if (canAfford(effect.cost)) {
+      purchaseTapEffect(currentItem.id);
+      setTimeout(() => selectTapEffect(currentItem.id), 100);
+    }
+  };
+
+  const handleTabChange = (id: ShopTab) => {
+    goTo(0);
+    setActiveTab(id);
   };
 
   const handleButton = () => {
     switch (activeTab) {
       case "effects": {
-        const effect = tapEffects.find((e) => e.id === currentItem.id);
-        if (effect && effect.purchased && !effect.enabled) {
-          selectTapEffect(currentItem.id);
-        } else if (effect && !effect.purchased && canAfford(effect.cost)) {
-          purchaseTapEffect(currentItem.id);
-          selectTapEffect(currentItem.id);
-        }
+        handleEffectItemClick();
       }
       case "bob": {
-        handleBobItemClick(currentItem.id);
+        handleBobItemClick();
       }
     }
+  };
+
+  const handleNext = () => {
+    if (hasNext) next();
+    else goTo(0);
+  };
+
+  const handlePrev = () => {
+    if (hasPrev) prev();
+    else goTo(pageCount - 1);
   };
 
   return (
@@ -159,26 +174,38 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                   $align="center"
                   style={{ position: "absolute", top: "30svh" }}
                 >
-                  {currentItem.purchased ? (
-                    <TapCountDisplay $variant="light">Gekauft </TapCountDisplay>
-                  ) : currentItem.enabled ? (
-                    <TapCountDisplay $variant="inverted">
-                      Ausgewählt
-                    </TapCountDisplay>
-                  ) : (
-                    <TapCountDisplay>{currentItem.cost} 🫵</TapCountDisplay>
-                  )}
+                  {match(currentItem)
+                    .with({ enabled: true }, () => (
+                      <TapCountDisplay $variant="inverted">
+                        Ausgewählt
+                      </TapCountDisplay>
+                    ))
+                    .with({ purchased: true }, () => (
+                      <TapCountDisplay $variant="light">
+                        Gekauft
+                      </TapCountDisplay>
+                    ))
+                    .otherwise(() => (
+                      <TapCountDisplay>{currentItem.cost} 🫵</TapCountDisplay>
+                    ))}
 
                   <ItemInformationChip>
-                    <span>{currentItem.name}</span>
                     <span>{getShopItemType(currentItem.type as any)}</span>
                   </ItemInformationChip>
                 </HugColumn>
               )}
             </AnimatePresence>
 
-            <ShopContent>
-              <ContentView>
+            <ContentControls>
+              <PaginationButton onClick={handlePrev} disabled={pageCount === 1}>
+                <ArrowLeftIcon />
+              </PaginationButton>
+
+              <HugColumn $gap="4px" $align="center" $justify="center">
+                <TapCountDisplay $variant="accent">
+                  <span>{currentItem.name}</span>
+                </TapCountDisplay>
+
                 <ShopItemButton
                   key={currentItem.id}
                   $selected={currentItem.enabled}
@@ -186,36 +213,40 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                   $canAfford={canAfford(currentItem.cost)}
                   onClick={handleButton}
                   role="button"
-                  disabled={currentItem.enabled}
                 >
-                  {currentItem.enabled
-                    ? "Entfernen"
-                    : currentItem.purchased
-                    ? "Auswählen"
-                    : "Kaufen"}
+                  {match(currentItem)
+                    .with({ enabled: true }, () => "Deaktiveren")
+                    .with({ purchased: true }, () => "Aktivieren")
+                    .otherwise(() => "Kaufen")}
                 </ShopItemButton>
-              </ContentView>
-            </ShopContent>
+              </HugColumn>
 
-            <ContentControls>
-              <PaginationButton onClick={prev}>
-                <ArrowLeftIcon />
-              </PaginationButton>
-              <PaginationButton onClick={next}>
+              <PaginationButton onClick={handleNext} disabled={pageCount === 1}>
                 <ArrowRightIcon />
               </PaginationButton>
             </ContentControls>
 
-            {/* <PaginationDots>
-              <span></span>
-            </PaginationDots> */}
+            <PaginationDots>
+              {Array(pageCount)
+                .fill(null)
+                .map((dot, i) => (
+                  <motion.span
+                    key={"dot" + i}
+                    animate={{
+                      width: page === i ? "12px" : "6px",
+                      opacity: page === i ? 1 : 0.25,
+                    }}
+                    initial={{ width: "6px", opacity: 0.25 }}
+                  ></motion.span>
+                ))}
+            </PaginationDots>
 
             <TabPanel>
               {tabs.map((tab) => (
                 <TabButton
                   key={tab.id}
                   $active={activeTab === tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => handleTabChange(tab.id)}
                 >
                   {tab.name}
                 </TabButton>
@@ -234,7 +265,7 @@ const ShopContainer = styled(motion.div)`
   right: 0;
   bottom: 88px;
   margin: 0 auto;
-  width: 880px;
+  width: 520px;
   padding: 4px;
   max-width: calc(100% - 32px);
   height: calc(100svh - 140px);
@@ -244,9 +275,8 @@ const ShopContainer = styled(motion.div)`
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  gap: 4px;
+  gap: 24px;
 
-  overflow: hidden;
   pointer-events: auto;
 `;
 
@@ -270,35 +300,20 @@ const TapCountDisplay = styled(motion.div)<{
   ${(p) =>
     p.$variant === "inverted" &&
     `
-    background: rgba(255,255,255,0.25);
+    background: rgba(0,0,0,0.25);
     color: #fff;
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
+    font-weight: 700;
   `}
 
 
-font-size: 0.875rem;
+  font-size: 0.875rem;
   font-weight: 900;
 
   padding: 6px 10px;
   border-radius: 0.625rem;
   box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.15);
-
-  @keyframes float {
-    0% {
-      transform: translateY(0);
-    }
-
-    50% {
-      transform: translateY(-0.625rem);
-    }
-
-    100% {
-      transform: translateY(0);
-    }
-  }
-
-  animation: float 6s ease-in-out infinite;
 `;
 
 const ItemInformationChip = styled(TapCountDisplay)`
@@ -307,20 +322,7 @@ const ItemInformationChip = styled(TapCountDisplay)`
   font-weight: 500;
   gap: 0.25rem;
 
-  span:first-child {
-    font-weight: 600;
-  }
-
-  span:last-child {
-    opacity: 0.5;
-  }
-`;
-
-const ShopContent = styled.div`
-  display: flex;
-  flex: 1;
-  width: 100%;
-  padding-bottom: 2.5rem;
+  font-weight: 600;
 `;
 
 const TabPanel = styled.div`
@@ -349,13 +351,13 @@ const TabButton = styled.button<{ $active: boolean }>`
 
 const ContentControls = styled.div`
   display: flex;
-  width: min(100%, 500px);
+  width: min(100%, 340px);
   align-items: center;
   justify-content: space-between;
 
   position: absolute;
   margin: 0 auto;
-  bottom: 25svh;
+  bottom: 10svh;
   left: 0;
   right: 0;
 `;
@@ -365,6 +367,14 @@ const PaginationDots = styled.div`
   align-items: center;
   justify-content: center;
   gap: 4px;
+
+  span {
+    height: 6px;
+    width: 6px;
+    background: #fff;
+    opacity: 0.25;
+    border-radius: 50px;
+  }
 `;
 
 const PaginationButton = styled.button`
@@ -372,26 +382,23 @@ const PaginationButton = styled.button`
   align-items: center;
   justify-content: center;
 
-  height: 2.5rem;
-  width: 2.5rem;
+  height: 2.75rem;
+  width: 2.75rem;
 
   border-radius: 50%;
   background: #fff;
   color: #212121;
   box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.15), 0px 0px 8px rgba(0, 0, 0, 0.1);
+  z-index: 0;
 
   svg {
     height: 20px;
     width: 20px;
   }
-`;
 
-const ContentView = styled.div`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
+  &:disabled {
+    opacity: 0.25;
+  }
 `;
 
 const ShopItemButton = styled.button<{
@@ -403,12 +410,19 @@ const ShopItemButton = styled.button<{
   flex-direction: column;
   align-items: center;
 
-  padding: 8px 12px;
-  border-radius: 50px;
-  cursor: ${(p) => (p.$canAfford || !p.$purchased ? "pointer" : "not-allowed")};
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.875rem;
+  cursor: pointer;
 
-  background: rgba(0, 0, 0, 0.25);
-  color: white;
+  background: ${(p) =>
+    p.$selected ? "rgba(255,255,255,1)" : "rgba(0,0,0,0.25)"};
+  color: ${(p) => (p.$selected ? "#212121" : "#ffffff")};
+  border: ${(p) =>
+    p.$selected
+      ? "2px solid rgba(255,255,255,1)"
+      : p.$purchased
+      ? "2px solid rgba(255,255,255,0.5)"
+      : "2px solid transparent"};
   font-size: 1rem;
   font-weight: 600;
 
@@ -420,6 +434,6 @@ const ShopItemButton = styled.button<{
 
   &:hover {
     background: ${(props) =>
-      props.$purchased ? "rgba(0, 0, 0, 0.5)" : "rgba(0, 0, 0, 0.25)"};
+      props.$selected ? "rgba(255,255,255,0.75)" : "rgba(0, 0, 0, 0.5)"};
   }
 `;
