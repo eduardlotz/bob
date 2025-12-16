@@ -6,6 +6,7 @@ import {
   CAMERA_HEIGHT,
   HIDDEN_OPTIONS_CAMERA_ZOOM,
   FUNNY_FISHEYE_ZOOM,
+  VISIBLE_OPTIONS_CAMERA_ZOOM,
 } from "@/molecules/HeadNavigation";
 
 export interface CameraView {
@@ -44,7 +45,7 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   shop: {
     id: "shop",
     name: "Shop View",
-    position: [0, 0.25, FUNNY_FISHEYE_ZOOM + 1.5],
+    position: [0, CAMERA_HEIGHT - 1, VISIBLE_OPTIONS_CAMERA_ZOOM - 2],
     target: [0, CAMERA_Y_POSITION, 0],
     transition: {
       duration: 1000,
@@ -159,7 +160,7 @@ export const useViewStore = create<ViewStore>()(
         try {
           const controls = cameraControlsRef.current;
 
-          await controls.setLookAt(
+          controls.setLookAt(
             ...viewConfig.position,
             ...viewConfig.target,
             true

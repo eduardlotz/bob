@@ -226,11 +226,6 @@ export function HeadNavigation({
   }, [emotionState, tapCount, getEmotionIcon, onEmotionUpdate]);
 
   useFrame(() => {
-    // don't override camera during view transitions
-    if (isTransitioning) {
-      return;
-    }
-
     // if we're in object view mode, let the view store handle the camera
     if (!isDefaultView()) {
       return;

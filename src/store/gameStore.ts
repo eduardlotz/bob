@@ -105,6 +105,18 @@ export interface BobItem extends BaseItem {
   detached?: boolean; // If true, item stays at initial position and doesn't follow head movements
 }
 
+const ITEM_NAME_MAP = {
+  hat: "Kopfbedeckung",
+  accessory: "Special",
+  "3d": "3D Deko",
+  tapEffects: "Tap Effekt",
+  decoration: "Dekoration",
+};
+
+export const getShopItemType = (itemType: keyof typeof ITEM_NAME_MAP) => {
+  return ITEM_NAME_MAP[itemType];
+};
+
 // Theme types
 export interface Theme {
   id: string;
@@ -318,7 +330,7 @@ export const initialBobItems: BobItem[] = [
   },
   {
     id: "chickenLittleGlasses",
-    name: "Sehhilfe",
+    name: "Nasenfahrrad",
     description: "Eddie's Brille",
     cost: 100,
     purchased: false,
@@ -728,8 +740,7 @@ export const useGameStore = create<GameStore>()(
             // unequip all items of the same type, then equip the selected one
             const updatedBobItems = state.bobItems.map((b) => ({
               ...b,
-              equipped:
-                b.type === bobItem.type ? b.id === bobItemId : b.enabled,
+              enabled: b.type === bobItem.type ? b.id === bobItemId : b.enabled,
             }));
 
             return {
@@ -749,7 +760,7 @@ export const useGameStore = create<GameStore>()(
             // unequip all items of the same type
             const updatedBobItems = state.bobItems.map((b) => ({
               ...b,
-              equipped: b.id === bobItem.id ? false : b.enabled,
+              enabled: b.id === bobItem.id ? false : b.enabled,
             }));
 
             return {
