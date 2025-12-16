@@ -44,22 +44,22 @@ export function useBlobEmotions() {
   const cooldownRef = useRef<number>(0);
   const lastEmotionTimeRef = useRef<number>(0);
 
-  // Load tap count from localStorage on mount
-  useEffect(() => {
-    const savedTapCount = localStorage.getItem("bobTapCount");
-    if (savedTapCount) {
-      const count = parseInt(savedTapCount, 10);
-      setTapCount(count);
-    }
-    setIsInitialized(true);
-  }, []);
+  // // Load tap count from localStorage on mount
+  // useEffect(() => {
+  //   const savedTapCount = localStorage.getItem("bobTapCount");
+  //   if (savedTapCount) {
+  //     const count = parseInt(savedTapCount, 10);
+  //     setTapCount(count);
+  //   }
+  //   setIsInitialized(true);
+  // }, []);
 
-  // Save tap count to localStorage whenever it changes (but not on initial load)
-  useEffect(() => {
-    if (isInitialized) {
-      localStorage.setItem("bobTapCount", tapCount.toString());
-    }
-  }, [tapCount, isInitialized]);
+  // // Save tap count to localStorage whenever it changes (but not on initial load)
+  // useEffect(() => {
+  //   if (isInitialized) {
+  //     localStorage.setItem("bobTapCount", tapCount.toString());
+  //   }
+  // }, [tapCount, isInitialized]);
 
   const clearEmotionTimeout = useCallback(() => {
     if (emotionTimeoutRef.current) {
@@ -87,9 +87,7 @@ export function useBlobEmotions() {
 
     // get the correct tap sound ID from game store
     const gameStore = useGameStore.getState();
-    const selectedTapEffect = gameStore.upgrades.find(
-      (u) => u.category === "tapEffects" && u.selected
-    );
+    const selectedTapEffect = gameStore.tapEffects.find((u) => u.enabled);
     const tapEffectId = selectedTapEffect?.id || "tap_effect_default";
 
     // resolve the actual sound ID using the resolver

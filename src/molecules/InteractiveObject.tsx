@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
-import { useViewStore } from "@/store/viewStore";
+import { CameraViewId, useViewStore, ViewMode } from "@/store/viewStore";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { a } from "@react-spring/three";
 import { match } from "ts-pattern";
@@ -13,7 +13,7 @@ interface InteractiveObjectProps {
   children: React.ReactNode;
   mode: InteractionMode;
   onDialogOpen?: () => void;
-  viewId?: string;
+  viewId?: CameraViewId;
   showOutline?: boolean;
 }
 

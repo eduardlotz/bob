@@ -5,6 +5,8 @@ import {
   CAMERA_Y_POSITION,
   CAMERA_HEIGHT,
   HIDDEN_OPTIONS_CAMERA_ZOOM,
+  FUNNY_FISHEYE_ZOOM,
+  VISIBLE_OPTIONS_CAMERA_ZOOM,
 } from "@/molecules/HeadNavigation";
 
 export interface CameraView {
@@ -19,12 +21,41 @@ export interface CameraView {
   };
 }
 
+export type CameraViewId =
+  | "default"
+  | "shop"
+  | "upgrades"
+  | "desk"
+  | "bookshelf"
+  | "computer"
+  | "cardbox";
+
 // camera settings for different object views
-export const CAMERA_VIEWS: Record<string, CameraView> = {
+export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   default: {
     id: "default",
     name: "Default View",
     position: [0, CAMERA_HEIGHT, HIDDEN_OPTIONS_CAMERA_ZOOM],
+    target: [0, CAMERA_Y_POSITION, 0],
+    transition: {
+      duration: 1000,
+      easing: "easeInOutCubic",
+    },
+  },
+  shop: {
+    id: "shop",
+    name: "Shop View",
+    position: [0, CAMERA_HEIGHT - 1, VISIBLE_OPTIONS_CAMERA_ZOOM - 2],
+    target: [0, CAMERA_Y_POSITION, 0],
+    transition: {
+      duration: 1000,
+      easing: "easeInOutCubic",
+    },
+  },
+  upgrades: {
+    id: "upgrades",
+    name: "Upgrades View",
+    position: [0, CAMERA_HEIGHT, FUNNY_FISHEYE_ZOOM],
     target: [0, CAMERA_Y_POSITION, 0],
     transition: {
       duration: 1000,
@@ -71,36 +102,25 @@ export const CAMERA_VIEWS: Record<string, CameraView> = {
       easing: "easeInOutCubic",
     },
   },
-  portrait: {
-    id: "portrait",
-    name: "Portrait View",
-    position: [-3, CAMERA_HEIGHT, -2],
-    target: [-2.5, 2, -5],
-    transition: {
-      duration: 1200,
-      easing: "easeInOutCubic",
-    },
-  },
 };
 
-export type ViewMode = "blob" | "object";
+export type ViewMode = "fixed" | "object";
 
 interface ViewStore {
-  currentView: string;
+  currentView: CameraViewId;
   viewMode: ViewMode;
   isTransitioning: boolean;
 
   cameraControlsRef: React.RefObject<CameraControls> | null;
 
-  setCurrentView: (viewId: string) => void;
+  setCurrentView: (viewId: CameraViewId) => void;
   setViewMode: (mode: ViewMode) => void;
   setCameraControlsRef: (ref: React.RefObject<CameraControls>) => void;
-  transitionToView: (viewId: string) => Promise<void>;
+  transitionToView: (viewId: CameraViewId) => Promise<void>;
   resetToDefaultView: () => Promise<void>;
 
   getCurrentViewConfig: () => CameraView | null;
   isDefaultView: () => boolean;
-  isBlobView: () => boolean;
   isObjectView: () => boolean;
   getAvailableViews: () => CameraView[];
 }
@@ -109,7 +129,7 @@ export const useViewStore = create<ViewStore>()(
   devtools(
     (set, get) => ({
       currentView: "default",
-      viewMode: "blob",
+      viewMode: "fixed",
       isTransitioning: false,
       cameraControlsRef: null,
 
@@ -117,7 +137,7 @@ export const useViewStore = create<ViewStore>()(
       setViewMode: (mode) => set({ viewMode: mode }),
       setCameraControlsRef: (ref) => set({ cameraControlsRef: ref }),
 
-      transitionToView: async (viewId: string) => {
+      transitionToView: async (viewId: CameraViewId) => {
         const { cameraControlsRef, isTransitioning } = get();
 
         // prevent multiple transitions
@@ -134,13 +154,13 @@ export const useViewStore = create<ViewStore>()(
         set({
           isTransitioning: true,
           currentView: viewId,
-          viewMode: viewId === "default" ? "blob" : "object",
+          viewMode: viewId !== "default" ? "object" : "fixed",
         });
 
         try {
           const controls = cameraControlsRef.current;
 
-          await controls.setLookAt(
+          controls.setLookAt(
             ...viewConfig.position,
             ...viewConfig.target,
             true
@@ -161,7 +181,7 @@ export const useViewStore = create<ViewStore>()(
 
         set({
           currentView: "default",
-          viewMode: "blob",
+          viewMode: "fixed",
           isTransitioning: false,
         });
       },
@@ -173,10 +193,6 @@ export const useViewStore = create<ViewStore>()(
 
       isDefaultView: () => {
         return get().currentView === "default";
-      },
-
-      isBlobView: () => {
-        return get().viewMode === "blob";
       },
 
       isObjectView: () => {

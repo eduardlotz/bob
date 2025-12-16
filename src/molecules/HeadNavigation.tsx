@@ -142,13 +142,8 @@ export function HeadNavigation({
     getEmotionIcon: any;
   }) => void;
 }) {
-  const {
-    currentView,
-    isDefaultView,
-    isBlobView,
-    isTransitioning,
-    resetToDefaultView,
-  } = useViewStore();
+  const { currentView, isDefaultView, isTransitioning, resetToDefaultView } =
+    useViewStore();
 
   // close options menu when entering a custom view
   useEffect(() => {
@@ -189,7 +184,7 @@ export function HeadNavigation({
   // mouse position tracking on desktop
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
-      if (isBlobView()) {
+      if (isDefaultView()) {
         setMousePosition({
           x: event.clientX / window.innerWidth,
           y: event.clientY / window.innerHeight,
@@ -198,7 +193,7 @@ export function HeadNavigation({
     };
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [isBlobView]);
+  }, [isDefaultView]);
 
   const { isOptionsClosing, closeOptionsWithAnimation } = useAppStore();
   const [cameraZoomAnimation, setCameraZoomAnimation] = useState(false);
@@ -231,13 +226,8 @@ export function HeadNavigation({
   }, [emotionState, tapCount, getEmotionIcon, onEmotionUpdate]);
 
   useFrame(() => {
-    // don't override camera during view transitions
-    if (isTransitioning) {
-      return;
-    }
-
     // if we're in object view mode, let the view store handle the camera
-    if (!isBlobView()) {
+    if (!isDefaultView()) {
       return;
     }
 
@@ -426,6 +416,7 @@ function Option({
   const optionRef = useRef<THREE.Group>(null!);
   const navigate = useNavigate();
   const { currentRoute } = useAppStore();
+  const { setViewMode } = useViewStore();
   const { canAfford, purchaseRoute } = useGameStore();
   const { showMessage } = useMessageStore();
 
@@ -446,6 +437,7 @@ function Option({
 
     navigate(route.path);
     hideOptions();
+    setViewMode("fixed");
   }, [route.path]);
 
   const handleOptionClick = () => {

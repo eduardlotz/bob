@@ -432,13 +432,11 @@ const colorConfigs = {
 };
 
 export function TapEffect() {
-  const { upgrades } = useGameStore();
+  const { tapEffects } = useGameStore();
 
-  const selectedTapEffect = upgrades.find(
-    (u) => u.category === "tapEffects" && u.selected
-  );
+  const selectedTapEffect = tapEffects.find((u) => u.enabled);
 
-  const effectValue = selectedTapEffect?.effect.value ?? 0;
+  const effectValue = selectedTapEffect?.effectId ?? 0;
 
   let activeConfig: {
     geo: BufferGeometry;
@@ -659,9 +657,9 @@ export function TapEffect() {
 export function ParticleEffects() {
   return (
     <group>
-      <RainEffect />
+      {/* <RainEffect />
       <CloudEffect />
-      <StarsEffect />
+      <StarsEffect /> */}
       <TapEffect />
     </group>
   );

@@ -25,7 +25,7 @@ export const Room = forwardRef(
     const wallRef = useRef<Mesh>(null);
 
     const handlePosterClick = () => {
-      transitionToView("portrait");
+      // nothing
     };
 
     useFrame(() => {

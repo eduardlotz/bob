@@ -31,6 +31,7 @@ import { BuilderHelmet } from "@/3d-objects/models/builderHelmet";
 import { BlobForm } from "@/components/BlobForm";
 import { getSelectedBlobForm, getBlobFormType } from "@/types/blobForms";
 import { SimsPlumbob } from "@/3d-objects/models/simsPlumbob";
+import { useKeyPress } from "@/hooks/useKeyPress";
 
 // TODO: move constants to a shared config file
 const HEAD_POSITION_Y = 0;
@@ -204,7 +205,7 @@ export function BlobHead({
 
   const { orientation, acceleration } = useDeviceOrientation();
 
-  const { isBlobView } = useViewStore();
+  const { isDefaultView } = useViewStore();
 
   const [spring, api] = useSpring(() => ({
     scale: [0, 0, 0],
@@ -230,7 +231,7 @@ export function BlobHead({
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
       // dont update mouse position when in object view mode (/about scene)
-      if (isBlobView()) {
+      if (isDefaultView()) {
         setMousePosition({
           x: (event.clientX / window.innerWidth) * 2 - 1,
           y: (event.clientY / window.innerHeight) * 2 - 1,
@@ -239,7 +240,7 @@ export function BlobHead({
     };
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [isBlobView]);
+  }, [isDefaultView]);
 
   useEffect(() => {
     const blinkInterval = setInterval(() => {
@@ -426,7 +427,7 @@ export function BlobHead({
     const cameraPosition = new Vector3(0, CAMERA_HEIGHT, baseZoom + zoomOffset);
     const target = cameraPosition.clone().add(lookDirection);
 
-    if (isBlobView()) {
+    if (isDefaultView()) {
       cameraControlsRef.current?.setLookAt(
         cameraPosition.x,
         cameraPosition.y,
@@ -468,7 +469,7 @@ export function BlobHead({
       ? Math.sin(clock.getElapsedTime() * 20) * 0.5
       : 0;
 
-    if (isBlobView()) {
+    if (isDefaultView()) {
       cameraControlsRef.current?.setLookAt(
         0,
         CAMERA_HEIGHT,
@@ -745,6 +746,8 @@ export function BlobHead({
     onHeadClick();
   };
 
+  useKeyPress(" ", () => onHeadClick());
+
   const onPointerOver = () => {
     document.body.style.cursor = "pointer";
   };
@@ -892,7 +895,7 @@ export function BlobHead({
   );
 
   const renderBobItems = () => {
-    const allEquippedItems = bobItems.filter((item) => item.equipped);
+    const allEquippedItems = bobItems.filter((item) => item.enabled);
 
     const detachedItems = allEquippedItems.filter(
       (item) => item.detached === true

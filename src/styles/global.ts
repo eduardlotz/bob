@@ -50,6 +50,8 @@ export const GlobalStyle = createGlobalStyle`
     
     body, root, button, input, textarea, select, p, a {
         font-family: "Open Sauce Two", Helvetica, Arial, sans-serif;
+        user-select: none;
+        -webkit-user-select: none;
     }
 
     *,

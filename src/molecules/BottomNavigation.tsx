@@ -2,7 +2,13 @@ import React, { useState, useMemo } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
 import { useGameStore } from "@/store/gameStore";
-import { useAppStore, ROUTE_PATHS } from "@/store";
+import {
+  useAppStore,
+  ROUTE_PATHS,
+  useViewStore,
+  ViewMode,
+  CameraViewId,
+} from "@/store";
 import { CartIcon } from "@/icons/cart";
 import { MenuIcon } from "@/icons/menu";
 import { CloseIcon } from "@/icons/close";
@@ -13,39 +19,46 @@ import { Magnetic } from "@/layout/Magnetic";
 import { HugColumn, HugRow } from "@/layout";
 import { TapUpgrades } from "./tapUpgrades";
 import { MenuButton } from "@/layout/atoms";
-
-type NavigationView = "shop" | "upgrades" | "quests" | "menu" | "default";
+import {
+  CAMERA_Y_POSITION,
+  VISIBLE_OPTIONS_CAMERA_ZOOM,
+} from "./HeadNavigation";
 
 export function BottomNavigation() {
-  const [currentView, setCurrentView] = useState<NavigationView>("default");
+  const { currentView, setViewMode, transitionToView } = useViewStore();
 
-  const { currentRoute, showOptions, toggleOptions } = useAppStore();
+  const {
+    currentRoute,
+    showOptions,
+    toggleOptions,
+    closeOptionsWithAnimation,
+  } = useAppStore();
 
   useKeyPress("Escape", () => {
-    if (currentView !== "default") {
-      setCurrentView("default");
-    }
+    transitionToView("default");
   });
 
   const isHomeRoute = currentRoute === ROUTE_PATHS.HOME;
 
-  // const tapUpgrades = upgrades.filter((u) => u.category === "upgrades");
-  // const hasAnyUpgrade = tapUpgrades.some((u) => u.unlocked);
-
-  const showTapUpgrades = isHomeRoute;
-
   const handleMenuButtonClick = () => {
     toggleOptions();
-    handleNavigationClick("menu");
+    handleNavigationClick("default");
   };
 
-  const handleNavigationClick = (view: NavigationView) => {
+  const handleNavigationClick = (view: CameraViewId) => {
     if (currentView === view) {
-      setCurrentView("default");
+      transitionToView("default");
     } else {
-      setCurrentView(view);
+      transitionToView(view);
     }
+
+    if (showOptions) closeOptionsWithAnimation();
   };
+
+  const showTapUpgrades =
+    !showOptions &&
+    isHomeRoute &&
+    ["default", "upgrades"].includes(currentView);
 
   return (
     <HugColumn
@@ -163,7 +176,7 @@ export function BottomNavigation() {
 
       <Shop
         isOpen={currentView === "shop"}
-        onClose={() => setCurrentView("default")}
+        onClose={() => setViewMode("fixed")}
       />
     </HugColumn>
   );
