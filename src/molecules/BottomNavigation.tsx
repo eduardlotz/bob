@@ -35,9 +35,7 @@ export function BottomNavigation() {
   } = useAppStore();
 
   useKeyPress("Escape", () => {
-    if (currentView !== "default") {
-      transitionToView("default");
-    }
+    transitionToView("default");
   });
 
   const isHomeRoute = currentRoute === ROUTE_PATHS.HOME;
@@ -57,7 +55,8 @@ export function BottomNavigation() {
     if (showOptions) closeOptionsWithAnimation();
   };
 
-  const showTapUpgrades = isHomeRoute && currentView === "default";
+  const showTapUpgrades =
+    isHomeRoute && ["default", "upgrades"].includes(currentView);
 
   return (
     <HugColumn
