@@ -229,6 +229,13 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
     repeatRule: "always",
     audioEnabled: true,
   },
+  {
+    id: "upgrade_is_maxxed",
+    text: ["Da geht nichts mehr, maxxed out 💯"],
+    label: "Bob",
+    repeatRule: "always",
+    audioEnabled: true,
+  },
 ];
 
 export const getMessageById = (id: string): MessageConfig | undefined =>

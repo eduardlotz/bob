@@ -210,6 +210,7 @@ const InProgressOverlay = (props: {
 const OverlayBody = styled(motion.div)`
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   padding: 20px;
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);

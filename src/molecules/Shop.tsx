@@ -66,6 +66,8 @@ export function Shop({ isOpen, onClose }: ShopProps) {
     unequipBobItem,
     equipBobItem,
     purchaseBobItem,
+    toggleDecoration,
+    purchaseDecoration,
   } = useGameStore();
 
   const shopViewsWithItems: Record<ShopTab, ShopItem[]> = {
@@ -105,8 +107,6 @@ export function Shop({ isOpen, onClose }: ShopProps) {
     } else if (canAfford(bobItem.cost)) {
       // purchase and equip
       purchaseBobItem(bobItem.id);
-      // auto-equip after purchase
-      setTimeout(() => equipBobItem(bobItem.id), 100);
     }
   };
 
@@ -118,7 +118,17 @@ export function Shop({ isOpen, onClose }: ShopProps) {
       selectTapEffect(currentItem.id);
     } else if (canAfford(effect.cost)) {
       purchaseTapEffect(currentItem.id);
-      setTimeout(() => selectTapEffect(currentItem.id), 100);
+    }
+  };
+
+  const handleDecoItemClick = () => {
+    const deco = decorations.find((e) => e.id === currentItem.id);
+    if (!deco) return;
+
+    if (deco.purchased) {
+      toggleDecoration(currentItem.id);
+    } else if (canAfford(deco.cost)) {
+      purchaseDecoration(currentItem.id);
     }
   };
 
@@ -134,6 +144,9 @@ export function Shop({ isOpen, onClose }: ShopProps) {
       }
       case "bob": {
         handleBobItemClick();
+      }
+      case "decorations": {
+        handleDecoItemClick();
       }
     }
   };
@@ -172,7 +185,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                   initial={MOTION_VARIANTS.slideUp.initial}
                   $gap={"4px"}
                   $align="center"
-                  style={{ position: "absolute", top: "30svh" }}
+                  style={{ position: "absolute", bottom: "30svh" }}
                 >
                   {match(currentItem)
                     .with({ enabled: true }, () => (
@@ -188,10 +201,6 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                     .otherwise(() => (
                       <TapCountDisplay>{currentItem.cost} 🫵</TapCountDisplay>
                     ))}
-
-                  <ItemInformationChip>
-                    <span>{getShopItemType(currentItem.type as any)}</span>
-                  </ItemInformationChip>
                 </HugColumn>
               )}
             </AnimatePresence>
@@ -202,8 +211,9 @@ export function Shop({ isOpen, onClose }: ShopProps) {
               </PaginationButton>
 
               <HugColumn $gap="4px" $align="center" $justify="center">
-                <TapCountDisplay $variant="accent">
+                <TapCountDisplay $variant="dark">
                   <span>{currentItem.name}</span>
+                  <span>{getShopItemType(currentItem.type as any)}</span>
                 </TapCountDisplay>
 
                 <ShopItemButton
@@ -286,34 +296,52 @@ const TapCountDisplay = styled(motion.div)<{
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 0.25rem;
 
-  background: #ffff54;
+  background-color: #ffff54;
   color: #212121;
+
+  font-size: 0.875rem;
+  font-weight: 900;
+
+  padding: 4px 8px;
+  border-radius: 0.625rem;
+  box-shadow: 0px 0.5px 2px rgba(0, 0, 0, 0.07), 0 1.5px 5px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+
+  // TODO: move to reset.scss and check padding
+  span {
+    line-height: 1.25;
+  }
 
   ${(p) =>
     p.$variant === "light" &&
     `
-    background: #fff;
+    background-color: #fff;
     color: #212121;
+    
   `}
 
   ${(p) =>
     p.$variant === "inverted" &&
     `
-    background: rgba(0,0,0,0.25);
+    background-color: rgba(0,0,0,0.25);
     color: #fff;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
     font-weight: 700;
   `}
+  
+  ${(p) =>
+    p.$variant === "dark" &&
+    `
+    background-color: #212121;
+    color: white;
+    gap: 0.25rem;
+    
+    font-weight: 700;
 
-
-  font-size: 0.875rem;
-  font-weight: 900;
-
-  padding: 6px 10px;
-  border-radius: 0.625rem;
-  box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.15);
+    span:last-child {opacity: 0.5;}
+  `}
 `;
 
 const ItemInformationChip = styled(TapCountDisplay)`
@@ -414,7 +442,7 @@ const ShopItemButton = styled.button<{
   border-radius: 0.875rem;
   cursor: pointer;
 
-  background: ${(p) =>
+  background-color: ${(p) =>
     p.$selected ? "rgba(255,255,255,1)" : "rgba(0,0,0,0.25)"};
   color: ${(p) => (p.$selected ? "#212121" : "#ffffff")};
   border: ${(p) =>

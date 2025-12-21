@@ -116,11 +116,11 @@ export interface BobItem extends BaseItem {
 }
 
 const ITEM_NAME_MAP = {
-  hat: "Kopfbedeckung",
-  accessory: "Special",
-  "3d": "3D Deko",
+  hat: "Kopf",
+  accessory: "Gesicht",
+  "3d": "Objekt",
   tapEffects: "Tap Effekt",
-  decoration: "Dekoration",
+  decoration: "Extra",
 };
 
 export const getShopItemType = (itemType: keyof typeof ITEM_NAME_MAP) => {
@@ -360,6 +360,17 @@ export const initialBobItems: BobItem[] = [
     icon: "💎",
     category: "bob",
     detached: true,
+  },
+  {
+    id: "blackCap",
+    name: "Kappe",
+    description: "Eddie's schwarze Kappe",
+    cost: 100,
+    purchased: false,
+    enabled: false,
+    type: "hat",
+    icon: "🧢",
+    category: "bob",
   },
 ];
 
@@ -671,7 +682,9 @@ export const useGameStore = create<GameStore>()(
             }
 
             let updatedTapEffects = state.tapEffects.map((t) =>
-              t.id === effectId ? { ...t, purchased: true } : t
+              t.id === effectId
+                ? { ...t, purchased: true, enabled: true }
+                : { ...t, enabled: false }
             );
 
             return {
@@ -729,7 +742,17 @@ export const useGameStore = create<GameStore>()(
             }
 
             const updatedBobItems = state.bobItems.map((b) =>
-              b.id === bobItemId ? { ...b, purchased: true } : b
+              b.id === bobItemId
+                ? {
+                    ...b,
+                    purchased: true,
+                    enabled: true,
+                  }
+                : {
+                    ...b,
+                    enabled:
+                      b.type === bobItem.type ? b.id === bobItemId : b.enabled,
+                  }
             );
 
             return {
@@ -1445,6 +1468,8 @@ export const useGameStore = create<GameStore>()(
             lastSchemaUpdate: state.lastSchemaUpdate,
             taps: state.taps,
             upgrades: state.upgrades,
+            tapEffects: state.tapEffects,
+            weatherEffects: state.weatherEffects,
             decorations: state.decorations,
             bobItems: state.bobItems,
             themes: state.themes,
