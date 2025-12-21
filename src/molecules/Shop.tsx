@@ -223,6 +223,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                   $canAfford={canAfford(currentItem.cost)}
                   onClick={handleButton}
                   role="button"
+                  disabled={!canAfford(currentItem.cost)}
                 >
                   {match(currentItem)
                     .with({ enabled: true }, () => "Deaktiveren")
