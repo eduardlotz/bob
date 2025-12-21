@@ -3,9 +3,11 @@ import { CloseIcon } from "@/icons/close";
 import { FillRow, HugColumn, HugRow } from "@/layout";
 import { Magnetic } from "@/layout/Magnetic";
 import { ROUTE_PATHS, useAppStore, useGameStore } from "@/store";
+import { useMessageStore } from "@/store/messageStore";
 import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
+import { formatNumber } from "./TapCounter";
 
 export const TapUpgrades = ({ show }: { show: boolean }) => {
   const { currentRoute } = useAppStore();
@@ -18,6 +20,7 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
     getTotalTapMultiplierUncached,
   } = useGameStore();
 
+  const { showMessage } = useMessageStore();
   const containerRef = useRef(null);
   const triggerRef = useRef(null);
   const [showUpgrades, setShowUpgrades] = useState(false);
@@ -75,6 +78,7 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
                   const canAffordNextUpgrade = canAfford(priceForNextLevel);
 
                   const canBuy = !isMaxLevel && canAffordNextUpgrade;
+
                   return (
                     <UpgradeButton
                       key={upgrade.id}
@@ -93,6 +97,7 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
                       }}
                       onClick={() => handleUpgradePurchase(upgrade.id)}
                       disabled={!canBuy}
+                      whileTap={{ scale: 0.95 }}
                     >
                       {upgrade.name}
 
@@ -114,7 +119,9 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
                             : upgrade.level + "/" + upgrade.maxLevel}
                         </LevelContainer>
                         {!isMaxLevel && (
-                          <TapCosts>{priceForNextLevel} 🫵</TapCosts>
+                          <TapCosts>
+                            {formatNumber(priceForNextLevel)} 🫵
+                          </TapCosts>
                         )}
                       </HugRow>
                     </UpgradeButton>

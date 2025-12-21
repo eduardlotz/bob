@@ -331,6 +331,7 @@ const Label = styled(motion.div)`
   background: #212121;
   border-radius: 50px;
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   margin-bottom: 4px;
 `;
 
@@ -344,6 +345,7 @@ const BubbleContainer = styled.div`
   border-radius: 28px;
   background: rgba(33, 33, 33, 0.1);
   backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 `;
 
 const BubbleLine = styled(motion.div)`
@@ -367,6 +369,7 @@ const BubbleLine = styled(motion.div)`
 const IndicatorBubble = styled(motion.div)`
   background: rgba(33, 33, 33, 0.15);
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   padding: 12px 16px;
   border-radius: 24px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);

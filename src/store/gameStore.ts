@@ -31,11 +31,11 @@ export enum GAME_STORE_VERSIONS {
   LATEST = V1,
 }
 
-// Constants
 const ONE_SECOND_MS = 1000;
 const AUTO_TAP_INTERVAL_MS = 1000;
 
-const PURGE_DATE = new Date("12/16/2025"); // utility to purge states created before this date
+// reset game states created before this date
+const PURGE_DATE = new Date("12/21/2025");
 
 // main migration function
 function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
@@ -116,11 +116,11 @@ export interface BobItem extends BaseItem {
 }
 
 const ITEM_NAME_MAP = {
-  hat: "Kopfbedeckung",
-  accessory: "Special",
-  "3d": "3D Deko",
+  hat: "Kopf",
+  accessory: "Gesicht",
+  "3d": "Objekt",
   tapEffects: "Tap Effekt",
-  decoration: "Dekoration",
+  decoration: "Extra",
 };
 
 export const getShopItemType = (itemType: keyof typeof ITEM_NAME_MAP) => {
@@ -307,7 +307,7 @@ export const initialDecorations: DecorationItem[] = [
 export const initialBobItems: BobItem[] = [
   {
     id: "builderHelmet",
-    name: "Schutzhelm",
+    name: "Baumeister",
     description: "Jo wir schaffen das!",
     cost: 100,
     purchased: false,
@@ -318,7 +318,7 @@ export const initialBobItems: BobItem[] = [
   },
   {
     id: "krustyKrabHat",
-    name: "Arbeitskleidung",
+    name: "Burger Boy",
     description: "Ist da die Krosse Krabbe?",
     cost: 100,
     purchased: false,
@@ -329,7 +329,7 @@ export const initialBobItems: BobItem[] = [
   },
   {
     id: "afroHair",
-    name: "Afro",
+    name: "Künstler",
     description: "Happy little accidents",
     cost: 100,
     purchased: false,
@@ -340,7 +340,7 @@ export const initialBobItems: BobItem[] = [
   },
   {
     id: "chickenLittleGlasses",
-    name: "Nasenfahrrad",
+    name: "Brillenschlange",
     description: "Eddie's Brille",
     cost: 100,
     purchased: false,
@@ -351,7 +351,7 @@ export const initialBobItems: BobItem[] = [
   },
   {
     id: "simsPlumbob",
-    name: "Plumbob",
+    name: "Sim",
     description: "Sul Sul",
     cost: 50,
     purchased: false,
@@ -360,6 +360,17 @@ export const initialBobItems: BobItem[] = [
     icon: "💎",
     category: "bob",
     detached: true,
+  },
+  {
+    id: "blackCap",
+    name: "Cap",
+    description: "Eddie's schwarze Kappe",
+    cost: 100,
+    purchased: false,
+    enabled: false,
+    type: "hat",
+    icon: "🧢",
+    category: "bob",
   },
 ];
 
@@ -671,7 +682,9 @@ export const useGameStore = create<GameStore>()(
             }
 
             let updatedTapEffects = state.tapEffects.map((t) =>
-              t.id === effectId ? { ...t, purchased: true } : t
+              t.id === effectId
+                ? { ...t, purchased: true, enabled: true }
+                : { ...t, enabled: false }
             );
 
             return {
@@ -729,7 +742,17 @@ export const useGameStore = create<GameStore>()(
             }
 
             const updatedBobItems = state.bobItems.map((b) =>
-              b.id === bobItemId ? { ...b, purchased: true } : b
+              b.id === bobItemId
+                ? {
+                    ...b,
+                    purchased: true,
+                    enabled: true,
+                  }
+                : {
+                    ...b,
+                    enabled:
+                      b.type === bobItem.type ? b.id === bobItemId : b.enabled,
+                  }
             );
 
             return {
@@ -1445,6 +1468,8 @@ export const useGameStore = create<GameStore>()(
             lastSchemaUpdate: state.lastSchemaUpdate,
             taps: state.taps,
             upgrades: state.upgrades,
+            tapEffects: state.tapEffects,
+            weatherEffects: state.weatherEffects,
             decorations: state.decorations,
             bobItems: state.bobItems,
             themes: state.themes,
@@ -1474,10 +1499,10 @@ export const useGameStore = create<GameStore>()(
 
           if (needsPurge) {
             try {
-              // TODO: fix
-              // import("./gameStore").then((gameStore) =>
-              //   gameStore.useGameStore.setState(state)
-              // );
+              // TODO: correctly migrate
+              import("./gameStore").then((gameStore) =>
+                gameStore.useGameStore.setState(state)
+              );
 
               toast.success(
                 `Store migrated from V${state.version} to V${GAME_STORE_VERSIONS.LATEST}`

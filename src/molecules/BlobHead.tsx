@@ -32,6 +32,7 @@ import { BlobForm } from "@/components/BlobForm";
 import { getSelectedBlobForm, getBlobFormType } from "@/types/blobForms";
 import { SimsPlumbob } from "@/3d-objects/models/simsPlumbob";
 import { useKeyPress } from "@/hooks/useKeyPress";
+import { BlackCap } from "@/3d-objects/models/blackCap";
 
 // TODO: move constants to a shared config file
 const HEAD_POSITION_Y = 0;
@@ -746,7 +747,8 @@ export function BlobHead({
     onHeadClick();
   };
 
-  useKeyPress(" ", () => onHeadClick());
+  // TODO: fix space bar taps + mention in onboarding
+  // useKeyPress(" ", () => onHeadClick());
 
   const onPointerOver = () => {
     document.body.style.cursor = "pointer";
@@ -941,6 +943,16 @@ export function BlobHead({
             key={item.id}
             position={calculateCostumePosition([0, -0.7, -0.05], "hat")}
             scale={[0.9, 0.9, 0.9]}
+          />
+        );
+      if (item.id === "blackCap")
+        return (
+          <BlackCap
+            key={item.id}
+            position={calculateCostumePosition([0, 0.45, 0], "hat")}
+            scale={[2, 2, 2]}
+            outlineColor={outlineColor}
+            rotation={[0, -Math.PI / 2, 0]}
           />
         );
       return null;
