@@ -56,14 +56,14 @@ type StyledTheme = {
 const GlobalStyle = createGlobalStyle<{ theme: StyledTheme | undefined }>`
   :root {
     --primary-color: ${(props) =>
-      props.theme?.colors?.basic?.white || "#2979FF"};
+      props.theme?.colors?.basic?.black || "#212121"};
     --secondary-color: ${(props) =>
-      props.theme?.colors?.brand?.blue || "#4285F4"};
+      props.theme?.colors?.brand?.blue || "#4277F7"};
     --accent-color: ${(props) =>
       props.theme?.colors?.brand?.yellow || "#FFD700"};
     --background-color: ${(props) =>
-      props.theme?.colors?.basic?.black || "#ffffff"};
-    --text-color: ${(props) => props.theme?.colors?.basic?.white || "#000000"};
+      props.theme?.colors?.basic?.black || "#212121"};
+    --text-color: ${(props) => props.theme?.colors?.basic?.white || "#ffffff"};
     --font-family: "Open Sauce Two";
     
     /* Additional theme variables for better control */

@@ -40,7 +40,7 @@ export const HugColumn = styled(motion.div)<{
   align-items: ${(p) => (p.$align ? p.$align : "flex-start")};
   justify-content: ${(p) => (p.$justify ? p.$justify : "space-between")};
   padding: 0;
-  gap: ${(p) => (p.$gap ? p.$gap : "12px")};
+  gap: ${(p) => (p.$gap !== undefined ? p.$gap : "12px")};
 `;
 
 export const FillRow = styled(motion.div)<{

@@ -169,13 +169,15 @@ export const IconLink = styled(motion.create(Link))`
 export const MenuButton = styled(motion.button)<{ $isActive?: boolean }>`
   display: flex;
   align-items: center;
-  justify-content: center;
 
+  justify-content: center;
+  flex-direction: column;
   padding: 16px 20px;
-  height: 58px;
+  height: 3.625rem;
+  width: 4.625rem;
   background-color: rgba(0, 0, 0, 0.25);
   color: var(--text-color);
-
+  gap: 0.125rem;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 
@@ -184,10 +186,20 @@ export const MenuButton = styled(motion.button)<{ $isActive?: boolean }>`
   outline-offset: ${(props) => (props.$isActive ? "3px" : "0")};
   cursor: pointer;
   pointer-events: auto;
-  border-radius: 24px;
+  border-radius: 1.5rem;
 
   &:hover {
     background-color: rgba(0, 0, 0, 0.4);
+  }
+
+  span {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 0.75rem;
+    font-weight: 700;
   }
 `;
 

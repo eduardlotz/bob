@@ -3,13 +3,12 @@ import styled from "styled-components";
 import { Button, Logo } from "@/layout/atoms";
 import { BottomNavigation } from "@/molecules/BottomNavigation";
 import { Statistics } from "@/molecules/Statistics";
-import { SoundToggle } from "@/components/SoundToggle";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 
 import { requestMotionPermission } from "@/utils/permission";
 import { useGameStore } from "@/store/gameStore";
 
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 
 interface UILayerProps {
   permissionGranted: boolean;
@@ -23,13 +22,6 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
   const { statisticsVisible } = useGameStore();
   const [soundHintDismissed, setSoundHintDismissed] = useState(false);
   const sound = useSoundSystem();
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      setSoundHintDismissed(true);
-    }, 10000);
-    return () => clearTimeout(timeout);
-  }, []);
 
   // cleanup manual taps every second
   // TODO: check if this is optimal -> without it the steps/s is not resetting
@@ -77,28 +69,8 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
 
   return (
     <UILayerContainer>
-      <TopLogoContainer>
-        <Logo />
-      </TopLogoContainer>
       <BottomNavigation />
       <Statistics visible={statisticsVisible} />
-
-      <ToggleRow>
-        <AnimatePresence mode="wait">
-          {!soundHintDismissed && (
-            <SoundHint
-              key="sound-hint"
-              initial={{ opacity: 0, filter: "blur(24px)" }}
-              animate={{ opacity: 1, filter: "blur(0px)" }}
-              exit={{ opacity: 0, filter: "blur(24px)" }}
-              transition={{ duration: 1.5, ease: "easeInOut", delay: 1 }}
-            >
-              Besser mit Sound
-            </SoundHint>
-          )}
-        </AnimatePresence>
-        <SoundToggle />
-      </ToggleRow>
     </UILayerContainer>
   );
 }

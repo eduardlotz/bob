@@ -14,6 +14,7 @@ const VIEWID_TITLE_MAP: Record<CameraViewId, string> = {
   cardbox: "Hobbies & Interessen",
   shop: "Shop",
   upgrades: "Upgrades",
+  phone: "Bob PHone",
 };
 
 export function ViewControls() {
@@ -43,7 +44,9 @@ export function ViewControls() {
     }
   };
 
-  const showBackButton = !["shop", "upgrads", "default"].includes(currentView);
+  const showBackButton = !["shop", "upgrades", "phone", "default"].includes(
+    currentView
+  );
 
   return (
     <AnimatePresence>

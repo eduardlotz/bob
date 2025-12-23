@@ -113,11 +113,9 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
                           right: 0,
                         }}
                       >
-                        <LevelContainer>
-                          {isMaxLevel
-                            ? "Max Level"
-                            : upgrade.level + "/" + upgrade.maxLevel}
-                        </LevelContainer>
+                        {upgrade.level > 0 && (
+                          <LevelContainer>Level {upgrade.level}</LevelContainer>
+                        )}
                         {!isMaxLevel && (
                           <TapCosts>
                             {formatNumber(priceForNextLevel)} 🫵

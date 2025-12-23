@@ -12,8 +12,8 @@ import {
 export interface CameraView {
   id: string;
   name: string;
-  position: [number, number, number];
-  target: [number, number, number];
+  position?: [number, number, number];
+  target?: [number, number, number];
   zoom?: number;
   transition?: {
     duration?: number;
@@ -25,6 +25,7 @@ export type CameraViewId =
   | "default"
   | "shop"
   | "upgrades"
+  | "phone"
   | "desk"
   | "bookshelf"
   | "computer"
@@ -55,12 +56,10 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   upgrades: {
     id: "upgrades",
     name: "Upgrades View",
-    position: [0, CAMERA_HEIGHT, FUNNY_FISHEYE_ZOOM],
-    target: [0, CAMERA_Y_POSITION, 0],
-    transition: {
-      duration: 1000,
-      easing: "easeInOutCubic",
-    },
+  },
+  phone: {
+    id: "phone",
+    name: "Phone View",
   },
   desk: {
     id: "desk",
@@ -158,13 +157,15 @@ export const useViewStore = create<ViewStore>()(
         });
 
         try {
-          const controls = cameraControlsRef.current;
+          if (viewConfig.position && viewConfig.target) {
+            const controls = cameraControlsRef.current;
 
-          controls.setLookAt(
-            ...viewConfig.position,
-            ...viewConfig.target,
-            true
-          );
+            controls.setLookAt(
+              ...viewConfig.position,
+              ...viewConfig.target,
+              true
+            );
+          }
         } catch (error) {
           console.error("Camera transition failed:", error);
         } finally {

@@ -193,13 +193,14 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                         Ausgewählt
                       </TapCountDisplay>
                     ))
-                    .with({ purchased: true }, () => (
-                      <TapCountDisplay $variant="light">
-                        Gekauft
-                      </TapCountDisplay>
+                    .with({ purchased: false }, () => (
+                      <TapCountDisplay>{currentItem.cost} 🫵</TapCountDisplay>
                     ))
                     .otherwise(() => (
-                      <TapCountDisplay>{currentItem.cost} 🫵</TapCountDisplay>
+                      // <TapCountDisplay $variant="light">
+                      //   Gekauft
+                      // </TapCountDisplay>
+                      <></>
                     ))}
                 </HugColumn>
               )}
