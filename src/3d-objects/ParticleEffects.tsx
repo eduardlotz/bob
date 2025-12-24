@@ -111,10 +111,10 @@ const BUBBLES_COUNT_MAX = 13;
 
 // Stars Effect using Sparkles from drei
 export function StarsEffect() {
-  const { upgrades } = useGameStore();
-  const starsUpgrade = upgrades.find((u) => u.id === "environment_stars");
+  const { weatherEffects } = useGameStore();
+  const starsUpgrade = weatherEffects.find((u) => u.id === "environment_stars");
   const starsEnabled = useMemo(
-    () => starsUpgrade?.unlocked && starsUpgrade?.selected,
+    () => starsUpgrade?.purchased && starsUpgrade?.enabled,
     [starsUpgrade]
   );
 
@@ -135,9 +135,9 @@ export function StarsEffect() {
 
 // Rain Effect using rectangular plane emitter with falling droplets
 export function RainEffect() {
-  const { upgrades } = useGameStore();
-  const rainUpgrade = upgrades.find((u) => u.id === "environment_rain");
-  const rainEnabled = rainUpgrade?.unlocked && rainUpgrade?.selected;
+  const { weatherEffects } = useGameStore();
+  const rainUpgrade = weatherEffects.find((u) => u.id === "environment_rain");
+  const rainEnabled = rainUpgrade?.purchased && rainUpgrade?.enabled;
 
   const [rainDrops, setRainDrops] = React.useState<
     Array<{
@@ -307,9 +307,11 @@ type CloudData = {
 };
 
 export const CloudEffect = () => {
-  const { upgrades } = useGameStore();
-  const cloudUpgrade = upgrades.find((u) => u.id === "environment_clouds");
-  const cloudEnabled = cloudUpgrade?.unlocked && cloudUpgrade?.selected;
+  const { weatherEffects } = useGameStore();
+  const cloudUpgrade = weatherEffects.find(
+    (u) => u.id === "environment_clouds"
+  );
+  const cloudEnabled = cloudUpgrade?.purchased && cloudUpgrade?.enabled;
 
   const clouds = useMemo(() => {
     if (!cloudEnabled) return [];

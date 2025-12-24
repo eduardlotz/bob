@@ -1495,8 +1495,7 @@ export const useGameStore = create<GameStore>()(
             );
 
           // TODO: check safer purge method or if even needed
-          // const needsPurge = new Date(state?.lastSchemaUpdate) < PURGE_DATE;
-          const needsPurge = true;
+          const needsPurge = new Date(state?.lastSchemaUpdate) < PURGE_DATE;
 
           if (needsPurge) {
             try {

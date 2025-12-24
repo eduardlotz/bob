@@ -146,7 +146,7 @@ export const useViewStore = create<ViewStore>()(
 
         const viewConfig = CAMERA_VIEWS[viewId];
         if (!viewConfig) {
-          console.warn(`View "${viewId}" not found`);
+          console.warn(`"${viewId}" view config missing`);
           return;
         }
 
@@ -157,9 +157,9 @@ export const useViewStore = create<ViewStore>()(
         });
 
         try {
-          if (viewConfig.position && viewConfig.target) {
-            const controls = cameraControlsRef.current;
+          const controls = cameraControlsRef.current;
 
+          if (viewConfig.position && viewConfig.target) {
             controls.setLookAt(
               ...viewConfig.position,
               ...viewConfig.target,

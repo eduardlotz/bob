@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useMemo } from "react";
 import styled from "styled-components";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, LayoutGroup } from "motion/react";
 import { CloseIcon } from "@/icons/close";
 import { NavButton } from "./BottomNavigation";
 import { Magnetic } from "@/layout/Magnetic";
@@ -10,63 +10,8 @@ import { PhoneMenuIcon } from "@/icons/phoneMenu";
 import { useGameStore, useViewStore } from "@/store";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { SpeakerIcon } from "@/icons/speaker";
-
-const ShopIcon = () => (
-  <svg
-    width={80}
-    height={80}
-    viewBox="0 0 80 80"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M24 2H56C68.1503 2 78 11.8497 78 24V56C78 68.1503 68.1503 78 56 78H24C11.8497 78 2 68.1503 2 56V24C2 11.8497 11.8497 2 24 2Z"
-      fill="#A6D4A6"
-      stroke="#518F57"
-      strokeWidth={4}
-    />
-    <path
-      d="M60.1512 27.5167C59.7198 32.08 58.5344 35.9741 57.4127 38.6759C56.5402 40.777 54.7069 42.2579 52.4741 42.695C50.1866 43.1428 46.7196 43.5921 42.0173 43.5921C38.7083 43.5921 35.9066 43.3696 33.6663 43.0817C29.7228 42.575 26.9419 39.3495 26.3077 35.4245L24.4531 23.9492H56.7494C58.7219 23.9492 60.3369 25.553 60.1512 27.5167Z"
-      fill="#C3F1C4"
-    />
-    <path
-      d="M60.1512 27.5167C59.7198 32.08 58.5344 35.9741 57.4127 38.6759C56.5402 40.777 54.7069 42.2579 52.4741 42.695C50.1866 43.1428 46.7196 43.5921 42.0173 43.5921C38.7083 43.5921 35.9066 43.3696 33.6663 43.0817C29.7228 42.575 26.9419 39.3495 26.3077 35.4245L24.4531 23.9492H56.7494C58.7219 23.9492 60.3369 25.553 60.1512 27.5167Z"
-      stroke="#518F57"
-      strokeWidth={3.57143}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M54.9654 52.5202H35.1504C31.6468 52.5202 28.6605 49.979 28.0997 46.5206L24.6883 25.4839C24.1275 22.0255 21.1411 19.4844 17.6375 19.4844H15.6797"
-      stroke="#518F57"
-      strokeWidth={3.57143}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M31.2313 60.5141C33.4387 60.5141 35.2282 58.7248 35.2282 56.5173C35.2282 54.3098 33.4387 52.5205 31.2313 52.5205C29.0238 52.5205 27.2344 54.3098 27.2344 56.5173C27.2344 58.7248 29.0238 60.5141 31.2313 60.5141Z"
-      fill="#518F57"
-    />
-    <path
-      d="M31.2313 60.5141C33.4387 60.5141 35.2282 58.7248 35.2282 56.5173C35.2282 54.3098 33.4387 52.5205 31.2313 52.5205C29.0238 52.5205 27.2344 54.3098 27.2344 56.5173C27.2344 58.7248 29.0238 60.5141 31.2313 60.5141Z"
-      stroke="#518F57"
-      strokeWidth={3.57143}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M54.9655 60.5141C57.173 60.5141 58.9623 58.7248 58.9623 56.5173C58.9623 54.3098 57.173 52.5205 54.9655 52.5205C52.758 52.5205 50.9688 54.3098 50.9688 56.5173C50.9688 58.7248 52.758 60.5141 54.9655 60.5141Z"
-      fill="#518F57"
-    />
-    <path
-      d="M54.9655 60.5141C57.173 60.5141 58.9623 58.7248 58.9623 56.5173C58.9623 54.3098 57.173 52.5205 54.9655 52.5205C52.758 52.5205 50.9688 54.3098 50.9688 56.5173C50.9688 58.7248 52.758 60.5141 54.9655 60.5141Z"
-      stroke="#518F57"
-      strokeWidth={3.57143}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
+import { ShopApp, ShopIcon } from "@/apps/shop";
+import { ArrowLeftIcon } from "@/icons/arrow";
 
 const SettingsIcon = () => (
   <svg
@@ -202,18 +147,225 @@ const ChatIcon = () => (
   </svg>
 );
 
-const BOB_APPS = [
+const QuestsIcon = () => (
+  <svg
+    width={80}
+    height={80}
+    viewBox="0 0 80 80"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <rect
+      x={1}
+      y={1}
+      width={78}
+      height={78}
+      rx={23}
+      fill="#D6E46E"
+      stroke="#B8BC4E"
+      strokeWidth={2}
+    />
+    <g clipPath="url(#clip0_3439_2730)">
+      <path
+        d="M40.0017 57.7729C51.4302 57.7729 57.8588 51.3443 57.8588 39.9157C57.8588 28.4872 51.4302 22.0586 40.0017 22.0586C28.5731 22.0586 22.1445 28.4872 22.1445 39.9157C22.1445 51.3443 28.5731 57.7729 40.0017 57.7729Z"
+        fill="#FCFFD7"
+      />
+      <path
+        d="M30.9375 42.6641C32.3111 47.6091 37.8056 50.6311 42.7507 49.2574C45.7727 48.1585 48.2452 45.686 49.0694 42.6641"
+        stroke="#B8BC4E"
+        strokeWidth={2.85714}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M32.7266 34.4893V36.4893"
+        stroke="#B8BC4E"
+        strokeWidth={2.85714}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M47.2773 34.4893V36.4893"
+        stroke="#B8BC4E"
+        strokeWidth={2.85714}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M40.0017 57.7729C51.4302 57.7729 57.8588 51.3443 57.8588 39.9157C57.8588 28.4872 51.4302 22.0586 40.0017 22.0586C28.5731 22.0586 22.1445 28.4872 22.1445 39.9157C22.1445 51.3443 28.5731 57.7729 40.0017 57.7729Z"
+        stroke="#B8BC4E"
+        strokeWidth={2.85714}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </g>
+    <defs>
+      <clipPath id="clip0_3439_2730">
+        <rect
+          width={40}
+          height={40}
+          fill="white"
+          transform="translate(20 19.916)"
+        />
+      </clipPath>
+    </defs>
+  </svg>
+);
+
+const DebugIcon = () => (
+  <svg
+    width={80}
+    height={80}
+    viewBox="0 0 80 80"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M24 1H56C68.7025 1 79 11.2975 79 24V56C79 68.7025 68.7025 79 56 79H24C11.2975 79 1 68.7025 1 56V24C1 11.2975 11.2975 1 24 1Z"
+      fill="#CEAE91"
+      stroke="#91765D"
+      strokeWidth={2}
+    />
+    <path
+      d="M22.8164 46.2725H28.7719"
+      stroke="#91765D"
+      strokeWidth={2.85714}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M51.8789 46.2725H57.8346"
+      stroke="#91765D"
+      strokeWidth={2.85714}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M46.4297 28.8549V22.8994"
+      stroke="#91765D"
+      strokeWidth={2.85714}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M46.4297 57.9623V52.0068"
+      stroke="#91765D"
+      strokeWidth={2.85714}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M22.8164 34.5625H28.7719"
+      stroke="#91765D"
+      strokeWidth={2.85714}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M34.2461 28.8549V22.8994"
+      stroke="#91765D"
+      strokeWidth={2.85714}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M51.8789 34.5625H57.8346"
+      stroke="#91765D"
+      strokeWidth={2.85714}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M34.2461 57.9623V52.0068"
+      stroke="#91765D"
+      strokeWidth={2.85714}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M29.0746 49.0355C29.2269 50.407 30.3174 51.4967 31.6884 51.653C34.4684 51.9698 37.3646 52.3487 40.3404 52.3487C43.3161 52.3487 46.2123 51.9698 48.9924 51.653C50.3633 51.4967 51.4538 50.407 51.6061 49.0355C51.9138 46.2667 52.2707 43.3821 52.2707 40.4185C52.2707 37.4549 51.9138 34.5703 51.6061 31.8014C51.4538 30.43 50.3633 29.3404 48.9924 29.1841C46.2123 28.8672 43.3161 28.4883 40.3404 28.4883C37.3646 28.4883 34.4684 28.8672 31.6884 29.1841C30.3174 29.3404 29.2269 30.43 29.0746 31.8014C28.7669 34.5703 28.4102 37.4549 28.4102 40.4185C28.4102 43.3821 28.7669 46.2667 29.0746 49.0355Z"
+      fill="#F0D5BD"
+    />
+    <path
+      d="M29.0746 49.0355C29.2269 50.407 30.3174 51.4967 31.6884 51.653C34.4684 51.9698 37.3646 52.3487 40.3404 52.3487C43.3161 52.3487 46.2123 51.9698 48.9924 51.653C50.3633 51.4967 51.4538 50.407 51.6061 49.0355C51.9138 46.2667 52.2707 43.3821 52.2707 40.4185C52.2707 37.4549 51.9138 34.5703 51.6061 31.8014C51.4538 30.43 50.3633 29.3404 48.9924 29.1841C46.2123 28.8672 43.3161 28.4883 40.3404 28.4883C37.3646 28.4883 34.4684 28.8672 31.6884 29.1841C30.3174 29.3404 29.2269 30.43 29.0746 31.8014C28.7669 34.5703 28.4102 37.4549 28.4102 40.4185C28.4102 43.3821 28.7669 46.2667 29.0746 49.0355Z"
+      stroke="#91765D"
+      strokeWidth={2.85714}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M40.3359 43.2979H44.4724"
+      stroke="#91765D"
+      strokeWidth={2.85714}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const MoreAppsSoonIcon = () => (
+  <svg
+    width="80"
+    height="80"
+    viewBox="0 0 80 80"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M52 0V1H56C57.5373 1 59.0389 1.15039 60.4902 1.4375L60.6826 0.458008C63.8315 1.08082 66.7588 2.31897 69.334 4.04297L68.7783 4.87305C71.2869 6.55252 73.4475 8.71307 75.127 11.2217L75.9561 10.665C77.6802 13.2402 78.918 16.1674 79.541 19.3164L78.5625 19.5098C78.8496 20.9611 79 22.4627 79 24V28H80V36H79V44H80V52H79V56C79 57.5373 78.8496 59.0389 78.5625 60.4902L79.541 60.6826C78.9182 63.8317 77.6802 66.7587 75.9561 69.334L75.127 68.7783C73.4475 71.2869 71.2869 73.4475 68.7783 75.127L69.334 75.9561C66.7587 77.6802 63.8317 78.9182 60.6826 79.541L60.4902 78.5625C59.0389 78.8496 57.5373 79 56 79H52V80H44V79H36V80H28V79H24C22.4627 79 20.9611 78.8496 19.5098 78.5625L19.3164 79.541C16.1674 78.918 13.2402 77.6802 10.665 75.9561L11.2217 75.127C8.71307 73.4475 6.55252 71.2869 4.87305 68.7783L4.04297 69.334C2.31897 66.7588 1.08082 63.8315 0.458008 60.6826L1.4375 60.4902C1.1863 59.2205 1.03962 57.9121 1.00684 56.5752L1 56V52H0V44H1V36H0V28H1V24C1 22.4627 1.15039 20.9611 1.4375 19.5098L0.458008 19.3164C1.08094 16.1676 2.31891 13.2401 4.04297 10.665L4.87305 11.2217C6.55252 8.71307 8.71307 6.55252 11.2217 4.87305L10.665 4.04297C13.2401 2.31891 16.1676 1.08094 19.3164 0.458008L19.5098 1.4375C20.9611 1.15039 22.4627 1 24 1H28V0H36V1H44V0H52Z"
+      fill="#373737"
+      stroke="white"
+      stroke-width="2"
+      stroke-dasharray="8 8"
+    />
+    <path
+      d="M38.4981 42.28C38.4981 41.4 38.6181 40.68 38.8581 40.12C39.0981 39.544 39.3781 39.096 39.6981 38.776C40.0341 38.456 40.4661 38.112 40.9941 37.744C41.3941 37.456 41.6981 37.224 41.9061 37.048C42.1141 36.856 42.2901 36.616 42.4341 36.328C42.5941 36.04 42.6741 35.696 42.6741 35.296C42.6741 34.608 42.4501 34.096 42.0021 33.76C41.5701 33.408 41.0021 33.232 40.2981 33.232C39.4981 33.232 38.8501 33.496 38.3541 34.024C37.8581 34.536 37.5781 35.288 37.5141 36.28H34.2261C34.2901 35.032 34.5941 33.96 35.1381 33.064C35.6821 32.168 36.4021 31.488 37.2981 31.024C38.2101 30.56 39.2341 30.328 40.3701 30.328C42.0341 30.328 43.4021 30.768 44.4741 31.648C45.5621 32.528 46.1061 33.808 46.1061 35.488C46.1061 36.208 46.0021 36.816 45.7941 37.312C45.6021 37.808 45.3621 38.208 45.0741 38.512C44.7861 38.8 44.3941 39.12 43.8981 39.472C43.5141 39.776 43.1941 40.04 42.9381 40.264C42.6981 40.488 42.4821 40.768 42.2901 41.104C42.1141 41.424 41.9941 41.824 41.9301 42.304L41.7381 43.408H38.4981V42.28ZM40.0821 49.288C39.5061 49.288 39.0101 49.08 38.5941 48.664C38.1941 48.248 37.9941 47.752 37.9941 47.176C37.9941 46.616 38.1941 46.136 38.5941 45.736C39.0101 45.32 39.5061 45.112 40.0821 45.112C40.6581 45.112 41.1461 45.312 41.5461 45.712C41.9621 46.112 42.1701 46.6 42.1701 47.176C42.1701 47.752 41.9621 48.248 41.5461 48.664C41.1461 49.08 40.6581 49.288 40.0821 49.288Z"
+      fill="white"
+    />
+  </svg>
+);
+
+type AppId = "shop" | "options" | "chat" | "quests" | "debug";
+
+const AppNameMap: Record<AppId, string> = {
+  shop: "Shop",
+  options: "Optionen",
+  chat: "Chat",
+  quests: "Quests",
+  debug: "debug",
+};
+
+interface BobAppData {
+  id: AppId;
+  icon: any; // fix type, jsx not working
+  view: React.JSX.Element;
+}
+
+const BOB_APPS: Array<BobAppData> = [
   {
-    name: "Shop",
+    id: "shop",
     icon: ShopIcon,
+    view: <ShopApp />,
   },
   {
-    name: "Settings",
+    id: "options",
     icon: SettingsIcon,
+    view: <></>,
   },
   {
-    name: "Chat",
+    id: "chat",
     icon: ChatIcon,
+    view: <></>,
+  },
+  {
+    id: "quests",
+    icon: QuestsIcon,
+    view: <></>,
+  },
+  {
+    id: "debug",
+    icon: DebugIcon,
+    view: <></>,
   },
 ];
 
@@ -222,24 +374,38 @@ export const BobPhone = () => {
   const triggerRef = useRef(null);
   const [isOpen, setIsOpen] = useState(false);
   const { transitionToView } = useViewStore();
+  const [activeApp, setActiveApp] = useState<AppId | undefined>();
+
+  const openApp = (appName: AppId) => {
+    setActiveApp(appName);
+  };
 
   const { toggle, isMuted, isEnabled } = useSoundSystem();
   const { setSoundEnabled } = useGameStore();
+
+  const activeAppView = () => BOB_APPS.find((a) => a.id === activeApp)?.view;
+  const activeAppName = activeApp ? AppNameMap[activeApp] : "";
 
   const handleAudioButtonClick = () => {
     toggle();
     setSoundEnabled(isEnabled);
   };
 
-  const onTriggerClick = useCallback(() => {
-    if (isOpen) transitionToView("phone");
-    else transitionToView("default");
+  const goToHomeScreen = () => {
+    setActiveApp(undefined);
+  };
 
+  const onTriggerClick = useCallback(() => {
     setIsOpen((prev) => !prev);
   }, []);
 
-  const currentTime = new Date().toLocaleTimeString("de", {
-    hour: "2-digit",
+  const currentHour = new Date()
+    .toLocaleTimeString("de", {
+      hour: "2-digit",
+    })
+    .slice(0, 2);
+
+  const currentMinutes = new Date().toLocaleTimeString("de", {
     minute: "2-digit",
   });
 
@@ -313,39 +479,81 @@ export const BobPhone = () => {
               ease: "easeInOut",
             }}
             ref={containerRef}
+            layoutRoot
+            layout
           >
-            <HugColumn $gap={0}>
-              <FillRow>
-                <StatusPill>{currentTime}</StatusPill>
-                <StatusPillButton
-                  $active={!isMuted}
-                  onClick={handleAudioButtonClick}
-                >
-                  <AnimatePresence mode="popLayout">
-                    <motion.div
-                      key={!isMuted ? "on" : "off"}
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0, opacity: 0 }}
-                      transition={{
-                        duration: 0.2,
-                        type: "spring",
-                        bounce: 0.7,
-                      }}
+            <HugColumn $gap={0} layout="position">
+              <AnimatePresence mode="popLayout">
+                {!activeApp && (
+                  <FillRow>
+                    <StatusPill>
+                      {currentHour}
+                      <Blinking
+                        style={{ paddingLeft: "0.1ch", paddingRight: "0.05ch" }}
+                      >
+                        :
+                      </Blinking>
+                      {currentMinutes}
+                    </StatusPill>
+                    <StatusPillButton
+                      $active={!isMuted}
+                      onClick={handleAudioButtonClick}
                     >
-                      <SpeakerIcon muted={isMuted} />
-                    </motion.div>
-                  </AnimatePresence>
-                </StatusPillButton>
-              </FillRow>
-              <AppGrid>
-                {BOB_APPS.map((app) => (
-                  <HugColumn $align="center">
-                    {app.icon()}
-                    <AppLabel>{app.name}</AppLabel>
-                  </HugColumn>
-                ))}
-              </AppGrid>
+                      <AnimatePresence mode="popLayout">
+                        <motion.div
+                          key={!isMuted ? "on" : "off"}
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0, opacity: 0 }}
+                          transition={{
+                            duration: 0.2,
+                            type: "spring",
+                            bounce: 0.7,
+                          }}
+                        >
+                          <SpeakerIcon muted={isMuted} />
+                        </motion.div>
+                      </AnimatePresence>
+                    </StatusPillButton>
+                  </FillRow>
+                )}
+                {activeApp ? (
+                  activeAppView()
+                ) : (
+                  <AppGrid
+                    key="app-grid"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{
+                      duration: 0.2,
+                      type: "spring",
+                      bounce: 0.7,
+                    }}
+                  >
+                    {BOB_APPS.map((app) => (
+                      <AppContainer onClick={() => openApp(app.id)}>
+                        {app.icon()}
+                        <AppLabel>{AppNameMap[app.id]}</AppLabel>
+                      </AppContainer>
+                    ))}
+                    <AppContainer disabled>
+                      <MoreAppsSoonIcon />
+                      <AppLabel>In Arbeit</AppLabel>
+                    </AppContainer>
+                  </AppGrid>
+                )}
+
+                {activeApp && (
+                  <AppBottomActions>
+                    <BackHomeButton onClick={goToHomeScreen}>
+                      <ArrowLeftIcon />
+                    </BackHomeButton>
+
+                    <AppName>{activeAppName}</AppName>
+                  </AppBottomActions>
+                )}
+              </AnimatePresence>
             </HugColumn>
           </BobPhoneBody>
         )}
@@ -354,6 +562,38 @@ export const BobPhone = () => {
   );
 };
 
+const AppBottomActions = styled(FillRow)`
+  position: relative;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 4px;
+  height: 2.5rem;
+  margin-top: 4px;
+`;
+
+const BackHomeButton = styled.button`
+  display: flex;
+  align-items: center;
+
+  padding: 8px 12px;
+  height: 2.5rem;
+  border-radius: 50px;
+  background-color: rgba(255, 255, 255, 0.25);
+  color: white;
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  margin: auto 0;
+`;
+
+const AppName = styled.h5`
+  font-size: 1rem;
+  font-weight: 600;
+`;
+
 const BobPhoneBody = styled(motion.div)`
   position: fixed;
   bottom: 90px;
@@ -361,7 +601,7 @@ const BobPhoneBody = styled(motion.div)`
   right: 0;
   margin: 0 auto;
 
-  width: 333px;
+  width: 320px;
   max-width: calc(100vw - 40px);
   background: var(--primary-color);
   padding: 4px;
@@ -370,11 +610,53 @@ const BobPhoneBody = styled(motion.div)`
   pointer-events: auto;
 `;
 
-const AppGrid = styled.div`
+const AppGrid = styled(motion.div)`
   width: 100%;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
+  grid-gap: 1rem;
   padding: 8px;
+  place-items: center;
+`;
+
+const AppContainer = styled.button`
+  position: relative;
+  align-items: center;
+  width: fit-content;
+  background: none;
+  border-radius: 24px;
+  padding: 0px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  &:after {
+    content: "";
+    position: absolute;
+    margin: auto;
+    top: 0px;
+    bottom: 0px;
+    width: calc(100% + 8px);
+    height: calc(100% + 8px);
+    background: rgba(255, 255, 255, 0.15);
+    opacity: 0;
+    z-index: -1;
+    border-radius: 24px;
+    scale: 0.95;
+    transition: 0.25s cubic-bezier(0.4, 0.9, 0.4, 1);
+    transition-property: scale, opacity;
+  }
+
+  @media (hover: hover) {
+    &:not(:disabled):hover {
+      cursor: pointer;
+
+      &:after {
+        opacity: 1;
+        scale: 1;
+      }
+    }
+  }
 `;
 
 const AppLabel = styled.span`
@@ -388,13 +670,16 @@ const AppLabel = styled.span`
 
 const StatusPill = styled.div`
   font-size: 1rem;
+  font-weight: 600;
   color: white;
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(255, 255, 255, 0.15);
   padding: 8px 12px;
   border-radius: 100px;
+  opacity: 0.75;
 
   display: flex;
   align-items: center;
+  height: 2.25rem;
 `;
 
 const StatusPillButton = styled.button<{ $active: boolean }>`
@@ -409,5 +694,27 @@ const StatusPillButton = styled.button<{ $active: boolean }>`
 
   > * {
     height: 1.25rem;
+  }
+`;
+
+const Blinking = styled.span`
+  animation: blinking linear 3s infinite;
+
+  @keyframes blinking {
+    0% {
+      opacity: 0;
+    }
+
+    50% {
+      opacity: 0;
+    }
+
+    51% {
+      opacity: 1;
+    }
+
+    100% {
+      opacity: 1;
+    }
   }
 `;

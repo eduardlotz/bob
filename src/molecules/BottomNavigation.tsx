@@ -126,10 +126,10 @@ export function BottomNavigation() {
         </AnimatePresence>
       </HugRow>
 
-      <Shop
+      {/* <Shop
         isOpen={currentView === "shop"}
         onClose={() => setViewMode("fixed")}
-      />
+      /> */}
     </HugColumn>
   );
 }
