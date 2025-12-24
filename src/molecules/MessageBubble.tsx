@@ -321,18 +321,21 @@ const Container = styled(motion.div)`
 `;
 
 const Label = styled(motion.div)`
-  font-size: 16px;
-  color: #ffffff;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 6px 16px;
-  background: #212121;
+  background: rgba(0, 0, 0, 0.25);
   border-radius: 50px;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  margin-bottom: 4px;
+
+  box-shadow: inset 0px 1px 4px 0 rgba(0, 0, 0, 0.1);
+
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 `;
 
 const BubbleContainer = styled.div`
@@ -356,7 +359,7 @@ const BubbleLine = styled(motion.div)`
   gap: 10px;
   padding: 15px 20px;
 
-  background: var(--primary-color);
+  background: var(--secondary-color);
   color: var(--text-color);
   border-radius: 24px;
   box-shadow: 0 4px 20px rgba(33, 33, 33, 0.1);

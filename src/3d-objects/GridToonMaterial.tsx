@@ -39,4 +39,4 @@ export const GridToonMaterial = shaderMaterial(
   `
 );
 
-THREE.ColorManagement.legacyMode = false; // ensure correct color space
+// THREE.ColorManagement.legacyMode = false;

@@ -24,10 +24,10 @@ export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
     purchased: false,
     active: true,
     colors: {
-      primary: "#2979FF",
-      secondary: "#4285F4",
+      primary: "#212121",
+      secondary: "#4178F7",
       accent: "#FFD700",
-      background: "#000000",
+      background: "#212121",
       text: "#ffffff",
     },
     planetColors: ["#ffffff", "#C5BDD5", "#85799F"],
