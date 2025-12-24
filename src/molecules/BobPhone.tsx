@@ -479,8 +479,6 @@ export const BobPhone = () => {
               ease: "easeInOut",
             }}
             ref={containerRef}
-            layoutRoot
-            layout
           >
             <HugColumn $gap={0} layout="position">
               <AnimatePresence mode="popLayout">
