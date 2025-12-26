@@ -203,95 +203,99 @@ export function ShopApp() {
 
   return (
     <>
-      <ShopContainer
-        key="shop-app-container"
-        initial={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(6px)" }}
-        animate={{
-          opacity: 1,
-          scaleX: 1,
-          y: 0,
-          filter: "blur(0px)",
-        }}
-        exit={{ opacity: 0, scaleX: 0.9, y: 80, filter: "blur(6px)" }}
-        transition={{
-          type: "spring" as const,
-          bounce: 0.5,
-        }}
-      >
-        {currentItem && (
-          <HugColumn
-            key={currentItem.id + "_meta"}
-            variants={MOTION_VARIANTS.slideUp}
-            animate={MOTION_VARIANTS.slideUp.animate()}
-            exit={MOTION_VARIANTS.slideUp.exit}
-            initial={MOTION_VARIANTS.slideUp.initial}
-            $gap={"4px"}
-            $align="center"
-            style={{ position: "absolute", bottom: "25svh" }}
-          >
-            {match(currentItem)
-              .with({ enabled: true }, () => (
-                <TapCountDisplay $variant="accent">Ausgewählt</TapCountDisplay>
-              ))
-              .with({ purchased: false }, () => (
-                <TapCountDisplay>{currentItem.cost} 🫵</TapCountDisplay>
-              ))
-              .otherwise(() => (
-                // <TapCountDisplay $variant="light">
-                //   Gekauft
-                // </TapCountDisplay>
-                <></>
-              ))}
-          </HugColumn>
-        )}
-
-        <ContentControls>
-          <PaginationButton onClick={handlePrev} disabled={pageCount === 1}>
-            <ArrowLeftIcon />
-          </PaginationButton>
-
-          <HugColumn $gap="4px" $align="center" $justify="center">
-            <TapCountDisplay $variant="dark">
-              <span>{currentItem.name}</span>
-              <span>{getShopItemType(currentItem.type as any)}</span>
-            </TapCountDisplay>
-
-            <ShopItemButton
-              key={currentItem.id + "_action_button"}
-              $selected={currentItem.enabled}
-              $purchased={currentItem.purchased}
-              $canAfford={canAfford(currentItem.cost)}
-              onClick={handleButton}
-              role="button"
-              disabled={!canAfford(currentItem.cost)}
+      <FixedAnchor>
+        <ShopContainer
+          key="shop-app-container"
+          initial={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(6px)" }}
+          animate={{
+            opacity: 1,
+            scaleX: 1,
+            y: 0,
+            filter: "blur(0px)",
+          }}
+          exit={{ opacity: 0, scaleX: 0.9, y: 80, filter: "blur(6px)" }}
+          transition={{
+            type: "spring" as const,
+            bounce: 0.5,
+          }}
+        >
+          {currentItem && (
+            <HugColumn
+              key={currentItem.id + "_meta"}
+              variants={MOTION_VARIANTS.slideUp}
+              animate={MOTION_VARIANTS.slideUp.animate()}
+              exit={MOTION_VARIANTS.slideUp.exit}
+              initial={MOTION_VARIANTS.slideUp.initial}
+              $gap={"4px"}
+              $align="center"
+              style={{ position: "absolute", bottom: "25svh" }}
             >
               {match(currentItem)
-                .with({ enabled: true }, () => "Deaktiveren")
-                .with({ purchased: true }, () => "Aktivieren")
-                .otherwise(() => "Kaufen")}
-            </ShopItemButton>
-          </HugColumn>
+                .with({ enabled: true }, () => (
+                  <TapCountDisplay $variant="accent">
+                    Ausgewählt
+                  </TapCountDisplay>
+                ))
+                .with({ purchased: false }, () => (
+                  <TapCountDisplay>{currentItem.cost} 🫵</TapCountDisplay>
+                ))
+                .otherwise(() => (
+                  // <TapCountDisplay $variant="light">
+                  //   Gekauft
+                  // </TapCountDisplay>
+                  <></>
+                ))}
+            </HugColumn>
+          )}
 
-          <PaginationButton onClick={handleNext} disabled={pageCount === 1}>
-            <ArrowRightIcon />
-          </PaginationButton>
-        </ContentControls>
+          <ContentControls>
+            <PaginationButton onClick={handlePrev} disabled={pageCount === 1}>
+              <ArrowLeftIcon />
+            </PaginationButton>
 
-        <PaginationDots>
-          {Array(pageCount)
-            .fill(null)
-            .map((dot, i) => (
-              <motion.span
-                key={"shop_pagination_dot_" + i}
-                animate={{
-                  width: page === i ? "12px" : "6px",
-                  opacity: page === i ? 1 : 0.25,
-                }}
-                initial={{ width: "6px", opacity: 0.25 }}
-              ></motion.span>
-            ))}
-        </PaginationDots>
-      </ShopContainer>
+            <HugColumn $gap="4px" $align="center" $justify="center">
+              <TapCountDisplay $variant="dark">
+                <span>{currentItem.name}</span>
+                <span>{getShopItemType(currentItem.type as any)}</span>
+              </TapCountDisplay>
+
+              <ShopItemButton
+                key={currentItem.id + "_action_button"}
+                $selected={currentItem.enabled}
+                $purchased={currentItem.purchased}
+                $canAfford={canAfford(currentItem.cost)}
+                onClick={handleButton}
+                role="button"
+                disabled={!canAfford(currentItem.cost)}
+              >
+                {match(currentItem)
+                  .with({ enabled: true }, () => "Deaktiveren")
+                  .with({ purchased: true }, () => "Aktivieren")
+                  .otherwise(() => "Kaufen")}
+              </ShopItemButton>
+            </HugColumn>
+
+            <PaginationButton onClick={handleNext} disabled={pageCount === 1}>
+              <ArrowRightIcon />
+            </PaginationButton>
+          </ContentControls>
+
+          <PaginationDots>
+            {Array(pageCount)
+              .fill(null)
+              .map((dot, i) => (
+                <motion.span
+                  key={"shop_pagination_dot_" + i}
+                  animate={{
+                    width: page === i ? "12px" : "6px",
+                    opacity: page === i ? 1 : 0.25,
+                  }}
+                  initial={{ width: "6px", opacity: 0.25 }}
+                ></motion.span>
+              ))}
+          </PaginationDots>
+        </ShopContainer>
+      </FixedAnchor>
 
       <TabPanel>
         {tabs.map((tab) => (
@@ -308,15 +312,18 @@ export function ShopApp() {
   );
 }
 
-const ShopContainer = styled(motion.div)`
+const FixedAnchor = styled.div`
   position: fixed;
   left: 0;
   right: 0;
   bottom: 100px;
   margin: 0 auto;
+`;
+
+const ShopContainer = styled(motion.div)`
   width: 520px;
   padding: 4px;
-  max-width: calc(100% - 32px);
+  max-width: 100%;
   /* height: calc(100svh - 140px); */
 
   z-index: 1001;
@@ -433,7 +440,7 @@ const TabButton = styled.button<{ $active: boolean }>`
 
 const ContentControls = styled.div`
   display: flex;
-  width: min(100%, 340px);
+  width: 100%;
   align-items: center;
   justify-content: space-between;
 

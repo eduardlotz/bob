@@ -19,8 +19,13 @@ const VIEWID_TITLE_MAP: Record<CameraViewId, string> = {
 };
 
 export function ViewControls() {
-  const { currentView, isDefaultView, resetToDefaultView, isTransitioning } =
-    useViewStore();
+  const {
+    currentView,
+    isDefaultView,
+    isPhoneView,
+    resetToDefaultView,
+    isTransitioning,
+  } = useViewStore();
   const [isVisible, setIsVisible] = useState(false);
 
   const currentViewTitle = useMemo(() => {
@@ -29,8 +34,8 @@ export function ViewControls() {
 
   // show controls when not default view
   useEffect(() => {
-    setIsVisible(!isDefaultView());
-  }, [currentView, isDefaultView]);
+    setIsVisible(!isDefaultView() && !isPhoneView());
+  }, [currentView, isDefaultView, isPhoneView]);
 
   // escape key to return to default view
   useKeyPress("Escape", () => {
@@ -50,14 +55,12 @@ export function ViewControls() {
     currentView === "upgrades" ||
     currentView.startsWith("phone:");
 
-  const showBackButton = !hideBackButton;
-
   return (
     <AnimatePresence>
       {isVisible && (
         <ViewControlsWrapper>
           <AnimatePresence>
-            {showBackButton && (
+            {!hideBackButton && (
               <BackButton
                 onClick={handleBackClick}
                 whileHover={{ scale: 1.05 }}

@@ -126,6 +126,7 @@ interface ViewStore {
 
   getCurrentViewConfig: () => CameraView | null;
   isDefaultView: () => boolean;
+  isPhoneView: () => boolean;
   isObjectView: () => boolean;
   getAvailableViews: () => CameraView[];
 }
@@ -205,6 +206,10 @@ export const useViewStore = create<ViewStore>()(
 
       isDefaultView: () => {
         return get().currentView === "default";
+      },
+
+      isPhoneView: () => {
+        return get().currentView.startsWith("phone:");
       },
 
       isObjectView: () => {
