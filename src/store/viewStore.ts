@@ -61,6 +61,8 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   "phone:home": {
     id: "phone:home",
     name: "Phone View",
+    position: [0, CAMERA_HEIGHT, HIDDEN_OPTIONS_CAMERA_ZOOM],
+    target: [0, CAMERA_Y_POSITION, 0],
   },
   "phone:debug": {
     id: "phone:debug",

@@ -131,13 +131,6 @@ export const NavButton = styled(motion.button)<{ $isActive?: boolean }>`
 
   pointer-events: auto;
 
-  box-shadow: 0 0px 0px rgba(41, 121, 255, 0.3);
-  transition-duration: ease-out 0.2s box-shadow;
-
-  &:hover {
-    box-shadow: 0 6px 16px rgba(41, 121, 255, 0.4);
-  }
-
   span {
     display: flex;
     flex-direction: column;

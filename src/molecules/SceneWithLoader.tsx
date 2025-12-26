@@ -37,26 +37,28 @@ export const CustomLoader = ({
       {isLoading && (
         <LoadingWrapper
           key="loader"
-          initial={{ opacity: 1 }}
-          animate={{ opacity: 1 }}
+          // initial={{ filter: "blur(16px)", scale: 1.15 }}
+          // animate={{ filter: "blur(0)", scale: 1.25 }}
+          // exit={{
+          //   filter: "blur(16px)",
+          //   scale: 1.15,
+          // }}
+          initial={{
+            clipPath: "circle(150% at 50% 50%)",
+            opacity: 1,
+          }}
           exit={{
-            opacity: 0,
-            transition: { duration: 0.8, ease: "easeInOut" },
+            clipPath: "circle(0% at 50% 50%)",
+            transition: { duration: 1.2, ease: [0.76, 0, 0.24, 1] },
           }}
         >
           <FillColumn $align="center" $justify="center">
             <MotionIconWrapper
               variants={MotionVariants.Pulse}
               animate="animate"
-              exit={{
-                scale: [1, 1.3, 0.8, 1.1, 0],
-                transition: {
-                  duration: 0.8,
-                  times: [0, 0.3, 0.5, 0.7, 1],
-                  ease: "easeInOut",
-                },
-              }}
               initial="initial"
+              layoutId="page-logo"
+              layout="position"
             >
               <Logo />
             </MotionIconWrapper>

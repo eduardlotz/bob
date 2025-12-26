@@ -7,7 +7,6 @@ import { Toaster } from "sonner";
 import styled from "styled-components";
 import { getRouteLabelByPath, ROUTE_PATHS, useAppStore } from "@/store";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { DialogRoot } from "@/molecules/DialogRoot";
 import { executeMigrationsWhenReady } from "@/store/migrationExecutor";
 
 import Home from "./routes/Home";
@@ -128,8 +127,6 @@ export default function App() {
 
           {/* <FloatingBarUI /> */}
         </FullScreen>
-
-        <DialogRoot />
       </FloatingBarProvider>
     </ThemeProvider>
   );

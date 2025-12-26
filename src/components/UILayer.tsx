@@ -7,7 +7,7 @@ import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { requestMotionPermission } from "@/utils/permission";
 import { useGameStore } from "@/store/gameStore";
 
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 
 interface UILayerProps {
   permissionGranted: boolean;
@@ -67,15 +67,33 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
 
   return (
     <UILayerContainer>
+      {/* <TopLogoContainer
+        layoutId="page-logo"
+        transition={{
+          layout: {
+            type: "spring",
+            mass: 0.55,
+            damping: 12,
+            bounceDamping: 15,
+          },
+        }}
+      >
+        <Logo />
+      </TopLogoContainer> */}
+      <AnimatePresence>
+        <MotionRoot id="motion-root"></MotionRoot>
+      </AnimatePresence>
       <BottomNavigation />
     </UILayerContainer>
   );
 }
 
-const TopLogoContainer = styled.div`
+const MotionRoot = styled.div``;
+
+const TopLogoContainer = styled(motion.div)`
   position: fixed;
   top: 20px;
-  left: 20px;
+  margin: 0 auto;
   z-index: 100;
   pointer-events: none;
   display: flex;

@@ -77,7 +77,7 @@ const SHARED_GEOMETRIES = {
     shape.closePath();
     return new THREE.ShapeGeometry(shape);
   })(),
-  sphere: new THREE.SphereGeometry(0.18, 8, 8),
+  sphere: new THREE.SphereGeometry(0.24, 2, 2),
   plane: new THREE.PlaneGeometry(1, 1),
   cylinder: new THREE.CylinderGeometry(0.02, 0.02, 0.3),
   cloudSphere: new THREE.SphereGeometry(1, 8, 8),
@@ -646,6 +646,10 @@ export function TapEffect() {
       meshRef.current.instanceMatrix.needsUpdate = true;
     }
   });
+
+  if (selectedTapEffect?.effectId === undefined) {
+    return null;
+  }
 
   return (
     <instancedMesh

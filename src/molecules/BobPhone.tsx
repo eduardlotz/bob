@@ -10,7 +10,7 @@ import { motion, AnimatePresence, LayoutGroup } from "motion/react";
 import { CloseIcon } from "@/icons/close";
 import { NavButton } from "./BottomNavigation";
 import { Magnetic } from "@/layout/Magnetic";
-import { FillRow, HugColumn } from "@/layout";
+import { FillColumn, FillRow, HugColumn } from "@/layout";
 import { format } from "date-fns/format";
 
 import { PhoneMenuIcon } from "@/icons/phoneMenu";
@@ -329,9 +329,9 @@ export const BobPhone = () => {
     }
   });
 
-  // useClickOutside([containerRef, triggerRef], () => {
-  //   if (currentView === "default" && isOpen) onTriggerClick();
-  // });
+  useClickOutside([containerRef, triggerRef], () => {
+    if (currentView === "phone:home" && isOpen) onTriggerClick();
+  });
 
   useEffect(() => {
     if (currentView.startsWith("phone:")) setIsOpen(true);
@@ -405,9 +405,9 @@ export const BobPhone = () => {
               ease: "easeInOut",
               layout: {
                 type: "spring",
-                mass: 0.55,
+                mass: 0.5,
                 damping: 12,
-                bounceDamping: 15,
+                bounceDamping: 20,
               },
             }}
             ref={containerRef}
@@ -416,101 +416,123 @@ export const BobPhone = () => {
             }}
             layout
           >
-            <OverflowClip>
-              <HugColumn $gap={activeApp ? "4px" : "0"} layout="position">
-                <AnimatePresence mode="popLayout">
-                  {!activeApp && (
-                    <FillRow>
-                      <StatusPill>
-                        {currentHour}
-                        <Blinking
-                          style={{
-                            paddingLeft: "0.1ch",
-                            paddingRight: "0.05ch",
-                          }}
-                        >
-                          :
-                        </Blinking>
-                        {currentMinutes}
-                      </StatusPill>
-                      <StatusPillButton
-                        $active={!isMuted}
-                        onClick={handleAudioButtonClick}
-                      >
-                        <AnimatePresence mode="popLayout">
-                          <motion.div
-                            key={!isMuted ? "on" : "off"}
-                            initial={{ scale: 0, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0, opacity: 0 }}
-                            transition={{
-                              duration: 0.2,
-                              type: "spring",
-                              bounce: 0.7,
-                            }}
-                          >
-                            <SpeakerIcon muted={isMuted} />
-                          </motion.div>
-                        </AnimatePresence>
-                      </StatusPillButton>
-                    </FillRow>
-                  )}
-                  {activeApp ? (
-                    activeAppView()
-                  ) : (
-                    <AppGrid
-                      key="app-grid"
-                      initial={{
-                        opacity: 0,
-                        scale: 0.95,
-                        filter: "blur(4px)",
-                        y: 12,
-                      }}
-                      animate={{
-                        opacity: 1,
-                        scale: 1,
-                        filter: "blur(0px)",
-                        y: 0,
-                      }}
-                      exit={{
-                        opacity: 0,
-                        scale: 0.95,
-                        filter: "blur(4px)",
-                        y: 12,
-                      }}
-                      transition={{
-                        type: "spring",
-                        bounce: 0.4,
+            <HugColumn $gap={activeApp ? "4px" : "0"} layout="position">
+              {!activeApp && (
+                <FillRow>
+                  <StatusPill>
+                    {currentHour}
+                    <Blinking
+                      style={{
+                        paddingLeft: "0.1ch",
+                        paddingRight: "0.05ch",
                       }}
                     >
-                      {BOB_APPS.map((app) => (
-                        <AppContainer
-                          key={app.id}
-                          onClick={() => openApp(app.id)}
-                        >
-                          {app.icon()}
-                          <AppLabel>{AppNameMap[app.id]}</AppLabel>
-                        </AppContainer>
-                      ))}
-                      <AppContainer disabled>
-                        <MoreAppsSoonIcon />
-                        <AppLabel>In Arbeit</AppLabel>
+                      :
+                    </Blinking>
+                    {currentMinutes}
+                  </StatusPill>
+                  <StatusPillButton
+                    $active={!isMuted}
+                    onClick={handleAudioButtonClick}
+                  >
+                    <AnimatePresence mode="popLayout">
+                      <motion.div
+                        key={!isMuted ? "on" : "off"}
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0, opacity: 0 }}
+                        transition={{
+                          duration: 0.2,
+                          type: "spring",
+                          bounce: 0.7,
+                        }}
+                      >
+                        <SpeakerIcon muted={isMuted} />
+                      </motion.div>
+                    </AnimatePresence>
+                  </StatusPillButton>
+                </FillRow>
+              )}
+              <FillColumn
+                key={activeApp}
+                // key="shop-app-container"
+                initial={{
+                  opacity: 0,
+                  scaleX: 0.9,
+                  y: 40,
+                  filter: "blur(6px)",
+                }}
+                animate={{
+                  opacity: 1,
+                  scaleX: 1,
+                  y: 0,
+                  filter: "blur(0px)",
+                }}
+                exit={{
+                  opacity: 0,
+                  scaleX: 0.9,
+                  y: 80,
+                  filter: "blur(6px)",
+                }}
+                transition={{
+                  type: "spring" as const,
+                  bounce: 0.5,
+                }}
+              >
+                {activeApp ? (
+                  activeAppView()
+                ) : (
+                  <AppGrid
+                    key="app-grid"
+                    initial={{
+                      opacity: 0,
+                      scale: 0.95,
+                      filter: "blur(4px)",
+                      y: 12,
+                    }}
+                    animate={{
+                      opacity: 1,
+                      scale: 1,
+                      filter: "blur(0px)",
+                      y: 0,
+                    }}
+                    exit={{
+                      opacity: 0,
+                      scale: 0.95,
+                      filter: "blur(4px)",
+                      y: 12,
+                    }}
+                    transition={{
+                      type: "spring",
+                      bounce: 0.4,
+                    }}
+                  >
+                    {BOB_APPS.map((app) => (
+                      <AppContainer
+                        key={app.id}
+                        onClick={() => openApp(app.id)}
+                      >
+                        {app.icon()}
+                        <AppLabel>{AppNameMap[app.id]}</AppLabel>
                       </AppContainer>
-                    </AppGrid>
-                  )}
+                    ))}
+                    <AppContainer disabled>
+                      <MoreAppsSoonIcon />
+                      <AppLabel>In Arbeit</AppLabel>
+                    </AppContainer>
+                  </AppGrid>
+                )}
+                {activeApp && (
+                  <AppBottomActions key="app_bottom_actions">
+                    <BackHomeButton onClick={goToHomeScreen}>
+                      <ArrowLeftIcon />
+                    </BackHomeButton>
 
-                  {activeApp && (
-                    <AppBottomActions key="app_bottom_actions">
-                      <BackHomeButton onClick={goToHomeScreen}>
-                        <ArrowLeftIcon />
-                      </BackHomeButton>
-
-                      <AppName>{activeAppName}</AppName>
-                    </AppBottomActions>
-                  )}
-                </AnimatePresence>
-              </HugColumn>
-            </OverflowClip>
+                    <AppName>{activeAppName}</AppName>
+                  </AppBottomActions>
+                )}
+              </FillColumn>
+            </HugColumn>
           </BobPhoneBody>
         )}
       </AnimatePresence>
@@ -519,7 +541,7 @@ export const BobPhone = () => {
 };
 
 const OverflowClip = styled.div`
-  overflow: clip;
+  /* overflow: clip; */
   overflow-clip-margin: 0.25rem;
   position: relative;
 `;
@@ -541,7 +563,7 @@ const BackHomeButton = styled.button`
   padding: 8px 12px;
   height: 2.5rem;
   border-radius: 50px;
-  background-color: rgba(255, 255, 255, 0.25);
+  background-color: rgba(255, 255, 255, 0.05);
   color: white;
   position: absolute;
   left: 0;
@@ -557,13 +579,15 @@ const AppName = styled.h5`
 
 const BobPhoneBody = styled(motion.div)`
   position: fixed;
-  bottom: 90px;
+  bottom: 94px;
   left: 0;
   right: 0;
   margin: 0 auto;
 
-  width: 320px;
-  max-width: calc(100vw - 40px);
+  overflow: clip;
+  overflow-clip-margin: 0.25rem;
+
+  width: 20rem;
   background: var(--primary-color);
   padding: 4px;
   border-radius: 24px;
@@ -633,10 +657,9 @@ const StatusPill = styled.div`
   font-size: 1rem;
   font-weight: 600;
   color: white;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.5);
   padding: 8px 12px;
   border-radius: 100px;
-  opacity: 0.75;
 
   display: flex;
   align-items: center;

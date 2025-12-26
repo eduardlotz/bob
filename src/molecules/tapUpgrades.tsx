@@ -217,6 +217,7 @@ const TriggerContainer = styled(motion.button)`
   padding: 0.5rem 0.75rem;
   border-radius: 50px;
   background-color: #fff;
+  opacity: 1;
 
   font-size: 1rem;
   font-weight: 700;
