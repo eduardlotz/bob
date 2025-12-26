@@ -35,7 +35,8 @@ const ONE_SECOND_MS = 1000;
 const AUTO_TAP_INTERVAL_MS = 1000;
 
 // reset game states created before this date
-const PURGE_DATE = new Date("12/24/2025");
+const PURGE_DATE = new Date("12/26/2025");
+const LAST_SCHEMA_UPDATE = new Date("12/26/2025");
 
 // main migration function
 function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
@@ -487,7 +488,7 @@ export const useGameStore = create<GameStore>()(
     persist(
       (set, get) => ({
         version: GAME_STORE_VERSIONS.LATEST,
-        lastSchemaUpdate: new Date(),
+        lastSchemaUpdate: LAST_SCHEMA_UPDATE,
         taps: 0,
         manualTaps: 0,
         manualTapsPerSecond: 0,

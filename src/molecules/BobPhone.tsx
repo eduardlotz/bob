@@ -500,7 +500,7 @@ export const BobPhone = () => {
                   )}
 
                   {activeApp && (
-                    <AppBottomActions>
+                    <AppBottomActions key="app_bottom_actions">
                       <BackHomeButton onClick={goToHomeScreen}>
                         <ArrowLeftIcon />
                       </BackHomeButton>
@@ -521,6 +521,7 @@ export const BobPhone = () => {
 const OverflowClip = styled.div`
   overflow: clip;
   overflow-clip-margin: 0.25rem;
+  position: relative;
 `;
 
 const AppBottomActions = styled(FillRow)`

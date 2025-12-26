@@ -1,4 +1,4 @@
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas, Dpr, useThree } from "@react-three/fiber";
 import {
   CameraControls,
   Fisheye,
@@ -231,7 +231,7 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
       <PerformanceMonitor
         factor={1}
         onChange={({ factor }) =>
-          setDpr(Math.floor(Math.max(0.5 + 1.5 * factor, 1)))
+          setDpr(Math.max(Math.floor(0.5 + 1.5 * factor), 1))
         }
       >
         {children}

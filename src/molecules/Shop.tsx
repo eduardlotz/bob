@@ -218,7 +218,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                 </TapCountDisplay>
 
                 <ShopItemButton
-                  key={currentItem.id}
+                  key={currentItem.id + "-shop-button"}
                   $selected={currentItem.enabled}
                   $purchased={currentItem.purchased}
                   $canAfford={canAfford(currentItem.cost)}
@@ -243,7 +243,7 @@ export function Shop({ isOpen, onClose }: ShopProps) {
                 .fill(null)
                 .map((dot, i) => (
                   <motion.span
-                    key={"dot" + i}
+                    key={"pagination_dot_" + i}
                     animate={{
                       width: page === i ? "12px" : "6px",
                       opacity: page === i ? 1 : 0.25,

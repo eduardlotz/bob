@@ -220,7 +220,7 @@ export function ShopApp() {
       >
         {currentItem && (
           <HugColumn
-            key={currentItem.id}
+            key={currentItem.id + "_meta"}
             variants={MOTION_VARIANTS.slideUp}
             animate={MOTION_VARIANTS.slideUp.animate()}
             exit={MOTION_VARIANTS.slideUp.exit}
@@ -257,7 +257,7 @@ export function ShopApp() {
             </TapCountDisplay>
 
             <ShopItemButton
-              key={currentItem.id}
+              key={currentItem.id + "_action_button"}
               $selected={currentItem.enabled}
               $purchased={currentItem.purchased}
               $canAfford={canAfford(currentItem.cost)}
@@ -282,7 +282,7 @@ export function ShopApp() {
             .fill(null)
             .map((dot, i) => (
               <motion.span
-                key={"dot" + i}
+                key={"shop_pagination_dot_" + i}
                 animate={{
                   width: page === i ? "12px" : "6px",
                   opacity: page === i ? 1 : 0.25,
@@ -296,7 +296,7 @@ export function ShopApp() {
       <TabPanel>
         {tabs.map((tab) => (
           <TabButton
-            key={tab.id}
+            key={tab.id + "_shop_tab"}
             $active={activeTab === tab.id}
             onClick={() => handleTabChange(tab.id)}
           >
