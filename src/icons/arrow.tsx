@@ -31,7 +31,7 @@ export const ArrowLeftIcon = ({ color }: IconProps) => (
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      d="M21 12H5m0 0l6-6m-6 6l6 6"
+      d="M19 12H5M5 12L10.25 17M5 12L10.25 7"
     />
   </svg>
 );

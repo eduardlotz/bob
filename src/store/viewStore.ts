@@ -23,9 +23,10 @@ export interface CameraView {
 
 export type CameraViewId =
   | "default"
-  | "shop"
   | "upgrades"
-  | "phone"
+  | "phone:home"
+  | "phone:shop"
+  | "phone:debug"
   | "desk"
   | "bookshelf"
   | "computer"
@@ -43,8 +44,8 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
       easing: "easeInOutCubic",
     },
   },
-  shop: {
-    id: "shop",
+  "phone:shop": {
+    id: "phone:shop",
     name: "Shop View",
     position: [0, CAMERA_HEIGHT - 1, VISIBLE_OPTIONS_CAMERA_ZOOM - 2],
     target: [0, CAMERA_Y_POSITION, 0],
@@ -57,9 +58,15 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
     id: "upgrades",
     name: "Upgrades View",
   },
-  phone: {
-    id: "phone",
+  "phone:home": {
+    id: "phone:home",
     name: "Phone View",
+    position: [0, CAMERA_HEIGHT, HIDDEN_OPTIONS_CAMERA_ZOOM],
+    target: [0, CAMERA_Y_POSITION, 0],
+  },
+  "phone:debug": {
+    id: "phone:debug",
+    name: "Debug View",
   },
   desk: {
     id: "desk",
@@ -107,6 +114,7 @@ export type ViewMode = "fixed" | "object";
 
 interface ViewStore {
   currentView: CameraViewId;
+  previousView: CameraViewId;
   viewMode: ViewMode;
   isTransitioning: boolean;
 
@@ -120,6 +128,7 @@ interface ViewStore {
 
   getCurrentViewConfig: () => CameraView | null;
   isDefaultView: () => boolean;
+  isPhoneView: () => boolean;
   isObjectView: () => boolean;
   getAvailableViews: () => CameraView[];
 }
@@ -128,6 +137,7 @@ export const useViewStore = create<ViewStore>()(
   devtools(
     (set, get) => ({
       currentView: "default",
+      previousView: "default",
       viewMode: "fixed",
       isTransitioning: false,
       cameraControlsRef: null,
@@ -140,7 +150,7 @@ export const useViewStore = create<ViewStore>()(
         const { cameraControlsRef, isTransitioning } = get();
 
         // prevent multiple transitions
-        if (isTransitioning || !cameraControlsRef?.current) {
+        if (!cameraControlsRef?.current) {
           return;
         }
 
@@ -151,6 +161,10 @@ export const useViewStore = create<ViewStore>()(
         }
 
         set({
+          previousView:
+            get().previousView !== viewId
+              ? get().currentView
+              : get().previousView,
           isTransitioning: true,
           currentView: viewId,
           viewMode: viewId !== "default" ? "object" : "fixed",
@@ -194,6 +208,10 @@ export const useViewStore = create<ViewStore>()(
 
       isDefaultView: () => {
         return get().currentView === "default";
+      },
+
+      isPhoneView: () => {
+        return get().currentView.startsWith("phone:");
       },
 
       isObjectView: () => {

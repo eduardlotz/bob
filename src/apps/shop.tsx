@@ -1,10 +1,17 @@
 import { usePagination } from "@/hooks/usePagination";
 import { ArrowLeftIcon, ArrowRightIcon } from "@/icons/arrow";
-import { HugColumn } from "@/layout";
+import { FillRow, HugColumn } from "@/layout";
 import { MOTION_VARIANTS } from "@/molecules/HeadNavigation";
-import { getShopItemType, ShopItem, useGameStore, useViewStore } from "@/store";
+import {
+  CameraViewId,
+  getShopItemType,
+  ShopItem,
+  useGameStore,
+  useViewStore,
+} from "@/store";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import styled from "styled-components";
 import { match } from "ts-pattern";
 
@@ -82,6 +89,8 @@ const tabs = [
   },
 ];
 
+const APP_ID: CameraViewId = "phone:shop";
+
 export function ShopApp() {
   const [activeTab, setActiveTab] = useState<ShopTab>("bob");
 
@@ -99,10 +108,14 @@ export function ShopApp() {
     purchaseDecoration,
   } = useGameStore();
 
-  const { transitionToView } = useViewStore();
+  const { currentView, transitionToView, previousView } = useViewStore();
 
   useEffect(() => {
-    transitionToView("shop");
+    transitionToView(APP_ID);
+
+    // return () => {
+    //   transitionToView(previousView);
+    // };
   }, []);
 
   const shopViewsWithItems: Record<ShopTab, ShopItem[]> = {
@@ -167,17 +180,22 @@ export function ShopApp() {
 
   const handleButton = () => {
     switch (activeTab) {
-      case "effects": {
+      case "effects":
         handleEffectItemClick();
-      }
-      case "bob": {
+        break;
+      case "bob":
         handleBobItemClick();
-      }
-      case "decorations": {
+        break;
+      case "decorations":
         handleDecoItemClick();
-      }
+        break;
     }
   };
+
+  const buttonLabel = match(currentItem)
+    .with({ enabled: true }, () => "Deaktiveren")
+    .with({ purchased: true }, () => "Aktivieren")
+    .otherwise(() => "Kaufen");
 
   const handleNext = () => {
     if (hasNext) next();
@@ -189,10 +207,10 @@ export function ShopApp() {
     else goTo(pageCount - 1);
   };
 
-  return (
-    <>
+  const ShopOverlays = (
+    <FixedAnchor>
       <ShopContainer
-        key="shop-container"
+        key="shop-app-container"
         initial={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(6px)" }}
         animate={{ opacity: 1, scaleX: 1, y: 0, filter: "blur(0px)" }}
         exit={{ opacity: 0, scaleX: 0.9, y: 80, filter: "blur(6px)" }}
@@ -201,89 +219,84 @@ export function ShopApp() {
           bounce: 0.5,
         }}
       >
-        <AnimatePresence mode="popLayout">
+        <ContentControls>
           {currentItem && (
             <HugColumn
-              key={currentItem.id}
-              variants={MOTION_VARIANTS.slideUp}
-              animate={MOTION_VARIANTS.slideUp.animate()}
-              exit={MOTION_VARIANTS.slideUp.exit}
-              initial={MOTION_VARIANTS.slideUp.initial}
+              key={currentItem.id + "_meta"}
+              variants={MOTION_VARIANTS.springScale}
+              animate={MOTION_VARIANTS.springScale.animate()}
+              exit={MOTION_VARIANTS.springScale.exit}
+              initial={MOTION_VARIANTS.springScale.initial}
               $gap={"4px"}
               $align="center"
-              style={{ position: "absolute", bottom: "30svh" }}
             >
               {match(currentItem)
                 .with({ enabled: true }, () => (
-                  <TapCountDisplay $variant="inverted">
-                    Ausgewählt
-                  </TapCountDisplay>
+                  <ItemStatusChip $variant="accent">Ausgewählt</ItemStatusChip>
                 ))
                 .with({ purchased: false }, () => (
-                  <TapCountDisplay>{currentItem.cost} 🫵</TapCountDisplay>
+                  <ItemStatusChip>{currentItem.cost} 🫵</ItemStatusChip>
                 ))
                 .otherwise(() => (
-                  // <TapCountDisplay $variant="light">
-                  //   Gekauft
-                  // </TapCountDisplay>
                   <></>
                 ))}
             </HugColumn>
           )}
-        </AnimatePresence>
 
-        <ContentControls>
-          <PaginationButton onClick={handlePrev} disabled={pageCount === 1}>
-            <ArrowLeftIcon />
-          </PaginationButton>
+          <ItemStatusChip $variant="dark">
+            <span>{currentItem.name}</span>
+            <span>{getShopItemType(currentItem.type as any)}</span>
+          </ItemStatusChip>
 
-          <HugColumn $gap="4px" $align="center" $justify="center">
-            <TapCountDisplay $variant="dark">
-              <span>{currentItem.name}</span>
-              <span>{getShopItemType(currentItem.type as any)}</span>
-            </TapCountDisplay>
+          <FillRow $justify="space-between">
+            <PaginationButton onClick={handlePrev} disabled={pageCount === 1}>
+              <ArrowLeftIcon />
+            </PaginationButton>
 
             <ShopItemButton
-              key={currentItem.id}
+              key={currentItem.id + "_action_button"}
               $selected={currentItem.enabled}
               $purchased={currentItem.purchased}
               $canAfford={canAfford(currentItem.cost)}
               onClick={handleButton}
               role="button"
-              disabled={!canAfford(currentItem.cost)}
+              disabled={!currentItem.purchased && !canAfford(currentItem.cost)}
             >
-              {match(currentItem)
-                .with({ enabled: true }, () => "Deaktiveren")
-                .with({ purchased: true }, () => "Aktivieren")
-                .otherwise(() => "Kaufen")}
+              {buttonLabel}
             </ShopItemButton>
-          </HugColumn>
 
-          <PaginationButton onClick={handleNext} disabled={pageCount === 1}>
-            <ArrowRightIcon />
-          </PaginationButton>
+            <PaginationButton onClick={handleNext} disabled={pageCount === 1}>
+              <ArrowRightIcon />
+            </PaginationButton>
+          </FillRow>
+
+          <PaginationDots key={`dots-${activeTab}`}>
+            {Array(pageCount)
+              .fill(null)
+              .map((_, i) => (
+                <motion.span
+                  key={`shop_pagination_dot_${i}`}
+                  animate={{
+                    width: page === i ? "12px" : "6px",
+                    opacity: page === i ? 1 : 0.25,
+                  }}
+                  initial={{ width: "6px", opacity: 0.25 }}
+                ></motion.span>
+              ))}
+          </PaginationDots>
         </ContentControls>
-
-        <PaginationDots>
-          {Array(pageCount)
-            .fill(null)
-            .map((dot, i) => (
-              <motion.span
-                key={"dot" + i}
-                animate={{
-                  width: page === i ? "12px" : "6px",
-                  opacity: page === i ? 1 : 0.25,
-                }}
-                initial={{ width: "6px", opacity: 0.25 }}
-              ></motion.span>
-            ))}
-        </PaginationDots>
       </ShopContainer>
+    </FixedAnchor>
+  );
+
+  return (
+    <>
+      {createPortal(ShopOverlays, document.getElementById("motion-root")!)}
 
       <TabPanel>
         {tabs.map((tab) => (
           <TabButton
-            key={tab.id}
+            key={tab.id + "_shop_tab"}
             $active={activeTab === tab.id}
             onClick={() => handleTabChange(tab.id)}
           >
@@ -295,16 +308,20 @@ export function ShopApp() {
   );
 }
 
-const ShopContainer = styled(motion.div)`
-  position: fixed;
+const FixedAnchor = styled.div`
+  position: absolute;
   left: 0;
   right: 0;
-  bottom: 100px;
+  bottom: calc(env(safe-area-inset-bottom) + 188px);
   margin: 0 auto;
+  width: fit-content;
+  max-width: calc(100vw - 40px);
+`;
+
+const ShopContainer = styled(motion.div)`
   width: 520px;
   padding: 4px;
-  max-width: calc(100% - 32px);
-  /* height: calc(100svh - 140px); */
+  max-width: 100%;
 
   z-index: 1001;
   display: flex;
@@ -316,7 +333,7 @@ const ShopContainer = styled(motion.div)`
   pointer-events: auto;
 `;
 
-const TapCountDisplay = styled(motion.div)<{
+const ItemStatusChip = styled(motion.div)<{
   $variant?: "light" | "dark" | "accent" | "inverted";
 }>`
   display: flex;
@@ -329,6 +346,7 @@ const TapCountDisplay = styled(motion.div)<{
 
   font-size: 0.875rem;
   font-weight: 900;
+  height: 1.375rem;
 
   padding: 4px 8px;
   border-radius: 0.625rem;
@@ -368,15 +386,18 @@ const TapCountDisplay = styled(motion.div)<{
 
     span:last-child {opacity: 0.5;}
   `}
-`;
 
-const ItemInformationChip = styled(TapCountDisplay)`
-  background: #212121;
-  color: white;
-  font-weight: 500;
-  gap: 0.25rem;
+${(p) =>
+    p.$variant === "accent" &&
+    `
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+    border: 1.5px solid var(--text-color);
+    gap: 0.25rem;
+    
+    font-weight: 700;
 
-  font-weight: 600;
+  `}
 `;
 
 const TabPanel = styled.div`
@@ -408,15 +429,13 @@ const TabButton = styled.button<{ $active: boolean }>`
 
 const ContentControls = styled.div`
   display: flex;
-  width: min(100%, 340px);
+  flex-direction: column;
+  width: 100%;
   align-items: center;
   justify-content: space-between;
+  gap: 0.5rem;
 
-  position: absolute;
   margin: 0 auto;
-  bottom: 10svh;
-  left: 0;
-  right: 0;
 `;
 
 const PaginationDots = styled.div`
@@ -424,6 +443,9 @@ const PaginationDots = styled.div`
   align-items: center;
   justify-content: center;
   gap: 4px;
+  padding: 2px;
+  border-radius: 50px;
+  background: rgba(0, 0, 0, 0.15);
 
   span {
     height: 6px;
@@ -439,10 +461,10 @@ const PaginationButton = styled.button`
   align-items: center;
   justify-content: center;
 
-  height: 2.75rem;
-  width: 2.75rem;
+  height: 3rem;
+  width: 3rem;
 
-  border-radius: 50%;
+  border-radius: 1rem;
   background: #fff;
   color: #212121;
   box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.15), 0px 0px 8px rgba(0, 0, 0, 0.1);
@@ -472,8 +494,9 @@ const ShopItemButton = styled.button<{
   cursor: pointer;
 
   background-color: ${(p) =>
-    p.$selected ? "rgba(255,255,255,1)" : "rgba(0,0,0,0.25)"};
-  color: ${(p) => (p.$selected ? "#212121" : "#ffffff")};
+    p.$selected ? "rgba(0,0,0,1)" : "rgba(0,0,0,0.25)"};
+  /* color: ${(p) => (p.$selected ? "#212121" : "#ffffff")}; */
+  color: #ffffff;
   border: ${(p) =>
     p.$selected
       ? "2px solid rgba(255,255,255,1)"
@@ -490,7 +513,6 @@ const ShopItemButton = styled.button<{
   width: fit-content;
 
   &:hover {
-    background: ${(props) =>
-      props.$selected ? "rgba(255,255,255,0.75)" : "rgba(0, 0, 0, 0.5)"};
+    background: rgba(0, 0, 0, 0.75);
   }
 `;

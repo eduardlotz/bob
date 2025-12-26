@@ -45,7 +45,6 @@ export const SimsPlumbob = ({
     });
   }, []);
 
-  // Auto rotation animation - temporarily disabled for performance testing
   useFrame(() => {
     if (group.current) {
       group.current.rotation.y += 0.01;

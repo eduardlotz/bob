@@ -12,14 +12,20 @@ const VIEWID_TITLE_MAP: Record<CameraViewId, string> = {
   bookshelf: "Mein Bücherregal",
   computer: "Mein Computer",
   cardbox: "Hobbies & Interessen",
-  shop: "Shop",
   upgrades: "Upgrades",
-  phone: "Bob PHone",
+  "phone:shop": "Shop",
+  "phone:home": "Phone",
+  "phone:debug": "Debug",
 };
 
 export function ViewControls() {
-  const { currentView, isDefaultView, resetToDefaultView, isTransitioning } =
-    useViewStore();
+  const {
+    currentView,
+    isDefaultView,
+    isPhoneView,
+    resetToDefaultView,
+    isTransitioning,
+  } = useViewStore();
   const [isVisible, setIsVisible] = useState(false);
 
   const currentViewTitle = useMemo(() => {
@@ -28,8 +34,8 @@ export function ViewControls() {
 
   // show controls when not default view
   useEffect(() => {
-    setIsVisible(!isDefaultView());
-  }, [currentView, isDefaultView]);
+    setIsVisible(!isDefaultView() && !isPhoneView());
+  }, [currentView, isDefaultView, isPhoneView]);
 
   // escape key to return to default view
   useKeyPress("Escape", () => {
@@ -44,16 +50,17 @@ export function ViewControls() {
     }
   };
 
-  const showBackButton = !["shop", "upgrades", "phone", "default"].includes(
-    currentView
-  );
+  const hideBackButton =
+    currentView === "default" ||
+    currentView === "upgrades" ||
+    currentView.startsWith("phone:");
 
   return (
     <AnimatePresence>
       {isVisible && (
         <ViewControlsWrapper>
           <AnimatePresence>
-            {showBackButton && (
+            {!hideBackButton && (
               <BackButton
                 onClick={handleBackClick}
                 whileHover={{ scale: 1.05 }}

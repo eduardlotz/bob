@@ -1,10 +1,11 @@
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas, Dpr, useThree } from "@react-three/fiber";
 import {
   CameraControls,
   Fisheye,
   Environment,
   PerspectiveCamera,
   Grid,
+  PerformanceMonitor,
 } from "@react-three/drei";
 
 import { Suspense, useRef, useState, useEffect, useMemo } from "react";
@@ -26,6 +27,13 @@ import { MessageBubble } from "@/molecules/MessageBubble";
 import { SceneDecorations } from "@/3d-objects/Decorations";
 import { Physics } from "@react-three/rapier";
 
+import { Perf } from "r3f-perf";
+
+const Debug = () => {
+  const { width } = useThree((s) => s.size);
+  return <Perf minimal={width < 712} matrixUpdate deepAnalyze overClock />;
+};
+
 // TODO: make proper constant file
 export const FLOOR_Y_POSITION = -1.5;
 
@@ -43,7 +51,7 @@ const Scene = ({
   const cameraControlsRef = useRef<CameraControls>(null!);
   const { setCameraControlsRef, resetToDefaultView, isDefaultView } =
     useViewStore();
-  const { upgrades, isPaused, customCameraControlsEnabled } = useGameStore();
+  const { upgrades, isPaused, statisticsVisible } = useGameStore();
 
   const {
     currentRoute,
@@ -138,6 +146,8 @@ const Scene = ({
             <Environment preset="city" />
             <BackgroundPlanet />
 
+            {statisticsVisible && <Debug />}
+
             <Physics gravity={[0, -9.81, 0]}>
               <HeadNavigation
                 showOptions={showOptions || false}
@@ -179,6 +189,7 @@ type FullScreenCanvasProps = {
 const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
   const canvasRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [dpr, setDpr] = useState(2);
 
   useEffect(() => {
     const handleResize = () => {
@@ -208,6 +219,7 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
         left: 0,
         zIndex: 0,
       }}
+      dpr={dpr}
       onCreated={(state) => {
         state.camera.position.y = 20;
         state.camera.position.z = 30;
@@ -216,7 +228,14 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
       }}
       {...props}
     >
-      {children}
+      <PerformanceMonitor
+        factor={1}
+        onChange={({ factor }) =>
+          setDpr(Math.max(Math.floor(0.5 + 1.5 * factor), 1))
+        }
+      >
+        {children}
+      </PerformanceMonitor>
     </Canvas>
   );
 };

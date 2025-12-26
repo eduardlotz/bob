@@ -2,13 +2,12 @@ import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { Button, Logo } from "@/layout/atoms";
 import { BottomNavigation } from "@/molecules/BottomNavigation";
-import { Statistics } from "@/molecules/Statistics";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 
 import { requestMotionPermission } from "@/utils/permission";
 import { useGameStore } from "@/store/gameStore";
 
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 
 interface UILayerProps {
   permissionGranted: boolean;
@@ -19,7 +18,6 @@ interface UILayerProps {
 }
 
 export function UILayer({ setPermissionGranted }: UILayerProps) {
-  const { statisticsVisible } = useGameStore();
   const [soundHintDismissed, setSoundHintDismissed] = useState(false);
   const sound = useSoundSystem();
 
@@ -69,16 +67,33 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
 
   return (
     <UILayerContainer>
+      {/* <TopLogoContainer
+        layoutId="page-logo"
+        transition={{
+          layout: {
+            type: "spring",
+            mass: 0.55,
+            damping: 12,
+            bounceDamping: 15,
+          },
+        }}
+      >
+        <Logo />
+      </TopLogoContainer> */}
+      <AnimatePresence>
+        <MotionRoot id="motion-root"></MotionRoot>
+      </AnimatePresence>
       <BottomNavigation />
-      <Statistics visible={statisticsVisible} />
     </UILayerContainer>
   );
 }
 
-const TopLogoContainer = styled.div`
+const MotionRoot = styled.div``;
+
+const TopLogoContainer = styled(motion.div)`
   position: fixed;
   top: 20px;
-  left: 20px;
+  margin: 0 auto;
   z-index: 100;
   pointer-events: none;
   display: flex;
