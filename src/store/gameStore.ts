@@ -1059,6 +1059,8 @@ export const useGameStore = create<GameStore>()(
             isPaused: false,
             recentManualTaps: [],
             upgrades: initialTapUpgrades,
+            tapEffects: initialTapEffects,
+            weatherEffects: initialWeatherEffects,
             decorations: initialDecorations,
             themes: initialThemes,
             bobItems: initialBobItems,

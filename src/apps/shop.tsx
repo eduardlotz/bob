@@ -312,8 +312,7 @@ const FixedAnchor = styled.div`
   position: absolute;
   left: 0;
   right: 0;
-  bottom: calc(env(safe-area-inset-bottom) + 180px);
-  /* bottom: 180px; */
+  bottom: calc(env(safe-area-inset-bottom) + 188px);
   margin: 0 auto;
   width: fit-content;
   max-width: calc(100vw - 40px);

@@ -1,4 +1,5 @@
 import { usePagination } from "@/hooks/usePagination";
+import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { ArrowLeftIcon, ArrowRightIcon } from "@/icons/arrow";
 import { FillRow, HugColumn } from "@/layout";
 import { MOTION_VARIANTS } from "@/molecules/HeadNavigation";
@@ -9,6 +10,7 @@ import {
   useGameStore,
   useViewStore,
 } from "@/store";
+import { useMessageStore } from "@/store/messageStore";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import styled from "styled-components";
@@ -108,29 +110,68 @@ export const DebugIcon = () => (
 const APP_ID: CameraViewId = "phone:debug";
 
 export const DebugApp = () => {
-  const { statisticsVisible, toggleStatistics } = useGameStore();
+  const { resetQuests } = useQuestSystem();
+  const { clearShownFlags, showMessages } = useMessageStore();
+
+  const {
+    statisticsVisible,
+    toggleStatistics,
+    resetGame: resetGameStore,
+    pauseGame,
+    resumeGame,
+    isPaused,
+  } = useGameStore();
+
+  const resetAllStores = () => {
+    resetGameStore();
+    clearShownFlags();
+    resetQuests();
+  };
 
   return (
-    <SettingsWrapper>
-      <h5>Performance Monitor</h5>
+    <HugColumn style={{ width: "25rem", maxWidth: "100%" }} $gap={"0.25rem"}>
+      <SettingsWrapper>
+        <h5>Performance Monitor</h5>
 
-      <ToggleButton $active={statisticsVisible} onClick={toggleStatistics}>
-        {statisticsVisible ? "AN" : "AUS"}
-      </ToggleButton>
-    </SettingsWrapper>
+        <ToggleButton $active={statisticsVisible} onClick={toggleStatistics}>
+          {statisticsVisible ? "ON" : "OFF"}
+        </ToggleButton>
+      </SettingsWrapper>
+      <SettingsWrapper $variant="destructive">
+        <h5>Alle Daten zurücksetzen</h5>
+
+        <ActionButton
+          onClick={() =>
+            confirm("This will delete all your progress.\nAre you sure?") &&
+            resetAllStores()
+          }
+          $variant="destructive"
+        >
+          Reset
+        </ActionButton>
+      </SettingsWrapper>
+    </HugColumn>
   );
 };
 
-const SettingsWrapper = styled(FillRow)`
+const SettingsWrapper = styled(FillRow)<{
+  $variant?: "destructive" | "default";
+}>`
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
 
   padding: 1rem;
-  background: rgba(255, 255, 255, 0.05);
   pointer-events: auto;
   border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.05);
+
+  ${(p) =>
+    p.$variant === "destructive" &&
+    `
+    background: rgba(255,0,0,0.2);
+  `}
 
   h5 {
     font-size: 1rem;
@@ -154,5 +195,39 @@ const ToggleButton = styled.button<{ $active: boolean }>`
 
   &:hover {
     background: rgba(255, 255, 255, 0.9);
+  }
+`;
+const ActionButton = styled.button<{ $variant?: "destructive" | "default" }>`
+  display: flex;
+  width: fit-content;
+  white-space: nowrap;
+  align-items: center;
+  justify-content: center;
+  max-height: 2.25rem;
+
+  padding: 0.5rem 0.75rem;
+  border-radius: 50px;
+  opacity: 1;
+
+  font-size: 1rem;
+  font-weight: 700;
+
+  background-color: #fff;
+  color: #212121;
+
+  ${(p) =>
+    p.$variant === "destructive" &&
+    `
+    background-color: #ff0000;
+    color: #ffffff;
+  `}
+
+  &:disabled {
+    color: #ffffff81;
+    background: #0000001e;
+  }
+
+  &:hover:not(:disabled) {
+    background: rgba(0, 0, 0, 0.5);
   }
 `;

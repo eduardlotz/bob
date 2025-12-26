@@ -305,6 +305,10 @@ export const BobPhone = () => {
   const activeAppView = () => BOB_APPS.find((a) => a.id === activeApp)?.view;
   const activeAppName = activeApp ? AppNameMap[activeApp] : "";
 
+  const showStatusBar = ["", "options", "quests", "chat", "debug"].includes(
+    activeApp ?? ""
+  );
+
   const handleAudioButtonClick = () => {
     toggle();
     setSoundEnabled(isEnabled);
@@ -417,7 +421,7 @@ export const BobPhone = () => {
             layout
           >
             <HugColumn $gap={activeApp ? "4px" : "0"} layout="position">
-              {!activeApp && (
+              {showStatusBar && (
                 <FillRow>
                   <StatusPill>
                     {currentHour}
@@ -431,6 +435,7 @@ export const BobPhone = () => {
                     </Blinking>
                     {currentMinutes}
                   </StatusPill>
+
                   <StatusPillButton
                     $active={!isMuted}
                     onClick={handleAudioButtonClick}
@@ -455,6 +460,7 @@ export const BobPhone = () => {
               )}
               <FillColumn
                 key={activeApp}
+                $gap={activeApp ? "4px" : "0"}
                 // key="shop-app-container"
                 initial={{
                   opacity: 0,
@@ -587,7 +593,9 @@ const BobPhoneBody = styled(motion.div)`
   overflow: clip;
   overflow-clip-margin: 0.25rem;
 
-  width: 20rem;
+  min-width: 18rem;
+  width: fit-content;
+  max-width: calc(100vw - 40px);
   background: var(--primary-color);
   padding: 4px;
   border-radius: 24px;
@@ -602,6 +610,7 @@ const AppGrid = styled(motion.div)`
   grid-gap: 1rem;
   padding: 8px;
   place-items: center;
+  width: 18rem;
 `;
 
 const AppContainer = styled.button`
