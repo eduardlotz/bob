@@ -8,6 +8,7 @@ import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import { formatNumber } from "./TapCounter";
+import { useKeyPress } from "@/hooks/useKeyPress";
 
 export const TapUpgrades = ({ show }: { show: boolean }) => {
   const { currentRoute } = useAppStore();
@@ -28,6 +29,9 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
   const tapUpgrades = upgrades.filter((u) => u.category === "upgrades");
 
   useClickOutside([containerRef, triggerRef], () => setShowUpgrades(false));
+  useKeyPress("Escape", () => {
+    setShowUpgrades(false);
+  });
 
   //   const totalTapsPerSecond = useMemo(() => {
   //     const autoTapRate =

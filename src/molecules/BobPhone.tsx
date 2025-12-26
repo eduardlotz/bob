@@ -1,17 +1,27 @@
-import React, { useState, useCallback, useRef, useMemo } from "react";
+import React, {
+  useState,
+  useCallback,
+  useRef,
+  useMemo,
+  useEffect,
+} from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence, LayoutGroup } from "motion/react";
 import { CloseIcon } from "@/icons/close";
 import { NavButton } from "./BottomNavigation";
 import { Magnetic } from "@/layout/Magnetic";
 import { FillRow, HugColumn } from "@/layout";
-import { useClickOutside } from "@/hooks/useClickOutside";
+import { format } from "date-fns/format";
+
 import { PhoneMenuIcon } from "@/icons/phoneMenu";
-import { useGameStore, useViewStore } from "@/store";
+import { useAppStore, useGameStore, useViewStore } from "@/store";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { SpeakerIcon } from "@/icons/speaker";
 import { ShopApp, ShopIcon } from "@/apps/shop";
 import { ArrowLeftIcon } from "@/icons/arrow";
+import { useKeyPress } from "@/hooks/useKeyPress";
+import { DebugApp, DebugIcon } from "@/apps/debug";
+import { useClickOutside } from "@/hooks/useClickOutside";
 
 const SettingsIcon = () => (
   <svg
@@ -212,97 +222,6 @@ const QuestsIcon = () => (
   </svg>
 );
 
-const DebugIcon = () => (
-  <svg
-    width={80}
-    height={80}
-    viewBox="0 0 80 80"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M24 1H56C68.7025 1 79 11.2975 79 24V56C79 68.7025 68.7025 79 56 79H24C11.2975 79 1 68.7025 1 56V24C1 11.2975 11.2975 1 24 1Z"
-      fill="#CEAE91"
-      stroke="#91765D"
-      strokeWidth={2}
-    />
-    <path
-      d="M22.8164 46.2725H28.7719"
-      stroke="#91765D"
-      strokeWidth={2.85714}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M51.8789 46.2725H57.8346"
-      stroke="#91765D"
-      strokeWidth={2.85714}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M46.4297 28.8549V22.8994"
-      stroke="#91765D"
-      strokeWidth={2.85714}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M46.4297 57.9623V52.0068"
-      stroke="#91765D"
-      strokeWidth={2.85714}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M22.8164 34.5625H28.7719"
-      stroke="#91765D"
-      strokeWidth={2.85714}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M34.2461 28.8549V22.8994"
-      stroke="#91765D"
-      strokeWidth={2.85714}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M51.8789 34.5625H57.8346"
-      stroke="#91765D"
-      strokeWidth={2.85714}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M34.2461 57.9623V52.0068"
-      stroke="#91765D"
-      strokeWidth={2.85714}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M29.0746 49.0355C29.2269 50.407 30.3174 51.4967 31.6884 51.653C34.4684 51.9698 37.3646 52.3487 40.3404 52.3487C43.3161 52.3487 46.2123 51.9698 48.9924 51.653C50.3633 51.4967 51.4538 50.407 51.6061 49.0355C51.9138 46.2667 52.2707 43.3821 52.2707 40.4185C52.2707 37.4549 51.9138 34.5703 51.6061 31.8014C51.4538 30.43 50.3633 29.3404 48.9924 29.1841C46.2123 28.8672 43.3161 28.4883 40.3404 28.4883C37.3646 28.4883 34.4684 28.8672 31.6884 29.1841C30.3174 29.3404 29.2269 30.43 29.0746 31.8014C28.7669 34.5703 28.4102 37.4549 28.4102 40.4185C28.4102 43.3821 28.7669 46.2667 29.0746 49.0355Z"
-      fill="#F0D5BD"
-    />
-    <path
-      d="M29.0746 49.0355C29.2269 50.407 30.3174 51.4967 31.6884 51.653C34.4684 51.9698 37.3646 52.3487 40.3404 52.3487C43.3161 52.3487 46.2123 51.9698 48.9924 51.653C50.3633 51.4967 51.4538 50.407 51.6061 49.0355C51.9138 46.2667 52.2707 43.3821 52.2707 40.4185C52.2707 37.4549 51.9138 34.5703 51.6061 31.8014C51.4538 30.43 50.3633 29.3404 48.9924 29.1841C46.2123 28.8672 43.3161 28.4883 40.3404 28.4883C37.3646 28.4883 34.4684 28.8672 31.6884 29.1841C30.3174 29.3404 29.2269 30.43 29.0746 31.8014C28.7669 34.5703 28.4102 37.4549 28.4102 40.4185C28.4102 43.3821 28.7669 46.2667 29.0746 49.0355Z"
-      stroke="#91765D"
-      strokeWidth={2.85714}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M40.3359 43.2979H44.4724"
-      stroke="#91765D"
-      strokeWidth={2.85714}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
 const MoreAppsSoonIcon = () => (
   <svg
     width="80"
@@ -315,8 +234,8 @@ const MoreAppsSoonIcon = () => (
       d="M52 0V1H56C57.5373 1 59.0389 1.15039 60.4902 1.4375L60.6826 0.458008C63.8315 1.08082 66.7588 2.31897 69.334 4.04297L68.7783 4.87305C71.2869 6.55252 73.4475 8.71307 75.127 11.2217L75.9561 10.665C77.6802 13.2402 78.918 16.1674 79.541 19.3164L78.5625 19.5098C78.8496 20.9611 79 22.4627 79 24V28H80V36H79V44H80V52H79V56C79 57.5373 78.8496 59.0389 78.5625 60.4902L79.541 60.6826C78.9182 63.8317 77.6802 66.7587 75.9561 69.334L75.127 68.7783C73.4475 71.2869 71.2869 73.4475 68.7783 75.127L69.334 75.9561C66.7587 77.6802 63.8317 78.9182 60.6826 79.541L60.4902 78.5625C59.0389 78.8496 57.5373 79 56 79H52V80H44V79H36V80H28V79H24C22.4627 79 20.9611 78.8496 19.5098 78.5625L19.3164 79.541C16.1674 78.918 13.2402 77.6802 10.665 75.9561L11.2217 75.127C8.71307 73.4475 6.55252 71.2869 4.87305 68.7783L4.04297 69.334C2.31897 66.7588 1.08082 63.8315 0.458008 60.6826L1.4375 60.4902C1.1863 59.2205 1.03962 57.9121 1.00684 56.5752L1 56V52H0V44H1V36H0V28H1V24C1 22.4627 1.15039 20.9611 1.4375 19.5098L0.458008 19.3164C1.08094 16.1676 2.31891 13.2401 4.04297 10.665L4.87305 11.2217C6.55252 8.71307 8.71307 6.55252 11.2217 4.87305L10.665 4.04297C13.2401 2.31891 16.1676 1.08094 19.3164 0.458008L19.5098 1.4375C20.9611 1.15039 22.4627 1 24 1H28V0H36V1H44V0H52Z"
       fill="#373737"
       stroke="white"
-      stroke-width="2"
-      stroke-dasharray="8 8"
+      strokeWidth="2"
+      strokeDasharray="8 8"
     />
     <path
       d="M38.4981 42.28C38.4981 41.4 38.6181 40.68 38.8581 40.12C39.0981 39.544 39.3781 39.096 39.6981 38.776C40.0341 38.456 40.4661 38.112 40.9941 37.744C41.3941 37.456 41.6981 37.224 41.9061 37.048C42.1141 36.856 42.2901 36.616 42.4341 36.328C42.5941 36.04 42.6741 35.696 42.6741 35.296C42.6741 34.608 42.4501 34.096 42.0021 33.76C41.5701 33.408 41.0021 33.232 40.2981 33.232C39.4981 33.232 38.8501 33.496 38.3541 34.024C37.8581 34.536 37.5781 35.288 37.5141 36.28H34.2261C34.2901 35.032 34.5941 33.96 35.1381 33.064C35.6821 32.168 36.4021 31.488 37.2981 31.024C38.2101 30.56 39.2341 30.328 40.3701 30.328C42.0341 30.328 43.4021 30.768 44.4741 31.648C45.5621 32.528 46.1061 33.808 46.1061 35.488C46.1061 36.208 46.0021 36.816 45.7941 37.312C45.6021 37.808 45.3621 38.208 45.0741 38.512C44.7861 38.8 44.3941 39.12 43.8981 39.472C43.5141 39.776 43.1941 40.04 42.9381 40.264C42.6981 40.488 42.4821 40.768 42.2901 41.104C42.1141 41.424 41.9941 41.824 41.9301 42.304L41.7381 43.408H38.4981V42.28ZM40.0821 49.288C39.5061 49.288 39.0101 49.08 38.5941 48.664C38.1941 48.248 37.9941 47.752 37.9941 47.176C37.9941 46.616 38.1941 46.136 38.5941 45.736C39.0101 45.32 39.5061 45.112 40.0821 45.112C40.6581 45.112 41.1461 45.312 41.5461 45.712C41.9621 46.112 42.1701 46.6 42.1701 47.176C42.1701 47.752 41.9621 48.248 41.5461 48.664C41.1461 49.08 40.6581 49.288 40.0821 49.288Z"
@@ -332,7 +251,7 @@ const AppNameMap: Record<AppId, string> = {
   options: "Optionen",
   chat: "Chat",
   quests: "Quests",
-  debug: "debug",
+  debug: "Debug",
 };
 
 interface BobAppData {
@@ -365,7 +284,7 @@ const BOB_APPS: Array<BobAppData> = [
   {
     id: "debug",
     icon: DebugIcon,
-    view: <></>,
+    view: <DebugApp />,
   },
 ];
 
@@ -373,7 +292,7 @@ export const BobPhone = () => {
   const containerRef = useRef(null);
   const triggerRef = useRef(null);
   const [isOpen, setIsOpen] = useState(false);
-  const { transitionToView } = useViewStore();
+  const { transitionToView, currentView } = useViewStore();
   const [activeApp, setActiveApp] = useState<AppId | undefined>();
 
   const openApp = (appName: AppId) => {
@@ -393,23 +312,31 @@ export const BobPhone = () => {
 
   const goToHomeScreen = () => {
     setActiveApp(undefined);
+    transitionToView("phone:home");
   };
 
   const onTriggerClick = useCallback(() => {
+    isOpen ? transitionToView("default") : transitionToView("phone:home");
     setIsOpen((prev) => !prev);
-  }, []);
+  }, [currentView]);
 
-  const currentHour = new Date()
-    .toLocaleTimeString("de", {
-      hour: "2-digit",
-    })
-    .slice(0, 2);
+  const currentHour = format(new Date(), "HH");
+  const currentMinutes = format(new Date(), "mm");
 
-  const currentMinutes = new Date().toLocaleTimeString("de", {
-    minute: "2-digit",
+  useKeyPress("Escape", () => {
+    if (isOpen) {
+      onTriggerClick();
+    }
   });
 
-  useClickOutside([containerRef, triggerRef], () => setIsOpen(false));
+  // useClickOutside([containerRef, triggerRef], () => {
+  //   if (currentView === "default" && isOpen) onTriggerClick();
+  // });
+
+  useEffect(() => {
+    if (currentView.startsWith("phone:")) setIsOpen(true);
+    else setIsOpen(false);
+  }, [currentView]);
 
   return (
     <>
@@ -425,7 +352,6 @@ export const BobPhone = () => {
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
           exit={{ opacity: 0, y: 40, filter: "blur(6px)" }}
           transition={{
-            // duration: 0.25,
             type: "spring" as const,
             bounce: 0.5,
             delay: 0.1,
@@ -477,88 +403,125 @@ export const BobPhone = () => {
             transition={{
               duration: 0.2,
               ease: "easeInOut",
+              layout: {
+                type: "spring",
+                mass: 0.55,
+                damping: 12,
+                bounceDamping: 15,
+              },
             }}
             ref={containerRef}
+            style={{
+              borderRadius: "24px",
+            }}
+            layout
           >
-            <HugColumn $gap={0} layout="position">
-              <AnimatePresence mode="popLayout">
-                {!activeApp && (
-                  <FillRow>
-                    <StatusPill>
-                      {currentHour}
-                      <Blinking
-                        style={{ paddingLeft: "0.1ch", paddingRight: "0.05ch" }}
-                      >
-                        :
-                      </Blinking>
-                      {currentMinutes}
-                    </StatusPill>
-                    <StatusPillButton
-                      $active={!isMuted}
-                      onClick={handleAudioButtonClick}
-                    >
-                      <AnimatePresence mode="popLayout">
-                        <motion.div
-                          key={!isMuted ? "on" : "off"}
-                          initial={{ scale: 0, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          exit={{ scale: 0, opacity: 0 }}
-                          transition={{
-                            duration: 0.2,
-                            type: "spring",
-                            bounce: 0.7,
+            <OverflowClip>
+              <HugColumn $gap={activeApp ? "4px" : "0"} layout="position">
+                <AnimatePresence mode="popLayout">
+                  {!activeApp && (
+                    <FillRow>
+                      <StatusPill>
+                        {currentHour}
+                        <Blinking
+                          style={{
+                            paddingLeft: "0.1ch",
+                            paddingRight: "0.05ch",
                           }}
                         >
-                          <SpeakerIcon muted={isMuted} />
-                        </motion.div>
-                      </AnimatePresence>
-                    </StatusPillButton>
-                  </FillRow>
-                )}
-                {activeApp ? (
-                  activeAppView()
-                ) : (
-                  <AppGrid
-                    key="app-grid"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{
-                      duration: 0.2,
-                      type: "spring",
-                      bounce: 0.7,
-                    }}
-                  >
-                    {BOB_APPS.map((app) => (
-                      <AppContainer onClick={() => openApp(app.id)}>
-                        {app.icon()}
-                        <AppLabel>{AppNameMap[app.id]}</AppLabel>
+                          :
+                        </Blinking>
+                        {currentMinutes}
+                      </StatusPill>
+                      <StatusPillButton
+                        $active={!isMuted}
+                        onClick={handleAudioButtonClick}
+                      >
+                        <AnimatePresence mode="popLayout">
+                          <motion.div
+                            key={!isMuted ? "on" : "off"}
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0, opacity: 0 }}
+                            transition={{
+                              duration: 0.2,
+                              type: "spring",
+                              bounce: 0.7,
+                            }}
+                          >
+                            <SpeakerIcon muted={isMuted} />
+                          </motion.div>
+                        </AnimatePresence>
+                      </StatusPillButton>
+                    </FillRow>
+                  )}
+                  {activeApp ? (
+                    activeAppView()
+                  ) : (
+                    <AppGrid
+                      key="app-grid"
+                      initial={{
+                        opacity: 0,
+                        scale: 0.95,
+                        filter: "blur(4px)",
+                        y: 12,
+                      }}
+                      animate={{
+                        opacity: 1,
+                        scale: 1,
+                        filter: "blur(0px)",
+                        y: 0,
+                      }}
+                      exit={{
+                        opacity: 0,
+                        scale: 0.95,
+                        filter: "blur(4px)",
+                        y: 12,
+                      }}
+                      transition={{
+                        type: "spring",
+                        bounce: 0.4,
+                      }}
+                    >
+                      {BOB_APPS.map((app) => (
+                        <AppContainer
+                          key={app.id}
+                          onClick={() => openApp(app.id)}
+                        >
+                          {app.icon()}
+                          <AppLabel>{AppNameMap[app.id]}</AppLabel>
+                        </AppContainer>
+                      ))}
+                      <AppContainer disabled>
+                        <MoreAppsSoonIcon />
+                        <AppLabel>In Arbeit</AppLabel>
                       </AppContainer>
-                    ))}
-                    <AppContainer disabled>
-                      <MoreAppsSoonIcon />
-                      <AppLabel>In Arbeit</AppLabel>
-                    </AppContainer>
-                  </AppGrid>
-                )}
+                    </AppGrid>
+                  )}
 
-                {activeApp && (
-                  <AppBottomActions>
-                    <BackHomeButton onClick={goToHomeScreen}>
-                      <ArrowLeftIcon />
-                    </BackHomeButton>
+                  {activeApp && (
+                    <AppBottomActions>
+                      <BackHomeButton onClick={goToHomeScreen}>
+                        <ArrowLeftIcon />
+                      </BackHomeButton>
 
-                    <AppName>{activeAppName}</AppName>
-                  </AppBottomActions>
-                )}
-              </AnimatePresence>
-            </HugColumn>
+                      <AppName>{activeAppName}</AppName>
+                    </AppBottomActions>
+                  )}
+                </AnimatePresence>
+              </HugColumn>
+            </OverflowClip>
           </BobPhoneBody>
         )}
       </AnimatePresence>
     </>
   );
 };
+
+const OverflowClip = styled.div`
+  overflow: clip;
+  overflow-clip-margin: 0.25rem;
+`;
 
 const AppBottomActions = styled(FillRow)`
   position: relative;
@@ -568,7 +531,6 @@ const AppBottomActions = styled(FillRow)`
 
   padding: 4px;
   height: 2.5rem;
-  margin-top: 4px;
 `;
 
 const BackHomeButton = styled.button`

@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { Button, Logo } from "@/layout/atoms";
 import { BottomNavigation } from "@/molecules/BottomNavigation";
-import { Statistics } from "@/molecules/Statistics";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 
 import { requestMotionPermission } from "@/utils/permission";
@@ -19,7 +18,6 @@ interface UILayerProps {
 }
 
 export function UILayer({ setPermissionGranted }: UILayerProps) {
-  const { statisticsVisible } = useGameStore();
   const [soundHintDismissed, setSoundHintDismissed] = useState(false);
   const sound = useSoundSystem();
 
@@ -70,7 +68,6 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
   return (
     <UILayerContainer>
       <BottomNavigation />
-      <Statistics visible={statisticsVisible} />
     </UILayerContainer>
   );
 }

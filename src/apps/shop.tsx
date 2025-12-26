@@ -2,7 +2,13 @@ import { usePagination } from "@/hooks/usePagination";
 import { ArrowLeftIcon, ArrowRightIcon } from "@/icons/arrow";
 import { HugColumn } from "@/layout";
 import { MOTION_VARIANTS } from "@/molecules/HeadNavigation";
-import { getShopItemType, ShopItem, useGameStore, useViewStore } from "@/store";
+import {
+  CameraViewId,
+  getShopItemType,
+  ShopItem,
+  useGameStore,
+  useViewStore,
+} from "@/store";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import styled from "styled-components";
@@ -82,6 +88,8 @@ const tabs = [
   },
 ];
 
+const APP_ID: CameraViewId = "phone:shop";
+
 export function ShopApp() {
   const [activeTab, setActiveTab] = useState<ShopTab>("bob");
 
@@ -99,10 +107,14 @@ export function ShopApp() {
     purchaseDecoration,
   } = useGameStore();
 
-  const { transitionToView } = useViewStore();
+  const { currentView, transitionToView, previousView } = useViewStore();
 
   useEffect(() => {
-    transitionToView("shop");
+    transitionToView(APP_ID);
+
+    // return () => {
+    //   transitionToView(previousView);
+    // };
   }, []);
 
   const shopViewsWithItems: Record<ShopTab, ShopItem[]> = {
@@ -192,45 +204,46 @@ export function ShopApp() {
   return (
     <>
       <ShopContainer
-        key="shop-container"
+        key="shop-app-container"
         initial={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(6px)" }}
-        animate={{ opacity: 1, scaleX: 1, y: 0, filter: "blur(0px)" }}
+        animate={{
+          opacity: 1,
+          scaleX: 1,
+          y: 0,
+          filter: "blur(0px)",
+        }}
         exit={{ opacity: 0, scaleX: 0.9, y: 80, filter: "blur(6px)" }}
         transition={{
           type: "spring" as const,
           bounce: 0.5,
         }}
       >
-        <AnimatePresence mode="popLayout">
-          {currentItem && (
-            <HugColumn
-              key={currentItem.id}
-              variants={MOTION_VARIANTS.slideUp}
-              animate={MOTION_VARIANTS.slideUp.animate()}
-              exit={MOTION_VARIANTS.slideUp.exit}
-              initial={MOTION_VARIANTS.slideUp.initial}
-              $gap={"4px"}
-              $align="center"
-              style={{ position: "absolute", bottom: "30svh" }}
-            >
-              {match(currentItem)
-                .with({ enabled: true }, () => (
-                  <TapCountDisplay $variant="inverted">
-                    Ausgewählt
-                  </TapCountDisplay>
-                ))
-                .with({ purchased: false }, () => (
-                  <TapCountDisplay>{currentItem.cost} 🫵</TapCountDisplay>
-                ))
-                .otherwise(() => (
-                  // <TapCountDisplay $variant="light">
-                  //   Gekauft
-                  // </TapCountDisplay>
-                  <></>
-                ))}
-            </HugColumn>
-          )}
-        </AnimatePresence>
+        {currentItem && (
+          <HugColumn
+            key={currentItem.id}
+            variants={MOTION_VARIANTS.slideUp}
+            animate={MOTION_VARIANTS.slideUp.animate()}
+            exit={MOTION_VARIANTS.slideUp.exit}
+            initial={MOTION_VARIANTS.slideUp.initial}
+            $gap={"4px"}
+            $align="center"
+            style={{ position: "absolute", bottom: "25svh" }}
+          >
+            {match(currentItem)
+              .with({ enabled: true }, () => (
+                <TapCountDisplay $variant="accent">Ausgewählt</TapCountDisplay>
+              ))
+              .with({ purchased: false }, () => (
+                <TapCountDisplay>{currentItem.cost} 🫵</TapCountDisplay>
+              ))
+              .otherwise(() => (
+                // <TapCountDisplay $variant="light">
+                //   Gekauft
+                // </TapCountDisplay>
+                <></>
+              ))}
+          </HugColumn>
+        )}
 
         <ContentControls>
           <PaginationButton onClick={handlePrev} disabled={pageCount === 1}>
@@ -368,6 +381,18 @@ const TapCountDisplay = styled(motion.div)<{
 
     span:last-child {opacity: 0.5;}
   `}
+
+${(p) =>
+    p.$variant === "accent" &&
+    `
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+    border: 1.5px solid var(--text-color);
+    gap: 0.25rem;
+    
+    font-weight: 700;
+
+  `}
 `;
 
 const ItemInformationChip = styled(TapCountDisplay)`
@@ -414,7 +439,7 @@ const ContentControls = styled.div`
 
   position: absolute;
   margin: 0 auto;
-  bottom: 10svh;
+  bottom: 2rem;
   left: 0;
   right: 0;
 `;
@@ -442,7 +467,7 @@ const PaginationButton = styled.button`
   height: 2.75rem;
   width: 2.75rem;
 
-  border-radius: 50%;
+  border-radius: 1rem;
   background: #fff;
   color: #212121;
   box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.15), 0px 0px 8px rgba(0, 0, 0, 0.1);
@@ -472,8 +497,9 @@ const ShopItemButton = styled.button<{
   cursor: pointer;
 
   background-color: ${(p) =>
-    p.$selected ? "rgba(255,255,255,1)" : "rgba(0,0,0,0.25)"};
-  color: ${(p) => (p.$selected ? "#212121" : "#ffffff")};
+    p.$selected ? "rgba(0,0,0,1)" : "rgba(0,0,0,0.25)"};
+  /* color: ${(p) => (p.$selected ? "#212121" : "#ffffff")}; */
+  color: #ffffff;
   border: ${(p) =>
     p.$selected
       ? "2px solid rgba(255,255,255,1)"
@@ -490,7 +516,6 @@ const ShopItemButton = styled.button<{
   width: fit-content;
 
   &:hover {
-    background: ${(props) =>
-      props.$selected ? "rgba(255,255,255,0.75)" : "rgba(0, 0, 0, 0.5)"};
+    background: rgba(0, 0, 0, 0.75);
   }
 `;

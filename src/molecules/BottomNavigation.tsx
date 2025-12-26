@@ -1,33 +1,18 @@
-import React, { useState, useMemo } from "react";
+import React from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
-import { useGameStore } from "@/store/gameStore";
-import {
-  useAppStore,
-  ROUTE_PATHS,
-  useViewStore,
-  ViewMode,
-  CameraViewId,
-} from "@/store";
-import { CartIcon } from "@/icons/cart";
+import { useAppStore, ROUTE_PATHS, useViewStore } from "@/store";
 import { MenuIcon } from "@/icons/menu";
 import { CloseIcon } from "@/icons/close";
-import { Shop } from "./Shop";
-import { ProgressTracker } from "./ProgressTracker";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { Magnetic } from "@/layout/Magnetic";
 import { HugColumn, HugRow } from "@/layout";
 import { TapUpgrades } from "./tapUpgrades";
 import { MenuButton } from "@/layout/atoms";
-import {
-  CAMERA_Y_POSITION,
-  VISIBLE_OPTIONS_CAMERA_ZOOM,
-} from "./HeadNavigation";
-import { PhoneMenuIcon } from "@/icons/phoneMenu";
 import { BobPhone } from "./BobPhone";
 
 export function BottomNavigation() {
-  const { currentView, setViewMode, transitionToView } = useViewStore();
+  const { currentView, transitionToView } = useViewStore();
 
   const {
     currentRoute,
@@ -44,21 +29,11 @@ export function BottomNavigation() {
 
   const handleMenuButtonClick = () => {
     toggleOptions();
-    handleNavigationClick("default");
-  };
-
-  const handleNavigationClick = (view: CameraViewId) => {
-    if (currentView === view) {
-      transitionToView("default");
-    } else {
-      transitionToView(view);
-    }
-
-    if (showOptions) closeOptionsWithAnimation();
+    transitionToView("default");
   };
 
   const showTapUpgrades =
-    !showOptions && isHomeRoute && ["default", "phone"].includes(currentView);
+    !showOptions && isHomeRoute && ["default"].includes(currentView);
 
   return (
     <HugColumn
