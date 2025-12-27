@@ -25,6 +25,7 @@ import {
   DEFAULT_FORM_PARAMETERS,
 } from "@/types/blobForms";
 import { initialWeatherEffects } from "@/shop-items/weatherEffects";
+import { initialBobItems } from "@/shop-items/bobItems";
 
 export enum GAME_STORE_VERSIONS {
   V1 = 1,
@@ -35,8 +36,8 @@ const ONE_SECOND_MS = 1000;
 const AUTO_TAP_INTERVAL_MS = 1000;
 
 // reset game states created before this date
-const PURGE_DATE = new Date("12/26/2025");
-const LAST_SCHEMA_UPDATE = new Date("12/26/2025");
+const PURGE_DATE = new Date("12/27/2025");
+const LAST_SCHEMA_UPDATE = new Date("12/27/2025");
 
 // main migration function
 function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
@@ -240,9 +241,9 @@ interface GameStore {
 
   purchaseUpgrade: (upgradeId: string) => void;
   purchaseDecoration: (decorationId: string) => void;
-  purchaseBobItem: (bobItemId: string) => void;
+  purchaseBobItem: (bobItemId: string, forFree?: boolean) => void;
   purchaseTheme: (themeId: string) => void;
-  purchaseRoute: (routeId: string, force?: boolean) => void;
+  purchaseRoute: (routeId: string, forFree?: boolean) => void;
   purchaseBlobForm: (blobFormId: string) => void;
   purchaseTapEffect: (effectId: string) => void;
 
@@ -302,76 +303,6 @@ export const initialDecorations: DecorationItem[] = [
     rotation: 0,
     color: "#FFD700",
     icon: "🌳",
-  },
-];
-
-export const initialBobItems: BobItem[] = [
-  {
-    id: "builderHelmet",
-    name: "Baumeister",
-    description: "Jo wir schaffen das!",
-    cost: 100,
-    purchased: false,
-    enabled: false,
-    type: "hat",
-    icon: "👨‍🍳",
-    category: "bob",
-  },
-  {
-    id: "krustyKrabHat",
-    name: "Burger Boy",
-    description: "Ist da die Krosse Krabbe?",
-    cost: 100,
-    purchased: false,
-    enabled: false,
-    type: "hat",
-    icon: "👨‍🍳",
-    category: "bob",
-  },
-  {
-    id: "afroHair",
-    name: "Künstler",
-    description: "Happy little accidents",
-    cost: 100,
-    purchased: false,
-    enabled: false,
-    type: "hat",
-    icon: "👨‍🎨",
-    category: "bob",
-  },
-  {
-    id: "chickenLittleGlasses",
-    name: "Brillenschlange",
-    description: "Eddie's Brille",
-    cost: 100,
-    purchased: false,
-    enabled: false,
-    type: "accessory",
-    icon: "🤓",
-    category: "bob",
-  },
-  {
-    id: "simsPlumbob",
-    name: "Sim",
-    description: "Sul Sul",
-    cost: 50,
-    purchased: false,
-    enabled: false,
-    type: "decoration",
-    icon: "💎",
-    category: "bob",
-    detached: true,
-  },
-  {
-    id: "blackCap",
-    name: "Cap",
-    description: "Eddie's schwarze Kappe",
-    cost: 100,
-    purchased: false,
-    enabled: false,
-    type: "hat",
-    icon: "🧢",
-    category: "bob",
   },
 ];
 
@@ -731,13 +662,13 @@ export const useGameStore = create<GameStore>()(
           });
         },
 
-        purchaseBobItem: (bobItemId: string) => {
+        purchaseBobItem: (bobItemId: string, forFree?: boolean) => {
           set((state) => {
             const bobItem = state.bobItems.find((b) => b.id === bobItemId);
             if (
               !bobItem ||
               bobItem.purchased ||
-              !state.canAfford(bobItem.cost)
+              (!state.canAfford(bobItem.cost) && !forFree)
             ) {
               return state;
             }
@@ -758,7 +689,7 @@ export const useGameStore = create<GameStore>()(
 
             return {
               ...state,
-              taps: state.taps - bobItem.cost,
+              taps: forFree ? state.taps : state.taps - bobItem.cost,
               bobItems: updatedBobItems,
             };
           });
@@ -903,17 +834,16 @@ export const useGameStore = create<GameStore>()(
           });
         },
 
-        // TODO: use better names (force means for free?)
-        purchaseRoute: (routeId: string, force = false) => {
+        purchaseRoute: (routeId: string, forFree = false) => {
           set((state) => {
             const route = state.routes.find((r) => r.id === routeId);
 
             return match({
               route,
               canAfford: route ? state.canAfford(route.cost) : false,
-              force,
+              forFree,
             })
-              .with({ force: true }, () => {
+              .with({ forFree: true }, () => {
                 const updatedRoutes = state.routes.map((r) =>
                   r.id === routeId
                     ? { ...r, purchased: true, unlocked: true }

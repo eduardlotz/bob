@@ -27,6 +27,7 @@ export type CameraViewId =
   | "phone:home"
   | "phone:shop"
   | "phone:debug"
+  | "phone:quests"
   | "desk"
   | "bookshelf"
   | "computer"
@@ -47,8 +48,8 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   "phone:shop": {
     id: "phone:shop",
     name: "Shop View",
-    position: [0, CAMERA_HEIGHT - 1, VISIBLE_OPTIONS_CAMERA_ZOOM - 2],
-    target: [0, CAMERA_Y_POSITION, 0],
+    position: [0, CAMERA_HEIGHT - 1.5, VISIBLE_OPTIONS_CAMERA_ZOOM - 2],
+    target: [0, CAMERA_Y_POSITION - 1.5, 0],
     transition: {
       duration: 1000,
       easing: "easeInOutCubic",
@@ -67,6 +68,10 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   "phone:debug": {
     id: "phone:debug",
     name: "Debug View",
+  },
+  "phone:quests": {
+    id: "phone:quests",
+    name: "Quests View",
   },
   desk: {
     id: "desk",

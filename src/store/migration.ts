@@ -4,7 +4,6 @@ import {
   isIndexedDBAvailable,
 } from "./indexedDB";
 import {
-  initialBobItems,
   initialDecorations,
   initialRoutes,
   initialThemes,
@@ -14,6 +13,7 @@ import { useQuestStore } from "./questStore";
 import { useMessageStore } from "./messageStore";
 import { toast } from "sonner";
 import { initialTapUpgrades } from "@/shop-items/upgrades";
+import { initialBobItems } from "@/shop-items/bobItems";
 
 // utility to move data from localStorage to IndexedDB
 export class StoreMigration {

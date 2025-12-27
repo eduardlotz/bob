@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
-import { CameraViewId, useViewStore, ViewMode } from "@/store/viewStore";
+import { CameraViewId, useViewStore } from "@/store/viewStore";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
-import { a } from "@react-spring/three";
 import { match } from "ts-pattern";
 
 export type InteractionMode = "dialog" | "view";
@@ -11,7 +10,7 @@ interface InteractiveObjectProps {
   questAction: string;
   questValue?: number;
   children: React.ReactNode;
-  mode: InteractionMode;
+  mode?: InteractionMode;
   onDialogOpen?: () => void;
   viewId?: CameraViewId;
   showOutline?: boolean;
@@ -33,27 +32,24 @@ export function InteractiveObject({
     useViewStore();
   const { playUISound } = useSoundSystem();
 
-  // go back to normal view if view is currently active
   const isViewActive = mode === "view" && currentView === viewId;
 
-  const handleClick = async (e: any) => {
-    e.stopPropagation();
+  const handleClick = (e: any) => {
     playUISound("ui-tap-2");
 
     triggerQuest(questAction, questValue);
 
-    await match(mode)
-      .with("dialog", async () => {
+    match(mode)
+      .with("dialog", () => {
         onDialogOpen?.();
       })
-      .with("view", async () => {
+      .with("view", () => {
         if (viewId) {
           if (!isViewActive) {
-            await transitionToView(viewId);
+            transitionToView(viewId);
           }
         }
-      })
-      .exhaustive();
+      });
   };
 
   const handlePointerEnter = () => {
@@ -66,16 +62,13 @@ export function InteractiveObject({
     document.body.style.cursor = "auto";
   };
 
-  const shouldShowOutline = showOutline && (isHovered || isViewActive);
-  const isDisabled = isTransitioning;
-
   return (
-    <a.group
-      onClick={isDisabled ? undefined : handleClick}
-      onPointerEnter={isDisabled ? undefined : handlePointerEnter}
-      onPointerLeave={isDisabled ? undefined : handlePointerLeave}
+    <group
+      onClick={handleClick}
+      onPointerEnter={handlePointerEnter}
+      onPointerLeave={handlePointerLeave}
     >
       {children}
-    </a.group>
+    </group>
   );
 }

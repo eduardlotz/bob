@@ -65,8 +65,8 @@ export default function App() {
 
         <Toaster
           duration={5000}
-          position="bottom-center"
-          offset={"7rem"}
+          position="top-center"
+          offset={"1.25rem"}
           theme="dark"
           icons={{
             success: (

@@ -213,7 +213,7 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
       camera={{ position: [0, 0, isMobile ? 1.5 : 2], fov: 50 }}
       style={{
         width: "100vw",
-        height: "100svh",
+        height: "100dvh",
         position: "absolute",
         top: 0,
         left: 0,

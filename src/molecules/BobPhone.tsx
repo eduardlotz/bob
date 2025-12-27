@@ -17,11 +17,12 @@ import { PhoneMenuIcon } from "@/icons/phoneMenu";
 import { useAppStore, useGameStore, useViewStore } from "@/store";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { SpeakerIcon } from "@/icons/speaker";
-import { ShopApp, ShopIcon } from "@/apps/shop";
+import { ShopApp, ShopIcon, TapCounterChip } from "@/apps/shop";
 import { ArrowLeftIcon } from "@/icons/arrow";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { DebugApp, DebugIcon } from "@/apps/debug";
 import { useClickOutside } from "@/hooks/useClickOutside";
+import { QuestsApp, QuestsIcon } from "@/apps/quests";
 
 const SettingsIcon = () => (
   <svg
@@ -157,71 +158,6 @@ const ChatIcon = () => (
   </svg>
 );
 
-const QuestsIcon = () => (
-  <svg
-    width={80}
-    height={80}
-    viewBox="0 0 80 80"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <rect
-      x={1}
-      y={1}
-      width={78}
-      height={78}
-      rx={23}
-      fill="#D6E46E"
-      stroke="#B8BC4E"
-      strokeWidth={2}
-    />
-    <g clipPath="url(#clip0_3439_2730)">
-      <path
-        d="M40.0017 57.7729C51.4302 57.7729 57.8588 51.3443 57.8588 39.9157C57.8588 28.4872 51.4302 22.0586 40.0017 22.0586C28.5731 22.0586 22.1445 28.4872 22.1445 39.9157C22.1445 51.3443 28.5731 57.7729 40.0017 57.7729Z"
-        fill="#FCFFD7"
-      />
-      <path
-        d="M30.9375 42.6641C32.3111 47.6091 37.8056 50.6311 42.7507 49.2574C45.7727 48.1585 48.2452 45.686 49.0694 42.6641"
-        stroke="#B8BC4E"
-        strokeWidth={2.85714}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M32.7266 34.4893V36.4893"
-        stroke="#B8BC4E"
-        strokeWidth={2.85714}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M47.2773 34.4893V36.4893"
-        stroke="#B8BC4E"
-        strokeWidth={2.85714}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M40.0017 57.7729C51.4302 57.7729 57.8588 51.3443 57.8588 39.9157C57.8588 28.4872 51.4302 22.0586 40.0017 22.0586C28.5731 22.0586 22.1445 28.4872 22.1445 39.9157C22.1445 51.3443 28.5731 57.7729 40.0017 57.7729Z"
-        stroke="#B8BC4E"
-        strokeWidth={2.85714}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </g>
-    <defs>
-      <clipPath id="clip0_3439_2730">
-        <rect
-          width={40}
-          height={40}
-          fill="white"
-          transform="translate(20 19.916)"
-        />
-      </clipPath>
-    </defs>
-  </svg>
-);
-
 const MoreAppsSoonIcon = () => (
   <svg
     width="80"
@@ -258,27 +194,29 @@ interface BobAppData {
   id: AppId;
   icon: any; // fix type, jsx not working
   view: React.JSX.Element;
+  bottomAction?: React.JSX.Element;
 }
 
 const BOB_APPS: Array<BobAppData> = [
-  {
-    id: "shop",
-    icon: ShopIcon,
-    view: <ShopApp />,
-  },
-  {
-    id: "options",
-    icon: SettingsIcon,
-    view: <></>,
-  },
   {
     id: "chat",
     icon: ChatIcon,
     view: <></>,
   },
   {
+    id: "shop",
+    icon: ShopIcon,
+    view: <ShopApp />,
+    bottomAction: <TapCounterChip />,
+  },
+  {
     id: "quests",
     icon: QuestsIcon,
+    view: <QuestsApp />,
+  },
+  {
+    id: "options",
+    icon: SettingsIcon,
     view: <></>,
   },
   {
@@ -303,6 +241,8 @@ export const BobPhone = () => {
   const { setSoundEnabled } = useGameStore();
 
   const activeAppView = () => BOB_APPS.find((a) => a.id === activeApp)?.view;
+  const activeAppBottomAction = () =>
+    BOB_APPS.find((a) => a.id === activeApp)?.bottomAction;
   const activeAppName = activeApp ? AppNameMap[activeApp] : "";
 
   const showStatusBar = ["", "options", "quests", "chat", "debug"].includes(
@@ -397,13 +337,13 @@ export const BobPhone = () => {
         </NavButton>
       </Magnetic>
 
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {isOpen && (
           <BobPhoneBody
             key="bob-phone-body"
-            initial={{ opacity: 0, scale: 0.9, y: 40, filter: "blur(10px)" }}
-            animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, scale: 0.9, y: 40, filter: "blur(10px)" }}
+            initial={{ opacity: 0, scaleX: 0.95, y: 40, filter: "blur(6px)" }}
+            animate={{ opacity: 1, scaleX: 1, y: 0, filter: "blur(0px)" }}
+            exit={{ opacity: 0, scaleX: 0.95, y: 40, filter: "blur(6px)" }}
             transition={{
               duration: 0.2,
               ease: "easeInOut",
@@ -417,13 +357,18 @@ export const BobPhone = () => {
             ref={containerRef}
             style={{
               borderRadius: "24px",
+              opacity: 0,
             }}
             layout
           >
-            <HugColumn $gap={activeApp ? "4px" : "0"} layout="position">
+            <HugColumn
+              $gap={activeApp ? "4px" : "0"}
+              layout="position"
+              $align="center"
+            >
               {showStatusBar && (
                 <FillRow>
-                  <StatusPill>
+                  <StatusPill layout="position">
                     {currentHour}
                     <Blinking
                       style={{
@@ -439,32 +384,33 @@ export const BobPhone = () => {
                   <StatusPillButton
                     $active={!isMuted}
                     onClick={handleAudioButtonClick}
+                    layout="position"
                   >
-                    <AnimatePresence mode="popLayout">
-                      <motion.div
-                        key={!isMuted ? "on" : "off"}
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0, opacity: 0 }}
-                        transition={{
-                          duration: 0.2,
-                          type: "spring",
-                          bounce: 0.7,
-                        }}
-                      >
-                        <SpeakerIcon muted={isMuted} />
-                      </motion.div>
-                    </AnimatePresence>
+                    <motion.div
+                      key={!isMuted ? "on" : "off"}
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      transition={{
+                        duration: 0.2,
+                        type: "spring",
+                        bounce: 0.7,
+                      }}
+                    >
+                      <SpeakerIcon muted={isMuted} />
+                    </motion.div>
                   </StatusPillButton>
                 </FillRow>
               )}
               <FillColumn
                 key={activeApp}
                 $gap={activeApp ? "4px" : "0"}
+                $align="center"
+                $justify="center"
                 // key="shop-app-container"
                 initial={{
                   opacity: 0,
-                  scaleX: 0.9,
+                  scaleX: 0.95,
                   y: 40,
                   filter: "blur(6px)",
                 }}
@@ -476,13 +422,13 @@ export const BobPhone = () => {
                 }}
                 exit={{
                   opacity: 0,
-                  scaleX: 0.9,
+                  scaleX: 0.95,
                   y: 80,
                   filter: "blur(6px)",
                 }}
                 transition={{
                   type: "spring" as const,
-                  bounce: 0.5,
+                  bounce: 0.4,
                 }}
               >
                 {activeApp ? (
@@ -509,8 +455,10 @@ export const BobPhone = () => {
                       y: 12,
                     }}
                     transition={{
-                      type: "spring",
-                      bounce: 0.4,
+                      // type: "spring",
+                      // bounce: 0.4,
+                      duration: 0.2,
+                      ease: "easeInOut",
                     }}
                   >
                     {BOB_APPS.map((app) => (
@@ -535,6 +483,8 @@ export const BobPhone = () => {
                     </BackHomeButton>
 
                     <AppName>{activeAppName}</AppName>
+
+                    <AppAction>{activeAppBottomAction()}</AppAction>
                   </AppBottomActions>
                 )}
               </FillColumn>
@@ -560,6 +510,12 @@ const AppBottomActions = styled(FillRow)`
 
   padding: 4px;
   height: 2.5rem;
+`;
+
+const AppAction = styled.div`
+  position: absolute;
+  right: 4px;
+  margin: auto 0;
 `;
 
 const BackHomeButton = styled.button`
@@ -662,7 +618,7 @@ const AppLabel = styled.span`
   border-radius: 50px;
 `;
 
-const StatusPill = styled.div`
+const StatusPill = styled(motion.div)`
   font-size: 1rem;
   font-weight: 600;
   color: white;
@@ -675,7 +631,7 @@ const StatusPill = styled.div`
   height: 2.25rem;
 `;
 
-const StatusPillButton = styled.button<{ $active: boolean }>`
+const StatusPillButton = styled(motion.button)<{ $active: boolean }>`
   font-size: 1rem;
   color: ${(p) => (p.$active ? "#212121" : "#ffffff9a")};
   background: ${(p) => (p.$active ? "#ffffff" : "rgba(0, 0, 0, 0.25)")};

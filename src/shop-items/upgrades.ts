@@ -2,7 +2,7 @@ import { Upgrade } from "@/store";
 
 export const initialTapUpgrades: Upgrade[] = [
   {
-    id: "auto_tap_1",
+    id: "auto_tap",
     name: "Auto Tapper",
     description: "Lass Bob 1 Mal pro Sekunde für dich tippen",
     baseCost: 15,
@@ -14,7 +14,7 @@ export const initialTapUpgrades: Upgrade[] = [
     category: "upgrades",
   },
   {
-    id: "tap_multiplier_1",
+    id: "tap_multiplier",
     name: "Tap Multiplikator",
     description: "Verdopple deine Taps",
     baseCost: 50,
