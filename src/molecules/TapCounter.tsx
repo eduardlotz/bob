@@ -8,6 +8,39 @@ import { THEME_CONFIG } from "@/store/themeConfig";
 
 const FONT_PATH = "/fonts/OpenRundeBold.json";
 
+// TODO: replace formatting with this d3-format example for bigger numbers
+// import { format } from "d3-format";
+
+// const SI_SUFFIXES = [
+//   "",   // 10^0
+//   "K",  // 10^3
+//   "M",  // 10^6
+//   "B",  // 10^9
+//   "T",  // 10^12
+//   "Qa", // 10^15
+//   "Qi", // 10^18
+//   "Sx", // 10^21
+//   "Sp", // 10^24
+//   "Oc", // 10^27
+//   "No", // 10^30
+//   "Dc", // 10^33
+// ];
+
+// const d3Formatter = format(".1~s");
+
+// export const formatNumber = (num: number): string => {
+//   if (num < 10_000) {
+//     return num.toLocaleString("de-DE", { maximumFractionDigits: 0 });
+//   }
+
+//   const formatted = d3Formatter(num); // e.g. "1.23M", "4.5G"
+
+//   return formatted.replace(
+//     /([a-zA-Z]+)/,
+//     (si) => SI_SUFFIXES["kMGTPEZY".indexOf(si[0]) + 1] ?? si
+//   );
+// };
+
 export const formatNumber = (num: number): string => {
   if (num < 10000) {
     // number below 10k, use German locale formatting (dots for thousands)

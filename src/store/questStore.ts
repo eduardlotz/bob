@@ -1,16 +1,26 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { createIndexedDBStorage } from "./indexedDB";
+import { ROUTE_IDS } from "./routeConfig";
+
+type RewardType = "taps_reward" | "item_reward";
+type RewardId = string;
+
+interface QuestReward {
+  type: RewardType;
+  amount: RewardId | number;
+}
 
 export interface Quest {
   id: string;
   title: string;
   description: string;
+  icon: string;
   progress: number;
   maxProgress: number;
-  reward: number;
+  reward: QuestReward;
   completed: boolean;
-  routeId: string;
+  routeId?: string;
   type: "interaction" | "tap" | "time" | "custom"; // TODO: expand store with hooks for diff types
   trigger?: {
     action: string;
@@ -33,48 +43,79 @@ export interface QuestStore {
 
 const initialQuests: Quest[] = [
   {
-    id: "about_quest_1",
-    title: "Mein Arbeitsplatz",
-    description: "Klick auf den Schreibtisch",
+    id: "auto_tap_milestone_1",
+    title: "Passives Einkommen",
+    description: "Komm in die Auto-Tap Gruppe 🔁🫵",
+    icon: "🔁",
     progress: 0,
-    maxProgress: 30,
-    reward: 500,
+    maxProgress: 1,
+    reward: {
+      type: "item_reward",
+      amount: "chickenLittleGlasses",
+    },
     completed: false,
-    routeId: "route_about",
+    routeId: "route_home",
     type: "interaction",
     trigger: {
-      action: "click_desk",
-      value: 50,
+      action: "auto_tap_level",
+      value: 1,
+    },
+  },
+  {
+    id: "tap_multilier_milestone_1",
+    title: "Exponentielles Wachstum",
+    description: "Verdopple deine 🫵/s",
+    icon: "🙌",
+    progress: 0,
+    maxProgress: 1,
+    reward: {
+      type: "taps_reward",
+      amount: 0,
+    },
+    completed: false,
+    routeId: "route_home",
+    type: "interaction",
+    trigger: {
+      action: "tap_multiplier_level",
+      value: 1,
+    },
+  },
+  {
+    id: "about_quest_1",
+    title: "Kennlernphase",
+    description: "Schalte die “Über Mich”-Seite frei",
+    icon: "👤",
+    progress: 0,
+    maxProgress: 1,
+    reward: {
+      type: "taps_reward",
+      amount: 500,
+    },
+    completed: false,
+    // routeId: "route_home",
+    type: "interaction",
+    trigger: {
+      action: `purchase_route_about`,
+      value: 1,
     },
   },
   {
     id: "about_quest_2",
-    title: "Meine Bücher",
-    description: "Klick auf die Bücher",
+    title: "Sul Sul!",
+    description: "Schnapp dir dein Plumbob!",
+    icon: "💎",
     progress: 0,
-    maxProgress: 25,
-    reward: 500,
-    completed: false,
-    routeId: "route_about",
-    type: "interaction",
-    trigger: {
-      action: "click_books",
-      value: 25,
+    maxProgress: 1,
+    reward: {
+      type: "item_reward",
+      amount: "simsPlumbob",
     },
-  },
-  {
-    id: "about_quest_3",
-    title: "Meine Interessen",
-    description: "Klick auf den Karton",
-    progress: 0,
-    maxProgress: 25,
-    reward: 500,
     completed: false,
     routeId: "route_about",
     type: "interaction",
     trigger: {
-      action: "click_box",
-      value: 25,
+      action: "click_plumbob",
+      value: 1,
     },
   },
 ];

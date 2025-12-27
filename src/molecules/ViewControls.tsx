@@ -5,18 +5,13 @@ import styled from "styled-components";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeftIcon } from "@/icons/arrow";
 
-// TODO: make type safe and use correctly
-const VIEWID_TITLE_MAP: Record<CameraViewId, string> = {
+const VIEWID_TITLE_MAP = {
   default: "Über mich",
   desk: "Mein Tisch",
   bookshelf: "Mein Bücherregal",
   computer: "Mein Computer",
   cardbox: "Hobbies & Interessen",
-  upgrades: "Upgrades",
-  "phone:shop": "Shop",
-  "phone:home": "Phone",
-  "phone:debug": "Debug",
-};
+} satisfies Partial<Record<CameraViewId, string>>;
 
 export function ViewControls() {
   const {

@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import styled from "styled-components";
 
 export const FullScreen = styled.div`
-  height: 100svh;
+  height: 100dvh;
   width: 100vw;
   background-color: white;
 

@@ -16,6 +16,7 @@ import { useAppStore } from "@/store";
 import { useViewStore } from "@/store/viewStore";
 import { Magnetic } from "@/layout/Magnetic";
 import { useMessageStore } from "@/store/messageStore";
+import { useQuestSystem } from "@/hooks/useQuestSystem";
 
 //#region constants
 export const CAMERA_Y_POSITION = 1;
@@ -417,6 +418,7 @@ function Option({
   const navigate = useNavigate();
   const { currentRoute } = useAppStore();
   const { setViewMode } = useViewStore();
+  const { triggerQuest } = useQuestSystem();
   const { canAfford, purchaseRoute } = useGameStore();
   const { showMessage } = useMessageStore();
 
@@ -444,6 +446,7 @@ function Option({
     match({ ...route, canPurchase: canAfford(route.cost) })
       .with({ isLocked: false, purchased: false, canPurchase: true }, () => {
         purchaseRoute(route.id);
+        triggerQuest(`purchase_${route.id}`);
         resetCamAndNavigate();
       })
       .with({ purchased: true }, () => {

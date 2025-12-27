@@ -6,13 +6,13 @@ import { toast } from "sonner";
 
 export const useQuestSystem = () => {
   const { currentRoute } = useAppStore();
-  const { addTaps } = useGameStore();
+  const { addTaps, purchaseBobItem } = useGameStore();
   const questStore = useQuestStore();
   const quests = questStore.quests;
   const updateQuestProgress = questStore.updateQuestProgress;
   const completeQuest = questStore.completeQuest;
 
-  // Convert route path to route ID for quest lookup
+  // TODO: check if needed
   const routeId = useMemo(() => {
     const routeMap: { [key: string]: string } = {
       "/home": "route_home",
@@ -25,7 +25,6 @@ export const useQuestSystem = () => {
     return routeMap[currentRoute] || "route_home";
   }, [currentRoute]);
 
-  // Get quests for current route - using stable reference
   const currentQuests = useMemo(
     () => quests.filter((quest) => quest.routeId === routeId),
     [quests, routeId]
@@ -50,7 +49,7 @@ export const useQuestSystem = () => {
       const freshQuests = useQuestStore.getState().quests;
       const relevantQuests = freshQuests.filter(
         (quest) =>
-          quest.routeId === routeId &&
+          (quest.routeId ? quest.routeId === routeId : true) &&
           !quest.completed &&
           quest.trigger?.action === action
       );
@@ -74,10 +73,12 @@ export const useQuestSystem = () => {
         if (newProgress >= quest.maxProgress && !currentQuestState?.completed) {
           completeQuest(quest.id);
 
-          addTaps(quest.reward);
+          quest.reward.type === "taps_reward"
+            ? addTaps(quest.reward.amount as number)
+            : purchaseBobItem(quest.reward.amount as string, true);
 
-          toast.success(`Quest erledigt! +${quest.reward} taps erhalten`, {
-            description: quest.title,
+          toast.success(`Quest erledigt! ${quest.title}`, {
+            description: quest.description,
             duration: 3000,
           });
         }
@@ -86,7 +87,6 @@ export const useQuestSystem = () => {
     [routeId, updateQuestProgress, completeQuest, addTaps]
   );
 
-  // Specific quest triggers
   const triggerInteraction = useCallback(
     (elementId: string) => {
       triggerQuest(`click_${elementId}`);

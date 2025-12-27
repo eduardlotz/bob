@@ -30,6 +30,6 @@ export default function MainLayout({ children }: any) {
 const Container = styled.div`
   position: relative;
   width: 100%;
-  height: 100svh;
+  height: 100dvh;
   overflow: hidden;
 `;

@@ -2,13 +2,14 @@ import { useClickOutside } from "@/hooks/useClickOutside";
 import { CloseIcon } from "@/icons/close";
 import { FillRow, HugColumn, HugRow } from "@/layout";
 import { Magnetic } from "@/layout/Magnetic";
-import { ROUTE_PATHS, useAppStore, useGameStore } from "@/store";
+import { ROUTE_PATHS, useAppStore, useGameStore, useQuestStore } from "@/store";
 import { useMessageStore } from "@/store/messageStore";
 import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import { formatNumber } from "./TapCounter";
 import { useKeyPress } from "@/hooks/useKeyPress";
+import { useQuestSystem } from "@/hooks/useQuestSystem";
 
 export const TapUpgrades = ({ show }: { show: boolean }) => {
   const { currentRoute } = useAppStore();
@@ -22,6 +23,8 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
   } = useGameStore();
 
   const { showMessage } = useMessageStore();
+
+  const { triggerQuest } = useQuestSystem();
   const containerRef = useRef(null);
   const triggerRef = useRef(null);
   const [showUpgrades, setShowUpgrades] = useState(false);
@@ -50,6 +53,8 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
 
   const handleUpgradePurchase = (upgradeId: string) => {
     purchaseUpgrade(upgradeId);
+
+    triggerQuest(`${upgradeId}_level`);
   };
 
   return (
@@ -57,6 +62,7 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
       {show && (
         <HugColumn
           key="upgrades-column"
+          style={{ opacity: 0, translateZ: 0 }}
           initial={{ opacity: 0, y: 40, filter: "blur(6px)" }}
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
           exit={{ opacity: 0, y: 40, filter: "blur(6px)" }}

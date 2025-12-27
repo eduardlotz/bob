@@ -2,6 +2,7 @@ import { usePagination } from "@/hooks/usePagination";
 import { ArrowLeftIcon, ArrowRightIcon } from "@/icons/arrow";
 import { FillRow, HugColumn } from "@/layout";
 import { MOTION_VARIANTS } from "@/molecules/HeadNavigation";
+import { formatNumber } from "@/molecules/TapCounter";
 import {
   CameraViewId,
   getShopItemType,
@@ -88,6 +89,16 @@ const tabs = [
     name: "Deko",
   },
 ];
+
+export const TapCounterChip = () => {
+  const { taps } = useGameStore();
+
+  return (
+    <ItemStatusChip $variant="dark-accent">
+      {formatNumber(Math.floor(taps))} 🫵
+    </ItemStatusChip>
+  );
+};
 
 const APP_ID: CameraViewId = "phone:shop";
 
@@ -333,8 +344,9 @@ const ShopContainer = styled(motion.div)`
   pointer-events: auto;
 `;
 
+// TODO: refactor/split + design system
 const ItemStatusChip = styled(motion.div)<{
-  $variant?: "light" | "dark" | "accent" | "inverted";
+  $variant?: "light" | "dark" | "accent" | "inverted" | "dark-accent";
 }>`
   display: flex;
   align-items: center;
@@ -385,6 +397,21 @@ const ItemStatusChip = styled(motion.div)<{
     font-weight: 700;
 
     span:last-child {opacity: 0.5;}
+  `}
+ 
+ ${(p) =>
+    p.$variant === "dark-accent" &&
+    `
+    color: var(--accent-color);
+    border: 1.5px solid var(--accent-color);
+    background-color: #212121;
+    
+    gap: 0.25rem;
+    padding: 0 0.75rem;
+    height: 2rem;
+    border-radius: 20px;
+    
+    font-weight: 700;
   `}
 
 ${(p) =>

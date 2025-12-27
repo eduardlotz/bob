@@ -30,7 +30,7 @@ let state: SoundSystemState = {
   worldEnabled: true,
 };
 
-let lastNonZeroMasterVolume = state.masterVolume > 0 ? state.masterVolume : 1;
+let lastNonZeroMasterVolume = state.masterVolume > 0 ? state.masterVolume : 0.5;
 
 let audioListener: THREE.AudioListener | null = null;
 let listenerAttachedToCamera = false;
@@ -205,9 +205,9 @@ const getTypeVolume = (type: SoundConfig["type"]): number => {
     case "ui":
       return state.uiVolume;
     case "text":
-      return state.textVolume ?? 1;
+      return state.textVolume;
     default:
-      return 1.0;
+      return 0.5;
   }
 };
 
