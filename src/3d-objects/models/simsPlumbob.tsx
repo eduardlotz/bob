@@ -1,9 +1,16 @@
 import * as THREE from "three";
 import React, { useEffect, useRef } from "react";
-import { MeshTransmissionMaterial, useGLTF } from "@react-three/drei";
+import {
+  MeshTransmissionMaterial,
+  Outlines,
+  useGLTF,
+  Wireframe,
+} from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
 import { useFrame } from "@react-three/fiber";
+import { useGameStore } from "@/store";
+import { previewMaterialProps } from "@/shop-items/utils";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -26,12 +33,13 @@ interface Props {
 
 export const SimsPlumbob = ({
   scale = [1, 1, 1],
-  outlineColor = "#000000",
+  outlineColor = "#8eb221",
   color = "#b7e822",
   ...props
 }: Props) => {
   const group = useRef<THREE.Group>(null!);
   const { nodes } = useGLTF(PATH) as GLTFResult;
+  const { previewMode } = useGameStore();
 
   const [spring, api] = useSpring(() => ({
     scale: [0, 0, 0], // start invisible
@@ -60,12 +68,22 @@ export const SimsPlumbob = ({
     >
       <group rotation={[-Math.PI / 2, 0, 0]}>
         <mesh geometry={nodes.Plumbob_Material001_0.geometry}>
-          <MeshTransmissionMaterial
-            color={color}
-            thickness={1.5}
-            distortion={0.5}
-            transmission={0.9}
-          />
+          <meshPhongMaterial color={color} />
+          {previewMode === "decoration" && (
+            <Wireframe
+              thickness={0.04}
+              backfaceStroke={outlineColor}
+              // fillMix={previewMode === "decoration" ? 1 : 0}
+            />
+          )}
+
+          {/* {previewMode === "decoration" && (
+            <Wireframe
+              thickness={0.05} // world units
+              backfaceStroke={outlineColor}
+              fillMix={previewMode === "decoration" ? 1 : 0.2}
+            />
+          )} */}
         </mesh>
       </group>
     </a.group>

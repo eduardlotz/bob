@@ -14,7 +14,7 @@ import { FillColumn, FillRow, HugColumn } from "@/layout";
 import { format } from "date-fns/format";
 
 import { PhoneMenuIcon } from "@/icons/phoneMenu";
-import { useAppStore, useGameStore, useViewStore } from "@/store";
+import { useGameStore, useViewStore } from "@/store";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { SpeakerIcon } from "@/icons/speaker";
 import { ShopApp, ShopIcon, TapCounterChip } from "@/apps/shop";
@@ -23,6 +23,8 @@ import { useKeyPress } from "@/hooks/useKeyPress";
 import { DebugApp, DebugIcon } from "@/apps/debug";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { QuestsApp, QuestsIcon } from "@/apps/quests";
+import { OptionsApp } from "@/apps/options";
+import { playUISound } from "@/utils/soundSystem";
 
 const SettingsIcon = () => (
   <svg
@@ -217,7 +219,7 @@ const BOB_APPS: Array<BobAppData> = [
   {
     id: "options",
     icon: SettingsIcon,
-    view: <></>,
+    view: <OptionsApp />,
   },
   {
     id: "debug",
@@ -226,6 +228,7 @@ const BOB_APPS: Array<BobAppData> = [
   },
 ];
 
+// MAYDO: check ref error
 export const BobPhone = () => {
   const containerRef = useRef(null);
   const triggerRef = useRef(null);
@@ -245,7 +248,7 @@ export const BobPhone = () => {
     BOB_APPS.find((a) => a.id === activeApp)?.bottomAction;
   const activeAppName = activeApp ? AppNameMap[activeApp] : "";
 
-  const showStatusBar = ["", "options", "quests", "chat", "debug"].includes(
+  const showStatusBar = ["", "quests", "chat", "debug"].includes(
     activeApp ?? ""
   );
 
@@ -270,6 +273,7 @@ export const BobPhone = () => {
   useKeyPress("Escape", () => {
     if (isOpen) {
       onTriggerClick();
+      playUISound("ui-tap-close");
     }
   });
 
@@ -315,7 +319,7 @@ export const BobPhone = () => {
                   bounce: 0.5,
                 }}
               >
-                <CloseIcon color="#ffffff" />
+                <CloseIcon />
               </motion.span>
             ) : (
               <motion.span

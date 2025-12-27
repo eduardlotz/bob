@@ -72,6 +72,8 @@ interface BaseItem {
   cost: number;
   purchased: boolean;
   enabled: boolean;
+  unlocked?: boolean;
+  preview?: boolean;
 }
 
 export interface WeatherEffect extends BaseItem {}
@@ -91,7 +93,6 @@ export interface Upgrade {
     value: number;
   };
   unlocked: boolean;
-  category: "upgrades" | "effects" | "environment" | "tapEffects";
 }
 
 export interface TapEffect extends BaseItem {
@@ -134,9 +135,8 @@ export interface Theme {
   id: string;
   name: string;
   description: string;
-  cost: number;
-  purchased: boolean;
   active: boolean;
+  preview: boolean;
   colors: {
     primary: string;
     secondary: string;
@@ -180,6 +180,12 @@ export interface SoundSystemState {
   worldEnabled?: boolean;
 }
 
+type PreviewMode =
+  | "theme"
+  | BobItem["type"]
+  | "tapEffect"
+  | DecorationItem["type"];
+
 interface GameStore {
   version: number;
   lastSchemaUpdate: Date; // Timestamp for manual migration triggers
@@ -204,6 +210,7 @@ interface GameStore {
   blobForms: BlobFormConfig[];
   themes: Theme[];
   currentTheme: Theme | null;
+  previewMode: PreviewMode | null;
   routes: Route[];
   tapEffects: TapEffect[];
   weatherEffects: WeatherEffect[];
@@ -232,6 +239,8 @@ interface GameStore {
   cleanupManualTaps: () => void;
   equipBobItem: (bobItemId: string) => void;
   unequipBobItem: (bobItemId: string) => void;
+  previewBobItem: (bobItemId: string) => void;
+
   selectBlobForm: (blobFormId: string) => void;
   updateBlobFormParameters: (
     blobFormId: string,
@@ -241,13 +250,18 @@ interface GameStore {
 
   purchaseUpgrade: (upgradeId: string) => void;
   purchaseDecoration: (decorationId: string) => void;
+  previewDecoration: (decorationId: string) => void;
+
   purchaseBobItem: (bobItemId: string, forFree?: boolean) => void;
-  purchaseTheme: (themeId: string) => void;
   purchaseRoute: (routeId: string, forFree?: boolean) => void;
   purchaseBlobForm: (blobFormId: string) => void;
+
   purchaseTapEffect: (effectId: string) => void;
+  previewTapEffect: (effectId: string) => void;
 
   activateTheme: (themeId: string) => void;
+  previewTheme: (themeId: string) => void;
+  resetPreview: () => void;
   selectTapEffect: (tapEffectId: string) => void;
   toggleDecoration: (decorationId: string) => void;
   toggleWeatherEffect: (effectId: string) => void;
@@ -312,8 +326,8 @@ export const initialThemes: Theme[] = Object.values(THEME_CONFIG).map(
     name: themeConfig.name,
     description: themeConfig.description,
     cost: themeConfig.id === THEME_IDS.DEFAULT ? 0 : 50,
-    purchased: themeConfig.id === THEME_IDS.DEFAULT,
     active: themeConfig.id === THEME_IDS.DEFAULT,
+    preview: themeConfig.preview,
     colors: themeConfig.colors,
     planetColors: themeConfig.planetColors,
     counterColor: themeConfig.counterColor,
@@ -442,6 +456,8 @@ export const useGameStore = create<GameStore>()(
         blobForms: INITIAL_BLOB_FORMS,
         themes: initialThemes,
         currentTheme: initialThemes[0],
+        previewMode: null,
+
         routes: initialRoutes,
         fisheyeIntensity: 0,
         animationsEnabled: true,
@@ -595,16 +611,16 @@ export const useGameStore = create<GameStore>()(
               ...state,
               taps: state.taps - cost,
               upgrades: updatedUpgrades,
-              _cachedTapsPerSecond: undefined,
-              _cachedTapMultiplier: undefined,
-              _lastUpgradeHash: undefined,
+              // _cachedTapsPerSecond: undefined,
+              // _cachedTapMultiplier: undefined,
+              // _lastUpgradeHash: undefined,
             };
           });
 
           // update cache after state change
-          setTimeout(() => {
-            get().updateComputedValueCache();
-          }, 0);
+          // setTimeout(() => {
+          //   get().updateComputedValueCache();
+          // }, 0);
         },
         purchaseTapEffect: (effectId: string) => {
           set((state) => {
@@ -623,16 +639,35 @@ export const useGameStore = create<GameStore>()(
               ...state,
               taps: state.taps - effect.cost,
               tapEffects: updatedTapEffects,
-              _cachedTapsPerSecond: undefined,
-              _cachedTapMultiplier: undefined,
-              _lastUpgradeHash: undefined,
+              // _cachedTapsPerSecond: undefined,
+              // _cachedTapMultiplier: undefined,
+              // _lastUpgradeHash: undefined,
             };
           });
 
           // update cache after state change
-          setTimeout(() => {
-            get().updateComputedValueCache();
-          }, 0);
+          // setTimeout(() => {
+          //   get().updateComputedValueCache();
+          // }, 0);
+        },
+
+        previewTapEffect: (effectId: string) => {
+          set((state) => {
+            const effect = state.tapEffects.find((t) => t.id === effectId);
+            if (!effect) {
+              return state;
+            }
+
+            let updatedTapEffects = state.tapEffects.map((t) => ({
+              ...t,
+              preview: t.id === effectId,
+            }));
+
+            return {
+              ...state,
+              tapEffects: updatedTapEffects,
+            };
+          });
         },
 
         purchaseDecoration: (decorationId: string) => {
@@ -661,6 +696,26 @@ export const useGameStore = create<GameStore>()(
             };
           });
         },
+        previewDecoration: (decorationId: string) => {
+          set((state) => {
+            const decoration = state.decorations.find(
+              (d) => d.id === decorationId
+            );
+            if (!decoration) {
+              return state;
+            }
+
+            const updatedDecorations = state.decorations.map((d) =>
+              d.id === decorationId ? { ...d, preview: true } : d
+            );
+
+            return {
+              ...state,
+              decorations: updatedDecorations,
+              previewMode: "decoration",
+            };
+          });
+        },
 
         purchaseBobItem: (bobItemId: string, forFree?: boolean) => {
           set((state) => {
@@ -679,6 +734,7 @@ export const useGameStore = create<GameStore>()(
                     ...b,
                     purchased: true,
                     enabled: true,
+                    unlocked: true,
                   }
                 : {
                     ...b,
@@ -711,6 +767,27 @@ export const useGameStore = create<GameStore>()(
             return {
               ...state,
               bobItems: updatedBobItems,
+              preview: false,
+            };
+          });
+        },
+        previewBobItem: (bobItemId: string) => {
+          set((state) => {
+            const bobItem = state.bobItems.find((b) => b.id === bobItemId);
+            if (!bobItem) {
+              return state;
+            }
+
+            // unequip all items of the same type, then equip the selected one
+            const updatedBobItems = state.bobItems.map((b) => ({
+              ...b,
+              preview: b.type === bobItem.type ? b.id === bobItemId : b.preview,
+            }));
+
+            return {
+              ...state,
+              bobItems: updatedBobItems,
+              previewMode: bobItem.type,
             };
           });
         },
@@ -731,6 +808,7 @@ export const useGameStore = create<GameStore>()(
             return {
               ...state,
               bobItems: updatedBobItems,
+              preview: true,
             };
           });
         },
@@ -815,25 +893,6 @@ export const useGameStore = create<GameStore>()(
           });
         },
 
-        purchaseTheme: (themeId: string) => {
-          set((state) => {
-            const theme = state.themes.find((t) => t.id === themeId);
-            if (!theme || theme.purchased || !state.canAfford(theme.cost)) {
-              return state;
-            }
-
-            const updatedThemes = state.themes.map((t) =>
-              t.id === themeId ? { ...t, purchased: true } : t
-            );
-
-            return {
-              ...state,
-              taps: state.taps - theme.cost,
-              themes: updatedThemes,
-            };
-          });
-        },
-
         purchaseRoute: (routeId: string, forFree = false) => {
           set((state) => {
             const route = state.routes.find((r) => r.id === routeId);
@@ -889,7 +948,7 @@ export const useGameStore = create<GameStore>()(
         activateTheme: (themeId: string) => {
           set((state) => {
             const theme = state.themes.find((t) => t.id === themeId);
-            if (!theme || !theme.purchased) {
+            if (!theme) {
               return state;
             }
 
@@ -902,6 +961,57 @@ export const useGameStore = create<GameStore>()(
               ...state,
               themes: updatedThemes,
               currentTheme: theme,
+            };
+          });
+        },
+        previewTheme: (themeId: string) => {
+          set((state) => {
+            const theme = state.themes.find((t) => t.id === themeId);
+            if (!theme) {
+              return state;
+            }
+
+            const updatedThemes = state.themes.map((t) => ({
+              ...t,
+              preview: t.id === themeId,
+            }));
+
+            return {
+              ...state,
+              themes: updatedThemes,
+              previewMode: "theme",
+            };
+          });
+        },
+        resetPreview: () => {
+          set((state) => {
+            const themes = state.themes.map((t) => ({
+              ...t,
+              preview: false,
+            }));
+
+            const bobItems = state.bobItems.map((b) => ({
+              ...b,
+              preview: false,
+            }));
+
+            const tapEffects = state.tapEffects.map((t) => ({
+              ...t,
+              preview: false,
+            }));
+
+            const decorations = state.decorations.map((d) => ({
+              ...d,
+              preview: false,
+            }));
+
+            return {
+              ...state,
+              themes,
+              bobItems,
+              tapEffects,
+              decorations,
+              previewMode: null,
             };
           });
         },
@@ -1480,7 +1590,7 @@ export const useGameStore = create<GameStore>()(
             try {
               const current = useGameStore.getState();
               engineSetMasterVolume(
-                muted ? 0 : current.soundSystem?.masterVolume || 1
+                muted ? 0 : current.soundSystem?.masterVolume || 0.7
               );
             } catch {}
           } catch {}

@@ -71,7 +71,7 @@ export const Room = forwardRef(
 
         {/* FRONT WALL */}
         <mesh ref={wallRef} position={[0, FLOOR_Y_POSITION + 1.5, -5]}>
-          <planeGeometry args={[ROOM_SIZE, 20]} />
+          <planeGeometry args={[ROOM_SIZE, ROOM_SIZE]} />
           <gridToonMaterial
             uGridDensity={12}
             uGridColor1={new THREE.Color("#d8e1e7")}
@@ -95,7 +95,7 @@ export const Room = forwardRef(
           rotation={[0, -Math.PI, 0]}
           position={spring.position.get() as [number, number, number]}
         >
-          <planeGeometry args={[ROOM_SIZE, 20]} />
+          <planeGeometry args={[ROOM_SIZE, ROOM_SIZE]} />
           <gridToonMaterial
             uGridDensity={12}
             uGridColor1={new THREE.Color("#d8e1e7")}
@@ -108,7 +108,7 @@ export const Room = forwardRef(
           rotation={[0, -Math.PI / 2, 0]}
           position={[5, FLOOR_Y_POSITION + 1.5, 0]}
         >
-          <planeGeometry args={[ROOM_SIZE, 20]} />
+          <planeGeometry args={[ROOM_SIZE, ROOM_SIZE]} />
           <gridToonMaterial
             uGridDensity={12}
             uGridColor1={new THREE.Color("#d8e1e7")}
@@ -121,7 +121,7 @@ export const Room = forwardRef(
           rotation={[0, Math.PI / 2, 0]}
           position={[-5, FLOOR_Y_POSITION + 1.5, 0]}
         >
-          <planeGeometry args={[ROOM_SIZE, 20]} />
+          <planeGeometry args={[ROOM_SIZE, ROOM_SIZE]} />
           <gridToonMaterial
             uGridDensity={12}
             uGridColor1={new THREE.Color("#d8e1e7")}

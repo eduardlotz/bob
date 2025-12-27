@@ -3,6 +3,8 @@ import React, { useEffect, useRef } from "react";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
+import { useGameStore } from "@/store";
+import { previewMaterialProps } from "@/shop-items/utils";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -29,6 +31,7 @@ export const RoundGlasses = ({
 }: Props) => {
   const group = useRef<THREE.Group>(null!);
   const { nodes, materials } = useGLTF(PATH) as GLTFResult;
+  const { previewMode } = useGameStore();
 
   const [spring, api] = useSpring(() => ({
     scale: [0, 0, 0], // start invisible
@@ -57,7 +60,10 @@ export const RoundGlasses = ({
         geometry={nodes.Object_3001.geometry}
         rotation={[-1.65, 0, 0]}
       >
-        <meshToonMaterial color={"#191919"} />
+        <meshToonMaterial
+          color={"#191919"}
+          {...(previewMode === "accessory" ? previewMaterialProps : {})}
+        />
       </mesh>
     </a.group>
   );

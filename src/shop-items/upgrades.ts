@@ -11,7 +11,6 @@ export const initialTapUpgrades: Upgrade[] = [
     maxLevel: 5,
     effect: { type: "autoTap", value: 1 },
     unlocked: true,
-    category: "upgrades",
   },
   {
     id: "tap_multiplier",
@@ -23,6 +22,5 @@ export const initialTapUpgrades: Upgrade[] = [
     maxLevel: 5,
     effect: { type: "tapMultiplier", value: 2 },
     unlocked: true,
-    category: "upgrades",
   },
 ];

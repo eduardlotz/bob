@@ -10,11 +10,12 @@ import styled from "styled-components";
 import { formatNumber } from "./TapCounter";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
+import { playUISound } from "@/utils/soundSystem";
 
 export const TapUpgrades = ({ show }: { show: boolean }) => {
   const { currentRoute } = useAppStore();
   const {
-    upgrades,
+    upgrades: tapUpgrades,
     purchaseUpgrade,
     canAfford,
     getAutoTapRateUncached,
@@ -29,11 +30,10 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
   const triggerRef = useRef(null);
   const [showUpgrades, setShowUpgrades] = useState(false);
 
-  const tapUpgrades = upgrades.filter((u) => u.category === "upgrades");
-
   useClickOutside([containerRef, triggerRef], () => setShowUpgrades(false));
   useKeyPress("Escape", () => {
     setShowUpgrades(false);
+    playUISound("ui-tap-close");
   });
 
   //   const totalTapsPerSecond = useMemo(() => {

@@ -73,7 +73,7 @@ export const QuestsApp = () => {
   return (
     <HugColumn style={{ width: "25rem", maxWidth: "100%" }} $gap={"0.25rem"}>
       {quests.map((quest) => (
-        <QuestListItem $completed={quest.completed}>
+        <QuestListItem $completed={quest.completed} key={quest.id}>
           <QuestIcon>{quest.completed ? quest.icon : ""}</QuestIcon>
 
           <FillColumn $align="flex-start" $gap={".125rem"}>

@@ -1,8 +1,7 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useGameStore } from "@/store/gameStore";
 import { createGlobalStyle } from "styled-components";
 
-// Type mapping to convert game store Theme to styled-components DefaultTheme
 type StyledTheme = {
   colors: {
     basic: {
@@ -53,9 +52,11 @@ type StyledTheme = {
   };
 };
 
+// TODO: refactor to an actual design system
 const GlobalStyle = createGlobalStyle<{ theme: StyledTheme | undefined }>`
   :root {
-    --primary-color: ${(props) =>
+    // TODO: check if global style with override is really needed 🤨
+    /* --primary-color: ${(props) =>
       props.theme?.colors?.basic?.black || "#212121"};
     --secondary-color: ${(props) =>
       props.theme?.colors?.brand?.blue || "#4277F7"};
@@ -63,10 +64,12 @@ const GlobalStyle = createGlobalStyle<{ theme: StyledTheme | undefined }>`
       props.theme?.colors?.brand?.yellow || "#FFD700"};
     --background-color: ${(props) =>
       props.theme?.colors?.basic?.black || "#212121"};
-    --text-color: ${(props) => props.theme?.colors?.basic?.white || "#ffffff"};
+    --text-color: ${(props) =>
+      props.theme?.colors?.basic?.white || "#ffffff"}; */
     --font-family: "Open Sauce Two";
-    
-    /* Additional theme variables for better control */
+      
+    --blob-color: ${(props) => props.theme?.colors?.basic?.black || "#212121"};
+
     --border-color: ${(props) =>
       props.theme?.colors?.shades?.grey?.two || "#e9ecef"};
     --card-background: ${(props) =>
@@ -147,56 +150,52 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const { currentTheme } = useGameStore();
+  const { currentTheme, themes, previewMode } = useGameStore();
+
+  const activeTheme =
+    previewMode === "theme" ? themes.find((t) => t.preview) : currentTheme;
 
   useEffect(() => {
-    // Apply theme to document root
-    if (currentTheme) {
-      console.log("Applying theme:", currentTheme.id);
-
-      // Set CSS custom properties
+    if (activeTheme) {
       const root = document.documentElement;
-      root.style.setProperty("--primary-color", currentTheme.colors.primary);
-      root.style.setProperty(
-        "--secondary-color",
-        currentTheme.colors.secondary
-      );
-      root.style.setProperty("--accent-color", currentTheme.colors.accent);
+      root.style.setProperty("--primary-color", activeTheme.colors.primary);
+      root.style.setProperty("--secondary-color", activeTheme.colors.secondary);
+      root.style.setProperty("--accent-color", activeTheme.colors.accent);
       root.style.setProperty(
         "--background-color",
-        currentTheme.colors.background
+        activeTheme.colors.background
       );
-      root.style.setProperty("--text-color", currentTheme.colors.text);
-      // root.style.setProperty("--font-family", currentTheme.font);
+      root.style.setProperty("--text-color", activeTheme.colors.text);
+      root.style.setProperty("--blob-color", activeTheme.blobColor);
+      root.style.setProperty("--outline-color", activeTheme.outlineColor);
+      // root.style.setProperty("--font-family", activeTheme.font);
 
-      // Set additional theme variables
       root.style.setProperty(
         "--border-color",
-        currentTheme.colors.border || "#e9ecef"
+        activeTheme.colors.border || "#e9ecef"
       );
       root.style.setProperty(
         "--card-background",
-        currentTheme.colors.cardBackground || "#f8f9fa"
+        activeTheme.colors.cardBackground || "#f8f9fa"
       );
       root.style.setProperty(
         "--success-color",
-        currentTheme.colors.success || "#4CAF50"
+        activeTheme.colors.success || "#4CAF50"
       );
       root.style.setProperty(
         "--danger-color",
-        currentTheme.colors.danger || "#dc3545"
+        activeTheme.colors.danger || "#dc3545"
       );
       root.style.setProperty(
         "--warning-color",
-        currentTheme.colors.warning || "#ffc107"
+        activeTheme.colors.warning || "#ffc107"
       );
 
-      // Also apply to body for immediate effect
-      document.body.style.backgroundColor = currentTheme.colors.background;
-      document.body.style.color = currentTheme.colors.text;
-      // document.body.style.fontFamily = currentTheme.font;
+      document.body.style.backgroundColor = activeTheme.colors.background;
+      document.body.style.color = activeTheme.colors.text;
+      // document.body.style.fontFamily = activeTheme.font;
     }
-  }, [currentTheme]);
+  }, [activeTheme]);
 
   return (
     <>

@@ -21,7 +21,7 @@ import { useQuestSystem } from "@/hooks/useQuestSystem";
 //#region constants
 export const CAMERA_Y_POSITION = 1;
 export const CAMERA_HEIGHT = 2;
-export const CAMERA_FOLLOW_OFFSET = 2.5;
+export const CAMERA_FOLLOW_OFFSET = 5;
 export const OPTIONS_Y_OFFSET = -1.5;
 
 export const VISIBLE_OPTIONS_CAMERA_ZOOM = 8;
@@ -146,6 +146,8 @@ export function HeadNavigation({
   const { currentView, isDefaultView, isTransitioning, resetToDefaultView } =
     useViewStore();
 
+  const { isMobile } = useAppStore();
+
   // close options menu when entering a custom view
   useEffect(() => {
     if (!isDefaultView() && showOptions) {
@@ -163,9 +165,10 @@ export function HeadNavigation({
     }
   }, [showOptions, isDefaultView, resetToDefaultView]);
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-
-  const isMobile = typeof screen.orientation !== "undefined";
+  const [mousePosition, setMousePosition] = useState({
+    x: 0.5,
+    y: 0.5,
+  });
 
   useEffect(() => {
     setWindowSize({
@@ -242,7 +245,17 @@ export function HeadNavigation({
     const finalZoom = baseZoom + zoomOffset;
 
     // only follow cursor on desktop
-    if (!isMobile) {
+    if (isMobile) {
+      cameraControlsRef.current?.setLookAt(
+        0,
+        CAMERA_HEIGHT,
+        finalZoom,
+        0,
+        CAMERA_Y_POSITION,
+        0,
+        true
+      );
+    } else {
       const cursorPos = new THREE.Vector3(
         (mousePosition.x - 0.5) * CAMERA_FOLLOW_OFFSET * 0.1,
         -(mousePosition.y - 0.5) * CAMERA_FOLLOW_OFFSET * 0.2,
@@ -250,21 +263,11 @@ export function HeadNavigation({
       );
       cameraControlsRef.current?.setLookAt(
         0,
-        showOptions && !isOptionsClosing ? 2 : CAMERA_HEIGHT,
+        CAMERA_HEIGHT,
         finalZoom,
         cursorPos.x,
         cursorPos.y + CAMERA_Y_POSITION,
         cursorPos.z,
-        true
-      );
-    } else {
-      cameraControlsRef.current?.setLookAt(
-        0,
-        showOptions && !isOptionsClosing ? 2 : CAMERA_HEIGHT,
-        finalZoom,
-        0,
-        CAMERA_Y_POSITION,
-        0,
         true
       );
     }
@@ -486,7 +489,7 @@ function Option({
             whileTap={MotionVariants.OptionButton.tap}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={handleOptionClick}
-            data-ui-sound-id="ui-tap-2"
+            data-ui-sound-id="ui-tap-close"
           >
             {!route.purchased && <PriceChip>{route.cost} 🫵</PriceChip>}
             {route.isLocked && (

@@ -171,11 +171,15 @@ export function BlobHead({
   emotionState: EmotionState;
   onCameraZoomAnimation?: (isAnimating: boolean) => void;
 }) {
-  const { currentTheme, bobItems, blobForms } = useGameStore();
+  const { currentTheme, themes, previewMode, bobItems, blobForms } =
+    useGameStore();
 
-  const blobColor = currentTheme?.blobColor;
-  const outlineColor = currentTheme?.outlineColor;
-  const eyeColor = currentTheme?.eyeColor;
+  const activeTheme =
+    previewMode === "theme" ? themes.find((t) => t.preview) : currentTheme;
+
+  const blobColor = activeTheme?.blobColor;
+  const outlineColor = activeTheme?.outlineColor;
+  const eyeColor = activeTheme?.eyeColor;
   const headRef = useRef<Group>(null!);
   const leftEyeRef = useRef<Mesh>(null!);
   const rightEyeRef = useRef<Mesh>(null!);
@@ -266,6 +270,7 @@ export function BlobHead({
     }
   }, [emotionState]);
 
+  // inactivity animations (spin & look around)
   useEffect(() => {
     const checkIdleAnimation = () => {
       const now = Date.now();
@@ -305,6 +310,7 @@ export function BlobHead({
     return () => clearInterval(idleCheckInterval);
   }, [lastActivity, idleAnimation, lastIdleAnimationTime]);
 
+  // reset inactivity timer when user does something again
   useEffect(() => {
     const handleActivity = () => {
       setLastActivity(Date.now());
@@ -326,6 +332,8 @@ export function BlobHead({
     };
   }, [idleAnimation]);
 
+  // dizzy animation rotating stars
+  // TODO: move to animation state machine
   useEffect(() => {
     if (emotionState === "dizzy") {
       const newStars = Array.from({ length: 5 }, (_, i) => ({
@@ -390,7 +398,8 @@ export function BlobHead({
     }
   });
 
-  // Handle mobile device motion
+  // legacy mobile head rotation using device motion
+  // MAYDO: refactor or remove
   const handleMobileMovement = (clock: Clock, delta: number) => {
     const {
       targetRotX,
@@ -897,14 +906,15 @@ export function BlobHead({
   );
 
   const renderBobItems = () => {
-    const allEquippedItems = bobItems.filter((item) => item.enabled);
+    const previewItems = bobItems.filter(
+      (b) => b.preview && b.type === previewMode
+    );
+    const enabledItems = bobItems.filter((b) => b.enabled);
 
-    const detachedItems = allEquippedItems.filter(
-      (item) => item.detached === true
-    );
-    const attachedItems = allEquippedItems.filter(
-      (item) => item.detached !== true
-    );
+    const allEquippedItems = previewMode ? previewItems : enabledItems;
+
+    const detachedItems = allEquippedItems.filter((i) => i.detached);
+    const attachedItems = allEquippedItems.filter((i) => !i.detached);
 
     const attachedModels = attachedItems.map((item) => {
       if (item.id === "krustyKrabHat")
@@ -932,9 +942,8 @@ export function BlobHead({
         return (
           <BuilderHelmet
             key={item.id}
-            position={calculateCostumePosition([0, 0.6, 0], "hat")}
-            scale={[1.2, 1.2, 1.2]}
-            rotation={[Math.PI * -0.05, 0, 0]}
+            position={calculateCostumePosition([0, 0.75, 0], "hat")}
+            scale={[1.22, 1.25, 1.25]}
           />
         );
       if (item.id === "afroHair")
@@ -942,6 +951,7 @@ export function BlobHead({
           <AfroHair
             key={item.id}
             position={calculateCostumePosition([0, -0.7, -0.05], "hat")}
+            rotation={[(Math.PI / 2) * 0.15, 0, 0]}
             scale={[0.9, 0.9, 0.9]}
           />
         );

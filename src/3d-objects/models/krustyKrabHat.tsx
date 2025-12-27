@@ -3,6 +3,8 @@ import React, { useEffect, useRef } from "react";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
+import { useGameStore } from "@/store";
+import { previewMaterialProps } from "@/shop-items/utils";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -33,6 +35,7 @@ export const KrustyKrabHat = ({
 }: Props) => {
   const group = useRef<THREE.Group>(null!);
   const { nodes, materials } = useGLTF(PATH) as GLTFResult;
+  const { previewMode } = useGameStore();
 
   const [spring, api] = useSpring(() => ({
     scale: [0, 0, 0], // start invisible
@@ -66,7 +69,10 @@ export const KrustyKrabHat = ({
           geometry={nodes["Cylinder001_02_-_Default_0"].geometry}
           material={materials["02_-_Default"]}
         >
-          <meshToonMaterial color={"#191919"} />
+          <meshToonMaterial
+            color={"#191919"}
+            {...(previewMode === "hat" ? previewMaterialProps : {})}
+          />
         </mesh>
         <mesh
           castShadow
@@ -74,7 +80,10 @@ export const KrustyKrabHat = ({
           geometry={nodes["Cylinder001_01_-_Default_0"].geometry}
           material={materials["01_-_Default"]}
         >
-          <meshToonMaterial color={"white"} />
+          <meshToonMaterial
+            color={"white"}
+            {...(previewMode === "hat" ? previewMaterialProps : {})}
+          />
         </mesh>
         <mesh
           castShadow
@@ -82,7 +91,10 @@ export const KrustyKrabHat = ({
           geometry={nodes["Cylinder001_03_-_Default_0"].geometry}
           material={materials["03_-_Default"]}
         >
-          <meshToonMaterial color="#75d1f0" />
+          <meshToonMaterial
+            color="#75d1f0"
+            {...(previewMode === "hat" ? previewMaterialProps : {})}
+          />
         </mesh>
       </group>
     </a.group>

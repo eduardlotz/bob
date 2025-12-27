@@ -9,6 +9,7 @@ import { useAppStore } from "@/store";
 import { useGameStore } from "@/store/gameStore";
 import { textSynth } from "@/utils/sound/textSynth";
 import { resumeAudioContext, unlockAudioContext } from "@/utils/soundSystem";
+import { DEFAULT_TEXT_VOLUME } from "@/utils/sound/defaults";
 
 const AUDIO_CHAR_DURATION_MS = 85;
 const AUDIO_LEAD_TIME_MS = 5;
@@ -49,7 +50,10 @@ const useTypewriterAudio = (text: string, isTyping: boolean) => {
             const duration = AUDIO_CHAR_DURATION_MS;
             const adjustedVolume = Math.max(
               0.1,
-              Math.min(0.6, 0.8 * (soundSystem.textVolume ?? 0.8))
+              Math.min(
+                0.6,
+                0.8 * (soundSystem.textVolume ?? DEFAULT_TEXT_VOLUME)
+              )
             );
             textSynth.playCharBlip(duration, adjustedVolume);
           } catch (e) {}
@@ -140,8 +144,13 @@ export const MessageBubble = memo(function MessageBubble({
     markFullyRevealed,
     markUserInteraction,
     getQueueLength,
+    showMessage,
+    dismissMessageById,
+    pauseSystem,
+    resumeSystem,
   } = useMessageStore();
   const { requestEmotion } = useAppStore();
+  const { previewMode } = useGameStore();
 
   const [visibleLines, setVisibleLines] = useState<
     Array<{ id: string; text: string; time: Date }>
@@ -150,6 +159,14 @@ export const MessageBubble = memo(function MessageBubble({
   const dismissTimerRef = useRef<number | null>(null);
 
   const queueLength = getQueueLength();
+
+  useEffect(() => {
+    if (previewMode === "theme") {
+      showMessage("chat_theme_preview");
+    } else {
+      dismissMessageById("chat_theme_preview");
+    }
+  }, [previewMode]);
 
   useEffect(() => {
     return () => {
@@ -194,9 +211,14 @@ export const MessageBubble = memo(function MessageBubble({
         );
 
         // TODO: don't dismiss if user is hovering
-        dismissTimerRef.current = window.setTimeout(() => {
-          dismissMessage();
-        }, readingTime);
+        // don't dismiss if theme preview
+        if (messageId === "chat_theme_preview") {
+          dismissTimerRef.current = window.setTimeout(() => {}, 0);
+        } else {
+          dismissTimerRef.current = window.setTimeout(() => {
+            dismissMessage();
+          }, readingTime);
+        }
         return;
       }
 
@@ -433,11 +455,11 @@ const Char = styled(motion.span)`
 `;
 
 const TimeTag = styled.div`
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   opacity: 0.75;
   font-weight: 400;
   color: var(--text-color);
-  letter-spacing: -2%;
+  /* letter-spacing: -2%; */
 `;
 
 const labelVariants: Variants = {

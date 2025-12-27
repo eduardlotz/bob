@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "motion/react";
 import styled from "styled-components";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeftIcon } from "@/icons/arrow";
+import { playUISound } from "@/utils/soundSystem";
 
 const VIEWID_TITLE_MAP = {
   default: "Über mich",
@@ -36,6 +37,7 @@ export function ViewControls() {
   useKeyPress("Escape", () => {
     if (!isDefaultView() && !isTransitioning) {
       resetToDefaultView();
+      playUISound("ui-tap-close");
     }
   });
 

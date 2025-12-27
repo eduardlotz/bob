@@ -10,6 +10,7 @@ import { HugColumn, HugRow } from "@/layout";
 import { TapUpgrades } from "./tapUpgrades";
 import { MenuButton } from "@/layout/atoms";
 import { BobPhone } from "./BobPhone";
+import { playUISound } from "@/utils/soundSystem";
 
 export function BottomNavigation() {
   const { currentView, transitionToView } = useViewStore();
@@ -23,6 +24,7 @@ export function BottomNavigation() {
 
   useKeyPress("Escape", () => {
     transitionToView("default");
+    playUISound("ui-tap-close");
   });
 
   const isHomeRoute = currentRoute === ROUTE_PATHS.HOME;
@@ -39,7 +41,13 @@ export function BottomNavigation() {
     <HugColumn
       $align="center"
       $gap="0.75rem"
-      style={{ position: "fixed", bottom: "20px" }}
+      style={{
+        position: "fixed",
+        bottom: "20px",
+        margin: "0 auto",
+        left: 0,
+        right: 0,
+      }}
     >
       <TapUpgrades show={showTapUpgrades} />
       <HugRow $gap={"8px"} layout>

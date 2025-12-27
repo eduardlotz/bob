@@ -6,6 +6,8 @@ import { a, useSpring } from "@react-spring/three";
 import { useFrame } from "@react-three/fiber";
 import { RapierRigidBody, RigidBody } from "@react-three/rapier";
 import { Grabbable } from "@/physics/Grabbable";
+import { useGameStore } from "@/store";
+import { previewMaterialProps } from "@/shop-items/utils";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -33,6 +35,7 @@ export const GreenDiamond = ({
 }: Props) => {
   const api = useRef<RapierRigidBody>(null);
   const { nodes } = useGLTF(PATH) as GLTFResult;
+  const { previewMode } = useGameStore();
 
   return (
     <Grabbable rigidBodyRef={api} mode={"spring"}>
@@ -45,7 +48,10 @@ export const GreenDiamond = ({
       >
         <group rotation={[-Math.PI / 2, 0, 0]} scale={0.24}>
           <mesh geometry={nodes.Plumbob_Material001_0.geometry}>
-            <meshToonMaterial color="#b7e822" />
+            <meshPhongMaterial
+              color="#b7e822"
+              {...(previewMode === "decoration" ? previewMaterialProps : {})}
+            />
           </mesh>
         </group>
       </RigidBody>
