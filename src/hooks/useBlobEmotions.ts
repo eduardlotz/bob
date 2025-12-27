@@ -20,7 +20,7 @@ export interface BlobEmotionData {
 
 const EMOTION_DURATIONS: Record<EmotionState, number> = {
   normal: 0,
-  happy: 1000,
+  happy: 2000,
   dizzy: 4000,
   mad: 5000,
   thinking: 2500,
@@ -138,10 +138,9 @@ export function useBlobEmotions() {
 
   const triggerEmotion = useCallback(
     (emotion: EmotionState, durationMs?: number) => {
-      const duration =
-        typeof durationMs === "number"
-          ? Math.max(200, durationMs)
-          : EMOTION_DURATIONS[emotion] || 1200;
+      const duration = durationMs
+        ? Math.max(3000, durationMs)
+        : EMOTION_DURATIONS[emotion] || 1200;
       setEmotionWithTimeout(emotion, duration);
     },
     [setEmotionWithTimeout]

@@ -8,6 +8,7 @@ import {
   FUNNY_FISHEYE_ZOOM,
   VISIBLE_OPTIONS_CAMERA_ZOOM,
 } from "@/molecules/HeadNavigation";
+import { useGameStore } from ".";
 
 export interface CameraView {
   id: string;
@@ -28,6 +29,7 @@ export type CameraViewId =
   | "phone:shop"
   | "phone:debug"
   | "phone:quests"
+  | "phone:options"
   | "desk"
   | "bookshelf"
   | "computer"
@@ -50,6 +52,16 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
     name: "Shop View",
     position: [0, CAMERA_HEIGHT - 1.5, VISIBLE_OPTIONS_CAMERA_ZOOM - 2],
     target: [0, CAMERA_Y_POSITION - 1.5, 0],
+    transition: {
+      duration: 1000,
+      easing: "easeInOutCubic",
+    },
+  },
+  "phone:options": {
+    id: "phone:options",
+    name: "Shop View",
+    position: [0, CAMERA_HEIGHT - 0.5, VISIBLE_OPTIONS_CAMERA_ZOOM - 1],
+    target: [0, CAMERA_Y_POSITION - 0.5, 0],
     transition: {
       duration: 1000,
       easing: "easeInOutCubic",
@@ -129,6 +141,7 @@ interface ViewStore {
   setViewMode: (mode: ViewMode) => void;
   setCameraControlsRef: (ref: React.RefObject<CameraControls>) => void;
   transitionToView: (viewId: CameraViewId) => Promise<void>;
+  transitionBack: () => Promise<void>;
   resetToDefaultView: () => Promise<void>;
 
   getCurrentViewConfig: () => CameraView | null;
@@ -151,29 +164,32 @@ export const useViewStore = create<ViewStore>()(
       setViewMode: (mode) => set({ viewMode: mode }),
       setCameraControlsRef: (ref) => set({ cameraControlsRef: ref }),
 
-      transitionToView: async (viewId: CameraViewId) => {
-        const { cameraControlsRef, isTransitioning } = get();
+      transitionToView: async (nextView: CameraViewId) => {
+        const { previousView, cameraControlsRef, isTransitioning } = get();
+        if (
+          ["phone:options", "phone:shop"].includes(previousView) &&
+          previousView !== nextView
+        ) {
+          useGameStore.getState().resetPreview();
+        }
 
         // prevent multiple transitions
-        if (!cameraControlsRef?.current) {
+        if (isTransitioning || !cameraControlsRef?.current) {
           return;
         }
 
-        const viewConfig = CAMERA_VIEWS[viewId];
+        const viewConfig = CAMERA_VIEWS[nextView];
         if (!viewConfig) {
-          console.warn(`"${viewId}" view config missing`);
+          console.warn(`"${nextView}" view config missing`);
           return;
         }
 
-        set({
-          previousView:
-            get().previousView !== viewId
-              ? get().currentView
-              : get().previousView,
+        set((state) => ({
+          previousView: state.currentView,
           isTransitioning: true,
-          currentView: viewId,
-          viewMode: viewId !== "default" ? "object" : "fixed",
-        });
+          currentView: nextView,
+          viewMode: nextView !== "default" ? "object" : "fixed",
+        }));
 
         try {
           const controls = cameraControlsRef.current;
@@ -190,6 +206,13 @@ export const useViewStore = create<ViewStore>()(
         } finally {
           set({ isTransitioning: false });
         }
+      },
+
+      transitionBack: async () => {
+        set((state) => ({
+          currentView: state.previousView,
+          previousView: state.currentView,
+        }));
       },
 
       resetToDefaultView: async () => {

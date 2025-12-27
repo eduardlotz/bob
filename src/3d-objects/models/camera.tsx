@@ -59,7 +59,7 @@ export const CameraModel = forwardRef(
                 // material={materials.T_Camera}
                 position={[0, 0, -0.033]}
               >
-                <meshToonMaterial color="#4c4c4f" />
+                <meshPhongMaterial color="#4c4c4f" />
               </mesh>
             </group>
           </group>

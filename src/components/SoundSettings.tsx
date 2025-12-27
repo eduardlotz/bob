@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { testSoundSystem, debugSoundSystem } from "@/utils/soundSystem";
 import { motion } from "motion/react";
+import { DEFAULT_TEXT_VOLUME } from "@/utils/sound/defaults";
 
 interface SoundSettingsProps {
   visible?: boolean;
@@ -133,7 +134,9 @@ export function SoundSettings({
               onChange={(e) => setTextVolume?.(parseFloat(e.target.value))}
               $disabled={!isEnabled}
             />
-            <VolumeValue>{Math.round((textVolume ?? 0.8) * 100)}%</VolumeValue>
+            <VolumeValue>
+              {Math.round((textVolume ?? DEFAULT_TEXT_VOLUME) * 100)}%
+            </VolumeValue>
           </SettingGroup>
 
           {/* Test Button */}

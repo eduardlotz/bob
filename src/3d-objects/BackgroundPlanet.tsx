@@ -2,13 +2,17 @@ import { BackSide } from "three";
 import { useGameStore } from "@/store/gameStore";
 import { THEME_CONFIG } from "@/store/themeConfig";
 import { GradientTexture } from "@react-three/drei";
+import { useMemo } from "react";
 
 export const BackgroundPlanet = () => {
-  const { currentTheme } = useGameStore();
+  const { currentTheme, themes, previewMode } = useGameStore();
+
+  const activeTheme =
+    previewMode === "theme" ? themes.find((t) => t.preview) : currentTheme;
 
   // Get theme colors, fallback to default if no theme is active
-  const themeConfig = currentTheme
-    ? Object.values(THEME_CONFIG).find((t) => t.id === currentTheme.id) ||
+  const themeConfig = activeTheme
+    ? Object.values(THEME_CONFIG).find((t) => t.id === activeTheme.id) ||
       THEME_CONFIG.DEFAULT
     : THEME_CONFIG.DEFAULT;
 

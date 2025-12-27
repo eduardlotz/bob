@@ -73,7 +73,7 @@ export function useSoundSystem(): SoundSystemHook {
       engineSetTypeVolume("tap", soundSystem.tapVolume);
       engineSetTypeVolume("world", soundSystem.worldVolume);
       engineSetTypeVolume("ui", soundSystem.uiVolume);
-      engineSetTypeVolume("text", (soundSystem as any).textVolume ?? 1);
+      engineSetTypeVolume("text", soundSystem.textVolume);
 
       if (soundSystem.enabled) {
         try {

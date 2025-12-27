@@ -22,7 +22,7 @@ import { startAutoTap, stopAutoTap } from "../store/gameStore";
 import { useKeyPress } from "../hooks/useKeyPress";
 import { FISHEYE_CONFIG } from "../store/themeConfig";
 import { a, useSpring } from "@react-spring/three";
-import { attachListenerToCamera } from "@/utils/soundSystem";
+import { attachListenerToCamera, playUISound } from "@/utils/soundSystem";
 import { MessageBubble } from "@/molecules/MessageBubble";
 import { SceneDecorations } from "@/3d-objects/Decorations";
 import { Physics } from "@react-three/rapier";
@@ -119,6 +119,7 @@ const Scene = ({
   useKeyPress("Escape", () => {
     if (showOptions) {
       closeOptionsWithAnimation();
+      playUISound("ui-tap-close");
     }
   });
 

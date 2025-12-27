@@ -63,8 +63,8 @@ const initialQuests: Quest[] = [
   },
   {
     id: "tap_multilier_milestone_1",
-    title: "Exponentielles Wachstum",
-    description: "Verdopple deine 🫵/s",
+    title: "Die erste Investition",
+    description: "Double it and give it to me",
     icon: "🙌",
     progress: 0,
     maxProgress: 1,

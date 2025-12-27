@@ -3,6 +3,8 @@ import React, { useEffect, useRef } from "react";
 import { Outlines, useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
+import { useGameStore } from "@/store";
+import { previewMaterialProps } from "@/shop-items/utils";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -28,6 +30,11 @@ export const BlackCap = ({
 }: Props) => {
   const group = useRef<THREE.Group>(null!);
   const { nodes, materials } = useGLTF(PATH) as GLTFResult;
+  const { previewMode } = useGameStore();
+
+  materials["Material.001"].wireframe = previewMode === "hat";
+  // materials["Material.001"].transparent = previewMode === "hat";
+  // materials["Material.001"].opacity = previewMode === "hat" ? 0.5 : 1;
 
   const [spring, api] = useSpring(() => ({
     scale: [0, 0, 0], // start invisible
@@ -54,7 +61,12 @@ export const BlackCap = ({
         geometry={nodes.Sphere.geometry}
         material={materials["Material.001"]}
       >
-        <Outlines thickness={0.005} color={outlineColor} screenspace />
+        <Outlines
+          thickness={0.005}
+          color={outlineColor}
+          screenspace
+          {...(previewMode === "hat" ? previewMaterialProps : {})}
+        />
       </mesh>
     </a.group>
   );

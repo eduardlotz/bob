@@ -85,12 +85,15 @@ export const formatNumber = (num: number): string => {
 };
 
 export const TapCounter = () => {
-  const { taps, currentTheme } = useGameStore();
+  const { taps, currentTheme, themes, previewMode } = useGameStore();
+
+  const activeTheme =
+    previewMode === "theme" ? themes.find((t) => t.preview) : currentTheme;
 
   const gameTapCount = taps;
 
-  const themeConfig = currentTheme
-    ? Object.values(THEME_CONFIG).find((t) => t.id === currentTheme.id) ||
+  const themeConfig = activeTheme
+    ? Object.values(THEME_CONFIG).find((t) => t.id === activeTheme.id) ||
       THEME_CONFIG.DEFAULT
     : THEME_CONFIG.DEFAULT;
 

@@ -16,7 +16,7 @@ import { createPortal } from "react-dom";
 import styled from "styled-components";
 import { match } from "ts-pattern";
 
-export const ShopIcon = () => (
+export const OptionsIcon = () => (
   <svg
     width={80}
     height={80}
@@ -73,160 +73,62 @@ export const ShopIcon = () => (
   </svg>
 );
 
-type ShopTab = "effects" | "decorations" | "bob";
+type OptionsTab = "theme" | "audio" | "general";
 
 const tabs = [
   {
-    id: "bob" as ShopTab,
-    name: "Bob",
+    id: "theme" as OptionsTab,
+    name: "Theme",
   },
   {
-    id: "effects" as ShopTab,
-    name: "Effekte",
+    id: "audio" as OptionsTab,
+    name: "Audio",
   },
   {
-    id: "decorations" as ShopTab,
-    name: "Deko",
+    id: "general" as OptionsTab,
+    name: "Allgemein",
   },
 ];
 
-export const TapCounterChip = () => {
-  const { taps } = useGameStore();
+const APP_ID: CameraViewId = "phone:options";
 
-  return (
-    <ItemStatusChip $variant="dark-accent">
-      {formatNumber(Math.floor(taps))} 🫵
-    </ItemStatusChip>
-  );
-};
+export function OptionsApp() {
+  const [activeTab, setActiveTab] = useState<OptionsTab>("theme");
 
-const APP_ID: CameraViewId = "phone:shop";
+  const { themes, activateTheme, previewTheme } = useGameStore();
 
-export function ShopApp() {
-  const [activeTab, setActiveTab] = useState<ShopTab>("bob");
-
-  const {
-    tapEffects,
-    decorations,
-    bobItems,
-    canAfford,
-    purchaseTapEffect,
-    selectTapEffect,
-    unequipBobItem,
-    equipBobItem,
-    purchaseBobItem,
-    toggleDecoration,
-    purchaseDecoration,
-
-    resetPreview,
-    previewBobItem,
-    previewDecoration,
-    previewTapEffect,
-  } = useGameStore();
-
-  const { currentView, transitionToView, previousView } = useViewStore();
-
-  const shopViewsWithItems: Record<ShopTab, ShopItem[]> = {
-    bob: bobItems.filter((b) => b.unlocked !== false),
-    effects: tapEffects,
-    decorations: decorations,
-  };
+  const { transitionToView } = useViewStore();
 
   const { data, page, pageCount, prev, next, hasNext, hasPrev, goTo } =
-    usePagination(shopViewsWithItems[activeTab], 1);
+    usePagination(themes, 1);
 
-  const initialIndex = useMemo(
-    () => shopViewsWithItems[activeTab].findIndex((t) => t.enabled),
-    []
-  );
+  const initialIndex = useMemo(() => themes.findIndex((t) => t.active), []);
   const currentItem = data[0];
 
   useEffect(() => {
     transitionToView(APP_ID);
     goTo(initialIndex);
+    // previewTheme(currentItem.id);
+
+    // return () => resetPreview();
   }, []);
 
   useEffect(() => {
-    handleItemPreview();
-  }, [page, activeTab]);
+    previewTheme(currentItem.id);
+  }, [page]);
 
-  const handleBobItemClick = () => {
-    const bobItem = bobItems.find((b) => b.id === currentItem.id);
-    if (!bobItem) return;
-
-    if (bobItem.purchased) {
-      // if already purchased, equip/unequip it
-      if (bobItem.enabled) {
-        unequipBobItem(bobItem.id);
-      } else {
-        equipBobItem(bobItem.id);
-      }
-    } else if (canAfford(bobItem.cost)) {
-      // purchase and equip
-      purchaseBobItem(bobItem.id);
-    }
-  };
-
-  const handleEffectItemClick = () => {
-    const effect = tapEffects.find((e) => e.id === currentItem.id);
-    if (!effect) return;
-
-    if (effect.purchased) {
-      selectTapEffect(currentItem.id);
-    } else if (canAfford(effect.cost)) {
-      purchaseTapEffect(currentItem.id);
-    }
-  };
-
-  const handleDecoItemClick = () => {
-    const deco = decorations.find((e) => e.id === currentItem.id);
-    if (!deco) return;
-
-    if (deco.purchased) {
-      toggleDecoration(currentItem.id);
-    } else if (canAfford(deco.cost)) {
-      purchaseDecoration(currentItem.id);
-    }
-  };
-
-  const handleTabChange = (id: ShopTab) => {
-    goTo(0);
+  const handleTabChange = (id: OptionsTab) => {
+    goTo(initialIndex);
     setActiveTab(id);
   };
 
   const handleButton = () => {
-    switch (activeTab) {
-      case "effects":
-        handleEffectItemClick();
-        break;
-      case "bob":
-        handleBobItemClick();
-        break;
-      case "decorations":
-        handleDecoItemClick();
-        break;
-    }
-  };
-
-  const handleItemPreview = () => {
-    if (currentItem.enabled) resetPreview();
-    switch (activeTab) {
-      case "effects":
-        previewTapEffect(currentItem.id);
-        break;
-      case "bob":
-        previewBobItem(currentItem.id);
-        break;
-      case "decorations":
-        previewDecoration(currentItem.id);
-        break;
-    }
+    activateTheme(currentItem.id);
   };
 
   const buttonLabel = match(currentItem)
-    .with({ enabled: true }, () => "Deaktiveren")
-    .with({ purchased: true }, () => "Aktivieren")
-    .otherwise(() => "Kaufen");
+    .with({ active: true }, () => "Aktiv")
+    .otherwise(() => "Auswählen");
 
   const handleNext = () => {
     if (hasNext) next();
@@ -238,10 +140,10 @@ export function ShopApp() {
     else goTo(pageCount - 1);
   };
 
-  const ShopOverlays = (
+  const ThemeOverlays = (
     <FixedAnchor>
       <ShopContainer
-        key="shop-app-container"
+        key="options-app-container"
         initial={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(6px)" }}
         animate={{ opacity: 1, scaleX: 1, y: 0, filter: "blur(0px)" }}
         exit={{ opacity: 0, scaleX: 0.9, y: 80, filter: "blur(6px)" }}
@@ -251,32 +153,8 @@ export function ShopApp() {
         }}
       >
         <ContentControls>
-          {currentItem && (
-            <HugColumn
-              key={currentItem.id + "_meta"}
-              variants={MOTION_VARIANTS.springScale}
-              animate={MOTION_VARIANTS.springScale.animate()}
-              exit={MOTION_VARIANTS.springScale.exit}
-              initial={MOTION_VARIANTS.springScale.initial}
-              $gap={"4px"}
-              $align="center"
-            >
-              {match(currentItem)
-                .with({ enabled: true }, () => (
-                  <ItemStatusChip $variant="accent">Ausgewählt</ItemStatusChip>
-                ))
-                .with({ purchased: false }, () => (
-                  <ItemStatusChip>{currentItem.cost} 🫵</ItemStatusChip>
-                ))
-                .otherwise(() => (
-                  <></>
-                ))}
-            </HugColumn>
-          )}
-
           <ItemStatusChip $variant="dark">
             <span>{currentItem.name}</span>
-            <span>{getShopItemType(currentItem.type as any)}</span>
           </ItemStatusChip>
 
           <FillRow $justify="space-between">
@@ -286,12 +164,10 @@ export function ShopApp() {
 
             <ShopItemButton
               key={currentItem.id + "_action_button"}
-              $selected={currentItem.enabled}
-              $purchased={currentItem.purchased}
-              $canAfford={canAfford(currentItem.cost)}
+              $selected={currentItem.active}
+              disabled={currentItem.active}
               onClick={handleButton}
               role="button"
-              disabled={!currentItem.purchased && !canAfford(currentItem.cost)}
             >
               {buttonLabel}
             </ShopItemButton>
@@ -322,7 +198,7 @@ export function ShopApp() {
 
   return (
     <>
-      {createPortal(ShopOverlays, document.getElementById("motion-root")!)}
+      {createPortal(ThemeOverlays, document.getElementById("motion-root")!)}
 
       <TabPanel>
         {tabs.map((tab) => (
@@ -415,8 +291,6 @@ const ItemStatusChip = styled(motion.div)<{
     gap: 0.25rem;
     
     font-weight: 700;
-
-    span:last-child {opacity: 0.5;}
   `}
  
  ${(p) =>
@@ -529,8 +403,6 @@ const PaginationButton = styled.button`
 
 const ShopItemButton = styled.button<{
   $selected: boolean;
-  $purchased: boolean;
-  $canAfford: boolean;
 }>`
   display: flex;
   flex-direction: column;
@@ -544,18 +416,13 @@ const ShopItemButton = styled.button<{
     p.$selected ? "rgba(0,0,0,1)" : "rgba(0,0,0,0.25)"};
   /* color: ${(p) => (p.$selected ? "#212121" : "#ffffff")}; */
   color: #ffffff;
-  border: ${(p) =>
-    p.$selected
-      ? "2px solid rgba(255,255,255,1)"
-      : p.$purchased
-      ? "2px solid rgba(255,255,255,0.5)"
-      : "2px solid transparent"};
+
   font-size: 1rem;
   font-weight: 600;
 
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  opacity: ${(props) => (props.$purchased || props.$canAfford ? 1 : 0.5)};
+  opacity: ${(props) => (props.$selected ? 0.5 : 1)};
 
   width: fit-content;
 

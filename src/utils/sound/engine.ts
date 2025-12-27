@@ -59,6 +59,7 @@ export const resumeAudioContext = async () => {
   }
 };
 
+// TODO: check if still relevant in 2026
 // Some iOS versions need an actual start/stop of a source node after resume
 // This plays a near-silent, extremely short tone to fully unlock playback
 export const unlockAudioContext = async () => {
@@ -229,7 +230,7 @@ const calculateFinalVolume = (config: SoundConfig): number => {
       : config.type === "tap"
       ? state.tapEnabled !== false
       : true;
-  const v = baseVolume * typeVolume * master * (typeEnabled ? 1 : 0);
+  const v = baseVolume * typeVolume * master * (typeEnabled ? 0.7 : 0);
   return Number.isFinite(v) ? v : 0;
 };
 

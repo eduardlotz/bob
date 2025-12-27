@@ -217,8 +217,8 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
   },
   {
     id: "route_locked",
-    text: ["🚧 NOCH IN ARBEIT 🚧"],
-    label: "INFO",
+    text: ["Das ist noch nicht fertig 😥"],
+    label: "Bob",
     repeatRule: "always",
     audioEnabled: true,
   },
@@ -235,6 +235,16 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
     label: "Bob",
     repeatRule: "always",
     audioEnabled: true,
+  },
+  {
+    id: "chat_theme_preview",
+    text: ["So wird der Chat aussehen", " 👁️👅👁️"],
+    label: "Vorschau",
+    repeatRule: "always",
+    audioEnabled: true,
+    options: {
+      emotion: { state: "happy", durationMs: 4000 },
+    },
   },
 ];
 

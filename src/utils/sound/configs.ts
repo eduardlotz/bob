@@ -4,6 +4,7 @@ import {
   DEFAULT_TEXT_SOUND,
   DEFAULT_UI_SOUND,
   DEFAULT_UI_SOUND_2,
+  DEFAULT_UI_SOUND_ALT,
 } from "./defaults";
 import { SoundConfig } from "./types";
 
@@ -35,7 +36,7 @@ export const DEFAULT_SOUND_CONFIGS: SoundConfig[] = [
   {
     id: DEFAULT_TEXT_SOUND.id,
     filePath: DEFAULT_TEXT_SOUND.filePath,
-    type: "text" as any,
+    type: "text",
     volume: 0.6,
     detune: { enabled: false, minSemitones: 0, maxSemitones: 0 },
     stopPrevious: false,
@@ -52,6 +53,17 @@ export const DEFAULT_SOUND_CONFIGS: SoundConfig[] = [
   {
     id: DEFAULT_UI_SOUND_2.id,
     filePath: DEFAULT_UI_SOUND_2.filePath,
+    type: "ui",
+    volume: 0.35,
+    detune: { enabled: true, minSemitones: 0, maxSemitones: 1 },
+    stopPrevious: true,
+  },
+  {
+    // somehow this import is not working?
+    // id: DEFAULT_UI_SOUND_ALT.id,
+    // filePath: DEFAULT_UI_SOUND_ALT.filePath,
+    id: "ui-tap-close",
+    filePath: "/audio/ui_click_sound_close.ogg",
     type: "ui",
     volume: 0.35,
     detune: { enabled: true, minSemitones: 0, maxSemitones: 1 },
