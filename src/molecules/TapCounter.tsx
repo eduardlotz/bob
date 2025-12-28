@@ -88,7 +88,9 @@ export const TapCounter = () => {
   const { taps, currentTheme, themes, previewMode } = useGameStore();
 
   const activeTheme =
-    previewMode === "theme" ? themes.find((t) => t.preview) : currentTheme;
+    previewMode === "theme"
+      ? themes.find((t) => t.preview)
+      : themes.find((t) => t.active);
 
   const gameTapCount = taps;
 

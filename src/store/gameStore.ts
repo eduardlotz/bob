@@ -26,22 +26,26 @@ import {
 } from "@/types/blobForms";
 import { initialWeatherEffects } from "@/shop-items/weatherEffects";
 import { initialBobItems } from "@/shop-items/bobItems";
-import { DEFAULT_MASTER_VOLUME } from "@/utils/sound/defaults";
+import {
+  DEFAULT_MASTER_VOLUME,
+  DEFAULT_TAP_SOUND,
+  DEFAULT_TAP_VOLUME,
+  DEFAULT_TEXT_VOLUME,
+  DEFAULT_UI_VOLUME,
+  DEFAULT_WORLD_VOLUME,
+} from "@/utils/sound/defaults";
 
-export enum GAME_STORE_VERSIONS {
+export enum GAME_STORE_VERSION {
   V1 = 1,
+  RESET_1 = 0,
   LATEST = V1,
 }
 
 const ONE_SECOND_MS = 1000;
 const AUTO_TAP_INTERVAL_MS = 1000;
 
-// reset game states created before this date
-const PURGE_DATE = new Date("12/28/2025");
-const LAST_SCHEMA_UPDATE = new Date("12/27/2025");
-
 // main migration function
-function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
+function migrateStore(oldState: any, version: GAME_STORE_VERSION): any {
   console.log(
     `Migration triggered: oldState version=${oldState.version}, migration version=${version}`
   );
@@ -56,10 +60,10 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSIONS): any {
     weatherEffects: initialWeatherEffects,
   };
 
-  let currentVersion = oldState.version || GAME_STORE_VERSIONS.V1;
+  let currentVersion = oldState.version || GAME_STORE_VERSION.V1;
 
-  currentVersion = GAME_STORE_VERSIONS.LATEST;
-  migratedState.version = GAME_STORE_VERSIONS.LATEST;
+  currentVersion = GAME_STORE_VERSION.LATEST;
+  migratedState.version = GAME_STORE_VERSION.LATEST;
 
   return migratedState;
 }
@@ -131,7 +135,6 @@ export const getShopItemType = (itemType: keyof typeof ITEM_NAME_MAP) => {
   return ITEM_NAME_MAP[itemType];
 };
 
-// Theme types
 export interface Theme {
   id: string;
   name: string;
@@ -164,7 +167,7 @@ export interface Route {
   cost: number;
   purchased: boolean;
   unlocked: boolean;
-  isLocked?: boolean; // for routes that are not available yet
+  isLocked?: boolean; // TODO: replace multiple status props with a single status
   path: string;
   icon: string;
   category: "pages";
@@ -187,23 +190,12 @@ type PreviewMode =
   | "tapEffect"
   | DecorationItem["type"];
 
-interface GameStore {
+interface GameState {
   version: number;
-  lastSchemaUpdate: Date; // Timestamp for manual migration triggers
 
   taps: number;
-  manualTaps: number;
-  manualTapsPerSecond: number;
-  tapsPerSecond: number;
   tapMultiplier: number;
-  autoTapRate: number;
-  isPaused: boolean;
-  recentManualTaps: number[];
   lastAutoTapTime: number;
-
-  _cachedTapsPerSecond?: number;
-  _cachedTapMultiplier?: number;
-  _lastUpgradeHash?: string;
 
   upgrades: Upgrade[];
   decorations: DecorationItem[];
@@ -211,16 +203,12 @@ interface GameStore {
   blobForms: BlobFormConfig[];
   themes: Theme[];
   currentTheme: Theme | null;
-  previewMode: PreviewMode | null;
+
   routes: Route[];
   tapEffects: TapEffect[];
   weatherEffects: WeatherEffect[];
 
   fisheyeIntensity: number;
-
-  customCameraControlsEnabled: boolean;
-  animationsEnabled: boolean;
-  statisticsVisible: boolean;
 
   soundSystem: SoundSystemState;
   soundPreferences?: {
@@ -233,14 +221,36 @@ interface GameStore {
     worldSoundIds?: string[];
     tapEffectAudioId?: string; // optional override for selected tap effect
   };
+}
 
+interface GameCache {
+  _cachedTapsPerSecond?: number;
+  _cachedTapMultiplier?: number;
+  _lastUpgradeHash?: string;
+}
+
+interface GameComputed {
+  manualTaps: number;
+  manualTapsPerSecond: number;
+  tapsPerSecond: number;
+  autoTapRate: number;
+  recentManualTaps: number[];
+}
+
+interface GameFlags {
+  previewMode: PreviewMode | null;
+  customCameraControlsEnabled: boolean;
+  animationsEnabled: boolean;
+  statisticsVisible: boolean;
+  isPaused: boolean;
+  isHydrated: boolean;
+}
+
+interface GameStateActions {
   addTaps: (amount: number) => void;
-  addAutoTaps: (amount: number) => void;
-  addManualTap: () => void;
-  cleanupManualTaps: () => void;
+
   equipBobItem: (bobItemId: string) => void;
   unequipBobItem: (bobItemId: string) => void;
-  previewBobItem: (bobItemId: string) => void;
 
   selectBlobForm: (blobFormId: string) => void;
   updateBlobFormParameters: (
@@ -251,30 +261,18 @@ interface GameStore {
 
   purchaseUpgrade: (upgradeId: string) => void;
   purchaseDecoration: (decorationId: string) => void;
-  previewDecoration: (decorationId: string) => void;
-
   purchaseBobItem: (bobItemId: string, forFree?: boolean) => void;
   purchaseRoute: (routeId: string, forFree?: boolean) => void;
   purchaseBlobForm: (blobFormId: string) => void;
-
   purchaseTapEffect: (effectId: string) => void;
-  previewTapEffect: (effectId: string) => void;
 
   activateTheme: (themeId: string) => void;
-  previewTheme: (themeId: string) => void;
-  resetPreview: () => void;
   selectTapEffect: (tapEffectId: string) => void;
   toggleDecoration: (decorationId: string) => void;
   toggleWeatherEffect: (effectId: string) => void;
   resetGame: () => void;
-  pauseGame: () => void;
-  resumeGame: () => void;
 
-  toggleCustomCameraControls: () => void;
-  addDevTaps: (amount: number) => void;
   buyAllUpgrades: () => void;
-  toggleAnimations: () => void;
-  toggleStatistics: () => void;
 
   setSoundEnabled: (enabled: boolean) => void;
   setMasterVolume: (volume: number) => void;
@@ -290,19 +288,54 @@ interface GameStore {
   setWorldSoundIds?: (ids: string[]) => void;
   toggleWorldSoundId?: (id: string) => void;
   setTapEffectAudioId?: (id?: string) => void;
+}
 
+interface GameCacheActions {
   getTotalTapsPerSecond: () => number;
   getTotalTapMultiplier: () => number;
   getAutoTapRate: () => number;
+  updateComputedValueCache: () => void;
+}
+
+interface GameComputedActions {
+  addAutoTaps: (amount: number) => void;
+  addManualTap: () => void;
+  cleanupManualTaps: () => void;
 
   getAutoTapRateUncached: () => number;
   getTotalTapMultiplierUncached: () => number;
 
-  updateComputedValueCache: () => void;
   canAfford: (cost: number) => boolean;
   calculateOfflineTaps: () => number;
   checkUnlockedRoutes: (routePath: string) => boolean;
 }
+
+interface GameFlagsActions {
+  previewBobItem: (bobItemId: string) => void;
+  previewDecoration: (decorationId: string) => void;
+  previewTapEffect: (effectId: string) => void;
+  previewTheme: (themeId: string) => void;
+  resetPreview: () => void;
+
+  setHydrated: (v: boolean) => void;
+  resetGame: () => void;
+  pauseGame: () => void;
+  resumeGame: () => void;
+
+  toggleCustomCameraControls: () => void;
+  toggleAnimations: () => void;
+  toggleStatistics: () => void;
+}
+
+export type PersistedGameStore = GameState & GameFlags;
+export type PersistedGameStoreActions = GameStateActions & GameFlagsActions;
+export type RuntimeGameStore = GameCache & GameComputed;
+export type RuntimeGameStoreActions = GameCacheActions & GameComputedActions;
+
+export type GameStore = PersistedGameStore &
+  PersistedGameStoreActions &
+  RuntimeGameStore &
+  RuntimeGameStoreActions;
 
 export const initialDecorations: DecorationItem[] = [
   {
@@ -429,60 +462,93 @@ const generateUpgradeHash = (upgrades: Upgrade[]): string => {
   return JSON.stringify(upgrades.map((u) => ({ id: u.id, level: u.level })));
 };
 
+export const initialGameState: GameState = {
+  version: GAME_STORE_VERSION.LATEST,
+
+  taps: 0,
+  tapMultiplier: 1,
+  lastAutoTapTime: 0,
+  // lastAutoTapTime: Date.now(),
+
+  upgrades: initialTapUpgrades,
+  decorations: initialDecorations,
+  bobItems: initialBobItems,
+  tapEffects: initialTapEffects,
+  weatherEffects: initialWeatherEffects,
+  blobForms: INITIAL_BLOB_FORMS,
+  themes: initialThemes,
+  currentTheme: initialThemes[0],
+  routes: initialRoutes,
+
+  fisheyeIntensity: 0,
+  soundSystem: {
+    enabled: true,
+    masterVolume: DEFAULT_MASTER_VOLUME,
+    tapVolume: DEFAULT_TAP_VOLUME,
+    worldVolume: DEFAULT_WORLD_VOLUME,
+    uiVolume: DEFAULT_UI_VOLUME,
+    textVolume: DEFAULT_TEXT_VOLUME,
+    tapEnabled: true,
+    worldEnabled: true,
+  },
+  soundPreferences: { enabled: true, muted: false },
+
+  audioSelections: {
+    worldMusicId: "world-lofi",
+    tapEffectId: "tap_effect_default",
+    worldSoundIds: [],
+    tapEffectAudioId: undefined,
+  },
+};
+
+const initialGameFlags: GameFlags = {
+  previewMode: null,
+  customCameraControlsEnabled: false,
+  // customCameraControlsEnabled: true,
+  animationsEnabled: true,
+  statisticsVisible: false,
+  isPaused: false,
+  isHydrated: false,
+};
+
+const partializePersisted = (state: GameStore): PersistedGameStore => ({
+  version: state.version,
+  taps: state.taps,
+  tapMultiplier: state.tapMultiplier,
+  lastAutoTapTime: state.lastAutoTapTime,
+  upgrades: state.upgrades,
+  decorations: state.decorations,
+  bobItems: state.bobItems,
+  blobForms: state.blobForms,
+  themes: state.themes,
+  currentTheme: state.currentTheme,
+  routes: state.routes,
+  tapEffects: state.tapEffects,
+  weatherEffects: state.weatherEffects,
+  fisheyeIntensity: state.fisheyeIntensity,
+  soundSystem: state.soundSystem,
+  soundPreferences: state.soundPreferences,
+  audioSelections: state.audioSelections,
+  isPaused: state.isPaused,
+  isHydrated: false, // reset on reload
+  customCameraControlsEnabled: state.customCameraControlsEnabled,
+  animationsEnabled: state.animationsEnabled,
+  statisticsVisible: state.statisticsVisible,
+  previewMode: state.previewMode,
+});
+
 export const useGameStore = create<GameStore>()(
   devtools(
     persist(
       (set, get) => ({
-        version: GAME_STORE_VERSIONS.LATEST,
-        lastSchemaUpdate: LAST_SCHEMA_UPDATE,
-        taps: 0,
+        ...initialGameState,
+        ...initialGameFlags,
+
         manualTaps: 0,
         manualTapsPerSecond: 0,
         tapsPerSecond: 0,
-        tapMultiplier: 1,
         autoTapRate: 0,
-        isPaused: false,
         recentManualTaps: [],
-        lastAutoTapTime: Date.now(),
-
-        _cachedTapsPerSecond: undefined,
-        _cachedTapMultiplier: undefined,
-        _lastUpgradeHash: undefined,
-
-        upgrades: initialTapUpgrades,
-        decorations: initialDecorations,
-        bobItems: initialBobItems,
-        tapEffects: initialTapEffects,
-        weatherEffects: initialWeatherEffects,
-        blobForms: INITIAL_BLOB_FORMS,
-        themes: initialThemes,
-        currentTheme: initialThemes[0],
-        previewMode: null,
-
-        routes: initialRoutes,
-        fisheyeIntensity: 0,
-        animationsEnabled: true,
-        statisticsVisible: false,
-        customCameraControlsEnabled: true,
-
-        soundSystem: {
-          enabled: true,
-          masterVolume: 1.0,
-          tapVolume: 1.0,
-          worldVolume: 0.9,
-          uiVolume: 1.0,
-          textVolume: 0.8,
-          tapEnabled: true,
-          worldEnabled: true,
-        },
-        soundPreferences: { enabled: true, muted: false },
-
-        audioSelections: {
-          worldMusicId: "world-lofi",
-          tapEffectId: "tap_effect_default",
-          worldSoundIds: [],
-          tapEffectAudioId: undefined,
-        },
 
         addTaps: (amount: number) => {
           set((state) => ({
@@ -1089,31 +1155,12 @@ export const useGameStore = create<GameStore>()(
           });
         },
 
+        setHydrated: (v) => set({ isHydrated: v }),
+
         resetGame: () => {
           set({
-            taps: 0,
-            manualTaps: 0,
-            manualTapsPerSecond: 0,
-            tapsPerSecond: 0,
-            tapMultiplier: 1,
-            autoTapRate: 0,
-            isPaused: false,
-            recentManualTaps: [],
-            upgrades: initialTapUpgrades,
-            tapEffects: initialTapEffects,
-            weatherEffects: initialWeatherEffects,
-            decorations: initialDecorations,
-            themes: initialThemes,
-            bobItems: initialBobItems,
-            blobForms: INITIAL_BLOB_FORMS,
-            currentTheme: initialThemes[0],
-            routes: initialRoutes,
-            fisheyeIntensity: 0,
-            animationsEnabled: true,
-            statisticsVisible: false,
-            _cachedTapsPerSecond: undefined,
-            _cachedTapMultiplier: undefined,
-            _lastUpgradeHash: undefined,
+            ...initialGameState,
+            ...initialGameFlags,
           });
         },
 
@@ -1136,11 +1183,6 @@ export const useGameStore = create<GameStore>()(
           set((state) => ({
             ...state,
             customCameraControlsEnabled: !state.customCameraControlsEnabled,
-          }));
-        },
-        addDevTaps: (amount: number) => {
-          set((state) => ({
-            taps: state.taps + amount,
           }));
         },
 
@@ -1501,122 +1543,142 @@ export const useGameStore = create<GameStore>()(
       }),
       {
         name: "game-store",
-        version: GAME_STORE_VERSIONS.LATEST,
+        version: GAME_STORE_VERSION.LATEST,
         storage: createIndexedDBStorage<GameStore>(),
-        migrate: (persistedState: any, version: number) => {
-          return migrateStore(persistedState, version);
-        },
-        partialize: (state) =>
-          ({
-            version: state.version,
-            lastSchemaUpdate: state.lastSchemaUpdate,
-            taps: state.taps,
-            upgrades: state.upgrades,
-            tapEffects: state.tapEffects,
-            weatherEffects: state.weatherEffects,
-            decorations: state.decorations,
-            bobItems: state.bobItems,
-            themes: state.themes,
-            currentTheme: state.currentTheme,
-            routes: state.routes,
-            blobForms: state.blobForms,
-            fisheyeIntensity: state.fisheyeIntensity,
-            lastAutoTapTime: state.lastAutoTapTime,
-            soundSystem: state.soundSystem,
-            soundPreferences: state.soundPreferences || {
-              enabled: state.soundSystem.enabled,
-              muted: state.soundSystem.masterVolume === 0,
-            },
-            audioSelections: state.audioSelections,
-          } as unknown as GameStore),
-        onRehydrateStorage: (state) => {
-          console.log("Game store rehydrated:", state);
+        // migrate: (persistedState: any, version: number) => {
+        //   return migrateStore(persistedState, version);
+        // },
+        migrate: (persisted: any, fromVersion) => {
+          if (!persisted) return initialGameState;
 
-          import("./migration")
-            .then((m) => m.queueStorageMigration())
-            .catch((e) =>
-              console.error("Failed to queue storage migration", e)
-            );
-
-          // TODO: check safer purge method or if even needed
-          const needsPurge = new Date(state?.lastSchemaUpdate) < PURGE_DATE;
-
-          if (needsPurge) {
-            try {
-              // TODO: correctly migrate
-              import("./gameStore").then((gameStore) =>
-                gameStore.useGameStore.setState(state)
-              );
-
-              toast.success(
-                `Store migrated from V${state.version} to V${GAME_STORE_VERSIONS.LATEST}`
-              );
-
-              setTimeout(() => {
-                try {
-                  import("./messageStore").then((messageStore) => {
-                    messageStore.useMessageStore.setState({
-                      isHydrated: true,
-                      repeatFlags: {},
-                      seenThisSession: {},
-                    });
-                    console.log(
-                      "Re-hydrated message store and cleared repeat flags after game store migration"
-                    );
-                  });
-                } catch (e) {
-                  console.warn("Failed to re-hydrate message store:", e);
-                }
-              }, 100);
-            } catch (error) {
-              console.error("Error during store migration:", error);
-              toast.error(
-                "Store Migration fehlgeschlagen, manche Inhalte könnten fehlen."
-              );
-            }
+          // HARD RESET
+          if (fromVersion < GAME_STORE_VERSION.RESET_1) {
+            return initialGameState;
           }
 
-          try {
-            const prefs = state.soundPreferences;
-            const enabled = prefs?.enabled ?? true;
-            const muted = prefs?.muted ?? false;
-            useGameStore.setState((s) => ({
-              ...s,
-              soundSystem: {
-                ...s.soundSystem,
-                enabled,
-              },
-              soundPreferences: { enabled, muted },
-            }));
-            try {
-              const current = useGameStore.getState();
-              engineSetMasterVolume(
-                muted
-                  ? 0
-                  : current.soundSystem?.masterVolume || DEFAULT_MASTER_VOLUME
-              );
-            } catch {}
-          } catch {}
+          // SOFT MIGRATIONS
+          if (fromVersion < 2) {
+            persisted = migrateStore(persisted, GAME_STORE_VERSION.LATEST);
+          }
 
-          try {
-            const s = useGameStore.getState();
-            engineSetTapEnabled(!!s.soundSystem.tapEnabled);
-            const worldId = s.audioSelections.worldMusicId;
-            if (worldId) {
-              const track = tryGetWorldSoundById(worldId);
-              if (track) engineSetWorldMusic(track.filePath, track.id);
-            }
-            const selectedTap = s.tapEffects.find((u) => u.enabled);
-            const cfg = resolveTapSoundForEffect(
-              selectedTap?.id || "tap_effect_default",
-              s.audioSelections.tapEffectAudioId
-            );
-            if (cfg && cfg.id) {
-              if (cfg.filePath) engineSetCurrentTapSound(cfg.id, cfg.filePath);
-              else engineSetCurrentTapSound(cfg.id);
-            }
-          } catch {}
+          return {
+            ...initialGameState,
+            ...persisted,
+            version: GAME_STORE_VERSION.LATEST,
+          };
         },
+        // partialize: (state: GameStore): PersistedGameStore => ({
+        //   ...state, // only include persisted fields (state + flags)
+        //   isHydrated: false, // reset hydration on reload
+        // }),
+        partialize: (state) =>
+          partializePersisted(state) as unknown as GameStore,
+        onRehydrateStorage: () => (state?: GameStore) => {
+          if (!state) return;
+
+          state.setHydrated(true);
+
+          state._cachedTapsPerSecond = state.tapsPerSecond;
+          state._cachedTapMultiplier = state.tapMultiplier;
+          state._lastUpgradeHash = "";
+
+          state.manualTaps = 0;
+          state.manualTapsPerSecond = 0;
+          state.tapsPerSecond = state.getTotalTapsPerSecond();
+          state.autoTapRate = state.getAutoTapRate();
+          state.recentManualTaps = [];
+
+          state.updateComputedValueCache?.();
+        },
+        // onRehydrateStorage: (state) => {
+        //   console.log("Game store rehydrated:", state);
+
+        //   import("./migration")
+        //     .then((m) => m.queueStorageMigration())
+        //     .catch((e) =>
+        //       console.error("Failed to queue storage migration", e)
+        //     );
+
+        //   // TODO: check safer purge method or if even needed
+        //   // const needsPurge = state?.lastSchemaUpdate < PURGE_DATE;
+        //   const needsPurge = false;
+
+        //   if (needsPurge) {
+        //     try {
+        //       // TODO: correctly migrate
+        //       import("./gameStore").then((gameStore) =>
+        //         gameStore.useGameStore.setState(state)
+        //       );
+
+        //       toast.success(
+        //         `Store migrated from V${state.version} to V${GAME_STORE_VERSION.LATEST}`
+        //       );
+
+        //       setTimeout(() => {
+        //         try {
+        //           import("./messageStore").then((messageStore) => {
+        //             messageStore.useMessageStore.setState({
+        //               isHydrated: true,
+        //               repeatFlags: {},
+        //               seenThisSession: {},
+        //             });
+        //             console.log(
+        //               "Re-hydrated message store and cleared repeat flags after game store migration"
+        //             );
+        //           });
+        //         } catch (e) {
+        //           console.warn("Failed to re-hydrate message store:", e);
+        //         }
+        //       }, 100);
+        //     } catch (error) {
+        //       console.error("Error during store migration:", error);
+        //       toast.error(
+        //         "Store Migration fehlgeschlagen, manche Inhalte könnten fehlen."
+        //       );
+        //     }
+        //   }
+
+        //   try {
+        //     const prefs = state.soundPreferences;
+        //     const enabled = prefs?.enabled ?? true;
+        //     const muted = prefs?.muted ?? false;
+        //     useGameStore.setState((s) => ({
+        //       ...s,
+        //       soundSystem: {
+        //         ...s.soundSystem,
+        //         enabled,
+        //       },
+        //       soundPreferences: { enabled, muted },
+        //     }));
+        //     try {
+        //       const current = useGameStore.getState();
+        //       engineSetMasterVolume(
+        //         muted
+        //           ? 0
+        //           : current.soundSystem?.masterVolume || DEFAULT_MASTER_VOLUME
+        //       );
+        //     } catch {}
+        //   } catch {}
+
+        //   try {
+        //     const s = useGameStore.getState();
+        //     engineSetTapEnabled(!!s.soundSystem.tapEnabled);
+        //     const worldId = s.audioSelections.worldMusicId;
+        //     if (worldId) {
+        //       const track = tryGetWorldSoundById(worldId);
+        //       if (track) engineSetWorldMusic(track.filePath, track.id);
+        //     }
+        //     const selectedTap = s.tapEffects.find((u) => u.enabled);
+        //     const cfg = resolveTapSoundForEffect(
+        //       selectedTap?.id || "tap_effect_default",
+        //       s.audioSelections.tapEffectAudioId
+        //     );
+        //     if (cfg && cfg.id) {
+        //       if (cfg.filePath) engineSetCurrentTapSound(cfg.id, cfg.filePath);
+        //       else engineSetCurrentTapSound(cfg.id);
+        //     }
+        //   } catch {}
+        // },
       }
     ),
     {
@@ -1672,8 +1734,8 @@ export const triggerStoreMigration = () => {
     fisheyeIntensity: store.fisheyeIntensity,
   };
 
-  const migratedState = migrateStore(currentState, GAME_STORE_VERSIONS.LATEST);
-  toast.success(`Store migrated to VERSION_${GAME_STORE_VERSIONS.LATEST}`);
+  const migratedState = migrateStore(currentState, GAME_STORE_VERSION.LATEST);
+  toast.success(`Store migrated to VERSION_${GAME_STORE_VERSION.LATEST}`);
 
   useGameStore.setState({
     ...store,
