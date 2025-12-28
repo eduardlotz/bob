@@ -17,6 +17,11 @@ export const DEFAULT_UI_SOUND = {
   filePath: "/audio/ui_click_sound_open.ogg",
 };
 
+export const DEFAULT_UI_SOUND_ALT = {
+  id: "ui-tap-close",
+  filePath: "/audio/ui_click_sound_close.ogg",
+};
+
 export const DEFAULT_UI_SOUND_2 = {
   id: "ui-tap-2",
   filePath: "/audio/bong_sound.ogg",
@@ -28,7 +33,7 @@ export const DEFAULT_WORLD_VOLUME = 0.8;
 export const DEFAULT_UI_VOLUME = 0.7;
 export const DEFAULT_TEXT_VOLUME = 0.8;
 
-export const DEBUG_LOGS = false;
+export const DEBUG_LOGS = true; // TODO: move to dev store
 
 // SPECIAL SOUNDS - MAYBE USED IN THE FUTURE
 export const SOFT_TAP_SOUND = {

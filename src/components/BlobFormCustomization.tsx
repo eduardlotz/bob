@@ -33,7 +33,6 @@ const ResetButton = styled.button`
   padding: 0.5rem 1rem;
   font-size: 0.95rem;
   font-weight: 500;
-  cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
@@ -136,7 +135,6 @@ const ParameterSlider = styled.input`
   background: var(--border-color);
   border-radius: 3px;
   outline: none;
-  cursor: pointer;
 
   &::-webkit-slider-thumb {
     appearance: none;

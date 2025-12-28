@@ -603,8 +603,6 @@ const AppContainer = styled.button`
 
   @media (hover: hover) {
     &:not(:disabled):hover {
-      cursor: pointer;
-
       &:after {
         opacity: 1;
         scale: 1;

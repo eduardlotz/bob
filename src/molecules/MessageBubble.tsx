@@ -5,7 +5,7 @@ import { a } from "@react-spring/three";
 import { motion, AnimatePresence } from "motion/react";
 import type { Variants } from "motion/react";
 import { useMessageStore } from "@/store/messageStore";
-import { useAppStore } from "@/store";
+import { useAppStore, useViewStore } from "@/store";
 import { useGameStore } from "@/store/gameStore";
 import { textSynth } from "@/utils/sound/textSynth";
 import { resumeAudioContext, unlockAudioContext } from "@/utils/soundSystem";
@@ -151,6 +151,7 @@ export const MessageBubble = memo(function MessageBubble({
   } = useMessageStore();
   const { requestEmotion } = useAppStore();
   const { previewMode } = useGameStore();
+  const { currentView } = useViewStore();
 
   const [visibleLines, setVisibleLines] = useState<
     Array<{ id: string; text: string; time: Date }>
@@ -161,12 +162,12 @@ export const MessageBubble = memo(function MessageBubble({
   const queueLength = getQueueLength();
 
   useEffect(() => {
-    if (previewMode === "theme") {
+    if (previewMode === "theme" && currentView == "phone:options") {
       showMessage("chat_theme_preview");
     } else {
       dismissMessageById("chat_theme_preview");
     }
-  }, [previewMode]);
+  }, [previewMode, currentView]);
 
   useEffect(() => {
     return () => {
@@ -212,9 +213,7 @@ export const MessageBubble = memo(function MessageBubble({
 
         // TODO: don't dismiss if user is hovering
         // don't dismiss if theme preview
-        if (messageId === "chat_theme_preview") {
-          dismissTimerRef.current = window.setTimeout(() => {}, 0);
-        } else {
+        if (messageId !== "chat_theme_preview") {
           dismissTimerRef.current = window.setTimeout(() => {
             dismissMessage();
           }, readingTime);

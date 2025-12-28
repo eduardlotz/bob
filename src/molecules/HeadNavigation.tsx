@@ -17,6 +17,7 @@ import { useViewStore } from "@/store/viewStore";
 import { Magnetic } from "@/layout/Magnetic";
 import { useMessageStore } from "@/store/messageStore";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
+import { useCursor } from "@/hooks/useCursor";
 
 //#region constants
 export const CAMERA_Y_POSITION = 1;
@@ -165,9 +166,9 @@ export function HeadNavigation({
     }
   }, [showOptions, isDefaultView, resetToDefaultView]);
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
-  const [mousePosition, setMousePosition] = useState({
-    x: 0.5,
-    y: 0.5,
+  const mousePosition = useCursor({
+    condition: isDefaultView,
+    positionFactor: 0.2,
   });
 
   useEffect(() => {
@@ -184,20 +185,6 @@ export function HeadNavigation({
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-
-  // mouse position tracking on desktop
-  useEffect(() => {
-    const handleMouseMove = (event: MouseEvent) => {
-      if (isDefaultView()) {
-        setMousePosition({
-          x: event.clientX / window.innerWidth,
-          y: event.clientY / window.innerHeight,
-        });
-      }
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [isDefaultView]);
 
   const { isOptionsClosing, closeOptionsWithAnimation } = useAppStore();
   const [cameraZoomAnimation, setCameraZoomAnimation] = useState(false);
@@ -257,8 +244,8 @@ export function HeadNavigation({
       );
     } else {
       const cursorPos = new THREE.Vector3(
-        (mousePosition.x - 0.5) * CAMERA_FOLLOW_OFFSET * 0.1,
-        -(mousePosition.y - 0.5) * CAMERA_FOLLOW_OFFSET * 0.2,
+        mousePosition.x * CAMERA_FOLLOW_OFFSET,
+        mousePosition.y * CAMERA_FOLLOW_OFFSET,
         0
       );
       cameraControlsRef.current?.setLookAt(
@@ -562,9 +549,9 @@ const NavigationBubble = styled(motion.button)<{
 
   opacity: ${(p) => (p.$locked ? 1 : 0.25)};
 
-  &:not(:disabled) {
+  /* &:not(:disabled) {
     cursor: pointer;
-  }
+  } */
 
   padding: 16px 20px;
   border-radius: 50px;

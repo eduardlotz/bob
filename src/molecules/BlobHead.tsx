@@ -33,6 +33,8 @@ import { getSelectedBlobForm, getBlobFormType } from "@/types/blobForms";
 import { SimsPlumbob } from "@/3d-objects/models/simsPlumbob";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { BlackCap } from "@/3d-objects/models/blackCap";
+import { useCursor } from "@/hooks/useCursor";
+import { useCursorStore } from "@/store/cursorStore";
 
 // TODO: move constants to a shared config file
 const HEAD_POSITION_Y = 0;
@@ -186,6 +188,24 @@ export function BlobHead({
 
   const eyeGeometries = useRef(createEyeGeometries());
 
+  const setCursor = useCursorStore.getState().set;
+
+  const onPointerOver = () => {
+    setCursor("hover");
+  };
+
+  const onPointerOut = () => {
+    setCursor("default");
+  };
+
+  const onPointerDown = () => {
+    setCursor("active");
+  };
+
+  const onPointerUp = () => {
+    setCursor("hover");
+  };
+
   const [dizzyStars, setDizzyStars] = useState<
     Array<{
       id: number;
@@ -198,7 +218,6 @@ export function BlobHead({
       spinAngle: number;
     }>
   >([]);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [blinking, setBlinking] = useState(false);
   const [idleAnimation, setIdleAnimation] = useState<"none" | "spin" | "tilt">(
     "none"
@@ -211,6 +230,12 @@ export function BlobHead({
   const { orientation, acceleration } = useDeviceOrientation();
 
   const { isDefaultView } = useViewStore();
+
+  // MAYDO: check why the head needs this weird cursor tracking
+  const mousePosition = useCursor({
+    condition: isDefaultView,
+    positionFactor: 2.5,
+  });
 
   const [spring, api] = useSpring(() => ({
     scale: [0, 0, 0],
@@ -233,19 +258,19 @@ export function BlobHead({
     }
   }, [showOptions, isClosing]);
 
-  useEffect(() => {
-    const handleMouseMove = (event: MouseEvent) => {
-      // dont update mouse position when in object view mode (/about scene)
-      if (isDefaultView()) {
-        setMousePosition({
-          x: (event.clientX / window.innerWidth) * 2 - 1,
-          y: (event.clientY / window.innerHeight) * 2 - 1,
-        });
-      }
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [isDefaultView]);
+  // useEffect(() => {
+  //   const handleMouseMove = (event: MouseEvent) => {
+  //     // dont update mouse position when in object view mode (/about scene)
+  //     if (isDefaultView()) {
+  //       setMousePosition({
+  //         x: (event.clientX / window.innerWidth) * 2 - 1,
+  //         y: (event.clientY / window.innerHeight) * 2 - 1,
+  //       });
+  //     }
+  //   };
+  //   window.addEventListener("mousemove", handleMouseMove);
+  //   return () => window.removeEventListener("mousemove", handleMouseMove);
+  // }, [isDefaultView]);
 
   useEffect(() => {
     const blinkInterval = setInterval(() => {
@@ -457,7 +482,7 @@ export function BlobHead({
   ) => {
     const targetRotY = mousePosition.x * MAX_ROTATION_X;
     const targetRotX =
-      (mousePosition.y - (showOptions ? 0 : CAMERA_Y_POSITION)) *
+      (-mousePosition.y - (showOptions ? 0 : CAMERA_Y_POSITION)) *
       MAX_ROTATION_Y;
     const targetRotZ = -mousePosition.x * MAX_ROTATION_X;
 
@@ -466,11 +491,7 @@ export function BlobHead({
     const floatY = Math.sin(clock.getElapsedTime() * 0.5) * 0.1;
     headRef.current.position.y = floatY + HEAD_POSITION_Y;
 
-    const cursorPos = new Vector3(
-      mousePosition.x * 0.2,
-      -(mousePosition.y - 0.5) * 0.4,
-      0
-    );
+    const cursorPos = new Vector3(mousePosition.x, -mousePosition.y * 0.4, 0);
 
     const baseZoom = showOptions
       ? VISIBLE_OPTIONS_CAMERA_ZOOM
@@ -759,14 +780,6 @@ export function BlobHead({
   // TODO: fix space bar taps + mention in onboarding
   // useKeyPress(" ", () => onHeadClick());
 
-  const onPointerOver = () => {
-    document.body.style.cursor = "pointer";
-  };
-
-  const onPointerLeave = () => {
-    document.body.style.cursor = "auto";
-  };
-
   const selectedBlobForm = useMemo(
     () => getSelectedBlobForm(blobForms),
     [blobForms]
@@ -1005,7 +1018,9 @@ export function BlobHead({
         ref={headRef}
         onClick={onClick}
         onPointerOver={onPointerOver}
-        onPointerLeave={onPointerLeave}
+        onPointerOut={onPointerOut}
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
         castShadow
         scale={spring.scale.get() as [number, number, number]}
         rotation={[0, Math.PI, 0]}

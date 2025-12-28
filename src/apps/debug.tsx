@@ -187,7 +187,6 @@ const ToggleButton = styled.button<{ $active: boolean }>`
   background: #fff;
   border: none;
   color: #212121;
-  cursor: pointer;
   font-size: 1rem;
   font-weight: 700;
   border-radius: 5rem;

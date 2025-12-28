@@ -91,6 +91,7 @@ export const useAppStore = create<AppStore>()(
       setPermissionGranted: (granted) => set({ permissionGranted: granted }),
       setIsMobile: (mobile) => set({ isMobile: mobile }),
       setEmotionData: (data) => set({ emotionData: data }),
+      // TODO: check if a custom event is better
       requestEmotion: (emotion, durationMs) => {
         // store only provides a lightweight signal; HeadNavigation consumes and triggers on change
         set((s) => ({ emotionData: s.emotionData }));

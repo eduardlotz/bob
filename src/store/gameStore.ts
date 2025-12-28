@@ -26,6 +26,7 @@ import {
 } from "@/types/blobForms";
 import { initialWeatherEffects } from "@/shop-items/weatherEffects";
 import { initialBobItems } from "@/shop-items/bobItems";
+import { DEFAULT_MASTER_VOLUME } from "@/utils/sound/defaults";
 
 export enum GAME_STORE_VERSIONS {
   V1 = 1,
@@ -36,7 +37,7 @@ const ONE_SECOND_MS = 1000;
 const AUTO_TAP_INTERVAL_MS = 1000;
 
 // reset game states created before this date
-const PURGE_DATE = new Date("12/27/2025");
+const PURGE_DATE = new Date("12/28/2025");
 const LAST_SCHEMA_UPDATE = new Date("12/27/2025");
 
 // main migration function
@@ -1590,7 +1591,9 @@ export const useGameStore = create<GameStore>()(
             try {
               const current = useGameStore.getState();
               engineSetMasterVolume(
-                muted ? 0 : current.soundSystem?.masterVolume || 0.7
+                muted
+                  ? 0
+                  : current.soundSystem?.masterVolume || DEFAULT_MASTER_VOLUME
               );
             } catch {}
           } catch {}

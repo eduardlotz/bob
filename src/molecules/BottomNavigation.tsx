@@ -135,7 +135,6 @@ export const NavButton = styled(motion.button)<{ $isActive?: boolean }>`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
 
   pointer-events: auto;
 
