@@ -98,7 +98,6 @@ export const IconButton = styled(motion.button)`
   }
 
   &:hover {
-    cursor: pointer;
     background-color: rgba(18, 18, 18, 0.08);
 
     > * {
@@ -107,7 +106,6 @@ export const IconButton = styled(motion.button)`
   }
 
   &:active {
-    cursor: pointer;
     background-color: rgba(18, 18, 18, 0.1);
 
     > * {
@@ -143,8 +141,6 @@ export const Button = styled(motion.button)<{
   transition: 0.35s cubic-bezier(0.2, 0.8, 0.2, 0.8);
   transition-property: box-shadow height;
   overflow: hidden;
-
-  cursor: pointer;
 
   &:hover {
     box-shadow: 0px 0px 0px 4px #121212;
@@ -184,7 +180,6 @@ export const MenuButton = styled(motion.button)<{ $isActive?: boolean }>`
   outline: 2px solid transparent;
   outline-color: ${(props) => (props.$isActive ? "#ffffff" : "transparent")};
   outline-offset: ${(props) => (props.$isActive ? "3px" : "0")};
-  cursor: pointer;
   pointer-events: auto;
   border-radius: 1.5rem;
 
@@ -268,7 +263,6 @@ export const DevSlider = styled.input`
     border-radius: 50%;
     background: var(--accent-color);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-    cursor: pointer;
   }
 
   &::-moz-range-thumb {
@@ -278,7 +272,6 @@ export const DevSlider = styled.input`
     background: var(--accent-color);
     border: none;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-    cursor: pointer;
   }
 `;
 
@@ -313,7 +306,6 @@ export const DevActionButton = styled.button<{
         : "rgba(255, 255, 255, 0.18)"};
   background-color: rgba(255, 255, 255, 0.08);
   color: #ffffff;
-  cursor: pointer;
   font-size: 13px;
   font-weight: 600;
   transition: 0.2s;

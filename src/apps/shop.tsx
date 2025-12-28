@@ -463,7 +463,6 @@ const TabButton = styled.button<{ $active: boolean }>`
   background: #fff;
   border: none;
   color: #212121;
-  cursor: pointer;
   font-size: 1rem;
   font-weight: 700;
   border-radius: 5rem;
@@ -538,7 +537,6 @@ const ShopItemButton = styled.button<{
 
   padding: 0.5rem 0.75rem;
   border-radius: 0.875rem;
-  cursor: pointer;
 
   background-color: ${(p) =>
     p.$selected ? "rgba(0,0,0,1)" : "rgba(0,0,0,0.25)"};

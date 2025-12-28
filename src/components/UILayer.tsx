@@ -8,6 +8,9 @@ import { requestMotionPermission } from "@/utils/permission";
 import { useGameStore } from "@/store/gameStore";
 
 import { AnimatePresence, motion } from "motion/react";
+import { Cursor } from "@/molecules/Cursor";
+import { useCursorStore } from "@/store/cursorStore";
+import { useAppStore } from "@/store";
 
 interface UILayerProps {
   permissionGranted: boolean;
@@ -18,8 +21,8 @@ interface UILayerProps {
 }
 
 export function UILayer({ setPermissionGranted }: UILayerProps) {
-  const [soundHintDismissed, setSoundHintDismissed] = useState(false);
   const sound = useSoundSystem();
+  const { isMobile } = useAppStore();
 
   // cleanup manual taps every second
   // TODO: check if this is optimal -> without it the steps/s is not resetting
@@ -32,58 +35,77 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
     return () => clearInterval(cleanupInterval);
   }, []);
 
-  // TODO: exten audio system to support different UI sounds
   useEffect(() => {
+    const CLICKABLE_SELECTOR =
+      'button, [role="button"], input[type="button"], input[type="submit"], [data-clickable], input[type="radio"], input[type="checkbox"], [data-ui-sound-id]';
+    const setCursor = useCursorStore.getState().set;
+
+    const handlePointerOver = (e: PointerEvent) => {
+      const target = (e.target as Element).closest(CLICKABLE_SELECTOR);
+      if (target) setCursor("hover");
+    };
+
+    const handlePointerOut = (e: PointerEvent) => {
+      const target = (e.target as Element).closest(CLICKABLE_SELECTOR);
+      if (target) setCursor("default");
+    };
+
+    const handlePointerDown = (e: PointerEvent) => {
+      const target = (e.target as Element).closest(CLICKABLE_SELECTOR);
+      if (target) setCursor("active");
+    };
+
+    const handlePointerUp = (e: PointerEvent) => {
+      const target = (e.target as Element).closest(CLICKABLE_SELECTOR);
+      if (target) setCursor("hover");
+    };
+
     const handleClick = (e: MouseEvent) => {
       const target = e.target as Element | null;
       if (!target) return;
-      const clickable = target.closest(
-        'button, [role="button"], input[type="button"], input[type="submit"], .click-sound, input[type="radio"], input[type="checkbox"], [data-ui-sound-id]'
-      );
+      const clickable = target.closest(CLICKABLE_SELECTOR);
+
       if (clickable) {
-        // check for unique sound first
         const attrId = clickable.getAttribute("data-ui-sound-id");
-        // defer slightly to avoid interfering with UI thread
         setTimeout(() => {
           if (attrId) {
-            // play the specific UI sound by ID
             sound.playUISound(attrId);
           } else {
-            // play default UI sound
             sound.playUISound();
           }
         }, 0);
       }
     };
-    document.addEventListener("click", handleClick, true);
-    return () => document.removeEventListener("click", handleClick, true);
-  }, [sound]);
+
+    window.addEventListener("pointerover", handlePointerOver);
+    window.addEventListener("pointerout", handlePointerOut);
+    window.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("click", handleClick);
+
+    return () => {
+      window.removeEventListener("pointerover", handlePointerOver);
+      window.removeEventListener("pointerout", handlePointerOut);
+      window.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("click", handleClick);
+    };
+  }, []);
 
   // TODO: fix or remove every device motion related
-  const handlePermissionRequest = async () => {
-    const granted = await requestMotionPermission();
-    setPermissionGranted(granted);
-  };
+  // const handlePermissionRequest = async () => {
+  //   const granted = await requestMotionPermission();
+  //   setPermissionGranted(granted);
+  // };
 
   return (
     <UILayerContainer>
-      {/* <TopLogoContainer
-        layoutId="page-logo"
-        transition={{
-          layout: {
-            type: "spring",
-            mass: 0.55,
-            damping: 12,
-            bounceDamping: 15,
-          },
-        }}
-      >
-        <Logo />
-      </TopLogoContainer> */}
       <AnimatePresence>
         <MotionRoot id="motion-root"></MotionRoot>
       </AnimatePresence>
       <BottomNavigation />
+
+      {!isMobile && <Cursor attachToParent />}
     </UILayerContainer>
   );
 }
@@ -114,7 +136,7 @@ const UILayerContainer = styled.div`
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 1000;
+  z-index: 9999;
   display: flex;
   flex-direction: column;
   align-items: center;

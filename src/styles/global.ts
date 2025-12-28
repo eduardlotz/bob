@@ -58,6 +58,7 @@ export const GlobalStyle = createGlobalStyle`
     *:before,
     *:after {
         box-sizing: inherit;
+        cursor: none;
     }
 
     button {
@@ -65,9 +66,9 @@ export const GlobalStyle = createGlobalStyle`
         border: none;
         box-shadow: none;
         pointer-events: auto;
-
+/* 
         &:not(:disabled) {
             cursor: pointer;
-        }
+        } */
     }
 `;

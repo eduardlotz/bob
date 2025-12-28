@@ -156,7 +156,6 @@ const Scene = ({
                 cameraControlsRef={cameraControlsRef}
                 permissionGranted={permissionGranted}
                 onEmotionUpdate={(data) => {
-                  // TODO: check if it actually works?
                   onEmotionUpdate?.(data);
                 }}
               />

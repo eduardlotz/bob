@@ -26,6 +26,7 @@ import {
 } from "@/types/blobForms";
 import { initialWeatherEffects } from "@/shop-items/weatherEffects";
 import { initialBobItems } from "@/shop-items/bobItems";
+import { DEFAULT_MASTER_VOLUME } from "@/utils/sound/defaults";
 
 export enum GAME_STORE_VERSIONS {
   V1 = 1,
@@ -1590,7 +1591,9 @@ export const useGameStore = create<GameStore>()(
             try {
               const current = useGameStore.getState();
               engineSetMasterVolume(
-                muted ? 0 : current.soundSystem?.masterVolume || 0.7
+                muted
+                  ? 0
+                  : current.soundSystem?.masterVolume || DEFAULT_MASTER_VOLUME
               );
             } catch {}
           } catch {}
