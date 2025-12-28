@@ -37,7 +37,7 @@ const ONE_SECOND_MS = 1000;
 const AUTO_TAP_INTERVAL_MS = 1000;
 
 // reset game states created before this date
-const PURGE_DATE = new Date("12/27/2025");
+const PURGE_DATE = new Date("12/28/2025");
 const LAST_SCHEMA_UPDATE = new Date("12/27/2025");
 
 // main migration function
