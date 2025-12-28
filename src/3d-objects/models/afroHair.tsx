@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import React, { useEffect, useRef } from "react";
-import { Outlines, useGLTF } from "@react-three/drei";
+import { Outlines, useGLTF, Wireframe } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
 import { useGameStore } from "@/store";
@@ -22,6 +22,7 @@ interface Props {
   rotation?: [number, number, number];
   scale?: [number, number, number];
   outlineColor?: string;
+  preview: boolean;
 }
 
 export const AfroHair = ({
@@ -31,11 +32,9 @@ export const AfroHair = ({
 }: Props) => {
   const group = useRef<THREE.Group>(null!);
   const { nodes, materials } = useGLTF(PATH) as GLTFResult;
-  const { previewMode } = useGameStore();
 
-  materials["hair"].transparent = previewMode === "hat";
-  materials["hair"].wireframe = previewMode === "hat";
-  // materials["hair"].opacity = previewMode === "hat" ? 0.5 : 1;
+  materials["hair"].transparent = props.preview;
+  materials["hair"].opacity = props.preview ? 0.25 : 1;
 
   const [spring, api] = useSpring(() => ({
     scale: [0, 0, 0], // start invisible
@@ -51,6 +50,7 @@ export const AfroHair = ({
 
   return (
     <a.group
+      key={Number(props.preview)}
       ref={group}
       scale={spring.scale.get() as [number, number, number]}
       castShadow
@@ -67,11 +67,15 @@ export const AfroHair = ({
         rotation={[0.294, 0, 0]}
         scale={[1.34, 0.966, 1.262]}
       >
+        {/* {props.preview && (
+          <Wireframe simplify thickness={0.04} backfaceStroke={outlineColor} />
+        )} */}
+
         <Outlines
           thickness={0.02}
           color={outlineColor}
           screenspace
-          {...(previewMode === "hat" ? previewMaterialProps : {})}
+          {...(props.preview ? previewMaterialProps : {})}
         />
       </mesh>
     </a.group>

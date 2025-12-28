@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import React, { useEffect, useRef } from "react";
-import { useGLTF } from "@react-three/drei";
+import { useGLTF, Wireframe } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
 import { useGameStore } from "@/store";
@@ -26,6 +26,7 @@ interface Props {
   rotation?: [number, number, number];
   scale?: [number, number, number];
   outlineColor?: string;
+  preview: boolean;
 }
 
 export const KrustyKrabHat = ({
@@ -35,7 +36,6 @@ export const KrustyKrabHat = ({
 }: Props) => {
   const group = useRef<THREE.Group>(null!);
   const { nodes, materials } = useGLTF(PATH) as GLTFResult;
-  const { previewMode } = useGameStore();
 
   const [spring, api] = useSpring(() => ({
     scale: [0, 0, 0], // start invisible
@@ -51,6 +51,7 @@ export const KrustyKrabHat = ({
 
   return (
     <a.group
+      key={Number(props.preview)}
       ref={group}
       scale={spring.scale.get() as [number, number, number]}
       castShadow
@@ -71,8 +72,11 @@ export const KrustyKrabHat = ({
         >
           <meshToonMaterial
             color={"#191919"}
-            {...(previewMode === "hat" ? previewMaterialProps : {})}
+            {...(props.preview ? previewMaterialProps : {})}
           />
+          {props.preview && (
+            <Wireframe thickness={0.04} backfaceStroke={outlineColor} />
+          )}
         </mesh>
         <mesh
           castShadow
@@ -82,8 +86,11 @@ export const KrustyKrabHat = ({
         >
           <meshToonMaterial
             color={"white"}
-            {...(previewMode === "hat" ? previewMaterialProps : {})}
+            {...(props.preview ? previewMaterialProps : {})}
           />
+          {props.preview && (
+            <Wireframe thickness={0.04} backfaceStroke={outlineColor} />
+          )}
         </mesh>
         <mesh
           castShadow
@@ -93,8 +100,11 @@ export const KrustyKrabHat = ({
         >
           <meshToonMaterial
             color="#75d1f0"
-            {...(previewMode === "hat" ? previewMaterialProps : {})}
+            {...(props.preview ? previewMaterialProps : {})}
           />
+          {props.preview && (
+            <Wireframe thickness={0.04} backfaceStroke={outlineColor} />
+          )}
         </mesh>
       </group>
     </a.group>

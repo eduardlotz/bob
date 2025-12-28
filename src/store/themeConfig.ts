@@ -18,7 +18,7 @@ export const THEME_IDS = {
 export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
   [THEME_IDS.DEFAULT]: {
     id: THEME_IDS.DEFAULT,
-    name: "Default",
+    name: "Im Hellen",
     description: "The original theme",
     active: true,
     preview: false,
@@ -37,7 +37,7 @@ export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
   },
   [THEME_IDS.DARK]: {
     id: THEME_IDS.DARK,
-    name: "Dark Mode",
+    name: "Im Dunklen",
     description: "A sleek dark theme with inverted colors",
     active: false,
     preview: false,
@@ -75,7 +75,7 @@ export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
   },
   [THEME_IDS.NEON]: {
     id: THEME_IDS.NEON,
-    name: "Neon",
+    name: "Im Grellen",
     description: "A vibrant neon theme",
     preview: false,
     active: false,

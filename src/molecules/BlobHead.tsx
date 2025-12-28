@@ -922,9 +922,14 @@ export function BlobHead({
     const previewItems = bobItems.filter(
       (b) => b.preview && b.type === previewMode
     );
-    const enabledItems = bobItems.filter((b) => b.enabled);
 
-    const allEquippedItems = previewMode ? previewItems : enabledItems;
+    const enabledItems = bobItems.filter(
+      (b) => b.enabled && b.type !== previewMode
+    );
+
+    const allEquippedItems = previewMode
+      ? [...previewItems, ...enabledItems]
+      : enabledItems;
 
     const detachedItems = allEquippedItems.filter((i) => i.detached);
     const attachedItems = allEquippedItems.filter((i) => !i.detached);
@@ -937,6 +942,7 @@ export function BlobHead({
             position={calculateCostumePosition([0, 0.9, 0], "hat")}
             scale={[0.006, 0.006, 0.006]}
             outlineColor={outlineColor}
+            preview={!item.enabled && !!item.preview}
           />
         );
       if (item.id === "chickenLittleGlasses")
@@ -949,6 +955,7 @@ export function BlobHead({
               item.id
             )}
             scale={[1.6, 1.6, 1.6]}
+            preview={!item.enabled && !!item.preview}
           />
         );
       if (item.id === "builderHelmet")
@@ -957,6 +964,7 @@ export function BlobHead({
             key={item.id}
             position={calculateCostumePosition([0, 0.75, 0], "hat")}
             scale={[1.22, 1.25, 1.25]}
+            preview={!item.enabled && !!item.preview}
           />
         );
       if (item.id === "afroHair")
@@ -966,6 +974,7 @@ export function BlobHead({
             position={calculateCostumePosition([0, -0.7, -0.05], "hat")}
             rotation={[(Math.PI / 2) * 0.15, 0, 0]}
             scale={[0.9, 0.9, 0.9]}
+            preview={!item.enabled && !!item.preview}
           />
         );
       if (item.id === "blackCap")
@@ -976,6 +985,7 @@ export function BlobHead({
             scale={[2, 2, 2]}
             outlineColor={outlineColor}
             rotation={[0, -Math.PI / 2, 0]}
+            preview={!item.enabled && !!item.preview}
           />
         );
       return null;
@@ -996,6 +1006,7 @@ export function BlobHead({
             position={[0, 3.5, 0]}
             scale={[0.4, 0.4, 0.4]}
             color={emotionColor}
+            preview={!item.enabled && !!item.preview}
           />
         );
       }

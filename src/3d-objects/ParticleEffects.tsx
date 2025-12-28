@@ -434,9 +434,12 @@ const colorConfigs = {
 };
 
 export function TapEffect() {
-  const { tapEffects } = useGameStore();
+  const { tapEffects, previewMode } = useGameStore();
 
-  const selectedTapEffect = tapEffects.find((u) => u.enabled);
+  const selectedTapEffect =
+    previewMode === "tapEffect"
+      ? tapEffects.find((u) => u.preview)
+      : tapEffects.find((u) => u.enabled);
 
   const effectValue = selectedTapEffect?.effectId ?? 0;
 

@@ -1,8 +1,9 @@
 import * as THREE from "three";
 import React, { useEffect, useRef } from "react";
-import { useGLTF } from "@react-three/drei";
+import { Outlines, useGLTF, Wireframe } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
+import { previewMaterialProps } from "@/shop-items/utils";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -19,11 +20,20 @@ interface Props {
   position: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
+  outlineColor?: string;
+  preview: boolean;
 }
 
-export const TreeModel = ({ scale = [1, 1, 1], ...props }: Props) => {
+export const TreeModel = ({
+  scale = [1, 1, 1],
+  outlineColor = "#4a1919",
+  ...props
+}: Props) => {
   const group = useRef<THREE.Group>(null!);
   const { nodes, materials } = useGLTF(PATH) as GLTFResult;
+
+  materials["color_main"].transparent = props.preview;
+  materials["color_main"].opacity = props.preview ? 0.25 : 1;
 
   const [spring, api] = useSpring(() => ({
     scale: [0, 0, 0], // start invisible
@@ -39,6 +49,7 @@ export const TreeModel = ({ scale = [1, 1, 1], ...props }: Props) => {
 
   return (
     <a.group
+      key={Number(props.preview)}
       ref={group}
       scale={spring.scale.get() as [number, number, number]}
       castShadow
@@ -49,7 +60,15 @@ export const TreeModel = ({ scale = [1, 1, 1], ...props }: Props) => {
       <mesh
         geometry={nodes["tree-lime"].geometry}
         material={materials.color_main}
-      />
+      >
+        {/* {props.preview && <Wireframe thickness={0.04} />} */}
+        <Outlines
+          thickness={0.02}
+          color={outlineColor}
+          screenspace
+          {...(props.preview ? previewMaterialProps : {})}
+        />
+      </mesh>
     </a.group>
   );
 };

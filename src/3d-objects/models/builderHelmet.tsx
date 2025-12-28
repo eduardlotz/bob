@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import React, { useEffect, useRef } from "react";
-import { Outlines, useGLTF } from "@react-three/drei";
+import { Outlines, useGLTF, Wireframe } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
 import { useGameStore } from "@/store";
@@ -21,6 +21,7 @@ interface Props {
   rotation?: [number, number, number];
   scale?: [number, number, number];
   outlineColor?: string;
+  preview: boolean;
 }
 
 export const BuilderHelmet = ({
@@ -30,7 +31,6 @@ export const BuilderHelmet = ({
 }: Props) => {
   const group = useRef<THREE.Group>(null!);
   const { nodes, materials } = useGLTF(PATH) as GLTFResult;
-  const { previewMode } = useGameStore();
 
   const [spring, api] = useSpring(() => ({
     scale: [0, 0, 0], // start invisible
@@ -47,6 +47,7 @@ export const BuilderHelmet = ({
   return (
     <a.group
       ref={group}
+      key={Number(props.preview)}
       scale={spring.scale.get() as [number, number, number]}
       position={props.position}
       rotation={props.rotation}
@@ -57,14 +58,15 @@ export const BuilderHelmet = ({
         geometry={nodes.Object_4001.geometry}
         position={[0.015, 0.053, 0.171]}
         rotation={[-Math.PI / 2, 0, 0]}
-        // material={materials["Material.017"]}
       >
         <meshToonMaterial
           color="#FFED55"
           side={THREE.DoubleSide}
-          {...(previewMode === "hat" ? previewMaterialProps : {})}
-          wireframe={previewMode === "hat"}
+          {...(props.preview ? previewMaterialProps : {})}
         />
+        {props.preview && (
+          <Wireframe simplify thickness={0.04} backfaceStroke={outlineColor} />
+        )}
       </mesh>
     </a.group>
   );
