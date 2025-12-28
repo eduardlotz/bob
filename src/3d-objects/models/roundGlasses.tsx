@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import React, { useEffect, useRef } from "react";
-import { useGLTF } from "@react-three/drei";
+import { useGLTF, Wireframe } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
 import { useGameStore } from "@/store";
@@ -22,6 +22,7 @@ interface Props {
   rotation?: [number, number, number];
   scale?: [number, number, number];
   outlineColor?: string;
+  preview: boolean;
 }
 
 export const RoundGlasses = ({
@@ -31,7 +32,6 @@ export const RoundGlasses = ({
 }: Props) => {
   const group = useRef<THREE.Group>(null!);
   const { nodes, materials } = useGLTF(PATH) as GLTFResult;
-  const { previewMode } = useGameStore();
 
   const [spring, api] = useSpring(() => ({
     scale: [0, 0, 0], // start invisible
@@ -47,6 +47,7 @@ export const RoundGlasses = ({
 
   return (
     <a.group
+      key={Number(props.preview)}
       ref={group}
       scale={spring.scale.get() as [number, number, number]}
       castShadow
@@ -62,8 +63,11 @@ export const RoundGlasses = ({
       >
         <meshToonMaterial
           color={"#191919"}
-          {...(previewMode === "accessory" ? previewMaterialProps : {})}
+          {...(props.preview ? previewMaterialProps : {})}
         />
+        {props.preview && (
+          <Wireframe thickness={0.04} backfaceStroke={outlineColor} />
+        )}
       </mesh>
     </a.group>
   );

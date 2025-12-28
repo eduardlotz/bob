@@ -148,7 +148,9 @@ export function ShopApp() {
 
   useEffect(() => {
     handleItemPreview();
-  }, [page, activeTab]);
+
+    if (currentView !== "phone:shop") resetPreview();
+  }, [page, activeTab, currentView]);
 
   const handleBobItemClick = () => {
     const bobItem = bobItems.find((b) => b.id === currentItem.id);

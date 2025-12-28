@@ -29,6 +29,7 @@ interface Props {
   scale?: [number, number, number];
   outlineColor?: string;
   color?: string;
+  preview: boolean;
 }
 
 export const SimsPlumbob = ({
@@ -39,7 +40,6 @@ export const SimsPlumbob = ({
 }: Props) => {
   const group = useRef<THREE.Group>(null!);
   const { nodes } = useGLTF(PATH) as GLTFResult;
-  const { previewMode } = useGameStore();
 
   const [spring, api] = useSpring(() => ({
     scale: [0, 0, 0], // start invisible
@@ -61,6 +61,7 @@ export const SimsPlumbob = ({
 
   return (
     <a.group
+      key={Number(props.preview)}
       ref={group}
       scale={spring.scale.get() as [number, number, number]}
       position={props.position}
@@ -68,22 +69,14 @@ export const SimsPlumbob = ({
     >
       <group rotation={[-Math.PI / 2, 0, 0]}>
         <mesh geometry={nodes.Plumbob_Material001_0.geometry}>
-          <meshPhongMaterial color={color} />
-          {previewMode === "decoration" && (
-            <Wireframe
-              thickness={0.04}
-              backfaceStroke={outlineColor}
-              // fillMix={previewMode === "decoration" ? 1 : 0}
-            />
-          )}
+          <meshPhongMaterial
+            color={color}
+            {...(props.preview ? previewMaterialProps : {})}
+          />
 
-          {/* {previewMode === "decoration" && (
-            <Wireframe
-              thickness={0.05} // world units
-              backfaceStroke={outlineColor}
-              fillMix={previewMode === "decoration" ? 1 : 0.2}
-            />
-          )} */}
+          {props.preview && (
+            <Wireframe thickness={0.04} backfaceStroke={outlineColor} />
+          )}
         </mesh>
       </group>
     </a.group>

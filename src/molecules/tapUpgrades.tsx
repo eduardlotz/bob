@@ -49,6 +49,7 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
 
   const onTriggerClick = () => {
     setShowUpgrades((open) => !open);
+    playUISound();
   };
 
   const handleUpgradePurchase = (upgradeId: string) => {

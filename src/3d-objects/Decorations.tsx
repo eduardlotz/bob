@@ -15,12 +15,14 @@ export function Decoration2D({
   scale,
   rotation,
   color,
+  preview,
 }: {
   type: string;
   position: [number, number, number];
   scale: number;
   rotation: number;
   color: string;
+  preview: boolean;
 }) {
   const meshRef = useRef<Mesh>(null);
 
@@ -74,12 +76,14 @@ export function Decoration3D({
   scale,
   rotation,
   color,
+  preview,
 }: {
   type: string;
   position: [number, number, number];
   scale: number;
   rotation: number;
   color: string;
+  preview: boolean;
 }) {
   const meshRef = useRef<Mesh>(null);
 
@@ -113,7 +117,13 @@ export function Decoration3D({
           </mesh>
         );
       case "tree_3d":
-        return <TreeModel position={position} scale={[scale, scale, scale]} />;
+        return (
+          <TreeModel
+            position={position}
+            scale={[scale, scale, scale]}
+            preview={preview}
+          />
+        );
 
       default:
         return null;
@@ -125,9 +135,14 @@ export function Decoration3D({
 
 // Main Decorations Container
 export function SceneDecorations() {
-  const { decorations } = useGameStore();
-
-  const activeDecorations = decorations.filter((d) => d.enabled);
+  const { decorations, previewMode } = useGameStore();
+  const preview =
+    previewMode === "3d" ||
+    previewMode === "2d" ||
+    previewMode === "decoration";
+  const activeDecorations = preview
+    ? decorations.filter((d) => d.preview)
+    : decorations.filter((d) => d.enabled);
 
   return (
     <group>
@@ -141,6 +156,7 @@ export function SceneDecorations() {
               scale={decoration.scale}
               rotation={decoration.rotation}
               color={decoration.color}
+              preview
             />
           );
         } else {
@@ -152,6 +168,7 @@ export function SceneDecorations() {
               scale={decoration.scale}
               rotation={decoration.rotation}
               color={decoration.color}
+              preview
             />
           );
         }

@@ -733,6 +733,7 @@ export const useGameStore = create<GameStore>()(
             return {
               ...state,
               tapEffects: updatedTapEffects,
+              previewMode: "tapEffect",
             };
           });
         },
@@ -1469,6 +1470,7 @@ export const useGameStore = create<GameStore>()(
             }, 0);
         },
 
+        // TODO: check where the diff between cached and uncached is -> delete
         getAutoTapRateUncached: () => {
           const state = get();
           return state.upgrades
@@ -1545,9 +1547,6 @@ export const useGameStore = create<GameStore>()(
         name: "game-store",
         version: GAME_STORE_VERSION.LATEST,
         storage: createIndexedDBStorage<GameStore>(),
-        // migrate: (persistedState: any, version: number) => {
-        //   return migrateStore(persistedState, version);
-        // },
         migrate: (persisted: any, fromVersion) => {
           if (!persisted) return initialGameState;
 
@@ -1567,10 +1566,6 @@ export const useGameStore = create<GameStore>()(
             version: GAME_STORE_VERSION.LATEST,
           };
         },
-        // partialize: (state: GameStore): PersistedGameStore => ({
-        //   ...state, // only include persisted fields (state + flags)
-        //   isHydrated: false, // reset hydration on reload
-        // }),
         partialize: (state) =>
           partializePersisted(state) as unknown as GameStore,
         onRehydrateStorage: () => (state?: GameStore) => {
@@ -1578,14 +1573,15 @@ export const useGameStore = create<GameStore>()(
 
           state.setHydrated(true);
 
-          state._cachedTapsPerSecond = state.tapsPerSecond;
-          state._cachedTapMultiplier = state.tapMultiplier;
-          state._lastUpgradeHash = "";
+          state._cachedTapsPerSecond = state._cachedTapsPerSecond;
+          state._cachedTapMultiplier = state._cachedTapMultiplier;
+          state._lastUpgradeHash = state._lastUpgradeHash;
 
           state.manualTaps = 0;
           state.manualTapsPerSecond = 0;
           state.tapsPerSecond = state.getTotalTapsPerSecond();
-          state.autoTapRate = state.getAutoTapRate();
+          state.autoTapRate = state.getTotalTapMultiplierUncached();
+          state.tapMultiplier = state.getTotalTapMultiplierUncached();
           state.recentManualTaps = [];
 
           state.updateComputedValueCache?.();
