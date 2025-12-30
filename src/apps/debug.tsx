@@ -11,10 +11,7 @@ import {
   useViewStore,
 } from "@/store";
 import { useMessageStore } from "@/store/messageStore";
-import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
 import styled from "styled-components";
-import { match } from "ts-pattern";
 
 export const DebugIcon = () => (
   <svg
@@ -111,20 +108,22 @@ const APP_ID: CameraViewId = "phone:debug";
 
 export const DebugApp = () => {
   const { resetQuests } = useQuestSystem();
-  const { clearShownFlags, showMessages } = useMessageStore();
+  const { clearShownFlags, clearAllMessages } = useMessageStore();
 
   const {
     statisticsVisible,
     toggleStatistics,
     resetGame: resetGameStore,
-    pauseGame,
-    resumeGame,
-    isPaused,
   } = useGameStore();
 
-  const resetAllStores = () => {
+  const resetEverything = () => {
+    // reset shop, upgrades, options, routes, debug, sound
     resetGameStore();
+
+    // reset chat + flags
     clearShownFlags();
+    clearAllMessages();
+
     resetQuests();
   };
 
@@ -143,7 +142,7 @@ export const DebugApp = () => {
         <ActionButton
           onClick={() =>
             confirm("This will delete all your progress.\nAre you sure?") &&
-            resetAllStores()
+            resetEverything()
           }
           $variant="destructive"
         >
