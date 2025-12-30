@@ -100,7 +100,6 @@ export function Cursor({ attachToParent }: CursorProps) {
         x: cursorXSpring,
         y: cursorYSpring,
         translateX: "-8px", // little offset because of icons
-        // MAYDO: check click icons top left offset
       }}
     >
       <AnimatePresence>

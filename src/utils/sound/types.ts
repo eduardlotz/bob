@@ -35,7 +35,6 @@ export interface SoundSystemState {
   worldVolume: number;
   uiVolume: number;
   textVolume: number;
-  // Optional per-type enable flags for runtime control
   tapEnabled?: boolean;
   worldEnabled?: boolean;
 }

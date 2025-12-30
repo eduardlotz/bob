@@ -1,6 +1,15 @@
 import { usePagination } from "@/hooks/usePagination";
+import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { ArrowLeftIcon, ArrowRightIcon } from "@/icons/arrow";
 import { FillColumn, FillRow, HugColumn, HugRow } from "@/layout";
+import {
+  DevSlider,
+  DevSliderValue,
+  Divider,
+  RowLabel,
+  ValueChip,
+  ValueSlider,
+} from "@/layout/atoms";
 import { CameraViewId, useGameStore, useViewStore } from "@/store";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
@@ -191,11 +200,98 @@ export function OptionsApp() {
     </FixedAnchor>
   );
 
-  const GeneralView = () => (
-    <FillRow $align="center" $justify="center" layout>
-      <AppInfo>Noch nicht verfügbar</AppInfo>
-    </FillRow>
-  );
+  const GeneralView = () => {
+    const sound = useSoundSystem();
+
+    return (
+      <FillColumn layout $gap={"1rem"}>
+        <FillColumn $gap={"1.5rem"}>
+          <FillRow $align="center" $justify="space-between" $gap={"1rem"}>
+            <HugRow $gap={"0.5rem"}>
+              <RowLabel>Master</RowLabel>
+              <ValueChip>{Math.round(sound.masterVolume * 100)}%</ValueChip>
+            </HugRow>
+            <ValueSlider
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={sound.masterVolume}
+              onChange={(e) =>
+                sound.setMasterVolume(parseFloat(e.target.value))
+              }
+            />
+          </FillRow>
+
+          <FillRow $align="center" $justify="space-between" $gap={"1rem"}>
+            <HugRow $gap={"0.5rem"}>
+              <RowLabel>Musik</RowLabel>
+              <ValueChip>{Math.round(sound.worldVolume * 100)}%</ValueChip>
+            </HugRow>
+            <ValueSlider
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={sound.worldVolume}
+              onChange={(e) => sound.setWorldVolume(parseFloat(e.target.value))}
+            />
+          </FillRow>
+
+          <FillRow $align="center" $justify="space-between" $gap={"1rem"}>
+            <HugRow $gap={"0.5rem"}>
+              <RowLabel>Effekte</RowLabel>
+              <ValueChip>{Math.round(sound.tapVolume * 100)}%</ValueChip>
+            </HugRow>
+            <ValueSlider
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={sound.tapVolume}
+              onChange={(e) => sound.setTapVolume(parseFloat(e.target.value))}
+            />
+          </FillRow>
+
+          <FillRow $align="center" $justify="space-between" $gap={"1rem"}>
+            <HugRow $gap={"0.5rem"}>
+              <RowLabel>UI</RowLabel>
+              <ValueChip>{Math.round(sound.uiVolume * 100)}%</ValueChip>
+            </HugRow>
+            <ValueSlider
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={sound.uiVolume}
+              onChange={(e) => sound.setUIVolume(parseFloat(e.target.value))}
+            />
+          </FillRow>
+
+          <FillRow $align="center" $justify="space-between" $gap={"1rem"}>
+            <HugRow $gap={"0.5rem"}>
+              <RowLabel>Chat</RowLabel>
+              <ValueChip>{Math.round(sound.textVolume * 100)}%</ValueChip>
+            </HugRow>
+            <ValueSlider
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={sound.textVolume}
+              onChange={(e) => sound.setTextVolume(parseFloat(e.target.value))}
+            />
+          </FillRow>
+        </FillColumn>
+
+        <Divider />
+
+        <FillRow $align="center" $justify="center" $gap={"1rem"}>
+          <AppInfo>Audio Status: {sound.audioStatus}</AppInfo>
+        </FillRow>
+      </FillColumn>
+    );
+  };
 
   const GraphicsView = () => (
     <FillRow $align="center" $justify="center">
@@ -211,36 +307,34 @@ export function OptionsApp() {
           document.getElementById("motion-root")!
         )}
 
-      <AnimatePresence mode="popLayout">
-        {activeTab !== "theme" && (
-          <HugColumn
-            key="options-container"
-            style={{
-              // width: "25rem",
-              maxWidth: "100%",
-              maxHeight: "23rem",
-              overflowY: "auto",
+      {activeTab !== "theme" && (
+        <HugColumn
+          key="options-container"
+          style={{
+            width: "25rem",
+            maxWidth: "100%",
+            maxHeight: "23rem",
+            overflowY: "auto",
 
-              borderRadius: "1.75rem",
-              background: "rgba(0, 0, 0, 0.25)",
-              padding: "0.25rem",
-              zIndex: -1,
-            }}
-            animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
-            initial={{ y: 15, opacity: 0, filter: "blur(6px)" }}
-            exit={{ y: 15, opacity: 0, filter: "blur(6px)" }}
-            transition={{
-              type: "spring" as const,
-              bounce: 0.1,
-              visualDuration: 0.2,
-            }}
-            layout
-          >
-            {activeTab === "general" && <GeneralView />}
-            {activeTab === "graphics" && <GraphicsView />}
-          </HugColumn>
-        )}
-      </AnimatePresence>
+            borderRadius: "1.75rem",
+            background: "rgba(0, 0, 0, 0.25)",
+            padding: "1rem",
+            zIndex: -1,
+          }}
+          animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
+          initial={{ y: 15, opacity: 0, filter: "blur(6px)" }}
+          exit={{ y: 15, opacity: 0, filter: "blur(6px)" }}
+          transition={{
+            type: "spring" as const,
+            bounce: 0.1,
+            visualDuration: 0.2,
+          }}
+          layout
+        >
+          {activeTab === "general" && <GeneralView />}
+          {activeTab === "graphics" && <GraphicsView />}
+        </HugColumn>
+      )}
 
       <TabPanel>
         {tabs.map((tab) => (
@@ -258,11 +352,19 @@ export function OptionsApp() {
 }
 
 const AppInfo = styled.p`
-  font-size: 0.875rem;
-  font-weight: 400;
-  color: var(--text-color);
   opacity: 0.5;
-  padding: 0.25rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.5rem;
+
+  font-size: 0.75rem;
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 0.75rem;
+
+  color: #ffffff;
+  font-weight: 600;
 `;
 
 const FixedAnchor = styled.div`
@@ -385,16 +487,18 @@ const TabButton = styled.button<{ $active: boolean }>`
   align-items: center;
   justify-content: center;
   padding: 0.5rem 0.75rem;
-  background: #fff;
   border: none;
-  color: #212121;
+  color: ${(p) => (p.$active ? "rgba(0,0,0,1)" : "rgba(255,255,255,1)")};
   font-size: 1rem;
   font-weight: 700;
   border-radius: 5rem;
-  opacity: ${(p) => (p.$active ? 1 : 0.5)};
+  background: ${(p) =>
+    p.$active ? "rgba(255,255,255,1)" : "rgba(255,255,255,0.05)"};
 
   &:hover {
-    background: rgba(255, 255, 255, 0.9);
+    background: ${(p) =>
+      p.$active ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.15)"};
+    color: ${(p) => (p.$active ? "rgba(0,0,0,1)" : "rgba(255,255,255,1)")};
   }
 `;
 

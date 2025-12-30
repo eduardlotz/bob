@@ -35,7 +35,7 @@ export interface SoundSystemHook {
   setTapVolume: (volume: number) => void;
   setWorldVolume: (volume: number) => void;
   setUIVolume: (volume: number) => void;
-  setTextVolume?: (volume: number) => void;
+  setTextVolume: (volume: number) => void;
 
   isEnabled: boolean;
   isMuted: boolean;
@@ -45,7 +45,7 @@ export interface SoundSystemHook {
   tapVolume: number;
   worldVolume: number;
   uiVolume: number;
-  textVolume?: number;
+  textVolume: number;
 
   enable: () => void;
   disable: () => void;
