@@ -23,6 +23,7 @@ export default function App() {
   const [showRouteChip, setShowRouteChip] = useState(false);
 
   // init message system globally
+  // not a real hook (TODO: change name)
   useMessageSystem();
 
   useEffect(() => {
@@ -30,16 +31,16 @@ export default function App() {
     setMounted(true);
   }, []);
 
-  // run queued migrations after small delay to ensure all stores are initialized
-  useEffect(() => {
-    if (mounted) {
-      const timer = setTimeout(() => {
-        executeMigrationsWhenReady().catch(console.error);
-      }, 500);
+  // // run queued migrations after small delay to ensure all stores are initialized
+  // useEffect(() => {
+  //   if (mounted) {
+  //     const timer = setTimeout(() => {
+  //       executeMigrationsWhenReady().catch(console.error);
+  //     }, 500);
 
-      return () => clearTimeout(timer);
-    }
-  }, [mounted]);
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [mounted]);
 
   // sync router with store
   useEffect(() => {

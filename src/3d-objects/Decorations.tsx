@@ -136,11 +136,12 @@ export function Decoration3D({
 // Main Decorations Container
 export function SceneDecorations() {
   const { decorations, previewMode } = useGameStore();
-  const preview =
+  const decoPreviewActive =
     previewMode === "3d" ||
     previewMode === "2d" ||
     previewMode === "decoration";
-  const activeDecorations = preview
+
+  const activeDecorations = decoPreviewActive
     ? decorations.filter((d) => d.preview)
     : decorations.filter((d) => d.enabled);
 
@@ -156,7 +157,7 @@ export function SceneDecorations() {
               scale={decoration.scale}
               rotation={decoration.rotation}
               color={decoration.color}
-              preview
+              preview={decoPreviewActive && !decoration.enabled}
             />
           );
         } else {
@@ -168,7 +169,7 @@ export function SceneDecorations() {
               scale={decoration.scale}
               rotation={decoration.rotation}
               color={decoration.color}
-              preview
+              preview={decoPreviewActive && !decoration.enabled}
             />
           );
         }

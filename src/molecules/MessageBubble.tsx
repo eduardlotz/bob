@@ -10,6 +10,7 @@ import { useGameStore } from "@/store/gameStore";
 import { textSynth } from "@/utils/sound/textSynth";
 import { resumeAudioContext, unlockAudioContext } from "@/utils/soundSystem";
 import { DEFAULT_TEXT_VOLUME } from "@/utils/sound/defaults";
+import { format } from "date-fns/format";
 
 const AUDIO_CHAR_DURATION_MS = 85;
 const AUDIO_LEAD_TIME_MS = 5;
@@ -245,9 +246,10 @@ export const MessageBubble = memo(function MessageBubble({
     [markFullyRevealed]
   );
 
-  // TODO: dismiss message on click
+  // TODO: reveal full message on click, dismiss if all revealed
   const handleClick = () => {
     markUserInteraction();
+    dismissMessage();
   };
 
   const offset = activeMessage?.config.positionOffset ?? [0, 0, 0];
@@ -279,6 +281,7 @@ export const MessageBubble = memo(function MessageBubble({
                 bounce: 0.2,
                 duration: 0.4,
               }}
+              onClick={handleClick}
             >
               {activeMessage?.config.label && (
                 <Label
@@ -290,7 +293,7 @@ export const MessageBubble = memo(function MessageBubble({
                 </Label>
               )}
 
-              <BubbleContainer onClick={handleClick}>
+              <BubbleContainer>
                 <AnimatePresence mode="popLayout">
                   {visibleLines.map((line) => (
                     <BubbleLine
@@ -310,12 +313,7 @@ export const MessageBubble = memo(function MessageBubble({
                       }}
                     >
                       <TypewriterText text={line.text} />
-                      <TimeTag>
-                        {line.time.toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </TimeTag>
+                      <TimeTag>{format(line.time, "HH:mm")}</TimeTag>
                     </BubbleLine>
                   ))}
 

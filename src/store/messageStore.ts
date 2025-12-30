@@ -188,21 +188,25 @@ const withErrorHandling = <T extends any[], R>(
   };
 };
 
+const initialMessageState = {
+  activeMessage: null,
+  queue: [],
+  archive: [],
+  seenThisSession: {},
+  repeatFlags: {},
+  preferences: {},
+  typingSpeedDefaultMs: 50,
+  systemPaused: false,
+  messageHistory: [],
+  lastError: null,
+  isHydrated: false,
+};
+
 export const useMessageStore = create<MessageStoreState>()(
   subscribeWithSelector(
     persist(
       (set, get) => ({
-        activeMessage: null,
-        queue: [],
-        archive: [],
-        seenThisSession: {},
-        repeatFlags: {},
-        preferences: {},
-        typingSpeedDefaultMs: 50,
-        systemPaused: false,
-        messageHistory: [],
-        lastError: null,
-        isHydrated: false,
+        ...initialMessageState,
 
         showMessage: withErrorHandling(
           async (
@@ -547,10 +551,10 @@ export const useMessageStore = create<MessageStoreState>()(
             activeMessage: null,
             queue: [],
             lastError: null,
+            archive: [],
           });
         },
 
-        // Debug utilities
         getDebugInfo: () => {
           const state = get();
           return {
@@ -571,32 +575,16 @@ export const useMessageStore = create<MessageStoreState>()(
       }),
       {
         name: "message-store",
-        version: 4,
+        version: 0,
         storage: createIndexedDBStorage<MessageStoreState>(),
         migrate: (persistedState: any, version: number) => {
-          let migrated = persistedState;
+          if (!persistedState) return initialMessageState;
 
-          if (version < 3) {
-            migrated = { ...migrated, systemPaused: false };
-          }
-
-          if (version < 4) {
-            migrated = {
-              ...migrated,
-              queue:
-                migrated.queue?.map?.((id: string) => ({
-                  id,
-                  priority: 0,
-                  queuedAt: Date.now(),
-                  retryCount: 0,
-                })) || [],
-              messageHistory: [],
-              lastError: null,
-              isHydrated: false,
-            };
-          }
-
-          return migrated;
+          return {
+            ...persistedState,
+            ...initialMessageState,
+            version: 0,
+          };
         },
         partialize: (state) =>
           ({

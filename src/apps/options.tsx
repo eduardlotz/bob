@@ -1,15 +1,7 @@
 import { usePagination } from "@/hooks/usePagination";
 import { ArrowLeftIcon, ArrowRightIcon } from "@/icons/arrow";
-import { FillRow, HugColumn } from "@/layout";
-import { MOTION_VARIANTS } from "@/molecules/HeadNavigation";
-import { formatNumber } from "@/molecules/TapCounter";
-import {
-  CameraViewId,
-  getShopItemType,
-  ShopItem,
-  useGameStore,
-  useViewStore,
-} from "@/store";
+import { FillColumn, FillRow, HugColumn, HugRow } from "@/layout";
+import { CameraViewId, useGameStore, useViewStore } from "@/store";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
@@ -73,7 +65,7 @@ export const OptionsIcon = () => (
   </svg>
 );
 
-type OptionsTab = "theme" | "audio" | "general";
+type OptionsTab = "theme" | "general" | "graphics";
 
 const tabs = [
   {
@@ -81,12 +73,12 @@ const tabs = [
     name: "Theme",
   },
   {
-    id: "audio" as OptionsTab,
-    name: "Audio",
-  },
-  {
     id: "general" as OptionsTab,
     name: "Allgemein",
+  },
+  {
+    id: "graphics" as OptionsTab,
+    name: "Grafik",
   },
 ];
 
@@ -95,7 +87,7 @@ const APP_ID: CameraViewId = "phone:options";
 export function OptionsApp() {
   const [activeTab, setActiveTab] = useState<OptionsTab>("theme");
 
-  const { themes, activateTheme, previewTheme } = useGameStore();
+  const { themes, activateTheme, previewTheme, resetPreview } = useGameStore();
 
   const { transitionToView } = useViewStore();
 
@@ -108,17 +100,17 @@ export function OptionsApp() {
   useEffect(() => {
     transitionToView(APP_ID);
     goTo(initialIndex);
-    // previewTheme(currentItem.id);
 
-    // return () => resetPreview();
+    return () => resetPreview();
   }, []);
 
   useEffect(() => {
-    previewTheme(currentItem.id);
-  }, [page]);
+    if (activeTab === "theme") previewTheme(currentItem.id);
+    else resetPreview();
+  }, [page, activeTab]);
 
   const handleTabChange = (id: OptionsTab) => {
-    goTo(initialIndex);
+    if (id === "theme") goTo(initialIndex);
     setActiveTab(id);
   };
 
@@ -140,11 +132,13 @@ export function OptionsApp() {
     else goTo(pageCount - 1);
   };
 
-  const ThemeOverlays = (
+  // TODO: fix re-render every second
+  const ThemeOverlays = () => (
     <FixedAnchor>
       <ShopContainer
         key="options-app-container"
-        initial={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(6px)" }}
+        // initial={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(6px)" }}
+        initial={false}
         animate={{ opacity: 1, scaleX: 1, y: 0, filter: "blur(0px)" }}
         exit={{ opacity: 0, scaleX: 0.9, y: 80, filter: "blur(6px)" }}
         transition={{
@@ -187,7 +181,8 @@ export function OptionsApp() {
                     width: page === i ? "12px" : "6px",
                     opacity: page === i ? 1 : 0.25,
                   }}
-                  initial={{ width: "6px", opacity: 0.25 }}
+                  // initial={{ width: "6px", opacity: 0.25 }}
+                  initial={false}
                 ></motion.span>
               ))}
           </PaginationDots>
@@ -196,9 +191,56 @@ export function OptionsApp() {
     </FixedAnchor>
   );
 
+  const GeneralView = () => (
+    <FillRow $align="center" $justify="center" layout>
+      <AppInfo>Noch nicht verfügbar</AppInfo>
+    </FillRow>
+  );
+
+  const GraphicsView = () => (
+    <FillRow $align="center" $justify="center">
+      <AppInfo>Noch nicht verfügbar</AppInfo>
+    </FillRow>
+  );
+
   return (
     <>
-      {createPortal(ThemeOverlays, document.getElementById("motion-root")!)}
+      {activeTab === "theme" &&
+        createPortal(
+          <ThemeOverlays />,
+          document.getElementById("motion-root")!
+        )}
+
+      <AnimatePresence mode="popLayout">
+        {activeTab !== "theme" && (
+          <HugColumn
+            key="options-container"
+            style={{
+              // width: "25rem",
+              maxWidth: "100%",
+              maxHeight: "23rem",
+              overflowY: "auto",
+
+              borderRadius: "1.75rem",
+              background: "rgba(0, 0, 0, 0.25)",
+              padding: "0.25rem",
+              zIndex: -1,
+            }}
+            animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
+            initial={{ y: 15, opacity: 0, filter: "blur(6px)" }}
+            exit={{ y: 15, opacity: 0, filter: "blur(6px)" }}
+            transition={{
+              type: "spring" as const,
+              bounce: 0.1,
+              visualDuration: 0.2,
+            }}
+            layout
+          >
+            {activeTab === "general" && <GeneralView />}
+            {activeTab === "graphics" && <GraphicsView />}
+          </HugColumn>
+        )}
+      </AnimatePresence>
 
       <TabPanel>
         {tabs.map((tab) => (
@@ -214,6 +256,14 @@ export function OptionsApp() {
     </>
   );
 }
+
+const AppInfo = styled.p`
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--text-color);
+  opacity: 0.5;
+  padding: 0.25rem;
+`;
 
 const FixedAnchor = styled.div`
   position: absolute;
@@ -321,12 +371,13 @@ ${(p) =>
   `}
 `;
 
-const TabPanel = styled.div`
+const TabPanel = styled(motion.div)`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-gap: 4px;
-
+  background: var(--primary-color);
   width: 100%;
+  border-radius: 6rem;
 `;
 
 const TabButton = styled.button<{ $active: boolean }>`
@@ -426,5 +477,40 @@ const ShopItemButton = styled.button<{
 
   &:hover {
     background: rgba(0, 0, 0, 0.75);
+  }
+`;
+
+const ActionButton = styled.button<{ $variant?: "destructive" | "default" }>`
+  display: flex;
+  width: fit-content;
+  white-space: nowrap;
+  align-items: center;
+  justify-content: center;
+  max-height: 2.25rem;
+
+  padding: 0.5rem 0.75rem;
+  border-radius: 50px;
+  opacity: 1;
+
+  font-size: 1rem;
+  font-weight: 700;
+
+  background-color: #fff;
+  color: #212121;
+
+  ${(p) =>
+    p.$variant === "destructive" &&
+    `
+    background-color: #ff0000;
+    color: #ffffff;
+  `}
+
+  &:disabled {
+    color: #ffffff81;
+    background: #0000001e;
+  }
+
+  &:hover:not(:disabled) {
+    background: rgba(0, 0, 0, 0.5);
   }
 `;

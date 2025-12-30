@@ -36,8 +36,8 @@ import {
 } from "@/utils/sound/defaults";
 
 export enum GAME_STORE_VERSION {
-  V1 = 1,
-  RESET_1 = 0,
+  V1 = 0,
+  RESET_1 = 10,
   LATEST = V1,
 }
 
@@ -54,6 +54,7 @@ function migrateStore(oldState: any, version: GAME_STORE_VERSION): any {
   migratedState = {
     ...migratedState,
     upgrades: initialTapUpgrades,
+    themes: initialThemes,
     decorations: initialDecorations,
     bobItems: initialBobItems,
     tapEffects: initialTapEffects,
@@ -467,7 +468,6 @@ export const initialGameState: GameState = {
   taps: 0,
   tapMultiplier: 1,
   lastAutoTapTime: 0,
-  // lastAutoTapTime: Date.now(),
 
   upgrades: initialTapUpgrades,
   decorations: initialDecorations,
@@ -503,7 +503,6 @@ export const initialGameState: GameState = {
 const initialGameFlags: GameFlags = {
   previewMode: null,
   customCameraControlsEnabled: false,
-  // customCameraControlsEnabled: true,
   animationsEnabled: true,
   statisticsVisible: false,
   isPaused: false,
@@ -1548,12 +1547,12 @@ export const useGameStore = create<GameStore>()(
           if (!persisted) return initialGameState;
 
           // HARD RESET
-          if (fromVersion < GAME_STORE_VERSION.RESET_1) {
+          if (fromVersion < GAME_STORE_VERSION.LATEST) {
             return initialGameState;
           }
 
           // SOFT MIGRATIONS
-          if (fromVersion < 2) {
+          if (fromVersion < GAME_STORE_VERSION.LATEST) {
             persisted = migrateStore(persisted, GAME_STORE_VERSION.LATEST);
           }
 

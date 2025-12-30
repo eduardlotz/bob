@@ -43,11 +43,12 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
   {
     id: "welcome_home",
     text: [
-      "hallööööchen 👋 ich bin Bob 😗✌️ sowas wie dein persönlicher Begleiter auf dieser Website",
-      "Vieles ist zwar noch in Arbeit, aber der Kern ist schon ready",
-      "das hier ist aber auch eine etwas andere Website, wie du wahrscheinlich schon bemerkt hast",
-      "“Wo sind die Bilder, wo sind die Texte, was will dieser weiße Ball von mir??”",
-      "zum start kannst du dich ja mal im BobPhone™ umschauen oder mich einfach antippen 🫵 danach schauen wir weiter",
+      "Halli hallo hallöchen, ich bin der Bob 😗✌️",
+      "Willkommen auf der persönlichen Website von Eduard Lotz",
+      "ich bin dein persönlicher Begleiter auf dieser Website",
+      "das hier ist eine etwas andere Website, wie du wahrscheinlich schon bemerkt hast 🕵️‍♂️",
+      "zum Start kannst du mich ja erstmal antippen 🫵",
+      "danach schauen wir mal weiter",
     ],
     label: "Bob",
     options: {
