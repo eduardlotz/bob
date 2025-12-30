@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist, subscribeWithSelector } from "zustand/middleware";
 import { createIndexedDBStorage } from "./indexedDB";
 import {
+  ArchivedMessage,
   getMessageById,
   MessageConfig,
   MessageOptions,
@@ -46,6 +47,7 @@ export interface MessageStoreState {
   readonly preferences: MessagePreferences;
   readonly typingSpeedDefaultMs: number;
   readonly systemPaused: boolean;
+  archive: ArchivedMessage[];
 
   // debug state
   readonly messageHistory: readonly string[];
@@ -66,6 +68,7 @@ export interface MessageStoreState {
   markFullyRevealed: () => void;
   pauseSystem: () => void;
   resumeSystem: () => void;
+  addToArchive: (message: ArchivedMessage) => void;
   clearQueue: () => void;
   getQueueLength: () => number;
   getNextQueuedId: () => string | null;
@@ -191,6 +194,7 @@ export const useMessageStore = create<MessageStoreState>()(
       (set, get) => ({
         activeMessage: null,
         queue: [],
+        archive: [],
         seenThisSession: {},
         repeatFlags: {},
         preferences: {},
@@ -409,6 +413,11 @@ export const useMessageStore = create<MessageStoreState>()(
             lastError: null,
           });
         },
+        addToArchive: (message: ArchivedMessage) => {
+          const state = get();
+          const newArchive = [...state.archive, message];
+          set({ archive: newArchive });
+        },
 
         clearShownFlags: () => {
           set({
@@ -444,6 +453,22 @@ export const useMessageStore = create<MessageStoreState>()(
               },
               lastError: null,
             });
+
+            // add one-time messages to archive
+            if (state.activeMessage.config.repeatRule === "oncePerPersist") {
+              const threadId = state.activeMessage.config.id;
+              const sender = state.activeMessage.config.label;
+              state.activeMessage.config.text.map((msg, index) => {
+                const archivedMessage = {
+                  id: threadId + index,
+                  text: msg,
+                  sender,
+                  time: new Date(),
+                };
+
+                state.addToArchive(archivedMessage);
+              });
+            }
           }
         },
 
@@ -577,23 +602,15 @@ export const useMessageStore = create<MessageStoreState>()(
           ({
             repeatFlags: state.repeatFlags,
             preferences: state.preferences,
+            archive: state.archive,
           } as Pick<
             MessageStoreState,
-            "repeatFlags" | "preferences"
+            "repeatFlags" | "preferences" | "archive"
           > as unknown as MessageStoreState),
         onRehydrateStorage: () => (state) => {
           if (state) {
-            queueMicrotask(() => {
-              try {
-                useMessageStore.setState({ isHydrated: true } as any);
-              } catch {}
-            });
+            useMessageStore.setState({ isHydrated: true });
           }
-
-          // lazy load migration queue
-          import("./migration")
-            .then((m) => m.queueStorageMigration())
-            .catch(console.warn);
         },
       }
     )

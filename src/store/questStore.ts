@@ -195,12 +195,12 @@ export const useQuestStore = create<QuestStore>()(
           quests: state.quests,
           activeQuests: state.activeQuests,
         } as QuestStore),
-      onRehydrateStorage: (state) => {
-        console.log("rehydrating quest store:", state);
-        import("./migration")
-          .then((m) => m.queueStorageMigration())
-          .catch((e) => console.error("Failed to queue storage migration", e));
-      },
+      // onRehydrateStorage: (state) => {
+      //   console.log("rehydrating quest store:", state);
+      //   import("./migration")
+      //     .then((m) => m.queueStorageMigration())
+      //     .catch((e) => console.error("Failed to queue storage migration", e));
+      // },
     }
   )
 );

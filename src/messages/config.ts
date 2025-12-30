@@ -19,7 +19,7 @@ export interface MessageOptions {
 
 export interface MessageConfig {
   id: string;
-  text: MessageText;
+  text: string[];
   label?: string;
   options?: MessageOptions;
   repeatRule: MessageRepeatRule;
@@ -31,16 +31,23 @@ export interface MessageConfig {
   lines?: string[];
 }
 
+export interface ArchivedMessage {
+  id: string;
+  text: string;
+  time: Date;
+  sender?: string;
+}
+
 // TODO: simplify this mess
 export const MESSAGE_CONFIG: MessageConfig[] = [
   {
     id: "welcome_home",
     text: [
-      "Hallöchen 👋",
-      "Ich bin Bob 😗✌️",
-      "Ich begleite dich hier auf der Website von Eddie!",
-      "Viel gibt es zwar noch nicht, aber der Kern steht schon",
-      "Tipp mich doch mal an 🫵 macht Spaß!",
+      "hallööööchen 👋 ich bin Bob 😗✌️ sowas wie dein persönlicher Begleiter auf dieser Website",
+      "Vieles ist zwar noch in Arbeit, aber der Kern ist schon ready",
+      "das hier ist aber auch eine etwas andere Website, wie du wahrscheinlich schon bemerkt hast",
+      "“Wo sind die Bilder, wo sind die Texte, was will dieser weiße Ball von mir??”",
+      "zum start kannst du dich ja mal im BobPhone™ umschauen oder mich einfach antippen 🫵 danach schauen wir weiter",
     ],
     label: "Bob",
     options: {
@@ -137,21 +144,6 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
     positionOffset: [0, 0, 0],
     nextDelayMs: 1800,
   },
-  // {
-  //   id: "home_features",
-  //   text: ["ach und noch was", "egal hab grad selber vergessen"],
-  //   label: "Bob",
-  //   options: {
-  //     typingSpeedMs: 25,
-  //     baseDismissMs: 2000,
-  //     contentLengthFactorMs: 50,
-  //     tailEnabled: false,
-  //   },
-  //   repeatRule: "oncePerPersist",
-  //   audioEnabled: true,
-  //   positionOffset: [0, 0, 0],
-  //   nextDelayMs: 1800,
-  // },
   {
     id: "about_welcome",
     text: [
