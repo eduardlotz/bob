@@ -317,7 +317,6 @@ interface GameFlagsActions {
   previewTheme: (themeId: string) => void;
   resetPreview: () => void;
 
-  setHydrated: (v: boolean) => void;
   resetGame: () => void;
   pauseGame: () => void;
   resumeGame: () => void;
@@ -678,16 +677,16 @@ export const useGameStore = create<GameStore>()(
               ...state,
               taps: state.taps - cost,
               upgrades: updatedUpgrades,
-              // _cachedTapsPerSecond: undefined,
-              // _cachedTapMultiplier: undefined,
-              // _lastUpgradeHash: undefined,
+              _cachedTapsPerSecond: undefined,
+              _cachedTapMultiplier: undefined,
+              _lastUpgradeHash: undefined,
             };
           });
 
           // update cache after state change
-          // setTimeout(() => {
-          //   get().updateComputedValueCache();
-          // }, 0);
+          setTimeout(() => {
+            get().updateComputedValueCache();
+          }, 0);
         },
         purchaseTapEffect: (effectId: string) => {
           set((state) => {
@@ -1156,8 +1155,6 @@ export const useGameStore = create<GameStore>()(
           });
         },
 
-        setHydrated: (v) => set({ isHydrated: v }),
-
         resetGame: () => {
           set({
             ...initialGameState,
@@ -1571,7 +1568,7 @@ export const useGameStore = create<GameStore>()(
         onRehydrateStorage: () => (state?: GameStore) => {
           if (!state) return;
 
-          state.setHydrated(true);
+          state.isHydrated = true;
 
           state._cachedTapsPerSecond = state._cachedTapsPerSecond;
           state._cachedTapMultiplier = state._cachedTapMultiplier;

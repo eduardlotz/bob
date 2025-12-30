@@ -37,7 +37,7 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
 
   useEffect(() => {
     const CLICKABLE_SELECTOR =
-      'button, [role="button"], input[type="button"], input[type="submit"], [data-clickable], input[type="radio"], input[type="checkbox"], [data-ui-sound-id]';
+      'button, [role="button"], a, input[type="button"], input[type="submit"], [data-clickable], input[type="radio"], input[type="checkbox"], [data-ui-sound-id]';
     const setCursor = useCursorStore.getState().set;
 
     const handlePointerOver = (e: PointerEvent) => {
