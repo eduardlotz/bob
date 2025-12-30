@@ -462,16 +462,18 @@ const TabButton = styled.button<{ $active: boolean }>`
   align-items: center;
   justify-content: center;
   padding: 0.5rem 0.75rem;
-  background: #fff;
   border: none;
-  color: #212121;
+  color: ${(p) => (p.$active ? "rgba(0,0,0,1)" : "rgba(255,255,255,1)")};
   font-size: 1rem;
   font-weight: 700;
   border-radius: 5rem;
-  opacity: ${(p) => (p.$active ? 1 : 0.5)};
+  background: ${(p) =>
+    p.$active ? "rgba(255,255,255,1)" : "rgba(255,255,255,0.05)"};
 
   &:hover {
-    background: rgba(255, 255, 255, 0.9);
+    background: ${(p) =>
+      p.$active ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.15)"};
+    color: ${(p) => (p.$active ? "rgba(0,0,0,1)" : "rgba(255,255,255,1)")};
   }
 `;
 

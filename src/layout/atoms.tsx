@@ -243,6 +243,65 @@ export const DevSliderLabel = styled.div`
   opacity: 0.85;
 `;
 
+export const RowLabel = styled.label`
+  /* font-size: 0.875rem; */
+  font-size: 0.875rem;
+  color: var(--text-color);
+  font-weight: 500;
+`;
+
+export const ValueChip = styled.p`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.5rem;
+
+  font-size: 0.75rem;
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 0.75rem;
+
+  color: #ffffff;
+  font-weight: 600;
+`;
+
+export const ValueSlider = styled.input`
+  width: 100%;
+  height: 1rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+  appearance: none;
+  position: relative;
+
+  &::-webkit-slider-thumb {
+    appearance: none;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 0.5rem;
+    background: #ffffff;
+    /* box-shadow: 0px 0px 0px 3px rgba(255, 255, 255, 0.15); */
+    border: none;
+  }
+
+  &::-moz-range-thumb {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 0.5rem;
+    background: #ffffff;
+    /* box-shadow: 0px 0px 0px 3px rgba(255, 255, 255, 0.15); */
+    border: none;
+  }
+`;
+
+export const Divider = styled.hr`
+  opacity: 0.1;
+  width: 100%;
+  height: 1px;
+
+  background: #000000;
+  border-bottom: 1px solid #ffffff;
+`;
+
 export const DevSlider = styled.input`
   width: 100%;
   height: 8px;
