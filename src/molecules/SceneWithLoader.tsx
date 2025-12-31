@@ -29,7 +29,7 @@ export const CustomLoader = ({
   const [percentage, setPercentage] = useState(0);
   const [finished, setFinished] = useState(false);
   const [exit, setExit] = useState(false);
-  const { isReady, setGameReady, setSoundEnabled } = useGameStore();
+  const { isReady, setSoundEnabled } = useGameStore();
   const { toggle, isMuted, isEnabled } = useSoundSystem();
 
   useEffect(() => {
@@ -147,7 +147,7 @@ export const CustomLoader = ({
                   </HugColumn>
                 )}
 
-                {finished && !isReady && (
+                {finished && (
                   <StartButton
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}

@@ -1572,12 +1572,12 @@ export const useGameStore = create<GameStore>()(
             version: GAME_STORE_VERSION.LATEST,
           };
         },
-        partialize: (state) =>
-          partializePersisted(state) as unknown as GameStore,
+        partialize: (state) => partializePersisted(state) as GameStore,
         onRehydrateStorage: () => (state?: GameStore) => {
           if (!state) return;
 
           state.isHydrated = true;
+          state.isReady = false;
 
           state._cachedTapsPerSecond = state._cachedTapsPerSecond;
           state._cachedTapMultiplier = state._cachedTapMultiplier;

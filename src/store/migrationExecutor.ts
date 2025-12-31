@@ -1,3 +1,4 @@
+import { useMessageStore } from "./messageStore";
 import {
   executeQueuedMigrations,
   hasFinalResetRun,
