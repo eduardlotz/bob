@@ -51,7 +51,8 @@ const Scene = ({
   const cameraControlsRef = useRef<CameraControls>(null!);
   const { setCameraControlsRef, resetToDefaultView, isDefaultView } =
     useViewStore();
-  const { upgrades, isPaused, statisticsVisible } = useGameStore();
+  const { upgrades, isPaused, statisticsVisible, setGameReady } =
+    useGameStore();
 
   const {
     currentRoute,

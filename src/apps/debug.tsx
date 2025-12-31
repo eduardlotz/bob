@@ -1,7 +1,7 @@
 import { usePagination } from "@/hooks/usePagination";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { ArrowLeftIcon, ArrowRightIcon } from "@/icons/arrow";
-import { FillRow, HugColumn } from "@/layout";
+import { FillRow, HugColumn, ListItemContainer } from "@/layout";
 import { Divider, DividerWithLabel } from "@/layout/atoms";
 import { MOTION_VARIANTS } from "@/molecules/HeadNavigation";
 import {
@@ -12,6 +12,7 @@ import {
   useViewStore,
 } from "@/store";
 import { useMessageStore } from "@/store/messageStore";
+import { executeMigrationsWhenReady } from "@/store/migrationExecutor";
 import styled from "styled-components";
 
 export const DebugIcon = () => (
@@ -120,6 +121,7 @@ export const DebugApp = () => {
     resumeGame,
     addTaps,
     buyAllUpgrades,
+    version,
   } = useGameStore();
 
   const resetEverything = () => {
@@ -149,6 +151,29 @@ export const DebugApp = () => {
       }}
       $gap={"0.25rem"}
     >
+      <SettingsWrapper>
+        <HugColumn>
+          <h5>Store</h5>
+          <Divider />
+
+          <ListItemContainer
+            $gridTemplateColumns="0.5fr 1fr"
+            $align="center"
+            $justify="space-between"
+            $gap={"1rem"}
+          >
+            Store Version: {version}
+          </ListItemContainer>
+          <ListItemContainer
+            $gridTemplateColumns="0.5fr 1fr"
+            $align="center"
+            $justify="space-between"
+            $gap={"1rem"}
+          >
+            Store Version: {version}
+          </ListItemContainer>
+        </HugColumn>
+      </SettingsWrapper>
       <SettingsWrapper>
         <h5>Auto-Tap</h5>
 

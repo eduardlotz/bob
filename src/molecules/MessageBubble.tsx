@@ -171,7 +171,7 @@ export const MessageBubble = memo(function MessageBubble({
   }, [previewMode, currentView]);
 
   useEffect(() => {
-    if (!activeMessage || !isReady) {
+    if (!activeMessage) {
       const t = setTimeout(() => setVisibleLines([]), 300);
       return () => clearTimeout(t);
     }
@@ -189,7 +189,7 @@ export const MessageBubble = memo(function MessageBubble({
 
     setVisibleLines([]);
     processLinesRecursive(lines, 0, activeMessage.config.id);
-  }, [activeMessage?.config.id, isReady]);
+  }, [activeMessage?.config.id]);
 
   const processLinesRecursive = useCallback(
     (allLines: string[], index: number, messageId: string) => {
@@ -252,6 +252,8 @@ export const MessageBubble = memo(function MessageBubble({
     anchor[1] + offset[1],
     anchor[2] + offset[2],
   ];
+
+  if (!isReady) return null;
 
   return (
     <a.group position={finalPos}>
