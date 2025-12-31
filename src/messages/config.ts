@@ -43,10 +43,10 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
   {
     id: "welcome_home",
     text: [
-      "Halli hallo hallöchen, ich bin der Bob 😗✌️",
-      "Willkommen auf der persönlichen Website von Eduard Lotz",
-      "ich bin dein persönlicher Begleiter auf dieser Website",
-      "das hier ist eine etwas andere Website, wie du wahrscheinlich schon bemerkt hast 🕵️‍♂️",
+      "Hallöchen, ich bin der Bob 😗✌️",
+      "Willkommen auf der persönlichen Website von Eduard Lotz!",
+      "ich werde dich hier ein wenig begleiten",
+      "das hier ist eine eeeetwas andere Seite, wie du wahrscheinlich schon bemerkt hast ✨",
       "zum Start kannst du mich ja erstmal antippen 🫵",
       "danach schauen wir mal weiter",
     ],

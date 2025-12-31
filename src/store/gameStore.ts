@@ -1195,20 +1195,24 @@ export const useGameStore = create<GameStore>()(
               ...decoration,
               purchased: true,
               enabled: true,
-            }));
-
-            const updatedThemes = state.themes.map((theme) => ({
-              ...theme,
-              purchased: true,
+              unlocked: true,
             }));
 
             const updatedRoutes = state.routes.map((route) => ({
               ...route,
               purchased: true,
+              unlocked: true,
             }));
 
             const updatedBobItems = state.bobItems.map((bobItem) => ({
               ...bobItem,
+              purchased: true,
+              unlocked: true,
+            }));
+
+            const updatedTapEffects = state.tapEffects.map((eff) => ({
+              ...eff,
+              unlocked: true,
               purchased: true,
             }));
 
@@ -1221,7 +1225,7 @@ export const useGameStore = create<GameStore>()(
               ...state,
               upgrades: updatedUpgrades,
               decorations: updatedDecorations,
-              themes: updatedThemes,
+              tapEffects: updatedTapEffects,
               routes: updatedRoutes,
               bobItems: updatedBobItems,
               blobForms: updatedBlobForms,

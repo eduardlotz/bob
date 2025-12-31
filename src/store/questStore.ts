@@ -63,8 +63,8 @@ const initialQuests: Quest[] = [
   },
   {
     id: "tap_multilier_milestone_1",
-    title: "Die erste Investition",
-    description: "Double it and give it to me",
+    title: "Double it and give it to me",
+    description: "Kauf dein erstes Multiplikator Upgrade",
     icon: "🙌",
     progress: 0,
     maxProgress: 1,
@@ -102,7 +102,7 @@ const initialQuests: Quest[] = [
   {
     id: "about_quest_2",
     title: "Sul Sul!",
-    description: "Schnapp dir dein Plumbob!",
+    description: "Finde den Plumbob 🕵",
     icon: "💎",
     progress: 0,
     maxProgress: 1,

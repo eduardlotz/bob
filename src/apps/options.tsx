@@ -1,7 +1,13 @@
 import { usePagination } from "@/hooks/usePagination";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { ArrowLeftIcon, ArrowRightIcon } from "@/icons/arrow";
-import { FillColumn, FillRow, HugColumn, HugRow } from "@/layout";
+import {
+  FillColumn,
+  FillRow,
+  HugColumn,
+  HugRow,
+  ListItemContainer,
+} from "@/layout";
 import {
   DevSlider,
   DevSliderValue,
@@ -78,12 +84,12 @@ type OptionsTab = "theme" | "general" | "graphics";
 
 const tabs = [
   {
-    id: "theme" as OptionsTab,
-    name: "Theme",
-  },
-  {
     id: "general" as OptionsTab,
     name: "Allgemein",
+  },
+  {
+    id: "theme" as OptionsTab,
+    name: "Theme",
   },
   {
     id: "graphics" as OptionsTab,
@@ -94,7 +100,7 @@ const tabs = [
 const APP_ID: CameraViewId = "phone:options";
 
 export function OptionsApp() {
-  const [activeTab, setActiveTab] = useState<OptionsTab>("theme");
+  const [activeTab, setActiveTab] = useState<OptionsTab>("general");
 
   const { themes, activateTheme, previewTheme, resetPreview } = useGameStore();
 
@@ -103,7 +109,10 @@ export function OptionsApp() {
   const { data, page, pageCount, prev, next, hasNext, hasPrev, goTo } =
     usePagination(themes, 1);
 
-  const initialIndex = useMemo(() => themes.findIndex((t) => t.active), []);
+  const initialIndex = useMemo(
+    () => themes.findIndex((t) => t.active),
+    [activeTab]
+  );
   const currentItem = data[0];
 
   useEffect(() => {
@@ -204,9 +213,18 @@ export function OptionsApp() {
     const sound = useSoundSystem();
 
     return (
-      <FillColumn layout $gap={"1rem"}>
+      <FillColumn
+        $gap={"1rem"}
+        key="general-options-view"
+        style={{ height: "fit-content" }}
+      >
         <FillColumn $gap={"1.5rem"}>
-          <FillRow $align="center" $justify="space-between" $gap={"1rem"}>
+          <ListItemContainer
+            $gridTemplateColumns="0.5fr 1fr"
+            $align="center"
+            $justify="space-between"
+            $gap={"1rem"}
+          >
             <HugRow $gap={"0.5rem"}>
               <RowLabel>Master</RowLabel>
               <ValueChip>{Math.round(sound.masterVolume * 100)}%</ValueChip>
@@ -221,9 +239,14 @@ export function OptionsApp() {
                 sound.setMasterVolume(parseFloat(e.target.value))
               }
             />
-          </FillRow>
+          </ListItemContainer>
 
-          <FillRow $align="center" $justify="space-between" $gap={"1rem"}>
+          <ListItemContainer
+            $gridTemplateColumns="0.5fr 1fr"
+            $align="center"
+            $justify="space-between"
+            $gap={"1rem"}
+          >
             <HugRow $gap={"0.5rem"}>
               <RowLabel>Musik</RowLabel>
               <ValueChip>{Math.round(sound.worldVolume * 100)}%</ValueChip>
@@ -236,9 +259,14 @@ export function OptionsApp() {
               value={sound.worldVolume}
               onChange={(e) => sound.setWorldVolume(parseFloat(e.target.value))}
             />
-          </FillRow>
+          </ListItemContainer>
 
-          <FillRow $align="center" $justify="space-between" $gap={"1rem"}>
+          <ListItemContainer
+            $gridTemplateColumns="0.5fr 1fr"
+            $align="center"
+            $justify="space-between"
+            $gap={"1rem"}
+          >
             <HugRow $gap={"0.5rem"}>
               <RowLabel>Effekte</RowLabel>
               <ValueChip>{Math.round(sound.tapVolume * 100)}%</ValueChip>
@@ -251,9 +279,14 @@ export function OptionsApp() {
               value={sound.tapVolume}
               onChange={(e) => sound.setTapVolume(parseFloat(e.target.value))}
             />
-          </FillRow>
+          </ListItemContainer>
 
-          <FillRow $align="center" $justify="space-between" $gap={"1rem"}>
+          <ListItemContainer
+            $gridTemplateColumns="0.5fr 1fr"
+            $align="center"
+            $justify="space-between"
+            $gap={"1rem"}
+          >
             <HugRow $gap={"0.5rem"}>
               <RowLabel>UI</RowLabel>
               <ValueChip>{Math.round(sound.uiVolume * 100)}%</ValueChip>
@@ -266,9 +299,14 @@ export function OptionsApp() {
               value={sound.uiVolume}
               onChange={(e) => sound.setUIVolume(parseFloat(e.target.value))}
             />
-          </FillRow>
+          </ListItemContainer>
 
-          <FillRow $align="center" $justify="space-between" $gap={"1rem"}>
+          <ListItemContainer
+            $gridTemplateColumns="0.5fr 1fr"
+            $align="center"
+            $justify="space-between"
+            $gap={"1rem"}
+          >
             <HugRow $gap={"0.5rem"}>
               <RowLabel>Chat</RowLabel>
               <ValueChip>{Math.round(sound.textVolume * 100)}%</ValueChip>
@@ -281,7 +319,7 @@ export function OptionsApp() {
               value={sound.textVolume}
               onChange={(e) => sound.setTextVolume(parseFloat(e.target.value))}
             />
-          </FillRow>
+          </ListItemContainer>
         </FillColumn>
 
         <Divider />
@@ -294,7 +332,12 @@ export function OptionsApp() {
   };
 
   const GraphicsView = () => (
-    <FillRow $align="center" $justify="center">
+    <FillRow
+      style={{ height: "fit-content" }}
+      key="graphics-options-view"
+      $align="center"
+      $justify="center"
+    >
       <AppInfo>Noch nicht verfügbar</AppInfo>
     </FillRow>
   );
@@ -308,8 +351,7 @@ export function OptionsApp() {
         )}
 
       {activeTab !== "theme" && (
-        <HugColumn
-          key="options-container"
+        <FillColumn
           style={{
             width: "25rem",
             maxWidth: "100%",
@@ -328,17 +370,47 @@ export function OptionsApp() {
             type: "spring" as const,
             bounce: 0.1,
             visualDuration: 0.2,
+            layout: {
+              type: "spring",
+              bounce: 0.2,
+              duration: 0.6,
+            },
           }}
+          // key="options-views-container"
+          key={activeTab + "-views-container"}
           layout
         >
           {activeTab === "general" && <GeneralView />}
           {activeTab === "graphics" && <GraphicsView />}
-        </HugColumn>
+        </FillColumn>
       )}
 
-      <TabPanel>
+      <TabPanel
+        layout
+        transition={{
+          type: "spring",
+          bounce: 0.2,
+          duration: 0.4,
+          layout: {
+            type: "spring",
+            bounce: 0.2,
+            visualDuration: 0.2,
+          },
+        }}
+      >
         {tabs.map((tab) => (
           <TabButton
+            layout="position"
+            transition={{
+              type: "spring",
+              bounce: 0.2,
+              duration: 0.4,
+              layout: {
+                type: "spring",
+                bounce: 0.2,
+                visualDuration: 0.2,
+              },
+            }}
             key={tab.id + "_shop_tab"}
             $active={activeTab === tab.id}
             onClick={() => handleTabChange(tab.id)}
@@ -482,7 +554,7 @@ const TabPanel = styled(motion.div)`
   border-radius: 6rem;
 `;
 
-const TabButton = styled.button<{ $active: boolean }>`
+const TabButton = styled(motion.button)<{ $active: boolean }>`
   display: flex;
   align-items: center;
   justify-content: center;

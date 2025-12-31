@@ -77,7 +77,7 @@ export const useQuestSystem = () => {
             ? addTaps(quest.reward.amount as number)
             : purchaseBobItem(quest.reward.amount as string, true);
 
-          toast.success(`Quest erledigt! ${quest.title}`, {
+          toast.success(`${quest.title}`, {
             description: quest.description,
             duration: 3000,
           });
