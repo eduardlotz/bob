@@ -85,3 +85,19 @@ export const ContentWidth = styled(FillColumn)`
   max-width: 880px;
   margin: 0 auto;
 `;
+
+export const ListItemContainer = styled(motion.div)<{
+  $gridTemplateColumns?: string;
+  $gap?: NumberWithMeasure;
+  $align?: string;
+  $justify?: string;
+  $width?: string;
+}>`
+  display: grid;
+  grid-template-columns: ${(p) => p.$gridTemplateColumns ?? "auto 1fr"};
+  align-items: center;
+  width: ${(p) => p.$width ?? "100%"};
+  align-items: ${(p) => (p.$align ? p.$align : "center")};
+  justify-content: ${(p) => (p.$justify ? p.$justify : "space-between")};
+  grid-gap: ${(p) => (p.$gap ? p.$gap : "0px")};
+`;

@@ -302,6 +302,31 @@ export const Divider = styled.hr`
   border-bottom: 1px solid #ffffff;
 `;
 
+export const DividerWithLabel = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => (
+  <DividerContainer>
+    <Divider />
+    {children}
+    <Divider />
+  </DividerContainer>
+);
+
+const DividerContainer = styled(FillRow)`
+  gap: 1.5rem;
+  padding: 0.75rem;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+
+  font-weight: 500;
+  text-transform: uppercase;
+`;
+
 export const DevSlider = styled.input`
   width: 100%;
   height: 8px;

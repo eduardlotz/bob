@@ -99,7 +99,8 @@ export function Cursor({ attachToParent }: CursorProps) {
 
         x: cursorXSpring,
         y: cursorYSpring,
-        translateX: "-8px", // little offset because of icons
+        translateX: "-6px", // little offset because of icons
+        translateY: "-4px", // little offset because of icons
       }}
     >
       <AnimatePresence>

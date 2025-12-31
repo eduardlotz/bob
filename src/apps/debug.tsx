@@ -2,6 +2,7 @@ import { usePagination } from "@/hooks/usePagination";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { ArrowLeftIcon, ArrowRightIcon } from "@/icons/arrow";
 import { FillRow, HugColumn } from "@/layout";
+import { Divider, DividerWithLabel } from "@/layout/atoms";
 import { MOTION_VARIANTS } from "@/molecules/HeadNavigation";
 import {
   CameraViewId,
@@ -114,6 +115,11 @@ export const DebugApp = () => {
     statisticsVisible,
     toggleStatistics,
     resetGame: resetGameStore,
+    isPaused,
+    pauseGame,
+    resumeGame,
+    addTaps,
+    buyAllUpgrades,
   } = useGameStore();
 
   const resetEverything = () => {
@@ -127,8 +133,31 @@ export const DebugApp = () => {
     resetQuests();
   };
 
+  const toggleGamePaused = () => {
+    if (isPaused) resumeGame();
+    else pauseGame();
+  };
+
   return (
-    <HugColumn style={{ width: "25rem", maxWidth: "100%" }} $gap={"0.25rem"}>
+    <HugColumn
+      style={{
+        width: "25rem",
+        maxWidth: "100%",
+        maxHeight: "23rem",
+        overflowY: "auto",
+      }}
+      $gap={"0.25rem"}
+    >
+      <SettingsWrapper>
+        <h5>Auto-Tap</h5>
+
+        <ToggleButton $active={!isPaused} onClick={toggleGamePaused}>
+          {!isPaused ? "ON" : "OFF"}
+        </ToggleButton>
+      </SettingsWrapper>
+
+      <DividerWithLabel>Utilities</DividerWithLabel>
+
       <SettingsWrapper>
         <h5>Performance Monitor</h5>
 
@@ -136,6 +165,26 @@ export const DebugApp = () => {
           {statisticsVisible ? "ON" : "OFF"}
         </ToggleButton>
       </SettingsWrapper>
+
+      <SettingsWrapper>
+        <HugColumn $gap={"0.5rem"}>
+          <h5>Taps</h5>
+          <p>Add 100 🫵</p>
+        </HugColumn>
+
+        <ActionButton onClick={() => addTaps(100)}>Add 🫵</ActionButton>
+      </SettingsWrapper>
+
+      <SettingsWrapper>
+        <HugColumn $gap={"0.5rem"}>
+          <h5>Unlock Items</h5>
+          <p>[Shop items, routes & upgrades]</p>
+        </HugColumn>
+
+        <ActionButton onClick={buyAllUpgrades}>Unlock</ActionButton>
+      </SettingsWrapper>
+
+      <DividerWithLabel>Gefährlich</DividerWithLabel>
       <SettingsWrapper $variant="destructive">
         <h5>Alle Daten zurücksetzen</h5>
 
@@ -175,6 +224,14 @@ const SettingsWrapper = styled(FillRow)<{
   h5 {
     font-size: 1rem;
     font-weight: 600;
+    color: var(--text-color);
+  }
+
+  p {
+    font-size: 0.875rem;
+    font-weight: 400;
+    opacity: 0.6;
+    color: var(--text-color);
   }
 `;
 
@@ -213,19 +270,23 @@ const ActionButton = styled.button<{ $variant?: "destructive" | "default" }>`
   background-color: #fff;
   color: #212121;
 
-  ${(p) =>
-    p.$variant === "destructive" &&
-    `
-    background-color: #ff0000;
-    color: #ffffff;
-  `}
-
   &:disabled {
     color: #ffffff81;
     background: #0000001e;
   }
 
   &:hover:not(:disabled) {
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(255, 255, 255, 0.8);
   }
+
+  ${(p) =>
+    p.$variant === "destructive" &&
+    `
+    background-color: #ff0000;
+    color: #ffffff;
+
+     &:hover:not(:disabled) {
+      background: #d60000
+  }
+  `}
 `;
