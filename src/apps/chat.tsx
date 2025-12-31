@@ -147,7 +147,7 @@ const MessageContainer = styled(motion.div)`
 
   background: var(--secondary-color);
   color: var(--text-color);
-  border-radius: 24px;
+  border-radius: 1.5rem;
   box-shadow: 0 4px 20px rgba(33, 33, 33, 0.1);
 `;
 

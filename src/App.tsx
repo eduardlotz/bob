@@ -7,13 +7,14 @@ import { Toaster } from "sonner";
 import styled from "styled-components";
 import { getRouteLabelByPath, ROUTE_PATHS, useAppStore } from "@/store";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { executeMigrationsWhenReady } from "@/store/migrationExecutor";
 
 import Home from "./routes/Home";
 import About from "./routes/About";
 import { AnimatePresence, motion } from "motion/react";
 import { useMessageSystem } from "@/hooks/useMessageSystem";
 import { FloatingBarProvider, FloatingBarUI } from "./layout/FloatingBar";
+import { useSoundSystem } from "./hooks/useSoundSystem";
+import { useCursorStore } from "./store/cursorStore";
 
 export default function App() {
   const location = useLocation();
@@ -21,6 +22,8 @@ export default function App() {
   const [mounted, setMounted] = useState(false);
   const [currentRouteInPretty, setCurrentRouteInPretty] = useState("");
   const [showRouteChip, setShowRouteChip] = useState(false);
+
+  const sound = useSoundSystem();
 
   // init message system globally
   // not a real hook (TODO: change name)
@@ -31,16 +34,62 @@ export default function App() {
     setMounted(true);
   }, []);
 
-  // // run queued migrations after small delay to ensure all stores are initialized
-  // useEffect(() => {
-  //   if (mounted) {
-  //     const timer = setTimeout(() => {
-  //       executeMigrationsWhenReady().catch(console.error);
-  //     }, 500);
+  useEffect(() => {
+    const CLICKABLE_SELECTOR =
+      'button, [role="button"], a, input[type="button"], input[type="submit"], [data-clickable], input[type="radio"], input[type="checkbox"], [data-ui-sound-id]';
+    const setCursor = useCursorStore.getState().set;
 
-  //     return () => clearTimeout(timer);
-  //   }
-  // }, [mounted]);
+    const handlePointerOver = (e: PointerEvent) => {
+      const target = (e.target as Element).closest(CLICKABLE_SELECTOR);
+      if (target) setCursor("hover");
+    };
+
+    const handlePointerOut = (e: PointerEvent) => {
+      const target = (e.target as Element).closest(CLICKABLE_SELECTOR);
+      if (target) setCursor("default");
+    };
+
+    const handlePointerDown = (e: PointerEvent) => {
+      const target = (e.target as Element).closest(CLICKABLE_SELECTOR);
+      if (target) setCursor("active");
+    };
+
+    const handlePointerUp = (e: PointerEvent) => {
+      const target = (e.target as Element).closest(CLICKABLE_SELECTOR);
+      if (target) setCursor("hover");
+    };
+
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as Element | null;
+      if (!target) return;
+      const clickable = target.closest(CLICKABLE_SELECTOR);
+
+      if (clickable) {
+        const attrId = clickable.getAttribute("data-ui-sound-id");
+        setTimeout(() => {
+          if (attrId) {
+            sound.playUISound(attrId);
+          } else {
+            sound.playUISound();
+          }
+        }, 0);
+      }
+    };
+
+    window.addEventListener("pointerover", handlePointerOver);
+    window.addEventListener("pointerout", handlePointerOut);
+    window.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("click", handleClick);
+
+    return () => {
+      window.removeEventListener("pointerover", handlePointerOver);
+      window.removeEventListener("pointerout", handlePointerOut);
+      window.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("click", handleClick);
+    };
+  }, []);
 
   // sync router with store
   useEffect(() => {

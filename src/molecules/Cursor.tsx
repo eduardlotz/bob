@@ -95,7 +95,7 @@ export function Cursor({ attachToParent }: CursorProps) {
         top: 0,
         left: 0,
         pointerEvents: "none",
-        zIndex: 9999,
+        zIndex: 99999,
 
         x: cursorXSpring,
         y: cursorYSpring,

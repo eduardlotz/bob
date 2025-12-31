@@ -556,11 +556,11 @@ const AppLabel = styled.span`
   border-radius: 50px;
 `;
 
-const StatusPill = styled(motion.div)`
+export const StatusPill = styled(motion.div)`
   font-size: 1rem;
   font-weight: 600;
   color: white;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(255, 255, 255, 0.1);
   padding: 8px 12px;
   border-radius: 100px;
 
@@ -569,10 +569,12 @@ const StatusPill = styled(motion.div)`
   height: 2.25rem;
 `;
 
-const StatusPillButton = styled(motion.button)<{ $active: boolean }>`
+export const StatusPillButton = styled(motion.button)<{ $active: boolean }>`
   font-size: 1rem;
-  color: ${(p) => (p.$active ? "#212121" : "#ffffff9a")};
-  background: ${(p) => (p.$active ? "#ffffff" : "rgba(0, 0, 0, 0.25)")};
+  color: ${(p) =>
+    p.$active ? "rgba(255,255,255,1)" : "rgba(255,255,255,.75)"};
+  background: ${(p) =>
+    p.$active ? "rgba(255,255,255,0.1)" : "rgba(0, 0, 0, 0.25)"};
   padding: 8px 12px;
   border-radius: 100px;
 
@@ -584,7 +586,7 @@ const StatusPillButton = styled(motion.button)<{ $active: boolean }>`
   }
 `;
 
-const Blinking = styled.span`
+export const Blinking = styled.span`
   animation: blinking linear 3s infinite;
 
   @keyframes blinking {

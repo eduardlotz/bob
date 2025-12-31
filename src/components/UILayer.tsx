@@ -4,12 +4,9 @@ import { Button, Logo } from "@/layout/atoms";
 import { BottomNavigation } from "@/molecules/BottomNavigation";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 
-import { requestMotionPermission } from "@/utils/permission";
 import { useGameStore } from "@/store/gameStore";
 
 import { AnimatePresence, motion } from "motion/react";
-import { Cursor } from "@/molecules/Cursor";
-import { useCursorStore } from "@/store/cursorStore";
 import { useAppStore } from "@/store";
 
 interface UILayerProps {
@@ -35,63 +32,6 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
     return () => clearInterval(cleanupInterval);
   }, []);
 
-  useEffect(() => {
-    const CLICKABLE_SELECTOR =
-      'button, [role="button"], a, input[type="button"], input[type="submit"], [data-clickable], input[type="radio"], input[type="checkbox"], [data-ui-sound-id]';
-    const setCursor = useCursorStore.getState().set;
-
-    const handlePointerOver = (e: PointerEvent) => {
-      const target = (e.target as Element).closest(CLICKABLE_SELECTOR);
-      if (target) setCursor("hover");
-    };
-
-    const handlePointerOut = (e: PointerEvent) => {
-      const target = (e.target as Element).closest(CLICKABLE_SELECTOR);
-      if (target) setCursor("default");
-    };
-
-    const handlePointerDown = (e: PointerEvent) => {
-      const target = (e.target as Element).closest(CLICKABLE_SELECTOR);
-      if (target) setCursor("active");
-    };
-
-    const handlePointerUp = (e: PointerEvent) => {
-      const target = (e.target as Element).closest(CLICKABLE_SELECTOR);
-      if (target) setCursor("hover");
-    };
-
-    const handleClick = (e: MouseEvent) => {
-      const target = e.target as Element | null;
-      if (!target) return;
-      const clickable = target.closest(CLICKABLE_SELECTOR);
-
-      if (clickable) {
-        const attrId = clickable.getAttribute("data-ui-sound-id");
-        setTimeout(() => {
-          if (attrId) {
-            sound.playUISound(attrId);
-          } else {
-            sound.playUISound();
-          }
-        }, 0);
-      }
-    };
-
-    window.addEventListener("pointerover", handlePointerOver);
-    window.addEventListener("pointerout", handlePointerOut);
-    window.addEventListener("pointerdown", handlePointerDown);
-    window.addEventListener("pointerup", handlePointerUp);
-    window.addEventListener("click", handleClick);
-
-    return () => {
-      window.removeEventListener("pointerover", handlePointerOver);
-      window.removeEventListener("pointerout", handlePointerOut);
-      window.removeEventListener("pointerdown", handlePointerDown);
-      window.removeEventListener("pointerup", handlePointerUp);
-      window.removeEventListener("click", handleClick);
-    };
-  }, []);
-
   // TODO: fix or remove every device motion related
   // const handlePermissionRequest = async () => {
   //   const granted = await requestMotionPermission();
@@ -104,8 +44,6 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
         <MotionRoot id="motion-root"></MotionRoot>
       </AnimatePresence>
       <BottomNavigation />
-
-      {!isMobile && <Cursor attachToParent />}
     </UILayerContainer>
   );
 }

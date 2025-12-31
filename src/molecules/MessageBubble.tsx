@@ -151,7 +151,7 @@ export const MessageBubble = memo(function MessageBubble({
     resumeSystem,
   } = useMessageStore();
   const { requestEmotion } = useAppStore();
-  const { previewMode } = useGameStore();
+  const { previewMode, isReady } = useGameStore();
   const { currentView } = useViewStore();
 
   const [visibleLines, setVisibleLines] = useState<
@@ -171,13 +171,7 @@ export const MessageBubble = memo(function MessageBubble({
   }, [previewMode, currentView]);
 
   useEffect(() => {
-    return () => {
-      if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!activeMessage) {
+    if (!activeMessage || !isReady) {
       const t = setTimeout(() => setVisibleLines([]), 300);
       return () => clearTimeout(t);
     }
@@ -195,7 +189,7 @@ export const MessageBubble = memo(function MessageBubble({
 
     setVisibleLines([]);
     processLinesRecursive(lines, 0, activeMessage.config.id);
-  }, [activeMessage?.config.id]);
+  }, [activeMessage?.config.id, isReady]);
 
   const processLinesRecursive = useCallback(
     (allLines: string[], index: number, messageId: string) => {

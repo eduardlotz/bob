@@ -245,6 +245,7 @@ interface GameFlags {
   statisticsVisible: boolean;
   isPaused: boolean;
   isHydrated: boolean;
+  isReady: boolean;
 }
 
 interface GameStateActions {
@@ -321,6 +322,7 @@ interface GameFlagsActions {
   resetGame: () => void;
   pauseGame: () => void;
   resumeGame: () => void;
+  setGameReady: (v: boolean) => void;
 
   toggleCustomCameraControls: () => void;
   toggleAnimations: () => void;
@@ -507,6 +509,7 @@ const initialGameFlags: GameFlags = {
   statisticsVisible: false,
   isPaused: false,
   isHydrated: false,
+  isReady: false,
 };
 
 const partializePersisted = (state: GameStore): PersistedGameStore => ({
@@ -529,6 +532,7 @@ const partializePersisted = (state: GameStore): PersistedGameStore => ({
   audioSelections: state.audioSelections,
   isPaused: state.isPaused,
   isHydrated: false, // reset on reload
+  isReady: false, // reset on reload
   customCameraControlsEnabled: state.customCameraControlsEnabled,
   animationsEnabled: state.animationsEnabled,
   statisticsVisible: state.statisticsVisible,
@@ -547,6 +551,8 @@ export const useGameStore = create<GameStore>()(
         tapsPerSecond: 0,
         autoTapRate: 0,
         recentManualTaps: [],
+
+        setGameReady: (gameReady) => set({ isReady: gameReady }),
 
         addTaps: (amount: number) => {
           set((state) => ({

@@ -11,6 +11,7 @@ import { TapUpgrades } from "./tapUpgrades";
 import { MenuButton } from "@/layout/atoms";
 import { BobPhone } from "./BobPhone";
 import { playUISound } from "@/utils/soundSystem";
+import { SCENE_REVEAL_DURATION } from "./SceneWithLoader";
 
 export function BottomNavigation() {
   const { currentView, transitionToView } = useViewStore();
@@ -48,6 +49,7 @@ export function BottomNavigation() {
         left: 0,
         right: 0,
       }}
+      transition={{ delay: SCENE_REVEAL_DURATION }}
     >
       <TapUpgrades show={showTapUpgrades} />
       <HugRow $gap={"8px"} layout>
@@ -108,11 +110,6 @@ export function BottomNavigation() {
           <BobPhone />
         </AnimatePresence>
       </HugRow>
-
-      {/* <Shop
-        isOpen={currentView === "shop"}
-        onClose={() => setViewMode("fixed")}
-      /> */}
     </HugColumn>
   );
 }
