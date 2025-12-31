@@ -145,6 +145,7 @@ export const DebugApp = () => {
         maxWidth: "100%",
         maxHeight: "23rem",
         overflowY: "auto",
+        borderRadius: "1.25rem",
       }}
       $gap={"0.25rem"}
     >
@@ -252,6 +253,7 @@ const ToggleButton = styled.button<{ $active: boolean }>`
     background: rgba(255, 255, 255, 0.9);
   }
 `;
+
 const ActionButton = styled.button<{ $variant?: "destructive" | "default" }>`
   display: flex;
   width: fit-content;

@@ -423,7 +423,7 @@ export function OptionsApp() {
   );
 }
 
-const AppInfo = styled.p`
+export const AppInfo = styled.p`
   opacity: 0.5;
 
   display: flex;

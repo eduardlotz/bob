@@ -65,11 +65,14 @@ export const MotionWrapper = styled(motion.div)`
 
 export const MotionIconWrapper = styled(FillRow)`
   all: inherit;
-  position: relative;
+  position: absolute;
+
+  margin: 0 auto;
+  left: 0;
+  right: 0;
 
   height: fit-content;
   width: fit-content;
-  margin: 0;
   gap: 8px;
 
   overflow: unset;
