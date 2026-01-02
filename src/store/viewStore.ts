@@ -9,6 +9,7 @@ import {
   VISIBLE_OPTIONS_CAMERA_ZOOM,
 } from "@/molecules/HeadNavigation";
 import { useGameStore } from ".";
+import { Vector3 } from "three";
 
 export interface CameraView {
   id: string;
@@ -20,11 +21,19 @@ export interface CameraView {
     duration?: number;
     easing?: string;
   };
+  defaultViewMode?: ViewMode;
+}
+
+export interface FocusTarget {
+  position: Vector3;
+  distance?: number;
 }
 
 export type CameraViewId =
   | "default"
   | "upgrades"
+  | "creative"
+  | "navigation"
   | "phone:home"
   | "phone:shop"
   | "phone:debug"
@@ -46,6 +55,17 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
       duration: 1000,
       easing: "easeInOutCubic",
     },
+  },
+  navigation: {
+    id: "navigation",
+    name: "Navigation/Menu View",
+    position: [0, CAMERA_HEIGHT, VISIBLE_OPTIONS_CAMERA_ZOOM],
+    target: [0, CAMERA_Y_POSITION, 0],
+    transition: {
+      duration: 1000,
+      easing: "easeInOutCubic",
+    },
+    defaultViewMode: "fixed",
   },
   "phone:shop": {
     id: "phone:shop",
@@ -71,6 +91,17 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
     id: "upgrades",
     name: "Upgrades View",
   },
+  creative: {
+    id: "creative",
+    name: "Creative Orbit View",
+    position: [0, CAMERA_HEIGHT, HIDDEN_OPTIONS_CAMERA_ZOOM],
+    target: [0, CAMERA_Y_POSITION, 0],
+    transition: {
+      duration: 1000,
+      easing: "easeInOutCubic",
+    },
+    defaultViewMode: "object",
+  },
   "phone:home": {
     id: "phone:home",
     name: "Phone View",
@@ -94,6 +125,7 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
       duration: 1200,
       easing: "easeInOutCubic",
     },
+    defaultViewMode: "object",
   },
   bookshelf: {
     id: "bookshelf",
@@ -104,6 +136,7 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
       duration: 1200,
       easing: "easeInOutCubic",
     },
+    defaultViewMode: "object",
   },
   computer: {
     id: "computer",
@@ -124,6 +157,7 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
       duration: 1200,
       easing: "easeInOutCubic",
     },
+    defaultViewMode: "object",
   },
 };
 
@@ -132,7 +166,10 @@ export type ViewMode = "fixed" | "object";
 interface ViewStore {
   currentView: CameraViewId;
   previousView: CameraViewId;
-  viewMode: ViewMode;
+
+  defaultViewMode: ViewMode; // default for current scene
+  viewMode: ViewMode; // currently active
+  previousViewMode: ViewMode;
   isTransitioning: boolean;
 
   cameraControlsRef: React.RefObject<CameraControls> | null;
@@ -143,12 +180,24 @@ interface ViewStore {
   transitionToView: (viewId: CameraViewId) => Promise<void>;
   transitionBack: () => Promise<void>;
   resetToDefaultView: () => Promise<void>;
+  resetToPreviousView: () => Promise<void>;
 
   getCurrentViewConfig: () => CameraView | null;
   isDefaultView: () => boolean;
+  isCreativeView: () => boolean;
   isPhoneView: () => boolean;
   isObjectView: () => boolean;
+  isNavigationView: () => boolean;
   getAvailableViews: () => CameraView[];
+
+  setDefaultViewMode: (mode: ViewMode) => void;
+
+  focusOnTarget: (target: FocusTarget) => Promise<void>;
+  isImageFocused: boolean;
+  focusedImageTitle: string | null;
+
+  focusOnImage: (title: string) => void;
+  clearImageFocus: () => void;
 }
 
 export const useViewStore = create<ViewStore>()(
@@ -156,9 +205,14 @@ export const useViewStore = create<ViewStore>()(
     (set, get) => ({
       currentView: "default",
       previousView: "default",
+      defaultViewMode: "fixed",
       viewMode: "fixed",
+      previousViewMode: "fixed",
       isTransitioning: false,
       cameraControlsRef: null,
+
+      setDefaultViewMode: (mode: ViewMode) =>
+        set({ defaultViewMode: mode, viewMode: mode, previousViewMode: mode }),
 
       setCurrentView: (viewId) => set({ currentView: viewId }),
       setViewMode: (mode) => set({ viewMode: mode }),
@@ -188,7 +242,11 @@ export const useViewStore = create<ViewStore>()(
           previousView: state.currentView,
           isTransitioning: true,
           currentView: nextView,
-          viewMode: nextView !== "default" ? "object" : "fixed",
+          previousViewMode: state.viewMode,
+          viewMode: viewConfig.defaultViewMode ?? state.viewMode,
+          defaultViewMode: viewConfig.defaultViewMode ?? state.viewMode,
+          isImageFocused: false,
+          focusedImageTitle: null,
         }));
 
         try {
@@ -216,15 +274,68 @@ export const useViewStore = create<ViewStore>()(
       },
 
       resetToDefaultView: async () => {
-        const { isTransitioning } = get();
+        const {
+          isTransitioning,
+          defaultViewMode,
+          currentView,
+          cameraControlsRef,
+          previousView,
+        } = get();
 
-        if (isTransitioning) {
+        if (isTransitioning || !cameraControlsRef?.current) {
           return;
         }
 
         set({
-          currentView: "default",
-          viewMode: "fixed",
+          currentView:
+            previousView === "creative" || currentView === "creative"
+              ? "creative"
+              : "default",
+          viewMode: defaultViewMode,
+          isImageFocused: false,
+          focusedImageTitle: null,
+          isTransitioning: true,
+        });
+
+        try {
+          const controls = cameraControlsRef.current;
+
+          // currently only two different defaults (creative -> "orbit view" & rest -> "fixed view")
+          const viewConfig =
+            CAMERA_VIEWS[
+              previousView === "creative" || currentView === "creative"
+                ? "creative"
+                : "default"
+            ];
+
+          if (!viewConfig) {
+            console.warn(`"${currentView}" view config missing`);
+            return;
+          }
+
+          if (viewConfig.position && viewConfig.target) {
+            controls.setLookAt(
+              ...viewConfig.position,
+              ...viewConfig.target,
+              true
+            );
+          }
+        } catch (error) {
+          console.error("Camera transition failed:", error);
+        } finally {
+          set({ isTransitioning: false });
+        }
+      },
+      resetToPreviousView: async () => {
+        const { isTransitioning, previousView, previousViewMode } = get();
+
+        if (isTransitioning || !previousView) {
+          return;
+        }
+
+        set({
+          currentView: previousView,
+          viewMode: previousViewMode,
           isTransitioning: false,
         });
       },
@@ -237,6 +348,9 @@ export const useViewStore = create<ViewStore>()(
       isDefaultView: () => {
         return get().currentView === "default";
       },
+      isCreativeView: () => {
+        return get().currentView === "creative";
+      },
 
       isPhoneView: () => {
         return get().currentView.startsWith("phone:");
@@ -246,9 +360,53 @@ export const useViewStore = create<ViewStore>()(
         return get().viewMode === "object";
       },
 
+      isNavigationView: () => {
+        return get().currentView === "navigation";
+      },
+
       getAvailableViews: () => {
         return Object.values(CAMERA_VIEWS);
       },
+
+      focusOnTarget: async ({ position, distance = 12 }) => {
+        const { cameraControlsRef, isTransitioning } = get();
+        if (isTransitioning || !cameraControlsRef?.current) return;
+
+        set({ isTransitioning: true, viewMode: "object" });
+
+        try {
+          const controls = cameraControlsRef.current;
+
+          const dir = position.clone().normalize().multiplyScalar(distance);
+          const camPos = dir.add(position);
+
+          controls.setLookAt(
+            camPos.x,
+            camPos.y,
+            camPos.z,
+            position.x,
+            position.y,
+            position.z,
+            true
+          );
+        } finally {
+          set({ isTransitioning: false });
+        }
+      },
+      isImageFocused: false,
+      focusedImageTitle: null,
+
+      focusOnImage: (title) =>
+        set({
+          isImageFocused: true,
+          focusedImageTitle: title,
+        }),
+
+      clearImageFocus: () =>
+        set({
+          isImageFocused: false,
+          focusedImageTitle: null,
+        }),
     }),
     {
       name: "view-store",

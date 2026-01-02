@@ -80,16 +80,16 @@ export const OptionsIcon = () => (
   </svg>
 );
 
-type OptionsTab = "theme" | "general" | "graphics";
+type OptionsTab = "theme" | "audio" | "graphics";
 
 const tabs = [
   {
-    id: "general" as OptionsTab,
-    name: "Allgemein",
-  },
-  {
     id: "theme" as OptionsTab,
     name: "Theme",
+  },
+  {
+    id: "audio" as OptionsTab,
+    name: "Audio",
   },
   {
     id: "graphics" as OptionsTab,
@@ -100,7 +100,7 @@ const tabs = [
 const APP_ID: CameraViewId = "phone:options";
 
 export function OptionsApp() {
-  const [activeTab, setActiveTab] = useState<OptionsTab>("general");
+  const [activeTab, setActiveTab] = useState<OptionsTab>("theme");
 
   const { themes, activateTheme, previewTheme, resetPreview } = useGameStore();
 
@@ -209,7 +209,7 @@ export function OptionsApp() {
     </FixedAnchor>
   );
 
-  const GeneralView = () => {
+  const AudioView = () => {
     const sound = useSoundSystem();
 
     return (
@@ -380,7 +380,7 @@ export function OptionsApp() {
           key={activeTab + "-views-container"}
           layout
         >
-          {activeTab === "general" && <GeneralView />}
+          {activeTab === "audio" && <AudioView />}
           {activeTab === "graphics" && <GraphicsView />}
         </FillColumn>
       )}

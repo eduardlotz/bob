@@ -14,7 +14,8 @@ import { playUISound } from "@/utils/soundSystem";
 import { SCENE_REVEAL_DURATION } from "./SceneWithLoader";
 
 export function BottomNavigation() {
-  const { currentView, transitionToView } = useViewStore();
+  const { currentView, resetToDefaultView, setViewMode, transitionToView } =
+    useViewStore();
 
   const {
     currentRoute,
@@ -24,15 +25,19 @@ export function BottomNavigation() {
   } = useAppStore();
 
   useKeyPress("Escape", () => {
-    transitionToView("default");
+    resetToDefaultView();
     playUISound("ui-tap-close");
   });
 
   const isHomeRoute = currentRoute === ROUTE_PATHS.HOME;
 
-  const handleMenuButtonClick = () => {
+  const handleMenuButtonClick = async () => {
+    if (showOptions) {
+      await resetToDefaultView();
+    } else {
+      await transitionToView("navigation");
+    }
     toggleOptions();
-    transitionToView("default");
   };
 
   const showTapUpgrades =

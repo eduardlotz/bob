@@ -58,6 +58,12 @@ export function useMessageSystem() {
               if (ok) routeShownRef.current[ROUTE_PATHS.ABOUT] = true;
             });
           })
+          .with(ROUTE_PATHS.CREATIVE, () => {
+            if (routeShownRef.current[ROUTE_PATHS.CREATIVE]) return;
+            return showMessage("creative_welcome").then((ok) => {
+              if (ok) routeShownRef.current[ROUTE_PATHS.CREATIVE] = true;
+            });
+          })
           .otherwise(() => Promise.resolve());
       }, 2000);
     },

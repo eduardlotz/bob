@@ -167,6 +167,26 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
     nextDelayMs: 1800,
   },
   {
+    id: "creative_welcome",
+    text: [
+      "Willkommen in meinem kreativen Bereich",
+      "quasi meine eigene kleine Galaxie an kreativen Ideen",
+      "Tipp ein Bild an, um es dir genauer anzuschauen",
+    ],
+    label: "Eddie",
+    options: {
+      typingSpeedMs: 25,
+      baseDismissMs: 2000,
+      contentLengthFactorMs: 50,
+      tailEnabled: false,
+      emotion: { state: "happy", durationMs: 3000 },
+    },
+    repeatRule: "oncePerPersist",
+    audioEnabled: true,
+    positionOffset: [0, 0, 0],
+    nextDelayMs: 1800,
+  },
+  {
     id: "dev_message",
     text: [
       "hey du 🫵🤓",

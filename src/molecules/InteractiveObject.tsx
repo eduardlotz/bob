@@ -3,6 +3,7 @@ import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { CameraViewId, useViewStore } from "@/store/viewStore";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { match } from "ts-pattern";
+import { useCursorStore } from "@/store/cursorStore";
 
 export type InteractionMode = "dialog" | "view";
 
@@ -31,6 +32,7 @@ export function InteractiveObject({
   const { transitionToView, currentView, isTransitioning, resetToDefaultView } =
     useViewStore();
   const { playUISound } = useSoundSystem();
+  const cursor = useCursorStore();
 
   const isViewActive = mode === "view" && currentView === viewId;
 
@@ -54,12 +56,16 @@ export function InteractiveObject({
 
   const handlePointerEnter = () => {
     setIsHovered(true);
-    document.body.style.cursor = "pointer";
+    cursor.set("hover");
   };
 
   const handlePointerLeave = () => {
     setIsHovered(false);
-    document.body.style.cursor = "auto";
+    cursor.set("default");
+  };
+
+  const handlePointerDown = () => {
+    cursor.set("active");
   };
 
   return (
@@ -67,6 +73,7 @@ export function InteractiveObject({
       onClick={handleClick}
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
+      onPointerDown={handlePointerDown}
     >
       {children}
     </group>

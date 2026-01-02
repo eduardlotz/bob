@@ -229,11 +229,13 @@ export function BlobHead({
 
   const { orientation, acceleration } = useDeviceOrientation();
 
-  const { isDefaultView } = useViewStore();
+  const { isDefaultView, isNavigationView } = useViewStore();
+
+  const shouldFollowCursor = isDefaultView() || isNavigationView();
 
   // MAYDO: check why the head needs this weird cursor tracking
   const mousePosition = useCursor({
-    condition: isDefaultView,
+    condition: () => shouldFollowCursor,
     positionFactor: 2.5,
   });
 
@@ -462,7 +464,7 @@ export function BlobHead({
     const cameraPosition = new Vector3(0, CAMERA_HEIGHT, baseZoom + zoomOffset);
     const target = cameraPosition.clone().add(lookDirection);
 
-    if (isDefaultView()) {
+    if (shouldFollowCursor) {
       cameraControlsRef.current?.setLookAt(
         cameraPosition.x,
         cameraPosition.y,
@@ -488,11 +490,13 @@ export function BlobHead({
 
     applyHeadRotation(targetRotX, targetRotY, targetRotZ, delta);
 
+    // floating animation
     const floatY = Math.sin(clock.getElapsedTime() * 0.5) * 0.1;
     headRef.current.position.y = floatY + HEAD_POSITION_Y;
 
-    const cursorPos = new Vector3(mousePosition.x, -mousePosition.y * 0.4, 0);
+    const cursorPos = new Vector3(mousePosition.x, mousePosition.y * 0.4, 0);
 
+    // camera follows cursor
     const baseZoom = showOptions
       ? VISIBLE_OPTIONS_CAMERA_ZOOM
       : HIDDEN_OPTIONS_CAMERA_ZOOM;
@@ -500,13 +504,14 @@ export function BlobHead({
       ? Math.sin(clock.getElapsedTime() * 20) * 0.5
       : 0;
 
-    if (isDefaultView()) {
+    if (shouldFollowCursor) {
       cameraControlsRef.current?.setLookAt(
         0,
         CAMERA_HEIGHT,
         baseZoom + zoomOffset,
         cursorPos.x,
-        cursorPos.y + 2,
+        // cursorPos.y + 2,
+        cursorPos.y + CAMERA_Y_POSITION,
         cursorPos.z,
         true
       );
