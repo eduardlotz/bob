@@ -119,12 +119,13 @@ const Scene = ({
     }
   }, [isHome]);
 
-  useKeyPress("Escape", () => {
-    if (showOptions) {
-      closeOptionsWithAnimation();
-      playUISound("ui-tap-close");
-    }
-  });
+  // useKeyPress("Escape", () => {
+  //   if (showOptions) {
+  //     resetToDefaultView();
+  //     playUISound("ui-tap-close");
+
+  //   }
+  // });
 
   return (
     <>
@@ -148,7 +149,11 @@ const Scene = ({
             <PerspectiveCamera makeDefault position={[0, 0, 3]} />
             <directionalLight intensity={1.2} position={[2, 4, 5]} />
             <Environment preset="city" />
-            {showBackground && <BackgroundPlanet />}
+            {showBackground ? (
+              <BackgroundPlanet />
+            ) : (
+              <color attach="background" args={["#0e0e0e"]} />
+            )}
             {statisticsVisible && <Debug />}
 
             <Physics gravity={[0, -9.81, 0]}>

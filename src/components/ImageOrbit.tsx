@@ -1,42 +1,46 @@
 import * as THREE from "three";
-import { useRef, useState, useMemo, useEffect, Suspense } from "react";
+import { useMemo, Suspense } from "react";
 import { Billboard, Image, useTexture } from "@react-three/drei";
 import { useFloatingBar } from "@/layout/FloatingBar";
 import { useCursorStore } from "@/store/cursorStore";
 import { useViewStore } from "@/store";
 import { playUISound } from "@/utils/soundSystem";
+import { SoundConfig } from "@/utils/sound/types";
 
 interface PortfolioImage {
   url: string;
   title: string;
+  link?: string;
+  sound?: SoundConfig;
 }
 
 const IMAGES: PortfolioImage[] = [
-  { url: "/images/portfolio/face_study.png", title: "face_study" },
-  { url: "/images/portfolio/hassliebe_cover.png", title: "hassliebe_cover" },
-  { url: "/images/portfolio/first_character.png", title: "character_model" },
-  { url: "/images/portfolio/fluffy_bear.png", title: "bear_head" },
-  { url: "/images/portfolio/gradient_gem.png", title: "gradient_gem" },
+  { url: "/images/portfolio/face_study.jpeg", title: "face_study" },
+  { url: "/images/portfolio/hassliebe_cover.jpeg", title: "hassliebe_cover" },
+  { url: "/images/portfolio/first_character.jpeg", title: "character_model" },
+  { url: "/images/portfolio/fluffy_bear.jpeg", title: "bear_head" },
+  { url: "/images/portfolio/gradient_gem.jpeg", title: "gradient_gem" },
   {
-    url: "/images/portfolio/peace_of_mind_red.png",
+    url: "/images/portfolio/peace_of_mind_red.jpeg",
     title: "peace_of_mind_red",
   },
-  { url: "/images/portfolio/noisy_wallpaper.jpg", title: "peace_of_mind" },
+  { url: "/images/portfolio/noisy_wallpaper.jpeg", title: "peace_of_mind" },
   {
-    url: "/images/portfolio/peace_of_mind_orange.png",
+    url: "/images/portfolio/peace_of_mind_orange.jpeg",
     title: "peace_of_mind_orange",
   },
-  { url: "/images/portfolio/toon_character.png", title: "toon_character" },
+  { url: "/images/portfolio/toon_character.jpeg", title: "toon_character" },
   {
-    url: "/images/portfolio/peace_of_mind_logos.png",
+    url: "/images/portfolio/peace_of_mind_logos.jpeg",
     title: "peace_of_mind_logos",
   },
-  { url: "/images/portfolio/warum_cover.png", title: "warum_cover" },
+  { url: "/images/portfolio/warum_cover.jpeg", title: "warum_cover" },
   {
-    url: "/images/portfolio/skateboard_stickers.png",
+    url: "/images/portfolio/skateboard_stickers.jpeg",
     title: "skateboard_stickers",
   },
-  { url: "/images/portfolio/tinyplanet_skateboard.jpg", title: "tiny_planet" },
+  { url: "/images/portfolio/tinyplanet_skateboard.jpeg", title: "tiny_planet" },
+  { url: "/images/portfolio/warum_v2.jpeg", title: "warum_2026_edit" },
 ];
 
 interface ImageItemProps {
@@ -49,8 +53,10 @@ function ImageItem({ url, title, position }: ImageItemProps) {
   const texture = useTexture(url);
 
   const { setHoveredObject } = useFloatingBar();
-  const { focusOnTarget, focusOnImage } = useViewStore();
+  const { focusOnTarget, focusOnImage, focusedImageTitle } = useViewStore();
   const cursor = useCursorStore();
+
+  const currentlyActive = focusedImageTitle === title; // TODO: use ids instead
 
   const handlePointerEnter = (e: any) => {
     e.stopPropagation();
@@ -68,7 +74,11 @@ function ImageItem({ url, title, position }: ImageItemProps) {
 
   const handlePointerDown = () => {
     cursor.set("active");
-    playUISound();
+    if (!currentlyActive) playUISound();
+  };
+
+  const handlePointerUp = () => {
+    cursor.set("hover");
   };
 
   const scale = useMemo<[number, number]>(() => {
@@ -89,21 +99,25 @@ function ImageItem({ url, title, position }: ImageItemProps) {
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
       onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
     >
       <Image
         texture={texture}
         transparent
         scale={scale}
         onClick={() => {
-          focusOnTarget({ position, distance: 14 });
-          focusOnImage(title);
+          // disable focus reset for already active images
+          if (focusedImageTitle !== title) {
+            focusOnTarget({ position, distance: 8 });
+            focusOnImage(title);
+          }
         }}
       />
     </Billboard>
   );
 }
 
-export function ImageOrbit({ radius = 20 }: { radius?: number }) {
+export function ImageOrbit({ radius = 40 }: { radius?: number }) {
   const points = useMemo(() => {
     const pts: THREE.Vector3[] = [];
     const n = IMAGES.length;

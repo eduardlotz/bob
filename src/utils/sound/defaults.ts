@@ -2,6 +2,7 @@ export const DEFAULT_WORLD_MUSIC = {
   id: "world-lofi",
   filePath: "/audio/lofi-music.mp3",
 };
+
 export const DEFAULT_TAP_SOUND = {
   id: "tap-bing-bong",
   filePath: "/audio/bing-bong.wav",
@@ -49,4 +50,9 @@ export const HARDSTYLE_TAP_SOUND = {
 export const TRANCE_TAP_SOUND = {
   id: "tap-trance-kick",
   filePath: "/audio/trance-kick.mp3",
+};
+
+export const DEFAULT_PINK_NOISE = {
+  id: "pink-noise",
+  filePath: "/audio/pink-noise.wav",
 };

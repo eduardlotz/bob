@@ -229,9 +229,18 @@ export function BlobHead({
 
   const { orientation, acceleration } = useDeviceOrientation();
 
-  const { isDefaultView, isNavigationView } = useViewStore();
+  const {
+    isDefaultView,
+    isNavigationView,
+    viewMode,
+    isTransitioning,
+    isObjectView,
+  } = useViewStore();
 
-  const shouldFollowCursor = isDefaultView() || isNavigationView();
+  const shouldFollowCursor =
+    viewMode === "fixed" &&
+    !isMobile &&
+    (isDefaultView() || isNavigationView());
 
   // MAYDO: check why the head needs this weird cursor tracking
   const mousePosition = useCursor({
@@ -259,20 +268,6 @@ export function BlobHead({
       });
     }
   }, [showOptions, isClosing]);
-
-  // useEffect(() => {
-  //   const handleMouseMove = (event: MouseEvent) => {
-  //     // dont update mouse position when in object view mode (/about scene)
-  //     if (isDefaultView()) {
-  //       setMousePosition({
-  //         x: (event.clientX / window.innerWidth) * 2 - 1,
-  //         y: (event.clientY / window.innerHeight) * 2 - 1,
-  //       });
-  //     }
-  //   };
-  //   window.addEventListener("mousemove", handleMouseMove);
-  //   return () => window.removeEventListener("mousemove", handleMouseMove);
-  // }, [isDefaultView]);
 
   useEffect(() => {
     const blinkInterval = setInterval(() => {
@@ -391,6 +386,7 @@ export function BlobHead({
     if (idleAnimation !== "none") {
       handleIdleAnimation(clock, delta);
     } else {
+      // special case: mobile movement using gyro
       if (isMobile && orientation && acceleration && permissionGranted) {
         handleMobileMovement(clock, delta);
       } else {
@@ -504,7 +500,7 @@ export function BlobHead({
       ? Math.sin(clock.getElapsedTime() * 20) * 0.5
       : 0;
 
-    if (shouldFollowCursor) {
+    if (shouldFollowCursor && !isTransitioning && !isObjectView()) {
       cameraControlsRef.current?.setLookAt(
         0,
         CAMERA_HEIGHT,

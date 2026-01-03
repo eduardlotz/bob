@@ -37,6 +37,7 @@ export function InteractiveObject({
   const isViewActive = mode === "view" && currentView === viewId;
 
   const handleClick = (e: any) => {
+    console.log("🚀 ~ handleClick ~ viewId:", viewId);
     playUISound("ui-tap-2");
 
     triggerQuest(questAction, questValue);

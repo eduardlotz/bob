@@ -1,5 +1,11 @@
 import { ImageOrbit } from "@/components/ImageOrbit";
 import { ROUTE_PATHS, useGameStore, useViewStore } from "@/store";
+import { DEFAULT_SOUND_CONFIGS } from "@/utils/sound/configs";
+import {
+  playWorldSound,
+  stopAllSounds,
+  stopAllWorldSounds,
+} from "@/utils/soundSystem";
 import { Stars } from "@react-three/drei";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -21,6 +27,7 @@ export function CreativeScene() {
   useEffect(() => {
     transitionToView("creative");
     setDefaultViewMode("object");
+    playWorldSound("pink-noise");
   }, []);
 
   return (

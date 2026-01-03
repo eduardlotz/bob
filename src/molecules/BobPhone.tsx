@@ -201,6 +201,11 @@ export const BobPhone = () => {
   const onTriggerClick = () => {
     isOpen ? resetToDefaultView() : transitionToView("phone:home");
     setIsOpen((prev) => !prev);
+    console.info(
+      isOpen
+        ? "resetToDefaultView(); in BOBPHONE.tsx"
+        : "TRANSITION_TO_VIEW(PHONE_HOME) in BOBPHONE.tsx"
+    );
   };
 
   const currentHour = format(new Date(), "HH");

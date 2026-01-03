@@ -5,6 +5,7 @@ import {
   DEFAULT_UI_SOUND,
   DEFAULT_UI_SOUND_2,
   DEFAULT_UI_SOUND_ALT,
+  DEFAULT_PINK_NOISE,
 } from "./defaults";
 import { SoundConfig } from "./types";
 
@@ -29,6 +30,18 @@ export const DEFAULT_SOUND_CONFIGS: SoundConfig[] = [
     loop: true,
     stopPrevious: true,
     distanceAttenuation: false,
+    detune: { enabled: false, minSemitones: 0, maxSemitones: 0 },
+    fadeIn: 5000,
+    fadeOut: 5000,
+  },
+  {
+    id: DEFAULT_PINK_NOISE.id,
+    filePath: DEFAULT_PINK_NOISE.filePath,
+    type: "world",
+    volume: 0.5,
+    loop: true,
+    stopPrevious: false,
+    distanceAttenuation: true,
     detune: { enabled: false, minSemitones: 0, maxSemitones: 0 },
     fadeIn: 5000,
     fadeOut: 5000,
@@ -78,6 +91,13 @@ export const WORLD_SOUNDS = [
     filePath: DEFAULT_WORLD_MUSIC.filePath,
     icon: "🎵",
     showInShop: true,
+  },
+  {
+    id: DEFAULT_PINK_NOISE.id,
+    name: "Pink Noise",
+    filePath: DEFAULT_PINK_NOISE.filePath,
+    icon: "💗",
+    showInShop: false,
   },
   {
     id: "world_rain",

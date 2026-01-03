@@ -68,7 +68,7 @@ export const ROUTE_CONFIG = {
     id: ROUTE_IDS.CREATIVE,
     name: "Kreatives",
     description: "Meine kreative Seite",
-    cost: 500,
+    cost: 25,
     icon: "🎨",
     isLocked: false,
   },

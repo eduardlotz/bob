@@ -27,6 +27,7 @@ export function BottomNavigation() {
   useKeyPress("Escape", () => {
     resetToDefaultView();
     playUISound("ui-tap-close");
+    console.info("resetToDefaultView(); in BOTTOMNAVIGATION.tsx");
   });
 
   const isHomeRoute = currentRoute === ROUTE_PATHS.HOME;

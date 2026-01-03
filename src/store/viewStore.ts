@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import type { CameraControls } from "@react-three/drei";
+import CameraControlsImpl from "camera-controls";
 import {
   CAMERA_Y_POSITION,
   CAMERA_HEIGHT,
@@ -59,8 +60,8 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   navigation: {
     id: "navigation",
     name: "Navigation/Menu View",
-    position: [0, CAMERA_HEIGHT, VISIBLE_OPTIONS_CAMERA_ZOOM],
-    target: [0, CAMERA_Y_POSITION, 0],
+    position: [0, CAMERA_HEIGHT - 1.5, VISIBLE_OPTIONS_CAMERA_ZOOM * 2],
+    target: [0, CAMERA_Y_POSITION - 1.5, 0],
     transition: {
       duration: 1000,
       easing: "easeInOutCubic",
@@ -147,6 +148,7 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
       duration: 1200,
       easing: "easeInOutCubic",
     },
+    defaultViewMode: "object",
   },
   cardbox: {
     id: "cardbox",
@@ -173,6 +175,8 @@ interface ViewStore {
   isTransitioning: boolean;
 
   cameraControlsRef: React.RefObject<CameraControls> | null;
+
+  applyViewModeToControls: (mode: ViewMode) => void;
 
   setCurrentView: (viewId: CameraViewId) => void;
   setViewMode: (mode: ViewMode) => void;
@@ -211,6 +215,23 @@ export const useViewStore = create<ViewStore>()(
       isTransitioning: false,
       cameraControlsRef: null,
 
+      applyViewModeToControls: (mode: ViewMode) => {
+        const controls = get().cameraControlsRef?.current;
+        if (!controls) return;
+
+        if (mode === "object") {
+          const target = new Vector3();
+          controls.getTarget(target); // receive current orbit center
+          controls.setTarget(target.x, target.y, target.z, true); // freeze the look-at point
+          if (get().focusedImageTitle)
+            controls.mouseButtons.left = CameraControlsImpl.ACTION.TRUCK;
+          else controls.mouseButtons.left = CameraControlsImpl.ACTION.ROTATE;
+        } else {
+          controls.saveState(); // optionally store current state
+          controls.reset(); // restore default position/target
+        }
+      },
+
       setDefaultViewMode: (mode: ViewMode) =>
         set({ defaultViewMode: mode, viewMode: mode, previousViewMode: mode }),
 
@@ -219,7 +240,13 @@ export const useViewStore = create<ViewStore>()(
       setCameraControlsRef: (ref) => set({ cameraControlsRef: ref }),
 
       transitionToView: async (nextView: CameraViewId) => {
-        const { previousView, cameraControlsRef, isTransitioning } = get();
+        const {
+          previousView,
+          cameraControlsRef,
+          isTransitioning,
+          viewMode,
+          defaultViewMode,
+        } = get();
         if (
           ["phone:options", "phone:shop"].includes(previousView) &&
           previousView !== nextView
@@ -244,10 +271,14 @@ export const useViewStore = create<ViewStore>()(
           currentView: nextView,
           previousViewMode: state.viewMode,
           viewMode: viewConfig.defaultViewMode ?? state.viewMode,
-          defaultViewMode: viewConfig.defaultViewMode ?? state.viewMode,
+          // defaultViewMode: viewConfig.defaultViewMode ?? state.defaultViewMode,
           isImageFocused: false,
           focusedImageTitle: null,
         }));
+
+        get().applyViewModeToControls(
+          viewConfig.defaultViewMode ?? get().viewMode
+        );
 
         try {
           const controls = cameraControlsRef.current;
@@ -286,16 +317,35 @@ export const useViewStore = create<ViewStore>()(
           return;
         }
 
+        const targetView: CameraViewId =
+          currentView === "creative" || previousView === "creative"
+            ? "creative"
+            : "default";
+
+        const viewConfig = CAMERA_VIEWS[targetView];
+
         set({
-          currentView:
-            previousView === "creative" || currentView === "creative"
-              ? "creative"
-              : "default",
-          viewMode: defaultViewMode,
+          currentView: targetView,
+          viewMode: viewConfig.defaultViewMode ?? "fixed",
           isImageFocused: false,
           focusedImageTitle: null,
           isTransitioning: true,
         });
+
+        get().applyViewModeToControls(
+          viewConfig.defaultViewMode ?? get().viewMode
+        );
+
+        // set({
+        //   currentView:
+        //     previousView === "creative" || currentView === "creative"
+        //       ? "creative"
+        //       : "default",
+        //   viewMode: defaultViewMode,
+        //   isImageFocused: false,
+        //   focusedImageTitle: null,
+        //   isTransitioning: true,
+        // });
 
         try {
           const controls = cameraControlsRef.current;
@@ -338,6 +388,8 @@ export const useViewStore = create<ViewStore>()(
           viewMode: previousViewMode,
           isTransitioning: false,
         });
+
+        get().applyViewModeToControls(previousViewMode);
       },
 
       getCurrentViewConfig: () => {
@@ -374,6 +426,8 @@ export const useViewStore = create<ViewStore>()(
 
         set({ isTransitioning: true, viewMode: "object" });
 
+        get().applyViewModeToControls("object");
+
         try {
           const controls = cameraControlsRef.current;
 
@@ -389,6 +443,7 @@ export const useViewStore = create<ViewStore>()(
             position.z,
             true
           );
+          controls.mouseButtons.left = CameraControlsImpl.ACTION.TRUCK;
         } finally {
           set({ isTransitioning: false });
         }
@@ -402,11 +457,18 @@ export const useViewStore = create<ViewStore>()(
           focusedImageTitle: title,
         }),
 
-      clearImageFocus: () =>
+      clearImageFocus: () => {
+        const { cameraControlsRef } = get();
+        const controls = cameraControlsRef?.current;
+
         set({
           isImageFocused: false,
           focusedImageTitle: null,
-        }),
+        });
+
+        if (controls)
+          controls.mouseButtons.left = CameraControlsImpl.ACTION.ROTATE;
+      },
     }),
     {
       name: "view-store",

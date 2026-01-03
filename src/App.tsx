@@ -21,6 +21,7 @@ import { FloatingBarProvider, FloatingBarUI } from "./layout/FloatingBar";
 import { useSoundSystem } from "./hooks/useSoundSystem";
 import { useCursorStore } from "./store/cursorStore";
 import Creative from "./routes/Creative";
+import { stopAllWorldSounds } from "./utils/soundSystem";
 
 export default function App() {
   const location = useLocation();
@@ -107,9 +108,11 @@ export default function App() {
   }, []);
 
   // sync router with store
+  // stop all previous world sounds onRouteChange
   useEffect(() => {
     if (currentRoute !== location.pathname) {
       setCurrentRoute(location.pathname);
+      stopAllWorldSounds();
 
       if (mounted) {
         const route = getRouteLabelByPath(location.pathname);
