@@ -29,6 +29,7 @@ export interface Quest {
 }
 
 export interface QuestStore {
+  version: number;
   quests: Quest[];
   activeQuests: string[];
   addQuest: (quest: Quest) => void;
@@ -39,6 +40,34 @@ export interface QuestStore {
   clearActiveQuests: () => void;
   resetQuests: () => void;
   resetAllQuests: () => void;
+}
+
+export enum QUESTS_STORE_VERSION {
+  V0 = 0,
+  V1 = 1000000, // version 1.00.00
+  LATEST = V1,
+}
+
+function migrateStore(oldState: any, fromVersion: number): any {
+  console.log(
+    `Quests Migration triggered: oldversion=${fromVersion}, migration version=${QUESTS_STORE_VERSION.LATEST}`
+  );
+
+  let migratedState = { ...oldState };
+
+  // initial migration: reset all defaults
+  if (fromVersion < QUESTS_STORE_VERSION.V0) {
+    migratedState = initialQuests;
+  }
+
+  // new quests added: /creative
+  // if (fromVersion < QUESTS_STORE_VERSION.V1) {
+  //   const newQuests = initialQuests
+  //   migratedState.push(newQuests)
+  // }
+
+  migratedState.version = QUESTS_STORE_VERSION.LATEST;
+  return migratedState;
 }
 
 const initialQuests: Quest[] = [
@@ -123,6 +152,7 @@ const initialQuests: Quest[] = [
 export const useQuestStore = create<QuestStore>()(
   persist(
     (set, get) => ({
+      version: QUESTS_STORE_VERSION.LATEST,
       quests: initialQuests,
       activeQuests: [],
 
@@ -188,19 +218,18 @@ export const useQuestStore = create<QuestStore>()(
     }),
     {
       name: "quest-store",
-      version: 1,
+      version: QUESTS_STORE_VERSION.LATEST,
       storage: createIndexedDBStorage<QuestStore>(),
       partialize: (state) =>
         ({
           quests: state.quests,
           activeQuests: state.activeQuests,
         } as QuestStore),
-      // onRehydrateStorage: (state) => {
-      //   console.log("rehydrating quest store:", state);
-      //   import("./migration")
-      //     .then((m) => m.queueStorageMigration())
-      //     .catch((e) => console.error("Failed to queue storage migration", e));
-      // },
+      migrate: (persisted: any, fromVersion: number) => {
+        if (!persisted) return initialQuests;
+
+        return migrateStore(persisted, fromVersion || 0);
+      },
     }
   )
 );

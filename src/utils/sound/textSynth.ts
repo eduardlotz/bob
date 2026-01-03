@@ -75,7 +75,7 @@ class TextSynth {
     try {
       // Fade in/out quickly
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.15 * gainScale + 1, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(gainScale, now + 0.01);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
 
       // Base freq randomized slightly

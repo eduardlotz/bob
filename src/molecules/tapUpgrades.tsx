@@ -125,7 +125,7 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
                         }}
                       >
                         {upgrade.level > 0 && (
-                          <LevelContainer>Level {upgrade.level}</LevelContainer>
+                          <LevelContainer>Lvl {upgrade.level}</LevelContainer>
                         )}
                         {!isMaxLevel && (
                           <TapCosts>
@@ -211,6 +211,7 @@ const TapCosts = styled.div`
 
   font-weight: 900;
   font-size: 0.75rem;
+  word-break: none;
 `;
 
 const TriggerContainer = styled(motion.button)`

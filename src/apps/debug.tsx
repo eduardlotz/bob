@@ -4,11 +4,13 @@ import { ArrowLeftIcon, ArrowRightIcon } from "@/icons/arrow";
 import { FillRow, HugColumn, ListItemContainer } from "@/layout";
 import { Divider, DividerWithLabel } from "@/layout/atoms";
 import { MOTION_VARIANTS } from "@/molecules/HeadNavigation";
+import { formatNumber } from "@/molecules/TapCounter";
 import {
   CameraViewId,
   getShopItemType,
   ShopItem,
   useGameStore,
+  useQuestStore,
   useViewStore,
 } from "@/store";
 import { useMessageStore } from "@/store/messageStore";
@@ -122,7 +124,18 @@ export const DebugApp = () => {
     addTaps,
     buyAllUpgrades,
     version,
+    themes,
+    currentTheme,
+    manualTaps,
+    taps,
   } = useGameStore();
+
+  const {
+    quests,
+    activeQuests,
+    resetAllQuests,
+    version: questsVersion,
+  } = useQuestStore();
 
   const resetEverything = () => {
     // reset shop, upgrades, options, routes, debug, sound
@@ -153,7 +166,7 @@ export const DebugApp = () => {
     >
       <SettingsWrapper>
         <HugColumn>
-          <h5>Store</h5>
+          <h5>Game Data</h5>
           <Divider />
 
           <ListItemContainer
@@ -162,15 +175,83 @@ export const DebugApp = () => {
             $justify="space-between"
             $gap={"1rem"}
           >
-            Store Version: {version}
+            <p>Version:</p> <p>{version}</p>
           </ListItemContainer>
+
+          <ListItemContainer
+            $gridTemplateColumns="0.5fr 1fr"
+            $align="flex-start"
+            $justify="space-between"
+            $gap={"1rem"}
+          >
+            <p>Farben:</p>{" "}
+            <p
+              style={{
+                wordBreak: "break-all",
+                lineHeight: 1.5,
+              }}
+            >
+              {JSON.stringify(currentTheme?.colors)}
+            </p>
+          </ListItemContainer>
+
           <ListItemContainer
             $gridTemplateColumns="0.5fr 1fr"
             $align="center"
             $justify="space-between"
             $gap={"1rem"}
           >
-            Store Version: {version}
+            <p>Theme:</p> <p>{currentTheme?.name}</p>
+            <p>Verfügbar:</p> <p>{themes.map((t) => t.name).join(" | ")}</p>
+          </ListItemContainer>
+
+          <Divider />
+
+          <ListItemContainer
+            $gridTemplateColumns="0.5fr 1fr"
+            $align="flex-start"
+            $justify="space-between"
+            $gap={"1rem"}
+          >
+            <p>Taps</p> <p></p>
+            <p>Ingesamt:</p> <p>{formatNumber(taps)}</p>
+            <p>Manuell:</p> <p>{formatNumber(manualTaps)}</p>
+            <p>Automatisch:</p> <p>{formatNumber(taps - manualTaps)}</p>
+          </ListItemContainer>
+        </HugColumn>
+      </SettingsWrapper>
+      <SettingsWrapper>
+        <HugColumn>
+          <h5>Quests Data</h5>
+          <Divider />
+
+          <ListItemContainer
+            $gridTemplateColumns="0.5fr 1fr"
+            $align="center"
+            $justify="space-between"
+            $gap={"1rem"}
+          >
+            <p>Version:</p> <p>{questsVersion}</p>
+          </ListItemContainer>
+
+          <ListItemContainer
+            $gridTemplateColumns="0.5fr 1fr"
+            $align="center"
+            $justify="space-between"
+            $gap={"1rem"}
+          >
+            <p>Verfügbar</p>
+            <p>
+              {quests
+                .map((t) => (t.completed !== true ? t.title : ""))
+                .join(" / ")}
+            </p>
+            {/* <p>Abgeschlossen</p>
+            <p>
+              {quests
+                .map((t) => (t.completed === true ? t.title : ""))
+                .join(" / ")}
+            </p> */}
           </ListItemContainer>
         </HugColumn>
       </SettingsWrapper>
@@ -212,12 +293,27 @@ export const DebugApp = () => {
 
       <DividerWithLabel>Gefährlich</DividerWithLabel>
       <SettingsWrapper $variant="destructive">
-        <h5>Alle Daten zurücksetzen</h5>
+        <h5>Quests zurücksetzen</h5>
+        <ActionButton
+          $variant="destructive"
+          onClick={() =>
+            confirm(
+              "Die Quests App wird zurückgesetzt und geupdated.\nBist du sicher?"
+            ) && resetAllQuests()
+          }
+        >
+          Reset
+        </ActionButton>
+      </SettingsWrapper>
+
+      <SettingsWrapper $variant="destructive">
+        <h5>Spiel zurücksetzen</h5>
 
         <ActionButton
           onClick={() =>
-            confirm("This will delete all your progress.\nAre you sure?") &&
-            resetEverything()
+            confirm(
+              "Das gesamte Spiel wird zurückgesetzt und geupdated.\nBist du sicher"
+            ) && resetEverything()
           }
           $variant="destructive"
         >
