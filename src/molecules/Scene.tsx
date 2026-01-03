@@ -50,18 +50,12 @@ const Scene = ({
   }) => void;
 }) => {
   const cameraControlsRef = useRef<CameraControls>(null!);
-  const { setCameraControlsRef, resetToDefaultView, isDefaultView } =
+  const { setCameraControlsRef, isDefaultView, resetToDefaultView } =
     useViewStore();
   const { upgrades, isPaused, statisticsVisible, setGameReady } =
     useGameStore();
 
-  const {
-    currentRoute,
-    showOptions,
-    setShowOptions,
-    setEmotionData,
-    closeOptionsWithAnimation,
-  } = useAppStore();
+  const { currentRoute, showOptions, setShowOptions } = useAppStore();
 
   // const autoTapEnabled = useMemo(() => {
   //   return upgrades.some(
@@ -80,15 +74,15 @@ const Scene = ({
     setCameraControlsRef(cameraControlsRef);
   }, [setCameraControlsRef]);
 
-  // useEffect(() => {
-  //   if (isHome) {
-  //     setTimeout(() => {
-  //       if (!isDefaultView()) {
-  //         resetToDefaultView();
-  //       }
-  //     }, 200);
-  //   }
-  // }, [isHome, resetToDefaultView]);
+  useEffect(() => {
+    if (isHome) {
+      setTimeout(() => {
+        if (!isDefaultView()) {
+          resetToDefaultView();
+        }
+      }, 200);
+    }
+  }, [isHome, resetToDefaultView]);
 
   useEffect(() => {
     if (isPaused) {

@@ -60,8 +60,8 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   navigation: {
     id: "navigation",
     name: "Navigation/Menu View",
-    position: [0, CAMERA_HEIGHT - 1.5, VISIBLE_OPTIONS_CAMERA_ZOOM * 2],
-    target: [0, CAMERA_Y_POSITION - 1.5, 0],
+    position: [0, CAMERA_HEIGHT - 1.5, VISIBLE_OPTIONS_CAMERA_ZOOM],
+    target: [0, CAMERA_Y_POSITION, 0],
     transition: {
       duration: 1000,
       easing: "easeInOutCubic",
@@ -350,6 +350,10 @@ export const useViewStore = create<ViewStore>()(
         try {
           const controls = cameraControlsRef.current;
 
+          // reset controls here because on mobile the reset does not work in the reset function (???)
+          controls.mouseButtons.left = CameraControlsImpl.ACTION.ROTATE;
+          controls.touches.one = CameraControlsImpl.ACTION.TOUCH_ROTATE;
+
           // currently only two different defaults (creative -> "orbit view" & rest -> "fixed view")
           const viewConfig =
             CAMERA_VIEWS[
@@ -443,7 +447,9 @@ export const useViewStore = create<ViewStore>()(
             position.z,
             true
           );
+
           controls.mouseButtons.left = CameraControlsImpl.ACTION.TRUCK;
+          controls.touches.one = CameraControlsImpl.ACTION.TOUCH_TRUCK;
         } finally {
           set({ isTransitioning: false });
         }
@@ -458,7 +464,9 @@ export const useViewStore = create<ViewStore>()(
         }),
 
       clearImageFocus: () => {
-        const { cameraControlsRef } = get();
+        const { isTransitioning, cameraControlsRef } = get();
+        if (isTransitioning || !cameraControlsRef?.current) return;
+
         const controls = cameraControlsRef?.current;
 
         set({
@@ -466,8 +474,8 @@ export const useViewStore = create<ViewStore>()(
           focusedImageTitle: null,
         });
 
-        if (controls)
-          controls.mouseButtons.left = CameraControlsImpl.ACTION.ROTATE;
+        controls.mouseButtons.left = CameraControlsImpl.ACTION.ROTATE;
+        controls.touches.one = CameraControlsImpl.ACTION.TOUCH_ROTATE;
       },
     }),
     {
