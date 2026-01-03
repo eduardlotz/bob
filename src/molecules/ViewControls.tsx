@@ -72,6 +72,7 @@ export function ViewControls() {
             }}
             exit={{ y: -120, filter: "blur(6px)" }}
             transition={{ duration: 0.5, ease: "circInOut" }}
+            data-ui-sound-id="ui-tap-close"
           >
             <ArrowLeftIcon />
           </BackButton>

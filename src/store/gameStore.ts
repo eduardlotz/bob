@@ -34,6 +34,7 @@ import {
   DEFAULT_UI_VOLUME,
   DEFAULT_WORLD_VOLUME,
 } from "@/utils/sound/defaults";
+import { initialDecorations } from "@/shop-items/decorations";
 
 const ONE_SECOND_MS = 1000;
 const AUTO_TAP_INTERVAL_MS = 1000;
@@ -41,7 +42,8 @@ const AUTO_TAP_INTERVAL_MS = 1000;
 export enum GAME_STORE_VERSION {
   V0 = 0,
   V1 = 1000000, // version 1.00.00
-  LATEST = V1,
+  V2 = 1000001, // version 1.00.01
+  LATEST = V2,
 }
 
 // main migration function
@@ -65,6 +67,17 @@ function migrateStore(oldState: any, fromVersion: number): any {
       routes: initialRoutes,
       themes: initialThemes,
       currenTheme: initialThemes.find(currentTheme),
+    };
+  }
+
+  // graphic preferences added
+  if (fromVersion < GAME_STORE_VERSION.V2) {
+    migratedState = {
+      ...migratedState,
+      graphicPreferences: {
+        qualityMode: "auto",
+        effectsEnabled: true,
+      },
     };
   }
 
@@ -114,9 +127,9 @@ export interface DecorationItem extends BaseItem {
   type: "2d" | "3d";
   position: [number, number, number];
   scale: number;
-  rotation: number;
-  color: string;
-  icon: string;
+  rotation?: number;
+  color?: string;
+  icon?: string;
 }
 
 // Bob item types (for wearable items like hats)
@@ -130,7 +143,7 @@ export interface BobItem extends BaseItem {
 const ITEM_NAME_MAP = {
   hat: "Kopf",
   accessory: "Gesicht",
-  "3d": "Objekt",
+  "3d": "Umgebung",
   tapEffects: "Tap Effekt",
   decoration: "Extra",
 };
@@ -194,6 +207,8 @@ type PreviewMode =
   | "tapEffect"
   | DecorationItem["type"];
 
+type QualityMode = "auto" | "low" | "high";
+
 interface GameState {
   version: number;
 
@@ -219,6 +234,12 @@ interface GameState {
     enabled: boolean;
     muted: boolean;
   };
+
+  graphicPreferences: {
+    qualityMode: QualityMode; // TODO: seperate selected, suggested
+    effectsEnabled: boolean;
+  };
+
   audioSelections: {
     worldMusicId: string;
     tapEffectId: string;
@@ -286,6 +307,9 @@ interface GameStateActions {
   setUIVolume: (volume: number) => void;
   setTextVolume: (volume: number) => void;
 
+  setGraphicsMode: (mode: QualityMode) => void;
+  toggleParticleEffects: () => void;
+
   setWorldMusicId: (id: string) => void;
   setTapEffectId: (id: string) => void;
   setTapEnabled: (enabled: boolean) => void;
@@ -341,23 +365,6 @@ export type GameStore = PersistedGameStore &
   PersistedGameStoreActions &
   RuntimeGameStore &
   RuntimeGameStoreActions;
-
-export const initialDecorations: DecorationItem[] = [
-  {
-    id: "tree_3d",
-    name: "Baum",
-    description: "Ein Baum",
-    cost: 1000,
-    purchased: false,
-    enabled: false,
-    type: "3d",
-    position: [0, -2, -7],
-    scale: 0.7,
-    rotation: 0,
-    color: "#FFD700",
-    icon: "🌳",
-  },
-];
 
 export const initialThemes: Theme[] = Object.values(THEME_CONFIG).map(
   (themeConfig) => ({
@@ -496,7 +503,10 @@ export const initialGameState: GameState = {
     worldEnabled: true,
   },
   soundPreferences: { enabled: true, muted: false },
-
+  graphicPreferences: {
+    qualityMode: "auto",
+    effectsEnabled: true,
+  },
   audioSelections: {
     worldMusicId: "world-lofi",
     tapEffectId: "tap_effect_default",
@@ -540,6 +550,7 @@ const partializePersisted = (state: GameStore): PersistedGameStore => ({
   animationsEnabled: state.animationsEnabled,
   statisticsVisible: state.statisticsVisible,
   previewMode: state.previewMode,
+  graphicPreferences: state.graphicPreferences,
 });
 
 export const useGameStore = create<GameStore>()(
@@ -1181,6 +1192,25 @@ export const useGameStore = create<GameStore>()(
           set((state) => ({
             ...state,
             isPaused: false,
+          }));
+        },
+
+        toggleParticleEffects: () => {
+          set((state) => ({
+            ...state,
+            graphicPreferences: {
+              ...state.graphicPreferences,
+              effectsEnabled: !state.graphicPreferences.effectsEnabled,
+            },
+          }));
+        },
+        setGraphicsMode: (mode) => {
+          set((state) => ({
+            ...state,
+            graphicPreferences: {
+              ...state.graphicPreferences,
+              qualityMode: mode,
+            },
           }));
         },
 

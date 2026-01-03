@@ -5,10 +5,10 @@ export const initialTapEffects: TapEffect[] = [
     id: "tap_effect_default",
     name: "Standard",
     description: "Weiße, graue und schwarze Punkte",
-    cost: 25,
-    purchased: false,
+    cost: 0,
+    purchased: true,
     type: "tapEffect",
-    enabled: false,
+    enabled: true,
     effectId: 0,
   },
   {

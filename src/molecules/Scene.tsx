@@ -1,4 +1,4 @@
-import { Canvas, Dpr, useThree } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
 import {
   CameraControls,
   Fisheye,
@@ -7,28 +7,28 @@ import {
   Grid,
   PerformanceMonitor,
 } from "@react-three/drei";
+import { match } from "ts-pattern";
+import { a, useSpring } from "@react-spring/three";
+import { Physics } from "@react-three/rapier";
+import { Perf } from "r3f-perf";
+import { Suspense, useRef, useState, useEffect } from "react";
 
-import { Suspense, useRef, useState, useEffect, useMemo } from "react";
 import { useAppStore, useGameStore } from "../store";
 import { useViewStore } from "../store/viewStore";
 import { ROUTE_PATHS } from "../store/routeConfig";
+import { FISHEYE_CONFIG } from "../store/themeConfig";
+import { startAutoTap, stopAutoTap } from "../store/gameStore";
+import { attachListenerToCamera, playUISound } from "@/utils/soundSystem";
+import { CreativeScene } from "@/routes/CreativeScene";
+import { AboutScene } from "../routes/AboutScene";
+
 import { HeadNavigation } from "./HeadNavigation";
 import { TapCounter } from "./TapCounter";
-import { AboutScene } from "../routes/AboutScene";
+import { MessageBubble } from "@/molecules/MessageBubble";
+
 import { BackgroundPlanet } from "../3d-objects/BackgroundPlanet";
 import { ParticleEffects } from "../3d-objects/ParticleEffects";
-import { match } from "ts-pattern";
-import { startAutoTap, stopAutoTap } from "../store/gameStore";
-import { useKeyPress } from "../hooks/useKeyPress";
-import { FISHEYE_CONFIG } from "../store/themeConfig";
-import { a, useSpring } from "@react-spring/three";
-import { attachListenerToCamera, playUISound } from "@/utils/soundSystem";
-import { MessageBubble } from "@/molecules/MessageBubble";
 import { SceneDecorations } from "@/3d-objects/Decorations";
-import { Physics } from "@react-three/rapier";
-
-import { Perf } from "r3f-perf";
-import { CreativeScene } from "@/routes/CreativeScene";
 
 const Debug = () => {
   const { width } = useThree((s) => s.size);
@@ -50,8 +50,13 @@ const Scene = ({
   }) => void;
 }) => {
   const cameraControlsRef = useRef<CameraControls>(null!);
-  const { setCameraControlsRef, isDefaultView, resetToDefaultView } =
-    useViewStore();
+  const {
+    setCameraControlsRef,
+    isDefaultView,
+    resetToDefaultView,
+    transitionToView,
+    setDefaultViewMode,
+  } = useViewStore();
   const { upgrades, isPaused, statisticsVisible, setGameReady } =
     useGameStore();
 
@@ -113,14 +118,6 @@ const Scene = ({
     }
   }, [isHome]);
 
-  // useKeyPress("Escape", () => {
-  //   if (showOptions) {
-  //     resetToDefaultView();
-  //     playUISound("ui-tap-close");
-
-  //   }
-  // });
-
   return (
     <>
       <FullScreenCanvas>
@@ -132,6 +129,7 @@ const Scene = ({
                 args={[8, 8]}
                 sectionThickness={2}
                 sectionColor="#E0DEE6"
+                // sectionColor="#959399"
                 sectionSize={1}
                 cellThickness={0}
                 fadeDistance={4}
@@ -194,6 +192,17 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
   const canvasRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
   const [dpr, setDpr] = useState(2);
+  const { graphicPreferences } = useGameStore();
+
+  useEffect(() => {
+    if (graphicPreferences.qualityMode === "high") setDpr(2);
+    else if (graphicPreferences.qualityMode === "low") setDpr(1);
+  }, [graphicPreferences.qualityMode]);
+
+  const handlePerformanceChange = ({ factor }: { factor: number }) => {
+    if (graphicPreferences.qualityMode == "auto")
+      setDpr(Math.max(Math.floor(0.5 + 1.5 * factor), 1));
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -232,12 +241,7 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
       }}
       {...props}
     >
-      <PerformanceMonitor
-        factor={1}
-        onChange={({ factor }) =>
-          setDpr(Math.max(Math.floor(0.5 + 1.5 * factor), 1))
-        }
-      >
+      <PerformanceMonitor factor={1} onChange={handlePerformanceChange}>
         {children}
       </PerformanceMonitor>
     </Canvas>

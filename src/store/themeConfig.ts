@@ -29,6 +29,7 @@ export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
       background: "#212121",
       text: "#ffffff",
     },
+    // planetColors: ["#bdbfd8", "#c3c3ce", "#efeef5"],
     planetColors: ["#ffffff", "#C5BDD5", "#85799F"],
     counterColor: "#ffffff",
     blobColor: "#ffffff",

@@ -324,7 +324,7 @@ export const DebugApp = () => {
   );
 };
 
-const SettingsWrapper = styled(FillRow)<{
+export const SettingsWrapper = styled(FillRow)<{
   $variant?: "destructive" | "default";
 }>`
   display: flex;
@@ -357,7 +357,7 @@ const SettingsWrapper = styled(FillRow)<{
   }
 `;
 
-const ToggleButton = styled.button<{ $active: boolean }>`
+export const ToggleButton = styled.button<{ $active: boolean }>`
   display: flex;
   align-items: center;
   justify-content: center;
@@ -375,7 +375,9 @@ const ToggleButton = styled.button<{ $active: boolean }>`
   }
 `;
 
-const ActionButton = styled.button<{ $variant?: "destructive" | "default" }>`
+export const ActionButton = styled.button<{
+  $variant?: "destructive" | "default";
+}>`
   display: flex;
   width: fit-content;
   white-space: nowrap;

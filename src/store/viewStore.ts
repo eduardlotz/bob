@@ -247,12 +247,6 @@ export const useViewStore = create<ViewStore>()(
           viewMode,
           defaultViewMode,
         } = get();
-        if (
-          ["phone:options", "phone:shop"].includes(previousView) &&
-          previousView !== nextView
-        ) {
-          useGameStore.getState().resetPreview();
-        }
 
         // prevent multiple transitions
         if (isTransitioning || !cameraControlsRef?.current) {
@@ -323,6 +317,8 @@ export const useViewStore = create<ViewStore>()(
             : "default";
 
         const viewConfig = CAMERA_VIEWS[targetView];
+
+        useGameStore.getState().resetPreview();
 
         set({
           currentView: targetView,

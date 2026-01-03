@@ -306,15 +306,15 @@ type CloudData = {
   bubbles: CloudBubble[];
 };
 
-export const CloudEffect = () => {
-  const { weatherEffects } = useGameStore();
-  const cloudUpgrade = weatherEffects.find(
-    (u) => u.id === "environment_clouds"
-  );
-  const cloudEnabled = cloudUpgrade?.purchased && cloudUpgrade?.enabled;
+export const CloudEffect = ({ preview }: { preview: boolean }) => {
+  // const { weatherEffects } = useGameStore();
+  // const cloudUpgrade = weatherEffects.find(
+  //   (u) => u.id === "environment_clouds"
+  // );
+  // const cloudEnabled = cloudUpgrade?.purchased && cloudUpgrade?.enabled;
 
   const clouds = useMemo(() => {
-    if (!cloudEnabled) return [];
+    // if (!cloudEnabled) return [];
 
     const count =
       CONFIG.CLOUD_COUNT.MIN +
@@ -323,9 +323,10 @@ export const CloudEffect = () => {
       );
 
     return generateClouds(count);
-  }, [cloudEnabled]);
+  }, []);
 
-  if (!cloudEnabled) return null;
+  // if (!cloudEnabled) return null;
+  // if (preview) return null;
 
   return (
     <group>
@@ -341,7 +342,7 @@ export const CloudEffect = () => {
             >
               <primitive
                 object={SHARED_MATERIALS.cloud}
-                opacity={bubble.opacity}
+                opacity={bubble.opacity * (preview ? 0.5 : 1)}
                 transparent
                 attach="material"
               />

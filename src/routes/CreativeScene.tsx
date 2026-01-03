@@ -33,8 +33,8 @@ export function CreativeScene() {
   return (
     <>
       <Stars
-        radius={50}
-        depth={50}
+        radius={100}
+        depth={100}
         count={1000}
         factor={2}
         speed={0.5}
