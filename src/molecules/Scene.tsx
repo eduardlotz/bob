@@ -176,10 +176,12 @@ const Scene = ({
                 <SceneDecorations />
               </a.group>
 
-              {match(currentRoute)
-                .with(ROUTE_PATHS.ABOUT, () => <AboutScene />)
-                .with(ROUTE_PATHS.CREATIVE, () => <CreativeScene />)
-                .otherwise(() => null)}
+              <Suspense fallback={null}>
+                {match(currentRoute)
+                  .with(ROUTE_PATHS.ABOUT, () => <AboutScene />)
+                  .with(ROUTE_PATHS.CREATIVE, () => <CreativeScene />)
+                  .otherwise(() => null)}
+              </Suspense>
             </Physics>
           </Fisheye>
         </Suspense>

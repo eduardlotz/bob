@@ -99,12 +99,12 @@ export const WORLD_SOUNDS = [
     icon: "💗",
     showInShop: false,
   },
-  {
-    id: "world_rain",
-    name: "Rain",
-    filePath: "/audio/rain.wav",
-    icon: "🌧️",
-  },
+  // {
+  //   id: "world_rain",
+  //   name: "Rain",
+  //   filePath: "/audio/rain.wav",
+  //   icon: "🌧️",
+  // },
 ];
 
 const EFFECT_SOUNDS = {
