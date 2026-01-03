@@ -18,6 +18,8 @@ import { Magnetic } from "@/layout/Magnetic";
 import { useMessageStore } from "@/store/messageStore";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { useCursor } from "@/hooks/useCursor";
+import { useKeyPress } from "@/hooks/useKeyPress";
+import { playUISound } from "@/utils/soundSystem";
 
 //#region constants
 export const CAMERA_Y_POSITION = 1;
@@ -144,30 +146,47 @@ export function HeadNavigation({
     getEmotionIcon: any;
   }) => void;
 }) {
-  const { currentView, isDefaultView, isTransitioning, resetToDefaultView } =
-    useViewStore();
+  const {
+    isTransitioning,
+    isDefaultView,
+    isNavigationView,
+    resetToDefaultView,
+    isObjectView,
+  } = useViewStore();
 
-  const { isMobile } = useAppStore();
+  const { isMobile, toggleOptions } = useAppStore();
 
   // close options menu when entering a custom view
-  useEffect(() => {
-    if (!isDefaultView() && showOptions) {
-      setShowOptions(false);
-    }
-  }, [currentView, isDefaultView, showOptions, setShowOptions]);
+  // useEffect(() => {
+  //   if (!isDefaultView() && showOptions) {
+  //     setShowOptions(false);
+  //   }
+  // }, [currentView, isDefaultView, showOptions, setShowOptions]);
 
   // return to default view when options menu is opened (if not already in default view)
-  useEffect(() => {
-    if (showOptions && !isDefaultView()) {
-      // small delay to ensure smooth transition
-      setTimeout(() => {
-        resetToDefaultView();
-      }, 100);
+  // useEffect(() => {
+  //   if (showOptions && !isDefaultView() && !isNavigationView()) {
+  //     // small delay to ensure smooth transition
+  //     setTimeout(() => {
+  //       resetToDefaultView();
+  //     }, 100);
+  //   }
+  // }, [showOptions, isDefaultView, resetToDefaultView, isNavigationView]);
+
+  useKeyPress("Escape", () => {
+    if (showOptions) {
+      toggleOptions();
+      resetToDefaultView();
+      playUISound("ui-tap-close");
     }
-  }, [showOptions, isDefaultView, resetToDefaultView]);
+  });
+
+  const shouldFollowCursor =
+    isMobile && (isDefaultView() || isNavigationView());
+
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
   const mousePosition = useCursor({
-    condition: isDefaultView,
+    condition: () => shouldFollowCursor,
     positionFactor: 0.2,
   });
 
@@ -218,46 +237,44 @@ export function HeadNavigation({
 
   useFrame(() => {
     // if we're in object view mode, let the view store handle the camera
-    if (!isDefaultView()) {
+    if (isObjectView() || isTransitioning) {
       return;
     }
-
     // default view behavior (home/menu)
-    const baseZoom =
-      showOptions && !isOptionsClosing
-        ? VISIBLE_OPTIONS_CAMERA_ZOOM
-        : HIDDEN_OPTIONS_CAMERA_ZOOM;
-    const zoomOffset = cameraZoomAnimation ? 1 : 0;
-
-    const finalZoom = baseZoom + zoomOffset;
-
+    // const baseZoom =
+    //   showOptions && !isOptionsClosing
+    //     ? VISIBLE_OPTIONS_CAMERA_ZOOM
+    //     : HIDDEN_OPTIONS_CAMERA_ZOOM;
+    // const zoomOffset = cameraZoomAnimation ? 1 : 0;
+    // const finalZoom = baseZoom + zoomOffset;
     // only follow cursor on desktop
-    if (isMobile) {
-      cameraControlsRef.current?.setLookAt(
-        0,
-        CAMERA_HEIGHT,
-        finalZoom,
-        0,
-        CAMERA_Y_POSITION,
-        0,
-        true
-      );
-    } else {
-      const cursorPos = new THREE.Vector3(
-        mousePosition.x * CAMERA_FOLLOW_OFFSET,
-        mousePosition.y * CAMERA_FOLLOW_OFFSET,
-        0
-      );
-      cameraControlsRef.current?.setLookAt(
-        0,
-        CAMERA_HEIGHT,
-        finalZoom,
-        cursorPos.x,
-        cursorPos.y + CAMERA_Y_POSITION,
-        cursorPos.z,
-        true
-      );
-    }
+    // if (isMobile) {
+    //   cameraControlsRef.current?.setLookAt(
+    //     0,
+    //     CAMERA_HEIGHT,
+    //     finalZoom,
+    //     0,
+    //     CAMERA_Y_POSITION,
+    //     0,
+    //     true
+    //   );
+    // } else {
+    //   const cursorPos = new THREE.Vector3(
+    //     mousePosition.x * CAMERA_FOLLOW_OFFSET,
+    //     mousePosition.y * CAMERA_FOLLOW_OFFSET,
+    //     0
+    //   );
+    //   cameraControlsRef.current?.setLookAt(
+    //     0,
+    //     CAMERA_HEIGHT,
+    //     finalZoom,
+    //     cursorPos.x,
+    //     cursorPos.y + CAMERA_Y_POSITION,
+    //     // cursorPos.y + 2,
+    //     cursorPos.z,
+    //     true
+    //   );
+    // }
   });
 
   return (
@@ -407,7 +424,7 @@ function Option({
   const optionRef = useRef<THREE.Group>(null!);
   const navigate = useNavigate();
   const { currentRoute } = useAppStore();
-  const { setViewMode } = useViewStore();
+  const { resetToDefaultView, transitionToView } = useViewStore();
   const { triggerQuest } = useQuestSystem();
   const { canAfford, purchaseRoute } = useGameStore();
   const { showMessage } = useMessageStore();
@@ -417,20 +434,22 @@ function Option({
   const position = initialPosition;
 
   const resetCamAndNavigate = useCallback(() => {
-    cameraControlsRef.current?.setLookAt(
-      0,
-      CAMERA_Y_POSITION,
-      VISIBLE_OPTIONS_CAMERA_ZOOM,
-      position.x,
-      position.y + 2,
-      position.z,
-      true
-    );
+    // cameraControlsRef.current?.setLookAt(
+    //   0,
+    //   CAMERA_Y_POSITION,
+    //   VISIBLE_OPTIONS_CAMERA_ZOOM,
+    //   position.x,
+    //   position.y + CAMERA_HEIGHT,
+    //   position.z,
+    //   true
+    // );
 
+    resetToDefaultView();
+    // if (route.name === "creative") transitionToView("creative");
+    // else transitionToView("default");
     navigate(route.path);
     hideOptions();
-    setViewMode("fixed");
-  }, [route.path]);
+  }, []);
 
   const handleOptionClick = () => {
     match({ ...route, canPurchase: canAfford(route.cost) })

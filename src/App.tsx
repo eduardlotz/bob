@@ -5,7 +5,12 @@ import MainLayout from "@/layout/MainLayout";
 import { GlobalStyle } from "@/styles/global";
 import { Toaster } from "sonner";
 import styled from "styled-components";
-import { getRouteLabelByPath, ROUTE_PATHS, useAppStore } from "@/store";
+import {
+  getRouteLabelByPath,
+  ROUTE_PATHS,
+  useAppStore,
+  useViewStore,
+} from "@/store";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
 import Home from "./routes/Home";
@@ -15,10 +20,21 @@ import { useMessageSystem } from "@/hooks/useMessageSystem";
 import { FloatingBarProvider, FloatingBarUI } from "./layout/FloatingBar";
 import { useSoundSystem } from "./hooks/useSoundSystem";
 import { useCursorStore } from "./store/cursorStore";
+import Creative from "./routes/Creative";
+import { stopAllWorldSounds } from "./utils/soundSystem";
 
 export default function App() {
   const location = useLocation();
   const { setCurrentRoute, currentRoute } = useAppStore();
+  const {
+    currentView,
+    isImageFocused,
+    isTransitioning,
+    previousView,
+    viewMode,
+    previousViewMode,
+    defaultViewMode,
+  } = useViewStore();
   const [mounted, setMounted] = useState(false);
   const [currentRouteInPretty, setCurrentRouteInPretty] = useState("");
   const [showRouteChip, setShowRouteChip] = useState(false);
@@ -92,9 +108,11 @@ export default function App() {
   }, []);
 
   // sync router with store
+  // stop all previous world sounds onRouteChange
   useEffect(() => {
     if (currentRoute !== location.pathname) {
       setCurrentRoute(location.pathname);
+      stopAllWorldSounds();
 
       if (mounted) {
         const route = getRouteLabelByPath(location.pathname);
@@ -160,12 +178,24 @@ export default function App() {
         </AnimatePresence>
 
         <FullScreen>
+          {/* <ViewDebug>
+            <p>transitioning? {isTransitioning ? "yes" : "no"}</p>
+            <p>Current View: {currentView}</p>
+            <p>Previous View: {previousView}</p>
+            <hr />
+            <p>Image Focused?: {isImageFocused ? "yes " : "no"}</p>
+            <p>Current ViewMode: {viewMode}</p>
+            <p>Default ViewMode: {defaultViewMode}</p>
+            <p>Previous ViewMode: {previousViewMode}</p>
+          </ViewDebug> */}
+
           <MainLayout>
             <ContentWrapper>
               <ContentWidth>
                 <Routes>
                   <Route path={ROUTE_PATHS.HOME} element={<Home />} />
                   <Route path={ROUTE_PATHS.ABOUT} element={<About />} />
+                  <Route path={ROUTE_PATHS.CREATIVE} element={<Creative />} />
                   <Route
                     path="*"
                     element={<Navigate to={ROUTE_PATHS.HOME} replace />}
@@ -175,21 +205,28 @@ export default function App() {
             </ContentWrapper>
           </MainLayout>
 
-          {/* <FloatingBarUI /> */}
+          <FloatingBarUI />
         </FullScreen>
       </FloatingBarProvider>
     </ThemeProvider>
   );
 }
 
-const FixedContainer = styled(motion.div)`
+const ViewDebug = styled(motion.div)`
   position: fixed;
-  top: 0;
+  bottom: 0;
   left: 0;
   right: 0;
-  width: 100vw;
-  height: 100dvh;
+  width: 320px;
+  background: white;
+  color: black;
+  font-size: 12px;
+  font-family: monospace !important;
+  border: 2px solid black;
   pointer-events: none;
+  z-index: 10000;
+  padding: 12px;
+  word-break: break-all;
 `;
 
 const ContentWrapper = styled(FillColumn)`

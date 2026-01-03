@@ -746,9 +746,6 @@ export const mute = (): void => {
     lastNonZeroMasterVolume = state.masterVolume;
   }
   setMasterVolume(0);
-  try {
-    stopAllWorldSounds();
-  } catch {}
 };
 
 export const unmute = (): void => {

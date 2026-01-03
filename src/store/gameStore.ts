@@ -35,37 +35,40 @@ import {
   DEFAULT_WORLD_VOLUME,
 } from "@/utils/sound/defaults";
 
-export enum GAME_STORE_VERSION {
-  V1 = 0,
-  RESET_1 = 10,
-  LATEST = V1,
-}
-
 const ONE_SECOND_MS = 1000;
 const AUTO_TAP_INTERVAL_MS = 1000;
 
+export enum GAME_STORE_VERSION {
+  V0 = 0,
+  V1 = 1000000, // version 1.00.00
+  LATEST = V1,
+}
+
 // main migration function
-function migrateStore(oldState: any, version: GAME_STORE_VERSION): any {
+function migrateStore(oldState: any, fromVersion: number): any {
   console.log(
-    `Migration triggered: oldState version=${oldState.version}, migration version=${version}`
+    `Migration triggered: oldState version=${fromVersion}, migration version=${GAME_STORE_VERSION.LATEST}`
   );
+
   let migratedState = { ...oldState };
 
-  migratedState = {
-    ...migratedState,
-    upgrades: initialTapUpgrades,
-    themes: initialThemes,
-    decorations: initialDecorations,
-    bobItems: initialBobItems,
-    tapEffects: initialTapEffects,
-    weatherEffects: initialWeatherEffects,
-  };
+  // initial migration: reset all defaults
+  if (fromVersion < GAME_STORE_VERSION.V0) {
+    migratedState = initialGameState;
+  }
 
-  let currentVersion = oldState.version || GAME_STORE_VERSION.V1;
+  // new route added: /creative
+  if (fromVersion < GAME_STORE_VERSION.V1) {
+    const currentTheme = migratedState.currentTheme.id ?? THEME_IDS.DEFAULT;
+    migratedState = {
+      ...migratedState,
+      routes: initialRoutes,
+      themes: initialThemes,
+      currenTheme: initialThemes.find(currentTheme),
+    };
+  }
 
-  currentVersion = GAME_STORE_VERSION.LATEST;
   migratedState.version = GAME_STORE_VERSION.LATEST;
-
   return migratedState;
 }
 
@@ -1553,24 +1556,10 @@ export const useGameStore = create<GameStore>()(
         name: "game-store",
         version: GAME_STORE_VERSION.LATEST,
         storage: createIndexedDBStorage<GameStore>(),
-        migrate: (persisted: any, fromVersion) => {
+        migrate: (persisted: any, fromVersion: number) => {
           if (!persisted) return initialGameState;
 
-          // HARD RESET
-          if (fromVersion < GAME_STORE_VERSION.LATEST) {
-            return initialGameState;
-          }
-
-          // SOFT MIGRATIONS
-          if (fromVersion < GAME_STORE_VERSION.LATEST) {
-            persisted = migrateStore(persisted, GAME_STORE_VERSION.LATEST);
-          }
-
-          return {
-            ...initialGameState,
-            ...persisted,
-            version: GAME_STORE_VERSION.LATEST,
-          };
+          return migrateStore(persisted, fromVersion || 0);
         },
         partialize: (state) => partializePersisted(state) as GameStore,
         onRehydrateStorage: () => (state?: GameStore) => {

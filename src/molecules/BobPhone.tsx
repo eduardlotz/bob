@@ -169,7 +169,7 @@ export const BobPhone = () => {
   const containerRef = useRef(null);
   const triggerRef = useRef(null);
   const [isOpen, setIsOpen] = useState(false);
-  const { transitionToView, currentView } = useViewStore();
+  const { transitionToView, currentView, resetToDefaultView } = useViewStore();
   const [activeApp, setActiveApp] = useState<AppId | undefined>();
 
   const openApp = (appName: AppId) => {
@@ -198,10 +198,15 @@ export const BobPhone = () => {
     transitionToView("phone:home");
   };
 
-  const onTriggerClick = useCallback(() => {
-    isOpen ? transitionToView("default") : transitionToView("phone:home");
+  const onTriggerClick = () => {
+    isOpen ? resetToDefaultView() : transitionToView("phone:home");
     setIsOpen((prev) => !prev);
-  }, [currentView]);
+    console.info(
+      isOpen
+        ? "resetToDefaultView(); in BOBPHONE.tsx"
+        : "TRANSITION_TO_VIEW(PHONE_HOME) in BOBPHONE.tsx"
+    );
+  };
 
   const currentHour = format(new Date(), "HH");
   const currentMinutes = format(new Date(), "mm");

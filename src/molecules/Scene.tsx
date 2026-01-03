@@ -28,6 +28,7 @@ import { SceneDecorations } from "@/3d-objects/Decorations";
 import { Physics } from "@react-three/rapier";
 
 import { Perf } from "r3f-perf";
+import { CreativeScene } from "@/routes/CreativeScene";
 
 const Debug = () => {
   const { width } = useThree((s) => s.size);
@@ -62,31 +63,32 @@ const Scene = ({
     closeOptionsWithAnimation,
   } = useAppStore();
 
-  const autoTapEnabled = useMemo(() => {
-    return upgrades.some(
-      (upgrade) => upgrade.id === "auto_tap_1" && upgrade.level > 0
-    );
-  }, [upgrades]);
+  // const autoTapEnabled = useMemo(() => {
+  //   return upgrades.some(
+  //     (upgrade) => upgrade.id === "auto_tap_1" && upgrade.level > 0
+  //   );
+  // }, [upgrades]);
 
   // shop items are only visible on home route
   const isHome = currentRoute === ROUTE_PATHS.HOME;
   const [visible, setVisible] = useState(isHome);
   // TODO: add grid options to UI
   const showGrid = isHome;
+  const showBackground = isHome;
 
   useEffect(() => {
     setCameraControlsRef(cameraControlsRef);
   }, [setCameraControlsRef]);
 
-  useEffect(() => {
-    if (isHome) {
-      setTimeout(() => {
-        if (!isDefaultView()) {
-          resetToDefaultView();
-        }
-      }, 200);
-    }
-  }, [isHome, resetToDefaultView]);
+  // useEffect(() => {
+  //   if (isHome) {
+  //     setTimeout(() => {
+  //       if (!isDefaultView()) {
+  //         resetToDefaultView();
+  //       }
+  //     }, 200);
+  //   }
+  // }, [isHome, resetToDefaultView]);
 
   useEffect(() => {
     if (isPaused) {
@@ -117,12 +119,13 @@ const Scene = ({
     }
   }, [isHome]);
 
-  useKeyPress("Escape", () => {
-    if (showOptions) {
-      closeOptionsWithAnimation();
-      playUISound("ui-tap-close");
-    }
-  });
+  // useKeyPress("Escape", () => {
+  //   if (showOptions) {
+  //     resetToDefaultView();
+  //     playUISound("ui-tap-close");
+
+  //   }
+  // });
 
   return (
     <>
@@ -146,8 +149,11 @@ const Scene = ({
             <PerspectiveCamera makeDefault position={[0, 0, 3]} />
             <directionalLight intensity={1.2} position={[2, 4, 5]} />
             <Environment preset="city" />
-            <BackgroundPlanet />
-
+            {showBackground ? (
+              <BackgroundPlanet />
+            ) : (
+              <color attach="background" args={["#0e0e0e"]} />
+            )}
             {statisticsVisible && <Debug />}
 
             <Physics gravity={[0, -9.81, 0]}>
@@ -170,9 +176,12 @@ const Scene = ({
                 <SceneDecorations />
               </a.group>
 
-              {match(currentRoute)
-                .with(ROUTE_PATHS.ABOUT, () => <AboutScene />)
-                .otherwise(() => null)}
+              <Suspense fallback={null}>
+                {match(currentRoute)
+                  .with(ROUTE_PATHS.ABOUT, () => <AboutScene />)
+                  .with(ROUTE_PATHS.CREATIVE, () => <CreativeScene />)
+                  .otherwise(() => null)}
+              </Suspense>
             </Physics>
           </Fisheye>
         </Suspense>

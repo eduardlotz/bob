@@ -2,12 +2,10 @@ import { CameraViewId, useViewStore, ViewMode } from "@/store/viewStore";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { motion, AnimatePresence } from "motion/react";
 import styled from "styled-components";
-import { useEffect, useMemo, useState } from "react";
 import { ArrowLeftIcon } from "@/icons/arrow";
 import { playUISound } from "@/utils/soundSystem";
 
 const VIEWID_TITLE_MAP = {
-  default: "Über mich",
   desk: "Mein Tisch",
   bookshelf: "Mein Bücherregal",
   computer: "Mein Computer",
@@ -18,63 +16,65 @@ export function ViewControls() {
   const {
     currentView,
     isDefaultView,
+    isCreativeView,
     isPhoneView,
+    isImageFocused,
+    focusedImageTitle,
+    isNavigationView,
     resetToDefaultView,
     isTransitioning,
   } = useViewStore();
-  const [isVisible, setIsVisible] = useState(false);
 
-  const currentViewTitle = useMemo(() => {
-    return VIEWID_TITLE_MAP[currentView as keyof typeof VIEWID_TITLE_MAP] || "";
-  }, [isVisible]);
-
-  // show controls when not default view
-  useEffect(() => {
-    setIsVisible(!isDefaultView() && !isPhoneView());
-  }, [currentView, isDefaultView, isPhoneView]);
+  const showControls =
+    isImageFocused ||
+    (!isDefaultView() &&
+      !isPhoneView() &&
+      !isCreativeView() &&
+      !isNavigationView());
 
   // escape key to return to default view
   useKeyPress("Escape", () => {
-    if (!isDefaultView() && !isTransitioning) {
-      resetToDefaultView();
+    if (
+      !isDefaultView() &&
+      !isCreativeView() &&
+      !isTransitioning &&
+      !isNavigationView()
+    ) {
+      handleBackClick();
       playUISound("ui-tap-close");
     }
   });
 
   const handleBackClick = () => {
-    if (!isTransitioning) {
-      resetToDefaultView();
-    }
+    if (isTransitioning) return;
+
+    resetToDefaultView();
+    console.info("resetToDefaultView(); in VIEWCONTROLS.tsx");
   };
 
-  const hideBackButton =
-    currentView === "default" ||
-    currentView === "upgrades" ||
-    currentView.startsWith("phone:");
+  const title = isImageFocused
+    ? focusedImageTitle
+    : VIEWID_TITLE_MAP[currentView as keyof typeof VIEWID_TITLE_MAP] ?? "";
 
   return (
     <AnimatePresence>
-      {isVisible && (
+      {showControls && (
         <ViewControlsWrapper>
-          <AnimatePresence>
-            {!hideBackButton && (
-              <BackButton
-                onClick={handleBackClick}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                key="view-controls-back-button"
-                initial={{ y: -120, filter: "blur(6px)" }}
-                animate={{
-                  y: 0,
-                  filter: "blur(0px)",
-                }}
-                exit={{ y: -120, filter: "blur(6px)" }}
-                transition={{ duration: 0.5, ease: "circInOut" }}
-              >
-                <ArrowLeftIcon />
-              </BackButton>
-            )}
-          </AnimatePresence>
+          <BackButton
+            onClick={handleBackClick}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            key="view-controls-back-button"
+            initial={{ y: -120, filter: "blur(6px)" }}
+            animate={{
+              y: 0,
+              filter: "blur(0px)",
+            }}
+            exit={{ y: -120, filter: "blur(6px)" }}
+            transition={{ duration: 0.5, ease: "circInOut" }}
+          >
+            <ArrowLeftIcon />
+          </BackButton>
           <CurrentViewChip
             key="view-controls-current-view-chip"
             initial={{ y: -20, scale: 0.9, opacity: 0, filter: "blur(6px)" }}
@@ -87,7 +87,7 @@ export function ViewControls() {
             exit={{ y: -120, scale: 0.9, opacity: 0, filter: "blur(6px)" }}
             transition={{ duration: 0.5, ease: "circInOut", delay: 0.15 }}
           >
-            {currentViewTitle}
+            {title}
           </CurrentViewChip>
         </ViewControlsWrapper>
       )}

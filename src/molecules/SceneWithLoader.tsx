@@ -14,35 +14,45 @@ import { format } from "date-fns/format";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { SpeakerIcon } from "@/icons/speaker";
 import { StatusPill, Blinking, StatusPillButton } from "./BobPhone";
-import { AppInfo } from "@/apps/options";
 
 export const SCENE_REVEAL_DURATION = 0.8;
 
 export const CustomLoader = ({
   onFadeOutComplete,
   onEnter,
+  isInitialLoad,
 }: {
   onFadeOutComplete: () => void;
   onEnter: () => void;
+  isInitialLoad: boolean;
 }) => {
   const { active, progress } = useProgress();
   const [percentage, setPercentage] = useState(0);
   const [finished, setFinished] = useState(false);
   const [exit, setExit] = useState(false);
-  const { isReady, setSoundEnabled } = useGameStore();
+  const { isReady, setGameReady, setSoundEnabled } = useGameStore();
   const { toggle, isMuted, isEnabled } = useSoundSystem();
 
   useEffect(() => {
     setPercentage((prev) => Math.max(prev, progress));
 
-    if (!active && progress === 100 && !finished) {
+    if (!active && progress === 100) {
       setFinished(true);
+
+      if (!isInitialLoad) {
+        handleEnter();
+      }
     }
-  }, [active, progress, finished]);
+  }, [active, progress, isInitialLoad]);
+
+  // useEffect(() => setExit(false), [active]);
 
   const handleEnter = () => {
     onEnter();
     setExit(true);
+
+    const timer = setTimeout(() => setGameReady(true), SCENE_REVEAL_DURATION);
+    return () => clearTimeout(timer);
   };
 
   const currentHour = format(new Date(), "HH");
@@ -185,6 +195,15 @@ export const SceneWithLoader = ({
   const [mountLoader, setMountLoader] = useState(true);
   const { isMobile, emotionData, setPermissionGranted } = useAppStore();
   const { isReady, setGameReady } = useGameStore();
+  const { active } = useProgress();
+  const [hasEntered, setHasEntered] = useState(false);
+
+  const showLoader = !hasEntered || active;
+
+  // check if perf is worse because of this
+  useEffect(() => {
+    setGameReady(!showLoader);
+  }, [showLoader]);
 
   const handleEnter = async () => {
     try {
@@ -196,6 +215,7 @@ export const SceneWithLoader = ({
     setGameReady(true);
 
     setSceneReady(true);
+    setHasEntered(true);
     onLoaded?.();
   };
 
@@ -205,10 +225,11 @@ export const SceneWithLoader = ({
 
   return (
     <>
-      {mountLoader && (
+      {showLoader && (
         <CustomLoader
           onEnter={handleEnter}
           onFadeOutComplete={handleLoaderExit}
+          isInitialLoad={!hasEntered}
         />
       )}
 

@@ -3,6 +3,7 @@ import { useQuestStore } from "@/store/questStore";
 import { useGameStore } from "@/store/gameStore";
 import { useAppStore } from "@/store";
 import { toast } from "sonner";
+import { ROUTE_DICTIONARY } from "@/store/routeConfig";
 
 export const useQuestSystem = () => {
   const { currentRoute } = useAppStore();
@@ -13,17 +14,10 @@ export const useQuestSystem = () => {
   const completeQuest = questStore.completeQuest;
 
   // TODO: check if needed
-  const routeId = useMemo(() => {
-    const routeMap: { [key: string]: string } = {
-      "/home": "route_home",
-      "/about": "route_about",
-      "/portfolio": "route_portfolio",
-      "/creative": "route_creative",
-      "/technical": "route_technical",
-      "/guestbook": "route_guestbook",
-    };
-    return routeMap[currentRoute] || "route_home";
-  }, [currentRoute]);
+  const routeId = useMemo(
+    () => ROUTE_DICTIONARY[currentRoute] || "route_home",
+    [currentRoute]
+  );
 
   const currentQuests = useMemo(
     () => quests.filter((quest) => quest.routeId === routeId),

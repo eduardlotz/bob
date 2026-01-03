@@ -2,6 +2,7 @@ export const DEFAULT_WORLD_MUSIC = {
   id: "world-lofi",
   filePath: "/audio/lofi-music.mp3",
 };
+
 export const DEFAULT_TAP_SOUND = {
   id: "tap-bing-bong",
   filePath: "/audio/bing-bong.wav",
@@ -28,10 +29,10 @@ export const DEFAULT_UI_SOUND_2 = {
 };
 
 export const DEFAULT_MASTER_VOLUME = 0.7;
-export const DEFAULT_TAP_VOLUME = 0.5;
+export const DEFAULT_TAP_VOLUME = 0.6;
 export const DEFAULT_WORLD_VOLUME = 0.8;
 export const DEFAULT_UI_VOLUME = 0.7;
-export const DEFAULT_TEXT_VOLUME = 0.8;
+export const DEFAULT_TEXT_VOLUME = 0.6;
 
 export const DEBUG_LOGS = true; // TODO: move to dev store
 
@@ -49,4 +50,9 @@ export const HARDSTYLE_TAP_SOUND = {
 export const TRANCE_TAP_SOUND = {
   id: "tap-trance-kick",
   filePath: "/audio/trance-kick.mp3",
+};
+
+export const DEFAULT_PINK_NOISE = {
+  id: "pink-noise",
+  filePath: "/audio/pink-noise.wav",
 };

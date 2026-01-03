@@ -19,6 +19,16 @@ export const ROUTE_IDS = {
   MINIGAMES: "route_minigames",
 } as const;
 
+// TODO: clean up this mix of data structures
+export const ROUTE_DICTIONARY: { [key: string]: string } = {
+  "/home": "route_home",
+  "/about": "route_about",
+  "/portfolio": "route_portfolio",
+  "/creative": "route_creative",
+  "/technical": "route_technical",
+  "/guestbook": "route_guestbook",
+};
+
 export const ROUTE_CONFIG = {
   [ROUTE_PATHS.HOME]: {
     id: ROUTE_IDS.HOME,
@@ -28,7 +38,6 @@ export const ROUTE_CONFIG = {
     cost: 0,
     icon: "🏠",
     isLocked: false,
-    component: "home" as const,
   },
   [ROUTE_PATHS.ABOUT]: {
     id: ROUTE_IDS.ABOUT,
@@ -38,7 +47,6 @@ export const ROUTE_CONFIG = {
     cost: 50,
     icon: "👤",
     isLocked: false,
-    component: "about" as const,
   },
   [ROUTE_PATHS.PORTFOLIO]: {
     id: ROUTE_IDS.PORTFOLIO,
@@ -47,7 +55,6 @@ export const ROUTE_CONFIG = {
     cost: 0,
     icon: "💼",
     isLocked: true,
-    component: "portfolio" as const,
   },
   [ROUTE_PATHS.TECHNICAL]: {
     id: ROUTE_IDS.TECHNICAL,
@@ -56,16 +63,14 @@ export const ROUTE_CONFIG = {
     cost: 0,
     icon: "⚙️",
     isLocked: true,
-    component: "technical" as const,
   },
   [ROUTE_PATHS.CREATIVE]: {
     id: ROUTE_IDS.CREATIVE,
     name: "Kreatives",
-    description: "Noch nicht verfügbar.",
-    cost: 0,
+    description: "Meine kreative Seite",
+    cost: 25,
     icon: "🎨",
-    isLocked: true,
-    component: "creative" as const,
+    isLocked: false,
   },
   [ROUTE_PATHS.GUESTBOOK]: {
     id: ROUTE_IDS.GUESTBOOK,
@@ -74,7 +79,6 @@ export const ROUTE_CONFIG = {
     cost: 0,
     icon: "📝",
     isLocked: true,
-    component: "guestbook" as const,
   },
   [ROUTE_PATHS.MINIGAMES]: {
     id: ROUTE_IDS.MINIGAMES,
@@ -83,7 +87,6 @@ export const ROUTE_CONFIG = {
     cost: 0,
     icon: "🎮",
     isLocked: true,
-    component: "minigames" as const,
   },
 } as const;
 
@@ -91,37 +94,30 @@ export const ROUTES = [
   {
     path: ROUTE_PATHS.HOME,
     label: ROUTE_CONFIG[ROUTE_PATHS.HOME].name,
-    component: ROUTE_CONFIG[ROUTE_PATHS.HOME].component,
   },
   {
     path: ROUTE_PATHS.ABOUT,
     label: ROUTE_CONFIG[ROUTE_PATHS.ABOUT].name,
-    component: ROUTE_CONFIG[ROUTE_PATHS.ABOUT].component,
   },
   {
     path: ROUTE_PATHS.PORTFOLIO,
     label: ROUTE_CONFIG[ROUTE_PATHS.PORTFOLIO].name,
-    component: ROUTE_CONFIG[ROUTE_PATHS.PORTFOLIO].component,
   },
   {
     path: ROUTE_PATHS.TECHNICAL,
     label: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].name,
-    component: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].component,
   },
   {
     path: ROUTE_PATHS.CREATIVE,
     label: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].name,
-    component: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].component,
   },
   {
     path: ROUTE_PATHS.GUESTBOOK,
     label: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].name,
-    component: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].component,
   },
   {
     path: ROUTE_PATHS.MINIGAMES,
     label: ROUTE_CONFIG[ROUTE_PATHS.MINIGAMES].name,
-    component: ROUTE_CONFIG[ROUTE_PATHS.MINIGAMES].component,
   },
 ] as const;
 
