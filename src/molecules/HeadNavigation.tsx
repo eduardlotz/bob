@@ -369,7 +369,7 @@ function OptionsGroup({
       const extraBottomMargin = worldHeight * 0.05; // 5% extra margin
       const effectiveBottomOffset = bottomOffset + extraBottomMargin;
 
-      x = Math.max(-halfSafeWidth, Math.min(halfSafeWidth, x));
+      x = Math.max(-halfSafeWidth - 40, Math.min(halfSafeWidth, x));
       y = Math.max(
         -halfSafeHeight + effectiveBottomOffset,
         Math.min(halfSafeHeight, y)
