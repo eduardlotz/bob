@@ -74,6 +74,7 @@ function migrateStore(oldState: any, fromVersion: number): any {
   if (fromVersion < GAME_STORE_VERSION.V2) {
     migratedState = {
       ...migratedState,
+      decorations: initialDecorations,
       graphicPreferences: {
         qualityMode: "auto",
         effectsEnabled: true,
