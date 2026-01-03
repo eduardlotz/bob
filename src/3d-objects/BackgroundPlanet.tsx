@@ -18,7 +18,7 @@ export const BackgroundPlanet = () => {
 
   return (
     <mesh>
-      <sphereGeometry args={[16, 16, 16]} />
+      <sphereGeometry args={[100, 16, 16]} />
       <meshBasicMaterial side={BackSide}>
         <GradientTexture
           stops={[0, 0.5, 1]}

@@ -3,6 +3,9 @@ import { useFrame } from "@react-three/fiber";
 import { useGameStore } from "@/store/gameStore";
 import { Mesh, MeshBasicMaterial, PlaneGeometry } from "three";
 import { TreeModel } from "./models/tree";
+import { GrassShader } from "./GrassShader";
+import { GrassDecoration } from "./GrassDecoration";
+import { CloudEffect } from "./ParticleEffects";
 
 const sharedStarGeo = new PlaneGeometry(1, 1);
 const sharedStarMat = new MeshBasicMaterial({
@@ -20,20 +23,20 @@ export function Decoration2D({
   type: string;
   position: [number, number, number];
   scale: number;
-  rotation: number;
-  color: string;
+  rotation?: number;
+  color?: string;
   preview: boolean;
 }) {
   const meshRef = useRef<Mesh>(null);
 
   const material = useMemo(() => {
     const m = sharedStarMat.clone();
-    m.color.set(color);
+    if (color) m.color.set(color);
     return m;
   }, [color]);
 
   useFrame((state) => {
-    if (meshRef.current) {
+    if (meshRef.current && rotation) {
       // Gentle floating animation
       meshRef.current.position.y =
         position[1] + Math.sin(state.clock.getElapsedTime() * 0.5) * 0.1;
@@ -69,7 +72,6 @@ export function Decoration2D({
   return renderDecoration();
 }
 
-// 3D Decoration Component
 export function Decoration3D({
   type,
   position,
@@ -81,49 +83,31 @@ export function Decoration3D({
   type: string;
   position: [number, number, number];
   scale: number;
-  rotation: number;
-  color: string;
+  rotation?: number;
+  color?: string;
   preview: boolean;
 }) {
-  const meshRef = useRef<Mesh>(null);
-
-  useFrame((state) => {
-    if (meshRef.current) {
-      // Floating animation
-      meshRef.current.position.y =
-        position[1] + Math.sin(state.clock.getElapsedTime() * 0.8) * 0.2;
-      // Rotation animation
-      meshRef.current.rotation.y =
-        rotation + state.clock.getElapsedTime() * 0.5;
-      meshRef.current.rotation.x =
-        Math.sin(state.clock.getElapsedTime() * 0.3) * 0.1;
-    }
-  });
-
   const renderDecoration = () => {
     switch (type) {
-      case "cube_3d":
-        return (
-          <mesh ref={meshRef} position={position} scale={[scale, scale, scale]}>
-            <boxGeometry args={[1, 1, 1]} />
-            <meshStandardMaterial color={color} />
-          </mesh>
-        );
-      case "sphere_3d":
-        return (
-          <mesh ref={meshRef} position={position} scale={[scale, scale, scale]}>
-            <sphereGeometry args={[0.5, 16, 16]} />
-            <meshStandardMaterial color={color} />
-          </mesh>
-        );
       case "tree_3d":
         return (
           <TreeModel
             position={position}
             scale={[scale, scale, scale]}
             preview={preview}
+            rotation={[0, rotation ?? 0, 0]}
           />
         );
+      case "grass_3d":
+        return (
+          <GrassShader
+            position={position}
+            scale={[scale, scale, scale]}
+            preview={preview}
+          />
+        );
+      case "clouds_3d":
+        return <CloudEffect preview={preview} />;
 
       default:
         return null;
@@ -133,7 +117,6 @@ export function Decoration3D({
   return renderDecoration();
 }
 
-// Main Decorations Container
 export function SceneDecorations() {
   const { decorations, previewMode } = useGameStore();
   const decoPreviewActive =

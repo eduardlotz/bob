@@ -268,7 +268,9 @@ export function ShopApp() {
                   <ItemStatusChip $variant="accent">Ausgewählt</ItemStatusChip>
                 ))
                 .with({ purchased: false }, () => (
-                  <ItemStatusChip>{currentItem.cost} 🫵</ItemStatusChip>
+                  <ItemStatusChip>
+                    {formatNumber(currentItem.cost)} 🫵
+                  </ItemStatusChip>
                 ))
                 .otherwise(() => (
                   <></>

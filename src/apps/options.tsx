@@ -22,6 +22,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import styled from "styled-components";
 import { match } from "ts-pattern";
+import { SettingsWrapper, ToggleButton } from "./debug";
 
 export const OptionsIcon = () => (
   <svg
@@ -331,16 +332,49 @@ export function OptionsApp() {
     );
   };
 
-  const GraphicsView = () => (
-    <FillRow
-      style={{ height: "fit-content" }}
-      key="graphics-options-view"
-      $align="center"
-      $justify="center"
-    >
-      <AppInfo>Noch nicht verfügbar</AppInfo>
-    </FillRow>
-  );
+  const GraphicsView = () => {
+    const { graphicPreferences, setGraphicsMode } = useGameStore();
+
+    const mode = graphicPreferences.qualityMode;
+
+    return (
+      <FillColumn
+        $gap={"1rem"}
+        key="general-options-view"
+        style={{ height: "fit-content" }}
+      >
+        <SettingsWrapper
+          $align="flex-start"
+          style={{ alignItems: "flex-start" }}
+        >
+          <HugColumn $gap={"0.5rem"}>
+            <h5>Qualität</h5>
+            <p>Hohe Performance = Niedrige Perfomance</p>
+          </HugColumn>
+          <HugColumn $gap={"0.5rem"}>
+            <ToggleButton
+              onClick={() => setGraphicsMode("auto")}
+              $active={mode === "auto"}
+            >
+              Automatisch
+            </ToggleButton>
+            <ToggleButton
+              onClick={() => setGraphicsMode("low")}
+              $active={mode === "low"}
+            >
+              Niedrig
+            </ToggleButton>
+            <ToggleButton
+              onClick={() => setGraphicsMode("high")}
+              $active={mode === "high"}
+            >
+              Hoch
+            </ToggleButton>
+          </HugColumn>
+        </SettingsWrapper>
+      </FillColumn>
+    );
+  };
 
   return (
     <>

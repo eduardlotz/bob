@@ -152,16 +152,17 @@ export function HeadNavigation({
     isNavigationView,
     resetToDefaultView,
     isObjectView,
+    currentView,
   } = useViewStore();
 
   const { isMobile, toggleOptions } = useAppStore();
 
   // close options menu when entering a custom view
-  // useEffect(() => {
-  //   if (!isDefaultView() && showOptions) {
-  //     setShowOptions(false);
-  //   }
-  // }, [currentView, isDefaultView, showOptions, setShowOptions]);
+  useEffect(() => {
+    if (!isNavigationView() && showOptions) {
+      setShowOptions(false);
+    }
+  }, [currentView, showOptions]);
 
   // return to default view when options menu is opened (if not already in default view)
   // useEffect(() => {
@@ -424,7 +425,7 @@ function Option({
   const optionRef = useRef<THREE.Group>(null!);
   const navigate = useNavigate();
   const { currentRoute } = useAppStore();
-  const { resetToDefaultView, transitionToView } = useViewStore();
+  const { resetToDefaultView } = useViewStore();
   const { triggerQuest } = useQuestSystem();
   const { canAfford, purchaseRoute } = useGameStore();
   const { showMessage } = useMessageStore();
@@ -445,8 +446,6 @@ function Option({
     // );
 
     resetToDefaultView();
-    // if (route.name === "creative") transitionToView("creative");
-    // else transitionToView("default");
     navigate(route.path);
     hideOptions();
   }, []);

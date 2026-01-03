@@ -423,7 +423,10 @@ export const BobPhone = () => {
                 )}
                 {activeApp && (
                   <AppBottomActions key="app_bottom_actions">
-                    <BackHomeButton onClick={goToHomeScreen}>
+                    <BackHomeButton
+                      onClick={goToHomeScreen}
+                      data-ui-sound-id="ui-tap-close"
+                    >
                       <ArrowLeftIcon />
                     </BackHomeButton>
 
