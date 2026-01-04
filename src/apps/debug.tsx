@@ -25,86 +25,24 @@ export const DebugIcon = () => (
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
   >
-    <path
-      d="M24 1H56C68.7025 1 79 11.2975 79 24V56C79 68.7025 68.7025 79 56 79H24C11.2975 79 1 68.7025 1 56V24C1 11.2975 11.2975 1 24 1Z"
-      fill="#CEAE91"
-      stroke="#91765D"
-      strokeWidth={2}
-    />
-    <path
-      d="M22.8164 46.2725H28.7719"
-      stroke="#91765D"
-      strokeWidth={2.85714}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M51.8789 46.2725H57.8346"
-      stroke="#91765D"
-      strokeWidth={2.85714}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M46.4297 28.8549V22.8994"
-      stroke="#91765D"
-      strokeWidth={2.85714}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M46.4297 57.9623V52.0068"
-      stroke="#91765D"
-      strokeWidth={2.85714}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M22.8164 34.5625H28.7719"
-      stroke="#91765D"
-      strokeWidth={2.85714}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M34.2461 28.8549V22.8994"
-      stroke="#91765D"
-      strokeWidth={2.85714}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M51.8789 34.5625H57.8346"
-      stroke="#91765D"
-      strokeWidth={2.85714}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M34.2461 57.9623V52.0068"
-      stroke="#91765D"
-      strokeWidth={2.85714}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M29.0746 49.0355C29.2269 50.407 30.3174 51.4967 31.6884 51.653C34.4684 51.9698 37.3646 52.3487 40.3404 52.3487C43.3161 52.3487 46.2123 51.9698 48.9924 51.653C50.3633 51.4967 51.4538 50.407 51.6061 49.0355C51.9138 46.2667 52.2707 43.3821 52.2707 40.4185C52.2707 37.4549 51.9138 34.5703 51.6061 31.8014C51.4538 30.43 50.3633 29.3404 48.9924 29.1841C46.2123 28.8672 43.3161 28.4883 40.3404 28.4883C37.3646 28.4883 34.4684 28.8672 31.6884 29.1841C30.3174 29.3404 29.2269 30.43 29.0746 31.8014C28.7669 34.5703 28.4102 37.4549 28.4102 40.4185C28.4102 43.3821 28.7669 46.2667 29.0746 49.0355Z"
-      fill="#F0D5BD"
-    />
-    <path
-      d="M29.0746 49.0355C29.2269 50.407 30.3174 51.4967 31.6884 51.653C34.4684 51.9698 37.3646 52.3487 40.3404 52.3487C43.3161 52.3487 46.2123 51.9698 48.9924 51.653C50.3633 51.4967 51.4538 50.407 51.6061 49.0355C51.9138 46.2667 52.2707 43.3821 52.2707 40.4185C52.2707 37.4549 51.9138 34.5703 51.6061 31.8014C51.4538 30.43 50.3633 29.3404 48.9924 29.1841C46.2123 28.8672 43.3161 28.4883 40.3404 28.4883C37.3646 28.4883 34.4684 28.8672 31.6884 29.1841C30.3174 29.3404 29.2269 30.43 29.0746 31.8014C28.7669 34.5703 28.4102 37.4549 28.4102 40.4185C28.4102 43.3821 28.7669 46.2667 29.0746 49.0355Z"
-      stroke="#91765D"
-      strokeWidth={2.85714}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M40.3359 43.2979H44.4724"
-      stroke="#91765D"
-      strokeWidth={2.85714}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
+    <svg
+      width="80"
+      height="80"
+      viewBox="0 0 80 80"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M0 24C0 10.7452 10.7452 0 24 0H56C69.2548 0 80 10.7452 80 24V56C80 69.2548 69.2548 80 56 80H24C10.7452 80 0 69.2548 0 56V24Z"
+        fill="#CEAE91"
+      />
+      <path
+        fill-rule="evenodd"
+        clip-rule="evenodd"
+        d="M39.9844 21.6709C41.7609 21.6731 43.4807 22.3321 44.9851 23.5444C49.3069 27.0268 53.0697 30.7981 56.5466 35.1306C58.9266 38.0967 58.948 41.9104 56.5431 44.8843C53.0251 49.2349 49.2134 53.0438 44.8595 56.5598C41.9267 58.9283 38.1152 58.9072 35.1903 56.5632C30.7839 53.032 26.958 49.2063 23.4268 44.8001C21.0813 41.8734 21.0601 38.0618 23.4302 35.1271C26.9116 30.8163 30.6805 27.0368 34.9779 23.5477C36.4846 22.3245 38.2068 21.6688 39.9844 21.6709ZM40 29.0739C41.1835 29.0739 42.1429 30.0332 42.1429 31.2167V40.473C42.1429 41.6565 41.1835 42.6159 40 42.6159C38.8165 42.6159 37.8571 41.6565 37.8571 40.473V31.2167C37.8571 30.0332 38.8165 29.0739 40 29.0739ZM40 44.9639C41.1835 44.9639 42.1429 45.9233 42.1429 47.1068V48.7829C42.1429 49.9663 41.1835 50.9258 40 50.9258C38.8165 50.9258 37.8571 49.9663 37.8571 48.7829V47.1068C37.8571 45.9233 38.8165 44.9639 40 44.9639Z"
+        fill="#F0D5BD"
+      />
+    </svg>
   </svg>
 );
 
@@ -355,9 +293,17 @@ export const SettingsWrapper = styled(FillRow)<{
     opacity: 0.6;
     color: var(--text-color);
   }
+
+  b {
+    font-weight: 600;
+    opacity: 1;
+  }
 `;
 
-export const ToggleButton = styled.button<{ $active: boolean }>`
+export const ToggleButton = styled.button<{
+  $active: boolean;
+  $fillRow?: boolean;
+}>`
   display: flex;
   align-items: center;
   justify-content: center;
@@ -369,6 +315,7 @@ export const ToggleButton = styled.button<{ $active: boolean }>`
   font-weight: 700;
   border-radius: 5rem;
   opacity: ${(p) => (p.$active ? 1 : 0.5)};
+  width: ${(p) => (p.$fillRow ? "100%" : "auto")};
 
   &:hover {
     background: rgba(255, 255, 255, 0.9);

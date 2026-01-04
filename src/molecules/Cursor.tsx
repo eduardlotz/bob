@@ -11,6 +11,9 @@ import { CursorIcon } from "@/icons/cursor";
 import { useCursorStore } from "@/store/cursorStore";
 import { CursorHoverIcon } from "@/icons/cursor-hover";
 import { CursorClickIcon } from "@/icons/cursor-click";
+import { match } from "ts-pattern";
+import { CursorGrabIcon } from "@/icons/cursor-grab";
+import { CursorGrabbingIcon } from "@/icons/cursor-grabbing";
 
 export type CursorProps = {
   attachToParent?: boolean;
@@ -106,13 +109,14 @@ export function Cursor({ attachToParent }: CursorProps) {
       <AnimatePresence>
         {isVisible && (
           <motion.div initial="initial" animate="animate" exit="exit">
-            {variant === "default" ? (
-              <CursorIcon />
-            ) : variant === "active" ? (
-              <CursorClickIcon />
-            ) : (
-              <CursorHoverIcon />
-            )}
+            {match(variant)
+              .with("active", () => <CursorClickIcon />)
+              .with("hover", () => <CursorHoverIcon />)
+              .with("grab", () => <CursorGrabIcon />)
+              .with("grabbing", () => <CursorGrabbingIcon />)
+              .otherwise(() => (
+                <CursorIcon />
+              ))}
           </motion.div>
         )}
       </AnimatePresence>

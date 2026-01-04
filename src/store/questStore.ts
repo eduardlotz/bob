@@ -147,6 +147,25 @@ const initialQuests: Quest[] = [
       value: 1,
     },
   },
+  {
+    id: "creative_quest_1",
+    title: "Kunst im All",
+    description: "Schau dir ein paar meiner kreativen Arbeiten an",
+    icon: "✨",
+    progress: 0,
+    maxProgress: 3,
+    reward: {
+      type: "taps_reward",
+      amount: 3000,
+    },
+    completed: false,
+    routeId: "route_creative",
+    type: "interaction",
+    trigger: {
+      action: "click_creative_image",
+      value: 1,
+    },
+  },
 ];
 
 export const useQuestStore = create<QuestStore>()(

@@ -387,11 +387,9 @@ export function BlobHead({
       handleIdleAnimation(clock, delta);
     } else {
       // special case: mobile movement using gyro
-      if (isMobile && orientation && acceleration && permissionGranted) {
-        handleMobileMovement(clock, delta);
-      } else {
-        handleDesktopMovement(clock, delta, showOptions);
-      }
+      // if (isMobile && orientation && acceleration && permissionGranted) {
+      // handleMobileMovement(clock, delta);
+      if (!isMobile) handleDesktopMovement(clock, delta, showOptions);
     }
 
     animateEyes(delta);

@@ -1,11 +1,12 @@
 import * as THREE from "three";
 import { useMemo, Suspense } from "react";
-import { Billboard, Image, useTexture } from "@react-three/drei";
+import { Billboard, Float, Image, useTexture } from "@react-three/drei";
 import { useFloatingBar } from "@/layout/FloatingBar";
 import { useCursorStore } from "@/store/cursorStore";
-import { useViewStore } from "@/store";
+import { useQuestStore, useViewStore } from "@/store";
 import { playUISound } from "@/utils/soundSystem";
 import { SoundConfig } from "@/utils/sound/types";
+import { useQuestSystem } from "@/hooks/useQuestSystem";
 
 interface PortfolioImage {
   url: string;
@@ -54,6 +55,7 @@ function ImageItem({ url, title, position }: ImageItemProps) {
 
   const { setHoveredObject } = useFloatingBar();
   const { focusOnTarget, focusOnImage, focusedImageTitle } = useViewStore();
+  const { triggerQuest } = useQuestSystem();
   const cursor = useCursorStore();
 
   const currentlyActive = focusedImageTitle === title; // TODO: use ids instead
@@ -73,8 +75,13 @@ function ImageItem({ url, title, position }: ImageItemProps) {
   };
 
   const handlePointerDown = () => {
-    cursor.set("active");
-    if (!currentlyActive) playUISound();
+    if (!currentlyActive) {
+      cursor.set("active");
+      triggerQuest("click_creative_image");
+      playUISound();
+    } else {
+      cursor.set("grab");
+    }
   };
 
   const handlePointerUp = () => {
@@ -101,18 +108,20 @@ function ImageItem({ url, title, position }: ImageItemProps) {
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
     >
-      <Image
-        texture={texture}
-        transparent
-        scale={scale}
-        onClick={() => {
-          // disable focus reset for already active images
-          if (focusedImageTitle !== title) {
-            focusOnTarget({ position, distance: 8 });
-            focusOnImage(title);
-          }
-        }}
-      />
+      <Float floatIntensity={1.1} floatingRange={[0.005, 0.005]} speed={0.5}>
+        <Image
+          texture={texture}
+          transparent
+          scale={scale}
+          onClick={() => {
+            // disable focus reset for already active images
+            if (focusedImageTitle !== title) {
+              focusOnTarget({ position, distance: 8 });
+              focusOnImage(title);
+            }
+          }}
+        />
+      </Float>
     </Billboard>
   );
 }

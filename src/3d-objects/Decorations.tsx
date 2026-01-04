@@ -4,7 +4,6 @@ import { useGameStore } from "@/store/gameStore";
 import { Mesh, MeshBasicMaterial, PlaneGeometry } from "three";
 import { TreeModel } from "./models/tree";
 import { GrassShader } from "./GrassShader";
-import { GrassDecoration } from "./GrassDecoration";
 import { CloudEffect } from "./ParticleEffects";
 
 const sharedStarGeo = new PlaneGeometry(1, 1);
