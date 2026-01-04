@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { CameraViewId, useViewStore } from "@/store/viewStore";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
@@ -26,19 +25,26 @@ export function InteractiveObject({
   viewId,
   showOutline = true,
 }: InteractiveObjectProps) {
-  const [isHovered, setIsHovered] = useState(false);
-  const [isActive, setIsActive] = useState(false);
   const { triggerQuest } = useQuestSystem();
-  const { transitionToView, currentView, isTransitioning, resetToDefaultView } =
-    useViewStore();
+  const { transitionToView, currentView } = useViewStore();
   const { playUISound } = useSoundSystem();
   const cursor = useCursorStore();
 
   const isViewActive = mode === "view" && currentView === viewId;
 
-  const handleClick = (e: any) => {
-    console.log("🚀 ~ handleClick ~ viewId:", viewId);
-    playUISound("ui-tap-2");
+  const handlePointerEnter = () => {
+    if (!isViewActive) cursor.setHoveringClickable(true);
+  };
+
+  const handlePointerLeave = () => {
+    cursor.setHoveringClickable(false);
+  };
+
+  const handlePointerDown = () => {
+    if (!isViewActive) {
+      cursor.setPointerDown(true);
+      playUISound("ui-tap-2");
+    }
 
     triggerQuest(questAction, questValue);
 
@@ -55,23 +61,8 @@ export function InteractiveObject({
       });
   };
 
-  const handlePointerEnter = () => {
-    setIsHovered(true);
-    cursor.set("hover");
-  };
-
-  const handlePointerLeave = () => {
-    setIsHovered(false);
-    cursor.set("default");
-  };
-
-  const handlePointerDown = () => {
-    cursor.set("active");
-  };
-
   return (
     <group
-      onClick={handleClick}
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
       onPointerDown={handlePointerDown}

@@ -9,6 +9,7 @@ import {
   getRouteLabelByPath,
   ROUTE_PATHS,
   useAppStore,
+  useGameStore,
   useViewStore,
 } from "@/store";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -18,10 +19,10 @@ import About from "./routes/About";
 import { AnimatePresence, motion } from "motion/react";
 import { useMessageSystem } from "@/hooks/useMessageSystem";
 import { FloatingBarProvider, FloatingBarUI } from "./layout/FloatingBar";
-import { useSoundSystem } from "./hooks/useSoundSystem";
-import { useCursorStore } from "./store/cursorStore";
 import Creative from "./routes/Creative";
 import { stopAllWorldSounds } from "./utils/soundSystem";
+import { CursorInputBridge } from "./bridges/CursorInputBridge";
+import { ClickableBridge } from "./bridges/ClickableBridge";
 
 export default function App() {
   const location = useLocation();
@@ -35,11 +36,11 @@ export default function App() {
     previousViewMode,
     defaultViewMode,
   } = useViewStore();
+  const { viewDebuggerVisible } = useGameStore();
+
   const [mounted, setMounted] = useState(false);
   const [currentRouteInPretty, setCurrentRouteInPretty] = useState("");
   const [showRouteChip, setShowRouteChip] = useState(false);
-
-  const sound = useSoundSystem();
 
   // init message system globally
   // not a real hook (TODO: change name)
@@ -48,63 +49,6 @@ export default function App() {
   useEffect(() => {
     setCurrentRoute(location.pathname);
     setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    const CLICKABLE_SELECTOR =
-      'button, [role="button"], a, input[type="button"], input[type="submit"], [data-clickable], input[type="radio"], input[type="checkbox"], [data-ui-sound-id]';
-    const setCursor = useCursorStore.getState().set;
-
-    const handlePointerOver = (e: PointerEvent) => {
-      const target = (e.target as Element).closest(CLICKABLE_SELECTOR);
-      if (target) setCursor("hover");
-    };
-
-    const handlePointerOut = (e: PointerEvent) => {
-      const target = (e.target as Element).closest(CLICKABLE_SELECTOR);
-      if (target) setCursor("default");
-    };
-
-    const handlePointerDown = (e: PointerEvent) => {
-      const target = (e.target as Element).closest(CLICKABLE_SELECTOR);
-      if (target) setCursor("active");
-    };
-
-    const handlePointerUp = (e: PointerEvent) => {
-      const target = (e.target as Element).closest(CLICKABLE_SELECTOR);
-      if (target) setCursor("hover");
-    };
-
-    const handleClick = (e: MouseEvent) => {
-      const target = e.target as Element | null;
-      if (!target) return;
-      const clickable = target.closest(CLICKABLE_SELECTOR);
-
-      if (clickable) {
-        const attrId = clickable.getAttribute("data-ui-sound-id");
-        setTimeout(() => {
-          if (attrId) {
-            sound.playUISound(attrId);
-          } else {
-            sound.playUISound();
-          }
-        }, 0);
-      }
-    };
-
-    window.addEventListener("pointerover", handlePointerOver);
-    window.addEventListener("pointerout", handlePointerOut);
-    window.addEventListener("pointerdown", handlePointerDown);
-    window.addEventListener("pointerup", handlePointerUp);
-    window.addEventListener("click", handleClick);
-
-    return () => {
-      window.removeEventListener("pointerover", handlePointerOver);
-      window.removeEventListener("pointerout", handlePointerOut);
-      window.removeEventListener("pointerdown", handlePointerDown);
-      window.removeEventListener("pointerup", handlePointerUp);
-      window.removeEventListener("click", handleClick);
-    };
   }, []);
 
   // sync router with store
@@ -178,16 +122,18 @@ export default function App() {
         </AnimatePresence>
 
         <FullScreen>
-          {/* <ViewDebug>
-            <p>transitioning? {isTransitioning ? "yes" : "no"}</p>
-            <p>Current View: {currentView}</p>
-            <p>Previous View: {previousView}</p>
-            <hr />
-            <p>Image Focused?: {isImageFocused ? "yes " : "no"}</p>
-            <p>Current ViewMode: {viewMode}</p>
-            <p>Default ViewMode: {defaultViewMode}</p>
-            <p>Previous ViewMode: {previousViewMode}</p>
-          </ViewDebug> */}
+          {viewDebuggerVisible && (
+            <ViewDebug>
+              <p>transitioning? {isTransitioning ? "yes" : "no"}</p>
+              <p>Current View: {currentView}</p>
+              <p>Previous View: {previousView}</p>
+              <hr />
+              <p>Image Focused?: {isImageFocused ? "yes " : "no"}</p>
+              <p>Current ViewMode: {viewMode}</p>
+              <p>Default ViewMode: {defaultViewMode}</p>
+              <p>Previous ViewMode: {previousViewMode}</p>
+            </ViewDebug>
+          )}
 
           <MainLayout>
             <ContentWrapper>
@@ -206,6 +152,8 @@ export default function App() {
           </MainLayout>
 
           <FloatingBarUI />
+          <CursorInputBridge />
+          <ClickableBridge />
         </FullScreen>
       </FloatingBarProvider>
     </ThemeProvider>
@@ -217,14 +165,14 @@ const ViewDebug = styled(motion.div)`
   bottom: 0;
   left: 0;
   right: 0;
-  width: 320px;
+  width: 200px;
   background: white;
   color: black;
   font-size: 12px;
   font-family: monospace !important;
   border: 2px solid black;
   pointer-events: none;
-  z-index: 10000;
+  z-index: 1;
   padding: 12px;
   word-break: break-all;
 `;

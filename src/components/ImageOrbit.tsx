@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { useMemo, Suspense } from "react";
+import { useMemo, Suspense, useEffect } from "react";
 import { Billboard, Float, Image, useTexture } from "@react-three/drei";
 import { useFloatingBar } from "@/layout/FloatingBar";
 import { useCursorStore } from "@/store/cursorStore";
@@ -56,37 +56,10 @@ function ImageItem({ url, title, position }: ImageItemProps) {
   const { setHoveredObject } = useFloatingBar();
   const { focusOnTarget, focusOnImage, focusedImageTitle } = useViewStore();
   const { triggerQuest } = useQuestSystem();
-  const cursor = useCursorStore();
 
   const currentlyActive = focusedImageTitle === title; // TODO: use ids instead
-
-  const handlePointerEnter = (e: any) => {
-    e.stopPropagation();
-
-    setHoveredObject({
-      title: title,
-    });
-    cursor.set("hover");
-  };
-
-  const handlePointerLeave = () => {
-    setHoveredObject(null);
-    cursor.set("default");
-  };
-
-  const handlePointerDown = () => {
-    if (!currentlyActive) {
-      cursor.set("active");
-      triggerQuest("click_creative_image");
-      playUISound();
-    } else {
-      cursor.set("grab");
-    }
-  };
-
-  const handlePointerUp = () => {
-    cursor.set("hover");
-  };
+  const setHovering = useCursorStore.getState().setHoveringClickable;
+  const setPointerDown = useCursorStore.getState().setPointerDown;
 
   const scale = useMemo<[number, number]>(() => {
     const { width, height } = texture.image as {
@@ -103,12 +76,31 @@ function ImageItem({ url, title, position }: ImageItemProps) {
   return (
     <Billboard
       position={position}
-      onPointerEnter={handlePointerEnter}
-      onPointerLeave={handlePointerLeave}
-      onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUp}
+      onPointerEnter={() => {
+        setHoveredObject({ title });
+
+        if (!currentlyActive) {
+          setHovering(true);
+        }
+      }}
+      onPointerLeave={() => {
+        setHoveredObject(null);
+        setHovering(false);
+        setPointerDown(false);
+      }}
+      onPointerDown={() => {
+        setPointerDown(true);
+
+        if (!currentlyActive) {
+          triggerQuest("click_creative_image");
+          playUISound();
+        }
+      }}
+      onPointerUp={() => {
+        setPointerDown(false);
+      }}
     >
-      <Float floatIntensity={1.1} floatingRange={[0.005, 0.005]} speed={0.5}>
+      <Float floatIntensity={10} speed={0.5}>
         <Image
           texture={texture}
           transparent

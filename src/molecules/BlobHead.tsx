@@ -188,23 +188,8 @@ export function BlobHead({
 
   const eyeGeometries = useRef(createEyeGeometries());
 
-  const setCursor = useCursorStore.getState().set;
-
-  const onPointerOver = () => {
-    setCursor("hover");
-  };
-
-  const onPointerOut = () => {
-    setCursor("default");
-  };
-
-  const onPointerDown = () => {
-    setCursor("active");
-  };
-
-  const onPointerUp = () => {
-    setCursor("hover");
-  };
+  const setHovering = useCursorStore.getState().setHoveringClickable;
+  const setPointerDown = useCursorStore.getState().setPointerDown;
 
   const [dizzyStars, setDizzyStars] = useState<
     Array<{
@@ -1029,10 +1014,19 @@ export function BlobHead({
       <a.group
         ref={headRef}
         onClick={onClick}
-        onPointerOver={onPointerOver}
-        onPointerOut={onPointerOut}
-        onPointerDown={onPointerDown}
-        onPointerUp={onPointerUp}
+        onPointerEnter={() => {
+          setHovering(true);
+        }}
+        onPointerLeave={() => {
+          setHovering(false);
+          setPointerDown(false);
+        }}
+        onPointerDown={() => {
+          setPointerDown(true);
+        }}
+        onPointerUp={() => {
+          setPointerDown(false);
+        }}
         castShadow
         scale={spring.scale.get() as [number, number, number]}
         rotation={[0, Math.PI, 0]}

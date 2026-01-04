@@ -53,6 +53,8 @@ export const DebugApp = () => {
   const { clearShownFlags, clearAllMessages } = useMessageStore();
 
   const {
+    viewDebuggerVisible,
+    toggleViewDebugger,
     statisticsVisible,
     toggleStatistics,
     resetGame: resetGameStore,
@@ -204,14 +206,6 @@ export const DebugApp = () => {
       <DividerWithLabel>Utilities</DividerWithLabel>
 
       <SettingsWrapper>
-        <h5>Performance Monitor</h5>
-
-        <ToggleButton $active={statisticsVisible} onClick={toggleStatistics}>
-          {statisticsVisible ? "ON" : "OFF"}
-        </ToggleButton>
-      </SettingsWrapper>
-
-      <SettingsWrapper>
         <HugColumn $gap={"0.5rem"}>
           <h5>Taps</h5>
           <p>Add 100 🫵</p>
@@ -227,6 +221,27 @@ export const DebugApp = () => {
         </HugColumn>
 
         <ActionButton onClick={buyAllUpgrades}>Unlock</ActionButton>
+      </SettingsWrapper>
+
+      <Divider />
+
+      <SettingsWrapper>
+        <h5>Performance Monitor</h5>
+
+        <ToggleButton $active={statisticsVisible} onClick={toggleStatistics}>
+          {statisticsVisible ? "ON" : "OFF"}
+        </ToggleButton>
+      </SettingsWrapper>
+
+      <SettingsWrapper>
+        <h5>View Debugger</h5>
+
+        <ToggleButton
+          $active={viewDebuggerVisible}
+          onClick={toggleViewDebugger}
+        >
+          {viewDebuggerVisible ? "ON" : "OFF"}
+        </ToggleButton>
       </SettingsWrapper>
 
       <DividerWithLabel>Gefährlich</DividerWithLabel>
@@ -290,6 +305,7 @@ export const SettingsWrapper = styled(FillRow)<{
   p {
     font-size: 0.875rem;
     font-weight: 400;
+    line-height: 1.4;
     opacity: 0.6;
     color: var(--text-color);
   }

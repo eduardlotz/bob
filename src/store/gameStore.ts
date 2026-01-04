@@ -268,6 +268,7 @@ interface GameFlags {
   customCameraControlsEnabled: boolean;
   animationsEnabled: boolean;
   statisticsVisible: boolean;
+  viewDebuggerVisible: boolean;
   isPaused: boolean;
   isHydrated: boolean;
   isReady: boolean;
@@ -355,6 +356,7 @@ interface GameFlagsActions {
   toggleCustomCameraControls: () => void;
   toggleAnimations: () => void;
   toggleStatistics: () => void;
+  toggleViewDebugger: () => void;
 }
 
 export type PersistedGameStore = GameState & GameFlags;
@@ -521,9 +523,18 @@ const initialGameFlags: GameFlags = {
   customCameraControlsEnabled: false,
   animationsEnabled: true,
   statisticsVisible: false,
+  viewDebuggerVisible: false,
   isPaused: false,
   isHydrated: false,
   isReady: false,
+};
+
+const initialGameComputedValues: GameComputed = {
+  manualTaps: 0,
+  manualTapsPerSecond: 0,
+  tapsPerSecond: 0,
+  autoTapRate: 0,
+  recentManualTaps: [],
 };
 
 const partializePersisted = (state: GameStore): PersistedGameStore => ({
@@ -550,7 +561,8 @@ const partializePersisted = (state: GameStore): PersistedGameStore => ({
   customCameraControlsEnabled: state.customCameraControlsEnabled,
   animationsEnabled: state.animationsEnabled,
   statisticsVisible: state.statisticsVisible,
-  previewMode: state.previewMode,
+  viewDebuggerVisible: state.viewDebuggerVisible,
+  previewMode: null, // reset on reload
   graphicPreferences: state.graphicPreferences,
 });
 
@@ -560,12 +572,7 @@ export const useGameStore = create<GameStore>()(
       (set, get) => ({
         ...initialGameState,
         ...initialGameFlags,
-
-        manualTaps: 0,
-        manualTapsPerSecond: 0,
-        tapsPerSecond: 0,
-        autoTapRate: 0,
-        recentManualTaps: [],
+        ...initialGameComputedValues,
 
         setGameReady: (gameReady) => set({ isReady: gameReady }),
 
@@ -1287,6 +1294,12 @@ export const useGameStore = create<GameStore>()(
           set((state) => ({
             ...state,
             statisticsVisible: !state.statisticsVisible,
+          }));
+        },
+        toggleViewDebugger: () => {
+          set((state) => ({
+            ...state,
+            viewDebuggerVisible: !state.viewDebuggerVisible,
           }));
         },
 
