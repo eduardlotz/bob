@@ -8,17 +8,10 @@ import {
   HugRow,
   ListItemContainer,
 } from "@/layout";
-import {
-  DevSlider,
-  DevSliderValue,
-  Divider,
-  RowLabel,
-  ValueChip,
-  ValueSlider,
-} from "@/layout/atoms";
+import { Divider, RowLabel, ValueChip, ValueSlider } from "@/layout/atoms";
 import { CameraViewId, useGameStore, useViewStore } from "@/store";
-import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useMemo, useState } from "react";
+import { motion } from "motion/react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import styled from "styled-components";
 import { match } from "ts-pattern";
@@ -33,50 +26,14 @@ export const OptionsIcon = () => (
     xmlns="http://www.w3.org/2000/svg"
   >
     <path
-      d="M24 2H56C68.1503 2 78 11.8497 78 24V56C78 68.1503 68.1503 78 56 78H24C11.8497 78 2 68.1503 2 56V24C2 11.8497 11.8497 2 24 2Z"
-      fill="#A6D4A6"
-      stroke="#518F57"
-      strokeWidth={4}
+      d="M0 24C0 10.7452 10.7452 0 24 0H56C69.2548 0 80 10.7452 80 24V56C80 69.2548 69.2548 80 56 80H24C10.7452 80 0 69.2548 0 56V24Z"
+      fill="#6B6E75"
     />
     <path
-      d="M60.1512 27.5167C59.7198 32.08 58.5344 35.9741 57.4127 38.6759C56.5402 40.777 54.7069 42.2579 52.4741 42.695C50.1866 43.1428 46.7196 43.5921 42.0173 43.5921C38.7083 43.5921 35.9066 43.3696 33.6663 43.0817C29.7228 42.575 26.9419 39.3495 26.3077 35.4245L24.4531 23.9492H56.7494C58.7219 23.9492 60.3369 25.553 60.1512 27.5167Z"
-      fill="#C3F1C4"
-    />
-    <path
-      d="M60.1512 27.5167C59.7198 32.08 58.5344 35.9741 57.4127 38.6759C56.5402 40.777 54.7069 42.2579 52.4741 42.695C50.1866 43.1428 46.7196 43.5921 42.0173 43.5921C38.7083 43.5921 35.9066 43.3696 33.6663 43.0817C29.7228 42.575 26.9419 39.3495 26.3077 35.4245L24.4531 23.9492H56.7494C58.7219 23.9492 60.3369 25.553 60.1512 27.5167Z"
-      stroke="#518F57"
-      strokeWidth={3.57143}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M54.9654 52.5202H35.1504C31.6468 52.5202 28.6605 49.979 28.0997 46.5206L24.6883 25.4839C24.1275 22.0255 21.1411 19.4844 17.6375 19.4844H15.6797"
-      stroke="#518F57"
-      strokeWidth={3.57143}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M31.2313 60.5141C33.4387 60.5141 35.2282 58.7248 35.2282 56.5173C35.2282 54.3098 33.4387 52.5205 31.2313 52.5205C29.0238 52.5205 27.2344 54.3098 27.2344 56.5173C27.2344 58.7248 29.0238 60.5141 31.2313 60.5141Z"
-      fill="#518F57"
-    />
-    <path
-      d="M31.2313 60.5141C33.4387 60.5141 35.2282 58.7248 35.2282 56.5173C35.2282 54.3098 33.4387 52.5205 31.2313 52.5205C29.0238 52.5205 27.2344 54.3098 27.2344 56.5173C27.2344 58.7248 29.0238 60.5141 31.2313 60.5141Z"
-      stroke="#518F57"
-      strokeWidth={3.57143}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M54.9655 60.5141C57.173 60.5141 58.9623 58.7248 58.9623 56.5173C58.9623 54.3098 57.173 52.5205 54.9655 52.5205C52.758 52.5205 50.9688 54.3098 50.9688 56.5173C50.9688 58.7248 52.758 60.5141 54.9655 60.5141Z"
-      fill="#518F57"
-    />
-    <path
-      d="M54.9655 60.5141C57.173 60.5141 58.9623 58.7248 58.9623 56.5173C58.9623 54.3098 57.173 52.5205 54.9655 52.5205C52.758 52.5205 50.9688 54.3098 50.9688 56.5173C50.9688 58.7248 52.758 60.5141 54.9655 60.5141Z"
-      stroke="#518F57"
-      strokeWidth={3.57143}
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M38.8815 20.7139H41.1215C41.9596 20.7156 42.7778 20.9694 43.4697 21.4422C44.1617 21.9151 44.6954 22.5851 45.0015 23.3653L46.0272 25.971L49.1415 27.7682L51.9015 27.3482C52.7317 27.2231 53.5803 27.3512 54.3366 27.7156C55.093 28.08 55.7219 28.6638 56.1415 29.391L57.2587 31.3224C57.6795 32.0493 57.8711 32.8863 57.8084 33.7239C57.7457 34.5615 57.4316 35.3606 56.9072 36.0167L55.1644 38.1967V41.8024L56.8958 43.9824C57.4187 44.6393 57.7319 45.4382 57.7946 46.2755C57.8572 47.1127 57.6665 47.9494 57.2472 48.6767L56.133 50.6082C55.7131 51.335 55.084 51.9187 54.3278 52.283C53.5715 52.6474 52.7231 52.7756 51.893 52.651L49.1301 52.231L46.013 54.031L44.993 56.631C44.6873 57.4117 44.1538 58.0824 43.4618 58.5558C42.7698 59.0292 41.9514 59.2834 41.113 59.2853H38.8758C38.0374 59.2834 37.219 59.0292 36.527 58.5558C35.835 58.0824 35.3015 57.4117 34.9958 56.631L33.9758 54.031L30.8587 52.231L28.0958 52.651C27.2659 52.7763 26.4176 52.6487 25.6613 52.2848C24.905 51.9209 24.2758 51.3376 23.8558 50.611L22.7415 48.6767C22.3207 47.9498 22.1291 47.1128 22.1918 46.2753C22.2545 45.4377 22.5686 44.6386 23.093 43.9824L24.8358 41.8024V38.1967L23.093 36.0167C22.5689 35.3605 22.2547 34.5616 22.1915 33.7242C22.1283 32.8868 22.319 32.0498 22.7387 31.3224L23.853 29.391C24.2727 28.6633 24.9022 28.0792 25.6591 27.7147C26.416 27.3503 27.2652 27.2225 28.0958 27.3482L30.8501 27.7682L33.9758 25.9567L35.0015 23.3653C35.307 22.5847 35.8405 21.9142 36.5326 21.4412C37.2247 20.9683 38.0433 20.7148 38.8815 20.7139ZM45.7015 39.9996C45.7015 43.6482 43.6472 45.7024 39.9987 45.7024C36.3501 45.7024 34.2958 43.6482 34.2958 39.9996C34.2958 36.351 36.3501 34.2967 39.9987 34.2967C43.6472 34.2967 45.7015 36.351 45.7015 39.9996Z"
+      fill="#D7D8DD"
     />
   </svg>
 );
@@ -332,45 +289,140 @@ export function OptionsApp() {
     );
   };
 
+  interface PerformanceStats {
+    fps: number;
+    memory: {
+      used: number;
+      total: number;
+    };
+    renderTime: number;
+    frameCount: number;
+  }
+
   const GraphicsView = () => {
     const { graphicPreferences, setGraphicsMode } = useGameStore();
 
     const mode = graphicPreferences.qualityMode;
 
+    const [stats, setStats] = useState<PerformanceStats>({
+      fps: 0,
+      memory: { used: 0, total: 0 },
+      renderTime: 0,
+      frameCount: 0,
+    });
+
+    const frameCountRef = useRef(0);
+    const lastTimeRef = useRef(performance.now());
+    const fpsRef = useRef<number[]>([]);
+
+    useEffect(() => {
+      let animationFrameId: number;
+
+      const updateStats = () => {
+        const currentTime = performance.now();
+        const deltaTime = currentTime - lastTimeRef.current;
+
+        frameCountRef.current++;
+
+        if (deltaTime >= 1000) {
+          const fps = Math.round((frameCountRef.current * 1000) / deltaTime);
+          fpsRef.current.push(fps);
+          if (fpsRef.current.length > 10) {
+            fpsRef.current.shift();
+          }
+
+          const avgFps = Math.round(
+            fpsRef.current.reduce((a, b) => a + b, 0) / fpsRef.current.length
+          );
+
+          // Get memory info if available
+          const memory = (performance as any).memory
+            ? {
+                used: Math.round(
+                  (performance as any).memory.usedJSHeapSize / 1024 / 1024
+                ),
+                total: Math.round(
+                  (performance as any).memory.totalJSHeapSize / 1024 / 1024
+                ),
+              }
+            : { used: 0, total: 0 };
+
+          setStats({
+            fps: avgFps,
+            memory,
+            renderTime: deltaTime,
+            frameCount: frameCountRef.current,
+          });
+
+          frameCountRef.current = 0;
+          lastTimeRef.current = currentTime;
+        }
+
+        animationFrameId = requestAnimationFrame(updateStats);
+      };
+
+      animationFrameId = requestAnimationFrame(updateStats);
+
+      return () => {
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+        }
+      };
+    }, []);
+
     return (
-      <FillColumn
-        $gap={"1rem"}
-        key="general-options-view"
-        style={{ height: "fit-content" }}
-      >
+      <FillColumn $gap={"1rem"} key="general-options-view">
         <SettingsWrapper
           $align="flex-start"
-          style={{ alignItems: "flex-start" }}
+          style={{
+            alignItems: "flex-start",
+            flexDirection: "column",
+            gap: "1rem",
+          }}
         >
-          <HugColumn $gap={"0.5rem"}>
-            <h5>Qualität</h5>
-            <p>Hohe Performance = Niedrige Perfomance</p>
-          </HugColumn>
-          <HugColumn $gap={"0.5rem"}>
+          <ListItemContainer
+            $gap={"0.25rem"}
+            $align="flex-start"
+            $gridTemplateColumns="3.125rem 1fr 1fr"
+          >
+            <FillColumn $align="flex-start" $gap={"0.5rem"}>
+              <p>FPS</p>
+              <b>{stats.fps}</b>
+            </FillColumn>
+            <FillColumn $align="flex-start" $gap={"0.5rem"}>
+              <p>Memory</p>
+              <b>
+                {stats.memory.used}/{stats.memory.total}MB
+              </b>
+            </FillColumn>
+            <FillColumn $align="flex-start" $gap={"0.5rem"}>
+              <p>Frame Time</p>
+              <b>{stats.renderTime.toFixed(1)}ms</b>
+            </FillColumn>
+          </ListItemContainer>
+          <FillColumn $gap={"0.5rem"} $align="flex-end">
             <ToggleButton
+              $fillRow
               onClick={() => setGraphicsMode("auto")}
               $active={mode === "auto"}
             >
               Automatisch
             </ToggleButton>
             <ToggleButton
+              $fillRow
               onClick={() => setGraphicsMode("low")}
               $active={mode === "low"}
             >
               Niedrig
             </ToggleButton>
             <ToggleButton
+              $fillRow
               onClick={() => setGraphicsMode("high")}
               $active={mode === "high"}
             >
               Hoch
             </ToggleButton>
-          </HugColumn>
+          </FillColumn>
         </SettingsWrapper>
       </FillColumn>
     );

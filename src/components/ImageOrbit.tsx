@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { useMemo, Suspense } from "react";
-import { Billboard, Image, useTexture } from "@react-three/drei";
+import { Billboard, Float, Image, useTexture } from "@react-three/drei";
 import { useFloatingBar } from "@/layout/FloatingBar";
 import { useCursorStore } from "@/store/cursorStore";
 import { useViewStore } from "@/store";
@@ -101,18 +101,20 @@ function ImageItem({ url, title, position }: ImageItemProps) {
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
     >
-      <Image
-        texture={texture}
-        transparent
-        scale={scale}
-        onClick={() => {
-          // disable focus reset for already active images
-          if (focusedImageTitle !== title) {
-            focusOnTarget({ position, distance: 8 });
-            focusOnImage(title);
-          }
-        }}
-      />
+      <Float floatIntensity={1.1} floatingRange={[0.005, 0.005]} speed={0.5}>
+        <Image
+          texture={texture}
+          transparent
+          scale={scale}
+          onClick={() => {
+            // disable focus reset for already active images
+            if (focusedImageTitle !== title) {
+              focusOnTarget({ position, distance: 8 });
+              focusOnImage(title);
+            }
+          }}
+        />
+      </Float>
     </Billboard>
   );
 }

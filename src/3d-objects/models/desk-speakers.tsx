@@ -49,7 +49,7 @@ export const DeskSpeakersModel = forwardRef(
     useFrame(({ clock }) => {
       if (!group.current) return;
       bounce.current = Math.sin(clock.elapsedTime * 4) * 0.01;
-      const squeeze = 1 - Math.abs(Math.sin(clock.elapsedTime * 9)) * 0.08;
+      const squeeze = 1 - Math.abs(Math.sin(clock.elapsedTime * 6.9)) * 0.08;
 
       group.current.scale.set(
         scale[0] + (isMuted ? 0 : bounce.current),
