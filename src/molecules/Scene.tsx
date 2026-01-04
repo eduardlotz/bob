@@ -18,7 +18,7 @@ import { useViewStore } from "../store/viewStore";
 import { ROUTE_PATHS } from "../store/routeConfig";
 import { FISHEYE_CONFIG } from "../store/themeConfig";
 import { startAutoTap, stopAutoTap } from "../store/gameStore";
-import { attachListenerToCamera, playUISound } from "@/utils/soundSystem";
+import { attachListenerToCamera } from "@/utils/soundSystem";
 import { CreativeScene } from "@/routes/CreativeScene";
 import { AboutScene } from "../routes/AboutScene";
 
@@ -37,6 +37,7 @@ const Debug = () => {
 
 // TODO: make proper constant file
 export const FLOOR_Y_POSITION = -1.5;
+const TRUCK_SPEED = 5;
 
 const Scene = ({
   permissionGranted,
@@ -54,19 +55,12 @@ const Scene = ({
     setCameraControlsRef,
     isDefaultView,
     resetToDefaultView,
-    transitionToView,
-    setDefaultViewMode,
+    isObjectView,
   } = useViewStore();
   const { upgrades, isPaused, statisticsVisible, setGameReady } =
     useGameStore();
 
   const { currentRoute, showOptions, setShowOptions } = useAppStore();
-
-  // const autoTapEnabled = useMemo(() => {
-  //   return upgrades.some(
-  //     (upgrade) => upgrade.id === "auto_tap_1" && upgrade.level > 0
-  //   );
-  // }, [upgrades]);
 
   // shop items are only visible on home route
   const isHome = currentRoute === ROUTE_PATHS.HOME;
@@ -136,7 +130,7 @@ const Scene = ({
                 position={[0, FLOOR_Y_POSITION, 0]}
               />
             )}
-            <CameraControls ref={cameraControlsRef} />
+            <CameraControls ref={cameraControlsRef} truckSpeed={TRUCK_SPEED} />
             <ambientLight intensity={2} />
             <PerspectiveCamera makeDefault position={[0, 0, 3]} />
             <directionalLight intensity={1.2} position={[2, 4, 5]} />
@@ -233,12 +227,6 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
         zIndex: 0,
       }}
       dpr={dpr}
-      onCreated={(state) => {
-        state.camera.position.y = 20;
-        state.camera.position.z = 30;
-        state.camera.lookAt(0, 10, 0);
-        state.camera.updateProjectionMatrix();
-      }}
       {...props}
     >
       <PerformanceMonitor factor={1} onChange={handlePerformanceChange}>

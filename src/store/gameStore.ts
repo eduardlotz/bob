@@ -5,17 +5,8 @@ import { createIndexedDBStorage } from "./indexedDB";
 import { match } from "ts-pattern";
 import { ROUTE_PATHS, ROUTE_IDS, ROUTE_CONFIG } from "./routeConfig";
 import { toast } from "sonner";
-import {
-  setMasterVolume as engineSetMasterVolume,
-  setCurrentTapSound as engineSetCurrentTapSound,
-  setTapEnabled as engineSetTapEnabled,
-  setWorldMusic as engineSetWorldMusic,
-} from "@/utils/soundSystem";
-import {
-  resolveTapSoundForEffect,
-  tryGetWorldSoundById,
-} from "@/utils/sound/configs";
-import { getWorldSoundById } from "@/utils/sound/configs";
+import { setCurrentTapSound as engineSetCurrentTapSound } from "@/utils/soundSystem";
+import { resolveTapSoundForEffect } from "@/utils/sound/configs";
 import { THEME_IDS, THEME_CONFIG } from "./themeConfig";
 import { initialTapUpgrades } from "@/shop-items/upgrades";
 import { initialTapEffects } from "@/shop-items/tapEffects";
@@ -28,7 +19,6 @@ import { initialWeatherEffects } from "@/shop-items/weatherEffects";
 import { initialBobItems } from "@/shop-items/bobItems";
 import {
   DEFAULT_MASTER_VOLUME,
-  DEFAULT_TAP_SOUND,
   DEFAULT_TAP_VOLUME,
   DEFAULT_TEXT_VOLUME,
   DEFAULT_UI_VOLUME,
@@ -43,7 +33,8 @@ export enum GAME_STORE_VERSION {
   V0 = 0,
   V1 = 1000000, // version 1.00.00
   V2 = 1000001, // version 1.00.01
-  LATEST = V2,
+  V3 = 1000002, // version 1.00.02
+  LATEST = V3,
 }
 
 // main migration function
@@ -56,6 +47,7 @@ function migrateStore(oldState: any, fromVersion: number): any {
 
   // initial migration: reset all defaults
   if (fromVersion < GAME_STORE_VERSION.V0) {
+    console.warn("GAME VERSION IS TOO OLD, STARTING FRESH");
     migratedState = initialGameState;
   }
 
@@ -66,7 +58,7 @@ function migrateStore(oldState: any, fromVersion: number): any {
       ...migratedState,
       routes: initialRoutes,
       themes: initialThemes,
-      currenTheme: initialThemes.find(currentTheme),
+      currentTheme: initialThemes.find(currentTheme),
     };
   }
 
@@ -79,6 +71,17 @@ function migrateStore(oldState: any, fromVersion: number): any {
         qualityMode: "auto",
         effectsEnabled: true,
       },
+    };
+  }
+
+  // theme fixes, chat color added
+  if (fromVersion < GAME_STORE_VERSION.V3) {
+    const currentTheme = migratedState.currentTheme.id ?? THEME_IDS.DEFAULT;
+
+    migratedState = {
+      ...migratedState,
+      themes: initialThemes,
+      currentTheme: initialThemes.find(currentTheme),
     };
   }
 
@@ -176,6 +179,7 @@ export interface Theme {
   blobColor: string;
   outlineColor: string;
   eyeColor: string;
+  chatColor: string;
 }
 
 export interface Route {
@@ -268,6 +272,7 @@ interface GameFlags {
   customCameraControlsEnabled: boolean;
   animationsEnabled: boolean;
   statisticsVisible: boolean;
+  viewDebuggerVisible: boolean;
   isPaused: boolean;
   isHydrated: boolean;
   isReady: boolean;
@@ -355,6 +360,7 @@ interface GameFlagsActions {
   toggleCustomCameraControls: () => void;
   toggleAnimations: () => void;
   toggleStatistics: () => void;
+  toggleViewDebugger: () => void;
 }
 
 export type PersistedGameStore = GameState & GameFlags;
@@ -381,6 +387,7 @@ export const initialThemes: Theme[] = Object.values(THEME_CONFIG).map(
     blobColor: themeConfig.blobColor,
     outlineColor: themeConfig.outlineColor,
     eyeColor: themeConfig.eyeColor,
+    chatColor: themeConfig.chatColor,
   })
 );
 
@@ -521,9 +528,18 @@ const initialGameFlags: GameFlags = {
   customCameraControlsEnabled: false,
   animationsEnabled: true,
   statisticsVisible: false,
+  viewDebuggerVisible: false,
   isPaused: false,
   isHydrated: false,
   isReady: false,
+};
+
+const initialGameComputedValues: GameComputed = {
+  manualTaps: 0,
+  manualTapsPerSecond: 0,
+  tapsPerSecond: 0,
+  autoTapRate: 0,
+  recentManualTaps: [],
 };
 
 const partializePersisted = (state: GameStore): PersistedGameStore => ({
@@ -550,7 +566,8 @@ const partializePersisted = (state: GameStore): PersistedGameStore => ({
   customCameraControlsEnabled: state.customCameraControlsEnabled,
   animationsEnabled: state.animationsEnabled,
   statisticsVisible: state.statisticsVisible,
-  previewMode: state.previewMode,
+  viewDebuggerVisible: state.viewDebuggerVisible,
+  previewMode: null, // reset on reload
   graphicPreferences: state.graphicPreferences,
 });
 
@@ -560,12 +577,7 @@ export const useGameStore = create<GameStore>()(
       (set, get) => ({
         ...initialGameState,
         ...initialGameFlags,
-
-        manualTaps: 0,
-        manualTapsPerSecond: 0,
-        tapsPerSecond: 0,
-        autoTapRate: 0,
-        recentManualTaps: [],
+        ...initialGameComputedValues,
 
         setGameReady: (gameReady) => set({ isReady: gameReady }),
 
@@ -1287,6 +1299,12 @@ export const useGameStore = create<GameStore>()(
           set((state) => ({
             ...state,
             statisticsVisible: !state.statisticsVisible,
+          }));
+        },
+        toggleViewDebugger: () => {
+          set((state) => ({
+            ...state,
+            viewDebuggerVisible: !state.viewDebuggerVisible,
           }));
         },
 

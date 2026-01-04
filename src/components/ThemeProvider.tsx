@@ -68,7 +68,10 @@ const GlobalStyle = createGlobalStyle<{ theme: StyledTheme | undefined }>`
       props.theme?.colors?.basic?.white || "#ffffff"}; */
     --font-family: "Open Sauce Two";
       
+    --counter-color: ${(props) =>
+      props.theme?.colors?.basic?.white || "#ffffff"};
     --blob-color: ${(props) => props.theme?.colors?.basic?.black || "#212121"};
+    --chat-color: ${(props) => props.theme?.colors?.brand?.blue || "#4277F7"};
 
     --border-color: ${(props) =>
       props.theme?.colors?.shades?.grey?.two || "#e9ecef"};
@@ -166,8 +169,10 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
         activeTheme.colors.background
       );
       root.style.setProperty("--text-color", activeTheme.colors.text);
+      root.style.setProperty("--counter-color", activeTheme.counterColor);
       root.style.setProperty("--blob-color", activeTheme.blobColor);
       root.style.setProperty("--outline-color", activeTheme.outlineColor);
+      root.style.setProperty("--chat-color", activeTheme.chatColor);
       // root.style.setProperty("--font-family", activeTheme.font);
 
       root.style.setProperty(

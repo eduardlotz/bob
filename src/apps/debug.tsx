@@ -37,8 +37,8 @@ export const DebugIcon = () => (
         fill="#CEAE91"
       />
       <path
-        fill-rule="evenodd"
-        clip-rule="evenodd"
+        fillRule="evenodd"
+        clipRule="evenodd"
         d="M39.9844 21.6709C41.7609 21.6731 43.4807 22.3321 44.9851 23.5444C49.3069 27.0268 53.0697 30.7981 56.5466 35.1306C58.9266 38.0967 58.948 41.9104 56.5431 44.8843C53.0251 49.2349 49.2134 53.0438 44.8595 56.5598C41.9267 58.9283 38.1152 58.9072 35.1903 56.5632C30.7839 53.032 26.958 49.2063 23.4268 44.8001C21.0813 41.8734 21.0601 38.0618 23.4302 35.1271C26.9116 30.8163 30.6805 27.0368 34.9779 23.5477C36.4846 22.3245 38.2068 21.6688 39.9844 21.6709ZM40 29.0739C41.1835 29.0739 42.1429 30.0332 42.1429 31.2167V40.473C42.1429 41.6565 41.1835 42.6159 40 42.6159C38.8165 42.6159 37.8571 41.6565 37.8571 40.473V31.2167C37.8571 30.0332 38.8165 29.0739 40 29.0739ZM40 44.9639C41.1835 44.9639 42.1429 45.9233 42.1429 47.1068V48.7829C42.1429 49.9663 41.1835 50.9258 40 50.9258C38.8165 50.9258 37.8571 49.9663 37.8571 48.7829V47.1068C37.8571 45.9233 38.8165 44.9639 40 44.9639Z"
         fill="#F0D5BD"
       />
@@ -53,6 +53,8 @@ export const DebugApp = () => {
   const { clearShownFlags, clearAllMessages } = useMessageStore();
 
   const {
+    viewDebuggerVisible,
+    toggleViewDebugger,
     statisticsVisible,
     toggleStatistics,
     resetGame: resetGameStore,
@@ -204,14 +206,6 @@ export const DebugApp = () => {
       <DividerWithLabel>Utilities</DividerWithLabel>
 
       <SettingsWrapper>
-        <h5>Performance Monitor</h5>
-
-        <ToggleButton $active={statisticsVisible} onClick={toggleStatistics}>
-          {statisticsVisible ? "ON" : "OFF"}
-        </ToggleButton>
-      </SettingsWrapper>
-
-      <SettingsWrapper>
         <HugColumn $gap={"0.5rem"}>
           <h5>Taps</h5>
           <p>Add 100 🫵</p>
@@ -227,6 +221,27 @@ export const DebugApp = () => {
         </HugColumn>
 
         <ActionButton onClick={buyAllUpgrades}>Unlock</ActionButton>
+      </SettingsWrapper>
+
+      <Divider />
+
+      <SettingsWrapper>
+        <h5>Performance Monitor</h5>
+
+        <ToggleButton $active={statisticsVisible} onClick={toggleStatistics}>
+          {statisticsVisible ? "ON" : "OFF"}
+        </ToggleButton>
+      </SettingsWrapper>
+
+      <SettingsWrapper>
+        <h5>View Debugger</h5>
+
+        <ToggleButton
+          $active={viewDebuggerVisible}
+          onClick={toggleViewDebugger}
+        >
+          {viewDebuggerVisible ? "ON" : "OFF"}
+        </ToggleButton>
       </SettingsWrapper>
 
       <DividerWithLabel>Gefährlich</DividerWithLabel>
@@ -290,6 +305,7 @@ export const SettingsWrapper = styled(FillRow)<{
   p {
     font-size: 0.875rem;
     font-weight: 400;
+    line-height: 1.4;
     opacity: 0.6;
     color: var(--text-color);
   }

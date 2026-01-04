@@ -110,7 +110,7 @@ const MessageContainer = styled(motion.div)`
   min-width: 90px;
   max-width: 100%;
 
-  background: var(--secondary-color);
+  background: var(--chat-color);
   color: var(--text-color);
   border-radius: 1.5rem;
   box-shadow: 0 4px 20px rgba(33, 33, 33, 0.1);

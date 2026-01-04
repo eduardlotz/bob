@@ -374,7 +374,7 @@ const BubbleLine = styled(motion.div)`
   gap: 10px;
   padding: 15px 20px;
 
-  background: var(--secondary-color);
+  background: var(--chat-color);
   color: var(--text-color);
   border-radius: 24px;
   box-shadow: 0 4px 20px rgba(33, 33, 33, 0.1);

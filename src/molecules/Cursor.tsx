@@ -1,5 +1,3 @@
-// stolen from https://github.com/ibelick/motion-primitives/blob/main/components/core/cursor.tsx
-
 import React, { useEffect, useState, useRef } from "react";
 import {
   motion,

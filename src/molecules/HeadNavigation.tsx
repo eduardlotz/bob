@@ -523,10 +523,10 @@ const BackgroundColor = styled.div<{ $active: boolean }>`
   border-radius: 50px;
 
   background-color: ${(p) =>
-    p.$active ? "var(--text-color)" : "var(--background-color)"};
+    p.$active ? "var(--text-color)" : "var(--primary-color)"};
   z-index: 0;
-  border-color: ${(p) => (p.$active ? "var(--text-color)" : "transparent")};
-  border: 2px solid transparent;
+  /* border-color: ${(p) => (p.$active ? "var(--text-color)" : "transparent")};
+  border: 2px solid transparent; */
 `;
 
 const RouteName = styled.p`
@@ -539,10 +539,9 @@ const NavigationBubble = styled(motion.button)<{
   $active: boolean;
   $locked?: boolean;
 }>`
-  color: ${(p) =>
-    p.$active ? "var(--background-color)" : "var(--text-color)"};
+  color: ${(p) => (p.$active ? "var(--primary-color)" : "var(--text-color)")};
   background-color: ${(p) =>
-    p.$active ? "var(--text-color)" : "var(--background-color)"};
+    p.$active ? "var(--text-color)" : "var(--primary-color)"};
 
   opacity: ${(p) => (p.$locked ? 1 : 0.25)};
 

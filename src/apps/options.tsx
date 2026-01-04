@@ -304,109 +304,20 @@ export function OptionsApp() {
 
     const mode = graphicPreferences.qualityMode;
 
-    const [stats, setStats] = useState<PerformanceStats>({
-      fps: 0,
-      memory: { used: 0, total: 0 },
-      renderTime: 0,
-      frameCount: 0,
-    });
-
-    const frameCountRef = useRef(0);
-    const lastTimeRef = useRef(performance.now());
-    const fpsRef = useRef<number[]>([]);
-
-    useEffect(() => {
-      let animationFrameId: number;
-
-      const updateStats = () => {
-        const currentTime = performance.now();
-        const deltaTime = currentTime - lastTimeRef.current;
-
-        frameCountRef.current++;
-
-        if (deltaTime >= 1000) {
-          const fps = Math.round((frameCountRef.current * 1000) / deltaTime);
-          fpsRef.current.push(fps);
-          if (fpsRef.current.length > 10) {
-            fpsRef.current.shift();
-          }
-
-          const avgFps = Math.round(
-            fpsRef.current.reduce((a, b) => a + b, 0) / fpsRef.current.length
-          );
-
-          // Get memory info if available
-          const memory = (performance as any).memory
-            ? {
-                used: Math.round(
-                  (performance as any).memory.usedJSHeapSize / 1024 / 1024
-                ),
-                total: Math.round(
-                  (performance as any).memory.totalJSHeapSize / 1024 / 1024
-                ),
-              }
-            : { used: 0, total: 0 };
-
-          setStats({
-            fps: avgFps,
-            memory,
-            renderTime: deltaTime,
-            frameCount: frameCountRef.current,
-          });
-
-          frameCountRef.current = 0;
-          lastTimeRef.current = currentTime;
-        }
-
-        animationFrameId = requestAnimationFrame(updateStats);
-      };
-
-      animationFrameId = requestAnimationFrame(updateStats);
-
-      return () => {
-        if (animationFrameId) {
-          cancelAnimationFrame(animationFrameId);
-        }
-      };
-    }, []);
-
     return (
       <FillColumn $gap={"1rem"} key="general-options-view">
-        <SettingsWrapper
-          $align="flex-start"
-          style={{
-            alignItems: "flex-start",
-            flexDirection: "column",
-            gap: "1rem",
-          }}
-        >
-          <ListItemContainer
-            $gap={"0.25rem"}
-            $align="flex-start"
-            $gridTemplateColumns="3.125rem 1fr 1fr"
-          >
-            <FillColumn $align="flex-start" $gap={"0.5rem"}>
-              <p>FPS</p>
-              <b>{stats.fps}</b>
-            </FillColumn>
-            <FillColumn $align="flex-start" $gap={"0.5rem"}>
-              <p>Memory</p>
-              <b>
-                {stats.memory.used}/{stats.memory.total}MB
-              </b>
-            </FillColumn>
-            <FillColumn $align="flex-start" $gap={"0.5rem"}>
-              <p>Frame Time</p>
-              <b>{stats.renderTime.toFixed(1)}ms</b>
-            </FillColumn>
-          </ListItemContainer>
+        <SettingsWrapper $align="flex-start">
+          <FillColumn $align="flex-start" $justify="flex-start" $gap={"0.5rem"}>
+            <h5>Hinweis</h5>
+            <p>Hohe Auflösung benötigt ein Neuladen der Webseite</p>
+          </FillColumn>
           <FillColumn $gap={"0.5rem"} $align="flex-end">
             <ToggleButton
               $fillRow
               onClick={() => setGraphicsMode("auto")}
               $active={mode === "auto"}
             >
-              Automatisch
+              Auto
             </ToggleButton>
             <ToggleButton
               $fillRow

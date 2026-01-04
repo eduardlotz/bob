@@ -7,7 +7,7 @@ import { useViewStore } from "@/store";
 type DragMode = "kinematic" | "spring";
 
 type GrabbableProps = {
-  children: React.ReactElement; // Must be a <RigidBody>
+  children: React.ReactElement; // has to be <RigidBody>
   rigidBodyRef: React.RefObject<RapierRigidBody>;
   mode?: DragMode; // 'kinematic' = precise hard lock; 'spring' = soft physics pull
   lockX?: boolean;
@@ -15,12 +15,11 @@ type GrabbableProps = {
   lockZ?: boolean;
   min?: { x?: number; y?: number; z?: number };
   max?: { x?: number; y?: number; z?: number };
-  stiffness?: number; // Only for 'spring' mode (default: 20)
+  stiffness?: number;
   onDragStart?: () => void;
   onDragEnd?: () => void;
 };
 
-// --- HELPER COMPONENT: GRABBABLE ---
 export const Grabbable = ({
   children,
   rigidBodyRef,
@@ -39,40 +38,38 @@ export const Grabbable = ({
   const { cameraControlsRef } = useViewStore();
   const controls = cameraControlsRef?.current;
 
-  // -- MUTABLE REFERENCES (Optimization) --
-  // We use refs for vectors to avoid garbage collection during the drag loop
+  // refs for vectors to avoid garbage collection during the drag loop
   const plane = useRef(new Plane());
   const intersection = useRef(new Vector3());
-  const offset = useRef(new Vector3()); // Offset from center of object to click point
+  // offset from center of object to click point
+  const offset = useRef(new Vector3());
   const targetPos = useRef(new Vector3());
   const mouseUV = useRef(new Vector2());
 
-  // For 'kinematic' throw velocity calculation
+  // kinematic throw velocity calculation
   const lastPos = useRef(new Vector3());
   const velocity = useRef(new Vector3());
-
-  // --- POINTER EVENTS ---
 
   const handlePointerDown = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
     const body = rigidBodyRef.current;
     if (!body) return;
 
-    // 0. DISABLE CAMERA CONTROLS
+    // disable camera controls
     if (controls) (controls as any).enabled = false;
 
-    // 1. Capture pointer
+    // capture pointer
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
 
-    // 2. Setup dragging plane
-    //    The plane faces the camera and passes through the object's center
+    // setup dragging plane
+    // the plane faces the camera and passes through the object's center
     const worldPos = body.translation();
     plane.current.setFromNormalAndCoplanarPoint(
       camera.getWorldDirection(new Vector3()).negate(),
       new Vector3(worldPos.x, worldPos.y, worldPos.z)
     );
 
-    // 3. Calculate offset (grab point vs object center)
+    // 3. get offset (grab point vs object center)
     raycaster.setFromCamera(
       new Vector2(
         (e.clientX / size.width) * 2 - 1,
@@ -88,13 +85,12 @@ export const Grabbable = ({
       );
     }
 
-    // 4. Mode-specific setup
     body.wakeUp();
     if (mode === "kinematic") {
-      body.setBodyType(2, true); // KinematicPosition
+      body.setBodyType(2, true);
     } else {
-      // In spring mode, we keep it dynamic but disable gravity
-      // so it doesn't sag while holding it.
+      // in spring mode keep it dynamic but disable gravity
+      // so it doesn't sag while holding it
       body.setGravityScale(0, true);
     }
 
@@ -104,7 +100,7 @@ export const Grabbable = ({
 
   const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
     if (!isDragging) return;
-    // Update mouse coordinates for the useFrame loop
+    // update mouse coordinates for the useFrame loop
     mouseUV.current.set(
       (e.clientX / size.width) * 2 - 1,
       -(e.clientY / size.height) * 2 + 1
@@ -115,13 +111,15 @@ export const Grabbable = ({
     if (!isDragging) return;
     const body = rigidBodyRef.current;
 
-    // RE-ENABLE CAMERA CONTROLS
+    // re-enable camera controls
     if (controls) (controls as any).enabled = true;
 
     if (body) {
       if (mode === "kinematic") {
-        body.setBodyType(0, true); // Restore Dynamic
-        // Apply throw velocity (clamped)
+        // restore Dynamic
+        body.setBodyType(0, true);
+
+        // apply clamped throw velocity
         const maxThrow = 20;
         velocity.current.x = Math.max(
           -maxThrow,
@@ -137,9 +135,8 @@ export const Grabbable = ({
         );
         body.setLinvel(velocity.current, true);
       } else {
-        // Restore gravity
+        // restore gravity
         body.setGravityScale(1, true);
-        // In spring mode, velocity is naturally preserved by the physics engine
       }
     }
 
@@ -148,18 +145,14 @@ export const Grabbable = ({
     if (onDragEnd) onDragEnd();
   };
 
-  // --- PHYSICS LOOP ---
   useFrame(() => {
     if (!isDragging || !rigidBodyRef.current) return;
 
-    // 1. Update Raycaster
     raycaster.setFromCamera(mouseUV.current, camera);
 
-    // 2. Find target point on plane
     if (raycaster.ray.intersectPlane(plane.current, intersection.current)) {
       targetPos.current.addVectors(intersection.current, offset.current);
 
-      // 3. Apply Constraints
       const currentPos = rigidBodyRef.current.translation();
 
       if (lockX) targetPos.current.x = currentPos.x;
@@ -183,24 +176,18 @@ export const Grabbable = ({
           targetPos.current.z = Math.min(max.z, targetPos.current.z);
       }
 
-      // 4. Move Body
       if (mode === "kinematic") {
-        // Hard Lock
         rigidBodyRef.current.setNextKinematicTranslation(targetPos.current);
 
-        // Calculate velocity for throw
         velocity.current
           .subVectors(targetPos.current, lastPos.current)
           .multiplyScalar(60);
         lastPos.current.copy(targetPos.current);
       } else {
-        // Soft Spring / Mouse Joint
-        // We calculate the vector from current position to target
         const direction = new Vector3().subVectors(
           targetPos.current,
           currentPos
         );
-        // Apply velocity proportional to distance (P-Controller)
         const newVel = direction.multiplyScalar(stiffness);
         rigidBodyRef.current.setLinvel(newVel, true);
       }
