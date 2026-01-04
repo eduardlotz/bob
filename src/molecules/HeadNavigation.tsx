@@ -182,14 +182,7 @@ export function HeadNavigation({
     }
   });
 
-  const shouldFollowCursor =
-    isMobile && (isDefaultView() || isNavigationView());
-
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
-  const mousePosition = useCursor({
-    condition: () => shouldFollowCursor,
-    positionFactor: 0.2,
-  });
 
   useEffect(() => {
     setWindowSize({
@@ -237,45 +230,31 @@ export function HeadNavigation({
   }, [emotionState, tapCount, getEmotionIcon, onEmotionUpdate]);
 
   useFrame(() => {
-    // if we're in object view mode, let the view store handle the camera
+    // if in object view mode, let view store camera controls handle transition
     if (isObjectView() || isTransitioning) {
       return;
     }
-    // default view behavior (home/menu)
-    // const baseZoom =
-    //   showOptions && !isOptionsClosing
-    //     ? VISIBLE_OPTIONS_CAMERA_ZOOM
-    //     : HIDDEN_OPTIONS_CAMERA_ZOOM;
-    // const zoomOffset = cameraZoomAnimation ? 1 : 0;
-    // const finalZoom = baseZoom + zoomOffset;
-    // only follow cursor on desktop
-    // if (isMobile) {
-    //   cameraControlsRef.current?.setLookAt(
-    //     0,
-    //     CAMERA_HEIGHT,
-    //     finalZoom,
-    //     0,
-    //     CAMERA_Y_POSITION,
-    //     0,
-    //     true
-    //   );
-    // } else {
-    //   const cursorPos = new THREE.Vector3(
-    //     mousePosition.x * CAMERA_FOLLOW_OFFSET,
-    //     mousePosition.y * CAMERA_FOLLOW_OFFSET,
-    //     0
-    //   );
-    //   cameraControlsRef.current?.setLookAt(
-    //     0,
-    //     CAMERA_HEIGHT,
-    //     finalZoom,
-    //     cursorPos.x,
-    //     cursorPos.y + CAMERA_Y_POSITION,
-    //     // cursorPos.y + 2,
-    //     cursorPos.z,
-    //     true
-    //   );
-    // }
+    // somehow the inital camera lookAt is wrong on mobile and this fixes it (???)
+    // transition to phone:shop or phone:options still not smooth
+    const baseZoom =
+      showOptions && !isOptionsClosing
+        ? VISIBLE_OPTIONS_CAMERA_ZOOM
+        : HIDDEN_OPTIONS_CAMERA_ZOOM;
+    const zoomOffset = cameraZoomAnimation ? 1 : 0;
+    const finalZoom = baseZoom + zoomOffset;
+
+    // mobile bob does not follow cursor -> fixed lookAt
+    if (isMobile) {
+      cameraControlsRef.current?.setLookAt(
+        0,
+        CAMERA_HEIGHT,
+        finalZoom,
+        0,
+        CAMERA_Y_POSITION,
+        0,
+        true
+      );
+    }
   });
 
   return (

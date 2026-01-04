@@ -169,11 +169,11 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
   {
     id: "creative_welcome",
     text: [
-      "Willkommen in meinem kreativen Bereich",
-      "quasi meine eigene kleine Galaxie an kreativen Ideen",
-      "Tipp ein Bild an, um es dir genauer anzuschauen",
+      "Willkommen in Eddies kreativen Bereich",
+      "quasi eine eigene kleine Galaxie mit all dem, was in der Freizeit so entstanden ist",
+      "Hier darfst du dich sogar frei bewegen. Tipp einfach mal Bild an, um es dir genauer anzuschauen 🔍",
     ],
-    label: "Eddie",
+    label: "Bob",
     options: {
       typingSpeedMs: 25,
       baseDismissMs: 2000,
