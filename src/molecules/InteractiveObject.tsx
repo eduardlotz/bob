@@ -65,7 +65,7 @@ export function InteractiveObject({
     <group
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
-      onPointerDown={handlePointerDown}
+      onClick={handlePointerDown}
     >
       {children}
     </group>

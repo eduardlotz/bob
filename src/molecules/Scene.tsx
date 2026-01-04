@@ -227,12 +227,6 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
         zIndex: 0,
       }}
       dpr={dpr}
-      // onCreated={(state) => {
-      //   state.camera.position.y = 20;
-      //   state.camera.position.z = 30;
-      //   state.camera.lookAt(0, 10, 0);
-      //   state.camera.updateProjectionMatrix();
-      // }}
       {...props}
     >
       <PerformanceMonitor factor={1} onChange={handlePerformanceChange}>
