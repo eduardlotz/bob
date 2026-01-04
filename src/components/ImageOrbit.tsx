@@ -3,9 +3,10 @@ import { useMemo, Suspense } from "react";
 import { Billboard, Float, Image, useTexture } from "@react-three/drei";
 import { useFloatingBar } from "@/layout/FloatingBar";
 import { useCursorStore } from "@/store/cursorStore";
-import { useViewStore } from "@/store";
+import { useQuestStore, useViewStore } from "@/store";
 import { playUISound } from "@/utils/soundSystem";
 import { SoundConfig } from "@/utils/sound/types";
+import { useQuestSystem } from "@/hooks/useQuestSystem";
 
 interface PortfolioImage {
   url: string;
@@ -54,6 +55,7 @@ function ImageItem({ url, title, position }: ImageItemProps) {
 
   const { setHoveredObject } = useFloatingBar();
   const { focusOnTarget, focusOnImage, focusedImageTitle } = useViewStore();
+  const { triggerQuest } = useQuestSystem();
   const cursor = useCursorStore();
 
   const currentlyActive = focusedImageTitle === title; // TODO: use ids instead
@@ -73,8 +75,13 @@ function ImageItem({ url, title, position }: ImageItemProps) {
   };
 
   const handlePointerDown = () => {
-    cursor.set("active");
-    if (!currentlyActive) playUISound();
+    if (!currentlyActive) {
+      cursor.set("active");
+      triggerQuest("click_creative_image");
+      playUISound();
+    } else {
+      cursor.set("grab");
+    }
   };
 
   const handlePointerUp = () => {
