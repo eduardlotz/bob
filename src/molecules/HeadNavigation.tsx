@@ -130,45 +130,39 @@ export const MOTION_VARIANTS = {
 //#endregion
 
 export function HeadNavigation({
-  showOptions,
-  setShowOptions,
   cameraControlsRef,
   permissionGranted,
   onEmotionUpdate,
 }: {
-  showOptions: boolean;
-  setShowOptions: React.Dispatch<React.SetStateAction<boolean>>;
   cameraControlsRef: React.RefObject<CameraControls>;
   permissionGranted: boolean;
-  onEmotionUpdate?: (data: { emotionState: any; getEmotionIcon: any }) => void;
+  onEmotionUpdate?: (data: { emotionState: any }) => void;
 }) {
+  const [cameraZoomAnimation, setCameraZoomAnimation] = useState(false);
+
+  const { emotionState, handleTap, triggerEmotion } = useBlobEmotions();
   const {
     isTransitioning,
-    isDefaultView,
     isNavigationView,
     resetToDefaultView,
     isObjectView,
     currentView,
   } = useViewStore();
 
-  const { isMobile, toggleOptions } = useAppStore();
+  const {
+    isMobile,
+    toggleOptions,
+    showOptions,
+    isOptionsClosing,
+    closeOptionsWithAnimation,
+  } = useAppStore();
 
   // close options menu when entering a custom view
   useEffect(() => {
     if (!isNavigationView() && showOptions) {
-      setShowOptions(false);
+      closeOptionsWithAnimation();
     }
   }, [currentView, showOptions]);
-
-  // return to default view when options menu is opened (if not already in default view)
-  // useEffect(() => {
-  //   if (showOptions && !isDefaultView() && !isNavigationView()) {
-  //     // small delay to ensure smooth transition
-  //     setTimeout(() => {
-  //       resetToDefaultView();
-  //     }, 100);
-  //   }
-  // }, [showOptions, isDefaultView, resetToDefaultView, isNavigationView]);
 
   useKeyPress("Escape", () => {
     if (showOptions) {
@@ -195,13 +189,6 @@ export function HeadNavigation({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const { isOptionsClosing, closeOptionsWithAnimation } = useAppStore();
-
-  const [cameraZoomAnimation, setCameraZoomAnimation] = useState(false);
-
-  const { emotionState, handleTap, getEmotionIcon, triggerEmotion } =
-    useBlobEmotions();
-
   // listen for global emotion requests
   useEffect(() => {
     const handler = (e: Event) => {
@@ -219,44 +206,44 @@ export function HeadNavigation({
 
   useEffect(() => {
     if (onEmotionUpdate) {
-      onEmotionUpdate({ emotionState, getEmotionIcon });
+      onEmotionUpdate({ emotionState });
     }
-  }, [emotionState, getEmotionIcon, onEmotionUpdate]);
+  }, [emotionState, onEmotionUpdate]);
 
-  useFrame(({ clock }, delta) => {
-    // if in object view mode, let view store camera controls handle transition
-    // mobile bob does not follow cursor -> fixed lookAt
-    if (isObjectView() || isTransitioning) {
-      return;
-    }
+  // useFrame(({ clock }, delta) => {
+  //   // if in object view mode, let view store camera controls handle transition
+  //   // mobile bob does not follow cursor -> fixed lookAt
+  //   if (isObjectView() || isTransitioning) {
+  //     return;
+  //   }
 
-    if (isMobile) {
-      // somehow the inital camera lookAt is wrong on mobile and this fixes it (???)
-      // transition to phone:shop or phone:options still not smooth
-      const baseZoom = showOptions
-        ? VISIBLE_OPTIONS_CAMERA_ZOOM
-        : HIDDEN_OPTIONS_CAMERA_ZOOM;
-      const zoomOffset = cameraZoomAnimation ? -1.5 : 0;
-      const handCamSwayX = Math.sin(clock.getElapsedTime() * 1) * 0.08;
-      const handCamSwayY = Math.sin(clock.getElapsedTime() * 0.5) * 0.05;
-      const cameraShakeX = cameraZoomAnimation
-        ? Math.sin(clock.getElapsedTime() * 40)
-        : 0;
-      const cameraShakeY = cameraZoomAnimation
-        ? Math.sin(clock.getElapsedTime() * 20)
-        : 0;
+  //   if (isMobile) {
+  //     // somehow the inital camera lookAt is wrong on mobile and this fixes it (???)
+  //     // transition to phone:shop or phone:options still not smooth
+  //     const baseZoom = showOptions
+  //       ? VISIBLE_OPTIONS_CAMERA_ZOOM
+  //       : HIDDEN_OPTIONS_CAMERA_ZOOM;
+  //     const zoomOffset = cameraZoomAnimation ? -1.5 : 0;
+  //     const handCamSwayX = Math.sin(clock.getElapsedTime() * 1) * 0.08;
+  //     const handCamSwayY = Math.sin(clock.getElapsedTime() * 0.5) * 0.05;
+  //     const cameraShakeX = cameraZoomAnimation
+  //       ? Math.sin(clock.getElapsedTime() * 40)
+  //       : 0;
+  //     const cameraShakeY = cameraZoomAnimation
+  //       ? Math.sin(clock.getElapsedTime() * 20)
+  //       : 0;
 
-      cameraControlsRef.current?.setLookAt(
-        0,
-        CAMERA_HEIGHT,
-        baseZoom + zoomOffset,
-        handCamSwayX + cameraShakeX,
-        CAMERA_Y_POSITION + handCamSwayY + cameraShakeY,
-        0,
-        true
-      );
-    }
-  });
+  //     cameraControlsRef.current?.setLookAt(
+  //       0,
+  //       CAMERA_HEIGHT,
+  //       baseZoom + zoomOffset,
+  //       handCamSwayX + cameraShakeX,
+  //       CAMERA_Y_POSITION + handCamSwayY + cameraShakeY,
+  //       0,
+  //       true
+  //     );
+  //   }
+  // });
 
   return (
     <>
@@ -275,7 +262,6 @@ export function HeadNavigation({
         <OptionsGroup
           windowWidth={windowSize.width}
           windowHeight={windowSize.height}
-          cameraControlsRef={cameraControlsRef}
           hideOptions={closeOptionsWithAnimation}
           isClosing={isOptionsClosing}
         />
@@ -287,13 +273,11 @@ export function HeadNavigation({
 function OptionsGroup({
   windowWidth,
   windowHeight,
-  cameraControlsRef,
   hideOptions,
   isClosing,
 }: {
   windowWidth: number;
   windowHeight: number;
-  cameraControlsRef: React.RefObject<CameraControls>;
   hideOptions: () => void;
   isClosing: boolean;
 }) {
@@ -376,7 +360,6 @@ function OptionsGroup({
               initialPosition={position}
               route={route}
               index={index}
-              cameraControlsRef={cameraControlsRef}
               hideOptions={hideOptions}
               isClosing={isClosing}
             />
@@ -391,14 +374,12 @@ function Option({
   initialPosition,
   route,
   index,
-  cameraControlsRef,
   hideOptions,
   isClosing,
 }: {
   initialPosition: THREE.Vector3;
   route: Route;
   index: number;
-  cameraControlsRef: React.RefObject<CameraControls>;
   hideOptions: () => void;
   isClosing: boolean;
 }) {
@@ -414,11 +395,11 @@ function Option({
 
   const position = initialPosition;
 
-  const resetCamAndNavigate = useCallback(() => {
+  const resetCamAndNavigate = () => {
     resetToDefaultView();
     navigate(route.path);
     hideOptions();
-  }, []);
+  };
 
   const handleOptionClick = () => {
     match({ ...route, canPurchase: canAfford(route.cost) })

@@ -6,7 +6,16 @@ import {
   PerspectiveCamera,
   Grid,
   PerformanceMonitor,
+  Effects,
 } from "@react-three/drei";
+import {
+  EffectComposer,
+  N8AO,
+  SMAA,
+  Bloom,
+  TiltShift2,
+  DepthOfField,
+} from "@react-three/postprocessing";
 import { match } from "ts-pattern";
 import { a, useSpring } from "@react-spring/three";
 import { Physics } from "@react-three/rapier";
@@ -43,13 +52,18 @@ const Scene = ({
   onEmotionUpdate,
 }: {
   permissionGranted: boolean;
-  onEmotionUpdate?: (data: { emotionState: any; getEmotionIcon: any }) => void;
+  onEmotionUpdate?: (data: { emotionState: any }) => void;
 }) => {
   const cameraControlsRef = useRef<CameraControls>(null!);
-  const { setCameraControlsRef } = useViewStore();
+  const {
+    setCameraControlsRef,
+    resetToDefaultView,
+    isDefaultView,
+    isTransitioning,
+  } = useViewStore();
   const { statisticsVisible } = useCoreStore();
 
-  const { currentRoute, showOptions, setShowOptions } = useAppStore();
+  const { currentRoute } = useAppStore();
 
   // shop items are only visible on home route
   const isHome = currentRoute === ROUTE_PATHS.HOME;
@@ -62,15 +76,13 @@ const Scene = ({
     setCameraControlsRef(cameraControlsRef);
   }, []);
 
-  // useEffect(() => {
-  //   if (isHome) {
-  //     setTimeout(() => {
-  //       if (!isDefaultView()) {
-  //         resetToDefaultView();
-  //       }
-  //     }, 200);
-  //   }
-  // }, [isHome]);
+  useEffect(() => {
+    if (isHome) {
+      if (!isDefaultView()) {
+        resetToDefaultView();
+      }
+    }
+  }, [isHome]);
 
   const [spring, api] = useSpring(() => ({
     scale: 1,
@@ -83,6 +95,7 @@ const Scene = ({
       api.start({
         scale: 1,
         config: { mass: 0.5, tension: 300, friction: 10 },
+        immediate: true,
       });
     } else {
       api.start({
@@ -125,8 +138,6 @@ const Scene = ({
 
             <Physics gravity={[0, -9.81, 0]}>
               <HeadNavigation
-                showOptions={showOptions || false}
-                setShowOptions={setShowOptions || (() => {})}
                 cameraControlsRef={cameraControlsRef}
                 permissionGranted={permissionGranted}
                 onEmotionUpdate={(data) => {

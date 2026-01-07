@@ -305,7 +305,7 @@ export function OptionsApp() {
     );
   }, []);
 
-  const GraphicsView = () => {
+  const GraphicsView = useCallback(() => {
     const { graphicPreferences, setGraphicsMode } = useCoreStore();
 
     const mode = graphicPreferences.qualityMode;
@@ -345,7 +345,7 @@ export function OptionsApp() {
         </SettingsWrapper>
       </FillColumn>
     );
-  };
+  }, []);
 
   return (
     <>

@@ -167,7 +167,7 @@ export const SceneWithLoader = ({
   ...rest
 }: {
   permissionGranted: boolean;
-  onEmotionUpdate?: (data: { emotionState: any; getEmotionIcon: any }) => void;
+  onEmotionUpdate?: (data: { emotionState: any }) => void;
   onLoaded?: () => void;
 }) => {
   const [sceneReady, setSceneReady] = useState(false);

@@ -5,11 +5,11 @@ import * as THREE from "three";
 import { useCoreStore } from "@/store";
 import { match } from "ts-pattern";
 
-const BLADE_COUNT_MIN = 5000;
-const BLADE_COUNT_AVG = 10000;
-const BLADE_COUNT_MAX = 20000;
-const BLADE_WIDTH = 0.15;
-const BLADE_HEIGHT = 1;
+const BLADE_COUNT_MIN = 2000;
+const BLADE_COUNT_AVG = 5000;
+const BLADE_COUNT_MAX = 10000;
+const BLADE_WIDTH = 0.2;
+const BLADE_HEIGHT = 1.25;
 const FIELD_SIZE = 20;
 const COLOR_ROOT = "#2e4420";
 const WIND_STRENGTH = 0.1;

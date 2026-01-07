@@ -219,16 +219,19 @@ export const useViewStore = create<ViewStore>()(
         const controls = get().cameraControlsRef?.current;
         if (!controls) return;
 
+        // TODO: apply all view mode rules here like cursor or camera controls
         if (mode === "object") {
           const target = new Vector3();
-          controls.getTarget(target); // receive current orbit center
-          controls.setTarget(target.x, target.y, target.z, true); // freeze the look-at point
+          // freeze current orbit center as look-at point
+          controls.getTarget(target);
+          controls.setTarget(target.x, target.y, target.z, true);
           if (get().focusedImageTitle)
             controls.mouseButtons.left = CameraControlsImpl.ACTION.TRUCK;
           else controls.mouseButtons.left = CameraControlsImpl.ACTION.ROTATE;
         } else {
-          controls.saveState(); // optionally store current state
-          controls.reset(); // restore default position/target
+          // restore default target
+          controls.saveState();
+          controls.reset();
         }
       },
 
@@ -283,11 +286,11 @@ export const useViewStore = create<ViewStore>()(
               ...viewConfig.target,
               true
             );
+            setTimeout(() => set({ isTransitioning: false }), 0);
           }
         } catch (error) {
           console.error("Camera transition failed:", error);
-        } finally {
-          set({ isTransitioning: false });
+          setTimeout(() => set({ isTransitioning: false }), 0);
         }
       },
 
@@ -353,11 +356,11 @@ export const useViewStore = create<ViewStore>()(
               ...viewConfig.target,
               true
             );
+            setTimeout(() => set({ isTransitioning: false }), 0);
           }
         } catch (error) {
           console.error("Camera transition failed:", error);
-        } finally {
-          set({ isTransitioning: false });
+          setTimeout(() => set({ isTransitioning: false }), 0);
         }
       },
       resetToPreviousView: async () => {
@@ -408,7 +411,11 @@ export const useViewStore = create<ViewStore>()(
         const { cameraControlsRef, isTransitioning } = get();
         if (isTransitioning || !cameraControlsRef?.current) return;
 
-        set({ isTransitioning: true, viewMode: "object" });
+        set({
+          isTransitioning: true,
+          viewMode: "object",
+          currentView: "creative",
+        });
 
         get().applyViewModeToControls("object");
 

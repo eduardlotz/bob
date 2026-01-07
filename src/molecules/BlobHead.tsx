@@ -1,4 +1,7 @@
-import { useDeviceOrientation } from "@/hooks/useDeviceOrientation";
+import {
+  DeviceOrientation,
+  useDeviceOrientation,
+} from "@/hooks/useDeviceOrientation";
 import { useFrame } from "@react-three/fiber";
 import { useRef, useState, useEffect, useMemo, useCallback } from "react";
 import {
@@ -252,8 +255,6 @@ export function BlobHead({
     isObjectView,
   } = useViewStore();
 
-  const { currentRoute } = useAppStore();
-
   const shouldFollowCursor =
     viewMode === "fixed" &&
     !isMobile &&
@@ -265,26 +266,11 @@ export function BlobHead({
     positionFactor: 2.5,
   });
 
+  // default size a little bigger, maybe fix directly inside BobForm.tsx
   const [spring, api] = useSpring(() => ({
     scale: [1.2, 1.2, 1.2],
     config: { tension: 200, friction: 15 },
   }));
-
-  // useEffect(() => {
-  //   if (!showOptions || isClosing) {
-  //     const delay = isClosing ? 400 : 0;
-  //     api.start({
-  //       scale: [1.2, 1.2, 1.2],
-  //       config: { tension: 300, friction: 10 },
-  //       delay,
-  //     });
-  //   } else {
-  //     api.start({
-  //       scale: [1.2, 1.2, 1.2],
-  //       config: { tension: 300, friction: 10 },
-  //     });
-  //   }
-  // }, [showOptions, isClosing]);
 
   useEffect(() => {
     const blinkInterval = setInterval(() => {
@@ -310,6 +296,7 @@ export function BlobHead({
   }, [emotionState]);
 
   // inactivity animations (spin & look around)
+  // MAYDO: add camera panning in idle mode
   useEffect(() => {
     const checkIdleAnimation = () => {
       const now = Date.now();
@@ -404,8 +391,15 @@ export function BlobHead({
       handleIdleAnimation(clock, delta);
     } else {
       // special case: mobile movement using gyro
-      if (isMobile && orientation && acceleration && permissionGranted) {
-        handleMobileMovement(clock, delta);
+      if (isMobile) {
+        handleMobileMovement(
+          clock,
+          delta,
+          showOptions,
+          orientation,
+          acceleration,
+          permissionGranted
+        );
       } else {
         handleDesktopMovement(clock, delta, showOptions);
       }
@@ -438,55 +432,101 @@ export function BlobHead({
     }
   });
 
-  // legacy mobile head rotation using device motion
-  // MAYDO: refactor or remove
-  const handleMobileMovement = (clock: Clock, delta: number) => {
-    const {
-      targetRotX,
-      targetRotY,
-      targetRotZ,
-      accelX,
-      accelY,
-      orientGamma,
-      orientBeta,
-    } = calculateAcceleratedRotation(acceleration, orientation);
+  // mobile either fixed camera or using device gyro
+  // TODO: test + refactor
+  const handleMobileMovement = (
+    clock: Clock,
+    delta: number,
+    showOptions: boolean,
+    orientation: DeviceOrientation,
+    acceleration: DeviceMotionEventAcceleration,
+    permissionGranted: boolean
+  ) => {
+    if (permissionGranted) {
+      const {
+        targetRotX,
+        targetRotY,
+        targetRotZ,
+        accelX,
+        accelY,
+        orientGamma,
+        orientBeta,
+      } = calculateAcceleratedRotation(acceleration, orientation);
 
-    applyHeadRotation(targetRotY, targetRotX, 0, delta);
+      applyHeadRotation(targetRotY, targetRotX, 0, delta);
 
-    applyMobileHeadPosition(
-      clock,
-      delta,
-      accelX,
-      accelY,
-      orientGamma,
-      orientBeta
-    );
-
-    const lookDirection = new Vector3(
-      -targetRotX,
-      targetRotY,
-      targetRotZ
-    ).normalize();
-
-    const baseZoom = showOptions
-      ? VISIBLE_OPTIONS_CAMERA_ZOOM
-      : HIDDEN_OPTIONS_CAMERA_ZOOM;
-    const zoomOffset = cameraZoomAnimation
-      ? Math.sin(clock.getElapsedTime() * 20) * 0.5
-      : 0;
-    const cameraPosition = new Vector3(0, CAMERA_HEIGHT, baseZoom + zoomOffset);
-    const target = cameraPosition.clone().add(lookDirection);
-
-    if (shouldFollowCursor) {
-      cameraControlsRef.current?.setLookAt(
-        cameraPosition.x,
-        cameraPosition.y,
-        cameraPosition.z,
-        target.x,
-        target.y,
-        target.z,
-        true
+      applyMobileHeadPosition(
+        clock,
+        delta,
+        accelX,
+        accelY,
+        orientGamma,
+        orientBeta
       );
+
+      const lookDirection = new Vector3(
+        -targetRotX,
+        targetRotY,
+        targetRotZ
+      ).normalize();
+
+      const baseZoom = showOptions
+        ? VISIBLE_OPTIONS_CAMERA_ZOOM
+        : HIDDEN_OPTIONS_CAMERA_ZOOM;
+      const zoomOffset = cameraZoomAnimation
+        ? Math.sin(clock.getElapsedTime() * 20) * 0.5
+        : 0;
+      const cameraPosition = new Vector3(
+        0,
+        CAMERA_HEIGHT,
+        baseZoom + zoomOffset
+      );
+      const target = cameraPosition.clone().add(lookDirection);
+
+      if (shouldFollowCursor) {
+        cameraControlsRef.current?.setLookAt(
+          cameraPosition.x,
+          cameraPosition.y,
+          cameraPosition.z,
+          target.x,
+          target.y,
+          target.z,
+          true
+        );
+      }
+    } else {
+      // head is looks back on mobile (???)
+      applyHeadRotation(-0.5, 0, 0, delta);
+
+      // floating animation
+      const floatY = Math.sin(clock.getElapsedTime() * 0.5) * 0.1;
+      headRef.current.position.y = floatY + HEAD_POSITION_Y;
+
+      const baseZoom = showOptions
+        ? VISIBLE_OPTIONS_CAMERA_ZOOM
+        : HIDDEN_OPTIONS_CAMERA_ZOOM;
+      const zoomOffset = cameraZoomAnimation ? -1.5 : 0;
+      const handCamSwayX = Math.sin(clock.getElapsedTime() * 1) * 0.02;
+      const handCamSwayY = Math.sin(clock.getElapsedTime() * 0.5) * 0.03;
+
+      const cameraShakeX = cameraZoomAnimation
+        ? Math.sin(clock.getElapsedTime() * 40)
+        : 0;
+      const cameraShakeY = cameraZoomAnimation
+        ? Math.sin(clock.getElapsedTime() * 20)
+        : 0;
+
+      if (!isTransitioning && !isObjectView()) {
+        cameraControlsRef.current?.setLookAt(
+          0,
+          CAMERA_HEIGHT,
+          baseZoom + zoomOffset,
+          handCamSwayX + cameraShakeX,
+          CAMERA_Y_POSITION + handCamSwayY + cameraShakeY,
+          0,
+          true
+        );
+      }
     }
   };
 
@@ -509,7 +549,6 @@ export function BlobHead({
 
     const cursorPos = new Vector3(mousePosition.x, mousePosition.y * 0.4, 0);
 
-    // camera follows cursor
     const baseZoom = showOptions
       ? VISIBLE_OPTIONS_CAMERA_ZOOM
       : HIDDEN_OPTIONS_CAMERA_ZOOM;
