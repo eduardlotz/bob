@@ -543,64 +543,11 @@ export const useCoreStore = create<GameStore>()(
             lastAutoTapTime: Date.now(),
           }));
         },
-
         addManualTap: () => {
-          set((state) => {
-            const now = Date.now();
-            const oneSecondAgo = now - ONE_SECOND_MS;
-
-            const recentTaps = state.recentManualTaps || [];
-            const filteredTaps: number[] = [];
-
-            for (let i = recentTaps.length - 1; i >= 0; i--) {
-              if (recentTaps[i] > oneSecondAgo) {
-                filteredTaps.unshift(recentTaps[i]);
-              }
-            }
-
-            const newTaps = [...filteredTaps, now];
-            const tapMultiplier = state.getTotalTapMultiplier();
-
-            const newState = {
-              ...state,
-              taps: state.taps + 1 * tapMultiplier,
-              manualTaps: state.manualTaps + 1,
-              manualTapsPerSecond: newTaps.length,
-              recentManualTaps: newTaps,
-            };
-
-            let hasRouteChanges = false;
-            const updatedRoutes = newState.routes.map((route) => {
-              const shouldUnlock = match({
-                purchased: route.purchased,
-                canAfford: newState.canAfford(route.cost),
-                unlocked: route.unlocked,
-              })
-                .with(
-                  { purchased: false, canAfford: true, unlocked: false },
-                  () => true
-                )
-                .otherwise(() => false);
-
-              if (shouldUnlock) {
-                hasRouteChanges = true;
-                return { ...route, unlocked: true };
-              }
-              return route;
-            });
-
-            if (hasRouteChanges) {
-              return {
-                ...newState,
-                routes: updatedRoutes,
-              };
-            }
-
-            return {
-              ...newState,
-              routes: updatedRoutes,
-            };
-          });
+          set((state) => ({
+            taps: state.taps + 1 * state.getTotalTapMultiplier(),
+            manualTaps: state.manualTaps + 1,
+          }));
         },
 
         cleanupManualTaps: () => {
@@ -1570,8 +1517,8 @@ export const useCoreStore = create<GameStore>()(
           state.manualTaps = state.manualTaps;
           state.manualTapsPerSecond = 0;
           state.tapsPerSecond = state.getTotalTapsPerSecond();
-          state.autoTapRate = state.getTotalTapMultiplierUncached();
-          state.tapMultiplier = state.getTotalTapMultiplierUncached();
+          state.autoTapRate = state.getAutoTapRate();
+          state.tapMultiplier = state.getTotalTapMultiplier();
           state.recentManualTaps = [];
 
           state.updateComputedValueCache?.();
@@ -1682,17 +1629,16 @@ export const startAutoTap = () => {
 
   autoTapInterval = setInterval(() => {
     const store = useCoreStore.getState();
+    const tapsPerSecond = store.getTotalTapsPerSecond();
 
     if (store.isPaused) {
       return;
     }
 
-    const tapsPerSecond = store.getTotalTapsPerSecond();
     if (tapsPerSecond > 0) {
       store.addAutoTaps(tapsPerSecond);
 
       // trigger tap effects for auto-taps
-      // TODO: use hook instead of global functions
       if ((window as any).createTapParticles) {
         (window as any).createTapParticles(0, 0, 0, 15);
       }

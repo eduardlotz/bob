@@ -140,11 +140,7 @@ export function HeadNavigation({
   setShowOptions: React.Dispatch<React.SetStateAction<boolean>>;
   cameraControlsRef: React.RefObject<CameraControls>;
   permissionGranted: boolean;
-  onEmotionUpdate?: (data: {
-    emotionState: any;
-    tapCount: number;
-    getEmotionIcon: any;
-  }) => void;
+  onEmotionUpdate?: (data: { emotionState: any; getEmotionIcon: any }) => void;
 }) {
   const {
     isTransitioning,
@@ -200,9 +196,10 @@ export function HeadNavigation({
   }, []);
 
   const { isOptionsClosing, closeOptionsWithAnimation } = useAppStore();
+
   const [cameraZoomAnimation, setCameraZoomAnimation] = useState(false);
 
-  const { emotionState, tapCount, handleTap, getEmotionIcon, triggerEmotion } =
+  const { emotionState, handleTap, getEmotionIcon, triggerEmotion } =
     useBlobEmotions();
 
   // listen for global emotion requests
@@ -215,42 +212,46 @@ export function HeadNavigation({
         triggerEmotion(detail.emotion, detail.durationMs);
       }
     };
-    window.addEventListener("vg-request-emotion", handler as EventListener);
+    window.addEventListener("bob-emotion", handler as EventListener);
     return () =>
-      window.removeEventListener(
-        "vg-request-emotion",
-        handler as EventListener
-      );
+      window.removeEventListener("bob-emotion", handler as EventListener);
   }, [triggerEmotion]);
 
   useEffect(() => {
     if (onEmotionUpdate) {
-      onEmotionUpdate({ emotionState, tapCount, getEmotionIcon });
+      onEmotionUpdate({ emotionState, getEmotionIcon });
     }
-  }, [emotionState, tapCount, getEmotionIcon, onEmotionUpdate]);
+  }, [emotionState, getEmotionIcon, onEmotionUpdate]);
 
-  useFrame(() => {
+  useFrame(({ clock }, delta) => {
     // if in object view mode, let view store camera controls handle transition
+    // mobile bob does not follow cursor -> fixed lookAt
     if (isObjectView() || isTransitioning) {
       return;
     }
-    // somehow the inital camera lookAt is wrong on mobile and this fixes it (???)
-    // transition to phone:shop or phone:options still not smooth
-    const baseZoom =
-      showOptions && !isOptionsClosing
+
+    if (isMobile) {
+      // somehow the inital camera lookAt is wrong on mobile and this fixes it (???)
+      // transition to phone:shop or phone:options still not smooth
+      const baseZoom = showOptions
         ? VISIBLE_OPTIONS_CAMERA_ZOOM
         : HIDDEN_OPTIONS_CAMERA_ZOOM;
-    const zoomOffset = cameraZoomAnimation ? 1 : 0;
-    const finalZoom = baseZoom + zoomOffset;
+      const zoomOffset = cameraZoomAnimation ? -1.5 : 0;
+      const handCamSwayX = Math.sin(clock.getElapsedTime() * 1) * 0.08;
+      const handCamSwayY = Math.sin(clock.getElapsedTime() * 0.5) * 0.05;
+      const cameraShakeX = cameraZoomAnimation
+        ? Math.sin(clock.getElapsedTime() * 40)
+        : 0;
+      const cameraShakeY = cameraZoomAnimation
+        ? Math.sin(clock.getElapsedTime() * 20)
+        : 0;
 
-    // mobile bob does not follow cursor -> fixed lookAt
-    if (isMobile) {
       cameraControlsRef.current?.setLookAt(
         0,
         CAMERA_HEIGHT,
-        finalZoom,
-        0,
-        CAMERA_Y_POSITION,
+        baseZoom + zoomOffset,
+        handCamSwayX + cameraShakeX,
+        CAMERA_Y_POSITION + handCamSwayY + cameraShakeY,
         0,
         true
       );
@@ -404,7 +405,7 @@ function Option({
   const optionRef = useRef<THREE.Group>(null!);
   const navigate = useNavigate();
   const { currentRoute } = useAppStore();
-  const { resetToDefaultView } = useViewStore();
+  const { resetToDefaultView, defaultViewMode, setViewMode } = useViewStore();
   const { triggerQuest } = useQuestSystem();
   const { canAfford, purchaseRoute } = useCoreStore();
   const { showMessage } = useMessageStore();

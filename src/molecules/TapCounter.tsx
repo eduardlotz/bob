@@ -4,6 +4,8 @@ import { Vector3, Group, Mesh } from "three";
 import { useSpring, a } from "@react-spring/three";
 import { useCoreStore } from "@/store/core/store";
 import { THEME_CONFIG } from "@/store/config/themes";
+import { useFrame } from "@react-three/fiber";
+import { playTapSound } from "@/utils/soundSystem";
 
 const FONT_PATH = "/fonts/OpenRundeBold.json";
 
@@ -83,8 +85,14 @@ export const formatNumber = (num: number): string => {
   }
 };
 
+const BASE_INTERVAL = 1; // min: 1 bounce per second
+const MIN_INTERVAL = 0.1; // max: 10 bounce per second
+
+let accumulator = 0;
+
 export const TapCounter = () => {
-  const { taps, currentTheme, themes, previewMode } = useCoreStore();
+  const { taps, themes, previewMode, getAutoTapRate, addAutoTaps, isPaused } =
+    useCoreStore();
 
   const activeTheme =
     previewMode === "theme"
@@ -101,6 +109,31 @@ export const TapCounter = () => {
 
   const numberRef = useRef<Mesh>(null);
   const [numberWidth, setNumberWidth] = useState(0);
+
+  useFrame((_, delta) => {
+    if (isPaused) return;
+
+    if (getAutoTapRate() <= 0) return;
+
+    // higher level → smaller interval
+    const interval = Math.max(
+      MIN_INTERVAL,
+      BASE_INTERVAL / Math.max(1, getAutoTapRate())
+    );
+
+    accumulator += delta;
+
+    if (accumulator < interval) return;
+
+    const steps = Math.floor(accumulator / interval);
+    accumulator -= steps * interval;
+
+    addAutoTaps(steps * getAutoTapRate() * interval);
+
+    if ((window as any).createTapParticles) {
+      (window as any).createTapParticles(0, 0, 0, 15);
+    }
+  });
 
   useEffect(() => {
     if (!numberRef.current) return;
@@ -124,6 +157,10 @@ export const TapCounter = () => {
   useEffect(() => {
     if (taps === 0) return;
 
+    // maybe toggle in options for more sound while autoplaying
+    // needs additional check so it does not play double when manually tapping
+    // playTapSound();
+
     api.start({
       from: { scale: [1.4, 1.8, 1.2] },
       to: { scale: [1, 1, 1] },
@@ -138,7 +175,8 @@ export const TapCounter = () => {
           font={FONT_PATH}
           size={3}
           height={1.5}
-          curveSegments={5}
+          curveSegments={8}
+          castShadow
           letterSpacing={-0.15}
           bevelEnabled={true}
           bevelSize={0.03}

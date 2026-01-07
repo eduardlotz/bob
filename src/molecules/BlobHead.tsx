@@ -31,10 +31,13 @@ import { BuilderHelmet } from "@/3d-objects/models/builderHelmet";
 import { BlobForm } from "@/components/BlobForm";
 import { getSelectedBlobForm, getBlobFormType } from "@/types/blobForms";
 import { SimsPlumbob } from "@/3d-objects/models/simsPlumbob";
-import { useKeyPress } from "@/hooks/useKeyPress";
 import { BlackCap } from "@/3d-objects/models/blackCap";
 import { useCursor } from "@/hooks/useCursor";
 import { useCursorStore } from "@/store/core/cursor";
+import { ROUTE_PATHS } from "@/store/config/routes";
+import { useAppStore } from "@/store";
+import { playTapSound } from "@/utils/soundSystem";
+import { resolveTapSoundForEffect } from "@/utils/sound/configs";
 
 // TODO: move constants to a shared config file
 const HEAD_POSITION_Y = 0;
@@ -43,6 +46,25 @@ const MAX_ROTATION_Y = 0.9;
 
 const IDLE_TIMEOUT_MIN = 15000;
 const IDLE_ANIMATION_DURATION = 3000;
+
+const ACCESSORY_AXIS_CONFIG: Record<
+  string,
+  {
+    x: boolean;
+    y: boolean;
+    z: boolean;
+    yMultiplier?: number;
+    zMultiplier?: number;
+  }
+> = {
+  chickenLittleGlasses: {
+    x: false,
+    y: true,
+    z: true,
+    yMultiplier: 0.5,
+    zMultiplier: 0.7,
+  },
+};
 
 // TODO: move to utils file
 const createEyeGeometries = () => {
@@ -173,8 +195,16 @@ export function BlobHead({
   emotionState: EmotionState;
   onCameraZoomAnimation?: (isAnimating: boolean) => void;
 }) {
-  const { currentTheme, themes, previewMode, bobItems, blobForms } =
-    useCoreStore();
+  const {
+    currentTheme,
+    themes,
+    previewMode,
+    bobItems,
+    blobForms,
+    addManualTap,
+    tapEffects,
+    audioSelections,
+  } = useCoreStore();
 
   const activeTheme =
     previewMode === "theme" ? themes.find((t) => t.preview) : currentTheme;
@@ -222,6 +252,8 @@ export function BlobHead({
     isObjectView,
   } = useViewStore();
 
+  const { currentRoute } = useAppStore();
+
   const shouldFollowCursor =
     viewMode === "fixed" &&
     !isMobile &&
@@ -234,25 +266,25 @@ export function BlobHead({
   });
 
   const [spring, api] = useSpring(() => ({
-    scale: [0, 0, 0],
+    scale: [1.2, 1.2, 1.2],
     config: { tension: 200, friction: 15 },
   }));
 
-  useEffect(() => {
-    if (!showOptions || isClosing) {
-      const delay = isClosing ? 400 : 0;
-      api.start({
-        scale: [1.2, 1.2, 1.2],
-        config: { tension: 300, friction: 10 },
-        delay,
-      });
-    } else {
-      api.start({
-        scale: [1.2, 1.2, 1.2],
-        config: { tension: 300, friction: 10 },
-      });
-    }
-  }, [showOptions, isClosing]);
+  // useEffect(() => {
+  //   if (!showOptions || isClosing) {
+  //     const delay = isClosing ? 400 : 0;
+  //     api.start({
+  //       scale: [1.2, 1.2, 1.2],
+  //       config: { tension: 300, friction: 10 },
+  //       delay,
+  //     });
+  //   } else {
+  //     api.start({
+  //       scale: [1.2, 1.2, 1.2],
+  //       config: { tension: 300, friction: 10 },
+  //     });
+  //   }
+  // }, [showOptions, isClosing]);
 
   useEffect(() => {
     const blinkInterval = setInterval(() => {
@@ -481,8 +513,15 @@ export function BlobHead({
     const baseZoom = showOptions
       ? VISIBLE_OPTIONS_CAMERA_ZOOM
       : HIDDEN_OPTIONS_CAMERA_ZOOM;
-    const zoomOffset = cameraZoomAnimation
-      ? Math.sin(clock.getElapsedTime() * 20) * 0.5
+    const zoomOffset = cameraZoomAnimation ? -1.5 : 0;
+    const handCamSwayX = Math.sin(clock.getElapsedTime() * 1) * 0.08;
+    const handCamSwayY = Math.sin(clock.getElapsedTime() * 0.5) * 0.05;
+
+    const cameraShakeX = cameraZoomAnimation
+      ? Math.sin(clock.getElapsedTime() * 40)
+      : 0;
+    const cameraShakeY = cameraZoomAnimation
+      ? Math.sin(clock.getElapsedTime() * 20)
       : 0;
 
     if (shouldFollowCursor && !isTransitioning && !isObjectView()) {
@@ -490,9 +529,8 @@ export function BlobHead({
         0,
         CAMERA_HEIGHT,
         baseZoom + zoomOffset,
-        cursorPos.x,
-        // cursorPos.y + 2,
-        cursorPos.y + CAMERA_Y_POSITION,
+        cursorPos.x + handCamSwayX + cameraShakeX,
+        cursorPos.y + CAMERA_Y_POSITION + handCamSwayY + cameraShakeY,
         cursorPos.z,
         true
       );
@@ -731,20 +769,25 @@ export function BlobHead({
     );
   };
 
-  const createParticles = (x: number, y: number, z: number, count = 15) => {
-    if ((window as any).createTapParticles) {
-      (window as any).createTapParticles(x, y, z, count);
-    }
-  };
+  const createParticles = useCallback(
+    (x: number, y: number, z: number, count = 15) => {
+      if ((window as any).createTapParticles) {
+        (window as any).createTapParticles(x, y, z, count);
+      }
+    },
+    []
+  );
 
-  const onClick = (event: any) => {
-    event.stopPropagation();
+  const onClick = (e: any) => {
+    e.stopPropagation(); // TODO: check why this stops double click bug
 
+    // trigger particles
     const COUNTER_POS: [number, number, number] = [0, 0, 0];
     createParticles(COUNTER_POS[0], COUNTER_POS[1], COUNTER_POS[2]);
 
+    // trigger bob bounce animation
     api.start({
-      scale: [1.35, 1.15, 1.35],
+      scale: [1.45, 1.15, 1.35],
       config: { tension: 420, friction: 10 },
     });
     api.start({
@@ -753,14 +796,27 @@ export function BlobHead({
       delay: 150,
     });
 
+    // trigger camera zoom
     setCameraZoomAnimation(true);
     onCameraZoomAnimation?.(true);
     setTimeout(() => {
       setCameraZoomAnimation(false);
       onCameraZoomAnimation?.(false);
-    }, 300);
+    }, 100);
 
+    // trigger emotions
     onHeadClick();
+
+    // get current tap sound config & play it
+    const selectedTapEffect = tapEffects.find((u) => u.enabled);
+    const tapEffectId = selectedTapEffect?.id || "tap_effect_default";
+    const soundConfig = resolveTapSoundForEffect(
+      tapEffectId,
+      audioSelections.tapEffectAudioId
+    );
+    playTapSound(soundConfig.id);
+
+    addManualTap();
   };
 
   // TODO: fix space bar taps + mention in onboarding
@@ -850,25 +906,6 @@ export function BlobHead({
     },
     [selectedBlobForm, blobFormType]
   );
-
-  const ACCESSORY_AXIS_CONFIG: Record<
-    string,
-    {
-      x: boolean;
-      y: boolean;
-      z: boolean;
-      yMultiplier?: number;
-      zMultiplier?: number;
-    }
-  > = {
-    chickenLittleGlasses: {
-      x: false,
-      y: true,
-      z: true,
-      yMultiplier: 0.5,
-      zMultiplier: 0.7,
-    },
-  };
 
   const calculateEyePosition = useCallback(
     (basePosition: [number, number, number]): [number, number, number] => {

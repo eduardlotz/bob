@@ -1,4 +1,4 @@
-import { FillColumn, FillRow, HugColumn, HugRow } from "@/layout";
+import { FillColumn, HugColumn } from "@/layout";
 import { Logo, MotionIconWrapper } from "@/layout/atoms";
 import { MotionVariants } from "@/styles/motion";
 import styled from "styled-components";
@@ -10,10 +10,9 @@ import { UILayer } from "@/components/UILayer";
 import { useAppStore, useCoreStore } from "@/store";
 import { initializeSoundSystem } from "@/utils/soundSystem";
 import { Cursor } from "./Cursor";
-import { format } from "date-fns/format";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { SpeakerIcon } from "@/icons/speaker";
-import { StatusPill, Blinking, StatusPillButton } from "./BobPhone";
+import { StatusPillButton } from "@/apps/ui";
 
 export const SCENE_REVEAL_DURATION = 0.5;
 
@@ -168,11 +167,7 @@ export const SceneWithLoader = ({
   ...rest
 }: {
   permissionGranted: boolean;
-  onEmotionUpdate?: (data: {
-    emotionState: any;
-    tapCount: number;
-    getEmotionIcon: any;
-  }) => void;
+  onEmotionUpdate?: (data: { emotionState: any; getEmotionIcon: any }) => void;
   onLoaded?: () => void;
 }) => {
   const [sceneReady, setSceneReady] = useState(false);

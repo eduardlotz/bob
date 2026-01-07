@@ -299,19 +299,14 @@ export const useViewStore = create<ViewStore>()(
       },
 
       resetToDefaultView: async () => {
-        const {
-          isTransitioning,
-          defaultViewMode,
-          currentView,
-          cameraControlsRef,
-          previousView,
-        } = get();
+        const { isTransitioning, currentView, cameraControlsRef } = get();
 
         if (isTransitioning || !cameraControlsRef?.current) {
           return;
         }
 
-        const currentRoute = useAppStore.getState().currentRoute;
+        const appStore = useAppStore.getState();
+        const currentRoute = appStore.currentRoute;
 
         // viewMode is set to fixed without transition
         // TODO: fix edge case when going from creative -> any other

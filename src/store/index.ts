@@ -14,7 +14,6 @@ export type SceneMode = "home" | "navigation";
 
 export interface EmotionState {
   emotionState: any;
-  tapCount: number;
   getEmotionIcon: () => string;
 }
 
@@ -82,7 +81,7 @@ export const useAppStore = create<AppStore>()(
       openOptions: () => set({ showOptions: true, isOptionsClosing: false }),
       closeOptionsWithAnimation: () => {
         // trigger closing flag so animated components can play exit
-        // set({ isOptionsClosing: true });
+        set({ isOptionsClosing: true });
         // after a small delay, actually close options and reset closing flag
         setTimeout(() => {
           set({ showOptions: false, isOptionsClosing: false });
@@ -97,7 +96,7 @@ export const useAppStore = create<AppStore>()(
         set((s) => ({ emotionData: s.emotionData }));
         // use a global event to avoid tight coupling
         try {
-          const ev = new CustomEvent("vg-request-emotion", {
+          const ev = new CustomEvent("bob-emotion", {
             detail: { emotion, durationMs },
           });
           window.dispatchEvent(ev);

@@ -17,7 +17,6 @@ import { useAppStore, useCoreStore } from "../store";
 import { useViewStore } from "../store/viewStore";
 import { ROUTE_PATHS } from "../store/config/routes";
 import { FISHEYE_CONFIG } from "../store/config/themes";
-import { startAutoTap, stopAutoTap } from "../store/core/store";
 import { attachListenerToCamera } from "@/utils/soundSystem";
 import { CreativeScene } from "@/routes/CreativeScene";
 import { AboutScene } from "../routes/AboutScene";
@@ -44,21 +43,11 @@ const Scene = ({
   onEmotionUpdate,
 }: {
   permissionGranted: boolean;
-  onEmotionUpdate?: (data: {
-    emotionState: any;
-    tapCount: number;
-    getEmotionIcon: any;
-  }) => void;
+  onEmotionUpdate?: (data: { emotionState: any; getEmotionIcon: any }) => void;
 }) => {
   const cameraControlsRef = useRef<CameraControls>(null!);
-  const {
-    setCameraControlsRef,
-    isDefaultView,
-    resetToDefaultView,
-    setViewMode,
-  } = useViewStore();
-  const { upgrades, isPaused, statisticsVisible, setGameReady } =
-    useCoreStore();
+  const { setCameraControlsRef } = useViewStore();
+  const { statisticsVisible } = useCoreStore();
 
   const { currentRoute, showOptions, setShowOptions } = useAppStore();
 
@@ -82,14 +71,6 @@ const Scene = ({
   //     }, 200);
   //   }
   // }, [isHome]);
-
-  useEffect(() => {
-    if (isPaused) {
-      stopAutoTap();
-    } else {
-      startAutoTap();
-    }
-  }, [isPaused]);
 
   const [spring, api] = useSpring(() => ({
     scale: 1,

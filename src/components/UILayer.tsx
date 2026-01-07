@@ -23,14 +23,14 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
 
   // cleanup manual taps every second
   // TODO: check if this is optimal -> without it the steps/s is not resetting
-  useEffect(() => {
-    const cleanupInterval = setInterval(() => {
-      const gameStore = useCoreStore.getState();
-      gameStore.cleanupManualTaps();
-    }, 1000);
+  // useEffect(() => {
+  //   const cleanupInterval = setInterval(() => {
+  //     const gameStore = useCoreStore.getState();
+  //     gameStore.cleanupManualTaps();
+  //   }, 1000);
 
-    return () => clearInterval(cleanupInterval);
-  }, []);
+  //   return () => clearInterval(cleanupInterval);
+  // }, []);
 
   // TODO: fix or remove every device motion related
   // const handlePermissionRequest = async () => {
