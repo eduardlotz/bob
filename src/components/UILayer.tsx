@@ -4,7 +4,7 @@ import { Button, Logo } from "@/layout/atoms";
 import { BottomNavigation } from "@/molecules/BottomNavigation";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 
-import { useGameStore } from "@/store/gameStore";
+import { useCoreStore } from "@/store/core/store";
 
 import { AnimatePresence, motion } from "motion/react";
 import { useAppStore } from "@/store";
@@ -25,7 +25,7 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
   // TODO: check if this is optimal -> without it the steps/s is not resetting
   useEffect(() => {
     const cleanupInterval = setInterval(() => {
-      const gameStore = useGameStore.getState();
+      const gameStore = useCoreStore.getState();
       gameStore.cleanupManualTaps();
     }, 1000);
 

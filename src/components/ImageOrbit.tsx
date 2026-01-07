@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { useMemo, Suspense, useEffect } from "react";
 import { Billboard, Float, Image, useTexture } from "@react-three/drei";
 import { useFloatingBar } from "@/layout/FloatingBar";
-import { useCursorStore } from "@/store/cursorStore";
+import { useCursorStore } from "@/store/core/cursor";
 import { useQuestStore, useViewStore } from "@/store";
 import { playUISound } from "@/utils/soundSystem";
 import { SoundConfig } from "@/utils/sound/types";

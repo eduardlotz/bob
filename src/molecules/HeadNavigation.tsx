@@ -8,7 +8,7 @@ import { BlobHead } from "./BlobHead";
 import { useBlobEmotions } from "@/hooks/useBlobEmotions";
 import { toast } from "sonner";
 import styled from "styled-components";
-import { Route, useGameStore } from "@/store/gameStore";
+import { Route, useCoreStore } from "@/store/core/store";
 import { useNavigate } from "react-router-dom";
 import { match } from "ts-pattern";
 import { LockIcon } from "@/icons/lock";
@@ -296,7 +296,7 @@ function OptionsGroup({
   hideOptions: () => void;
   isClosing: boolean;
 }) {
-  const routes = useGameStore((state) => state.routes);
+  const routes = useCoreStore((state) => state.routes);
   const count = routes.length;
 
   if (count === 0) {
@@ -406,7 +406,7 @@ function Option({
   const { currentRoute } = useAppStore();
   const { resetToDefaultView } = useViewStore();
   const { triggerQuest } = useQuestSystem();
-  const { canAfford, purchaseRoute } = useGameStore();
+  const { canAfford, purchaseRoute } = useCoreStore();
   const { showMessage } = useMessageStore();
 
   const isActive = currentRoute === route.path;
@@ -414,16 +414,6 @@ function Option({
   const position = initialPosition;
 
   const resetCamAndNavigate = useCallback(() => {
-    // cameraControlsRef.current?.setLookAt(
-    //   0,
-    //   CAMERA_Y_POSITION,
-    //   VISIBLE_OPTIONS_CAMERA_ZOOM,
-    //   position.x,
-    //   position.y + CAMERA_HEIGHT,
-    //   position.z,
-    //   true
-    // );
-
     resetToDefaultView();
     navigate(route.path);
     hideOptions();

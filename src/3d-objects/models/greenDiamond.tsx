@@ -6,7 +6,7 @@ import { a, useSpring } from "@react-spring/three";
 import { useFrame } from "@react-three/fiber";
 import { RapierRigidBody, RigidBody } from "@react-three/rapier";
 import { Grabbable } from "@/physics/Grabbable";
-import { useGameStore } from "@/store";
+import { useCoreStore } from "@/store";
 import { previewMaterialProps } from "@/shop-items/utils";
 
 type GLTFResult = GLTF & {
@@ -35,7 +35,7 @@ export const GreenDiamond = ({
 }: Props) => {
   const api = useRef<RapierRigidBody>(null);
   const { nodes } = useGLTF(PATH) as GLTFResult;
-  const { previewMode } = useGameStore();
+  const { previewMode } = useCoreStore();
 
   return (
     <Grabbable rigidBodyRef={api} mode={"spring"}>

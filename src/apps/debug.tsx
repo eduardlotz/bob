@@ -1,20 +1,9 @@
-import { usePagination } from "@/hooks/usePagination";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
-import { ArrowLeftIcon, ArrowRightIcon } from "@/icons/arrow";
 import { FillRow, HugColumn, ListItemContainer } from "@/layout";
 import { Divider, DividerWithLabel } from "@/layout/atoms";
-import { MOTION_VARIANTS } from "@/molecules/HeadNavigation";
 import { formatNumber } from "@/molecules/TapCounter";
-import {
-  CameraViewId,
-  getShopItemType,
-  ShopItem,
-  useGameStore,
-  useQuestStore,
-  useViewStore,
-} from "@/store";
+import { CameraViewId, useCoreStore, useQuestStore } from "@/store";
 import { useMessageStore } from "@/store/messageStore";
-import { executeMigrationsWhenReady } from "@/store/migrationExecutor";
 import styled from "styled-components";
 
 export const DebugIcon = () => (
@@ -68,7 +57,7 @@ export const DebugApp = () => {
     currentTheme,
     manualTaps,
     taps,
-  } = useGameStore();
+  } = useCoreStore();
 
   const {
     quests,
@@ -106,7 +95,7 @@ export const DebugApp = () => {
     >
       <SettingsWrapper>
         <HugColumn>
-          <h5>Game Data</h5>
+          <h5>Core Data</h5>
           <Divider />
 
           <ListItemContainer
@@ -115,7 +104,7 @@ export const DebugApp = () => {
             $justify="space-between"
             $gap={"1rem"}
           >
-            <p>Version:</p> <p>{version}</p>
+            <p>Store Version:</p> <p>{version}</p>
           </ListItemContainer>
 
           <ListItemContainer

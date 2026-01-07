@@ -1,5 +1,5 @@
 import { useSoundSystem } from "@/hooks/useSoundSystem";
-import { useCursorStore } from "@/store/cursorStore";
+import { useCursorStore } from "@/store/core/cursor";
 import { useEffect } from "react";
 
 const CLICKABLE_SELECTOR =

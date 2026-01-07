@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from "react";
-import { useGameStore } from "@/store/gameStore";
+import { useCoreStore } from "@/store/core/store";
 import { createGlobalStyle } from "styled-components";
 
 type StyledTheme = {
@@ -153,7 +153,7 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const { currentTheme, themes, previewMode } = useGameStore();
+  const { currentTheme, themes, previewMode } = useCoreStore();
 
   const activeTheme =
     previewMode === "theme" ? themes.find((t) => t.preview) : currentTheme;

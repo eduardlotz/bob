@@ -8,7 +8,7 @@ export {
   ROUTES,
   getRouteLabelByPath,
   getAllRoutes,
-} from "./routeConfig";
+} from "./config/routes";
 
 export type SceneMode = "home" | "navigation";
 
@@ -82,7 +82,7 @@ export const useAppStore = create<AppStore>()(
       openOptions: () => set({ showOptions: true, isOptionsClosing: false }),
       closeOptionsWithAnimation: () => {
         // trigger closing flag so animated components can play exit
-        set({ isOptionsClosing: true });
+        // set({ isOptionsClosing: true });
         // after a small delay, actually close options and reset closing flag
         setTimeout(() => {
           set({ showOptions: false, isOptionsClosing: false });
@@ -131,6 +131,6 @@ export const useAppStore = create<AppStore>()(
   )
 );
 
-export * from "./gameStore";
-export * from "./questStore";
+export * from "./core/store";
+export * from "./core/quests";
 export * from "./viewStore";

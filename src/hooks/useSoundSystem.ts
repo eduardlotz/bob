@@ -20,7 +20,7 @@ import {
   stopSoundsById as engineStopSoundsById,
 } from "../utils/soundSystem";
 import { getWorldSoundById, tryGetWorldSoundById } from "@/utils/sound/configs";
-import { useGameStore } from "../store/gameStore";
+import { useCoreStore } from "../store/core/store";
 
 let _initPerformed = false;
 
@@ -59,7 +59,7 @@ export interface SoundSystemHook {
 }
 
 export function useSoundSystem(): SoundSystemHook {
-  const soundSystem = useGameStore((s) => s.soundSystem);
+  const soundSystem = useCoreStore((s) => s.soundSystem);
 
   const lastNonZeroRef = useRef<number>(
     soundSystem.masterVolume > 0 ? soundSystem.masterVolume : 1
@@ -115,7 +115,7 @@ export function useSoundSystem(): SoundSystemHook {
   }, []);
 
   const resumeSelectedWorldLayersSnapshot = useCallback(() => {
-    const s = useGameStore.getState();
+    const s = useCoreStore.getState();
     if (!s.soundSystem.enabled) return;
     if (s.soundSystem.masterVolume <= 0) return;
     if (s.soundSystem.worldEnabled === false) return;
@@ -167,7 +167,7 @@ export function useSoundSystem(): SoundSystemHook {
   }, []);
 
   const playTapSound = useCallback((soundId?: string) => {
-    const s = useGameStore.getState();
+    const s = useCoreStore.getState();
     if (s.isPaused) return;
     if (!isEnabled()) return;
     try {
@@ -182,7 +182,7 @@ export function useSoundSystem(): SoundSystemHook {
   }, []);
 
   const playWorldSound = useCallback((soundId: string, options?: any) => {
-    const s = useGameStore.getState();
+    const s = useCoreStore.getState();
     if (!isEnabled() || s.isPaused) return;
     try {
       playWorldSoundUtil(soundId, options);
@@ -200,7 +200,7 @@ export function useSoundSystem(): SoundSystemHook {
         console.error("engineSetMasterVolume failed:", err);
       }
 
-      const store = useGameStore.getState();
+      const store = useCoreStore.getState();
       store.setMasterVolume(clamped);
 
       if (clamped > 0) {
@@ -218,7 +218,7 @@ export function useSoundSystem(): SoundSystemHook {
     (v: number) => {
       const clamped = Math.max(0, Math.min(1, v));
       setTypeVolume("tap", clamped);
-      useGameStore.getState().setTapVolume(clamped);
+      useCoreStore.getState().setTapVolume(clamped);
     },
     [setTypeVolume]
   );
@@ -227,7 +227,7 @@ export function useSoundSystem(): SoundSystemHook {
     (v: number) => {
       const clamped = Math.max(0, Math.min(1, v));
       setTypeVolume("world", clamped);
-      useGameStore.getState().setWorldVolume(clamped);
+      useCoreStore.getState().setWorldVolume(clamped);
       try {
         updateWorldSoundVolumes(false);
       } catch (err) {
@@ -241,7 +241,7 @@ export function useSoundSystem(): SoundSystemHook {
     (v: number) => {
       const clamped = Math.max(0, Math.min(1, v));
       setTypeVolume("ui", clamped);
-      useGameStore.getState().setUIVolume(clamped);
+      useCoreStore.getState().setUIVolume(clamped);
     },
     [setTypeVolume]
   );
@@ -250,20 +250,20 @@ export function useSoundSystem(): SoundSystemHook {
     (v: number) => {
       const clamped = Math.max(0, Math.min(1, v));
       setTypeVolume("text", clamped);
-      useGameStore.getState().setTextVolume(clamped);
+      useCoreStore.getState().setTextVolume(clamped);
     },
     [setTypeVolume]
   );
 
   const enable = useCallback(() => {
-    useGameStore.getState().setSoundEnabled(true);
+    useCoreStore.getState().setSoundEnabled(true);
     try {
       engineEnable();
     } catch (err) {
       console.error("engineEnable failed:", err);
     }
 
-    const s = useGameStore.getState();
+    const s = useCoreStore.getState();
     if (
       s.soundSystem.masterVolume > 0 &&
       s.soundSystem.worldEnabled !== false &&
@@ -275,7 +275,7 @@ export function useSoundSystem(): SoundSystemHook {
   }, [resumeSelectedWorldLayersSnapshot]);
 
   const disable = useCallback(() => {
-    useGameStore.getState().setSoundEnabled(false);
+    useCoreStore.getState().setSoundEnabled(false);
     try {
       engineDisable();
     } catch (err) {
@@ -285,7 +285,7 @@ export function useSoundSystem(): SoundSystemHook {
 
   // volume-based, does not flip "enabled" flag
   const mute = useCallback(() => {
-    const store = useGameStore.getState();
+    const store = useCoreStore.getState();
     const current = store.soundSystem.masterVolume;
     if (current > 0) {
       lastNonZeroRef.current = current;
@@ -315,12 +315,12 @@ export function useSoundSystem(): SoundSystemHook {
       console.error("engineUnmute failed:", err);
     }
 
-    useGameStore.getState().setMasterVolume(restore);
+    useCoreStore.getState().setMasterVolume(restore);
     resumeSelectedWorldLayersSnapshot();
   }, [resumeSelectedWorldLayersSnapshot]);
 
   const toggleMute = useCallback(() => {
-    const store = useGameStore.getState();
+    const store = useCoreStore.getState();
     const current = store.soundSystem.masterVolume;
     if (current > 0) {
       mute();

@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "motion/react";
 import type { Variants } from "motion/react";
 import { useMessageStore } from "@/store/messageStore";
 import { useAppStore, useViewStore } from "@/store";
-import { useGameStore } from "@/store/gameStore";
+import { useCoreStore } from "@/store/core/store";
 import { textSynth } from "@/utils/sound/textSynth";
 import { resumeAudioContext, unlockAudioContext } from "@/utils/soundSystem";
 import { DEFAULT_TEXT_VOLUME } from "@/utils/sound/defaults";
@@ -24,7 +24,7 @@ export interface MessageBubbleProps {
 }
 
 const useTypewriterAudio = (text: string, isTyping: boolean) => {
-  const { soundSystem } = useGameStore();
+  const { soundSystem } = useCoreStore();
   const audioRef = useRef<{ index: number; timeout: number | null }>({
     index: 0,
     timeout: null,
@@ -151,7 +151,7 @@ export const MessageBubble = memo(function MessageBubble({
     resumeSystem,
   } = useMessageStore();
   const { requestEmotion } = useAppStore();
-  const { previewMode, isReady } = useGameStore();
+  const { previewMode, isReady } = useCoreStore();
   const { currentView } = useViewStore();
 
   const [visibleLines, setVisibleLines] = useState<

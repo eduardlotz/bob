@@ -2,7 +2,7 @@ import React, { useRef, useMemo } from "react";
 import { useFrame, extend } from "@react-three/fiber";
 import { shaderMaterial } from "@react-three/drei";
 import * as THREE from "three";
-import { useGameStore } from "@/store";
+import { useCoreStore } from "@/store";
 import { match } from "ts-pattern";
 
 const BLADE_COUNT_MIN = 5000;
@@ -81,7 +81,7 @@ export const GrassShader = ({ position, rotation, scale, preview }: Props) => {
   const meshRef = useRef<THREE.InstancedMesh>(null!);
   const materialRef = useRef<any>();
 
-  const { graphicPreferences } = useGameStore();
+  const { graphicPreferences } = useCoreStore();
 
   const allowedBladeCount = useMemo(
     () =>

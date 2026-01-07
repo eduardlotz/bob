@@ -9,7 +9,7 @@ import {
   ListItemContainer,
 } from "@/layout";
 import { Divider, RowLabel, ValueChip, ValueSlider } from "@/layout/atoms";
-import { CameraViewId, useGameStore, useViewStore } from "@/store";
+import { CameraViewId, useCoreStore, useViewStore } from "@/store";
 import { motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -60,7 +60,7 @@ const APP_ID: CameraViewId = "phone:options";
 export function OptionsApp() {
   const [activeTab, setActiveTab] = useState<OptionsTab>("theme");
 
-  const { themes, activateTheme, previewTheme, resetPreview } = useGameStore();
+  const { themes, activateTheme, previewTheme, resetPreview } = useCoreStore();
 
   const { transitionToView } = useViewStore();
 
@@ -300,7 +300,7 @@ export function OptionsApp() {
   }
 
   const GraphicsView = () => {
-    const { graphicPreferences, setGraphicsMode } = useGameStore();
+    const { graphicPreferences, setGraphicsMode } = useCoreStore();
 
     const mode = graphicPreferences.qualityMode;
 

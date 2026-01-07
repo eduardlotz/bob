@@ -9,7 +9,7 @@ import {
   FUNNY_FISHEYE_ZOOM,
   VISIBLE_OPTIONS_CAMERA_ZOOM,
 } from "@/molecules/HeadNavigation";
-import { useGameStore } from ".";
+import { ROUTE_PATHS, useAppStore, useCoreStore } from ".";
 import { Vector3 } from "three";
 
 export interface CameraView {
@@ -311,14 +311,16 @@ export const useViewStore = create<ViewStore>()(
           return;
         }
 
+        const currentRoute = useAppStore.getState().currentRoute;
+
+        // viewMode is set to fixed without transition
+        // TODO: fix edge case when going from creative -> any other
         const targetView: CameraViewId =
-          currentView === "creative" || previousView === "creative"
-            ? "creative"
-            : "default";
+          currentRoute === ROUTE_PATHS.CREATIVE ? "creative" : "default";
 
         const viewConfig = CAMERA_VIEWS[targetView];
 
-        useGameStore.getState().resetPreview();
+        useCoreStore.getState().resetPreview();
 
         set({
           currentView: targetView,
@@ -332,17 +334,6 @@ export const useViewStore = create<ViewStore>()(
           viewConfig.defaultViewMode ?? get().viewMode
         );
 
-        // set({
-        //   currentView:
-        //     previousView === "creative" || currentView === "creative"
-        //       ? "creative"
-        //       : "default",
-        //   viewMode: defaultViewMode,
-        //   isImageFocused: false,
-        //   focusedImageTitle: null,
-        //   isTransitioning: true,
-        // });
-
         try {
           const controls = cameraControlsRef.current;
 
@@ -353,9 +344,7 @@ export const useViewStore = create<ViewStore>()(
           // currently only two different defaults (creative -> "orbit view" & rest -> "fixed view")
           const viewConfig =
             CAMERA_VIEWS[
-              previousView === "creative" || currentView === "creative"
-                ? "creative"
-                : "default"
+              currentRoute === ROUTE_PATHS.CREATIVE ? "creative" : "default"
             ];
 
           if (!viewConfig) {

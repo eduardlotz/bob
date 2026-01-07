@@ -1,13 +1,13 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { persist } from "zustand/middleware";
-import { createIndexedDBStorage } from "./indexedDB";
+import { createIndexedDBStorage } from "../indexedDB";
 import { match } from "ts-pattern";
-import { ROUTE_PATHS, ROUTE_IDS, ROUTE_CONFIG } from "./routeConfig";
+import { ROUTE_PATHS, ROUTE_IDS, ROUTE_CONFIG } from "../config/routes";
 import { toast } from "sonner";
 import { setCurrentTapSound as engineSetCurrentTapSound } from "@/utils/soundSystem";
 import { resolveTapSoundForEffect } from "@/utils/sound/configs";
-import { THEME_IDS, THEME_CONFIG } from "./themeConfig";
+import { THEME_IDS, THEME_CONFIG } from "../config/themes";
 import { initialTapUpgrades } from "@/shop-items/upgrades";
 import { initialTapEffects } from "@/shop-items/tapEffects";
 import {
@@ -25,6 +25,7 @@ import {
   DEFAULT_WORLD_VOLUME,
 } from "@/utils/sound/defaults";
 import { initialDecorations } from "@/shop-items/decorations";
+import { migrateCoreStore } from "./migrations";
 
 const ONE_SECOND_MS = 1000;
 const AUTO_TAP_INTERVAL_MS = 1000;
@@ -35,58 +36,6 @@ export enum GAME_STORE_VERSION {
   V2 = 1000001, // version 1.00.01
   V3 = 1000002, // version 1.00.02
   LATEST = V3,
-}
-
-// main migration function
-function migrateStore(oldState: any, fromVersion: number): any {
-  console.log(
-    `Migration triggered: oldState version=${fromVersion}, migration version=${GAME_STORE_VERSION.LATEST}`
-  );
-
-  let migratedState = { ...oldState };
-
-  // initial migration: reset all defaults
-  if (fromVersion < GAME_STORE_VERSION.V0) {
-    console.warn("GAME VERSION IS TOO OLD, STARTING FRESH");
-    migratedState = initialGameState;
-  }
-
-  // new route added: /creative
-  if (fromVersion < GAME_STORE_VERSION.V1) {
-    const currentTheme = migratedState.currentTheme.id ?? THEME_IDS.DEFAULT;
-    migratedState = {
-      ...migratedState,
-      routes: initialRoutes,
-      themes: initialThemes,
-      currentTheme: initialThemes.find(currentTheme),
-    };
-  }
-
-  // graphic preferences added
-  if (fromVersion < GAME_STORE_VERSION.V2) {
-    migratedState = {
-      ...migratedState,
-      decorations: initialDecorations,
-      graphicPreferences: {
-        qualityMode: "auto",
-        effectsEnabled: true,
-      },
-    };
-  }
-
-  // theme fixes, chat color added
-  if (fromVersion < GAME_STORE_VERSION.V3) {
-    const currentTheme = migratedState.currentTheme.id ?? THEME_IDS.DEFAULT;
-
-    migratedState = {
-      ...migratedState,
-      themes: initialThemes,
-      currentTheme: initialThemes.find(currentTheme),
-    };
-  }
-
-  migratedState.version = GAME_STORE_VERSION.LATEST;
-  return migratedState;
 }
 
 // TODO: plan refactor to include component inside item properties
@@ -571,7 +520,7 @@ const partializePersisted = (state: GameStore): PersistedGameStore => ({
   graphicPreferences: state.graphicPreferences,
 });
 
-export const useGameStore = create<GameStore>()(
+export const useCoreStore = create<GameStore>()(
   devtools(
     persist(
       (set, get) => ({
@@ -1389,7 +1338,7 @@ export const useGameStore = create<GameStore>()(
           }));
           // runtime: also resolve and apply audio for the selected tap effect
           try {
-            const s = useGameStore.getState();
+            const s = useCoreStore.getState();
             const cfg = resolveTapSoundForEffect(
               id,
               s.audioSelections.tapEffectAudioId
@@ -1605,11 +1554,8 @@ export const useGameStore = create<GameStore>()(
         name: "game-store",
         version: GAME_STORE_VERSION.LATEST,
         storage: createIndexedDBStorage<GameStore>(),
-        migrate: (persisted: any, fromVersion: number) => {
-          if (!persisted) return initialGameState;
-
-          return migrateStore(persisted, fromVersion || 0);
-        },
+        migrate: migrateCoreStore,
+        // partialize: partializePersisted,
         partialize: (state) => partializePersisted(state) as GameStore,
         onRehydrateStorage: () => (state?: GameStore) => {
           if (!state) return;
@@ -1621,7 +1567,7 @@ export const useGameStore = create<GameStore>()(
           state._cachedTapMultiplier = state._cachedTapMultiplier;
           state._lastUpgradeHash = state._lastUpgradeHash;
 
-          state.manualTaps = 0;
+          state.manualTaps = state.manualTaps;
           state.manualTapsPerSecond = 0;
           state.tapsPerSecond = state.getTotalTapsPerSecond();
           state.autoTapRate = state.getTotalTapMultiplierUncached();
@@ -1735,7 +1681,7 @@ export const startAutoTap = () => {
   }
 
   autoTapInterval = setInterval(() => {
-    const store = useGameStore.getState();
+    const store = useCoreStore.getState();
 
     if (store.isPaused) {
       return;
@@ -1759,26 +1705,4 @@ export const stopAutoTap = () => {
     clearInterval(autoTapInterval);
     autoTapInterval = null;
   }
-};
-
-// manually trigger store migration in dev tools
-export const triggerStoreMigration = () => {
-  const store = useGameStore.getState();
-  const currentState = {
-    version: store.version || 1,
-    taps: store.taps,
-    upgrades: store.upgrades,
-    decorations: store.decorations,
-    themes: store.themes,
-    currentTheme: store.currentTheme,
-    fisheyeIntensity: store.fisheyeIntensity,
-  };
-
-  const migratedState = migrateStore(currentState, GAME_STORE_VERSION.LATEST);
-  toast.success(`Store migrated to VERSION_${GAME_STORE_VERSION.LATEST}`);
-
-  useGameStore.setState({
-    ...store,
-    ...migratedState,
-  });
 };

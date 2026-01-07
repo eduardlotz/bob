@@ -2,9 +2,8 @@ import { Text3D, Outlines } from "@react-three/drei";
 import { useRef, useEffect, useState } from "react";
 import { Vector3, Group, Mesh } from "three";
 import { useSpring, a } from "@react-spring/three";
-import { useFrame } from "@react-three/fiber";
-import { useGameStore } from "@/store/gameStore";
-import { THEME_CONFIG } from "@/store/themeConfig";
+import { useCoreStore } from "@/store/core/store";
+import { THEME_CONFIG } from "@/store/config/themes";
 
 const FONT_PATH = "/fonts/OpenRundeBold.json";
 
@@ -85,23 +84,20 @@ export const formatNumber = (num: number): string => {
 };
 
 export const TapCounter = () => {
-  const { taps, currentTheme, themes, previewMode } = useGameStore();
+  const { taps, currentTheme, themes, previewMode } = useCoreStore();
 
   const activeTheme =
     previewMode === "theme"
       ? themes.find((t) => t.preview)
       : themes.find((t) => t.active);
 
-  const gameTapCount = taps;
-
   const themeConfig = activeTheme
     ? Object.values(THEME_CONFIG).find((t) => t.id === activeTheme.id) ||
       THEME_CONFIG.DEFAULT
     : THEME_CONFIG.DEFAULT;
 
-  const formattedNumber = formatNumber(gameTapCount);
+  const formattedNumber = formatNumber(taps);
   const groupRef = useRef<Group>(null!);
-  const prevTapCount = useRef(gameTapCount);
 
   const numberRef = useRef<Mesh>(null);
   const [numberWidth, setNumberWidth] = useState(0);
@@ -125,58 +121,40 @@ export const TapCounter = () => {
     config: { tension: 300, friction: 10 },
   }));
 
-  // MAYDO: test if by-passing react render is better
-  // best practice would be useEffect to handle animation updates with dependencies
-  // but manually tapping while auto-tap is active feels better when the update is in useFrame 🤷
+  useEffect(() => {
+    if (taps === 0) return;
 
-  useFrame(() => {
-    // hide counter until first few taps?
-    // if (gameTapCount === 0) {
-    //   api.start({
-    //     scale: [0, 0, 0],
-    //     immediate: true,
-    //   });
-    // }
-
-    if (gameTapCount !== prevTapCount.current) {
-      api.start({
-        scale: [1.4, 1.8, 1.2],
-        immediate: true,
-      });
-      api.start({
-        scale: [1, 1, 1],
-        config: { tension: 300, friction: 15 },
-      });
-      prevTapCount.current = gameTapCount;
-    }
-  });
+    api.start({
+      from: { scale: [1.4, 1.8, 1.2] },
+      to: { scale: [1, 1, 1] },
+      immediate: false,
+    });
+  }, [taps, api]);
 
   return (
-    <a.group
-      ref={groupRef}
-      scale={spring.scale.get() as [number, number, number]}
-      position={responsivePosition}
-    >
-      <Text3D
-        font={FONT_PATH}
-        size={3}
-        height={1.5}
-        curveSegments={8}
-        letterSpacing={-0.15}
-        bevelEnabled={true}
-        bevelSize={0.03}
-        bevelThickness={0.2}
-        bevelSegments={1}
-        ref={numberRef}
-      >
-        {formattedNumber}
-        <meshToonMaterial color={themeConfig.counterColor} />
-        <Outlines
-          thickness={0.011}
-          color={themeConfig.outlineColor}
-          screenspace
-        />
-      </Text3D>
+    <a.group ref={groupRef} scale={spring.scale as any}>
+      <a.group position={responsivePosition}>
+        <Text3D
+          font={FONT_PATH}
+          size={3}
+          height={1.5}
+          curveSegments={5}
+          letterSpacing={-0.15}
+          bevelEnabled={true}
+          bevelSize={0.03}
+          bevelThickness={0.2}
+          bevelSegments={1}
+          ref={numberRef}
+        >
+          {formattedNumber}
+          <meshToonMaterial color={themeConfig.counterColor} />
+          <Outlines
+            thickness={0.011}
+            color={themeConfig.outlineColor}
+            screenspace
+          />
+        </Text3D>
+      </a.group>
     </a.group>
   );
 };

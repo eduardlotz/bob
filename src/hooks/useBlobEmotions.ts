@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useGameStore } from "@/store/gameStore";
+import { useCoreStore } from "@/store/core/store";
 import { useAppStore, ROUTE_PATHS } from "@/store";
 import { useSoundSystem } from "./useSoundSystem";
 import { resolveTapSoundForEffect } from "@/utils/sound/configs";
@@ -86,7 +86,7 @@ export function useBlobEmotions() {
     const now = Date.now();
 
     // get the correct tap sound ID from game store
-    const gameStore = useGameStore.getState();
+    const gameStore = useCoreStore.getState();
     const selectedTapEffect = gameStore.tapEffects.find((u) => u.enabled);
     const tapEffectId = selectedTapEffect?.id || "tap_effect_default";
 
@@ -105,7 +105,7 @@ export function useBlobEmotions() {
     // only increment tap count on home route
     if (currentRoute === ROUTE_PATHS.HOME) {
       setTapCount((prev) => prev + 1);
-      const gameStore = useGameStore.getState();
+      const gameStore = useCoreStore.getState();
       gameStore.addManualTap();
     }
 

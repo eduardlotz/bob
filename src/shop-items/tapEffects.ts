@@ -42,7 +42,3 @@ export const initialTapEffects: TapEffect[] = [
     effectId: 3,
   },
 ];
-
-export const getTapEffectsIds = () => {
-  return initialTapEffects.map((t) => t.id);
-};

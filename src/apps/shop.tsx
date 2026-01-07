@@ -7,7 +7,7 @@ import {
   CameraViewId,
   getShopItemType,
   ShopItem,
-  useGameStore,
+  useCoreStore,
   useViewStore,
 } from "@/store";
 import { AnimatePresence, motion } from "motion/react";
@@ -60,7 +60,7 @@ const tabs = [
 ];
 
 export const TapCounterChip = () => {
-  const { taps } = useGameStore();
+  const { taps } = useCoreStore();
 
   return (
     <ItemStatusChip $variant="dark-accent">
@@ -91,9 +91,9 @@ export function ShopApp() {
     previewBobItem,
     previewDecoration,
     previewTapEffect,
-  } = useGameStore();
+  } = useCoreStore();
 
-  const { currentView, transitionToView, previousView } = useViewStore();
+  const { currentView, transitionToView, setViewMode } = useViewStore();
 
   const shopViewsWithItems: Record<ShopTab, ShopItem[]> = {
     bob: bobItems.filter((b) => b.unlocked !== false),
@@ -112,6 +112,8 @@ export function ShopApp() {
 
   useEffect(() => {
     transitionToView(APP_ID);
+    setViewMode("object");
+
     goTo(initialIndex);
   }, []);
 

@@ -1,6 +1,6 @@
 import React, { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { useGameStore } from "@/store/gameStore";
+import { useCoreStore } from "@/store/core/store";
 import { Mesh, MeshBasicMaterial, PlaneGeometry } from "three";
 import { TreeModel } from "./models/tree";
 import { GrassShader } from "./GrassShader";
@@ -117,7 +117,7 @@ export function Decoration3D({
 }
 
 export function SceneDecorations() {
-  const { decorations, previewMode } = useGameStore();
+  const { decorations, previewMode } = useCoreStore();
   const decoPreviewActive =
     previewMode === "3d" ||
     previewMode === "2d" ||

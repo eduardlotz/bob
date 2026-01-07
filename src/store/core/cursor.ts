@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { useViewStore, ViewMode } from "./viewStore";
+import { useViewStore, ViewMode } from "../viewStore";
 
 export type CursorVariant =
   | "default"

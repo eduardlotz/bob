@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useMemo, useLayoutEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Sparkles } from "@react-three/drei";
-import { useGameStore } from "@/store/gameStore";
+import { useCoreStore } from "@/store/core/store";
 import * as THREE from "three";
 import {
   Object3D,
@@ -10,6 +10,7 @@ import {
   DynamicDrawUsage,
   BufferGeometry,
   Material,
+  Texture,
 } from "three";
 
 // TODO: check performance impact
@@ -83,7 +84,6 @@ const SHARED_GEOMETRIES = {
   cloudSphere: new THREE.SphereGeometry(1, 8, 8),
 };
 
-// Pre-create and reuse materials
 const SHARED_MATERIALS = {
   heart: new THREE.MeshStandardMaterial({ transparent: true }),
   star: new THREE.MeshStandardMaterial({ transparent: true }),
@@ -109,9 +109,9 @@ const BUBBLES_COUNT_MIN = 6;
 const BUBBLES_COUNT_MAX = 13;
 // #endregion
 
-// Stars Effect using Sparkles from drei
+// Sparkles from drei
 export function StarsEffect() {
-  const { weatherEffects } = useGameStore();
+  const { weatherEffects } = useCoreStore();
   const starsUpgrade = weatherEffects.find((u) => u.id === "environment_stars");
   const starsEnabled = useMemo(
     () => starsUpgrade?.purchased && starsUpgrade?.enabled,
@@ -133,9 +133,9 @@ export function StarsEffect() {
   );
 }
 
-// Rain Effect using rectangular plane emitter with falling droplets
+// rectangular plane emitter with falling droplets
 export function RainEffect() {
-  const { weatherEffects } = useGameStore();
+  const { weatherEffects } = useCoreStore();
   const rainUpgrade = weatherEffects.find((u) => u.id === "environment_rain");
   const rainEnabled = rainUpgrade?.purchased && rainUpgrade?.enabled;
 
@@ -232,9 +232,7 @@ export function RainEffect() {
 
 const generateClouds = (count: number): CloudData[] => {
   return Array.from({ length: count }, () => {
-    // 1. Position Logic (Safe Zone)
     const angle = Math.random() * Math.PI * 2;
-    // Guaranteed distance from center (Camera)
     const radius =
       CONFIG.RADIUS.MIN +
       Math.random() * (CONFIG.RADIUS.MAX - CONFIG.RADIUS.MIN);
@@ -245,7 +243,6 @@ const generateClouds = (count: number): CloudData[] => {
       Math.random() * (CONFIG.HEIGHT.MAX - CONFIG.HEIGHT.MIN);
     const z = Math.sin(angle) * radius;
 
-    // 2. Bubble Generation
     const bubbleCount =
       CONFIG.BUBBLE_COUNT.MIN +
       Math.floor(
@@ -254,14 +251,12 @@ const generateClouds = (count: number): CloudData[] => {
 
     const bubbles: CloudBubble[] = [];
 
-    // Main central bubble
     bubbles.push({
       offset: [0, 0, 0],
       scale: 1.2 + Math.random() * 0.8,
       opacity: 0.1 + Math.random() * 0.2,
     });
 
-    // Satellite bubbles
     for (let i = 0; i < bubbleCount - 1; i++) {
       const bubbleAngle =
         (i / (bubbleCount - 1)) * Math.PI * 2 + Math.random() * 0.5;
@@ -307,15 +302,7 @@ type CloudData = {
 };
 
 export const CloudEffect = ({ preview }: { preview: boolean }) => {
-  // const { weatherEffects } = useGameStore();
-  // const cloudUpgrade = weatherEffects.find(
-  //   (u) => u.id === "environment_clouds"
-  // );
-  // const cloudEnabled = cloudUpgrade?.purchased && cloudUpgrade?.enabled;
-
   const clouds = useMemo(() => {
-    // if (!cloudEnabled) return [];
-
     const count =
       CONFIG.CLOUD_COUNT.MIN +
       Math.floor(
@@ -324,9 +311,6 @@ export const CloudEffect = ({ preview }: { preview: boolean }) => {
 
     return generateClouds(count);
   }, []);
-
-  // if (!cloudEnabled) return null;
-  // if (preview) return null;
 
   return (
     <group>
@@ -434,8 +418,8 @@ const colorConfigs = {
   default: ["#ffffff", "#cccccc", "#212121", "#000000", "#297AFF"],
 };
 
-export function TapEffect() {
-  const { tapEffects, previewMode } = useGameStore();
+export function TapEffects() {
+  const { tapEffects, previewMode } = useCoreStore();
 
   const selectedTapEffect =
     previewMode === "tapEffect"
@@ -448,6 +432,7 @@ export function TapEffect() {
     geo: BufferGeometry;
     mat: Material;
     colors: string[];
+    texture?: Texture; // Optional texture for emojis
   } = {
     geo: SHARED_GEOMETRIES.sphere,
     mat: SHARED_MATERIALS.sphere,
@@ -480,7 +465,6 @@ export function TapEffect() {
   const meshRef = useRef<InstancedMesh>(null);
   const dummy = useMemo(() => new Object3D(), []);
 
-  // Create the object pool
   const particles = useMemo(() => {
     return new Array(MAX_COUNT).fill(0).map(() => ({
       life: 0,
@@ -515,7 +499,6 @@ export function TapEffect() {
         p.y = y;
         p.z = z;
 
-        // Random spherical direction (maybe used for future effect)
         const theta = Math.random() * Math.PI * 2;
         const phi = Math.acos(Math.random() * 2 - 1);
 
@@ -661,16 +644,5 @@ export function TapEffect() {
       args={[activeConfig.geo, activeConfig.mat, MAX_COUNT]}
       frustumCulled={false}
     />
-  );
-}
-
-export function ParticleEffects() {
-  return (
-    <group>
-      {/* <RainEffect />
-      <CloudEffect />
-      <StarsEffect /> */}
-      <TapEffect />
-    </group>
   );
 }

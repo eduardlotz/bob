@@ -21,7 +21,7 @@ import { calculateAcceleratedRotation } from "@/utils/math";
 import { a, useSpring } from "@react-spring/three";
 import { Star3D } from "@/3d-objects/Star3D";
 import { EmotionState } from "@/hooks/useBlobEmotions";
-import { useGameStore } from "@/store/gameStore";
+import { useCoreStore } from "@/store/core/store";
 import { useViewStore } from "@/store/viewStore";
 import { KrustyKrabHat } from "@/3d-objects/models/krustyKrabHat";
 import { match } from "ts-pattern";
@@ -34,7 +34,7 @@ import { SimsPlumbob } from "@/3d-objects/models/simsPlumbob";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { BlackCap } from "@/3d-objects/models/blackCap";
 import { useCursor } from "@/hooks/useCursor";
-import { useCursorStore } from "@/store/cursorStore";
+import { useCursorStore } from "@/store/core/cursor";
 
 // TODO: move constants to a shared config file
 const HEAD_POSITION_Y = 0;
@@ -174,7 +174,7 @@ export function BlobHead({
   onCameraZoomAnimation?: (isAnimating: boolean) => void;
 }) {
   const { currentTheme, themes, previewMode, bobItems, blobForms } =
-    useGameStore();
+    useCoreStore();
 
   const activeTheme =
     previewMode === "theme" ? themes.find((t) => t.preview) : currentTheme;

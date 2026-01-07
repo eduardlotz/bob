@@ -2,7 +2,7 @@ import { useClickOutside } from "@/hooks/useClickOutside";
 import { CloseIcon } from "@/icons/close";
 import { FillRow, HugColumn, HugRow } from "@/layout";
 import { Magnetic } from "@/layout/Magnetic";
-import { ROUTE_PATHS, useAppStore, useGameStore, useQuestStore } from "@/store";
+import { ROUTE_PATHS, useAppStore, useCoreStore, useQuestStore } from "@/store";
 import { useMessageStore } from "@/store/messageStore";
 import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -21,7 +21,7 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
     getAutoTapRateUncached,
     manualTapsPerSecond,
     getTotalTapMultiplierUncached,
-  } = useGameStore();
+  } = useCoreStore();
 
   const { showMessage } = useMessageStore();
 

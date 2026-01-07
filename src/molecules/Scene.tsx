@@ -13,11 +13,11 @@ import { Physics } from "@react-three/rapier";
 import { Perf } from "r3f-perf";
 import { Suspense, useRef, useState, useEffect } from "react";
 
-import { useAppStore, useGameStore } from "../store";
+import { useAppStore, useCoreStore } from "../store";
 import { useViewStore } from "../store/viewStore";
-import { ROUTE_PATHS } from "../store/routeConfig";
-import { FISHEYE_CONFIG } from "../store/themeConfig";
-import { startAutoTap, stopAutoTap } from "../store/gameStore";
+import { ROUTE_PATHS } from "../store/config/routes";
+import { FISHEYE_CONFIG } from "../store/config/themes";
+import { startAutoTap, stopAutoTap } from "../store/core/store";
 import { attachListenerToCamera } from "@/utils/soundSystem";
 import { CreativeScene } from "@/routes/CreativeScene";
 import { AboutScene } from "../routes/AboutScene";
@@ -27,7 +27,7 @@ import { TapCounter } from "./TapCounter";
 import { MessageBubble } from "@/molecules/MessageBubble";
 
 import { BackgroundPlanet } from "../3d-objects/BackgroundPlanet";
-import { ParticleEffects } from "../3d-objects/ParticleEffects";
+import { TapEffects } from "../3d-objects/ParticleEffects";
 import { SceneDecorations } from "@/3d-objects/Decorations";
 
 const Debug = () => {
@@ -55,10 +55,10 @@ const Scene = ({
     setCameraControlsRef,
     isDefaultView,
     resetToDefaultView,
-    isObjectView,
+    setViewMode,
   } = useViewStore();
   const { upgrades, isPaused, statisticsVisible, setGameReady } =
-    useGameStore();
+    useCoreStore();
 
   const { currentRoute, showOptions, setShowOptions } = useAppStore();
 
@@ -71,17 +71,17 @@ const Scene = ({
 
   useEffect(() => {
     setCameraControlsRef(cameraControlsRef);
-  }, [setCameraControlsRef]);
+  }, []);
 
-  useEffect(() => {
-    if (isHome) {
-      setTimeout(() => {
-        if (!isDefaultView()) {
-          resetToDefaultView();
-        }
-      }, 200);
-    }
-  }, [isHome, resetToDefaultView]);
+  // useEffect(() => {
+  //   if (isHome) {
+  //     setTimeout(() => {
+  //       if (!isDefaultView()) {
+  //         resetToDefaultView();
+  //       }
+  //     }, 200);
+  //   }
+  // }, [isHome]);
 
   useEffect(() => {
     if (isPaused) {
@@ -156,9 +156,8 @@ const Scene = ({
               <MessageBubble anchor={[0, 2.4, 0]} />
 
               <a.group visible={visible} scale={spring.scale}>
-                <ParticleEffects />
                 <TapCounter />
-
+                <TapEffects />
                 <SceneDecorations />
               </a.group>
 
@@ -186,7 +185,7 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
   const canvasRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
   const [dpr, setDpr] = useState(2);
-  const { graphicPreferences } = useGameStore();
+  const { graphicPreferences } = useCoreStore();
 
   useEffect(() => {
     if (graphicPreferences.qualityMode === "high") setDpr(2);

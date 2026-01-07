@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useGameStore } from "@/store/gameStore";
+import { useCoreStore } from "@/store/core/store";
 import {
   getMigrationStatus,
   forceMigration,
@@ -16,13 +16,13 @@ export const MigrationDebugger: React.FC = () => {
   const [migrationStatus, setMigrationStatus] = useState<any>(null);
   const [storeVersion, setStoreVersion] = useState<number>(0);
   const [lastSchemaUpdate, setLastSchemaUpdate] = useState<Date | null>(null);
-  const { themes, currentTheme } = useGameStore();
+  const { themes, currentTheme } = useCoreStore();
 
   useEffect(() => {
     const status = getMigrationStatus();
     setMigrationStatus(status);
 
-    const store = useGameStore.getState();
+    const store = useCoreStore.getState();
     setStoreVersion(store.version || 0);
     setLastSchemaUpdate(store.lastSchemaUpdate || null);
   }, []);
@@ -53,9 +53,9 @@ export const MigrationDebugger: React.FC = () => {
 
   const handleTriggerSchemaMigration = () => {
     try {
-      const store = useGameStore.getState();
+      const store = useCoreStore.getState();
       // Set lastSchemaUpdate to an old date to trigger migration
-      useGameStore.setState({
+      useCoreStore.setState({
         ...store,
         lastSchemaUpdate: new Date("2020-01-01"), // Old date to trigger migration
       });

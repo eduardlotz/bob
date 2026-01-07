@@ -14,7 +14,7 @@ import { FillColumn, FillRow, HugColumn } from "@/layout";
 import { format } from "date-fns/format";
 
 import { PhoneMenuIcon } from "@/icons/phoneMenu";
-import { useGameStore, useViewStore } from "@/store";
+import { useCoreStore, useViewStore } from "@/store";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { SpeakerIcon } from "@/icons/speaker";
 import { ShopApp, ShopIcon, TapCounterChip } from "@/apps/shop";
@@ -94,7 +94,7 @@ export const BobPhone = () => {
   };
 
   const { toggle, isMuted, isEnabled } = useSoundSystem();
-  const { setSoundEnabled } = useGameStore();
+  const { setSoundEnabled } = useCoreStore();
 
   const activeAppView = () => BOB_APPS.find((a) => a.id === activeApp)?.view;
   const activeAppBottomAction = () =>

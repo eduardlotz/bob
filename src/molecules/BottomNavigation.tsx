@@ -32,11 +32,11 @@ export function BottomNavigation() {
 
   const isHomeRoute = currentRoute === ROUTE_PATHS.HOME;
 
-  const handleMenuButtonClick = async () => {
+  const handleMenuButtonClick = () => {
     if (showOptions) {
-      await resetToDefaultView();
+      resetToDefaultView();
     } else {
-      await transitionToView("navigation");
+      transitionToView("navigation");
     }
     toggleOptions();
   };

@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from "react";
 import { Outlines, useGLTF, Wireframe } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
-import { useGameStore } from "@/store";
+import { useCoreStore } from "@/store";
 import { previewMaterialProps } from "@/shop-items/utils";
 
 type GLTFResult = GLTF & {

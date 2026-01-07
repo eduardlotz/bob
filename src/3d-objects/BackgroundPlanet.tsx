@@ -1,10 +1,10 @@
 import { BackSide } from "three";
-import { useGameStore } from "@/store/gameStore";
-import { THEME_CONFIG } from "@/store/themeConfig";
+import { useCoreStore } from "@/store/core/store";
+import { THEME_CONFIG } from "@/store/config/themes";
 import { GradientTexture } from "@react-three/drei";
 
 export const BackgroundPlanet = () => {
-  const { currentTheme, themes, previewMode } = useGameStore();
+  const { currentTheme, themes, previewMode } = useCoreStore();
 
   const activeTheme =
     previewMode === "theme" ? themes.find((t) => t.preview) : currentTheme;

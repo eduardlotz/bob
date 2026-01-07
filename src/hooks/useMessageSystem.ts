@@ -1,16 +1,16 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useAppStore } from "@/store";
 import { match } from "ts-pattern";
-import { ROUTE_PATHS } from "@/store/routeConfig";
+import { ROUTE_PATHS } from "@/store/config/routes";
 import { useIsHydrated, useMessageStore } from "@/store/messageStore";
-import { useGameStore } from "@/store/gameStore";
+import { useCoreStore } from "@/store/core/store";
 
 export function useMessageSystem() {
   const currentRoute = useAppStore((s) => s.currentRoute);
   const isHydrated = useIsHydrated();
   const { showMessage, showMessages, systemPaused } = useMessageStore();
   const lastRouteRef = useRef<string | null>(null);
-  const { manualTaps } = useGameStore();
+  const { manualTaps } = useCoreStore();
   const hasShownFirstTapRef = useRef(false);
   const prevTapRef = useRef(0);
   const routeShownRef = useRef<Record<string, boolean>>({});
