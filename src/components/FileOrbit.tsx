@@ -24,12 +24,50 @@ interface PortfolioItem {
 
 const ITEMS: PortfolioItem[] = [
   {
-    url: "/images/portfolio/gradient_gem.jpeg",
-    title: "Gradient Gem",
+    url: "/images/portfolio/face_study.jpeg",
+    title: "3D Gesicht Studie 1/2",
   },
   {
-    url: "/images/portfolio/face_study.jpeg",
-    title: "Gesichter Studie",
+    url: "/images/portfolio/gradient_gem.jpeg",
+    title: "3D Licht Studie",
+  },
+  {
+    url: "/videos/portfolio/face-emotions-study.mp4",
+    title: "3D Gesicht Studie 2/2",
+    type: "video",
+  },
+  {
+    url: "/images/portfolio/bubbles-cover.jpeg",
+    title: "Bubbles",
+  },
+  {
+    url: "/images/portfolio/du-fehlst-cover.jpeg",
+    title: "du fehlst",
+  },
+  {
+    url: "/images/portfolio/hsd-dingeundinge.jpeg",
+    title: "Dinge/Undinge",
+  },
+  {
+    url: "/images/portfolio/peaceofmind-clothing.jpeg",
+    title: "Peace of Mind Prints",
+  },
+  {
+    url: "/videos/portfolio/lego-gravity-field.mp4",
+    title: "3D Physics Studie",
+    type: "video",
+  },
+  {
+    url: "/images/portfolio/soundcheck-cover.jpeg",
+    title: "Soundchecks",
+  },
+  {
+    url: "/images/portfolio/soundcloud-cover.jpeg",
+    title: "Mixes",
+  },
+  {
+    url: "/images/portfolio/hassliebe-fast-version-cover.jpeg",
+    title: "hassliebe (fast version)",
   },
   {
     url: "/videos/portfolio/peace-of-mind-roses-explo.mp4",
@@ -38,13 +76,13 @@ const ITEMS: PortfolioItem[] = [
   },
   {
     url: "/images/portfolio/hassliebe_cover.jpeg",
-    title: "Hassliebe Cover",
+    title: "hassliebe",
   },
   {
     url: "/images/portfolio/first_character.jpeg",
-    title: "Erster 3D Charakter",
+    title: "3D Körper Studie",
   },
-  { url: "/images/portfolio/fluffy_bear.jpeg", title: "Bärchen" },
+  { url: "/images/portfolio/fluffy_bear.jpeg", title: "3D Haare Studie" },
   {
     url: "/images/portfolio/peace_of_mind_red.jpeg",
     title: "Shirt Prints",
@@ -58,8 +96,13 @@ const ITEMS: PortfolioItem[] = [
     title: "Starve the ego",
   },
   {
+    url: "/videos/portfolio/what-the-figma.mp4",
+    title: "Wie zum Figma",
+    type: "video",
+  },
+  {
     url: "/images/portfolio/toon_character.jpeg",
-    title: "Animal Crossing Style Charcter",
+    title: "3D Low Poly Character",
   },
   {
     url: "/images/portfolio/peace_of_mind_logos.jpeg",
@@ -67,11 +110,16 @@ const ITEMS: PortfolioItem[] = [
   },
   {
     url: "/images/portfolio/warum_cover.jpeg",
-    title: "Warum Cover",
+    title: "warum",
   },
   {
     url: "/images/portfolio/skateboard_stickers.jpeg",
     title: "Skateboard Stickers",
+  },
+  {
+    url: "/videos/portfolio/beer-books.mp4",
+    title: "3D Grease Pencil Studie",
+    type: "video",
   },
   {
     url: "/images/portfolio/tinyplanet_skateboard.jpeg",
@@ -79,7 +127,7 @@ const ITEMS: PortfolioItem[] = [
   },
   {
     url: "/images/portfolio/warum_v2.jpeg",
-    title: "Warum (edit) Cover",
+    title: "warum (edit)",
   },
 ];
 
@@ -201,28 +249,36 @@ function MediaItem({ item, position }: MediaItemProps) {
   );
 }
 
-export function FileOrbit({ radius = 40 }: { radius?: number }) {
+export function FileOrbit({ spread = 20 }: { spread?: number }) {
   const points = useMemo(() => {
     const pts: THREE.Vector3[] = [];
     const n = ITEMS.length;
+
     const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+    // const goldenAngle = Math.PI * (2 - Math.sqrt(2));
 
     for (let i = 0; i < n; i++) {
-      const y = 1 - (i / (n - 1)) * 2;
-      const r = Math.sqrt(1 - y * y);
+      // sqrt(i) creates a more even "galaxy" density
+      const currentRadius = Math.sqrt(i + 1) * spread;
+
+      // y goes from 1 to -1 over the course of the loop (vertical spread)
+      const y = (1 - (i / (n - 1)) * 2) * (currentRadius * 0.5);
+
+      const r = Math.sqrt(Math.max(0, currentRadius * currentRadius - y * y));
+
       const theta = goldenAngle * i;
 
       pts.push(
         new THREE.Vector3(
-          Math.cos(theta) * r * radius,
-          y * radius,
-          Math.sin(theta) * r * radius
+          Math.cos(theta) * r,
+          Math.sin(theta) * y,
+          Math.sin(theta) * r
         )
       );
     }
 
     return pts;
-  }, [radius]);
+  }, [spread]);
 
   return (
     <Suspense fallback={null}>

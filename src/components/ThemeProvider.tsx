@@ -94,6 +94,10 @@ const GlobalStyle = createGlobalStyle<{ theme: StyledTheme | undefined }>`
     font-family: var(--font-family), Aria, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 
+  html, body {
+    overscroll-behavior: none;
+  }
+
   a, button {
     &:focus {
       outline-color: var(--text-color);

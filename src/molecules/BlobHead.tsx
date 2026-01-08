@@ -509,8 +509,8 @@ export function BlobHead({
         ? VISIBLE_OPTIONS_CAMERA_ZOOM
         : HIDDEN_OPTIONS_CAMERA_ZOOM;
       const zoomOffset = cameraZoomAnimation ? CAMERA_ZOOM_ON_TAP : 0;
-      const handCamSwayX = Math.sin(clock.getElapsedTime() * 1) * 0.02;
-      const handCamSwayY = Math.sin(clock.getElapsedTime() * 0.5) * 0.03;
+      const handCamSwayX = Math.sin(clock.getElapsedTime() * 1) * 0.03;
+      const handCamSwayY = Math.sin(clock.getElapsedTime() * 0.5) * 0.02;
       const cameraShakeStrength =
         Math.sin(clock.getElapsedTime() * 50) *
         Math.min(1, 0.01 * getTotalTapMultiplier());
@@ -555,8 +555,8 @@ export function BlobHead({
       ? VISIBLE_OPTIONS_CAMERA_ZOOM
       : HIDDEN_OPTIONS_CAMERA_ZOOM;
     const zoomOffset = cameraZoomAnimation ? CAMERA_ZOOM_ON_TAP : 0;
-    const handCamSwayX = Math.sin(clock.getElapsedTime() * 1) * 0.08;
-    const handCamSwayY = Math.sin(clock.getElapsedTime() * 0.5) * 0.05;
+    const handCamSwayX = Math.sin(clock.getElapsedTime() * 1) * 0.03;
+    const handCamSwayY = Math.sin(clock.getElapsedTime() * 0.5) * 0.02;
     const cameraShakeStrength =
       Math.sin(clock.getElapsedTime() * 50) *
       Math.min(1, 0.01 * getTotalTapMultiplier());

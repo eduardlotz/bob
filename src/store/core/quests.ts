@@ -118,10 +118,9 @@ const initialQuests: Quest[] = [
     maxProgress: 1,
     reward: {
       type: "taps_reward",
-      amount: 500,
+      amount: 1000,
     },
     completed: false,
-    // routeId: "route_home",
     type: "interaction",
     trigger: {
       action: `purchase_route_about`,
@@ -149,14 +148,14 @@ const initialQuests: Quest[] = [
   },
   {
     id: "creative_quest_1",
-    title: "Kunst im All",
+    title: "Ist das Kunst oder kann das auf den Mond",
     description: "Schau dir ein paar meiner kreativen Arbeiten an",
     icon: "✨",
     progress: 0,
-    maxProgress: 3,
+    maxProgress: 5,
     reward: {
       type: "taps_reward",
-      amount: 3000,
+      amount: 15000,
     },
     completed: false,
     routeId: "route_creative",

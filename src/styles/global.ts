@@ -58,7 +58,7 @@ export const GlobalStyle = createGlobalStyle`
     *:before,
     *:after {
         box-sizing: inherit;
-        cursor: none;
+        cursor: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=), auto !important;
     }
 
     button {
