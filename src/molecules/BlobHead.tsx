@@ -18,6 +18,7 @@ import {
   CAMERA_HEIGHT,
   HIDDEN_OPTIONS_CAMERA_ZOOM,
   VISIBLE_OPTIONS_CAMERA_ZOOM,
+  CAMERA_ZOOM_ON_TAP,
 } from "./HeadNavigation";
 import { CameraControls } from "@react-three/drei";
 import { calculateAcceleratedRotation } from "@/utils/math";
@@ -207,6 +208,8 @@ export function BlobHead({
     addManualTap,
     tapEffects,
     audioSelections,
+    tapMultiplier,
+    getTotalTapMultiplier,
   } = useCoreStore();
 
   const activeTheme =
@@ -505,16 +508,15 @@ export function BlobHead({
       const baseZoom = showOptions
         ? VISIBLE_OPTIONS_CAMERA_ZOOM
         : HIDDEN_OPTIONS_CAMERA_ZOOM;
-      const zoomOffset = cameraZoomAnimation ? -1.5 : 0;
-      const handCamSwayX = Math.sin(clock.getElapsedTime() * 1) * 0.02;
-      const handCamSwayY = Math.sin(clock.getElapsedTime() * 0.5) * 0.03;
+      const zoomOffset = cameraZoomAnimation ? CAMERA_ZOOM_ON_TAP : 0;
+      const handCamSwayX = Math.sin(clock.getElapsedTime() * 1) * 0.03;
+      const handCamSwayY = Math.sin(clock.getElapsedTime() * 0.5) * 0.02;
+      const cameraShakeStrength =
+        Math.sin(clock.getElapsedTime() * 50) *
+        Math.min(1, 0.01 * getTotalTapMultiplier());
 
-      const cameraShakeX = cameraZoomAnimation
-        ? Math.sin(clock.getElapsedTime() * 40)
-        : 0;
-      const cameraShakeY = cameraZoomAnimation
-        ? Math.sin(clock.getElapsedTime() * 20)
-        : 0;
+      const cameraShakeX = cameraZoomAnimation ? cameraShakeStrength : 0;
+      const cameraShakeY = cameraZoomAnimation ? cameraShakeStrength : 0;
 
       if (!isTransitioning && !isObjectView()) {
         cameraControlsRef.current?.setLookAt(
@@ -552,16 +554,15 @@ export function BlobHead({
     const baseZoom = showOptions
       ? VISIBLE_OPTIONS_CAMERA_ZOOM
       : HIDDEN_OPTIONS_CAMERA_ZOOM;
-    const zoomOffset = cameraZoomAnimation ? -1.5 : 0;
-    const handCamSwayX = Math.sin(clock.getElapsedTime() * 1) * 0.08;
-    const handCamSwayY = Math.sin(clock.getElapsedTime() * 0.5) * 0.05;
+    const zoomOffset = cameraZoomAnimation ? CAMERA_ZOOM_ON_TAP : 0;
+    const handCamSwayX = Math.sin(clock.getElapsedTime() * 1) * 0.03;
+    const handCamSwayY = Math.sin(clock.getElapsedTime() * 0.5) * 0.02;
+    const cameraShakeStrength =
+      Math.sin(clock.getElapsedTime() * 50) *
+      Math.min(1, 0.01 * getTotalTapMultiplier());
 
-    const cameraShakeX = cameraZoomAnimation
-      ? Math.sin(clock.getElapsedTime() * 40)
-      : 0;
-    const cameraShakeY = cameraZoomAnimation
-      ? Math.sin(clock.getElapsedTime() * 20)
-      : 0;
+    const cameraShakeX = cameraZoomAnimation ? cameraShakeStrength : 0;
+    const cameraShakeY = cameraZoomAnimation ? cameraShakeStrength : 0;
 
     if (shouldFollowCursor && !isTransitioning && !isObjectView()) {
       cameraControlsRef.current?.setLookAt(
