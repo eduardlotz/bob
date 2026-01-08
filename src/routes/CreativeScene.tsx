@@ -1,5 +1,5 @@
 import { ImageOrbit } from "@/components/ImageOrbit";
-import { ROUTE_PATHS, useGameStore, useViewStore } from "@/store";
+import { ROUTE_PATHS, useAppStore, useCoreStore, useViewStore } from "@/store";
 import { DEFAULT_SOUND_CONFIGS } from "@/utils/sound/configs";
 import {
   playWorldSound,
@@ -11,8 +11,14 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 export function CreativeScene() {
-  const { checkUnlockedRoutes } = useGameStore();
-  const { transitionToView, setDefaultViewMode } = useViewStore();
+  const { checkUnlockedRoutes } = useCoreStore();
+  const { currentRoute } = useAppStore();
+  const {
+    transitionToView,
+    resetToDefaultView,
+    setDefaultViewMode,
+    currentView,
+  } = useViewStore();
   const navigate = useNavigate();
 
   const isAllowedToAcces = checkUnlockedRoutes(ROUTE_PATHS.CREATIVE);
@@ -25,10 +31,11 @@ export function CreativeScene() {
   }, [isAllowedToAcces]);
 
   useEffect(() => {
-    transitionToView("creative");
     setDefaultViewMode("object");
+    resetToDefaultView();
+    transitionToView("creative");
     playWorldSound("pink-noise");
-  }, []);
+  }, [currentRoute]);
 
   return (
     <>

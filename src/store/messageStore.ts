@@ -548,6 +548,8 @@ export const useMessageStore = create<MessageStoreState>()(
 
         clearAllMessages: () => {
           set({
+            seenThisSession: {},
+            repeatFlags: {},
             activeMessage: null,
             queue: [],
             lastError: null,

@@ -1,6 +1,6 @@
 import React, { useMemo, useCallback } from "react";
 import styled from "styled-components";
-import { useGameStore } from "@/store/gameStore";
+import { useCoreStore } from "@/store/core/store";
 import {
   BlobFormConfig,
   getBlobFormType,
@@ -203,7 +203,7 @@ export const BlobFormCustomization = React.memo(
       updateBlobFormParameters,
       resetBlobFormParameters,
       canAfford,
-    } = useGameStore();
+    } = useCoreStore();
 
     const selectedForm = useMemo(
       () => blobForms.find((form) => form.selected) || blobForms[0],

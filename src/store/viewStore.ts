@@ -9,7 +9,7 @@ import {
   FUNNY_FISHEYE_ZOOM,
   VISIBLE_OPTIONS_CAMERA_ZOOM,
 } from "@/molecules/HeadNavigation";
-import { useGameStore } from ".";
+import { ROUTE_PATHS, useAppStore, useCoreStore } from ".";
 import { Vector3 } from "three";
 
 export interface CameraView {
@@ -219,16 +219,19 @@ export const useViewStore = create<ViewStore>()(
         const controls = get().cameraControlsRef?.current;
         if (!controls) return;
 
+        // TODO: apply all view mode rules here like cursor or camera controls
         if (mode === "object") {
           const target = new Vector3();
-          controls.getTarget(target); // receive current orbit center
-          controls.setTarget(target.x, target.y, target.z, true); // freeze the look-at point
+          // freeze current orbit center as look-at point
+          controls.getTarget(target);
+          controls.setTarget(target.x, target.y, target.z, true);
           if (get().focusedImageTitle)
             controls.mouseButtons.left = CameraControlsImpl.ACTION.TRUCK;
           else controls.mouseButtons.left = CameraControlsImpl.ACTION.ROTATE;
         } else {
-          controls.saveState(); // optionally store current state
-          controls.reset(); // restore default position/target
+          // restore default target
+          controls.saveState();
+          controls.reset();
         }
       },
 
@@ -283,11 +286,11 @@ export const useViewStore = create<ViewStore>()(
               ...viewConfig.target,
               true
             );
+            setTimeout(() => set({ isTransitioning: false }), 0);
           }
         } catch (error) {
           console.error("Camera transition failed:", error);
-        } finally {
-          set({ isTransitioning: false });
+          setTimeout(() => set({ isTransitioning: false }), 0);
         }
       },
 
@@ -299,26 +302,23 @@ export const useViewStore = create<ViewStore>()(
       },
 
       resetToDefaultView: async () => {
-        const {
-          isTransitioning,
-          defaultViewMode,
-          currentView,
-          cameraControlsRef,
-          previousView,
-        } = get();
+        const { isTransitioning, currentView, cameraControlsRef } = get();
 
         if (isTransitioning || !cameraControlsRef?.current) {
           return;
         }
 
+        const appStore = useAppStore.getState();
+        const currentRoute = appStore.currentRoute;
+
+        // viewMode is set to fixed without transition
+        // TODO: fix edge case when going from creative -> any other
         const targetView: CameraViewId =
-          currentView === "creative" || previousView === "creative"
-            ? "creative"
-            : "default";
+          currentRoute === ROUTE_PATHS.CREATIVE ? "creative" : "default";
 
         const viewConfig = CAMERA_VIEWS[targetView];
 
-        useGameStore.getState().resetPreview();
+        useCoreStore.getState().resetPreview();
 
         set({
           currentView: targetView,
@@ -332,17 +332,6 @@ export const useViewStore = create<ViewStore>()(
           viewConfig.defaultViewMode ?? get().viewMode
         );
 
-        // set({
-        //   currentView:
-        //     previousView === "creative" || currentView === "creative"
-        //       ? "creative"
-        //       : "default",
-        //   viewMode: defaultViewMode,
-        //   isImageFocused: false,
-        //   focusedImageTitle: null,
-        //   isTransitioning: true,
-        // });
-
         try {
           const controls = cameraControlsRef.current;
 
@@ -353,9 +342,7 @@ export const useViewStore = create<ViewStore>()(
           // currently only two different defaults (creative -> "orbit view" & rest -> "fixed view")
           const viewConfig =
             CAMERA_VIEWS[
-              previousView === "creative" || currentView === "creative"
-                ? "creative"
-                : "default"
+              currentRoute === ROUTE_PATHS.CREATIVE ? "creative" : "default"
             ];
 
           if (!viewConfig) {
@@ -369,11 +356,11 @@ export const useViewStore = create<ViewStore>()(
               ...viewConfig.target,
               true
             );
+            setTimeout(() => set({ isTransitioning: false }), 0);
           }
         } catch (error) {
           console.error("Camera transition failed:", error);
-        } finally {
-          set({ isTransitioning: false });
+          setTimeout(() => set({ isTransitioning: false }), 0);
         }
       },
       resetToPreviousView: async () => {
@@ -424,7 +411,11 @@ export const useViewStore = create<ViewStore>()(
         const { cameraControlsRef, isTransitioning } = get();
         if (isTransitioning || !cameraControlsRef?.current) return;
 
-        set({ isTransitioning: true, viewMode: "object" });
+        set({
+          isTransitioning: true,
+          viewMode: "object",
+          currentView: "creative",
+        });
 
         get().applyViewModeToControls("object");
 

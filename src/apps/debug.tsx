@@ -1,21 +1,10 @@
-import { usePagination } from "@/hooks/usePagination";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
-import { ArrowLeftIcon, ArrowRightIcon } from "@/icons/arrow";
-import { FillRow, HugColumn, ListItemContainer } from "@/layout";
+import { HugColumn, ListItemContainer } from "@/layout";
 import { Divider, DividerWithLabel } from "@/layout/atoms";
-import { MOTION_VARIANTS } from "@/molecules/HeadNavigation";
 import { formatNumber } from "@/molecules/TapCounter";
-import {
-  CameraViewId,
-  getShopItemType,
-  ShopItem,
-  useGameStore,
-  useQuestStore,
-  useViewStore,
-} from "@/store";
+import { CameraViewId, useCoreStore, useQuestStore } from "@/store";
 import { useMessageStore } from "@/store/messageStore";
-import { executeMigrationsWhenReady } from "@/store/migrationExecutor";
-import styled from "styled-components";
+import { ActionButton, SettingsWrapper, ToggleButton } from "./ui";
 
 export const DebugIcon = () => (
   <svg
@@ -68,7 +57,11 @@ export const DebugApp = () => {
     currentTheme,
     manualTaps,
     taps,
-  } = useGameStore();
+    getAutoTapRate,
+    autoTapRate,
+    getTotalTapMultiplier,
+    getTotalTapsPerSecond,
+  } = useCoreStore();
 
   const {
     quests,
@@ -106,7 +99,7 @@ export const DebugApp = () => {
     >
       <SettingsWrapper>
         <HugColumn>
-          <h5>Game Data</h5>
+          <h5>Core Data</h5>
           <Divider />
 
           <ListItemContainer
@@ -115,7 +108,7 @@ export const DebugApp = () => {
             $justify="space-between"
             $gap={"1rem"}
           >
-            <p>Version:</p> <p>{version}</p>
+            <p>Store Version:</p> <p>{version}</p>
           </ListItemContainer>
 
           <ListItemContainer
@@ -157,6 +150,18 @@ export const DebugApp = () => {
             <p>Ingesamt:</p> <p>{formatNumber(taps)}</p>
             <p>Manuell:</p> <p>{formatNumber(manualTaps)}</p>
             <p>Automatisch:</p> <p>{formatNumber(taps - manualTaps)}</p>
+          </ListItemContainer>
+          <Divider />
+
+          <ListItemContainer
+            $gridTemplateColumns="0.5fr 1fr"
+            $align="flex-start"
+            $justify="space-between"
+            $gap={"1rem"}
+          >
+            <p>Auto-Tap Rate:</p> <p>{getAutoTapRate()}</p>
+            <p>Tap Power:</p> <p>{getTotalTapMultiplier()}</p>
+            <p>🫵/s:</p> <p>{getTotalTapsPerSecond()}</p>
           </ListItemContainer>
         </HugColumn>
       </SettingsWrapper>
@@ -276,105 +281,3 @@ export const DebugApp = () => {
     </HugColumn>
   );
 };
-
-export const SettingsWrapper = styled(FillRow)<{
-  $variant?: "destructive" | "default";
-}>`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-
-  padding: 1rem;
-  pointer-events: auto;
-  border-radius: 1.25rem;
-  background: rgba(255, 255, 255, 0.05);
-
-  ${(p) =>
-    p.$variant === "destructive" &&
-    `
-    background: rgba(255,0,0,0.2);
-  `}
-
-  h5 {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--text-color);
-  }
-
-  p {
-    font-size: 0.875rem;
-    font-weight: 400;
-    line-height: 1.4;
-    opacity: 0.6;
-    color: var(--text-color);
-  }
-
-  b {
-    font-weight: 600;
-    opacity: 1;
-  }
-`;
-
-export const ToggleButton = styled.button<{
-  $active: boolean;
-  $fillRow?: boolean;
-}>`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem 0.75rem;
-  background: #fff;
-  border: none;
-  color: #212121;
-  font-size: 1rem;
-  font-weight: 700;
-  border-radius: 5rem;
-  opacity: ${(p) => (p.$active ? 1 : 0.5)};
-  width: ${(p) => (p.$fillRow ? "100%" : "auto")};
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.9);
-  }
-`;
-
-export const ActionButton = styled.button<{
-  $variant?: "destructive" | "default";
-}>`
-  display: flex;
-  width: fit-content;
-  white-space: nowrap;
-  align-items: center;
-  justify-content: center;
-  max-height: 2.25rem;
-
-  padding: 0.5rem 0.75rem;
-  border-radius: 50px;
-  opacity: 1;
-
-  font-size: 1rem;
-  font-weight: 700;
-
-  background-color: #fff;
-  color: #212121;
-
-  &:disabled {
-    color: #ffffff81;
-    background: #0000001e;
-  }
-
-  &:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.8);
-  }
-
-  ${(p) =>
-    p.$variant === "destructive" &&
-    `
-    background-color: #ff0000;
-    color: #ffffff;
-
-     &:hover:not(:disabled) {
-      background: #d60000
-  }
-  `}
-`;

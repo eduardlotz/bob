@@ -9,7 +9,7 @@ import {
   getRouteLabelByPath,
   ROUTE_PATHS,
   useAppStore,
-  useGameStore,
+  useCoreStore,
   useViewStore,
 } from "@/store";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -36,7 +36,7 @@ export default function App() {
     previousViewMode,
     defaultViewMode,
   } = useViewStore();
-  const { viewDebuggerVisible } = useGameStore();
+  const { viewDebuggerVisible } = useCoreStore();
 
   const [mounted, setMounted] = useState(false);
   const [currentRouteInPretty, setCurrentRouteInPretty] = useState("");

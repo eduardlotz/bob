@@ -6,18 +6,26 @@ import {
   PerspectiveCamera,
   Grid,
   PerformanceMonitor,
+  Effects,
 } from "@react-three/drei";
+import {
+  EffectComposer,
+  N8AO,
+  SMAA,
+  Bloom,
+  TiltShift2,
+  DepthOfField,
+} from "@react-three/postprocessing";
 import { match } from "ts-pattern";
 import { a, useSpring } from "@react-spring/three";
 import { Physics } from "@react-three/rapier";
 import { Perf } from "r3f-perf";
 import { Suspense, useRef, useState, useEffect } from "react";
 
-import { useAppStore, useGameStore } from "../store";
+import { useAppStore, useCoreStore } from "../store";
 import { useViewStore } from "../store/viewStore";
-import { ROUTE_PATHS } from "../store/routeConfig";
-import { FISHEYE_CONFIG } from "../store/themeConfig";
-import { startAutoTap, stopAutoTap } from "../store/gameStore";
+import { ROUTE_PATHS } from "../store/config/routes";
+import { FISHEYE_CONFIG } from "../store/config/themes";
 import { attachListenerToCamera } from "@/utils/soundSystem";
 import { CreativeScene } from "@/routes/CreativeScene";
 import { AboutScene } from "../routes/AboutScene";
@@ -27,7 +35,7 @@ import { TapCounter } from "./TapCounter";
 import { MessageBubble } from "@/molecules/MessageBubble";
 
 import { BackgroundPlanet } from "../3d-objects/BackgroundPlanet";
-import { ParticleEffects } from "../3d-objects/ParticleEffects";
+import { TapEffects } from "../3d-objects/ParticleEffects";
 import { SceneDecorations } from "@/3d-objects/Decorations";
 
 const Debug = () => {
@@ -44,23 +52,18 @@ const Scene = ({
   onEmotionUpdate,
 }: {
   permissionGranted: boolean;
-  onEmotionUpdate?: (data: {
-    emotionState: any;
-    tapCount: number;
-    getEmotionIcon: any;
-  }) => void;
+  onEmotionUpdate?: (data: { emotionState: any }) => void;
 }) => {
   const cameraControlsRef = useRef<CameraControls>(null!);
   const {
     setCameraControlsRef,
-    isDefaultView,
     resetToDefaultView,
-    isObjectView,
+    isDefaultView,
+    isTransitioning,
   } = useViewStore();
-  const { upgrades, isPaused, statisticsVisible, setGameReady } =
-    useGameStore();
+  const { statisticsVisible } = useCoreStore();
 
-  const { currentRoute, showOptions, setShowOptions } = useAppStore();
+  const { currentRoute } = useAppStore();
 
   // shop items are only visible on home route
   const isHome = currentRoute === ROUTE_PATHS.HOME;
@@ -71,25 +74,15 @@ const Scene = ({
 
   useEffect(() => {
     setCameraControlsRef(cameraControlsRef);
-  }, [setCameraControlsRef]);
+  }, []);
 
   useEffect(() => {
     if (isHome) {
-      setTimeout(() => {
-        if (!isDefaultView()) {
-          resetToDefaultView();
-        }
-      }, 200);
+      if (!isDefaultView()) {
+        resetToDefaultView();
+      }
     }
-  }, [isHome, resetToDefaultView]);
-
-  useEffect(() => {
-    if (isPaused) {
-      stopAutoTap();
-    } else {
-      startAutoTap();
-    }
-  }, [isPaused]);
+  }, [isHome]);
 
   const [spring, api] = useSpring(() => ({
     scale: 1,
@@ -102,6 +95,7 @@ const Scene = ({
       api.start({
         scale: 1,
         config: { mass: 0.5, tension: 300, friction: 10 },
+        immediate: true,
       });
     } else {
       api.start({
@@ -144,8 +138,6 @@ const Scene = ({
 
             <Physics gravity={[0, -9.81, 0]}>
               <HeadNavigation
-                showOptions={showOptions || false}
-                setShowOptions={setShowOptions || (() => {})}
                 cameraControlsRef={cameraControlsRef}
                 permissionGranted={permissionGranted}
                 onEmotionUpdate={(data) => {
@@ -156,9 +148,8 @@ const Scene = ({
               <MessageBubble anchor={[0, 2.4, 0]} />
 
               <a.group visible={visible} scale={spring.scale}>
-                <ParticleEffects />
                 <TapCounter />
-
+                <TapEffects />
                 <SceneDecorations />
               </a.group>
 
@@ -186,7 +177,7 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
   const canvasRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
   const [dpr, setDpr] = useState(2);
-  const { graphicPreferences } = useGameStore();
+  const { graphicPreferences } = useCoreStore();
 
   useEffect(() => {
     if (graphicPreferences.qualityMode === "high") setDpr(2);

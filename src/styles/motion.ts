@@ -138,7 +138,9 @@ export namespace MotionVariants {
       scale: 0.8,
       opacity: 0,
       filter: "blur(4px)",
-      transition: { type: "spring" as const, duration: 0.4, bounce: 0.4 },
+      transition: {
+        duration: 0.2,
+      },
     },
     hover: (custom?: {
       delay?: number;

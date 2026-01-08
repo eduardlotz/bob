@@ -1,13 +1,13 @@
 import { useCallback, useMemo, useEffect } from "react";
-import { useQuestStore } from "@/store/questStore";
-import { useGameStore } from "@/store/gameStore";
+import { useQuestStore } from "@/store/core/quests";
+import { useCoreStore } from "@/store/core/store";
 import { useAppStore } from "@/store";
 import { toast } from "sonner";
-import { ROUTE_DICTIONARY } from "@/store/routeConfig";
+import { ROUTE_DICTIONARY } from "@/store/config/routes";
 
 export const useQuestSystem = () => {
   const { currentRoute } = useAppStore();
-  const { addTaps, purchaseBobItem } = useGameStore();
+  const { addTaps, purchaseBobItem } = useCoreStore();
   const questStore = useQuestStore();
   const quests = questStore.quests;
   const updateQuestProgress = questStore.updateQuestProgress;

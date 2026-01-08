@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { createIndexedDBStorage } from "./indexedDB";
-import { ROUTE_IDS } from "./routeConfig";
+import { createIndexedDBStorage } from "../indexedDB";
+import { ROUTE_IDS } from "../config/routes";
 
 type RewardType = "taps_reward" | "item_reward";
 type RewardId = string;

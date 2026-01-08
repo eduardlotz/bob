@@ -9,7 +9,7 @@ import {
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
 import { useFrame } from "@react-three/fiber";
-import { useGameStore } from "@/store";
+import { useCoreStore } from "@/store";
 import { previewMaterialProps } from "@/shop-items/utils";
 
 type GLTFResult = GLTF & {

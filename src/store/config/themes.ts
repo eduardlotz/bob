@@ -1,4 +1,4 @@
-import { Theme } from "./gameStore";
+import { Theme } from "../core/store";
 
 export const FISHEYE_CONFIG = {
   MIN: 0.1,

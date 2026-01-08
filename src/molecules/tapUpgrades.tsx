@@ -1,11 +1,10 @@
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { CloseIcon } from "@/icons/close";
-import { FillRow, HugColumn, HugRow } from "@/layout";
+import { HugColumn, HugRow } from "@/layout";
 import { Magnetic } from "@/layout/Magnetic";
-import { ROUTE_PATHS, useAppStore, useGameStore, useQuestStore } from "@/store";
-import { useMessageStore } from "@/store/messageStore";
-import { AnimatePresence, LayoutGroup, motion } from "motion/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCoreStore } from "@/store";
+import { AnimatePresence, motion } from "motion/react";
+import { useRef, useState } from "react";
 import styled from "styled-components";
 import { formatNumber } from "./TapCounter";
 import { useKeyPress } from "@/hooks/useKeyPress";
@@ -13,17 +12,7 @@ import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { playUISound } from "@/utils/soundSystem";
 
 export const TapUpgrades = ({ show }: { show: boolean }) => {
-  const { currentRoute } = useAppStore();
-  const {
-    upgrades: tapUpgrades,
-    purchaseUpgrade,
-    canAfford,
-    getAutoTapRateUncached,
-    manualTapsPerSecond,
-    getTotalTapMultiplierUncached,
-  } = useGameStore();
-
-  const { showMessage } = useMessageStore();
+  const { upgrades: tapUpgrades, purchaseUpgrade, canAfford } = useCoreStore();
 
   const { triggerQuest } = useQuestSystem();
   const containerRef = useRef(null);
@@ -35,17 +24,6 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
     setShowUpgrades(false);
     playUISound("ui-tap-close");
   });
-
-  //   const totalTapsPerSecond = useMemo(() => {
-  //     const autoTapRate =
-  //       getAutoTapRateUncached() * getTotalTapMultiplierUncached();
-  //     return autoTapRate + manualTapsPerSecond;
-  //   }, [
-  //     getAutoTapRateUncached,
-  //     getTotalTapMultiplierUncached,
-  //     manualTapsPerSecond,
-  //     upgrades, // add upgrades as dependency so calculation updates when upgrades change
-  //   ]);
 
   const onTriggerClick = () => {
     setShowUpgrades((open) => !open);

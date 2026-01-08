@@ -2,7 +2,7 @@ import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { CameraViewId, useViewStore } from "@/store/viewStore";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { match } from "ts-pattern";
-import { useCursorStore } from "@/store/cursorStore";
+import { useCursorStore } from "@/store/core/cursor";
 
 export type InteractionMode = "dialog" | "view";
 

@@ -14,7 +14,7 @@ import { FillColumn, FillRow, HugColumn } from "@/layout";
 import { format } from "date-fns/format";
 
 import { PhoneMenuIcon } from "@/icons/phoneMenu";
-import { useGameStore, useViewStore } from "@/store";
+import { useCoreStore, useViewStore } from "@/store";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { SpeakerIcon } from "@/icons/speaker";
 import { ShopApp, ShopIcon, TapCounterChip } from "@/apps/shop";
@@ -23,10 +23,11 @@ import { useKeyPress } from "@/hooks/useKeyPress";
 import { DebugApp, DebugIcon } from "@/apps/debug";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { QuestsApp, QuestsIcon } from "@/apps/quests";
-import { AppInfo, OptionsApp, OptionsIcon } from "@/apps/options";
+import { OptionsApp, OptionsIcon } from "@/apps/options";
 import { playUISound } from "@/utils/soundSystem";
 import { ChatApp, ChatIcon } from "@/apps/chat";
 import { CreditsApp, CreditsIcon } from "@/apps/credits";
+import { StatusPillButton } from "@/apps/ui";
 
 type AppId = "shop" | "options" | "chat" | "quests" | "credits" | "debug";
 
@@ -94,7 +95,7 @@ export const BobPhone = () => {
   };
 
   const { toggle, isMuted, isEnabled } = useSoundSystem();
-  const { setSoundEnabled } = useGameStore();
+  const { setSoundEnabled } = useCoreStore();
 
   const activeAppView = () => BOB_APPS.find((a) => a.id === activeApp)?.view;
   const activeAppBottomAction = () =>
@@ -281,7 +282,6 @@ export const BobPhone = () => {
                 $gap={activeApp ? "4px" : "0"}
                 $align="center"
                 $justify="center"
-                // key="shop-app-container"
                 initial={{
                   opacity: 0,
                   scaleX: 0.95,
@@ -368,12 +368,6 @@ export const BobPhone = () => {
     </>
   );
 };
-
-const OverflowClip = styled.div`
-  /* overflow: clip; */
-  overflow-clip-margin: 0.25rem;
-  position: relative;
-`;
 
 const AppBottomActions = styled(FillRow)`
   position: relative;
@@ -489,7 +483,7 @@ const AppLabel = styled.span`
   border-radius: 50px;
 `;
 
-export const StatusPill = styled(motion.div)`
+const StatusPill = styled(motion.div)`
   font-size: 1rem;
   font-weight: 600;
   color: white;
@@ -502,24 +496,7 @@ export const StatusPill = styled(motion.div)`
   height: 2.25rem;
 `;
 
-export const StatusPillButton = styled(motion.button)<{ $active: boolean }>`
-  font-size: 1rem;
-  color: ${(p) =>
-    p.$active ? "rgba(255,255,255,1)" : "rgba(255,255,255,.75)"};
-  background: ${(p) =>
-    p.$active ? "rgba(255,255,255,0.1)" : "rgba(0, 0, 0, 0.25)"};
-  padding: 8px 12px;
-  border-radius: 100px;
-
-  display: flex;
-  align-items: center;
-
-  > * {
-    height: 1.25rem;
-  }
-`;
-
-export const Blinking = styled.span`
+const Blinking = styled.span`
   animation: blinking linear 3s infinite;
 
   @keyframes blinking {

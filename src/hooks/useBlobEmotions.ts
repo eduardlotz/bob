@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useGameStore } from "@/store/gameStore";
+import { useCoreStore } from "@/store/core/store";
 import { useAppStore, ROUTE_PATHS } from "@/store";
 import { useSoundSystem } from "./useSoundSystem";
 import { resolveTapSoundForEffect } from "@/utils/sound/configs";
@@ -14,7 +14,6 @@ export type EmotionState =
 
 export interface BlobEmotionData {
   currentEmotion: EmotionState;
-  tapCount: number;
   lastEmotionTime: number;
 }
 
@@ -34,32 +33,12 @@ const TAP_THRESHOLD = 30; // taps within window to trigger dizzy
 
 export function useBlobEmotions() {
   const [emotionState, setEmotionState] = useState<EmotionState>("normal");
-  const [tapCount, setTapCount] = useState(0);
-  const [isInitialized, setIsInitialized] = useState(false);
   const tapTimesRef = useRef<number[]>([]); // recent tap timestamps
   const { currentRoute } = useAppStore();
-  const { playTapSound } = useSoundSystem();
 
   const emotionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const cooldownRef = useRef<number>(0);
   const lastEmotionTimeRef = useRef<number>(0);
-
-  // // Load tap count from localStorage on mount
-  // useEffect(() => {
-  //   const savedTapCount = localStorage.getItem("bobTapCount");
-  //   if (savedTapCount) {
-  //     const count = parseInt(savedTapCount, 10);
-  //     setTapCount(count);
-  //   }
-  //   setIsInitialized(true);
-  // }, []);
-
-  // // Save tap count to localStorage whenever it changes (but not on initial load)
-  // useEffect(() => {
-  //   if (isInitialized) {
-  //     localStorage.setItem("bobTapCount", tapCount.toString());
-  //   }
-  // }, [tapCount, isInitialized]);
 
   const clearEmotionTimeout = useCallback(() => {
     if (emotionTimeoutRef.current) {
@@ -84,30 +63,6 @@ export function useBlobEmotions() {
 
   const handleTap = useCallback(() => {
     const now = Date.now();
-
-    // get the correct tap sound ID from game store
-    const gameStore = useGameStore.getState();
-    const selectedTapEffect = gameStore.tapEffects.find((u) => u.enabled);
-    const tapEffectId = selectedTapEffect?.id || "tap_effect_default";
-
-    // resolve the actual sound ID using the resolver
-    const soundConfig = resolveTapSoundForEffect(
-      tapEffectId,
-      gameStore.audioSelections.tapEffectAudioId
-    );
-
-    if (soundConfig?.id) {
-      playTapSound(soundConfig.id);
-    } else {
-      playTapSound(); // fallback to default
-    }
-
-    // only increment tap count on home route
-    if (currentRoute === ROUTE_PATHS.HOME) {
-      setTapCount((prev) => prev + 1);
-      const gameStore = useGameStore.getState();
-      gameStore.addManualTap();
-    }
 
     // add current tap and remove old taps outside the time window
     tapTimesRef.current.push(now);
@@ -173,7 +128,6 @@ export function useBlobEmotions() {
 
   return {
     emotionState,
-    tapCount,
     handleTap,
     getEmotionIcon,
     triggerEmotion,

@@ -1,4 +1,4 @@
-import { useCursorStore } from "@/store/cursorStore";
+import { useCursorStore } from "@/store/core/cursor";
 import { useEffect } from "react";
 
 export function CursorInputBridge() {

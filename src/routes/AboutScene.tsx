@@ -1,4 +1,4 @@
-import { useGameStore } from "@/store/gameStore";
+import { useCoreStore } from "@/store/core/store";
 import { ROUTE_PATHS, useViewStore } from "@/store";
 import { useEffect, useMemo, useRef } from "react";
 import { InteractiveObject } from "../molecules/InteractiveObject";
@@ -24,7 +24,7 @@ import { CameraModel } from "@/3d-objects/models/camera";
 import { GreenDiamond } from "@/3d-objects/models/greenDiamond";
 
 export function AboutScene() {
-  const { checkUnlockedRoutes } = useGameStore();
+  const { checkUnlockedRoutes } = useCoreStore();
   const { getCurrentViewConfig } = useViewStore();
   const navigate = useNavigate();
 

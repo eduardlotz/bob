@@ -8,22 +8,16 @@ export {
   ROUTES,
   getRouteLabelByPath,
   getAllRoutes,
-} from "./routeConfig";
-
-export type SceneMode = "home" | "navigation";
+} from "./config/routes";
 
 export interface EmotionState {
   emotionState: any;
-  tapCount: number;
-  getEmotionIcon: () => string;
 }
 
 interface AppStore {
   currentRoute: string;
   isNavigationOpen: boolean;
   isOptionsClosing: boolean;
-
-  sceneMode: SceneMode;
 
   showOptions: boolean;
   permissionGranted: boolean;
@@ -44,8 +38,7 @@ interface AppStore {
 
   setCurrentRoute: (route: string) => void;
   setNavigationOpen: (open: boolean) => void;
-  setSceneMode: (mode: SceneMode) => void;
-  setShowOptions: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowOptions: (show: boolean) => void;
   closeOptionsWithAnimation: () => void;
   openOptions: () => void;
   setPermissionGranted: (granted: boolean) => void;
@@ -59,13 +52,13 @@ interface AppStore {
   isRouteActive: (path: string) => boolean;
 }
 
+// TODO: move to coreStore
 export const useAppStore = create<AppStore>()(
   devtools(
     (set, get) => ({
       currentRoute: "/home",
       isNavigationOpen: false,
       isOptionsClosing: false,
-      sceneMode: "home",
       showOptions: false,
       permissionGranted: false,
       isMobile: false,
@@ -73,20 +66,15 @@ export const useAppStore = create<AppStore>()(
 
       setCurrentRoute: (route) => set({ currentRoute: route }),
       setNavigationOpen: (open) => set({ isNavigationOpen: open }),
-      setSceneMode: (mode) => set({ sceneMode: mode }),
-      setShowOptions: (show) =>
-        set({
-          showOptions:
-            typeof show === "function" ? show(get().showOptions) : show,
-        }),
+      setShowOptions: (show) => set({ showOptions: show }),
       openOptions: () => set({ showOptions: true, isOptionsClosing: false }),
       closeOptionsWithAnimation: () => {
-        // trigger closing flag so animated components can play exit
+        // trigger closing flag so navigation can animate out
+        // close + reset flag after a small delay
         set({ isOptionsClosing: true });
-        // after a small delay, actually close options and reset closing flag
         setTimeout(() => {
           set({ showOptions: false, isOptionsClosing: false });
-        }, 400);
+        }, 200);
       },
       setPermissionGranted: (granted) => set({ permissionGranted: granted }),
       setIsMobile: (mobile) => set({ isMobile: mobile }),
@@ -97,7 +85,7 @@ export const useAppStore = create<AppStore>()(
         set((s) => ({ emotionData: s.emotionData }));
         // use a global event to avoid tight coupling
         try {
-          const ev = new CustomEvent("vg-request-emotion", {
+          const ev = new CustomEvent("bob-emotion", {
             detail: { emotion, durationMs },
           });
           window.dispatchEvent(ev);
@@ -131,6 +119,6 @@ export const useAppStore = create<AppStore>()(
   )
 );
 
-export * from "./gameStore";
-export * from "./questStore";
+export * from "./core/store";
+export * from "./core/quests";
 export * from "./viewStore";

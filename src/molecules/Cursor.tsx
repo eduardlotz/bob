@@ -6,7 +6,7 @@ import {
   AnimatePresence,
 } from "motion/react";
 import { CursorIcon } from "@/icons/cursor";
-import { useCursorStore } from "@/store/cursorStore";
+import { useCursorStore } from "@/store/core/cursor";
 import { CursorHoverIcon } from "@/icons/cursor-hover";
 import { CursorClickIcon } from "@/icons/cursor-click";
 import { match } from "ts-pattern";
