@@ -30,6 +30,7 @@ export const OPTIONS_Y_OFFSET = -1.5;
 export const VISIBLE_OPTIONS_CAMERA_ZOOM = 8;
 export const HIDDEN_OPTIONS_CAMERA_ZOOM = 4;
 export const FUNNY_FISHEYE_ZOOM = 1.15;
+export const CAMERA_ZOOM_ON_TAP = -1.5;
 
 export const OPTION_RADIUS_OFFSET = 0.005;
 export const OPTIONS_BASE_RADIUS_MULTIPLIER = 1.3;
@@ -209,41 +210,6 @@ export function HeadNavigation({
       onEmotionUpdate({ emotionState });
     }
   }, [emotionState, onEmotionUpdate]);
-
-  // useFrame(({ clock }, delta) => {
-  //   // if in object view mode, let view store camera controls handle transition
-  //   // mobile bob does not follow cursor -> fixed lookAt
-  //   if (isObjectView() || isTransitioning) {
-  //     return;
-  //   }
-
-  //   if (isMobile) {
-  //     // somehow the inital camera lookAt is wrong on mobile and this fixes it (???)
-  //     // transition to phone:shop or phone:options still not smooth
-  //     const baseZoom = showOptions
-  //       ? VISIBLE_OPTIONS_CAMERA_ZOOM
-  //       : HIDDEN_OPTIONS_CAMERA_ZOOM;
-  //     const zoomOffset = cameraZoomAnimation ? -1.5 : 0;
-  //     const handCamSwayX = Math.sin(clock.getElapsedTime() * 1) * 0.08;
-  //     const handCamSwayY = Math.sin(clock.getElapsedTime() * 0.5) * 0.05;
-  //     const cameraShakeX = cameraZoomAnimation
-  //       ? Math.sin(clock.getElapsedTime() * 40)
-  //       : 0;
-  //     const cameraShakeY = cameraZoomAnimation
-  //       ? Math.sin(clock.getElapsedTime() * 20)
-  //       : 0;
-
-  //     cameraControlsRef.current?.setLookAt(
-  //       0,
-  //       CAMERA_HEIGHT,
-  //       baseZoom + zoomOffset,
-  //       handCamSwayX + cameraShakeX,
-  //       CAMERA_Y_POSITION + handCamSwayY + cameraShakeY,
-  //       0,
-  //       true
-  //     );
-  //   }
-  // });
 
   return (
     <>

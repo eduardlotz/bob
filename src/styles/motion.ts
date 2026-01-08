@@ -125,12 +125,11 @@ export namespace MotionVariants {
       },
     },
   };
-  // Extended option button variant used by navigation option pills
   export const OptionButton = {
     initial: {
       scale: 0.8,
       opacity: 0,
-      // boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
+      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
       filter: "blur(4px)",
       transition: { type: "spring" as const, duration: 0.6, bounce: 0.4 },
     },
@@ -163,7 +162,7 @@ export namespace MotionVariants {
     }) => ({
       scale: 1,
       opacity: custom?.isLocked ? 0.5 : 1,
-      // boxShadow: custom?.isDisabled ? `none` : "0 2px 16px rgba(0, 0, 0, 0.2)",
+      boxShadow: custom?.isDisabled ? `none` : "0 2px 16px rgba(0, 0, 0, 0.2)",
       filter: custom?.isLocked ? "blur(2px)" : "blur(0px)",
       transition: {
         type: "spring" as const,
@@ -183,7 +182,7 @@ export namespace Transitions {
     },
   };
 
-  // inertica means that the animation will continue to move after the drag
+  // inertia =  animation will continue to move after drag
   export const inertiaTransition = {
     type: "inertia" as const,
     bounceStiffness: 300,
@@ -191,7 +190,7 @@ export namespace Transitions {
     timeConstant: 300,
   };
 
-  // static means that the animation will not move after the drag
+  // static = animation will not move after drag
   export const staticTransition = {
     type: "tween" as const,
     duration: 0.5,

@@ -1,11 +1,6 @@
-import { ImageOrbit } from "@/components/ImageOrbit";
+import { FileOrbit } from "@/components/FileOrbit";
 import { ROUTE_PATHS, useAppStore, useCoreStore, useViewStore } from "@/store";
-import { DEFAULT_SOUND_CONFIGS } from "@/utils/sound/configs";
-import {
-  playWorldSound,
-  stopAllSounds,
-  stopAllWorldSounds,
-} from "@/utils/soundSystem";
+import { playWorldSound } from "@/utils/soundSystem";
 import { Stars } from "@react-three/drei";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -48,7 +43,7 @@ export function CreativeScene() {
         saturation={0}
         fade
       />
-      <ImageOrbit />
+      <FileOrbit />
     </>
   );
 }
