@@ -166,7 +166,9 @@ function VideoPlane({
   return (
     <mesh scale={[calculatedScale[0], calculatedScale[1], 1]} onClick={onClick}>
       <planeGeometry />
-      <meshBasicMaterial map={texture} toneMapped={false} />
+      <Suspense fallback={null}>
+        <meshBasicMaterial map={texture} toneMapped={false} />
+      </Suspense>
     </mesh>
   );
 }
@@ -186,12 +188,14 @@ function ImagePlane({
   const calculatedScale = useMediaScale(width, height);
 
   return (
-    <Image
-      texture={texture}
-      transparent
-      scale={calculatedScale}
-      onClick={onClick}
-    />
+    <Suspense fallback={null}>
+      <Image
+        texture={texture}
+        transparent
+        scale={calculatedScale}
+        onClick={onClick}
+      />
+    </Suspense>
   );
 }
 
