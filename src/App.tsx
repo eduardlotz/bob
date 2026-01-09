@@ -23,6 +23,7 @@ import Creative from "./routes/Creative";
 import { stopAllWorldSounds } from "./utils/soundSystem";
 import { CursorInputBridge } from "./bridges/CursorInputBridge";
 import { ClickableBridge } from "./bridges/ClickableBridge";
+import MiniGames from "./routes/MiniGames";
 
 export default function App() {
   const location = useLocation();
@@ -142,6 +143,7 @@ export default function App() {
                   <Route path={ROUTE_PATHS.HOME} element={<Home />} />
                   <Route path={ROUTE_PATHS.ABOUT} element={<About />} />
                   <Route path={ROUTE_PATHS.CREATIVE} element={<Creative />} />
+                  <Route path={ROUTE_PATHS.MINIGAMES} element={<MiniGames />} />
                   <Route
                     path="*"
                     element={<Navigate to={ROUTE_PATHS.HOME} replace />}

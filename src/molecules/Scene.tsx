@@ -37,6 +37,7 @@ import { MessageBubble } from "@/molecules/MessageBubble";
 import { BackgroundPlanet } from "../3d-objects/BackgroundPlanet";
 import { TapEffects } from "../3d-objects/ParticleEffects";
 import { SceneDecorations } from "@/3d-objects/Decorations";
+import { MiniGamesScene } from "@/routes/MiniGamesScene";
 
 const Debug = () => {
   const { width } = useThree((s) => s.size);
@@ -157,6 +158,7 @@ const Scene = ({
                 {match(currentRoute)
                   .with(ROUTE_PATHS.ABOUT, () => <AboutScene />)
                   .with(ROUTE_PATHS.CREATIVE, () => <CreativeScene />)
+                  .with(ROUTE_PATHS.MINIGAMES, () => <MiniGamesScene />)
                   .otherwise(() => null)}
               </Suspense>
             </Physics>

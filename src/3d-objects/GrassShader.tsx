@@ -13,7 +13,7 @@ const BLADE_HEIGHT = 1.25;
 const FIELD_SIZE = 20;
 const COLOR_ROOT = "#2e4420";
 const WIND_STRENGTH = 0.1;
-const GRASS_COLOR_BASE = "#384b2c";
+const GRASS_COLOR_BASE = "#486536";
 const GRASS_COLOR_TOP = "#5d8c5f";
 
 const GrassInstancedMaterial = shaderMaterial(
