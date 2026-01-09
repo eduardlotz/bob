@@ -207,6 +207,7 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
       ref={canvasRef}
       shadows
       flat
+      gl={{ powerPreference: "default", antialias: false }}
       color="black"
       camera={{ position: [0, 0, isMobile ? 1.5 : 2], fov: 50 }}
       style={{
