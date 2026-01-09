@@ -45,6 +45,10 @@ const ITEMS: PortfolioItem[] = [
     title: "du fehlst",
   },
   {
+    url: "/images/portfolio/hassliebe-slowie-cover.jpeg",
+    title: "hassliebe (slowie version)",
+  },
+  {
     url: "/images/portfolio/hsd-dingeundinge.jpeg",
     title: "Dinge/Undinge",
   },
