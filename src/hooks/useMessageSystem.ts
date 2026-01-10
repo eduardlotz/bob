@@ -73,13 +73,13 @@ export function useMessageSystem() {
               // first visit: minigames welcome
               return showMessage("minigames_welcome").then((ok) => {
                 if (ok) {
-                  routeShownRef.current[ROUTE_PATHS.HOME] = true;
+                  routeShownRef.current[ROUTE_PATHS.MINIGAMES] = true;
                 }
               });
             } else {
               // returning visit: not ready message
-              return showMessage("minigames_welcome").then((ok) => {
-                if (ok) routeShownRef.current[ROUTE_PATHS.CREATIVE] = true;
+              return showMessage("minigames_not_ready").then((ok) => {
+                if (ok) routeShownRef.current[ROUTE_PATHS.MINIGAMES] = true;
               });
             }
           })
