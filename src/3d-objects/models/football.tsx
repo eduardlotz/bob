@@ -34,13 +34,13 @@ export const FootballModel = forwardRef(
     const handlePointerEnter = (e: any) => {
       e.stopPropagation();
 
-      setHoveredObject({
-        title: "Fuppes",
-      });
+      // setHoveredObject({
+      //   title: "Fuppes",
+      // });
     };
 
     const handlePointerLeave = () => {
-      setHoveredObject(null);
+      // setHoveredObject(null);
     };
 
     return (

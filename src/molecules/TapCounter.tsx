@@ -129,6 +129,7 @@ export const TapCounter = () => {
     accumulator -= steps * interval;
 
     addAutoTaps(steps * getAutoTapRate() * interval);
+    // playTapSound();
 
     if ((window as any).createTapParticles) {
       (window as any).createTapParticles(0, 0.5, -2, 15);

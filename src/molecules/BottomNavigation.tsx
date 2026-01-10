@@ -14,7 +14,7 @@ import { playUISound } from "@/utils/soundSystem";
 import { SCENE_REVEAL_DURATION } from "./SceneWithLoader";
 
 export function BottomNavigation() {
-  const { currentView, resetToDefaultView, setViewMode, transitionToView } =
+  const { currentView, resetToDefaultView, isPhoneView, transitionToView } =
     useViewStore();
 
   const {
@@ -41,8 +41,7 @@ export function BottomNavigation() {
     toggleOptions();
   };
 
-  const showTapUpgrades =
-    !showOptions && isHomeRoute && ["default"].includes(currentView);
+  const showTapUpgrades = !showOptions && isHomeRoute && !isPhoneView();
 
   return (
     <HugColumn

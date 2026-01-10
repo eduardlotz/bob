@@ -45,7 +45,7 @@ export const Room = forwardRef(
         {/* FLOOR */}
         <mesh
           rotation={[-Math.PI / 2, 0, 0]}
-          position={[0, FLOOR_Y_POSITION, 0]}
+          position={[0, FLOOR_Y_POSITION - 0.55, 0]}
         >
           <planeGeometry args={[ROOM_SIZE, ROOM_SIZE]} />
           <woodToonMaterial

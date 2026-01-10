@@ -26,7 +26,7 @@ import { useAppStore, useCoreStore } from "../store";
 import { useViewStore } from "../store/viewStore";
 import { ROUTE_PATHS } from "../store/config/routes";
 import { FISHEYE_CONFIG } from "../store/config/themes";
-import { attachListenerToCamera } from "@/utils/soundSystem";
+import { attachListenerToCamera, stopSoundsById } from "@/utils/soundSystem";
 import { CreativeScene } from "@/routes/CreativeScene";
 import { AboutScene } from "../routes/AboutScene";
 
@@ -77,14 +77,6 @@ const Scene = ({
     setCameraControlsRef(cameraControlsRef);
   }, []);
 
-  useEffect(() => {
-    if (isHome) {
-      if (!isDefaultView()) {
-        resetToDefaultView();
-      }
-    }
-  }, [isHome]);
-
   const [spring, api] = useSpring(() => ({
     scale: 1,
     config: { tension: 300, friction: 15 },
@@ -92,6 +84,10 @@ const Scene = ({
 
   useEffect(() => {
     if (isHome) {
+      if (!isDefaultView()) {
+        resetToDefaultView();
+      }
+
       setVisible(true);
       api.start({
         scale: 1,
@@ -119,10 +115,10 @@ const Scene = ({
                 sectionThickness={2}
                 sectionColor="#E0DEE6"
                 // sectionColor="#959399"
-                sectionSize={1}
+                sectionSize={1.2}
                 cellThickness={0}
                 fadeDistance={4}
-                position={[0, FLOOR_Y_POSITION, 0]}
+                position={[0, FLOOR_Y_POSITION - 0.55, -0.55]}
               />
             )}
             <CameraControls ref={cameraControlsRef} truckSpeed={TRUCK_SPEED} />
@@ -130,11 +126,7 @@ const Scene = ({
             <PerspectiveCamera makeDefault position={[0, 0, 3]} />
             <directionalLight intensity={1.2} position={[2, 4, 5]} />
             <Environment preset="city" />
-            {showBackground ? (
-              <BackgroundPlanet />
-            ) : (
-              <color attach="background" args={["#0e0e0e"]} />
-            )}
+            {showBackground && <BackgroundPlanet />}
             {statisticsVisible && <Debug />}
 
             <Physics gravity={[0, -9.81, 0]}>
@@ -152,6 +144,15 @@ const Scene = ({
                 <TapCounter />
                 <TapEffects />
                 <SceneDecorations />
+
+                {/* bottom fake shadow */}
+                <mesh
+                  rotation={[-Math.PI / 2, 0, 0]}
+                  position={[0, FLOOR_Y_POSITION - 0.5, 0]}
+                >
+                  <circleGeometry args={[0.8, 16, 16]} />
+                  <meshToonMaterial color="#111820" transparent opacity={0.5} />
+                </mesh>
               </a.group>
 
               <Suspense fallback={null}>

@@ -1,12 +1,6 @@
-import React, {
-  useState,
-  useCallback,
-  useRef,
-  useMemo,
-  useEffect,
-} from "react";
+import React, { useState, useRef, useEffect } from "react";
 import styled from "styled-components";
-import { motion, AnimatePresence, LayoutGroup } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { CloseIcon } from "@/icons/close";
 import { NavButton } from "./BottomNavigation";
 import { Magnetic } from "@/layout/Magnetic";
@@ -137,7 +131,10 @@ export const BobPhone = () => {
   });
 
   useClickOutside([containerRef, triggerRef], () => {
-    if (currentView === "phone:home" && isOpen) onTriggerClick();
+    if (currentView === "phone:home" && isOpen) {
+      onTriggerClick();
+      playUISound("ui-tap-close");
+    }
   });
 
   useEffect(() => {
