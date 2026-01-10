@@ -1,6 +1,6 @@
 import { FileOrbit } from "@/components/FileOrbit";
 import { ROUTE_PATHS, useAppStore, useCoreStore, useViewStore } from "@/store";
-import { playWorldSound } from "@/utils/soundSystem";
+import { playWorldSound, stopSoundsById } from "@/utils/soundSystem";
 import { Stars } from "@react-three/drei";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -30,7 +30,9 @@ export function CreativeScene() {
     resetToDefaultView();
     transitionToView("creative");
     playWorldSound("pink-noise");
-  }, [currentRoute]);
+
+    return () => stopSoundsById("pink-noise");
+  }, []);
 
   return (
     <>
@@ -44,6 +46,7 @@ export function CreativeScene() {
         fade
       />
       <FileOrbit />
+      <color attach="background" args={["#0e0e0e"]} />
     </>
   );
 }

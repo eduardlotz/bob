@@ -131,7 +131,12 @@ export function ShopApp() {
   useEffect(() => {
     handleItemPreview();
 
-    if (currentView !== "phone:shop") resetPreview();
+    if (currentView !== "phone:shop") {
+      resetPreview();
+      transitionToView(APP_ID);
+    } else {
+      transitionToView("phone:shop");
+    }
   }, [page, activeTab, currentView]);
 
   const handleBobItemClick = () => {

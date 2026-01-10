@@ -26,7 +26,7 @@ import { useAppStore, useCoreStore } from "../store";
 import { useViewStore } from "../store/viewStore";
 import { ROUTE_PATHS } from "../store/config/routes";
 import { FISHEYE_CONFIG } from "../store/config/themes";
-import { attachListenerToCamera } from "@/utils/soundSystem";
+import { attachListenerToCamera, stopSoundsById } from "@/utils/soundSystem";
 import { CreativeScene } from "@/routes/CreativeScene";
 import { AboutScene } from "../routes/AboutScene";
 
@@ -37,6 +37,8 @@ import { MessageBubble } from "@/molecules/MessageBubble";
 import { BackgroundPlanet } from "../3d-objects/BackgroundPlanet";
 import { TapEffects } from "../3d-objects/ParticleEffects";
 import { SceneDecorations } from "@/3d-objects/Decorations";
+import { MiniGamesScene } from "@/routes/MiniGamesScene";
+import { EmotionState } from "@/hooks/useBlobEmotions";
 
 const Debug = () => {
   const { width } = useThree((s) => s.size);
@@ -52,16 +54,17 @@ const Scene = ({
   onEmotionUpdate,
 }: {
   permissionGranted: boolean;
-  onEmotionUpdate?: (data: { emotionState: any }) => void;
+  onEmotionUpdate?: (data: { emotionState: EmotionState }) => void;
 }) => {
   const cameraControlsRef = useRef<CameraControls>(null!);
   const {
     setCameraControlsRef,
     resetToDefaultView,
     isDefaultView,
-    isTransitioning,
+    transitionToView,
+    setDefaultViewMode,
   } = useViewStore();
-  const { statisticsVisible } = useCoreStore();
+  const { statisticsVisible, physicsDebugEnabled } = useCoreStore();
 
   const { currentRoute } = useAppStore();
 
@@ -76,33 +79,24 @@ const Scene = ({
     setCameraControlsRef(cameraControlsRef);
   }, []);
 
-  useEffect(() => {
-    if (isHome) {
-      if (!isDefaultView()) {
-        resetToDefaultView();
-      }
-    }
-  }, [isHome]);
-
   const [spring, api] = useSpring(() => ({
     scale: 1,
     config: { tension: 300, friction: 15 },
   }));
 
   useEffect(() => {
+    setVisible(isHome);
+
     if (isHome) {
-      setVisible(true);
-      api.start({
-        scale: 1,
-        config: { mass: 0.5, tension: 300, friction: 10 },
-        immediate: true,
-      });
-    } else {
-      api.start({
-        scale: 0.0,
-        config: { tension: 100, friction: 10 },
-        onRest: () => setVisible(false),
-      });
+      if (!isDefaultView()) {
+        const timer = setTimeout(() => {
+          setDefaultViewMode("fixed");
+          resetToDefaultView();
+          transitionToView("default");
+          stopSoundsById("pink-noise");
+        }, 800);
+        return () => clearTimeout(timer);
+      }
     }
   }, [isHome]);
 
@@ -118,10 +112,10 @@ const Scene = ({
                 sectionThickness={2}
                 sectionColor="#E0DEE6"
                 // sectionColor="#959399"
-                sectionSize={1}
+                sectionSize={1.2}
                 cellThickness={0}
                 fadeDistance={4}
-                position={[0, FLOOR_Y_POSITION, 0]}
+                position={[0, FLOOR_Y_POSITION - 0.55, -0.55]}
               />
             )}
             <CameraControls ref={cameraControlsRef} truckSpeed={TRUCK_SPEED} />
@@ -129,14 +123,10 @@ const Scene = ({
             <PerspectiveCamera makeDefault position={[0, 0, 3]} />
             <directionalLight intensity={1.2} position={[2, 4, 5]} />
             <Environment preset="city" />
-            {showBackground ? (
-              <BackgroundPlanet />
-            ) : (
-              <color attach="background" args={["#0e0e0e"]} />
-            )}
+            {showBackground && <BackgroundPlanet />}
             {statisticsVisible && <Debug />}
 
-            <Physics gravity={[0, -9.81, 0]}>
+            <Physics gravity={[0, -9.81, 0]} debug={physicsDebugEnabled}>
               <HeadNavigation
                 cameraControlsRef={cameraControlsRef}
                 permissionGranted={permissionGranted}
@@ -149,14 +139,24 @@ const Scene = ({
 
               <a.group visible={visible} scale={spring.scale}>
                 <TapCounter />
-                <TapEffects />
                 <SceneDecorations />
+                <TapEffects />
+
+                {/* bottom fake shadow */}
+                <mesh
+                  rotation={[-Math.PI / 2, 0, 0]}
+                  position={[0, FLOOR_Y_POSITION - 0.5, 0]}
+                >
+                  <circleGeometry args={[0.8, 16, 16]} />
+                  <meshToonMaterial color="#111820" transparent opacity={0.5} />
+                </mesh>
               </a.group>
 
               <Suspense fallback={null}>
                 {match(currentRoute)
                   .with(ROUTE_PATHS.ABOUT, () => <AboutScene />)
                   .with(ROUTE_PATHS.CREATIVE, () => <CreativeScene />)
+                  .with(ROUTE_PATHS.MINIGAMES, () => <MiniGamesScene />)
                   .otherwise(() => null)}
               </Suspense>
             </Physics>

@@ -42,6 +42,7 @@ import { ROUTE_PATHS } from "@/store/config/routes";
 import { useAppStore } from "@/store";
 import { playTapSound } from "@/utils/soundSystem";
 import { resolveTapSoundForEffect } from "@/utils/sound/configs";
+import { BallCollider, RigidBody } from "@react-three/rapier";
 
 // TODO: move constants to a shared config file
 const HEAD_POSITION_Y = 0;
@@ -211,6 +212,9 @@ export function BlobHead({
     tapMultiplier,
     getTotalTapMultiplier,
   } = useCoreStore();
+  const { currentRoute } = useAppStore();
+
+  const showAutoTapParticles = currentRoute === ROUTE_PATHS.HOME;
 
   const activeTheme =
     previewMode === "theme" ? themes.find((t) => t.preview) : currentTheme;
@@ -822,8 +826,10 @@ export function BlobHead({
     e.stopPropagation(); // TODO: check why this stops double click bug
 
     // trigger particles
-    const COUNTER_POS: [number, number, number] = [0, 0, 0];
-    createParticles(COUNTER_POS[0], COUNTER_POS[1], COUNTER_POS[2]);
+    if (showAutoTapParticles) {
+      const COUNTER_POS: [number, number, number] = [0, 0, 0];
+      createParticles(COUNTER_POS[0], COUNTER_POS[1], COUNTER_POS[2]);
+    }
 
     // trigger bob bounce animation
     api.start({
@@ -1087,73 +1093,75 @@ export function BlobHead({
   const content = (
     <>
       {detachedItems}
+      <RigidBody type="fixed" colliders={false}>
+        <BallCollider args={[1]} />
+        <a.group
+          ref={headRef}
+          onClick={onClick}
+          onPointerEnter={() => {
+            setHovering(true);
+          }}
+          onPointerLeave={() => {
+            setHovering(false);
+            setPointerDown(false);
+          }}
+          onPointerDown={() => {
+            setPointerDown(true);
+          }}
+          onPointerUp={() => {
+            setPointerDown(false);
+          }}
+          castShadow
+          scale={spring.scale.get() as [number, number, number]}
+          rotation={[0, Math.PI, 0]}
+          // position={[0, 2, 0]}
+        >
+          <BlobForm
+            formType={blobFormType}
+            parameters={selectedBlobForm.parameters}
+            blobColor={blobColor || "#ff6b9d"}
+            outlineColor={outlineColor || "#000000"}
+          />
 
-      <a.group
-        ref={headRef}
-        onClick={onClick}
-        onPointerEnter={() => {
-          setHovering(true);
-        }}
-        onPointerLeave={() => {
-          setHovering(false);
-          setPointerDown(false);
-        }}
-        onPointerDown={() => {
-          setPointerDown(true);
-        }}
-        onPointerUp={() => {
-          setPointerDown(false);
-        }}
-        castShadow
-        scale={spring.scale.get() as [number, number, number]}
-        rotation={[0, Math.PI, 0]}
-        position={[0, 2, 0]}
-      >
-        <BlobForm
-          formType={blobFormType}
-          parameters={selectedBlobForm.parameters}
-          blobColor={blobColor || "#ff6b9d"}
-          outlineColor={outlineColor || "#000000"}
-        />
+          <group position={calculateEyePosition([0, 0.2, 0.85])}>
+            <mesh ref={leftEyeRef} position={[-0.45, 0, 0]}>
+              <sphereGeometry args={[0.1, 16, 16]} />
+              <meshToonMaterial color={eyeColor} />
+            </mesh>
+            <mesh ref={rightEyeRef} position={[0.45, 0, 0]}>
+              <sphereGeometry args={[0.1, 16, 16]} />
+              <meshToonMaterial color={eyeColor} />
+            </mesh>
+          </group>
 
-        <group position={calculateEyePosition([0, 0.2, 0.85])}>
-          <mesh ref={leftEyeRef} position={[-0.45, 0, 0]}>
-            <sphereGeometry args={[0.1, 16, 16]} />
-            <meshToonMaterial color={eyeColor} />
-          </mesh>
-          <mesh ref={rightEyeRef} position={[0.45, 0, 0]}>
-            <sphereGeometry args={[0.1, 16, 16]} />
-            <meshToonMaterial color={eyeColor} />
-          </mesh>
-        </group>
+          {attachedItems}
 
-        {attachedItems}
+          {emotionState === "dizzy" &&
+            dizzyStars.map((star) => {
+              if (!star.visible) return null;
 
-        {emotionState === "dizzy" &&
-          dizzyStars.map((star) => {
-            if (!star.visible) return null;
+              const orbitX = Math.cos(star.orbitAngle) * star.orbitRadius;
+              const orbitZ = Math.sin(star.orbitAngle) * star.orbitRadius;
+              const orbitY = 1.5 + Math.sin(star.orbitAngle * 2) * 0.2;
 
-            const orbitX = Math.cos(star.orbitAngle) * star.orbitRadius;
-            const orbitZ = Math.sin(star.orbitAngle) * star.orbitRadius;
-            const orbitY = 1.5 + Math.sin(star.orbitAngle * 2) * 0.2;
-
-            return (
-              <group
-                key={star.id}
-                position={[orbitX, orbitY, orbitZ]}
-                scale={[star.scale, star.scale, star.scale]}
-              >
-                <Star3D
-                  rotation={[
-                    Math.sin(star.spinAngle) * 0.1,
-                    star.spinAngle,
-                    Math.sin(star.spinAngle * 0.5) * 0.05,
-                  ]}
-                />
-              </group>
-            );
-          })}
-      </a.group>
+              return (
+                <group
+                  key={star.id}
+                  position={[orbitX, orbitY, orbitZ]}
+                  scale={[star.scale, star.scale, star.scale]}
+                >
+                  <Star3D
+                    rotation={[
+                      Math.sin(star.spinAngle) * 0.1,
+                      star.spinAngle,
+                      Math.sin(star.spinAngle * 0.5) * 0.05,
+                    ]}
+                  />
+                </group>
+              );
+            })}
+        </a.group>
+      </RigidBody>
     </>
   );
 

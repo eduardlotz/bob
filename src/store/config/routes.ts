@@ -84,9 +84,9 @@ export const ROUTE_CONFIG = {
     id: ROUTE_IDS.MINIGAMES,
     name: "Minispiele",
     description: "Noch nicht verfügbar.",
-    cost: 0,
+    cost: 500,
     icon: "🎮",
-    isLocked: true,
+    isLocked: false,
   },
 } as const;
 

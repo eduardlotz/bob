@@ -1,3 +1,4 @@
+import { EmotionState } from "@/hooks/useBlobEmotions";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 
@@ -10,8 +11,8 @@ export {
   getAllRoutes,
 } from "./config/routes";
 
-export interface EmotionState {
-  emotionState: any;
+export interface EmotionData {
+  emotionState: EmotionState;
 }
 
 interface AppStore {
@@ -23,18 +24,8 @@ interface AppStore {
   permissionGranted: boolean;
   isMobile: boolean;
 
-  emotionData: EmotionState | null;
-  requestEmotion: (
-    emotion:
-      | "normal"
-      | "happy"
-      | "dizzy"
-      | "mad"
-      | "thinking"
-      | "suspicious"
-      | "sad",
-    durationMs?: number
-  ) => void;
+  emotionData: EmotionData | null;
+  requestEmotion: (emotion: EmotionState, durationMs?: number) => void;
 
   setCurrentRoute: (route: string) => void;
   setNavigationOpen: (open: boolean) => void;
@@ -43,7 +34,7 @@ interface AppStore {
   openOptions: () => void;
   setPermissionGranted: (granted: boolean) => void;
   setIsMobile: (mobile: boolean) => void;
-  setEmotionData: (data: EmotionState | null) => void;
+  setEmotionData: (data: EmotionData | null) => void;
 
   navigateToRoute: (route: string) => void;
   toggleOptions: () => void;

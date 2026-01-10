@@ -1,12 +1,6 @@
-import React, {
-  useState,
-  useCallback,
-  useRef,
-  useMemo,
-  useEffect,
-} from "react";
+import React, { useState, useRef, useEffect } from "react";
 import styled from "styled-components";
-import { motion, AnimatePresence, LayoutGroup } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { CloseIcon } from "@/icons/close";
 import { NavButton } from "./BottomNavigation";
 import { Magnetic } from "@/layout/Magnetic";
@@ -117,13 +111,10 @@ export const BobPhone = () => {
   };
 
   const onTriggerClick = () => {
-    isOpen ? resetToDefaultView() : transitionToView("phone:home");
+    // isOpen ? resetToDefaultView() : transitionToView("phone:home");
+
+    resetToDefaultView();
     setIsOpen((prev) => !prev);
-    console.info(
-      isOpen
-        ? "resetToDefaultView(); in BOBPHONE.tsx"
-        : "TRANSITION_TO_VIEW(PHONE_HOME) in BOBPHONE.tsx"
-    );
   };
 
   const currentHour = format(new Date(), "HH");
@@ -137,7 +128,10 @@ export const BobPhone = () => {
   });
 
   useClickOutside([containerRef, triggerRef], () => {
-    if (currentView === "phone:home" && isOpen) onTriggerClick();
+    if (currentView === "phone:home" && isOpen) {
+      onTriggerClick();
+      playUISound("ui-tap-close");
+    }
   });
 
   useEffect(() => {
@@ -243,18 +237,6 @@ export const BobPhone = () => {
                     </Blinking>
                     {currentMinutes}
                   </StatusPill>
-
-                  {/* <AppInfo
-                    style={{
-                      position: "absolute",
-                      margin: "auto",
-                      left: 0,
-                      right: 0,
-                      width: "fit-content",
-                    }}
-                  >
-                    v0.01
-                  </AppInfo> */}
 
                   <StatusPillButton
                     $active={!isMuted}

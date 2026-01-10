@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import React, { forwardRef, useEffect, useRef } from "react";
-import { useGLTF } from "@react-three/drei";
+import { Outlines, useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
 

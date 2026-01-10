@@ -23,7 +23,7 @@ export const BlobForm = React.memo(
               ]}
             />
             <meshToonMaterial color={blobColor} />
-            <Outlines thickness={0.005} color={outlineColor} screenspace />
+            <Outlines thickness={0.0125} color={outlineColor} screenspace />
           </mesh>
         );
 
@@ -39,7 +39,7 @@ export const BlobForm = React.memo(
             castShadow
           >
             <meshToonMaterial color={blobColor} />
-            <Outlines thickness={0.005} color={outlineColor} screenspace />
+            <Outlines thickness={0.0125} color={outlineColor} screenspace />
           </RoundedBox>
         );
 
@@ -49,7 +49,7 @@ export const BlobForm = React.memo(
           <mesh castShadow>
             <sphereGeometry args={[1, 64, 64]} />
             <meshToonMaterial color={blobColor} />
-            <Outlines thickness={0.005} color={outlineColor} screenspace />
+            <Outlines thickness={0.0125} color={outlineColor} screenspace />
           </mesh>
         );
     }

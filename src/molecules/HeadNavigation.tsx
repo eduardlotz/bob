@@ -19,7 +19,7 @@ import { useMessageStore } from "@/store/messageStore";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { useCursor } from "@/hooks/useCursor";
 import { useKeyPress } from "@/hooks/useKeyPress";
-import { playUISound } from "@/utils/soundSystem";
+import { playUISound, stopAllWorldSounds } from "@/utils/soundSystem";
 
 //#region constants
 export const CAMERA_Y_POSITION = 1;
@@ -365,6 +365,8 @@ function Option({
     resetToDefaultView();
     navigate(route.path);
     hideOptions();
+
+    stopAllWorldSounds();
   };
 
   const handleOptionClick = () => {

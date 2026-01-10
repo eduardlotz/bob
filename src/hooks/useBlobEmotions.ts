@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useCoreStore } from "@/store/core/store";
-import { useAppStore, ROUTE_PATHS } from "@/store";
-import { useSoundSystem } from "./useSoundSystem";
-import { resolveTapSoundForEffect } from "@/utils/sound/configs";
+
+import { useAppStore } from "@/store";
 
 export type EmotionState =
   | "normal"
@@ -10,7 +8,8 @@ export type EmotionState =
   | "dizzy"
   | "mad"
   | "thinking"
-  | "suspicious";
+  | "suspicious"
+  | "sad";
 
 export interface BlobEmotionData {
   currentEmotion: EmotionState;
@@ -22,8 +21,9 @@ const EMOTION_DURATIONS: Record<EmotionState, number> = {
   happy: 2000,
   dizzy: 4000,
   mad: 5000,
-  thinking: 2500,
-  suspicious: 1800,
+  thinking: 2500, // TODO
+  suspicious: 1800, // TODO
+  sad: 4000, // TODO
 };
 
 const COOLDOWN_DURATION = 1000; // Cooldown between emotional state changes

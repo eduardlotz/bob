@@ -50,7 +50,7 @@ export function AboutScene() {
   }, []);
 
   return (
-    <group>
+    <>
       <InteractiveObject
         questAction="click_desk"
         questValue={30}
@@ -58,19 +58,19 @@ export function AboutScene() {
         viewId="desk"
       >
         <DeskModel
-          position={[-4, FLOOR_Y_POSITION + 1.2, 0]}
+          position={[-4, FLOOR_Y_POSITION + 1.2 - 0.55, 0]}
           rotation={[0, 0, 0]}
           scale={[2, 2, 2]}
         />
 
         <DeskSpeakersModel
-          position={[-4.3, FLOOR_Y_POSITION + 1.46, 0]}
+          position={[-4.3, FLOOR_Y_POSITION + 1.46 - 0.55, 0]}
           rotation={[-1.58, 0, 0]}
           scale={[0.146, 0.146, 0.146]}
         />
 
         <MacbookModel
-          position={[-3.85, FLOOR_Y_POSITION + 1.271, 0]}
+          position={[-3.85, FLOOR_Y_POSITION + 1.271 - 0.55, 0]}
           rotation={[0, 1.58, 0]}
           scale={[0.4, 0.4, 0.4]}
         />
@@ -83,7 +83,7 @@ export function AboutScene() {
         viewId="bookshelf"
       >
         <BookshelfModel
-          position={[3, FLOOR_Y_POSITION, -3]}
+          position={[3, FLOOR_Y_POSITION - 0.55, -3]}
           rotation={[0, -0.75, 0]}
           scale={[2, 2, 2]}
         />
@@ -133,11 +133,6 @@ export function AboutScene() {
         />
       </InteractiveObject>
 
-      {/* <FootballModel
-        position={[-3, FLOOR_Y_POSITION + 15, -3]}
-        rotation={[1.2, 0, -0.2]}
-      /> */}
-
       <InteractiveObject
         questAction="click_box"
         questValue={30}
@@ -145,13 +140,13 @@ export function AboutScene() {
         viewId="cardbox"
       >
         <CardboxModel
-          position={[4, FLOOR_Y_POSITION + 0.05, 2]}
+          position={[4, FLOOR_Y_POSITION + 0.05 - 0.55, 2]}
           rotation={[-1.56, 0, 1.57]}
           scale={[0.9, 0.9, 0.9]}
         />
 
         <BasketBox
-          position={[4, FLOOR_Y_POSITION + 0.9, 2]}
+          position={[4, FLOOR_Y_POSITION + 0.9 - 0.55, 2]}
           width={2.1}
           depth={2.1}
           height={1.9}
@@ -174,7 +169,15 @@ export function AboutScene() {
         height={10}
         wallThickness={0.02}
       />
-    </group>
+      {/* bottom fake shadow */}
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, FLOOR_Y_POSITION - 0.5, 0]}
+      >
+        <circleGeometry args={[0.8, 16, 16]} />
+        <meshToonMaterial color="#111820" transparent opacity={0.5} />
+      </mesh>
+    </>
   );
 }
 
