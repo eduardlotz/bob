@@ -61,6 +61,8 @@ export const DebugApp = () => {
     autoTapRate,
     getTotalTapMultiplier,
     getTotalTapsPerSecond,
+    physicsDebugEnabled,
+    togglePhysicsDebug,
   } = useCoreStore();
 
   const {
@@ -231,6 +233,17 @@ export const DebugApp = () => {
       <Divider />
 
       <SettingsWrapper>
+        <h5>Physic Debugger</h5>
+
+        <ToggleButton
+          $active={physicsDebugEnabled}
+          onClick={togglePhysicsDebug}
+        >
+          {physicsDebugEnabled ? "ON" : "OFF"}
+        </ToggleButton>
+      </SettingsWrapper>
+
+      <SettingsWrapper>
         <h5>Performance Monitor</h5>
 
         <ToggleButton $active={statisticsVisible} onClick={toggleStatistics}>
@@ -239,7 +252,7 @@ export const DebugApp = () => {
       </SettingsWrapper>
 
       <SettingsWrapper>
-        <h5>View Debugger</h5>
+        <h5>ViewMode Debugger</h5>
 
         <ToggleButton
           $active={viewDebuggerVisible}

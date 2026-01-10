@@ -35,7 +35,7 @@ export const FootballModel = forwardRef(
       e.stopPropagation();
 
       // setHoveredObject({
-      //   title: "Fuppes",
+      //   title: "Minigame #1",
       // });
     };
 
@@ -44,13 +44,13 @@ export const FootballModel = forwardRef(
     };
 
     return (
-      <Grabbable rigidBodyRef={api} mode={"spring"}>
+      <Grabbable stiffness={50} rigidBodyRef={api} mode={"kinematic"}>
         <RigidBody
           {...props}
           ref={api}
-          colliders="hull"
-          restitution={0.5}
-          friction={0.7}
+          colliders="ball"
+          restitution={0.2}
+          friction={0.5}
         >
           <mesh
             onPointerEnter={handlePointerEnter}

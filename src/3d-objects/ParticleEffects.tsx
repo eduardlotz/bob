@@ -85,17 +85,20 @@ const SHARED_GEOMETRIES = {
 };
 
 const SHARED_MATERIALS = {
-  heart: new THREE.MeshStandardMaterial({ transparent: true }),
-  star: new THREE.MeshStandardMaterial({ transparent: true }),
-  sphere: new THREE.MeshStandardMaterial({ transparent: true }),
-  confetti: new THREE.MeshStandardMaterial({
-    transparent: true,
-    side: THREE.DoubleSide,
+  heart: new THREE.MeshToonMaterial({ transparent: false }),
+  star: new THREE.MeshToonMaterial({ transparent: false }),
+  sphere: new THREE.MeshToonMaterial({ transparent: false }),
+  confetti: new THREE.MeshToonMaterial({
+    transparent: false,
+    // side: THREE.DoubleSide,
   }),
-  rain: new THREE.MeshStandardMaterial({ color: "#87CEEB", transparent: true }),
-  cloud: new THREE.MeshStandardMaterial({
+  rain: new THREE.MeshToonMaterial({
+    color: "#87CEEB",
+    transparent: false,
+  }),
+  cloud: new THREE.MeshToonMaterial({
     color: "#ffffff",
-    transparent: true,
+    // transparent: true,
   }),
 };
 
@@ -137,7 +140,8 @@ export function StarsEffect() {
 export function RainEffect() {
   const { weatherEffects } = useCoreStore();
   const rainUpgrade = weatherEffects.find((u) => u.id === "environment_rain");
-  const rainEnabled = rainUpgrade?.purchased && rainUpgrade?.enabled;
+  // const rainEnabled = rainUpgrade?.purchased && rainUpgrade?.enabled;
+  const rainEnabled = true;
 
   const [rainDrops, setRainDrops] = React.useState<
     Array<{
@@ -326,8 +330,8 @@ export const CloudEffect = ({ preview }: { preview: boolean }) => {
             >
               <primitive
                 object={SHARED_MATERIALS.cloud}
-                opacity={bubble.opacity * (preview ? 0.5 : 1)}
-                transparent
+                // opacity={bubble.opacity * (preview ? 0.5 : 1)}
+                // transparent
                 attach="material"
               />
             </mesh>
@@ -418,13 +422,14 @@ const colorConfigs = {
   default: ["#ffffff", "#cccccc", "#212121", "#000000", "#297AFF"],
 };
 
-export function TapEffects() {
+export function TapEffects({ id }: { id?: string }) {
   const { tapEffects, previewMode } = useCoreStore();
 
-  const selectedTapEffect =
-    previewMode === "tapEffect"
-      ? tapEffects.find((u) => u.preview)
-      : tapEffects.find((u) => u.enabled);
+  const selectedTapEffect = id
+    ? tapEffects.find((u) => u.id === id)
+    : previewMode === "tapEffect"
+    ? tapEffects.find((u) => u.preview)
+    : tapEffects.find((u) => u.enabled);
 
   const effectValue = selectedTapEffect?.effectId ?? 0;
 

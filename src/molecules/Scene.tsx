@@ -38,6 +38,7 @@ import { BackgroundPlanet } from "../3d-objects/BackgroundPlanet";
 import { TapEffects } from "../3d-objects/ParticleEffects";
 import { SceneDecorations } from "@/3d-objects/Decorations";
 import { MiniGamesScene } from "@/routes/MiniGamesScene";
+import { EmotionState } from "@/hooks/useBlobEmotions";
 
 const Debug = () => {
   const { width } = useThree((s) => s.size);
@@ -53,7 +54,7 @@ const Scene = ({
   onEmotionUpdate,
 }: {
   permissionGranted: boolean;
-  onEmotionUpdate?: (data: { emotionState: any }) => void;
+  onEmotionUpdate?: (data: { emotionState: EmotionState }) => void;
 }) => {
   const cameraControlsRef = useRef<CameraControls>(null!);
   const {
@@ -62,7 +63,7 @@ const Scene = ({
     isDefaultView,
     isTransitioning,
   } = useViewStore();
-  const { statisticsVisible } = useCoreStore();
+  const { statisticsVisible, physicsDebugEnabled } = useCoreStore();
 
   const { currentRoute } = useAppStore();
 
@@ -89,17 +90,18 @@ const Scene = ({
       }
 
       setVisible(true);
-      api.start({
-        scale: 1,
-        config: { mass: 0.5, tension: 300, friction: 10 },
-        immediate: true,
-      });
+      // api.start({
+      //   scale: 1,
+      //   config: { mass: 0.5, tension: 300, friction: 10 },
+      //   immediate: true,
+      // });
     } else {
-      api.start({
-        scale: 0.0,
-        config: { tension: 100, friction: 10 },
-        onRest: () => setVisible(false),
-      });
+      // api.start({
+      //   scale: 0.0,
+      //   config: { tension: 100, friction: 10 },
+      //   onRest: () => setVisible(false),
+      // });
+      setVisible(false);
     }
   }, [isHome]);
 
@@ -129,7 +131,7 @@ const Scene = ({
             {showBackground && <BackgroundPlanet />}
             {statisticsVisible && <Debug />}
 
-            <Physics gravity={[0, -9.81, 0]}>
+            <Physics gravity={[0, -9.81, 0]} debug={physicsDebugEnabled}>
               <HeadNavigation
                 cameraControlsRef={cameraControlsRef}
                 permissionGranted={permissionGranted}
@@ -142,8 +144,8 @@ const Scene = ({
 
               <a.group visible={visible} scale={spring.scale}>
                 <TapCounter />
-                <TapEffects />
                 <SceneDecorations />
+                <TapEffects />
 
                 {/* bottom fake shadow */}
                 <mesh

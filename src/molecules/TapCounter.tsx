@@ -6,6 +6,7 @@ import { useCoreStore } from "@/store/core/store";
 import { THEME_CONFIG } from "@/store/config/themes";
 import { useFrame } from "@react-three/fiber";
 import { playTapSound } from "@/utils/soundSystem";
+import { ROUTE_PATHS, useAppStore } from "@/store";
 
 const FONT_PATH = "/fonts/OpenRundeBold.json";
 
@@ -94,10 +95,14 @@ export const TapCounter = () => {
   const { taps, themes, previewMode, getAutoTapRate, addAutoTaps, isPaused } =
     useCoreStore();
 
+  const { currentRoute } = useAppStore();
+
   const activeTheme =
     previewMode === "theme"
       ? themes.find((t) => t.preview)
       : themes.find((t) => t.active);
+
+  const showAutoTapParticles = currentRoute === ROUTE_PATHS.HOME;
 
   const themeConfig = activeTheme
     ? Object.values(THEME_CONFIG).find((t) => t.id === activeTheme.id) ||
@@ -131,7 +136,7 @@ export const TapCounter = () => {
     addAutoTaps(steps * getAutoTapRate() * interval);
     // playTapSound();
 
-    if ((window as any).createTapParticles) {
+    if (showAutoTapParticles && (window as any).createTapParticles) {
       (window as any).createTapParticles(0, 0.5, -2, 15);
     }
   });

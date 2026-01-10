@@ -64,6 +64,25 @@ export function useMessageSystem() {
               if (ok) routeShownRef.current[ROUTE_PATHS.CREATIVE] = true;
             });
           })
+          .with(ROUTE_PATHS.MINIGAMES, () => {
+            if (routeShownRef.current[ROUTE_PATHS.MINIGAMES]) return;
+            const returning =
+              !!useMessageStore.getState().repeatFlags["minigames_welcome"];
+
+            if (!returning) {
+              // first visit: minigames welcome
+              return showMessage("minigames_welcome").then((ok) => {
+                if (ok) {
+                  routeShownRef.current[ROUTE_PATHS.HOME] = true;
+                }
+              });
+            } else {
+              // returning visit: not ready message
+              return showMessage("minigames_welcome").then((ok) => {
+                if (ok) routeShownRef.current[ROUTE_PATHS.CREATIVE] = true;
+              });
+            }
+          })
           .otherwise(() => Promise.resolve());
       }, 2000);
     },

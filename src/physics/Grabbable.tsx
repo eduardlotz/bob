@@ -120,7 +120,7 @@ export const Grabbable = ({
         body.setBodyType(0, true);
 
         // apply clamped throw velocity
-        const maxThrow = 20;
+        const maxThrow = 50;
         velocity.current.x = Math.max(
           -maxThrow,
           Math.min(maxThrow, velocity.current.x)

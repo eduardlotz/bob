@@ -45,7 +45,8 @@ export interface QuestStore {
 export enum QUESTS_STORE_VERSION {
   V0 = 0,
   V1 = 1000000, // version 1.00.00
-  LATEST = V1,
+  V2 = 1000001, // version 1.00.01
+  LATEST = V2,
 }
 
 function migrateStore(oldState: any, fromVersion: number): any {
@@ -60,11 +61,10 @@ function migrateStore(oldState: any, fromVersion: number): any {
     migratedState = initialQuests;
   }
 
-  // new quests added: /creative
-  // if (fromVersion < QUESTS_STORE_VERSION.V1) {
-  //   const newQuests = initialQuests
-  //   migratedState.push(newQuests)
-  // }
+  // new quests added: /creative + /minigames
+  if (fromVersion < QUESTS_STORE_VERSION.V2) {
+    migratedState = { ...migratedState, initialQuests };
+  }
 
   migratedState.version = QUESTS_STORE_VERSION.LATEST;
   return migratedState;
@@ -83,7 +83,7 @@ const initialQuests: Quest[] = [
       amount: "chickenLittleGlasses",
     },
     completed: false,
-    routeId: "route_home",
+    routeId: ROUTE_IDS.HOME,
     type: "interaction",
     trigger: {
       action: "auto_tap_level",
@@ -102,7 +102,7 @@ const initialQuests: Quest[] = [
       amount: 0,
     },
     completed: false,
-    routeId: "route_home",
+    routeId: ROUTE_IDS.HOME,
     type: "interaction",
     trigger: {
       action: "tap_multiplier_level",
@@ -139,7 +139,7 @@ const initialQuests: Quest[] = [
       amount: "simsPlumbob",
     },
     completed: false,
-    routeId: "route_about",
+    routeId: ROUTE_IDS.ABOUT,
     type: "interaction",
     trigger: {
       action: "click_plumbob",
@@ -148,7 +148,7 @@ const initialQuests: Quest[] = [
   },
   {
     id: "creative_quest_1",
-    title: "Ist das Kunst oder kann das auf den Mond",
+    title: "Galaxy Gallery",
     description: "Schau dir ein paar meiner kreativen Arbeiten an",
     icon: "✨",
     progress: 0,
@@ -158,10 +158,29 @@ const initialQuests: Quest[] = [
       amount: 15000,
     },
     completed: false,
-    routeId: "route_creative",
+    routeId: ROUTE_IDS.CREATIVE,
     type: "interaction",
     trigger: {
       action: "click_creative_image",
+      value: 1,
+    },
+  },
+  {
+    id: "minigames_home_goal_scored",
+    title: "Wäre die Knieverletzung nicht gewesen dann...",
+    description: "Schieß ein Tor",
+    icon: "⚽️",
+    progress: 0,
+    maxProgress: 1,
+    reward: {
+      type: "taps_reward",
+      amount: 10000,
+    },
+    completed: false,
+    routeId: ROUTE_IDS.MINIGAMES,
+    type: "interaction",
+    trigger: {
+      action: "minigames_home_goal_scored",
       value: 1,
     },
   },

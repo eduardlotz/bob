@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { useMemo, Suspense } from "react";
+import { useMemo, Suspense, useEffect, useRef } from "react";
 import {
   Billboard,
   Float,
@@ -9,10 +9,11 @@ import {
 } from "@react-three/drei";
 import { useFloatingBar } from "@/layout/FloatingBar";
 import { useCursorStore } from "@/store/core/cursor";
-import { useViewStore } from "@/store";
+import { useAppStore, useCoreStore, useViewStore } from "@/store";
 import { playUISound } from "@/utils/soundSystem";
 import { SoundConfig } from "@/utils/sound/types";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
+import { useFrame, useThree } from "@react-three/fiber";
 
 interface PortfolioItem {
   url: string;
@@ -152,17 +153,26 @@ function VideoPlane({
   url,
   scale,
   onClick,
+  currentlyActive,
+  inRange,
 }: {
   url: string;
   scale: [number, number];
   onClick: () => void;
+  currentlyActive: boolean;
+  inRange?: boolean;
 }) {
   const texture = useVideoTexture(url, {
-    start: true,
+    start: currentlyActive,
     muted: true,
     loop: true,
     playsInline: true,
   });
+
+  useEffect(() => {
+    if (!currentlyActive) texture.image?.pause();
+    else texture.image?.play();
+  }, [currentlyActive]);
 
   const { videoWidth, videoHeight } = texture.image;
   const calculatedScale = useMediaScale(videoWidth, videoHeight);
@@ -171,7 +181,12 @@ function VideoPlane({
     <mesh scale={[calculatedScale[0], calculatedScale[1], 1]} onClick={onClick}>
       <planeGeometry />
       <Suspense fallback={null}>
-        <meshBasicMaterial map={texture} toneMapped={false} />
+        <meshBasicMaterial
+          map={texture}
+          toneMapped={false}
+          opacity={inRange ? 1 : 0}
+          transparent
+        />
       </Suspense>
     </mesh>
   );
@@ -181,10 +196,12 @@ function ImagePlane({
   url,
   scale,
   onClick,
+  inRange,
 }: {
   url: string;
   scale?: [number, number];
   onClick: () => void;
+  inRange?: boolean;
 }) {
   const texture = useTexture(url);
 
@@ -198,10 +215,14 @@ function ImagePlane({
         transparent
         scale={calculatedScale}
         onClick={onClick}
+        opacity={inRange ? 1 : 0}
       />
     </Suspense>
   );
 }
+
+const LOW_RENDER_DISTANCE = 90;
+const HIGH_RENDER_DISTANCE = 1000;
 
 function MediaItem({ item, position }: MediaItemProps) {
   const { url, title, type } = item;
@@ -209,6 +230,19 @@ function MediaItem({ item, position }: MediaItemProps) {
   const { setHoveredObject } = useFloatingBar();
   const { focusOnTarget, focusOnImage, focusedImageTitle } = useViewStore();
   const { triggerQuest } = useQuestSystem();
+  const { graphicPreferences } = useCoreStore();
+  const { isMobile } = useAppStore();
+
+  const graphicMode = graphicPreferences.qualityMode;
+  const RENDER_DISTANCE =
+    isMobile || graphicMode === "low"
+      ? LOW_RENDER_DISTANCE
+      : HIGH_RENDER_DISTANCE;
+
+  const { camera } = useThree();
+
+  const distance = camera.position.distanceTo(position);
+  const inRange = distance < RENDER_DISTANCE;
 
   const currentlyActive = focusedImageTitle === title;
   const setHovering = useCursorStore.getState().setHoveringClickable;
@@ -225,35 +259,55 @@ function MediaItem({ item, position }: MediaItemProps) {
     }
   };
 
+  const groupRef = useRef<THREE.Group>(null!);
+
+  useFrame(({ camera }) => {
+    const obj = groupRef.current;
+    if (!obj) return;
+
+    const d = camera.position.distanceTo(obj.position);
+    const inRange = d < RENDER_DISTANCE;
+
+    obj.visible = inRange;
+    obj.matrixAutoUpdate = inRange;
+  });
+
   return (
-    <Billboard
-      position={position}
-      onPointerEnter={() => {
-        setHoveredObject({ title });
-        if (!currentlyActive) setHovering(true);
-      }}
-      onPointerLeave={() => {
-        setHoveredObject(null);
-        setHovering(false);
-        setPointerDown(false);
-      }}
-      onPointerDown={() => {
-        setPointerDown(true);
-        if (!currentlyActive) {
-          triggerQuest("click_creative_image");
-          playUISound();
-        }
-      }}
-      onPointerUp={() => setPointerDown(false)}
-    >
-      <Float floatIntensity={10} speed={0.5}>
-        {isVideo ? (
-          <VideoPlane url={url} scale={[1, 1]} onClick={handleClick} />
-        ) : (
-          <ImagePlane url={url} onClick={handleClick} />
-        )}
-      </Float>
-    </Billboard>
+    <group ref={groupRef} position={position}>
+      <Billboard
+        onPointerEnter={() => {
+          setHoveredObject({ title });
+          if (!currentlyActive) setHovering(true);
+        }}
+        onPointerLeave={() => {
+          setHoveredObject(null);
+          setHovering(false);
+          setPointerDown(false);
+        }}
+        onPointerDown={() => {
+          setPointerDown(true);
+          if (!currentlyActive) {
+            triggerQuest("click_creative_image");
+            playUISound();
+          }
+        }}
+        onPointerUp={() => setPointerDown(false)}
+      >
+        <Float floatIntensity={10} speed={0.5}>
+          {isVideo ? (
+            <VideoPlane
+              url={url}
+              scale={[1, 1]}
+              onClick={handleClick}
+              currentlyActive={currentlyActive}
+              inRange={inRange}
+            />
+          ) : (
+            <ImagePlane url={url} onClick={handleClick} inRange={inRange} />
+          )}
+        </Float>
+      </Billboard>
+    </group>
   );
 }
 

@@ -1,3 +1,4 @@
+import { EmotionState } from "@/hooks/useBlobEmotions";
 import { Vector3Tuple } from "three";
 
 export type MessageRepeatRule = "always" | "oncePerSession" | "oncePerPersist";
@@ -12,7 +13,7 @@ export interface MessageOptions {
   minimumDisplayMs?: number;
   priority?: number;
   emotion?: {
-    state: "normal" | "happy" | "dizzy" | "mad" | "thinking" | "suspicious";
+    state: EmotionState;
     durationMs?: number;
   };
 }
@@ -170,9 +171,9 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
     id: "creative_welcome",
     text: [
       "Willkommen im kreativen Bereich 🧑‍🎨",
-      "Das ist quasi eine eigene kleine Galaxie als Galerie, mit Fotografien, Designs und 3D Render",
+      "Hier darfst du dich sogar frei bewegen",
+      "Eine eigene kleine Galaxie als Galerie, mit Fotografien, Designs und 3D Render",
       "Tipp einfach mal ein Bild oder Video an, um es dir genauer anzuschauen! 🔍",
-      "Ansonten darfst du dich hier sogar frei bewegen :) mit dem Menü Button kommst du auch immer wieder zu mir zurück (falls du dich verirrt hast)",
     ],
     label: "Bob",
     options: {
@@ -254,6 +255,44 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
     id: "chat_theme_preview",
     text: ["So wird der Chat aussehen", " 👁️👅👁️"],
     label: "Vorschau",
+    repeatRule: "always",
+    audioEnabled: true,
+    options: {
+      emotion: { state: "happy", durationMs: 4000 },
+    },
+  },
+  {
+    id: "minigames_welcome",
+    text: [
+      "Ja mooooin, bock was zu zocken??",
+      "außer dem Fußball und dem dem TOr hinter mir steht hier noch nix ☹️",
+      "und die Steuerung um Sachen zu bewegen ist aktuell noch 'geht so'",
+    ],
+    label: "Bob",
+    repeatRule: "oncePerPersist",
+    audioEnabled: true,
+    options: {
+      emotion: { state: "happy", durationMs: 4000 },
+    },
+  },
+  {
+    id: "minigames_not_ready",
+    text: [
+      "Wie Sie sehen, sehen Sie nichts",
+      "hier ist gibt es leider noch nichts neues",
+      "vielleicht ja morgen...",
+    ],
+    label: "Bob",
+    repeatRule: "oncePerSession",
+    audioEnabled: true,
+    options: {
+      emotion: { state: "sad", durationMs: 4000 },
+    },
+  },
+  {
+    id: "minigames_home_goal_scored",
+    text: ["TOOOOR!! 🎉⚽️"],
+    label: "Bob",
     repeatRule: "always",
     audioEnabled: true,
     options: {

@@ -30,7 +30,6 @@ export function ViewControls() {
     (!isDefaultView() &&
       !isPhoneView() &&
       !isCreativeView() &&
-      currentView !== "minigames" &&
       !isNavigationView());
 
   // escape key to return to default view

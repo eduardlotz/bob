@@ -221,6 +221,7 @@ interface GameFlags {
   customCameraControlsEnabled: boolean;
   animationsEnabled: boolean;
   statisticsVisible: boolean;
+  physicsDebugEnabled: boolean;
   viewDebuggerVisible: boolean;
   isPaused: boolean;
   isHydrated: boolean;
@@ -309,6 +310,7 @@ interface GameFlagsActions {
   toggleCustomCameraControls: () => void;
   toggleAnimations: () => void;
   toggleStatistics: () => void;
+  togglePhysicsDebug: () => void;
   toggleViewDebugger: () => void;
 }
 
@@ -477,6 +479,7 @@ const initialGameFlags: GameFlags = {
   customCameraControlsEnabled: false,
   animationsEnabled: true,
   statisticsVisible: false,
+  physicsDebugEnabled: false,
   viewDebuggerVisible: false,
   isPaused: false,
   isHydrated: false,
@@ -515,6 +518,7 @@ const partializePersisted = (state: GameStore): PersistedGameStore => ({
   customCameraControlsEnabled: state.customCameraControlsEnabled,
   animationsEnabled: state.animationsEnabled,
   statisticsVisible: state.statisticsVisible,
+  physicsDebugEnabled: state.physicsDebugEnabled,
   viewDebuggerVisible: state.viewDebuggerVisible,
   previewMode: null, // reset on reload
   graphicPreferences: state.graphicPreferences,
@@ -1197,6 +1201,12 @@ export const useCoreStore = create<GameStore>()(
             statisticsVisible: !state.statisticsVisible,
           }));
         },
+        togglePhysicsDebug: () => {
+          set((state) => ({
+            ...state,
+            physicsDebugEnabled: !state.physicsDebugEnabled,
+          }));
+        },
         toggleViewDebugger: () => {
           set((state) => ({
             ...state,
@@ -1619,36 +1629,3 @@ export const useCoreStore = create<GameStore>()(
     }
   )
 );
-
-let autoTapInterval: NodeJS.Timeout | null = null;
-
-export const startAutoTap = () => {
-  if (autoTapInterval) {
-    clearInterval(autoTapInterval);
-  }
-
-  autoTapInterval = setInterval(() => {
-    const store = useCoreStore.getState();
-    const tapsPerSecond = store.getTotalTapsPerSecond();
-
-    if (store.isPaused) {
-      return;
-    }
-
-    if (tapsPerSecond > 0) {
-      store.addAutoTaps(tapsPerSecond);
-
-      // trigger tap effects for auto-taps
-      if ((window as any).createTapParticles) {
-        (window as any).createTapParticles(0, 0, 0, 15);
-      }
-    }
-  }, AUTO_TAP_INTERVAL_MS);
-};
-
-export const stopAutoTap = () => {
-  if (autoTapInterval) {
-    clearInterval(autoTapInterval);
-    autoTapInterval = null;
-  }
-};
