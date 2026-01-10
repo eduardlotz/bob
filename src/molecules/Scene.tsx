@@ -61,7 +61,8 @@ const Scene = ({
     setCameraControlsRef,
     resetToDefaultView,
     isDefaultView,
-    isTransitioning,
+    transitionToView,
+    setDefaultViewMode,
   } = useViewStore();
   const { statisticsVisible, physicsDebugEnabled } = useCoreStore();
 
@@ -84,24 +85,18 @@ const Scene = ({
   }));
 
   useEffect(() => {
+    setVisible(isHome);
+
     if (isHome) {
       if (!isDefaultView()) {
-        resetToDefaultView();
+        const timer = setTimeout(() => {
+          setDefaultViewMode("fixed");
+          resetToDefaultView();
+          transitionToView("default");
+          stopSoundsById("pink-noise");
+        }, 800);
+        return () => clearTimeout(timer);
       }
-
-      setVisible(true);
-      // api.start({
-      //   scale: 1,
-      //   config: { mass: 0.5, tension: 300, friction: 10 },
-      //   immediate: true,
-      // });
-    } else {
-      // api.start({
-      //   scale: 0.0,
-      //   config: { tension: 100, friction: 10 },
-      //   onRest: () => setVisible(false),
-      // });
-      setVisible(false);
     }
   }, [isHome]);
 

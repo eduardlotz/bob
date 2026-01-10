@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { useMemo } from "react";
-import { RigidBody, CuboidCollider, ConeCollider } from "@react-three/rapier";
+import { RigidBody, CuboidCollider } from "@react-three/rapier";
+import { Outlines } from "@react-three/drei";
 
 interface GoalPostProps {
   position: [number, number, number];
@@ -16,9 +17,10 @@ export function GoalPost({
   onLeave,
 }: GoalPostProps) {
   const material = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "white" }),
+    () => new THREE.MeshToonMaterial({ color: "white" }),
     []
   );
+  const outlineColor = "#000000";
 
   const radius = 0.05 * scale;
   const height = 2 * scale;
@@ -29,6 +31,7 @@ export function GoalPost({
       {/* Left post */}
       <mesh position={[-width / 2, height / 2, 0]} material={material}>
         <cylinderGeometry args={[radius, radius, height, 16]} />
+        <Outlines thickness={0.03} color={outlineColor} screenspace />
       </mesh>
 
       <CuboidCollider
@@ -40,6 +43,7 @@ export function GoalPost({
       {/* Right post */}
       <mesh position={[width / 2, height / 2, 0]} material={material}>
         <cylinderGeometry args={[radius, radius, height, 16]} />
+        <Outlines thickness={0.03} color={outlineColor} screenspace />
       </mesh>
 
       <CuboidCollider
@@ -54,7 +58,8 @@ export function GoalPost({
         rotation={[0, 0, Math.PI / 2]}
         material={material}
       >
-        <cylinderGeometry args={[radius, radius, width, 16]} />
+        <cylinderGeometry args={[radius, radius, width + 0.1, 16]} />
+        <Outlines thickness={0.03} color={outlineColor} screenspace />
       </mesh>
 
       <CuboidCollider

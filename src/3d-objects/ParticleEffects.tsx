@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useMemo, useLayoutEffect } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Sparkles } from "@react-three/drei";
+import { Outlines, Sparkles } from "@react-three/drei";
 import { useCoreStore } from "@/store/core/store";
 import * as THREE from "three";
 import {
@@ -334,6 +334,7 @@ export const CloudEffect = ({ preview }: { preview: boolean }) => {
                 // transparent
                 attach="material"
               />
+              <Outlines thickness={0.03} color={"#000000"} screenspace />
             </mesh>
           ))}
         </group>

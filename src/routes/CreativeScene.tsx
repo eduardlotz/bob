@@ -30,7 +30,9 @@ export function CreativeScene() {
     resetToDefaultView();
     transitionToView("creative");
     playWorldSound("pink-noise");
-  }, [currentRoute]);
+
+    return () => stopSoundsById("pink-noise");
+  }, []);
 
   return (
     <>

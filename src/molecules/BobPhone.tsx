@@ -111,13 +111,10 @@ export const BobPhone = () => {
   };
 
   const onTriggerClick = () => {
-    isOpen ? resetToDefaultView() : transitionToView("phone:home");
+    // isOpen ? resetToDefaultView() : transitionToView("phone:home");
+
+    resetToDefaultView();
     setIsOpen((prev) => !prev);
-    console.info(
-      isOpen
-        ? "resetToDefaultView(); in BOBPHONE.tsx"
-        : "TRANSITION_TO_VIEW(PHONE_HOME) in BOBPHONE.tsx"
-    );
   };
 
   const currentHour = format(new Date(), "HH");
@@ -240,18 +237,6 @@ export const BobPhone = () => {
                     </Blinking>
                     {currentMinutes}
                   </StatusPill>
-
-                  {/* <AppInfo
-                    style={{
-                      position: "absolute",
-                      margin: "auto",
-                      left: 0,
-                      right: 0,
-                      width: "fit-content",
-                    }}
-                  >
-                    v0.01
-                  </AppInfo> */}
 
                   <StatusPillButton
                     $active={!isMuted}
