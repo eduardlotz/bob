@@ -19,11 +19,11 @@ import About from "./routes/About";
 import { AnimatePresence, motion } from "motion/react";
 import { useMessageSystem } from "@/hooks/useMessageSystem";
 import { FloatingBarProvider, FloatingBarUI } from "./layout/FloatingBar";
-import Creative from "./routes/Creative";
 import { stopAllWorldSounds } from "./utils/soundSystem";
 import { CursorInputBridge } from "./bridges/CursorInputBridge";
 import { ClickableBridge } from "./bridges/ClickableBridge";
 import MiniGames from "./routes/MiniGames";
+import Portfolio from "./routes/Portfolio";
 
 export default function App() {
   const location = useLocation();
@@ -142,7 +142,7 @@ export default function App() {
                 <Routes>
                   <Route path={ROUTE_PATHS.HOME} element={<Home />} />
                   <Route path={ROUTE_PATHS.ABOUT} element={<About />} />
-                  <Route path={ROUTE_PATHS.CREATIVE} element={<Creative />} />
+                  <Route path={ROUTE_PATHS.PORTFOLIO} element={<Portfolio />} />
                   <Route path={ROUTE_PATHS.MINIGAMES} element={<MiniGames />} />
                   <Route
                     path="*"

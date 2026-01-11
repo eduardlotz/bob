@@ -58,10 +58,10 @@ export function useMessageSystem() {
               if (ok) routeShownRef.current[ROUTE_PATHS.ABOUT] = true;
             });
           })
-          .with(ROUTE_PATHS.CREATIVE, () => {
-            if (routeShownRef.current[ROUTE_PATHS.CREATIVE]) return;
-            return showMessage("creative_welcome").then((ok) => {
-              if (ok) routeShownRef.current[ROUTE_PATHS.CREATIVE] = true;
+          .with(ROUTE_PATHS.PORTFOLIO, () => {
+            if (routeShownRef.current[ROUTE_PATHS.PORTFOLIO]) return;
+            return showMessage("portfolio_welcome").then((ok) => {
+              if (ok) routeShownRef.current[ROUTE_PATHS.PORTFOLIO] = true;
             });
           })
           .with(ROUTE_PATHS.MINIGAMES, () => {
@@ -113,7 +113,7 @@ export function useMessageSystem() {
 
     if (hasShownFirstTapRef.current || systemPaused) return;
 
-    const threshold = 10;
+    const threshold = 5;
     if (prev < threshold && manualTaps >= threshold) {
       hasShownFirstTapRef.current = true;
       showMessage("first_tap_hint");

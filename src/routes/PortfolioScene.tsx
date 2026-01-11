@@ -5,7 +5,7 @@ import { Stars } from "@react-three/drei";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-export function CreativeScene() {
+export function PortfolioScene() {
   const { checkUnlockedRoutes } = useCoreStore();
   const { currentRoute } = useAppStore();
   const {
@@ -16,7 +16,7 @@ export function CreativeScene() {
   } = useViewStore();
   const navigate = useNavigate();
 
-  const isAllowedToAcces = checkUnlockedRoutes(ROUTE_PATHS.CREATIVE);
+  const isAllowedToAcces = checkUnlockedRoutes(ROUTE_PATHS.PORTFOLIO);
 
   useEffect(() => {
     if (!isAllowedToAcces) {
@@ -28,7 +28,7 @@ export function CreativeScene() {
   useEffect(() => {
     setDefaultViewMode("object");
     resetToDefaultView();
-    transitionToView("creative");
+    transitionToView("portfolio");
     playWorldSound("pink-noise");
 
     return () => stopSoundsById("pink-noise");

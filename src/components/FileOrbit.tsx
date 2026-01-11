@@ -290,7 +290,7 @@ function MediaItem({ item, position }: MediaItemProps) {
         onPointerDown={() => {
           setPointerDown(true);
           if (!currentlyActive) {
-            triggerQuest("click_creative_image");
+            triggerQuest("click_portfolio_item");
             playUISound();
           }
         }}

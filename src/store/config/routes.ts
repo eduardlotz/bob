@@ -51,10 +51,10 @@ export const ROUTE_CONFIG = {
   [ROUTE_PATHS.PORTFOLIO]: {
     id: ROUTE_IDS.PORTFOLIO,
     name: "Portfolio",
-    description: "Noch nicht verfügbar.",
-    cost: 0,
-    icon: "💼",
-    isLocked: true,
+    description: "Mein Design Portfolio.",
+    cost: 100,
+    icon: "🎨",
+    isLocked: false,
   },
   [ROUTE_PATHS.TECHNICAL]: {
     id: ROUTE_IDS.TECHNICAL,
@@ -67,10 +67,10 @@ export const ROUTE_CONFIG = {
   [ROUTE_PATHS.CREATIVE]: {
     id: ROUTE_IDS.CREATIVE,
     name: "Kreatives",
-    description: "Meine kreative Seite",
-    cost: 50,
+    description: "Noch nicht verfügbar",
+    cost: 0,
     icon: "🎨",
-    isLocked: false,
+    isLocked: true,
   },
   [ROUTE_PATHS.GUESTBOOK]: {
     id: ROUTE_IDS.GUESTBOOK,
@@ -84,7 +84,7 @@ export const ROUTE_CONFIG = {
     id: ROUTE_IDS.MINIGAMES,
     name: "Minispiele",
     description: "Noch nicht verfügbar.",
-    cost: 500,
+    cost: 200,
     icon: "🎮",
     isLocked: false,
   },

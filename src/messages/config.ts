@@ -168,12 +168,13 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
     nextDelayMs: 1800,
   },
   {
-    id: "creative_welcome",
+    id: "portfolio_welcome",
     text: [
-      "Willkommen im kreativen Bereich 🧑‍🎨",
+      "Willkommen im ersten kreativeren Bereich 🧑‍🎨",
       "Hier darfst du dich sogar frei bewegen",
-      "Eine eigene kleine Galaxie als Galerie, mit Fotografien, Designs und 3D Render",
-      "Tipp einfach mal ein Bild oder Video an, um es dir genauer anzuschauen! 🔍",
+      "Schon bisschen geiler als so eine normale PDF oder?? 🥵",
+      "Eddie's Design Portfolio, verstreut in einem eigenen kleinen Universum",
+      "Tipp ein Bild, um es dir genauer anzuschauen 🔍",
     ],
     label: "Bob",
     options: {
