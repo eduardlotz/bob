@@ -60,7 +60,7 @@ export const Grabbable = ({
   min,
   max,
   stiffness = 80, // Higher default for PD controller
-  damping = 5, // Damping adds weight
+  damping = 2, // Damping adds weight
   throwMult = 1.0,
   freezeRotation = false,
   onDragStart,

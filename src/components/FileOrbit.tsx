@@ -223,7 +223,7 @@ function ImagePlane({
 
 const LOW_RENDER_DISTANCE = 90;
 const HIGH_RENDER_DISTANCE = 1000;
-const MOBILE_ITEMS_LIMIT = 12;
+const MOBILE_ITEMS_LIMIT = 4;
 
 function MediaItem({ item, position }: MediaItemProps) {
   const { url, title, type } = item;
@@ -351,12 +351,10 @@ export function FileOrbit({ spread = 20 }: { spread?: number }) {
   }, [spread]);
 
   return (
-    <Suspense fallback={null}>
-      <group>
-        {points.map((pos, i) => (
-          <MediaItem key={media[i].url} position={pos} item={media[i]} />
-        ))}
-      </group>
-    </Suspense>
+    <group>
+      {points.map((pos, i) => (
+        <MediaItem key={media[i].url} position={pos} item={media[i]} />
+      ))}
+    </group>
   );
 }

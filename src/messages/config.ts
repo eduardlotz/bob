@@ -44,10 +44,9 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
   {
     id: "welcome_home",
     text: [
-      "Hallöchen, ich bin der Bob 😗✌️",
       "Willkommen auf der persönlichen Website von Eduard Lotz!",
-      "ich werde dich hier ein wenig begleiten",
-      "das hier ist eine eeeetwas andere Seite, wie du wahrscheinlich schon bemerkt hast ✨",
+      "ich bin Bob 😗✌️",
+      "ich bin quasi dein persönlicher Begleiter hier",
       "zum Start kannst du mich ja erstmal antippen 🫵",
       "danach schauen wir mal weiter",
     ],
@@ -130,7 +129,7 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
   {
     id: "first_tap_hint",
     text: [
-      "Übrigenski: für nur 15 taps 🫵 kannst du den Auto-Tapper aktivieren",
+      "Ach übrigenski: für nur 15 taps 🫵 kannst du den Auto-Tapper aktivieren",
       "Dann kann ich für dich tappen, solange du dich auf der Seite umschaust 👀",
     ],
     label: "Bob",
@@ -172,7 +171,6 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
     text: [
       "Willkommen im ersten kreativeren Bereich 🧑‍🎨",
       "Hier darfst du dich sogar frei bewegen",
-      "Schon bisschen geiler als so eine normale PDF oder?? 🥵",
       "Eddie's Design Portfolio, verstreut in einem eigenen kleinen Universum",
       "Tipp ein Bild, um es dir genauer anzuschauen 🔍",
     ],
