@@ -1,27 +1,23 @@
 import React, { useRef, useMemo } from "react";
 import { useFrame, extend } from "@react-three/fiber";
-import { shaderMaterial, usePerformanceMonitor } from "@react-three/drei";
+import { shaderMaterial } from "@react-three/drei";
 import * as THREE from "three";
 import { useCoreStore } from "@/store";
 import { match } from "ts-pattern";
 
 const BLADE_COUNT_MIN = 2000;
-const BLADE_COUNT_AVG = 7500;
+const BLADE_COUNT_AVG = 6000;
 const BLADE_COUNT_MAX = 10000;
 
 const BLADE_WIDTH = 0.3;
-const BLADE_HEIGHT = 1;
+const BLADE_HEIGHT = 1.5;
 const FIELD_SIZE = 20;
 
-const COLOR_ROOT = "#284c11";
+const COLOR_ROOT = "#3a6121";
 const WIND_STRENGTH = 0.1;
 
-const GRASS_COLOR_BASE = "#365b1f";
-const GRASS_COLOR_TOP = "#29a02f";
-
-/* ------------------------------------------------------------------ */
-/* MATERIAL                                                           */
-/* ------------------------------------------------------------------ */
+const GRASS_COLOR_BASE = "#468320";
+const GRASS_COLOR_TOP = "#53a029";
 
 const GrassInstancedMaterial = shaderMaterial(
   {
@@ -32,7 +28,7 @@ const GrassInstancedMaterial = shaderMaterial(
 
     // noise controls
     uDistributionScale: 0.5,
-    uHeightScale: 0.4,
+    uHeightScale: 0.8,
     uMinHeight: 0.6,
     uMaxHeight: 1.4,
   },
@@ -85,7 +81,7 @@ const GrassInstancedMaterial = shaderMaterial(
     pos.y *= bladeHeight;
 
     /* taper: denser patches look fuller */
-    float taper = mix(0.4, 1.0, distribution);
+    float taper = mix(0.6, 1.0, distribution);
     pos.x *= taper * (1.0 - uv.y);
 
     /* wind with noise-based phase offset */
@@ -127,10 +123,6 @@ const GrassInstancedMaterial = shaderMaterial(
 );
 
 extend({ GrassInstancedMaterial });
-
-/* ------------------------------------------------------------------ */
-/* COMPONENT                                                          */
-/* ------------------------------------------------------------------ */
 
 interface Props {
   position: [number, number, number];
@@ -202,6 +194,7 @@ export const GrassShader = ({ position, rotation, scale, preview }: Props) => {
           itemSize={16}
         />
         <planeGeometry args={[BLADE_WIDTH, BLADE_HEIGHT, 1, 4]} />
+        {/* @ts-ignore */}
         <grassInstancedMaterial
           ref={materialRef}
           uPreview={preview}

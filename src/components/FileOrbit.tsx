@@ -1,19 +1,13 @@
 import * as THREE from "three";
-import { useMemo, Suspense, useEffect, useRef } from "react";
-import {
-  Billboard,
-  Float,
-  Image,
-  useTexture,
-  useVideoTexture,
-} from "@react-three/drei";
+import { useMemo, useEffect, useRef, useState } from "react";
+import { Billboard, Float } from "@react-three/drei";
 import { useFloatingBar } from "@/layout/FloatingBar";
 import { useCursorStore } from "@/store/core/cursor";
 import { useAppStore, useCoreStore, useViewStore } from "@/store";
 import { playUISound } from "@/utils/soundSystem";
 import { SoundConfig } from "@/utils/sound/types";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
-import { useFrame, useThree } from "@react-three/fiber";
+import { useFrame } from "@react-three/fiber";
 
 interface PortfolioItem {
   url: string;
@@ -149,81 +143,154 @@ const useMediaScale = (width: number, height: number): [number, number] => {
   }, [width, height]);
 };
 
-function VideoPlane({
+function VideoPlaneWithDisposal({
   url,
-  scale,
   onClick,
   currentlyActive,
-  inRange,
+  shouldLoad,
 }: {
   url: string;
-  scale: [number, number];
   onClick: () => void;
   currentlyActive: boolean;
-  inRange?: boolean;
+  shouldLoad: boolean;
 }) {
-  const texture = useVideoTexture(url, {
-    start: currentlyActive,
-    muted: true,
-    loop: true,
-    playsInline: true,
-  });
+  const [texture, setTexture] = useState<THREE.VideoTexture | null>(null);
+  const [scale, setScale] = useState<[number, number]>([1, 1]);
+  const textureRef = useRef<THREE.VideoTexture | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
-    if (!currentlyActive) texture.image?.pause();
-    else texture.image?.play();
+    if (!shouldLoad) {
+      // Dispose texture and video when out of range
+      if (videoRef.current) {
+        videoRef.current.pause();
+        videoRef.current.src = "";
+        videoRef.current.load();
+        videoRef.current = null;
+      }
+      if (textureRef.current) {
+        textureRef.current.dispose();
+        textureRef.current = null;
+        setTexture(null);
+      }
+      return;
+    }
+
+    // Load video texture when in range
+    const video = document.createElement("video");
+    video.src = url;
+    video.muted = true;
+    video.loop = true;
+    video.playsInline = true;
+    video.crossOrigin = "anonymous";
+
+    video.addEventListener("loadedmetadata", () => {
+      const { videoWidth, videoHeight } = video;
+      const max = 8;
+      const factor = max / Math.max(videoWidth, videoHeight);
+      setScale([videoWidth * factor, videoHeight * factor]);
+    });
+
+    const videoTexture = new THREE.VideoTexture(video);
+    videoTexture.minFilter = THREE.LinearFilter;
+    videoTexture.magFilter = THREE.LinearFilter;
+
+    videoRef.current = video;
+    textureRef.current = videoTexture;
+    setTexture(videoTexture);
+
+    if (currentlyActive) {
+      video.play();
+    }
+
+    return () => {
+      if (videoRef.current) {
+        videoRef.current.pause();
+        videoRef.current.src = "";
+        videoRef.current.load();
+      }
+      if (textureRef.current) {
+        textureRef.current.dispose();
+      }
+    };
+  }, [url, shouldLoad]);
+
+  useEffect(() => {
+    if (!videoRef.current) return;
+    if (!currentlyActive) {
+      videoRef.current.pause();
+    } else {
+      videoRef.current.play();
+    }
   }, [currentlyActive]);
 
-  const { videoWidth, videoHeight } = texture.image;
-  const calculatedScale = useMediaScale(videoWidth, videoHeight);
+  if (!texture) return null;
 
   return (
-    <mesh scale={[calculatedScale[0], calculatedScale[1], 1]} onClick={onClick}>
+    <mesh scale={[scale[0], scale[1], 1]} onClick={onClick}>
       <planeGeometry />
-      <Suspense fallback={null}>
-        <meshBasicMaterial
-          map={texture}
-          toneMapped={false}
-          opacity={inRange ? 1 : 0}
-          transparent
-        />
-      </Suspense>
+      <meshBasicMaterial map={texture} toneMapped={false} transparent />
     </mesh>
   );
 }
 
-function ImagePlane({
+function ImagePlaneWithDisposal({
   url,
-  scale,
   onClick,
-  inRange,
+  shouldLoad,
 }: {
   url: string;
-  scale?: [number, number];
   onClick: () => void;
-  inRange?: boolean;
+  shouldLoad: boolean;
 }) {
-  const texture = useTexture(url);
+  const [texture, setTexture] = useState<THREE.Texture | null>(null);
+  const [scale, setScale] = useState<[number, number]>([1, 1]);
+  const textureRef = useRef<THREE.Texture | null>(null);
 
-  const { width, height } = texture.image;
-  const calculatedScale = useMediaScale(width, height);
+  useEffect(() => {
+    if (!shouldLoad) {
+      // Dispose texture when out of range
+      if (textureRef.current) {
+        textureRef.current.dispose();
+        textureRef.current = null;
+        setTexture(null);
+      }
+      return;
+    }
+
+    // Load texture when in range
+    const loader = new THREE.TextureLoader();
+    loader.load(url, (loadedTexture) => {
+      textureRef.current = loadedTexture;
+      setTexture(loadedTexture);
+
+      // Calculate scale inside the callback, not using hook
+      const { width, height } = loadedTexture.image;
+      const max = 8;
+      const factor = max / Math.max(width, height);
+      setScale([width * factor, height * factor]);
+    });
+
+    return () => {
+      if (textureRef.current) {
+        textureRef.current.dispose();
+        textureRef.current = null;
+      }
+    };
+  }, [url, shouldLoad]);
+
+  if (!texture) return null;
 
   return (
-    <Suspense fallback={null}>
-      <Image
-        texture={texture}
-        transparent
-        scale={calculatedScale}
-        onClick={onClick}
-        opacity={inRange ? 1 : 0}
-      />
-    </Suspense>
+    <mesh scale={[scale[0], scale[1], 1]} onClick={onClick}>
+      <planeGeometry />
+      <meshBasicMaterial map={texture} transparent />
+    </mesh>
   );
 }
 
 const LOW_RENDER_DISTANCE = 90;
 const HIGH_RENDER_DISTANCE = 1000;
-const MOBILE_ITEMS_LIMIT = 10;
 
 function MediaItem({ item, position }: MediaItemProps) {
   const { url, title, type } = item;
@@ -240,10 +307,7 @@ function MediaItem({ item, position }: MediaItemProps) {
       ? LOW_RENDER_DISTANCE
       : HIGH_RENDER_DISTANCE;
 
-  const { camera } = useThree();
-
-  const distance = camera.position.distanceTo(position);
-  const inRange = distance < RENDER_DISTANCE;
+  const [shouldLoad, setShouldLoad] = useState(false);
 
   const currentlyActive = focusedImageTitle === title;
   const setHovering = useCursorStore.getState().setHoveringClickable;
@@ -253,7 +317,6 @@ function MediaItem({ item, position }: MediaItemProps) {
     type === "video" || url.endsWith(".mp4") || url.endsWith(".webm");
 
   const handleClick = () => {
-    // disable focus reset for already active images
     if (focusedImageTitle !== title) {
       focusOnTarget({ position, distance: 8 });
       focusOnImage(title);
@@ -271,7 +334,12 @@ function MediaItem({ item, position }: MediaItemProps) {
     const d = camera.position.distanceTo(obj.position);
     const inRange = d < RENDER_DISTANCE;
 
-    obj.visible = inRange;
+    // Update shouldLoad based on distance
+    if (inRange !== shouldLoad) {
+      setShouldLoad(inRange);
+    }
+
+    obj.visible = shouldLoad;
     obj.matrixAutoUpdate = inRange;
   });
 
@@ -298,15 +366,18 @@ function MediaItem({ item, position }: MediaItemProps) {
       >
         <Float floatIntensity={10} speed={0.5}>
           {isVideo ? (
-            <VideoPlane
+            <VideoPlaneWithDisposal
               url={url}
-              scale={[1, 1]}
               onClick={handleClick}
               currentlyActive={currentlyActive}
-              inRange={inRange}
+              shouldLoad={shouldLoad}
             />
           ) : (
-            <ImagePlane url={url} onClick={handleClick} inRange={inRange} />
+            <ImagePlaneWithDisposal
+              url={url}
+              onClick={handleClick}
+              shouldLoad={shouldLoad}
+            />
           )}
         </Float>
       </Billboard>
@@ -314,28 +385,39 @@ function MediaItem({ item, position }: MediaItemProps) {
   );
 }
 
+const MOBILE_MAX_ITEMS = 14;
+const MOBILE_INITIAL_ITEMS = 4;
+
 export function FileOrbit({ spread = 20 }: { spread?: number }) {
   const { isMobile } = useAppStore();
+  const [loadedCount, setLoadedCount] = useState(
+    isMobile ? MOBILE_INITIAL_ITEMS : ITEMS.length
+  );
+
   const media = isMobile
-    ? ITEMS.filter((i) => i.type !== "video").slice(0, MOBILE_ITEMS_LIMIT)
+    ? ITEMS.filter((i) => i.type !== "video").slice(0, loadedCount)
     : ITEMS;
+
+  useEffect(() => {
+    if (!isMobile || loadedCount >= MOBILE_MAX_ITEMS) return;
+
+    const timer = setTimeout(() => {
+      setLoadedCount((prev) => Math.min(prev + 2, MOBILE_MAX_ITEMS));
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [loadedCount, isMobile]);
 
   const points = useMemo(() => {
     const pts: THREE.Vector3[] = [];
     const n = media.length;
 
     const goldenAngle = Math.PI * (3 - Math.sqrt(5));
-    // const goldenAngle = Math.PI * (2 - Math.sqrt(2));
 
     for (let i = 0; i < n; i++) {
-      // sqrt(i) creates a more even "galaxy" density
       const currentRadius = Math.sqrt(i + 1) * spread;
-
-      // y goes from 1 to -1 over the course of the loop (vertical spread)
       const y = (1 - (i / (n - 1)) * 2) * (currentRadius * 0.5);
-
       const r = Math.sqrt(Math.max(0, currentRadius * currentRadius - y * y));
-
       const theta = goldenAngle * i;
 
       pts.push(
@@ -348,7 +430,7 @@ export function FileOrbit({ spread = 20 }: { spread?: number }) {
     }
 
     return pts;
-  }, [spread]);
+  }, [media.length, spread]); // Add media.length as dependency
 
   return (
     <group>

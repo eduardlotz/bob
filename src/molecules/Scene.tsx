@@ -6,16 +6,8 @@ import {
   PerspectiveCamera,
   Grid,
   PerformanceMonitor,
-  Effects,
 } from "@react-three/drei";
-import {
-  EffectComposer,
-  N8AO,
-  SMAA,
-  Bloom,
-  TiltShift2,
-  DepthOfField,
-} from "@react-three/postprocessing";
+
 import { match } from "ts-pattern";
 import { a, useSpring } from "@react-spring/three";
 import { Physics } from "@react-three/rapier";
@@ -208,10 +200,8 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
       shadows
       flat
       gl={{
-        powerPreference: "default",
-        antialias: false,
-        depth: true,
-        stencil: false,
+        powerPreference: "high-performance",
+        // antialias: false,
       }}
       onCreated={({ gl }) => {
         const canvas = gl.domElement;
