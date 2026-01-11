@@ -40,6 +40,10 @@ export function migrateCoreStore(persisted: any, fromVersion: number) {
       initialThemes.find((t) => t.id === themeId) ?? initialThemes[0];
   }
 
+  if (fromVersion < GAME_STORE_VERSION.V4) {
+    state.routes = initialRoutes;
+  }
+
   return {
     ...state,
     version: GAME_STORE_VERSION.LATEST,

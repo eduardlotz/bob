@@ -147,8 +147,8 @@ const initialQuests: Quest[] = [
     },
   },
   {
-    id: "creative_quest_1",
-    title: "Galaxy Gallery",
+    id: "portfolio_quest_1",
+    title: "Portfolio Redesign #67",
     description: "Schau dir ein paar meiner kreativen Arbeiten an",
     icon: "✨",
     progress: 0,
@@ -158,10 +158,10 @@ const initialQuests: Quest[] = [
       amount: 15000,
     },
     completed: false,
-    routeId: ROUTE_IDS.CREATIVE,
+    routeId: ROUTE_IDS.PORTFOLIO,
     type: "interaction",
     trigger: {
-      action: "click_creative_image",
+      action: "click_portfolio_item",
       value: 1,
     },
   },

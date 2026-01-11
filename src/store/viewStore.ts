@@ -6,7 +6,6 @@ import {
   CAMERA_Y_POSITION,
   CAMERA_HEIGHT,
   HIDDEN_OPTIONS_CAMERA_ZOOM,
-  FUNNY_FISHEYE_ZOOM,
   VISIBLE_OPTIONS_CAMERA_ZOOM,
 } from "@/molecules/HeadNavigation";
 import { ROUTE_PATHS, useAppStore, useCoreStore } from ".";
@@ -33,7 +32,7 @@ export interface FocusTarget {
 export type CameraViewId =
   | "default"
   | "upgrades"
-  | "creative"
+  | "portfolio"
   | "navigation"
   | "phone:home"
   | "phone:shop"
@@ -92,9 +91,9 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
     id: "upgrades",
     name: "Upgrades View",
   },
-  creative: {
-    id: "creative",
-    name: "Creative Orbit View",
+  portfolio: {
+    id: "portfolio",
+    name: "Portfolio Orbit View",
     position: [0, CAMERA_HEIGHT, HIDDEN_OPTIONS_CAMERA_ZOOM],
     target: [0, CAMERA_Y_POSITION, 0],
     transition: {
@@ -312,9 +311,9 @@ export const useViewStore = create<ViewStore>()(
         const currentRoute = appStore.currentRoute;
 
         // viewMode is set to fixed without transition
-        // TODO: fix edge case when going from creative -> any other
+        // TODO: fix edge case when going from portfolio -> any other
         const targetView: CameraViewId =
-          currentRoute === ROUTE_PATHS.CREATIVE ? "creative" : "default";
+          currentRoute === ROUTE_PATHS.PORTFOLIO ? "portfolio" : "default";
 
         const viewConfig = CAMERA_VIEWS[targetView];
 
@@ -342,7 +341,7 @@ export const useViewStore = create<ViewStore>()(
           // currently only two different defaults (creative -> "orbit view" & rest -> "fixed view")
           const viewConfig =
             CAMERA_VIEWS[
-              currentRoute === ROUTE_PATHS.CREATIVE ? "creative" : "default"
+              currentRoute === ROUTE_PATHS.PORTFOLIO ? "portfolio" : "default"
             ];
 
           if (!viewConfig) {
@@ -388,7 +387,7 @@ export const useViewStore = create<ViewStore>()(
         return get().currentView === "default";
       },
       isCreativeView: () => {
-        return get().currentView === "creative";
+        return get().currentView === "portfolio";
       },
 
       isPhoneView: () => {
@@ -414,7 +413,7 @@ export const useViewStore = create<ViewStore>()(
         set({
           isTransitioning: true,
           viewMode: "object",
-          currentView: "creative",
+          currentView: "portfolio",
         });
 
         get().applyViewModeToControls("object");

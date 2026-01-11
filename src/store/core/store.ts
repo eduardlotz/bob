@@ -35,7 +35,8 @@ export enum GAME_STORE_VERSION {
   V1 = 1000000, // version 1.00.00
   V2 = 1000001, // version 1.00.01
   V3 = 1000002, // version 1.00.02
-  LATEST = V3,
+  V4 = 1000003, // version 1.00.04
+  LATEST = V4,
 }
 
 // TODO: plan refactor to include component inside item properties

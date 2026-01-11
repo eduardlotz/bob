@@ -27,7 +27,7 @@ import { useViewStore } from "../store/viewStore";
 import { ROUTE_PATHS } from "../store/config/routes";
 import { FISHEYE_CONFIG } from "../store/config/themes";
 import { attachListenerToCamera, stopSoundsById } from "@/utils/soundSystem";
-import { CreativeScene } from "@/routes/CreativeScene";
+import { PortfolioScene } from "@/routes/PortfolioScene";
 import { AboutScene } from "../routes/AboutScene";
 
 import { HeadNavigation } from "./HeadNavigation";
@@ -155,7 +155,7 @@ const Scene = ({
               <Suspense fallback={null}>
                 {match(currentRoute)
                   .with(ROUTE_PATHS.ABOUT, () => <AboutScene />)
-                  .with(ROUTE_PATHS.CREATIVE, () => <CreativeScene />)
+                  .with(ROUTE_PATHS.PORTFOLIO, () => <PortfolioScene />)
                   .with(ROUTE_PATHS.MINIGAMES, () => <MiniGamesScene />)
                   .otherwise(() => null)}
               </Suspense>
