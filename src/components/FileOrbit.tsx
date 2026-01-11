@@ -7,7 +7,7 @@ import { useAppStore, useCoreStore, useViewStore } from "@/store";
 import { playUISound } from "@/utils/soundSystem";
 import { SoundConfig } from "@/utils/sound/types";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 
 interface PortfolioItem {
   url: string;
@@ -385,32 +385,37 @@ function MediaItem({ item, position }: MediaItemProps) {
   );
 }
 
-const MOBILE_MAX_ITEMS = 14;
-const MOBILE_INITIAL_ITEMS = 4;
+// divide orbit into spatial chunks
+function getChunkKey(position: THREE.Vector3, chunkSize = 100) {
+  return `${Math.floor(position.x / chunkSize)}_${Math.floor(
+    position.y / chunkSize
+  )}_${Math.floor(position.z / chunkSize)}`;
+}
+
+// group items by chunk
+function chunkItems(items: PortfolioItem[], positions: THREE.Vector3[]) {
+  const chunks = new Map<
+    string,
+    Array<{ item: PortfolioItem; position: THREE.Vector3 }>
+  >();
+
+  items.forEach((item, i) => {
+    const key = getChunkKey(positions[i]);
+    if (!chunks.has(key)) chunks.set(key, []);
+    chunks.get(key)!.push({ item, position: positions[i] });
+  });
+
+  return chunks;
+}
 
 export function FileOrbit({ spread = 20 }: { spread?: number }) {
+  const { camera } = useThree();
   const { isMobile } = useAppStore();
-  const [loadedCount, setLoadedCount] = useState(
-    isMobile ? MOBILE_INITIAL_ITEMS : ITEMS.length
-  );
+  const [visibleChunks, setVisibleChunks] = useState<Set<string>>(new Set());
 
-  const media = isMobile
-    ? ITEMS.filter((i) => i.type !== "video").slice(0, loadedCount)
-    : ITEMS;
-
-  useEffect(() => {
-    if (!isMobile || loadedCount >= MOBILE_MAX_ITEMS) return;
-
-    const timer = setTimeout(() => {
-      setLoadedCount((prev) => Math.min(prev + 2, MOBILE_MAX_ITEMS));
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [loadedCount, isMobile]);
-
-  const points = useMemo(() => {
+  const chunks = useMemo(() => {
     const pts: THREE.Vector3[] = [];
-    const n = media.length;
+    const n = ITEMS.length;
 
     const goldenAngle = Math.PI * (3 - Math.sqrt(5));
 
@@ -429,13 +434,53 @@ export function FileOrbit({ spread = 20 }: { spread?: number }) {
       );
     }
 
-    return pts;
-  }, [media.length, spread]); // Add media.length as dependency
+    return chunkItems(ITEMS, pts);
+  }, [spread]);
+
+  useFrame(() => {
+    const newVisible = new Set<string>();
+    const chunkSize = isMobile ? 50 : 200;
+
+    // which chunks to load based on camera position
+    const camPos = camera.position;
+
+    // load 3x3x3 grid of chunks around camera
+    for (let x = -1; x <= 1; x++) {
+      for (let y = -1; y <= 1; y++) {
+        for (let z = -1; z <= 1; z++) {
+          const offsetPos = new THREE.Vector3(
+            camPos.x + x * chunkSize,
+            camPos.y + y * chunkSize,
+            camPos.z + z * chunkSize
+          );
+          newVisible.add(getChunkKey(offsetPos, chunkSize));
+        }
+      }
+    }
+
+    setVisibleChunks(newVisible);
+  });
 
   return (
     <group>
-      {points.map((pos, i) => (
-        <MediaItem key={media[i].url} position={pos} item={media[i]} />
+      {Array.from(chunks.entries()).map(([chunkKey, items]) =>
+        visibleChunks.has(chunkKey) ? (
+          <ChunkGroup key={chunkKey} items={items} />
+        ) : null
+      )}
+    </group>
+  );
+}
+
+function ChunkGroup({
+  items,
+}: {
+  items: Array<{ item: PortfolioItem; position: THREE.Vector3 }>;
+}) {
+  return (
+    <group>
+      {items.map(({ item, position }) => (
+        <MediaItem key={item.url} item={item} position={position} />
       ))}
     </group>
   );
