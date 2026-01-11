@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useEffect } from "react";
+import { useCallback, useMemo } from "react";
 import { useQuestStore } from "@/store/core/quests";
 import { useCoreStore } from "@/store/core/store";
 import { useAppStore } from "@/store";
@@ -13,7 +13,6 @@ export const useQuestSystem = () => {
   const updateQuestProgress = questStore.updateQuestProgress;
   const completeQuest = questStore.completeQuest;
 
-  // TODO: check if needed
   const routeId = useMemo(
     () => ROUTE_DICTIONARY[currentRoute] || "route_home",
     [currentRoute]
@@ -94,7 +93,6 @@ export const useQuestSystem = () => {
     totalReward,
     triggerQuest,
     triggerInteraction,
-    // Debug function to reset quests
     resetQuests: () => {
       const questStore = useQuestStore.getState();
       questStore.resetAllQuests();

@@ -265,8 +265,8 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
     id: "minigames_welcome",
     text: [
       "Ja mooooin, bock was zu zocken??",
-      "außer dem Fußball und dem dem TOr hinter mir steht hier noch nix ☹️",
-      "und die Steuerung um Sachen zu bewegen ist aktuell noch 'geht so'",
+      "außer dem Fußball und dem dem Tor hinter mir steht hier leider noch nix ☹️",
+      "wenn dir das nicht reicht, musst du wohl nochmal wieder kommen",
     ],
     label: "Bob",
     repeatRule: "oncePerPersist",

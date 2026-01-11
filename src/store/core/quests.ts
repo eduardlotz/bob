@@ -166,9 +166,9 @@ const initialQuests: Quest[] = [
     },
   },
   {
-    id: "minigames_home_goal_scored",
-    title: "Wäre die Knieverletzung nicht gewesen dann...",
-    description: "Schieß ein Tor",
+    id: "minigames_quest_1",
+    title: "Ich wär ja fast Profi geworden, aber",
+    description: "Bring das Runde ins Eckige",
     icon: "⚽️",
     progress: 0,
     maxProgress: 1,
@@ -177,10 +177,10 @@ const initialQuests: Quest[] = [
       amount: 10000,
     },
     completed: false,
-    routeId: ROUTE_IDS.MINIGAMES,
+    // routeId: ROUTE_IDS.MINIGAMES, // FIX: not working with route
     type: "interaction",
     trigger: {
-      action: "minigames_home_goal_scored",
+      action: "minigames_goal_scored",
       value: 1,
     },
   },
@@ -242,7 +242,6 @@ export const useQuestStore = create<QuestStore>()(
           activeQuests: [],
         })),
 
-      // Reset quests for testing - clears all progress
       resetAllQuests: () =>
         set(() => ({
           quests: initialQuests.map((quest) => ({

@@ -207,7 +207,26 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
       ref={canvasRef}
       shadows
       flat
-      gl={{ powerPreference: "default", antialias: false }}
+      gl={{
+        powerPreference: "default",
+        antialias: false,
+        depth: true,
+        stencil: false,
+      }}
+      onCreated={({ gl }) => {
+        const canvas = gl.domElement;
+
+        const onLost = (e: Event) => {
+          e.preventDefault();
+        };
+
+        const onRestored = () => {
+          window.location.reload();
+        };
+
+        canvas.addEventListener("webglcontextlost", onLost, false);
+        canvas.addEventListener("webglcontextrestored", onRestored, false);
+      }}
       color="black"
       camera={{ position: [0, 0, isMobile ? 1.5 : 2], fov: 50 }}
       style={{

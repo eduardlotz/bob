@@ -334,7 +334,7 @@ export const CloudEffect = ({ preview }: { preview: boolean }) => {
                 // transparent
                 attach="material"
               />
-              <Outlines thickness={0.03} color={"#000000"} screenspace />
+              <Outlines thickness={0.02} color={"#000000"} screenspace />
             </mesh>
           ))}
         </group>
