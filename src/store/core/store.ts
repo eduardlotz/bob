@@ -26,6 +26,7 @@ import {
 } from "@/utils/sound/defaults";
 import { initialDecorations } from "@/shop-items/decorations";
 import { migrateCoreStore } from "./migrations";
+import { OrbitForm } from "@/components/FileOrbit";
 
 const ONE_SECOND_MS = 1000;
 const AUTO_TAP_INTERVAL_MS = 1000;
@@ -201,6 +202,8 @@ interface GameState {
     worldSoundIds?: string[];
     tapEffectAudioId?: string; // optional override for selected tap effect
   };
+
+  selectedOrbitForm: OrbitForm;
 }
 
 interface GameCache {
@@ -274,6 +277,7 @@ interface GameStateActions {
   setWorldSoundIds?: (ids: string[]) => void;
   toggleWorldSoundId?: (id: string) => void;
   setTapEffectAudioId?: (id?: string) => void;
+  setOrbitForm: (form: OrbitForm) => void;
 }
 
 interface GameCacheActions {
@@ -473,6 +477,7 @@ export const initialGameState: GameState = {
     worldSoundIds: [],
     tapEffectAudioId: undefined,
   },
+  selectedOrbitForm: "SPHERICAL_SHELL",
 };
 
 const initialGameFlags: GameFlags = {
@@ -523,8 +528,10 @@ const partializePersisted = (state: GameStore): PersistedGameStore => ({
   viewDebuggerVisible: state.viewDebuggerVisible,
   previewMode: null, // reset on reload
   graphicPreferences: state.graphicPreferences,
+  selectedOrbitForm: state.selectedOrbitForm,
 });
 
+// TODO: split storeCreate into groups for better readability
 export const useCoreStore = create<GameStore>()(
   devtools(
     persist(
@@ -532,6 +539,7 @@ export const useCoreStore = create<GameStore>()(
         ...initialGameState,
         ...initialGameFlags,
         ...initialGameComputedValues,
+        setOrbitForm: (form) => set({ selectedOrbitForm: form }),
 
         setGameReady: (gameReady) => set({ isReady: gameReady }),
 
