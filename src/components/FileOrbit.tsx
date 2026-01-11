@@ -314,9 +314,11 @@ function MediaItem({ item, position }: MediaItemProps) {
 }
 
 export function FileOrbit({ spread = 20 }: { spread?: number }) {
+  const { isMobile } = useAppStore();
+  const media = isMobile ? ITEMS.filter((i) => i.type !== "video") : ITEMS;
   const points = useMemo(() => {
     const pts: THREE.Vector3[] = [];
-    const n = ITEMS.length;
+    const n = media.length;
 
     const goldenAngle = Math.PI * (3 - Math.sqrt(5));
     // const goldenAngle = Math.PI * (2 - Math.sqrt(2));
@@ -348,7 +350,7 @@ export function FileOrbit({ spread = 20 }: { spread?: number }) {
     <Suspense fallback={null}>
       <group>
         {points.map((pos, i) => (
-          <MediaItem key={ITEMS[i].url} position={pos} item={ITEMS[i]} />
+          <MediaItem key={media[i].url} position={pos} item={media[i]} />
         ))}
       </group>
     </Suspense>
