@@ -259,6 +259,8 @@ function MediaItem({ item, position }: MediaItemProps) {
     }
   };
 
+  if (isVideo && isMobile) return null;
+
   const groupRef = useRef<THREE.Group>(null!);
 
   useFrame(({ camera }) => {
