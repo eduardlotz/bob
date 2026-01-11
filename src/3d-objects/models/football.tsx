@@ -44,7 +44,7 @@ export const FootballModel = forwardRef(
     };
 
     return (
-      <Grabbable stiffness={50} rigidBodyRef={api} mode={"kinematic"}>
+      <Grabbable stiffness={100} damping={5} rigidBodyRef={api} mode="spring">
         <RigidBody
           {...props}
           ref={api}

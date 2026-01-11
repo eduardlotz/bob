@@ -223,6 +223,7 @@ function ImagePlane({
 
 const LOW_RENDER_DISTANCE = 90;
 const HIGH_RENDER_DISTANCE = 1000;
+const MOBILE_ITEMS_LIMIT = 12;
 
 function MediaItem({ item, position }: MediaItemProps) {
   const { url, title, type } = item;
@@ -315,7 +316,10 @@ function MediaItem({ item, position }: MediaItemProps) {
 
 export function FileOrbit({ spread = 20 }: { spread?: number }) {
   const { isMobile } = useAppStore();
-  const media = isMobile ? ITEMS.filter((i) => i.type !== "video") : ITEMS;
+  const media = isMobile
+    ? ITEMS.filter((i) => i.type !== "video").slice(0, MOBILE_ITEMS_LIMIT)
+    : ITEMS;
+
   const points = useMemo(() => {
     const pts: THREE.Vector3[] = [];
     const n = media.length;

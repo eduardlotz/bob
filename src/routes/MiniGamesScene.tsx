@@ -1,29 +1,26 @@
 import { GrassShader } from "@/3d-objects/GrassShader";
 import { FootballModel } from "@/3d-objects/models/football";
 import { GoalPost } from "@/3d-objects/models/goalPost";
-import {
-  CloudEffect,
-  RainEffect,
-  TapEffects,
-} from "@/3d-objects/ParticleEffects";
-import { useMessageSystem } from "@/hooks/useMessageSystem";
+import { CloudEffect, TapEffects } from "@/3d-objects/ParticleEffects";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { InteractiveObject } from "@/molecules/InteractiveObject";
 import { FLOOR_Y_POSITION } from "@/molecules/Scene";
 import { BasketBox } from "@/physics/BasketBox";
-import { ROUTE_PATHS, useAppStore, useCoreStore, useViewStore } from "@/store";
+import { ROUTE_PATHS, useCoreStore } from "@/store";
 import { useMessageStore } from "@/store/messageStore";
-import { GradientTexture, Grid } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
-import { useCallback, useEffect, useRef } from "react";
+import { GradientTexture, Grid, Html } from "@react-three/drei";
+import { CuboidCollider } from "@react-three/rapier";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 import { BackSide } from "three";
 
 export function MiniGamesScene() {
   const { checkUnlockedRoutes } = useCoreStore();
-  const { currentRoute } = useAppStore();
   const goalsScored = useRef(0);
+  const [score, setScore] = useState(0);
+
+  const [ballKey, setBallKey] = useState(0);
+  const isResetting = useRef(false); // Cooldown lock
 
   const navigate = useNavigate();
   const { showMessage } = useMessageStore();
@@ -38,9 +35,19 @@ export function MiniGamesScene() {
   }, []);
 
   const onGoalScored = () => {
+    if (isResetting.current) return;
+    isResetting.current = true;
+
     createParticles();
     showMessage("minigames_home_goal_scored");
-    triggerQuest("minigames_home_goal_scored");
+    triggerQuest("minigames_goal_scored");
+
+    setScore((prev) => prev + 1);
+
+    setTimeout(() => {
+      setBallKey((prev) => prev + 1);
+      isResetting.current = false;
+    }, 1000);
   };
 
   useEffect(() => {
@@ -50,23 +57,8 @@ export function MiniGamesScene() {
     }
   }, [isAllowedToAcces]);
 
-  // useEffect(() => {
-  //   playWorldSound("minigames-theme");
-  //   return () => stopSoundsById("minigames-theme");
-  // }, [currentRoute]);
-
   return (
     <>
-      {/* <SpotLight
-        distance={6}
-        radiusTop={0.5}
-        color="#e5f4cd"
-        angle={0.6}
-        attenuation={5}
-        anglePower={1} // Diffuse-cone anglePower (default: 5)
-        position={[0, 3, 0]}
-      /> */}
-
       <TapEffects id="tap_effect_confetti" />
 
       {/* bottom fake shadow */}
@@ -78,14 +70,13 @@ export function MiniGamesScene() {
         <meshToonMaterial color="#111820" transparent opacity={0.5} />
       </mesh>
 
-      <InteractiveObject questAction="start_game">
-        <FootballModel position={[0, 8, 0.5]} />
-      </InteractiveObject>
+      <FootballModel position={[-1, 2, 0]} key={ballKey} />
 
       <CloudEffect preview={false} />
 
       <GrassShader position={[0, -0.8, 0]} preview={false} />
 
+      <CuboidCollider args={[7 / 2, 0.02, 7 / 2]} position={[0, 4.5, 0]} />
       <BasketBox
         position={[0, 3.3 + FLOOR_Y_POSITION, -1]}
         width={7.5}
@@ -102,8 +93,6 @@ export function MiniGamesScene() {
           // console.log("left goal");
         }}
       />
-
-      {/* <color attach="background" args={["#1e2655"]} /> */}
 
       <mesh>
         <sphereGeometry args={[100, 16, 16]} />
