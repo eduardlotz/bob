@@ -18,16 +18,16 @@ interface OrbitFormSelection {
 
 const orbitForms: Array<OrbitFormSelection> = [
   {
-    id: "SPHERICAL_SHELL",
+    id: "FIBONACCI_SPHERE",
     name: "Kugel",
   },
   {
     id: "EQUATORIAL_RING",
-    name: "Kreis",
+    name: "Ring",
   },
   {
-    id: "LATITUDE_BANDS",
-    name: "Türme",
+    id: "LOGARITHMIC_SPIRAL",
+    name: "Spirale",
   },
   {
     id: "GALAXY_WAVES",

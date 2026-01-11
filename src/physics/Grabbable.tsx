@@ -1,14 +1,7 @@
-import React, { useRef, useState, useMemo } from "react";
+import React, { useRef, useState } from "react";
 import { useThree, useFrame, ThreeEvent } from "@react-three/fiber";
-import { RapierRigidBody, vec3 } from "@react-three/rapier";
-import {
-  Vector3,
-  Plane,
-  Vector2,
-  Quaternion,
-  LineBasicMaterial,
-  BufferGeometry,
-} from "three";
+import { RapierRigidBody } from "@react-three/rapier";
+import { Vector3, Plane, Vector2 } from "three";
 import { useCoreStore, useViewStore } from "@/store"; // Assuming this exists based on your snippet
 import { Line } from "@react-three/drei";
 

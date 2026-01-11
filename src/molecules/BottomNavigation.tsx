@@ -15,8 +15,13 @@ import { SCENE_REVEAL_DURATION } from "./SceneWithLoader";
 import { OrbitFormControls } from "./orbitFormControls";
 
 export function BottomNavigation() {
-  const { currentView, resetToDefaultView, isPhoneView, transitionToView } =
-    useViewStore();
+  const {
+    currentView,
+    resetToDefaultView,
+    isPhoneView,
+    transitionToView,
+    isImageFocused,
+  } = useViewStore();
 
   const {
     currentRoute,
@@ -44,7 +49,7 @@ export function BottomNavigation() {
 
   const showTapUpgrades = !showOptions && isHomeRoute && !isPhoneView();
   const showOrbitFormControls =
-    !showOptions && isPortfolioRoute && !isPhoneView();
+    !showOptions && isPortfolioRoute && !isPhoneView() && !isImageFocused;
 
   return (
     <HugColumn

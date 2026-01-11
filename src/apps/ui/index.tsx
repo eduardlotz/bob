@@ -162,7 +162,7 @@ export const ToggleButton = styled(motion.button)<{
   align-items: center;
   justify-content: center;
   padding: 0.5rem 0.75rem;
-  background: ${(p) => (p.$active ? "#ffffff" : "#ffffff3a")};
+  background: ${(p) => (p.$active ? "#ffffff" : "#3a3a3a")};
   border: none;
   color: ${(p) => (p.$active ? "#212121" : "#ffffff")};
   font-size: 1rem;
@@ -171,7 +171,7 @@ export const ToggleButton = styled(motion.button)<{
   width: ${(p) => (p.$fillRow ? "100%" : "auto")};
 
   &:hover {
-    background: ${(p) => (p.$active ? "#ffffff" : "#ffffff8c")};
+    background: ${(p) => (p.$active ? "#ffffff" : "#5c5c5c")};
   }
 `;
 
