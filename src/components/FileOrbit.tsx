@@ -9,7 +9,7 @@ import {
 } from "@react-three/drei";
 import { useFloatingBar } from "@/layout/FloatingBar";
 import { useCursorStore } from "@/store/core/cursor";
-import { useViewStore } from "@/store";
+import { useCoreStore, useViewStore } from "@/store";
 import { playUISound } from "@/utils/soundSystem";
 import { SoundConfig } from "@/utils/sound/types";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
@@ -173,7 +173,9 @@ function VideoPlane({
 
   return (
     <mesh scale={[calculatedScale[0], calculatedScale[1], 1]} onClick={onClick}>
+      {/* @ts-ignore */}
       <roundedPlaneGeometry args={[1, 1, 0.05, 6]} />
+
       {/* <planeGeometry /> */}
       <Suspense fallback={null}>
         <meshBasicMaterial map={texture} toneMapped={false} />
@@ -267,7 +269,7 @@ export type OrbitForm =
   | "EQUATORIAL_RING"
   | "LATITUDE_BANDS"
   | "SPHERICAL_SHELL"
-  | "MERIDIAN_ARC";
+  | "GALAXY_WAVES";
 
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 
@@ -275,15 +277,18 @@ export function getSphericalAngles({
   index,
   count,
   form,
+  radius,
 }: {
   index: number;
   count: number;
   form: OrbitForm;
-}): { phi: number; theta: number } {
+  radius: number;
+}): { r: number; phi: number; theta: number } {
   switch (form) {
     // 1. Flat horizontal orbit
     case "EQUATORIAL_RING": {
       return {
+        r: radius,
         phi: Math.PI / 2,
         theta: index * GOLDEN_ANGLE,
       };
@@ -299,6 +304,7 @@ export function getSphericalAngles({
       const phiMax = Math.PI * 0.65;
 
       return {
+        r: radius,
         phi: phiMin + (bandIndex / Math.max(1, bands - 1)) * (phiMax - phiMin),
         theta: bandOffset * GOLDEN_ANGLE,
       };
@@ -309,25 +315,30 @@ export function getSphericalAngles({
       const t = (index + 0.5) / count;
 
       return {
+        r: radius,
         phi: Math.acos(1 - 2 * t),
         theta: index * GOLDEN_ANGLE,
       };
     }
 
-    // 4. Vertical meridian arc
-    case "MERIDIAN_ARC": {
-      const phiMin = Math.PI * 0.15;
-      const phiMax = Math.PI * 0.85;
+    // 4. Galaxy Like Waves
+    case "GALAXY_WAVES": {
+      const currentRadius = Math.sqrt(index + 1) * (radius / 2);
+      const y = (1 - (index / (count - 1)) * 2) * (currentRadius * 0.5);
+      const r = Math.sqrt(Math.max(0, currentRadius * currentRadius - y * y));
+      const theta = GOLDEN_ANGLE * index;
 
       return {
-        phi: phiMin + (index / Math.max(1, count - 1)) * (phiMax - phiMin),
-        theta: Math.PI / 2,
+        r: Math.cos(theta) * r,
+        phi: Math.sin(theta) * y,
+        theta: Math.sin(theta) * r,
       };
     }
   }
 }
 
-export function FileOrbit({ spread = 40 }: { spread?: number }) {
+export function FileOrbit({ radius = 40 }: { radius?: number }) {
+  const { selectedOrbitForm: orbitForm } = useCoreStore();
   const spherical = new THREE.Spherical();
   const n = ITEMS.length;
 
@@ -335,19 +346,20 @@ export function FileOrbit({ spread = 40 }: { spread?: number }) {
     const pts: THREE.Vector3[] = [];
 
     for (let i = 1; i < n + 1; i++) {
-      const { phi, theta } = getSphericalAngles({
+      const { phi, theta, r } = getSphericalAngles({
         index: i,
         count: n,
-        form: "EQUATORIAL_RING",
+        form: orbitForm,
+        radius,
       });
 
       pts.push(
-        new THREE.Vector3().setFromSpherical(spherical.set(spread, phi, theta))
+        new THREE.Vector3().setFromSpherical(spherical.set(r, phi, theta))
       );
     }
 
     return pts;
-  }, [spread]);
+  }, [radius, orbitForm]);
 
   return (
     <Suspense fallback={null}>

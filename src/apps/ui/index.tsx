@@ -154,7 +154,7 @@ export const SettingsWrapper = styled(FillRow)<{
   }
 `;
 
-export const ToggleButton = styled.button<{
+export const ToggleButton = styled(motion.button)<{
   $active: boolean;
   $fillRow?: boolean;
 }>`
@@ -162,21 +162,20 @@ export const ToggleButton = styled.button<{
   align-items: center;
   justify-content: center;
   padding: 0.5rem 0.75rem;
-  background: #fff;
+  background: ${(p) => (p.$active ? "#ffffff" : "#ffffff3a")};
   border: none;
-  color: #212121;
+  color: ${(p) => (p.$active ? "#212121" : "#ffffff")};
   font-size: 1rem;
   font-weight: 700;
   border-radius: 5rem;
-  opacity: ${(p) => (p.$active ? 1 : 0.5)};
   width: ${(p) => (p.$fillRow ? "100%" : "auto")};
 
   &:hover {
-    background: rgba(255, 255, 255, 0.9);
+    background: ${(p) => (p.$active ? "#ffffff" : "#ffffff8c")};
   }
 `;
 
-export const ActionButton = styled.button<{
+export const ActionButton = styled(motion.button)<{
   $variant?: "destructive" | "default";
 }>`
   display: flex;

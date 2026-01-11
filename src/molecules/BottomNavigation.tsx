@@ -12,6 +12,7 @@ import { MenuButton } from "@/layout/atoms";
 import { BobPhone } from "./BobPhone";
 import { playUISound } from "@/utils/soundSystem";
 import { SCENE_REVEAL_DURATION } from "./SceneWithLoader";
+import { OrbitFormControls } from "./orbitFormControls";
 
 export function BottomNavigation() {
   const { currentView, resetToDefaultView, isPhoneView, transitionToView } =
@@ -27,10 +28,10 @@ export function BottomNavigation() {
   useKeyPress("Escape", () => {
     resetToDefaultView();
     playUISound("ui-tap-close");
-    console.info("resetToDefaultView(); in BOTTOMNAVIGATION.tsx");
   });
 
   const isHomeRoute = currentRoute === ROUTE_PATHS.HOME;
+  const isPortfolioRoute = currentRoute === ROUTE_PATHS.PORTFOLIO;
 
   const handleMenuButtonClick = () => {
     if (showOptions) {
@@ -42,6 +43,8 @@ export function BottomNavigation() {
   };
 
   const showTapUpgrades = !showOptions && isHomeRoute && !isPhoneView();
+  const showOrbitFormControls =
+    !showOptions && isPortfolioRoute && !isPhoneView();
 
   return (
     <HugColumn
@@ -57,6 +60,7 @@ export function BottomNavigation() {
       transition={{ delay: SCENE_REVEAL_DURATION }}
     >
       <TapUpgrades show={showTapUpgrades} />
+      <OrbitFormControls show={showOrbitFormControls} />
       <HugRow $gap={"8px"} layout>
         <AnimatePresence mode="popLayout">
           {/* {!isHomeRoute && <ProgressTracker />} */}

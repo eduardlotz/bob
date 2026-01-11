@@ -1,5 +1,6 @@
 import { FileOrbit } from "@/components/FileOrbit";
-import { ROUTE_PATHS, useAppStore, useCoreStore, useViewStore } from "@/store";
+import { useSoundSystem } from "@/hooks/useSoundSystem";
+import { ROUTE_PATHS, useCoreStore, useViewStore } from "@/store";
 import { playWorldSound, stopSoundsById } from "@/utils/soundSystem";
 import { Stars } from "@react-three/drei";
 import { useEffect } from "react";
@@ -7,14 +8,10 @@ import { useNavigate } from "react-router-dom";
 
 export function PortfolioScene() {
   const { checkUnlockedRoutes } = useCoreStore();
-  const { currentRoute } = useAppStore();
-  const {
-    transitionToView,
-    resetToDefaultView,
-    setDefaultViewMode,
-    currentView,
-  } = useViewStore();
+  const { transitionToView, resetToDefaultView, setDefaultViewMode } =
+    useViewStore();
   const navigate = useNavigate();
+  const { isMuted } = useSoundSystem();
 
   const isAllowedToAcces = checkUnlockedRoutes(ROUTE_PATHS.PORTFOLIO);
 
@@ -29,7 +26,7 @@ export function PortfolioScene() {
     setDefaultViewMode("object");
     resetToDefaultView();
     transitionToView("portfolio");
-    playWorldSound("pink-noise");
+    if (!isMuted) playWorldSound("pink-noise");
 
     return () => stopSoundsById("pink-noise");
   }, []);
