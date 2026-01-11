@@ -166,4 +166,6 @@ const FloatingBarLabel = styled(motion.p)`
   font-size: 1rem;
   font-weight: 600;
   color: "#fff";
+  text-align: center;
+  white-space: nowrap;
 `;
