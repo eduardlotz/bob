@@ -477,7 +477,7 @@ export const initialGameState: GameState = {
     worldSoundIds: [],
     tapEffectAudioId: undefined,
   },
-  selectedOrbitForm: "SPHERICAL_SHELL",
+  selectedOrbitForm: "FIBONACCI_SPHERE",
 };
 
 const initialGameFlags: GameFlags = {

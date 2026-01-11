@@ -94,8 +94,8 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   portfolio: {
     id: "portfolio",
     name: "Portfolio Orbit View",
-    position: [0, CAMERA_HEIGHT, HIDDEN_OPTIONS_CAMERA_ZOOM],
-    target: [0, CAMERA_Y_POSITION, 0],
+    position: [5, CAMERA_HEIGHT - 0.5, 50],
+    target: [0, CAMERA_Y_POSITION - 0.5, 0],
     transition: {
       duration: 1000,
       easing: "easeInOutCubic",
@@ -198,6 +198,7 @@ interface ViewStore {
   focusOnTarget: (target: FocusTarget) => Promise<void>;
   isImageFocused: boolean;
   focusedImageTitle: string | null;
+  lastFocusPosition: Vector3 | null;
 
   focusOnImage: (title: string) => void;
   clearImageFocus: () => void;
@@ -213,6 +214,7 @@ export const useViewStore = create<ViewStore>()(
       previousViewMode: "fixed",
       isTransitioning: false,
       cameraControlsRef: null,
+      lastFocusPosition: null,
 
       applyViewModeToControls: (mode: ViewMode) => {
         const controls = get().cameraControlsRef?.current;
@@ -220,13 +222,18 @@ export const useViewStore = create<ViewStore>()(
 
         // TODO: apply all view mode rules here like cursor or camera controls
         if (mode === "object") {
+          const cameraPos = new Vector3();
+          controls.getPosition(cameraPos); // current camera world position
+          set({ lastFocusPosition: cameraPos.clone() }); // store for later restore
+
           const target = new Vector3();
           // freeze current orbit center as look-at point
           controls.getTarget(target);
           controls.setTarget(target.x, target.y, target.z, true);
-          if (get().focusedImageTitle)
-            controls.mouseButtons.left = CameraControlsImpl.ACTION.TRUCK;
-          else controls.mouseButtons.left = CameraControlsImpl.ACTION.ROTATE;
+
+          controls.mouseButtons.left = get().focusedImageTitle
+            ? CameraControlsImpl.ACTION.TRUCK
+            : CameraControlsImpl.ACTION.ROTATE;
         } else {
           // restore default target
           controls.saveState();
@@ -270,6 +277,7 @@ export const useViewStore = create<ViewStore>()(
           // defaultViewMode: viewConfig.defaultViewMode ?? state.defaultViewMode,
           isImageFocused: false,
           focusedImageTitle: null,
+          lastFocusPosition: null,
         }));
 
         get().applyViewModeToControls(
@@ -301,12 +309,18 @@ export const useViewStore = create<ViewStore>()(
       },
 
       resetToDefaultView: async () => {
-        const { isTransitioning, currentView, cameraControlsRef } = get();
+        const {
+          isTransitioning,
+          currentView,
+          cameraControlsRef,
+          lastFocusPosition,
+        } = get();
 
         if (isTransitioning || !cameraControlsRef?.current) {
           return;
         }
 
+        useCoreStore.getState().resetPreview();
         const appStore = useAppStore.getState();
         const currentRoute = appStore.currentRoute;
 
@@ -316,8 +330,6 @@ export const useViewStore = create<ViewStore>()(
           currentRoute === ROUTE_PATHS.PORTFOLIO ? "portfolio" : "default";
 
         const viewConfig = CAMERA_VIEWS[targetView];
-
-        useCoreStore.getState().resetPreview();
 
         set({
           currentView: targetView,
@@ -349,7 +361,24 @@ export const useViewStore = create<ViewStore>()(
             return;
           }
 
-          if (viewConfig.position && viewConfig.target) {
+          if (
+            currentRoute === ROUTE_PATHS.PORTFOLIO &&
+            lastFocusPosition &&
+            viewConfig.target &&
+            !get().isNavigationView()
+          ) {
+            const target = new Vector3(0, 0, 0);
+            controls.getTarget(target); // keep current target, or optionally restore previous target if you store it
+
+            controls.setLookAt(
+              lastFocusPosition.x,
+              lastFocusPosition.y,
+              lastFocusPosition.z,
+              ...viewConfig.target,
+              true
+            );
+            setTimeout(() => set({ isTransitioning: false }), 0);
+          } else if (viewConfig.position && viewConfig.target) {
             controls.setLookAt(
               ...viewConfig.position,
               ...viewConfig.target,
@@ -450,10 +479,29 @@ export const useViewStore = create<ViewStore>()(
         }),
 
       clearImageFocus: () => {
-        const { isTransitioning, cameraControlsRef } = get();
-        if (isTransitioning || !cameraControlsRef?.current) return;
+        const { isTransitioning, cameraControlsRef, lastFocusPosition } = get();
+        if (
+          isTransitioning ||
+          !cameraControlsRef?.current ||
+          !lastFocusPosition
+        )
+          return;
 
-        const controls = cameraControlsRef?.current;
+        const controls = cameraControlsRef.current;
+
+        // move camera back to stored lastFocusPosition
+        const target = new Vector3();
+        controls.getTarget(target); // keep current target, or optionally restore previous target if you store it
+
+        controls.setLookAt(
+          lastFocusPosition.x,
+          lastFocusPosition.y,
+          lastFocusPosition.z,
+          target.x,
+          target.y,
+          target.z,
+          true
+        );
 
         set({
           isImageFocused: false,

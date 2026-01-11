@@ -144,7 +144,7 @@ interface MediaItemProps {
 
 const useMediaScale = (width: number, height: number): [number, number] => {
   return useMemo(() => {
-    const max = 4;
+    const max = 8;
     const factor = max / Math.max(width, height);
     return [width * factor, height * factor];
   }, [width, height]);
@@ -228,7 +228,7 @@ function MediaItem({ item, position }: MediaItemProps) {
   const handleClick = () => {
     // disable focus reset for already active images
     if (focusedImageTitle !== title) {
-      focusOnTarget({ position, distance: 4 });
+      focusOnTarget({ position, distance: 8 });
       focusOnImage(title);
     }
   };
@@ -254,21 +254,21 @@ function MediaItem({ item, position }: MediaItemProps) {
       }}
       onPointerUp={() => setPointerDown(false)}
     >
-      <Float floatIntensity={10} speed={0.5}>
-        {isVideo ? (
-          <VideoPlane url={url} scale={[1, 1]} onClick={handleClick} />
-        ) : (
-          <ImagePlane url={url} onClick={handleClick} />
-        )}
-      </Float>
+      {/* <Float floatIntensity={10} speed={0.5}> */}
+      {isVideo ? (
+        <VideoPlane url={url} scale={[1, 1]} onClick={handleClick} />
+      ) : (
+        <ImagePlane url={url} onClick={handleClick} />
+      )}
+      {/* </Float> */}
     </Billboard>
   );
 }
 
 export type OrbitForm =
   | "EQUATORIAL_RING"
-  | "LATITUDE_BANDS"
-  | "SPHERICAL_SHELL"
+  | "LOGARITHMIC_SPIRAL"
+  | "FIBONACCI_SPHERE"
   | "GALAXY_WAVES";
 
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
@@ -285,40 +285,48 @@ export function getSphericalAngles({
   radius: number;
 }): { r: number; phi: number; theta: number } {
   switch (form) {
-    // 1. Flat horizontal orbit
-    case "EQUATORIAL_RING": {
-      return {
-        r: radius,
-        phi: Math.PI / 2,
-        theta: index * GOLDEN_ANGLE,
-      };
-    }
-
-    // 2. Horizontal stacked bands
-    case "LATITUDE_BANDS": {
-      const bands = Math.ceil(Math.sqrt(count));
-      const bandIndex = index % bands;
-      const bandOffset = Math.floor(index / bands);
-
-      const phiMin = Math.PI * 0.35;
-      const phiMax = Math.PI * 0.65;
-
-      return {
-        r: radius,
-        phi: phiMin + (bandIndex / Math.max(1, bands - 1)) * (phiMax - phiMin),
-        theta: bandOffset * GOLDEN_ANGLE,
-      };
-    }
-
-    // 3. True spherical distribution (Fibonacci sphere)
-    case "SPHERICAL_SHELL": {
+    // evenly distributed sphere, little squashed
+    case "FIBONACCI_SPHERE": {
       const t = (index + 0.5) / count;
+      const y = 1 - 2 * t;
+
+      const power = 1;
+      const squash = Math.sign(y) * Math.pow(Math.abs(y), power);
+
+      const phi = Math.acos(squash);
 
       return {
         r: radius,
-        phi: Math.acos(1 - 2 * t),
+        phi: phi,
         theta: index * GOLDEN_ANGLE,
       };
+    }
+
+    // ring around camera
+    case "EQUATORIAL_RING": {
+      const tweak = 0;
+
+      return {
+        r: radius,
+        phi: Math.PI / 2 + tweak * Math.log(index + 1),
+        theta: index * GOLDEN_ANGLE,
+      };
+    }
+
+    // vertical spiral
+    case "LOGARITHMIC_SPIRAL": {
+      const t = index / (count - 1);
+
+      const turns = 1;
+      const height = radius * 5;
+
+      const theta = 2 * Math.PI * turns * t;
+
+      const x = radius * Math.cos(theta);
+      const z = (radius * Math.sin(theta) * Math.PI) / 2;
+      const y = height * (t - 0.5);
+
+      return { r: x, phi: y, theta: z };
     }
 
     // 4. Galaxy Like Waves
@@ -353,9 +361,12 @@ export function FileOrbit({ radius = 40 }: { radius?: number }) {
         radius,
       });
 
-      pts.push(
-        new THREE.Vector3().setFromSpherical(spherical.set(r, phi, theta))
-      );
+      if (orbitForm === "GALAXY_WAVES" || orbitForm === "LOGARITHMIC_SPIRAL")
+        pts.push(new THREE.Vector3(r, phi, theta));
+      else
+        pts.push(
+          new THREE.Vector3().setFromSpherical(spherical.set(r, phi, theta))
+        );
     }
 
     return pts;
