@@ -1,13 +1,20 @@
 import * as THREE from "three";
-import { useMemo, useEffect, useRef, useState } from "react";
-import { Billboard, Float } from "@react-three/drei";
+import { useMemo, Suspense } from "react";
+import {
+  Billboard,
+  Float,
+  Image,
+  useTexture,
+  useVideoTexture,
+} from "@react-three/drei";
 import { useFloatingBar } from "@/layout/FloatingBar";
 import { useCursorStore } from "@/store/core/cursor";
-import { useAppStore, useCoreStore, useViewStore } from "@/store";
+import { useViewStore } from "@/store";
 import { playUISound } from "@/utils/soundSystem";
 import { SoundConfig } from "@/utils/sound/types";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
-import { useFrame, useThree } from "@react-three/fiber";
+import { extend } from "@react-three/fiber";
+import { geometry } from "maath";
 
 interface PortfolioItem {
   url: string;
@@ -33,7 +40,7 @@ const ITEMS: PortfolioItem[] = [
   },
   {
     url: "/images/portfolio/bubbles-cover.jpeg",
-    title: "Bubbles",
+    title: "bubbles",
   },
   {
     url: "/images/portfolio/du-fehlst-cover.jpeg",
@@ -137,160 +144,70 @@ interface MediaItemProps {
 
 const useMediaScale = (width: number, height: number): [number, number] => {
   return useMemo(() => {
-    const max = 8;
+    const max = 4;
     const factor = max / Math.max(width, height);
     return [width * factor, height * factor];
   }, [width, height]);
 };
 
-function VideoPlaneWithDisposal({
+extend({ RoundedPlaneGeometry: geometry.RoundedPlaneGeometry });
+
+function VideoPlane({
   url,
+  scale,
   onClick,
-  currentlyActive,
-  shouldLoad,
 }: {
   url: string;
+  scale: [number, number];
   onClick: () => void;
-  currentlyActive: boolean;
-  shouldLoad: boolean;
 }) {
-  const [texture, setTexture] = useState<THREE.VideoTexture | null>(null);
-  const [scale, setScale] = useState<[number, number]>([1, 1]);
-  const textureRef = useRef<THREE.VideoTexture | null>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const texture = useVideoTexture(url, {
+    start: true,
+    muted: true,
+    loop: true,
+    playsInline: true,
+  });
 
-  useEffect(() => {
-    if (!shouldLoad) {
-      // Dispose texture and video when out of range
-      if (videoRef.current) {
-        videoRef.current.pause();
-        videoRef.current.src = "";
-        videoRef.current.load();
-        videoRef.current = null;
-      }
-      if (textureRef.current) {
-        textureRef.current.dispose();
-        textureRef.current = null;
-        setTexture(null);
-      }
-      return;
-    }
-
-    // Load video texture when in range
-    const video = document.createElement("video");
-    video.src = url;
-    video.muted = true;
-    video.loop = true;
-    video.playsInline = true;
-    video.crossOrigin = "anonymous";
-
-    video.addEventListener("loadedmetadata", () => {
-      const { videoWidth, videoHeight } = video;
-      const max = 8;
-      const factor = max / Math.max(videoWidth, videoHeight);
-      setScale([videoWidth * factor, videoHeight * factor]);
-    });
-
-    const videoTexture = new THREE.VideoTexture(video);
-    videoTexture.minFilter = THREE.LinearFilter;
-    videoTexture.magFilter = THREE.LinearFilter;
-
-    videoRef.current = video;
-    textureRef.current = videoTexture;
-    setTexture(videoTexture);
-
-    if (currentlyActive) {
-      video.play();
-    }
-
-    return () => {
-      if (videoRef.current) {
-        videoRef.current.pause();
-        videoRef.current.src = "";
-        videoRef.current.load();
-      }
-      if (textureRef.current) {
-        textureRef.current.dispose();
-      }
-    };
-  }, [url, shouldLoad]);
-
-  useEffect(() => {
-    if (!videoRef.current) return;
-    if (!currentlyActive) {
-      videoRef.current.pause();
-    } else {
-      videoRef.current.play();
-    }
-  }, [currentlyActive]);
-
-  if (!texture) return null;
+  const { videoWidth, videoHeight } = texture.image;
+  const calculatedScale = useMediaScale(videoWidth, videoHeight);
 
   return (
-    <mesh scale={[scale[0], scale[1], 1]} onClick={onClick}>
-      <planeGeometry />
-      <meshBasicMaterial map={texture} toneMapped={false} transparent />
+    <mesh scale={[calculatedScale[0], calculatedScale[1], 1]} onClick={onClick}>
+      <roundedPlaneGeometry args={[1, 1, 0.05, 6]} />
+      {/* <planeGeometry /> */}
+      <Suspense fallback={null}>
+        <meshBasicMaterial map={texture} toneMapped={false} />
+      </Suspense>
     </mesh>
   );
 }
 
-function ImagePlaneWithDisposal({
+function ImagePlane({
   url,
+  scale,
   onClick,
-  shouldLoad,
 }: {
   url: string;
+  scale?: [number, number];
   onClick: () => void;
-  shouldLoad: boolean;
 }) {
-  const [texture, setTexture] = useState<THREE.Texture | null>(null);
-  const [scale, setScale] = useState<[number, number]>([1, 1]);
-  const textureRef = useRef<THREE.Texture | null>(null);
+  const texture = useTexture(url);
 
-  useEffect(() => {
-    if (!shouldLoad) {
-      // Dispose texture when out of range
-      if (textureRef.current) {
-        textureRef.current.dispose();
-        textureRef.current = null;
-        setTexture(null);
-      }
-      return;
-    }
-
-    // Load texture when in range
-    const loader = new THREE.TextureLoader();
-    loader.load(url, (loadedTexture) => {
-      textureRef.current = loadedTexture;
-      setTexture(loadedTexture);
-
-      // Calculate scale inside the callback, not using hook
-      const { width, height } = loadedTexture.image;
-      const max = 8;
-      const factor = max / Math.max(width, height);
-      setScale([width * factor, height * factor]);
-    });
-
-    return () => {
-      if (textureRef.current) {
-        textureRef.current.dispose();
-        textureRef.current = null;
-      }
-    };
-  }, [url, shouldLoad]);
-
-  if (!texture) return null;
+  const { width, height } = texture.image;
+  const calculatedScale = useMediaScale(width, height);
 
   return (
-    <mesh scale={[scale[0], scale[1], 1]} onClick={onClick}>
-      <planeGeometry />
-      <meshBasicMaterial map={texture} transparent />
-    </mesh>
+    <Suspense fallback={null}>
+      <Image
+        texture={texture}
+        transparent
+        scale={calculatedScale}
+        onClick={onClick}
+        radius={0.15}
+      />
+    </Suspense>
   );
 }
-
-const LOW_RENDER_DISTANCE = 90;
-const HIGH_RENDER_DISTANCE = 1000;
 
 function MediaItem({ item, position }: MediaItemProps) {
   const { url, title, type } = item;
@@ -298,16 +215,6 @@ function MediaItem({ item, position }: MediaItemProps) {
   const { setHoveredObject } = useFloatingBar();
   const { focusOnTarget, focusOnImage, focusedImageTitle } = useViewStore();
   const { triggerQuest } = useQuestSystem();
-  const { graphicPreferences } = useCoreStore();
-  const { isMobile } = useAppStore();
-
-  const graphicMode = graphicPreferences.qualityMode;
-  const RENDER_DISTANCE =
-    isMobile || graphicMode === "low"
-      ? LOW_RENDER_DISTANCE
-      : HIGH_RENDER_DISTANCE;
-
-  const [shouldLoad, setShouldLoad] = useState(false);
 
   const currentlyActive = focusedImageTitle === title;
   const setHovering = useCursorStore.getState().setHoveringClickable;
@@ -317,171 +224,138 @@ function MediaItem({ item, position }: MediaItemProps) {
     type === "video" || url.endsWith(".mp4") || url.endsWith(".webm");
 
   const handleClick = () => {
+    // disable focus reset for already active images
     if (focusedImageTitle !== title) {
-      focusOnTarget({ position, distance: 8 });
+      focusOnTarget({ position, distance: 4 });
       focusOnImage(title);
     }
   };
 
-  if (isVideo && isMobile) return null;
-
-  const groupRef = useRef<THREE.Group>(null!);
-
-  useFrame(({ camera }) => {
-    const obj = groupRef.current;
-    if (!obj) return;
-
-    const d = camera.position.distanceTo(obj.position);
-    const inRange = d < RENDER_DISTANCE;
-
-    // Update shouldLoad based on distance
-    if (inRange !== shouldLoad) {
-      setShouldLoad(inRange);
-    }
-
-    obj.visible = shouldLoad;
-    obj.matrixAutoUpdate = inRange;
-  });
-
   return (
-    <group ref={groupRef} position={position}>
-      <Billboard
-        onPointerEnter={() => {
-          setHoveredObject({ title });
-          if (!currentlyActive) setHovering(true);
-        }}
-        onPointerLeave={() => {
-          setHoveredObject(null);
-          setHovering(false);
-          setPointerDown(false);
-        }}
-        onPointerDown={() => {
-          setPointerDown(true);
-          if (!currentlyActive) {
-            triggerQuest("click_portfolio_item");
-            playUISound();
-          }
-        }}
-        onPointerUp={() => setPointerDown(false)}
-      >
-        <Float floatIntensity={10} speed={0.5}>
-          {isVideo ? (
-            <VideoPlaneWithDisposal
-              url={url}
-              onClick={handleClick}
-              currentlyActive={currentlyActive}
-              shouldLoad={shouldLoad}
-            />
-          ) : (
-            <ImagePlaneWithDisposal
-              url={url}
-              onClick={handleClick}
-              shouldLoad={shouldLoad}
-            />
-          )}
-        </Float>
-      </Billboard>
-    </group>
+    <Billboard
+      position={position}
+      onPointerEnter={() => {
+        setHoveredObject({ title });
+        if (!currentlyActive) setHovering(true);
+      }}
+      onPointerLeave={() => {
+        setHoveredObject(null);
+        setHovering(false);
+        setPointerDown(false);
+      }}
+      onPointerDown={() => {
+        setPointerDown(true);
+        if (!currentlyActive) {
+          triggerQuest("click_creative_image");
+          playUISound();
+        }
+      }}
+      onPointerUp={() => setPointerDown(false)}
+    >
+      <Float floatIntensity={10} speed={0.5}>
+        {isVideo ? (
+          <VideoPlane url={url} scale={[1, 1]} onClick={handleClick} />
+        ) : (
+          <ImagePlane url={url} onClick={handleClick} />
+        )}
+      </Float>
+    </Billboard>
   );
 }
 
-// divide orbit into spatial chunks
-function getChunkKey(position: THREE.Vector3, chunkSize = 100) {
-  return `${Math.floor(position.x / chunkSize)}_${Math.floor(
-    position.y / chunkSize
-  )}_${Math.floor(position.z / chunkSize)}`;
+export type OrbitForm =
+  | "EQUATORIAL_RING"
+  | "LATITUDE_BANDS"
+  | "SPHERICAL_SHELL"
+  | "MERIDIAN_ARC";
+
+const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
+
+export function getSphericalAngles({
+  index,
+  count,
+  form,
+}: {
+  index: number;
+  count: number;
+  form: OrbitForm;
+}): { phi: number; theta: number } {
+  switch (form) {
+    // 1. Flat horizontal orbit
+    case "EQUATORIAL_RING": {
+      return {
+        phi: Math.PI / 2,
+        theta: index * GOLDEN_ANGLE,
+      };
+    }
+
+    // 2. Horizontal stacked bands
+    case "LATITUDE_BANDS": {
+      const bands = Math.ceil(Math.sqrt(count));
+      const bandIndex = index % bands;
+      const bandOffset = Math.floor(index / bands);
+
+      const phiMin = Math.PI * 0.35;
+      const phiMax = Math.PI * 0.65;
+
+      return {
+        phi: phiMin + (bandIndex / Math.max(1, bands - 1)) * (phiMax - phiMin),
+        theta: bandOffset * GOLDEN_ANGLE,
+      };
+    }
+
+    // 3. True spherical distribution (Fibonacci sphere)
+    case "SPHERICAL_SHELL": {
+      const t = (index + 0.5) / count;
+
+      return {
+        phi: Math.acos(1 - 2 * t),
+        theta: index * GOLDEN_ANGLE,
+      };
+    }
+
+    // 4. Vertical meridian arc
+    case "MERIDIAN_ARC": {
+      const phiMin = Math.PI * 0.15;
+      const phiMax = Math.PI * 0.85;
+
+      return {
+        phi: phiMin + (index / Math.max(1, count - 1)) * (phiMax - phiMin),
+        theta: Math.PI / 2,
+      };
+    }
+  }
 }
 
-// group items by chunk
-function chunkItems(items: PortfolioItem[], positions: THREE.Vector3[]) {
-  const chunks = new Map<
-    string,
-    Array<{ item: PortfolioItem; position: THREE.Vector3 }>
-  >();
+export function FileOrbit({ spread = 40 }: { spread?: number }) {
+  const spherical = new THREE.Spherical();
+  const n = ITEMS.length;
 
-  items.forEach((item, i) => {
-    const key = getChunkKey(positions[i]);
-    if (!chunks.has(key)) chunks.set(key, []);
-    chunks.get(key)!.push({ item, position: positions[i] });
-  });
-
-  return chunks;
-}
-
-export function FileOrbit({ spread = 20 }: { spread?: number }) {
-  const { camera } = useThree();
-  const { isMobile } = useAppStore();
-  const [visibleChunks, setVisibleChunks] = useState<Set<string>>(new Set());
-
-  const chunks = useMemo(() => {
+  const points = useMemo(() => {
     const pts: THREE.Vector3[] = [];
-    const n = ITEMS.length;
 
-    const goldenAngle = Math.PI * (3 - Math.sqrt(5));
-
-    for (let i = 0; i < n; i++) {
-      const currentRadius = Math.sqrt(i + 1) * spread;
-      const y = (1 - (i / (n - 1)) * 2) * (currentRadius * 0.5);
-      const r = Math.sqrt(Math.max(0, currentRadius * currentRadius - y * y));
-      const theta = goldenAngle * i;
+    for (let i = 1; i < n + 1; i++) {
+      const { phi, theta } = getSphericalAngles({
+        index: i,
+        count: n,
+        form: "EQUATORIAL_RING",
+      });
 
       pts.push(
-        new THREE.Vector3(
-          Math.cos(theta) * r,
-          Math.sin(theta) * y,
-          Math.sin(theta) * r
-        )
+        new THREE.Vector3().setFromSpherical(spherical.set(spread, phi, theta))
       );
     }
 
-    return chunkItems(ITEMS, pts);
+    return pts;
   }, [spread]);
 
-  useFrame(() => {
-    const newVisible = new Set<string>();
-    const chunkSize = isMobile ? 50 : 200;
-
-    // which chunks to load based on camera position
-    const camPos = camera.position;
-
-    // load 3x3x3 grid of chunks around camera
-    for (let x = -1; x <= 1; x++) {
-      for (let y = -1; y <= 1; y++) {
-        for (let z = -1; z <= 1; z++) {
-          const offsetPos = new THREE.Vector3(
-            camPos.x + x * chunkSize,
-            camPos.y + y * chunkSize,
-            camPos.z + z * chunkSize
-          );
-          newVisible.add(getChunkKey(offsetPos, chunkSize));
-        }
-      }
-    }
-
-    setVisibleChunks(newVisible);
-  });
-
   return (
-    <group>
-      {Array.from(chunks.entries()).map(([chunkKey, items]) =>
-        visibleChunks.has(chunkKey) ? (
-          <ChunkGroup key={chunkKey} items={items} />
-        ) : null
-      )}
-    </group>
-  );
-}
-
-function ChunkGroup({
-  items,
-}: {
-  items: Array<{ item: PortfolioItem; position: THREE.Vector3 }>;
-}) {
-  return (
-    <group>
-      {items.map(({ item, position }) => (
-        <MediaItem key={item.url} item={item} position={position} />
-      ))}
-    </group>
+    <Suspense fallback={null}>
+      <group>
+        {points.map((pos, i) => (
+          <MediaItem key={ITEMS[i].url} position={pos} item={ITEMS[i]} />
+        ))}
+      </group>
+    </Suspense>
   );
 }
