@@ -3,7 +3,7 @@ import { Logo, MotionIconWrapper } from "@/layout/atoms";
 import { MotionVariants } from "@/styles/motion";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useRef } from "react";
 import { useProgress } from "@react-three/drei";
 import Scene from "@/molecules/Scene";
 import { UILayer } from "@/components/UILayer";
@@ -29,16 +29,20 @@ export const CustomLoader = ({
   const [percentage, setPercentage] = useState(0);
   const [finished, setFinished] = useState(false);
   const [exit, setExit] = useState(false);
-  const { isReady, setGameReady, setSoundEnabled } = useCoreStore();
+  const { setGameReady, setSoundEnabled } = useCoreStore();
   const { toggle, isMuted, isEnabled } = useSoundSystem();
 
-  useEffect(() => {
-    setPercentage((prev) => Math.max(prev, progress));
+  // Track if this is monitoring initial scene load only
+  const initialLoadCompleteRef = useRef(false);
 
-    if (!active && progress === 100) {
-      setFinished(true);
-      if (!isInitialLoad) {
-        handleEnter();
+  useEffect(() => {
+    // Only update progress during initial load
+    if (isInitialLoad && !initialLoadCompleteRef.current) {
+      setPercentage((prev) => Math.max(prev, progress));
+
+      if (!active && progress === 100) {
+        setFinished(true);
+        initialLoadCompleteRef.current = true;
       }
     }
   }, [active, progress, isInitialLoad]);
@@ -50,9 +54,6 @@ export const CustomLoader = ({
     const timer = setTimeout(() => setGameReady(true), SCENE_REVEAL_DURATION);
     return () => clearTimeout(timer);
   };
-
-  // const currentHour = format(new Date(), "HH");
-  // const currentMinutes = format(new Date(), "mm");
 
   const handleAudioButtonClick = () => {
     toggle();
@@ -82,49 +83,46 @@ export const CustomLoader = ({
             $gap={"2rem"}
             style={{ width: "400px" }}
           >
-            <AnimatePresence mode="popLayout">
-              {!isReady && (
-                <HugColumn
-                  $align="center"
-                  $justify="center"
-                  key="loading-screen-infos"
-                  initial={{ scale: 0.9, opacity: 0 }}
+            <HugColumn
+              $align="center"
+              $justify="center"
+              key="loading-screen-infos"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              $gap={"2rem"}
+            >
+              <MotionIconWrapper
+                variants={MotionVariants.Pulse}
+                animate={!finished ? "animate" : "initial"}
+                initial="initial"
+                layoutId="page-logo"
+                layout="position"
+              >
+                <Logo />
+              </MotionIconWrapper>
+
+              <StatusPillButton
+                $active={!isMuted}
+                onClick={handleAudioButtonClick}
+                layout="position"
+              >
+                <motion.div
+                  key={!isMuted ? "on" : "off"}
+                  initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0, opacity: 0 }}
-                  $gap={"2rem"}
+                  transition={{
+                    duration: 0.2,
+                    type: "spring",
+                    bounce: 0.7,
+                  }}
                 >
-                  <MotionIconWrapper
-                    variants={MotionVariants.Pulse}
-                    animate={!finished ? "animate" : "initial"}
-                    initial="initial"
-                    layoutId="page-logo"
-                    layout="position"
-                  >
-                    <Logo />
-                  </MotionIconWrapper>
+                  <SpeakerIcon muted={isMuted} />
+                </motion.div>
+              </StatusPillButton>
+            </HugColumn>
 
-                  <StatusPillButton
-                    $active={!isMuted}
-                    onClick={handleAudioButtonClick}
-                    layout="position"
-                  >
-                    <motion.div
-                      key={!isMuted ? "on" : "off"}
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0, opacity: 0 }}
-                      transition={{
-                        duration: 0.2,
-                        type: "spring",
-                        bounce: 0.7,
-                      }}
-                    >
-                      <SpeakerIcon muted={isMuted} />
-                    </motion.div>
-                  </StatusPillButton>
-                </HugColumn>
-              )}
-            </AnimatePresence>
             <AnimatePresence mode="popLayout" initial={false}>
               <ProgressContainer>
                 {!finished ? (
@@ -170,19 +168,13 @@ export const SceneWithLoader = ({
   onEmotionUpdate?: (data: { emotionState: any }) => void;
   onLoaded?: () => void;
 }) => {
-  const [sceneReady, setSceneReady] = useState(false);
-  const [mountLoader, setMountLoader] = useState(true);
   const { isMobile, emotionData, setPermissionGranted } = useAppStore();
   const { isReady, setGameReady } = useCoreStore();
-  const { active } = useProgress();
   const [hasEntered, setHasEntered] = useState(false);
+  const [mountLoader, setMountLoader] = useState(true);
 
-  const showLoader = !hasEntered || active;
-
-  // check if perf is worse because of this
-  useEffect(() => {
-    setGameReady(!showLoader);
-  }, [showLoader]);
+  // Only show loader on first load - ignore runtime texture loading
+  const showLoader = !hasEntered;
 
   const handleEnter = async () => {
     try {
@@ -192,8 +184,6 @@ export const SceneWithLoader = ({
     }
 
     setGameReady(true);
-
-    setSceneReady(true);
     setHasEntered(true);
     onLoaded?.();
   };
@@ -204,7 +194,7 @@ export const SceneWithLoader = ({
 
   return (
     <>
-      {showLoader && (
+      {showLoader && mountLoader && (
         <CustomLoader
           onEnter={handleEnter}
           onFadeOutComplete={handleLoaderExit}
@@ -240,7 +230,6 @@ const StartButton = styled(motion.button)`
   width: fit-content;
   align-items: center;
   justify-content: center;
-  /* max-height: 2.25rem; */
 
   padding: 1rem 1.75rem;
   border-radius: 50px;
@@ -261,7 +250,7 @@ const LoadingWrapper = styled(motion.div)`
   top: 0;
   left: 0;
   right: 0;
-  z-index: 99998; //cursor - 1
+  z-index: 99998;
 
   width: 100dvw;
   height: 100dvh;
@@ -299,10 +288,4 @@ const ProgressFill = styled(motion.div)`
   border-radius: 2px;
   transition: width 0.3s ease;
   overflow: hidden;
-`;
-
-const ProgressText = styled.div`
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 500;
 `;

@@ -1,19 +1,13 @@
 import * as THREE from "three";
-import { useMemo, Suspense } from "react";
-import {
-  Billboard,
-  Float,
-  Image,
-  useTexture,
-  useVideoTexture,
-} from "@react-three/drei";
+import { useMemo, useRef, useEffect } from "react";
+import { Billboard } from "@react-three/drei";
 import { useFloatingBar } from "@/layout/FloatingBar";
 import { useCursorStore } from "@/store/core/cursor";
-import { useCoreStore, useViewStore } from "@/store";
+import { useAppStore, useCoreStore, useViewStore } from "@/store";
 import { playUISound } from "@/utils/soundSystem";
 import { SoundConfig } from "@/utils/sound/types";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
-import { extend } from "@react-three/fiber";
+import { extend, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { geometry } from "maath";
 
 interface PortfolioItem {
@@ -25,35 +19,20 @@ interface PortfolioItem {
 }
 
 const ITEMS: PortfolioItem[] = [
-  {
-    url: "/images/portfolio/face_study.jpeg",
-    title: "3D Gesicht Studie 1/2",
-  },
-  {
-    url: "/images/portfolio/gradient_gem.jpeg",
-    title: "3D Licht Studie",
-  },
+  { url: "/images/portfolio/face_study.jpeg", title: "3D Gesicht Studie 1/2" },
+  { url: "/images/portfolio/gradient_gem.jpeg", title: "3D Licht Studie" },
   {
     url: "/videos/portfolio/face-emotions-study.mp4",
     title: "3D Gesicht Studie 2/2",
     type: "video",
   },
-  {
-    url: "/images/portfolio/bubbles-cover.jpeg",
-    title: "bubbles",
-  },
-  {
-    url: "/images/portfolio/du-fehlst-cover.jpeg",
-    title: "du fehlst",
-  },
+  { url: "/images/portfolio/bubbles-cover.jpeg", title: "bubbles" },
+  { url: "/images/portfolio/du-fehlst-cover.jpeg", title: "du fehlst" },
   {
     url: "/images/portfolio/hassliebe-slowie-cover.jpeg",
     title: "hassliebe (slowie version)",
   },
-  {
-    url: "/images/portfolio/hsd-dingeundinge.jpeg",
-    title: "Dinge/Undinge",
-  },
+  { url: "/images/portfolio/hsd-dingeundinge.jpeg", title: "Dinge/Undinge" },
   {
     url: "/images/portfolio/peaceofmind-clothing.jpeg",
     title: "Peace of Mind Prints",
@@ -63,14 +42,8 @@ const ITEMS: PortfolioItem[] = [
     title: "3D Physics Studie",
     type: "video",
   },
-  {
-    url: "/images/portfolio/soundcheck-cover.jpeg",
-    title: "Soundchecks",
-  },
-  {
-    url: "/images/portfolio/soundcloud-cover.jpeg",
-    title: "Mixes",
-  },
+  { url: "/images/portfolio/soundcheck-cover.jpeg", title: "Soundchecks" },
+  { url: "/images/portfolio/soundcloud-cover.jpeg", title: "Mixes" },
   {
     url: "/images/portfolio/hassliebe-fast-version-cover.jpeg",
     title: "hassliebe (fast version)",
@@ -80,23 +53,11 @@ const ITEMS: PortfolioItem[] = [
     title: "Peace & Roses",
     type: "video",
   },
-  {
-    url: "/images/portfolio/hassliebe_cover.jpeg",
-    title: "hassliebe",
-  },
-  {
-    url: "/images/portfolio/first_character.jpeg",
-    title: "3D Körper Studie",
-  },
+  { url: "/images/portfolio/hassliebe_cover.jpeg", title: "hassliebe" },
+  { url: "/images/portfolio/first_character.jpeg", title: "3D Körper Studie" },
   { url: "/images/portfolio/fluffy_bear.jpeg", title: "3D Haare Studie" },
-  {
-    url: "/images/portfolio/peace_of_mind_red.jpeg",
-    title: "Shirt Prints",
-  },
-  {
-    url: "/images/portfolio/noisy_wallpaper.jpeg",
-    title: "Noise & Peace",
-  },
+  { url: "/images/portfolio/peace_of_mind_red.jpeg", title: "Shirt Prints" },
+  { url: "/images/portfolio/noisy_wallpaper.jpeg", title: "Noise & Peace" },
   {
     url: "/images/portfolio/peace_of_mind_orange.jpeg",
     title: "Starve the ego",
@@ -114,10 +75,7 @@ const ITEMS: PortfolioItem[] = [
     url: "/images/portfolio/peace_of_mind_logos.jpeg",
     title: "Peace of Mind Variants",
   },
-  {
-    url: "/images/portfolio/warum_cover.jpeg",
-    title: "warum",
-  },
+  { url: "/images/portfolio/warum_cover.jpeg", title: "warum" },
   {
     url: "/images/portfolio/skateboard_stickers.jpeg",
     title: "Skateboard Stickers",
@@ -127,92 +85,233 @@ const ITEMS: PortfolioItem[] = [
     title: "3D Grease Pencil Studie",
     type: "video",
   },
-  {
-    url: "/images/portfolio/tinyplanet_skateboard.jpeg",
-    title: "Tiny Planet",
-  },
-  {
-    url: "/images/portfolio/warum_v2.jpeg",
-    title: "warum (edit)",
-  },
+  { url: "/images/portfolio/tinyplanet_skateboard.jpeg", title: "Tiny Planet" },
+  { url: "/images/portfolio/warum_v2.jpeg", title: "warum (edit)" },
 ];
 
-interface MediaItemProps {
-  item: PortfolioItem;
-  position: THREE.Vector3;
-}
-
-const useMediaScale = (width: number, height: number): [number, number] => {
-  return useMemo(() => {
-    const max = 8;
-    const factor = max / Math.max(width, height);
-    return [width * factor, height * factor];
-  }, [width, height]);
+// Configuration
+const CONFIG = {
+  cullingDistance: 75,
+  maxTextureSize: 1024,
+  videoPlayDistance: 30,
 };
 
 extend({ RoundedPlaneGeometry: geometry.RoundedPlaneGeometry });
 
+function compressTexture(texture: THREE.Texture, maxSize: number) {
+  const img = texture.image;
+  if (!img || img.width <= maxSize) return texture;
+
+  const canvas = document.createElement("canvas");
+  const scale = maxSize / Math.max(img.width, img.height);
+  canvas.width = img.width * scale;
+  canvas.height = img.height * scale;
+
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    texture.image = canvas;
+    texture.needsUpdate = true;
+  }
+
+  return texture;
+}
+
+function getMediaScale(width: number, height: number): [number, number] {
+  const max = 8;
+  const factor = max / Math.max(width, height);
+  return [width * factor, height * factor];
+}
+
 function VideoPlane({
   url,
-  scale,
+  distanceRef,
   onClick,
 }: {
   url: string;
-  scale: [number, number];
-  onClick: () => void;
+  distanceRef: React.MutableRefObject<number>;
+  onClick: (e: ThreeEvent<MouseEvent>) => void;
 }) {
-  const texture = useVideoTexture(url, {
-    start: true,
-    muted: true,
-    loop: true,
-    playsInline: true,
+  const meshRef = useRef<THREE.Mesh>(null);
+  const matRef = useRef<THREE.MeshBasicMaterial>(null);
+
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const videoTex = useRef<THREE.VideoTexture | null>(null);
+  const posterTex = useRef<THREE.Texture | null>(null);
+
+  const scaleRef = useRef<[number, number]>([8, 8]);
+  const readyRef = useRef(false);
+
+  useEffect(() => {
+    if (readyRef.current) return;
+
+    const video = document.createElement("video");
+    video.src = url;
+    video.muted = true;
+    video.loop = true;
+    video.playsInline = true;
+    video.preload = "auto";
+
+    const onCanPlay = () => {
+      const w = video.videoWidth || 16;
+      const h = video.videoHeight || 9;
+      scaleRef.current = getMediaScale(w, h);
+
+      // video texture
+      const vTex = new THREE.VideoTexture(video);
+      vTex.colorSpace = THREE.SRGBColorSpace;
+      vTex.minFilter = THREE.LinearFilter;
+      vTex.magFilter = THREE.LinearFilter;
+      videoTex.current = vTex;
+
+      // poster
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext("2d")!.drawImage(video, 0, 0);
+      const pTex = new THREE.CanvasTexture(canvas);
+      pTex.colorSpace = THREE.SRGBColorSpace;
+      posterTex.current = pTex;
+
+      videoRef.current = video;
+      readyRef.current = true;
+    };
+
+    video.addEventListener("canplay", onCanPlay);
+    video.load();
+
+    return () => {
+      video.pause();
+      video.src = "";
+      video.load();
+      videoTex.current?.dispose();
+      posterTex.current?.dispose();
+    };
+  }, [url]);
+
+  useFrame(() => {
+    if (!meshRef.current || !matRef.current) return;
+
+    const d = distanceRef.current;
+    const fadeStart = CONFIG.videoPlayDistance;
+    const fadeEnd = CONFIG.cullingDistance;
+
+    let opacity = 1;
+    if (d > fadeStart) opacity = 1 - (d - fadeStart) / (fadeEnd - fadeStart);
+    matRef.current.opacity = Math.max(0, Math.min(1, opacity));
+
+    if (!readyRef.current) return;
+
+    meshRef.current.scale.set(scaleRef.current[0], scaleRef.current[1], 1);
+
+    if (d < CONFIG.videoPlayDistance) {
+      if (matRef.current.map !== videoTex.current) {
+        matRef.current.map = videoTex.current!;
+        matRef.current.needsUpdate = true;
+      }
+      videoRef.current?.play().catch(() => {});
+    } else {
+      if (matRef.current.map !== posterTex.current) {
+        matRef.current.map = posterTex.current!;
+        matRef.current.needsUpdate = true;
+      }
+      videoRef.current?.pause();
+    }
   });
 
-  const { videoWidth, videoHeight } = texture.image;
-  const calculatedScale = useMediaScale(videoWidth, videoHeight);
-
   return (
-    <mesh scale={[calculatedScale[0], calculatedScale[1], 1]} onClick={onClick}>
+    <mesh ref={meshRef} onClick={onClick}>
       {/* @ts-ignore */}
       <roundedPlaneGeometry args={[1, 1, 0.05, 6]} />
-
-      {/* <planeGeometry /> */}
-      <Suspense fallback={null}>
-        <meshBasicMaterial map={texture} toneMapped={false} />
-      </Suspense>
+      <meshBasicMaterial
+        ref={matRef}
+        color="#ffffff"
+        transparent
+        opacity={0}
+        toneMapped={false}
+      />
     </mesh>
   );
 }
 
+const textureCache = new Map<string, THREE.Texture>();
+
 function ImagePlane({
   url,
-  scale,
+  distanceRef,
   onClick,
 }: {
   url: string;
-  scale?: [number, number];
-  onClick: () => void;
+  distanceRef: React.MutableRefObject<number>;
+  onClick: (e: ThreeEvent<MouseEvent>) => void;
 }) {
-  const texture = useTexture(url);
+  const meshRef = useRef<THREE.Mesh>(null);
+  const matRef = useRef<THREE.MeshBasicMaterial>(null);
+  const texRef = useRef<THREE.Texture | null>(null);
+  const scaleRef = useRef<[number, number]>([8, 8]);
 
-  const { width, height } = texture.image;
-  const calculatedScale = useMediaScale(width, height);
+  useEffect(() => {
+    if (textureCache.has(url)) {
+      const t = textureCache.get(url)!;
+      texRef.current = t;
+      scaleRef.current = getMediaScale(t.image.width, t.image.height);
+      return;
+    }
+
+    new THREE.TextureLoader().load(url, (t) => {
+      compressTexture(t, CONFIG.maxTextureSize);
+      t.colorSpace = THREE.SRGBColorSpace;
+      t.needsUpdate = true;
+      textureCache.set(url, t);
+      texRef.current = t;
+      scaleRef.current = getMediaScale(t.image.width, t.image.height);
+    });
+  }, [url]);
+
+  useFrame(() => {
+    if (!meshRef.current || !matRef.current) return;
+
+    const d = distanceRef.current;
+    const fadeStart = CONFIG.cullingDistance * 0.8;
+    const fadeEnd = CONFIG.cullingDistance;
+
+    let opacity = 1;
+    if (d > fadeStart) opacity = 1 - (d - fadeStart) / (fadeEnd - fadeStart);
+
+    matRef.current.opacity = Math.max(0, Math.min(1, opacity));
+
+    if (texRef.current && matRef.current.map !== texRef.current) {
+      matRef.current.map = texRef.current;
+      matRef.current.needsUpdate = true;
+      meshRef.current.scale.set(scaleRef.current[0], scaleRef.current[1], 1);
+    }
+  });
 
   return (
-    <Suspense fallback={null}>
-      <Image
-        texture={texture}
+    <mesh ref={meshRef} onClick={onClick}>
+      {/* @ts-ignore */}
+      <roundedPlaneGeometry args={[1, 1, 0.05, 6]} />
+      <meshBasicMaterial
+        ref={matRef}
+        color="#ffffff"
         transparent
-        scale={calculatedScale}
-        onClick={onClick}
-        radius={0.15}
+        opacity={0}
+        toneMapped={false}
       />
-    </Suspense>
+    </mesh>
   );
 }
 
-function MediaItem({ item, position }: MediaItemProps) {
+function MediaItem({
+  item,
+  position,
+}: {
+  item: PortfolioItem;
+  position: THREE.Vector3;
+  index: number;
+}) {
   const { url, title, type } = item;
+  const { camera } = useThree();
 
   const { setHoveredObject } = useFloatingBar();
   const { focusOnTarget, focusOnImage, focusedImageTitle } = useViewStore();
@@ -225,18 +324,29 @@ function MediaItem({ item, position }: MediaItemProps) {
   const isVideo =
     type === "video" || url.endsWith(".mp4") || url.endsWith(".webm");
 
-  const handleClick = () => {
-    // disable focus reset for already active images
+  const handleClick = (e: ThreeEvent<MouseEvent>) => {
+    e.stopPropagation();
+
     if (focusedImageTitle !== title) {
       focusOnTarget({ position, distance: 8 });
       focusOnImage(title);
     }
   };
 
+  const distanceRef = useRef(Infinity);
+
+  useFrame(() => {
+    distanceRef.current = camera.position.distanceTo(position);
+  });
+
+  if (distanceRef.current > CONFIG.cullingDistance + 20 && !currentlyActive)
+    return null;
+
   return (
     <Billboard
       position={position}
-      onPointerEnter={() => {
+      onPointerEnter={(e) => {
+        e.stopPropagation();
         setHoveredObject({ title });
         if (!currentlyActive) setHovering(true);
       }}
@@ -254,13 +364,11 @@ function MediaItem({ item, position }: MediaItemProps) {
       }}
       onPointerUp={() => setPointerDown(false)}
     >
-      {/* <Float floatIntensity={10} speed={0.5}> */}
       {isVideo ? (
-        <VideoPlane url={url} scale={[1, 1]} onClick={handleClick} />
+        <VideoPlane url={url} onClick={handleClick} distanceRef={distanceRef} />
       ) : (
-        <ImagePlane url={url} onClick={handleClick} />
+        <ImagePlane url={url} onClick={handleClick} distanceRef={distanceRef} />
       )}
-      {/* </Float> */}
     </Billboard>
   );
 }
@@ -285,27 +393,17 @@ export function getSphericalAngles({
   radius: number;
 }): { r: number; phi: number; theta: number } {
   switch (form) {
-    // evenly distributed sphere, little squashed
     case "FIBONACCI_SPHERE": {
       const t = (index + 0.5) / count;
       const y = 1 - 2 * t;
-
       const power = 1;
       const squash = Math.sign(y) * Math.pow(Math.abs(y), power);
-
       const phi = Math.acos(squash);
-
-      return {
-        r: radius,
-        phi: phi,
-        theta: index * GOLDEN_ANGLE,
-      };
+      return { r: radius, phi: phi, theta: index * GOLDEN_ANGLE };
     }
 
-    // ring around camera
     case "EQUATORIAL_RING": {
       const tweak = 0;
-
       return {
         r: radius,
         phi: Math.PI / 2 + tweak * Math.log(index + 1),
@@ -313,29 +411,22 @@ export function getSphericalAngles({
       };
     }
 
-    // vertical spiral
     case "LOGARITHMIC_SPIRAL": {
       const t = index / (count - 1);
-
       const turns = 1;
       const height = radius * 5;
-
       const theta = 2 * Math.PI * turns * t;
-
       const x = radius * Math.cos(theta);
       const z = (radius * Math.sin(theta) * Math.PI) / 2;
       const y = height * (t - 0.5);
-
       return { r: x, phi: y, theta: z };
     }
 
-    // 4. Galaxy Like Waves
     case "GALAXY_WAVES": {
       const currentRadius = Math.sqrt(index + 1) * (radius / 2);
       const y = (1 - (index / (count - 1)) * 2) * (currentRadius * 0.5);
       const r = Math.sqrt(Math.max(0, currentRadius * currentRadius - y * y));
       const theta = GOLDEN_ANGLE * index;
-
       return {
         r: Math.cos(theta) * r,
         phi: Math.sin(theta) * y,
@@ -347,18 +438,21 @@ export function getSphericalAngles({
 
 export function FileOrbit({ radius = 40 }: { radius?: number }) {
   const { selectedOrbitForm: orbitForm } = useCoreStore();
+  const { isMobile } = useAppStore();
+
+  const effectiveRadius = isMobile ? radius * 1.5 : radius;
+
   const spherical = new THREE.Spherical();
   const n = ITEMS.length;
 
   const points = useMemo(() => {
     const pts: THREE.Vector3[] = [];
-
     for (let i = 1; i < n + 1; i++) {
       const { phi, theta, r } = getSphericalAngles({
         index: i,
         count: n,
         form: orbitForm,
-        radius,
+        radius: effectiveRadius,
       });
 
       if (orbitForm === "GALAXY_WAVES" || orbitForm === "LOGARITHMIC_SPIRAL")
@@ -368,17 +462,19 @@ export function FileOrbit({ radius = 40 }: { radius?: number }) {
           new THREE.Vector3().setFromSpherical(spherical.set(r, phi, theta))
         );
     }
-
     return pts;
-  }, [radius, orbitForm]);
+  }, [effectiveRadius, orbitForm]);
 
   return (
-    <Suspense fallback={null}>
-      <group>
-        {points.map((pos, i) => (
-          <MediaItem key={ITEMS[i].url} position={pos} item={ITEMS[i]} />
-        ))}
-      </group>
-    </Suspense>
+    <group>
+      {points.map((pos, i) => (
+        <MediaItem
+          key={ITEMS[i].url}
+          position={pos}
+          item={ITEMS[i]}
+          index={i}
+        />
+      ))}
+    </group>
   );
 }
