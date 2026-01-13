@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { useMemo, Suspense } from "react";
+import { useMemo, Suspense, useState, useRef, useEffect } from "react";
 import {
   Billboard,
   Float,
@@ -13,7 +13,7 @@ import { useCoreStore, useViewStore } from "@/store";
 import { playUISound } from "@/utils/soundSystem";
 import { SoundConfig } from "@/utils/sound/types";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
-import { extend } from "@react-three/fiber";
+import { extend, useFrame, useThree } from "@react-three/fiber";
 import { geometry } from "maath";
 
 interface PortfolioItem {
@@ -142,77 +142,249 @@ interface MediaItemProps {
   position: THREE.Vector3;
 }
 
-const useMediaScale = (width: number, height: number): [number, number] => {
-  return useMemo(() => {
-    const max = 8;
-    const factor = max / Math.max(width, height);
-    return [width * factor, height * factor];
-  }, [width, height]);
+// Configuration
+const CONFIG = {
+  cullingDistance: 50,
+  maxTextureSize: 1024,
+  videoPlayDistance: 30,
 };
 
 extend({ RoundedPlaneGeometry: geometry.RoundedPlaneGeometry });
 
+// Texture compression utility
+function compressTexture(texture: THREE.Texture, maxSize: number) {
+  const img = texture.image;
+  if (!img || img.width <= maxSize) return texture;
+
+  const canvas = document.createElement("canvas");
+  const scale = maxSize / Math.max(img.width, img.height);
+  canvas.width = img.width * scale;
+  canvas.height = img.height * scale;
+
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    texture.image = canvas;
+    texture.needsUpdate = true;
+  }
+
+  return texture;
+}
+
+function getMediaScale(width: number, height: number): [number, number] {
+  const max = 8;
+  const factor = max / Math.max(width, height);
+  return [width * factor, height * factor];
+}
+
+// Lazy loading video component
 function VideoPlane({
   url,
-  scale,
+  shouldLoad,
+  shouldPlay,
   onClick,
 }: {
   url: string;
-  scale: [number, number];
+  shouldLoad: boolean;
+  shouldPlay: boolean;
   onClick: () => void;
 }) {
-  const texture = useVideoTexture(url, {
-    start: true,
-    muted: true,
-    loop: true,
-    playsInline: true,
-  });
+  const [loaded, setLoaded] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const textureRef = useRef<THREE.VideoTexture | null>(null);
+  const [posterUrl, setPosterUrl] = useState<string>("");
 
-  const { videoWidth, videoHeight } = texture.image;
-  const calculatedScale = useMediaScale(videoWidth, videoHeight);
+  useEffect(() => {
+    if (shouldLoad && !loaded) {
+      const video = document.createElement("video");
+      video.src = url;
+      video.crossOrigin = "anonymous";
+      video.loop = true;
+      video.muted = true;
+      video.playsInline = true;
+      video.preload = "metadata";
+
+      const onMetadata = () => {
+        const texture = new THREE.VideoTexture(video);
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.format = THREE.RGBFormat;
+        textureRef.current = texture;
+        videoRef.current = video;
+
+        // Generate poster frame
+        video.currentTime = 0.1;
+      };
+
+      const onSeeked = () => {
+        // Create canvas for poster
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(video, 0, 0);
+          setPosterUrl(canvas.toDataURL());
+        }
+        setLoaded(true);
+      };
+
+      video.addEventListener("loadedmetadata", onMetadata);
+      video.addEventListener("seeked", onSeeked);
+      video.load();
+
+      return () => {
+        video.removeEventListener("loadedmetadata", onMetadata);
+        video.removeEventListener("seeked", onSeeked);
+        video.pause();
+        video.src = "";
+        video.load();
+        if (textureRef.current) {
+          textureRef.current.dispose();
+        }
+      };
+    }
+  }, [shouldLoad, loaded, url]);
+
+  useEffect(() => {
+    if (videoRef.current && textureRef.current) {
+      if (shouldPlay) {
+        videoRef.current.play().catch(() => {});
+      } else {
+        videoRef.current.pause();
+        videoRef.current.currentTime = 0.1;
+      }
+      textureRef.current.needsUpdate = true;
+    }
+  }, [shouldPlay]);
+
+  const scale = useMemo(() => {
+    if (loaded && videoRef.current) {
+      return getMediaScale(
+        videoRef.current.videoWidth || 16,
+        videoRef.current.videoHeight || 9
+      );
+    }
+    return [8, 8];
+  }, [loaded]);
+
+  if (!loaded) {
+    return (
+      <mesh onClick={onClick}>
+        <planeGeometry args={[8, 8]} />
+        <meshBasicMaterial color="#222" />
+      </mesh>
+    );
+  }
+
+  // Show poster when not playing
+  if (!shouldPlay && posterUrl) {
+    return (
+      <mesh scale={[scale[0], scale[1], 1]} onClick={onClick}>
+        {/* @ts-ignore */}
+        <roundedPlaneGeometry args={[1, 1, 0.05, 6]} />
+        <meshBasicMaterial>
+          <primitive
+            attach="map"
+            object={new THREE.TextureLoader().load(posterUrl)}
+          />
+        </meshBasicMaterial>
+      </mesh>
+    );
+  }
 
   return (
-    <mesh scale={[calculatedScale[0], calculatedScale[1], 1]} onClick={onClick}>
+    <mesh scale={[scale[0], scale[1], 1]} onClick={onClick}>
       {/* @ts-ignore */}
       <roundedPlaneGeometry args={[1, 1, 0.05, 6]} />
-
-      {/* <planeGeometry /> */}
-      <Suspense fallback={null}>
-        <meshBasicMaterial map={texture} toneMapped={false} />
-      </Suspense>
+      <meshBasicMaterial map={textureRef.current} toneMapped={false} />
     </mesh>
   );
 }
 
+// Texture cache to prevent reloading
+const textureCache = new Map<string, THREE.Texture>();
+
+// Lazy loading image component
 function ImagePlane({
   url,
-  scale,
+  shouldLoad,
   onClick,
 }: {
   url: string;
-  scale?: [number, number];
+  shouldLoad: boolean;
   onClick: () => void;
 }) {
-  const texture = useTexture(url);
+  const [loaded, setLoaded] = useState(false);
+  const textureRef = useRef<THREE.Texture | null>(null);
 
-  const { width, height } = texture.image;
-  const calculatedScale = useMediaScale(width, height);
+  const scale = useMemo(() => {
+    if (loaded && textureRef.current) {
+      const { width, height } = textureRef.current.image;
+      return getMediaScale(width, height);
+    }
+    return [8, 8];
+  }, [loaded]);
+
+  useEffect(() => {
+    if (shouldLoad && !loaded) {
+      // Check cache first
+      if (textureCache.has(url)) {
+        textureRef.current = textureCache.get(url)!;
+        setLoaded(true);
+        return;
+      }
+
+      const loader = new THREE.TextureLoader();
+      loader.load(
+        url,
+        (texture) => {
+          compressTexture(texture, CONFIG.maxTextureSize);
+          texture.colorSpace = THREE.SRGBColorSpace;
+          textureRef.current = texture;
+          textureCache.set(url, texture);
+          setLoaded(true);
+        },
+        undefined,
+        (error) => {
+          console.error("Error loading texture:", url, error);
+        }
+      );
+    }
+  }, [shouldLoad, loaded, url]);
+
+  if (!loaded || !textureRef.current) {
+    return (
+      <mesh onClick={onClick}>
+        <planeGeometry args={[8, 8]} />
+        <meshBasicMaterial color="#333" />
+      </mesh>
+    );
+  }
 
   return (
-    <Suspense fallback={null}>
-      <Image
-        texture={texture}
-        transparent
-        scale={calculatedScale}
-        onClick={onClick}
-        radius={0.15}
-      />
-    </Suspense>
+    <Image
+      texture={textureRef.current}
+      transparent
+      scale={scale[0]}
+      onClick={onClick}
+      radius={0.15}
+    />
   );
 }
 
-function MediaItem({ item, position }: MediaItemProps) {
+function MediaItem({
+  item,
+  position,
+  index,
+}: {
+  item: PortfolioItem;
+  position: THREE.Vector3;
+  index: number;
+}) {
   const { url, title, type } = item;
+  const { camera } = useThree();
+  const [distance, setDistance] = useState(Infinity);
 
   const { setHoveredObject } = useFloatingBar();
   const { focusOnTarget, focusOnImage, focusedImageTitle } = useViewStore();
@@ -225,13 +397,26 @@ function MediaItem({ item, position }: MediaItemProps) {
   const isVideo =
     type === "video" || url.endsWith(".mp4") || url.endsWith(".webm");
 
+  // Calculate distance every frame
+  useFrame(() => {
+    const dist = camera.position.distanceTo(position);
+    setDistance(dist);
+  });
+
+  const shouldLoad = distance < CONFIG.cullingDistance || currentlyActive;
+  const shouldPlay = isVideo && distance < CONFIG.videoPlayDistance;
+
   const handleClick = () => {
-    // disable focus reset for already active images
     if (focusedImageTitle !== title) {
       focusOnTarget({ position, distance: 8 });
       focusOnImage(title);
     }
   };
+
+  // Don't render if too far
+  if (distance > CONFIG.cullingDistance + 20 && !currentlyActive) {
+    return null;
+  }
 
   return (
     <Billboard
@@ -254,13 +439,16 @@ function MediaItem({ item, position }: MediaItemProps) {
       }}
       onPointerUp={() => setPointerDown(false)}
     >
-      {/* <Float floatIntensity={10} speed={0.5}> */}
       {isVideo ? (
-        <VideoPlane url={url} scale={[1, 1]} onClick={handleClick} />
+        <VideoPlane
+          url={url}
+          shouldLoad={shouldLoad}
+          shouldPlay={shouldPlay}
+          onClick={handleClick}
+        />
       ) : (
-        <ImagePlane url={url} onClick={handleClick} />
+        <ImagePlane url={url} shouldLoad={shouldLoad} onClick={handleClick} />
       )}
-      {/* </Float> */}
     </Billboard>
   );
 }
@@ -285,27 +473,17 @@ export function getSphericalAngles({
   radius: number;
 }): { r: number; phi: number; theta: number } {
   switch (form) {
-    // evenly distributed sphere, little squashed
     case "FIBONACCI_SPHERE": {
       const t = (index + 0.5) / count;
       const y = 1 - 2 * t;
-
       const power = 1;
       const squash = Math.sign(y) * Math.pow(Math.abs(y), power);
-
       const phi = Math.acos(squash);
-
-      return {
-        r: radius,
-        phi: phi,
-        theta: index * GOLDEN_ANGLE,
-      };
+      return { r: radius, phi: phi, theta: index * GOLDEN_ANGLE };
     }
 
-    // ring around camera
     case "EQUATORIAL_RING": {
       const tweak = 0;
-
       return {
         r: radius,
         phi: Math.PI / 2 + tweak * Math.log(index + 1),
@@ -313,29 +491,22 @@ export function getSphericalAngles({
       };
     }
 
-    // vertical spiral
     case "LOGARITHMIC_SPIRAL": {
       const t = index / (count - 1);
-
       const turns = 1;
       const height = radius * 5;
-
       const theta = 2 * Math.PI * turns * t;
-
       const x = radius * Math.cos(theta);
       const z = (radius * Math.sin(theta) * Math.PI) / 2;
       const y = height * (t - 0.5);
-
       return { r: x, phi: y, theta: z };
     }
 
-    // 4. Galaxy Like Waves
     case "GALAXY_WAVES": {
       const currentRadius = Math.sqrt(index + 1) * (radius / 2);
       const y = (1 - (index / (count - 1)) * 2) * (currentRadius * 0.5);
       const r = Math.sqrt(Math.max(0, currentRadius * currentRadius - y * y));
       const theta = GOLDEN_ANGLE * index;
-
       return {
         r: Math.cos(theta) * r,
         phi: Math.sin(theta) * y,
@@ -352,7 +523,6 @@ export function FileOrbit({ radius = 40 }: { radius?: number }) {
 
   const points = useMemo(() => {
     const pts: THREE.Vector3[] = [];
-
     for (let i = 1; i < n + 1; i++) {
       const { phi, theta, r } = getSphericalAngles({
         index: i,
@@ -368,7 +538,6 @@ export function FileOrbit({ radius = 40 }: { radius?: number }) {
           new THREE.Vector3().setFromSpherical(spherical.set(r, phi, theta))
         );
     }
-
     return pts;
   }, [radius, orbitForm]);
 
@@ -376,7 +545,12 @@ export function FileOrbit({ radius = 40 }: { radius?: number }) {
     <Suspense fallback={null}>
       <group>
         {points.map((pos, i) => (
-          <MediaItem key={ITEMS[i].url} position={pos} item={ITEMS[i]} />
+          <MediaItem
+            key={ITEMS[i].url}
+            position={pos}
+            item={ITEMS[i]}
+            index={i}
+          />
         ))}
       </group>
     </Suspense>
