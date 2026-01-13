@@ -1,19 +1,13 @@
 import * as THREE from "three";
-import { useMemo, Suspense, useState, useRef, useEffect } from "react";
-import {
-  Billboard,
-  Float,
-  Image,
-  useTexture,
-  useVideoTexture,
-} from "@react-three/drei";
+import { useMemo, useRef, useEffect } from "react";
+import { Billboard } from "@react-three/drei";
 import { useFloatingBar } from "@/layout/FloatingBar";
 import { useCursorStore } from "@/store/core/cursor";
-import { useCoreStore, useViewStore } from "@/store";
+import { useAppStore, useCoreStore, useViewStore } from "@/store";
 import { playUISound } from "@/utils/soundSystem";
 import { SoundConfig } from "@/utils/sound/types";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
-import { extend, useFrame, useThree } from "@react-three/fiber";
+import { extend, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { geometry } from "maath";
 
 interface PortfolioItem {
@@ -25,35 +19,20 @@ interface PortfolioItem {
 }
 
 const ITEMS: PortfolioItem[] = [
-  {
-    url: "/images/portfolio/face_study.jpeg",
-    title: "3D Gesicht Studie 1/2",
-  },
-  {
-    url: "/images/portfolio/gradient_gem.jpeg",
-    title: "3D Licht Studie",
-  },
+  { url: "/images/portfolio/face_study.jpeg", title: "3D Gesicht Studie 1/2" },
+  { url: "/images/portfolio/gradient_gem.jpeg", title: "3D Licht Studie" },
   {
     url: "/videos/portfolio/face-emotions-study.mp4",
     title: "3D Gesicht Studie 2/2",
     type: "video",
   },
-  {
-    url: "/images/portfolio/bubbles-cover.jpeg",
-    title: "bubbles",
-  },
-  {
-    url: "/images/portfolio/du-fehlst-cover.jpeg",
-    title: "du fehlst",
-  },
+  { url: "/images/portfolio/bubbles-cover.jpeg", title: "bubbles" },
+  { url: "/images/portfolio/du-fehlst-cover.jpeg", title: "du fehlst" },
   {
     url: "/images/portfolio/hassliebe-slowie-cover.jpeg",
     title: "hassliebe (slowie version)",
   },
-  {
-    url: "/images/portfolio/hsd-dingeundinge.jpeg",
-    title: "Dinge/Undinge",
-  },
+  { url: "/images/portfolio/hsd-dingeundinge.jpeg", title: "Dinge/Undinge" },
   {
     url: "/images/portfolio/peaceofmind-clothing.jpeg",
     title: "Peace of Mind Prints",
@@ -63,14 +42,8 @@ const ITEMS: PortfolioItem[] = [
     title: "3D Physics Studie",
     type: "video",
   },
-  {
-    url: "/images/portfolio/soundcheck-cover.jpeg",
-    title: "Soundchecks",
-  },
-  {
-    url: "/images/portfolio/soundcloud-cover.jpeg",
-    title: "Mixes",
-  },
+  { url: "/images/portfolio/soundcheck-cover.jpeg", title: "Soundchecks" },
+  { url: "/images/portfolio/soundcloud-cover.jpeg", title: "Mixes" },
   {
     url: "/images/portfolio/hassliebe-fast-version-cover.jpeg",
     title: "hassliebe (fast version)",
@@ -80,23 +53,11 @@ const ITEMS: PortfolioItem[] = [
     title: "Peace & Roses",
     type: "video",
   },
-  {
-    url: "/images/portfolio/hassliebe_cover.jpeg",
-    title: "hassliebe",
-  },
-  {
-    url: "/images/portfolio/first_character.jpeg",
-    title: "3D Körper Studie",
-  },
+  { url: "/images/portfolio/hassliebe_cover.jpeg", title: "hassliebe" },
+  { url: "/images/portfolio/first_character.jpeg", title: "3D Körper Studie" },
   { url: "/images/portfolio/fluffy_bear.jpeg", title: "3D Haare Studie" },
-  {
-    url: "/images/portfolio/peace_of_mind_red.jpeg",
-    title: "Shirt Prints",
-  },
-  {
-    url: "/images/portfolio/noisy_wallpaper.jpeg",
-    title: "Noise & Peace",
-  },
+  { url: "/images/portfolio/peace_of_mind_red.jpeg", title: "Shirt Prints" },
+  { url: "/images/portfolio/noisy_wallpaper.jpeg", title: "Noise & Peace" },
   {
     url: "/images/portfolio/peace_of_mind_orange.jpeg",
     title: "Starve the ego",
@@ -114,10 +75,7 @@ const ITEMS: PortfolioItem[] = [
     url: "/images/portfolio/peace_of_mind_logos.jpeg",
     title: "Peace of Mind Variants",
   },
-  {
-    url: "/images/portfolio/warum_cover.jpeg",
-    title: "warum",
-  },
+  { url: "/images/portfolio/warum_cover.jpeg", title: "warum" },
   {
     url: "/images/portfolio/skateboard_stickers.jpeg",
     title: "Skateboard Stickers",
@@ -127,31 +85,19 @@ const ITEMS: PortfolioItem[] = [
     title: "3D Grease Pencil Studie",
     type: "video",
   },
-  {
-    url: "/images/portfolio/tinyplanet_skateboard.jpeg",
-    title: "Tiny Planet",
-  },
-  {
-    url: "/images/portfolio/warum_v2.jpeg",
-    title: "warum (edit)",
-  },
+  { url: "/images/portfolio/tinyplanet_skateboard.jpeg", title: "Tiny Planet" },
+  { url: "/images/portfolio/warum_v2.jpeg", title: "warum (edit)" },
 ];
-
-interface MediaItemProps {
-  item: PortfolioItem;
-  position: THREE.Vector3;
-}
 
 // Configuration
 const CONFIG = {
-  cullingDistance: 50,
+  cullingDistance: 75,
   maxTextureSize: 1024,
   videoPlayDistance: 30,
 };
 
 extend({ RoundedPlaneGeometry: geometry.RoundedPlaneGeometry });
 
-// Texture compression utility
 function compressTexture(texture: THREE.Texture, maxSize: number) {
   const img = texture.image;
   if (!img || img.width <= maxSize) return texture;
@@ -177,206 +123,188 @@ function getMediaScale(width: number, height: number): [number, number] {
   return [width * factor, height * factor];
 }
 
-// Lazy loading video component
 function VideoPlane({
   url,
-  shouldLoad,
-  shouldPlay,
+  distanceRef,
   onClick,
 }: {
   url: string;
-  shouldLoad: boolean;
-  shouldPlay: boolean;
-  onClick: () => void;
+  distanceRef: React.MutableRefObject<number>;
+  onClick: (e: ThreeEvent<MouseEvent>) => void;
 }) {
-  const [loaded, setLoaded] = useState(false);
+  const meshRef = useRef<THREE.Mesh>(null);
+  const matRef = useRef<THREE.MeshBasicMaterial>(null);
+
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const textureRef = useRef<THREE.VideoTexture | null>(null);
-  const [posterUrl, setPosterUrl] = useState<string>("");
+  const videoTex = useRef<THREE.VideoTexture | null>(null);
+  const posterTex = useRef<THREE.Texture | null>(null);
+
+  const scaleRef = useRef<[number, number]>([8, 8]);
+  const readyRef = useRef(false);
 
   useEffect(() => {
-    if (shouldLoad && !loaded) {
-      const video = document.createElement("video");
-      video.src = url;
-      video.crossOrigin = "anonymous";
-      video.loop = true;
-      video.muted = true;
-      video.playsInline = true;
-      video.preload = "metadata";
+    if (readyRef.current) return;
 
-      const onMetadata = () => {
-        const texture = new THREE.VideoTexture(video);
-        texture.minFilter = THREE.LinearFilter;
-        texture.magFilter = THREE.LinearFilter;
-        texture.format = THREE.RGBFormat;
-        textureRef.current = texture;
-        videoRef.current = video;
+    const video = document.createElement("video");
+    video.src = url;
+    video.muted = true;
+    video.loop = true;
+    video.playsInline = true;
+    video.preload = "auto";
 
-        // Generate poster frame
-        video.currentTime = 0.1;
-      };
+    const onCanPlay = () => {
+      const w = video.videoWidth || 16;
+      const h = video.videoHeight || 9;
+      scaleRef.current = getMediaScale(w, h);
 
-      const onSeeked = () => {
-        // Create canvas for poster
-        const canvas = document.createElement("canvas");
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          ctx.drawImage(video, 0, 0);
-          setPosterUrl(canvas.toDataURL());
-        }
-        setLoaded(true);
-      };
+      // video texture
+      const vTex = new THREE.VideoTexture(video);
+      vTex.colorSpace = THREE.SRGBColorSpace;
+      vTex.minFilter = THREE.LinearFilter;
+      vTex.magFilter = THREE.LinearFilter;
+      videoTex.current = vTex;
 
-      video.addEventListener("loadedmetadata", onMetadata);
-      video.addEventListener("seeked", onSeeked);
+      // poster
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext("2d")!.drawImage(video, 0, 0);
+      const pTex = new THREE.CanvasTexture(canvas);
+      pTex.colorSpace = THREE.SRGBColorSpace;
+      posterTex.current = pTex;
+
+      videoRef.current = video;
+      readyRef.current = true;
+    };
+
+    video.addEventListener("canplay", onCanPlay);
+    video.load();
+
+    return () => {
+      video.pause();
+      video.src = "";
       video.load();
+      videoTex.current?.dispose();
+      posterTex.current?.dispose();
+    };
+  }, [url]);
 
-      return () => {
-        video.removeEventListener("loadedmetadata", onMetadata);
-        video.removeEventListener("seeked", onSeeked);
-        video.pause();
-        video.src = "";
-        video.load();
-        if (textureRef.current) {
-          textureRef.current.dispose();
-        }
-      };
-    }
-  }, [shouldLoad, loaded, url]);
+  useFrame(() => {
+    if (!meshRef.current || !matRef.current) return;
 
-  useEffect(() => {
-    if (videoRef.current && textureRef.current) {
-      if (shouldPlay) {
-        videoRef.current.play().catch(() => {});
-      } else {
-        videoRef.current.pause();
-        videoRef.current.currentTime = 0.1;
+    const d = distanceRef.current;
+    const fadeStart = CONFIG.videoPlayDistance;
+    const fadeEnd = CONFIG.cullingDistance;
+
+    let opacity = 1;
+    if (d > fadeStart) opacity = 1 - (d - fadeStart) / (fadeEnd - fadeStart);
+    matRef.current.opacity = Math.max(0, Math.min(1, opacity));
+
+    if (!readyRef.current) return;
+
+    meshRef.current.scale.set(scaleRef.current[0], scaleRef.current[1], 1);
+
+    if (d < CONFIG.videoPlayDistance) {
+      if (matRef.current.map !== videoTex.current) {
+        matRef.current.map = videoTex.current!;
+        matRef.current.needsUpdate = true;
       }
-      textureRef.current.needsUpdate = true;
+      videoRef.current?.play().catch(() => {});
+    } else {
+      if (matRef.current.map !== posterTex.current) {
+        matRef.current.map = posterTex.current!;
+        matRef.current.needsUpdate = true;
+      }
+      videoRef.current?.pause();
     }
-  }, [shouldPlay]);
-
-  const scale = useMemo(() => {
-    if (loaded && videoRef.current) {
-      return getMediaScale(
-        videoRef.current.videoWidth || 16,
-        videoRef.current.videoHeight || 9
-      );
-    }
-    return [8, 8];
-  }, [loaded]);
-
-  if (!loaded) {
-    return (
-      <mesh onClick={onClick}>
-        <planeGeometry args={[8, 8]} />
-        <meshBasicMaterial color="#222" />
-      </mesh>
-    );
-  }
-
-  // Show poster when not playing
-  if (!shouldPlay && posterUrl) {
-    return (
-      <mesh scale={[scale[0], scale[1], 1]} onClick={onClick}>
-        {/* @ts-ignore */}
-        <roundedPlaneGeometry args={[1, 1, 0.05, 6]} />
-        <meshBasicMaterial>
-          <primitive
-            attach="map"
-            object={new THREE.TextureLoader().load(posterUrl)}
-          />
-        </meshBasicMaterial>
-      </mesh>
-    );
-  }
+  });
 
   return (
-    <mesh scale={[scale[0], scale[1], 1]} onClick={onClick}>
+    <mesh ref={meshRef} onClick={onClick}>
       {/* @ts-ignore */}
       <roundedPlaneGeometry args={[1, 1, 0.05, 6]} />
-      <meshBasicMaterial map={textureRef.current} toneMapped={false} />
+      <meshBasicMaterial
+        ref={matRef}
+        color="#ffffff"
+        transparent
+        opacity={0}
+        toneMapped={false}
+      />
     </mesh>
   );
 }
 
-// Texture cache to prevent reloading
 const textureCache = new Map<string, THREE.Texture>();
 
-// Lazy loading image component
 function ImagePlane({
   url,
-  shouldLoad,
+  distanceRef,
   onClick,
 }: {
   url: string;
-  shouldLoad: boolean;
-  onClick: () => void;
+  distanceRef: React.MutableRefObject<number>;
+  onClick: (e: ThreeEvent<MouseEvent>) => void;
 }) {
-  const [loaded, setLoaded] = useState(false);
-  const textureRef = useRef<THREE.Texture | null>(null);
-
-  const scale = useMemo(() => {
-    if (loaded && textureRef.current) {
-      const { width, height } = textureRef.current.image;
-      return getMediaScale(width, height);
-    }
-    return [8, 8];
-  }, [loaded]);
+  const meshRef = useRef<THREE.Mesh>(null);
+  const matRef = useRef<THREE.MeshBasicMaterial>(null);
+  const texRef = useRef<THREE.Texture | null>(null);
+  const scaleRef = useRef<[number, number]>([8, 8]);
 
   useEffect(() => {
-    if (shouldLoad && !loaded) {
-      // Check cache first
-      if (textureCache.has(url)) {
-        textureRef.current = textureCache.get(url)!;
-        setLoaded(true);
-        return;
-      }
-
-      const loader = new THREE.TextureLoader();
-      loader.load(
-        url,
-        (texture) => {
-          compressTexture(texture, CONFIG.maxTextureSize);
-          texture.colorSpace = THREE.SRGBColorSpace;
-          textureRef.current = texture;
-          textureCache.set(url, texture);
-          setLoaded(true);
-        },
-        undefined,
-        (error) => {
-          console.error("Error loading texture:", url, error);
-        }
-      );
+    if (textureCache.has(url)) {
+      const t = textureCache.get(url)!;
+      texRef.current = t;
+      scaleRef.current = getMediaScale(t.image.width, t.image.height);
+      return;
     }
-  }, [shouldLoad, loaded, url]);
 
-  if (!loaded || !textureRef.current) {
-    return (
-      <mesh onClick={onClick}>
-        <planeGeometry args={[8, 8]} />
-        <meshBasicMaterial color="#333" />
-      </mesh>
-    );
-  }
+    new THREE.TextureLoader().load(url, (t) => {
+      compressTexture(t, CONFIG.maxTextureSize);
+      t.colorSpace = THREE.SRGBColorSpace;
+      t.needsUpdate = true;
+      textureCache.set(url, t);
+      texRef.current = t;
+      scaleRef.current = getMediaScale(t.image.width, t.image.height);
+    });
+  }, [url]);
+
+  useFrame(() => {
+    if (!meshRef.current || !matRef.current) return;
+
+    const d = distanceRef.current;
+    const fadeStart = CONFIG.cullingDistance * 0.8;
+    const fadeEnd = CONFIG.cullingDistance;
+
+    let opacity = 1;
+    if (d > fadeStart) opacity = 1 - (d - fadeStart) / (fadeEnd - fadeStart);
+
+    matRef.current.opacity = Math.max(0, Math.min(1, opacity));
+
+    if (texRef.current && matRef.current.map !== texRef.current) {
+      matRef.current.map = texRef.current;
+      matRef.current.needsUpdate = true;
+      meshRef.current.scale.set(scaleRef.current[0], scaleRef.current[1], 1);
+    }
+  });
 
   return (
-    <Image
-      texture={textureRef.current}
-      transparent
-      scale={scale[0]}
-      onClick={onClick}
-      radius={0.15}
-    />
+    <mesh ref={meshRef} onClick={onClick}>
+      {/* @ts-ignore */}
+      <roundedPlaneGeometry args={[1, 1, 0.05, 6]} />
+      <meshBasicMaterial
+        ref={matRef}
+        color="#ffffff"
+        transparent
+        opacity={0}
+        toneMapped={false}
+      />
+    </mesh>
   );
 }
 
 function MediaItem({
   item,
   position,
-  index,
 }: {
   item: PortfolioItem;
   position: THREE.Vector3;
@@ -384,7 +312,6 @@ function MediaItem({
 }) {
   const { url, title, type } = item;
   const { camera } = useThree();
-  const [distance, setDistance] = useState(Infinity);
 
   const { setHoveredObject } = useFloatingBar();
   const { focusOnTarget, focusOnImage, focusedImageTitle } = useViewStore();
@@ -397,31 +324,29 @@ function MediaItem({
   const isVideo =
     type === "video" || url.endsWith(".mp4") || url.endsWith(".webm");
 
-  // Calculate distance every frame
-  useFrame(() => {
-    const dist = camera.position.distanceTo(position);
-    setDistance(dist);
-  });
+  const handleClick = (e: ThreeEvent<MouseEvent>) => {
+    e.stopPropagation();
 
-  const shouldLoad = distance < CONFIG.cullingDistance || currentlyActive;
-  const shouldPlay = isVideo && distance < CONFIG.videoPlayDistance;
-
-  const handleClick = () => {
     if (focusedImageTitle !== title) {
       focusOnTarget({ position, distance: 8 });
       focusOnImage(title);
     }
   };
 
-  // Don't render if too far
-  if (distance > CONFIG.cullingDistance + 20 && !currentlyActive) {
+  const distanceRef = useRef(Infinity);
+
+  useFrame(() => {
+    distanceRef.current = camera.position.distanceTo(position);
+  });
+
+  if (distanceRef.current > CONFIG.cullingDistance + 20 && !currentlyActive)
     return null;
-  }
 
   return (
     <Billboard
       position={position}
-      onPointerEnter={() => {
+      onPointerEnter={(e) => {
+        e.stopPropagation();
         setHoveredObject({ title });
         if (!currentlyActive) setHovering(true);
       }}
@@ -440,14 +365,9 @@ function MediaItem({
       onPointerUp={() => setPointerDown(false)}
     >
       {isVideo ? (
-        <VideoPlane
-          url={url}
-          shouldLoad={shouldLoad}
-          shouldPlay={shouldPlay}
-          onClick={handleClick}
-        />
+        <VideoPlane url={url} onClick={handleClick} distanceRef={distanceRef} />
       ) : (
-        <ImagePlane url={url} shouldLoad={shouldLoad} onClick={handleClick} />
+        <ImagePlane url={url} onClick={handleClick} distanceRef={distanceRef} />
       )}
     </Billboard>
   );
@@ -518,6 +438,10 @@ export function getSphericalAngles({
 
 export function FileOrbit({ radius = 40 }: { radius?: number }) {
   const { selectedOrbitForm: orbitForm } = useCoreStore();
+  const { isMobile } = useAppStore();
+
+  const effectiveRadius = isMobile ? radius * 1.5 : radius;
+
   const spherical = new THREE.Spherical();
   const n = ITEMS.length;
 
@@ -528,7 +452,7 @@ export function FileOrbit({ radius = 40 }: { radius?: number }) {
         index: i,
         count: n,
         form: orbitForm,
-        radius,
+        radius: effectiveRadius,
       });
 
       if (orbitForm === "GALAXY_WAVES" || orbitForm === "LOGARITHMIC_SPIRAL")
@@ -539,20 +463,18 @@ export function FileOrbit({ radius = 40 }: { radius?: number }) {
         );
     }
     return pts;
-  }, [radius, orbitForm]);
+  }, [effectiveRadius, orbitForm]);
 
   return (
-    <Suspense fallback={null}>
-      <group>
-        {points.map((pos, i) => (
-          <MediaItem
-            key={ITEMS[i].url}
-            position={pos}
-            item={ITEMS[i]}
-            index={i}
-          />
-        ))}
-      </group>
-    </Suspense>
+    <group>
+      {points.map((pos, i) => (
+        <MediaItem
+          key={ITEMS[i].url}
+          position={pos}
+          item={ITEMS[i]}
+          index={i}
+        />
+      ))}
+    </group>
   );
 }
