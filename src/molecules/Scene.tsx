@@ -18,7 +18,11 @@ import { useAppStore, useCoreStore } from "../store";
 import { useViewStore } from "../store/viewStore";
 import { ROUTE_PATHS } from "../store/config/routes";
 import { FISHEYE_CONFIG } from "../store/config/themes";
-import { attachListenerToCamera, stopSoundsById } from "@/utils/soundSystem";
+import {
+  attachListenerToCamera,
+  playWorldSound,
+  stopSoundsById,
+} from "@/utils/soundSystem";
 import { PortfolioScene } from "@/routes/PortfolioScene";
 import { AboutScene } from "../routes/AboutScene";
 
@@ -31,6 +35,11 @@ import { TapEffects } from "../3d-objects/ParticleEffects";
 import { SceneDecorations } from "@/3d-objects/Decorations";
 import { MiniGamesScene } from "@/routes/MiniGamesScene";
 import { EmotionState } from "@/hooks/useBlobEmotions";
+import {
+  DEFAULT_PINK_NOISE,
+  DEFAULT_WORLD_MUSIC,
+} from "@/utils/sound/defaults";
+import { useSoundSystem } from "@/hooks/useSoundSystem";
 
 const Debug = () => {
   const { width } = useThree((s) => s.size);
@@ -57,6 +66,7 @@ const Scene = ({
     setDefaultViewMode,
   } = useViewStore();
   const { statisticsVisible, physicsDebugEnabled } = useCoreStore();
+  const { isMuted } = useSoundSystem();
 
   const { currentRoute } = useAppStore();
 
@@ -82,14 +92,16 @@ const Scene = ({
     if (isHome) {
       if (!isDefaultView()) {
         const timer = setTimeout(() => {
+          playWorldSound(DEFAULT_WORLD_MUSIC.id);
           setDefaultViewMode("fixed");
           resetToDefaultView();
           transitionToView("default");
-          stopSoundsById("pink-noise");
-        }, 800);
+          stopSoundsById(DEFAULT_PINK_NOISE.id);
+        }, 350);
         return () => clearTimeout(timer);
       }
     }
+    return () => stopSoundsById(DEFAULT_WORLD_MUSIC.id);
   }, [isHome]);
 
   return (

@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 
-export default function Creative() {
+export default function MiniGames() {
   useEffect(() => {
-    document.title = "Kreatives — Eduard Lotz";
+    document.title = "Mini Games — Eduard Lotz";
   }, []);
 
   return null;

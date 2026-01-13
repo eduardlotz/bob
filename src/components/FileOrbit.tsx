@@ -91,9 +91,12 @@ const ITEMS: PortfolioItem[] = [
 
 // Configuration
 const CONFIG = {
-  cullingDistance: 75,
-  maxTextureSize: 1024,
-  videoPlayDistance: 30,
+  low: { cullingDistance: 50, maxTextureSize: 1024 / 2, videoPlayDistance: 15 },
+  high: {
+    cullingDistance: 75,
+    maxTextureSize: 1024,
+    videoPlayDistance: 100,
+  },
 };
 
 extend({ RoundedPlaneGeometry: geometry.RoundedPlaneGeometry });
@@ -141,6 +144,8 @@ function VideoPlane({
 
   const scaleRef = useRef<[number, number]>([8, 8]);
   const readyRef = useRef(false);
+  const { isMobile } = useAppStore();
+  const renderConfig = isMobile ? CONFIG.low : CONFIG.high;
 
   useEffect(() => {
     if (readyRef.current) return;
@@ -193,8 +198,8 @@ function VideoPlane({
     if (!meshRef.current || !matRef.current) return;
 
     const d = distanceRef.current;
-    const fadeStart = CONFIG.videoPlayDistance;
-    const fadeEnd = CONFIG.cullingDistance;
+    const fadeStart = renderConfig.videoPlayDistance;
+    const fadeEnd = renderConfig.cullingDistance;
 
     let opacity = 1;
     if (d > fadeStart) opacity = 1 - (d - fadeStart) / (fadeEnd - fadeStart);
@@ -204,7 +209,7 @@ function VideoPlane({
 
     meshRef.current.scale.set(scaleRef.current[0], scaleRef.current[1], 1);
 
-    if (d < CONFIG.videoPlayDistance) {
+    if (d < renderConfig.videoPlayDistance) {
       if (matRef.current.map !== videoTex.current) {
         matRef.current.map = videoTex.current!;
         matRef.current.needsUpdate = true;
@@ -249,6 +254,8 @@ function ImagePlane({
   const matRef = useRef<THREE.MeshBasicMaterial>(null);
   const texRef = useRef<THREE.Texture | null>(null);
   const scaleRef = useRef<[number, number]>([8, 8]);
+  const { isMobile } = useAppStore();
+  const renderConfig = isMobile ? CONFIG.low : CONFIG.high;
 
   useEffect(() => {
     if (textureCache.has(url)) {
@@ -259,7 +266,7 @@ function ImagePlane({
     }
 
     new THREE.TextureLoader().load(url, (t) => {
-      compressTexture(t, CONFIG.maxTextureSize);
+      compressTexture(t, renderConfig.maxTextureSize);
       t.colorSpace = THREE.SRGBColorSpace;
       t.needsUpdate = true;
       textureCache.set(url, t);
@@ -272,8 +279,8 @@ function ImagePlane({
     if (!meshRef.current || !matRef.current) return;
 
     const d = distanceRef.current;
-    const fadeStart = CONFIG.cullingDistance * 0.8;
-    const fadeEnd = CONFIG.cullingDistance;
+    const fadeStart = renderConfig.cullingDistance * 0.8;
+    const fadeEnd = renderConfig.cullingDistance;
 
     let opacity = 1;
     if (d > fadeStart) opacity = 1 - (d - fadeStart) / (fadeEnd - fadeStart);
@@ -316,6 +323,8 @@ function MediaItem({
   const { setHoveredObject } = useFloatingBar();
   const { focusOnTarget, focusOnImage, focusedImageTitle } = useViewStore();
   const { triggerQuest } = useQuestSystem();
+  const { isMobile } = useAppStore();
+  const renderConfig = isMobile ? CONFIG.low : CONFIG.high;
 
   const currentlyActive = focusedImageTitle === title;
   const setHovering = useCursorStore.getState().setHoveringClickable;
@@ -339,7 +348,10 @@ function MediaItem({
     distanceRef.current = camera.position.distanceTo(position);
   });
 
-  if (distanceRef.current > CONFIG.cullingDistance + 20 && !currentlyActive)
+  if (
+    distanceRef.current > renderConfig.cullingDistance + 20 &&
+    !currentlyActive
+  )
     return null;
 
   return (
@@ -403,12 +415,9 @@ export function getSphericalAngles({
     }
 
     case "EQUATORIAL_RING": {
-      const tweak = 0;
-      return {
-        r: radius,
-        phi: Math.PI / 2 + tweak * Math.log(index + 1),
-        theta: index * GOLDEN_ANGLE,
-      };
+      const phi = Math.PI / 2;
+      const theta = (index / count) * 2 * Math.PI;
+      return { r: radius * 2, phi, theta };
     }
 
     case "LOGARITHMIC_SPIRAL": {
@@ -440,7 +449,7 @@ export function FileOrbit({ radius = 40 }: { radius?: number }) {
   const { selectedOrbitForm: orbitForm } = useCoreStore();
   const { isMobile } = useAppStore();
 
-  const effectiveRadius = isMobile ? radius * 1.5 : radius;
+  const effectiveRadius = isMobile ? radius * 0.8 : radius;
 
   const spherical = new THREE.Spherical();
   const n = ITEMS.length;
