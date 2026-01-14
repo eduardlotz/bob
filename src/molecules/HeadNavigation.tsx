@@ -362,11 +362,11 @@ function Option({
   const position = initialPosition;
 
   const resetCamAndNavigate = () => {
-    resetToDefaultView();
     navigate(route.path);
+    // resetToDefaultView();
     hideOptions();
 
-    stopAllWorldSounds();
+    // stopAllWorldSounds();
   };
 
   const handleOptionClick = () => {

@@ -65,7 +65,7 @@ export function BottomNavigation() {
       transition={{ delay: SCENE_REVEAL_DURATION }}
     >
       <TapUpgrades show={showTapUpgrades} />
-      <OrbitFormControls show={showOrbitFormControls} />
+      {/* <OrbitFormControls show={showOrbitFormControls} /> */}
       <HugRow $gap={"8px"} layout>
         <AnimatePresence mode="popLayout">
           {/* {!isHomeRoute && <ProgressTracker />} */}

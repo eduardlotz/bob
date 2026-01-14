@@ -17,22 +17,22 @@ interface OrbitFormSelection {
 }
 
 const orbitForms: Array<OrbitFormSelection> = [
-  {
-    id: "FIBONACCI_SPHERE",
-    name: "Kugel",
-  },
+  // {
+  //   id: "FIBONACCI_SPHERE",
+  //   name: "Kugel",
+  // },
   {
     id: "EQUATORIAL_RING",
     name: "Ring",
   },
-  {
-    id: "LOGARITHMIC_SPIRAL",
-    name: "Spirale",
-  },
-  {
-    id: "GALAXY_WAVES",
-    name: "Galaxie",
-  },
+  // {
+  //   id: "LOGARITHMIC_SPIRAL",
+  //   name: "Spirale",
+  // },
+  // {
+  //   id: "GALAXY_WAVES",
+  //   name: "Galaxie",
+  // },
 ];
 
 export const OrbitFormControls = ({ show }: { show: boolean }) => {

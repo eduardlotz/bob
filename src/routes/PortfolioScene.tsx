@@ -12,12 +12,8 @@ import { useNavigate } from "react-router-dom";
 
 export function PortfolioScene() {
   const { checkUnlockedRoutes } = useCoreStore();
-  const {
-    transitionToView,
-    resetToDefaultView,
-    setDefaultViewMode,
-    applyViewModeToControls,
-  } = useViewStore();
+  const { resetToDefaultView, setDefaultViewMode, transitionToView } =
+    useViewStore();
   const navigate = useNavigate();
   const { isMuted } = useSoundSystem();
 
@@ -31,14 +27,17 @@ export function PortfolioScene() {
   }, [isAllowedToAcces]);
 
   useEffect(() => {
-    applyViewModeToControls("object");
-    stopSoundsById(DEFAULT_WORLD_MUSIC.id);
     setDefaultViewMode("object");
-    resetToDefaultView();
-    transitionToView("portfolio");
+    // const timer = setTimeout(() => resetToDefaultView(), 300);
+    // transitionToView("portfolio");
+
+    // stopSoundsById(DEFAULT_WORLD_MUSIC.id);
     if (!isMuted) playWorldSound(DEFAULT_PINK_NOISE.id);
 
-    return () => stopSoundsById(DEFAULT_PINK_NOISE.id);
+    return () => {
+      // clearTimeout(timer);
+      stopSoundsById(DEFAULT_PINK_NOISE.id);
+    };
   }, []);
 
   return (

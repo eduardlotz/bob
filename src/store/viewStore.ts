@@ -94,7 +94,7 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   portfolio: {
     id: "portfolio",
     name: "Portfolio Orbit View",
-    position: [5, CAMERA_HEIGHT - 0.5, 50],
+    position: [5, CAMERA_HEIGHT - 0.5, 73],
     target: [0, CAMERA_Y_POSITION - 0.5, 0],
     transition: {
       duration: 1000,
@@ -231,6 +231,12 @@ export const useViewStore = create<ViewStore>()(
           controls.getTarget(target);
           controls.setTarget(target.x, target.y, target.z, true);
 
+          // if (get().isImageFocused) {
+          //   controls.minDistance = 2;
+          // } else if (get().currentView === "portfolio")
+          //   controls.minDistance = 62;
+          // else controls.minDistance = 4;
+
           controls.mouseButtons.left = get().focusedImageTitle
             ? CameraControlsImpl.ACTION.TRUCK
             : CameraControlsImpl.ACTION.ROTATE;
@@ -361,11 +367,25 @@ export const useViewStore = create<ViewStore>()(
             return;
           }
 
+          // set polar small angles for portfolio vs bigger for rest
+          if (currentRoute === ROUTE_PATHS.PORTFOLIO) {
+            controls.minPolarAngle = 1.55;
+            controls.maxPolarAngle = 1.6;
+            controls.minDistance = 4;
+            controls.maxDistance = 73;
+          } else {
+            controls.maxPolarAngle = 2;
+            controls.minPolarAngle = 0.2;
+            controls.minDistance = 1;
+            controls.maxDistance = 7;
+          }
+
           if (
             currentRoute === ROUTE_PATHS.PORTFOLIO &&
             lastFocusPosition &&
-            viewConfig.target &&
-            !get().isNavigationView()
+            viewConfig.target
+            // &&
+            // !get().isNavigationView()
           ) {
             const target = new Vector3(0, 0, 0);
             controls.getTarget(target); // keep current target, or optionally restore previous target if you store it
@@ -442,7 +462,7 @@ export const useViewStore = create<ViewStore>()(
         set({
           isTransitioning: true,
           viewMode: "object",
-          currentView: "portfolio",
+          // currentView: "portfolio",
         });
 
         get().applyViewModeToControls("object");
