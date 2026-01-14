@@ -91,11 +91,11 @@ const ITEMS: PortfolioItem[] = [
 
 // Configuration
 const CONFIG = {
-  low: { cullingDistance: 50, maxTextureSize: 1024 / 2, videoPlayDistance: 15 },
+  low: { cullingDistance: 50, maxTextureSize: 1024 / 2, videoPlayDistance: 8 },
   high: {
-    cullingDistance: 75,
+    cullingDistance: 60,
     maxTextureSize: 1024,
-    videoPlayDistance: 100,
+    videoPlayDistance: 10,
   },
 };
 
@@ -385,11 +385,10 @@ function MediaItem({
   );
 }
 
-export type OrbitForm =
-  | "EQUATORIAL_RING"
-  | "LOGARITHMIC_SPIRAL"
-  | "FIBONACCI_SPHERE"
-  | "GALAXY_WAVES";
+export type OrbitForm = "EQUATORIAL_RING";
+// | "FIBONACCI_SPHERE"
+// | "LOGARITHMIC_SPIRAL"
+// | "GALAXY_WAVES";
 
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 
@@ -405,51 +404,52 @@ export function getSphericalAngles({
   radius: number;
 }): { r: number; phi: number; theta: number } {
   switch (form) {
-    case "FIBONACCI_SPHERE": {
-      const t = (index + 0.5) / count;
-      const y = 1 - 2 * t;
-      const power = 1;
-      const squash = Math.sign(y) * Math.pow(Math.abs(y), power);
-      const phi = Math.acos(squash);
-      return { r: radius, phi: phi, theta: index * GOLDEN_ANGLE };
-    }
+    // case "FIBONACCI_SPHERE": {
+    //   const t = (index + 0.5) / count;
+    //   const y = 1 - 2 * t;
+    //   const power = 1;
+    //   const squash = Math.sign(y) * Math.pow(Math.abs(y), power);
+    //   const phi = Math.acos(squash);
+    //   return { r: radius, phi: phi, theta: index * GOLDEN_ANGLE };
+    // }
 
     case "EQUATORIAL_RING": {
       const phi = Math.PI / 2;
       const theta = (index / count) * 2 * Math.PI;
-      return { r: radius * 2, phi, theta };
+      return { r: radius, phi, theta };
     }
 
-    case "LOGARITHMIC_SPIRAL": {
-      const t = index / (count - 1);
-      const turns = 1;
-      const height = radius * 5;
-      const theta = 2 * Math.PI * turns * t;
-      const x = radius * Math.cos(theta);
-      const z = (radius * Math.sin(theta) * Math.PI) / 2;
-      const y = height * (t - 0.5);
-      return { r: x, phi: y, theta: z };
-    }
+    // case "LOGARITHMIC_SPIRAL": {
+    //   const t = index / (count - 1);
+    //   const turns = 1;
+    //   const height = radius * 5;
+    //   const theta = 2 * Math.PI * turns * t;
+    //   const x = radius * Math.cos(theta);
+    //   const z = (radius * Math.sin(theta) * Math.PI) / 2;
+    //   const y = height * (t - 0.5);
+    //   return { r: x, phi: y, theta: z };
+    // }
 
-    case "GALAXY_WAVES": {
-      const currentRadius = Math.sqrt(index + 1) * (radius / 2);
-      const y = (1 - (index / (count - 1)) * 2) * (currentRadius * 0.5);
-      const r = Math.sqrt(Math.max(0, currentRadius * currentRadius - y * y));
-      const theta = GOLDEN_ANGLE * index;
-      return {
-        r: Math.cos(theta) * r,
-        phi: Math.sin(theta) * y,
-        theta: Math.sin(theta) * r,
-      };
-    }
+    // case "GALAXY_WAVES": {
+    //   const currentRadius = Math.sqrt(index + 1) * (radius / 2);
+    //   const y = (1 - (index / (count - 1)) * 2) * (currentRadius * 0.5);
+    //   const r = Math.sqrt(Math.max(0, currentRadius * currentRadius - y * y));
+    //   const theta = GOLDEN_ANGLE * index;
+    //   return {
+    //     r: Math.cos(theta) * r,
+    //     phi: Math.sin(theta) * y,
+    //     theta: Math.sin(theta) * r,
+    //   };
+    // }
   }
 }
 
-export function FileOrbit({ radius = 40 }: { radius?: number }) {
+export function FileOrbit({ radius = 60 }: { radius?: number }) {
   const { selectedOrbitForm: orbitForm } = useCoreStore();
   const { isMobile } = useAppStore();
 
-  const effectiveRadius = isMobile ? radius * 0.8 : radius;
+  // const effectiveRadius = isMobile ? radius * 0.8 : radius;
+  const effectiveRadius = radius;
 
   const spherical = new THREE.Spherical();
   const n = ITEMS.length;
@@ -464,12 +464,12 @@ export function FileOrbit({ radius = 40 }: { radius?: number }) {
         radius: effectiveRadius,
       });
 
-      if (orbitForm === "GALAXY_WAVES" || orbitForm === "LOGARITHMIC_SPIRAL")
-        pts.push(new THREE.Vector3(r, phi, theta));
-      else
-        pts.push(
-          new THREE.Vector3().setFromSpherical(spherical.set(r, phi, theta))
-        );
+      // if (orbitForm === "GALAXY_WAVES" || orbitForm === "LOGARITHMIC_SPIRAL")
+      //   pts.push(new THREE.Vector3(r, phi, theta));
+      // else
+      pts.push(
+        new THREE.Vector3().setFromSpherical(spherical.set(r, phi, theta))
+      );
     }
     return pts;
   }, [effectiveRadius, orbitForm]);

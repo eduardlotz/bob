@@ -477,7 +477,7 @@ export const initialGameState: GameState = {
     worldSoundIds: [],
     tapEffectAudioId: undefined,
   },
-  selectedOrbitForm: "FIBONACCI_SPHERE",
+  selectedOrbitForm: "EQUATORIAL_RING",
 };
 
 const initialGameFlags: GameFlags = {
@@ -528,7 +528,8 @@ const partializePersisted = (state: GameStore): PersistedGameStore => ({
   viewDebuggerVisible: state.viewDebuggerVisible,
   previewMode: null, // reset on reload
   graphicPreferences: state.graphicPreferences,
-  selectedOrbitForm: state.selectedOrbitForm,
+  // selectedOrbitForm: state.selectedOrbitForm,
+  selectedOrbitForm: "EQUATORIAL_RING", // TODO: add configs with minMax angles/zooms for other forms or delete select option altogether
 });
 
 // TODO: split storeCreate into groups for better readability

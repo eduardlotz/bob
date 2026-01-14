@@ -32,10 +32,13 @@ export default function App() {
     currentView,
     isImageFocused,
     isTransitioning,
+    cameraControlsRef,
     previousView,
     viewMode,
     previousViewMode,
     defaultViewMode,
+    lastFocusPosition,
+    resetToDefaultView,
   } = useViewStore();
   const { viewDebuggerVisible } = useCoreStore();
 
@@ -56,17 +59,22 @@ export default function App() {
   // stop all previous world sounds onRouteChange
   useEffect(() => {
     if (currentRoute !== location.pathname) {
-      setCurrentRoute(location.pathname);
-      stopAllWorldSounds();
-
       if (mounted) {
+        setCurrentRoute(location.pathname);
+        stopAllWorldSounds(); // TODO: check why not working, need to call stopSoundsbyId manually
         const route = getRouteLabelByPath(location.pathname);
         setCurrentRouteInPretty(route);
         setShowRouteChip(true);
+        setTimeout(() => resetToDefaultView(), 150);
 
         setTimeout(() => {
           setShowRouteChip(false);
         }, 1800);
+
+        // return () => {
+        //   clearTimeout(routeChipTimer);
+        //   clearTimeout(defaultViewTimer);
+        // };
       }
     }
   }, [location.pathname, currentRoute, setCurrentRoute]);
@@ -125,6 +133,32 @@ export default function App() {
         <FullScreen>
           {viewDebuggerVisible && (
             <ViewDebug>
+              <p>
+                CameraControls:{" "}
+                {cameraControlsRef?.current?.active ? "active" : "-"}
+              </p>
+              <p>
+                LastFocusPoint: x:{lastFocusPosition?.x.toFixed(0)} y:
+                {lastFocusPosition?.y.toFixed(0)} z:
+                {lastFocusPosition?.z.toFixed(0)}
+              </p>
+              <p>Distance: {cameraControlsRef?.current?.distance.toFixed(2)}</p>
+              <p>
+                Polar Angle: {cameraControlsRef?.current?.polarAngle.toFixed(2)}
+              </p>
+              <p>
+                Polar min:{" "}
+                {cameraControlsRef?.current?.minPolarAngle.toFixed(2)}
+              </p>
+              <p>
+                Polar max:{" "}
+                {cameraControlsRef?.current?.minPolarAngle.toFixed(2)}
+              </p>
+              <p>
+                Azimuth Angle:{" "}
+                {cameraControlsRef?.current?.azimuthAngle.toFixed(2)}
+              </p>
+              <hr />
               <p>transitioning? {isTransitioning ? "yes" : "no"}</p>
               <p>Current View: {currentView}</p>
               <p>Previous View: {previousView}</p>

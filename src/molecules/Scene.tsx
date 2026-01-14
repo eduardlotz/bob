@@ -40,6 +40,8 @@ import {
   DEFAULT_WORLD_MUSIC,
 } from "@/utils/sound/defaults";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 const Debug = () => {
   const { width } = useThree((s) => s.size);
@@ -79,6 +81,7 @@ const Scene = ({
 
   useEffect(() => {
     setCameraControlsRef(cameraControlsRef);
+    resetToDefaultView();
   }, []);
 
   const [spring, api] = useSpring(() => ({
@@ -90,17 +93,17 @@ const Scene = ({
     setVisible(isHome);
 
     if (isHome) {
+      // stopSoundsById(DEFAULT_PINK_NOISE.id);
+      if (!isMuted) playWorldSound(DEFAULT_WORLD_MUSIC.id);
+      setDefaultViewMode("fixed");
       if (!isDefaultView()) {
-        const timer = setTimeout(() => {
-          playWorldSound(DEFAULT_WORLD_MUSIC.id);
-          setDefaultViewMode("fixed");
-          resetToDefaultView();
-          transitionToView("default");
-          stopSoundsById(DEFAULT_PINK_NOISE.id);
-        }, 350);
-        return () => clearTimeout(timer);
+        setTimeout(() => {
+          // resetToDefaultView();
+          // transitionToView("default");
+        }, 100);
       }
     }
+
     return () => stopSoundsById(DEFAULT_WORLD_MUSIC.id);
   }, [isHome]);
 
@@ -122,7 +125,14 @@ const Scene = ({
                 position={[0, FLOOR_Y_POSITION - 0.55, -0.55]}
               />
             )}
-            <CameraControls ref={cameraControlsRef} truckSpeed={TRUCK_SPEED} />
+            <CameraControls
+              ref={cameraControlsRef}
+              truckSpeed={TRUCK_SPEED}
+              // minPolarAngle={1.55}
+              // maxPolarAngle={1.6}
+              // minDistance={4}
+              // maxDistance={73}
+            />
             <ambientLight intensity={2} />
             <PerspectiveCamera makeDefault position={[0, 0, 3]} />
             <directionalLight intensity={1.2} position={[2, 4, 5]} />
@@ -182,6 +192,7 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
   const [isMobile, setIsMobile] = useState(false);
   const [dpr, setDpr] = useState(2);
   const { graphicPreferences } = useCoreStore();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (graphicPreferences.qualityMode === "high") setDpr(2);
@@ -224,6 +235,8 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
 
         const onRestored = () => {
           window.location.reload();
+          navigate(ROUTE_PATHS.HOME);
+          toast.error("Ein Fehler ist aufgetreten...");
         };
 
         canvas.addEventListener("webglcontextlost", onLost, false);

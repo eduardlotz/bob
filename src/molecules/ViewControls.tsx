@@ -49,7 +49,6 @@ export function ViewControls() {
     if (isTransitioning) return;
 
     resetToDefaultView();
-    console.info("resetToDefaultView(); in VIEWCONTROLS.tsx");
   };
 
   const title = isImageFocused
