@@ -18,7 +18,7 @@ export function GoalPost({
 }: GoalPostProps) {
   const material = useMemo(
     () => new THREE.MeshToonMaterial({ color: "white" }),
-    []
+    [],
   );
   const outlineColor = "#000000";
 
@@ -70,8 +70,8 @@ export function GoalPost({
 
       {/* Trigger volume */}
       <CuboidCollider
-        args={[width / 2, height / 2, 0.5 * scale]}
-        position={[0, height / 2, -0.25 * scale]}
+        args={[width / 2, height / 2, 0.25 * scale]}
+        position={[0, height / 2, -0.32 * scale]}
         sensor
         onIntersectionEnter={onEnter}
         onIntersectionExit={onLeave}

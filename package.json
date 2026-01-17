@@ -21,6 +21,7 @@
     "date-fns": "^4.1.0",
     "downloadjs": "^1.4.7",
     "eslint": "9.33.0",
+    "immer": "^11.1.3",
     "motion": "^12.23.12",
     "postprocessing": "^6.37.7",
     "react": "^18.3.1",

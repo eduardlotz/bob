@@ -14,7 +14,7 @@ import { Physics } from "@react-three/rapier";
 import { Perf } from "r3f-perf";
 import { Suspense, useRef, useState, useEffect } from "react";
 
-import { useAppStore, useCoreStore } from "../store";
+import { useAppStore, useCoreStore, useMiniGameStore } from "../store";
 import { useViewStore } from "../store/viewStore";
 import { ROUTE_IDS, ROUTE_PATHS } from "../store/config/routes";
 import { FISHEYE_CONFIG } from "../store/config/themes";
@@ -68,6 +68,7 @@ const Scene = ({
     transitionToView,
   } = useViewStore();
   const { statisticsVisible, physicsDebugEnabled } = useCoreStore();
+  const { activeGame } = useMiniGameStore();
 
   const { currentRoute } = useAppStore();
 
@@ -163,13 +164,15 @@ const Scene = ({
             {statisticsVisible && <Debug />}
 
             <Physics gravity={[0, -9.81, 0]} debug={physicsDebugEnabled}>
-              <HeadNavigation
-                cameraControlsRef={cameraControlsRef}
-                permissionGranted={permissionGranted}
-                onEmotionUpdate={(data) => {
-                  onEmotionUpdate?.(data);
-                }}
-              />
+              {activeGame === "LOBBY" && (
+                <HeadNavigation
+                  cameraControlsRef={cameraControlsRef}
+                  permissionGranted={permissionGranted}
+                  onEmotionUpdate={(data) => {
+                    onEmotionUpdate?.(data);
+                  }}
+                />
+              )}
 
               <MessageBubble anchor={[0, 2.4, 0]} />
 

@@ -48,7 +48,7 @@ export function useMessageSystem() {
               return showMessage(`return_greeting_${randomGreeting}`).then(
                 (ok) => {
                   if (ok) routeShownRef.current[ROUTE_PATHS.HOME] = true;
-                }
+                },
               );
             }
           })
@@ -78,15 +78,15 @@ export function useMessageSystem() {
               });
             } else {
               // returning visit: not ready message
-              return showMessage("minigames_not_ready").then((ok) => {
-                if (ok) routeShownRef.current[ROUTE_PATHS.MINIGAMES] = true;
-              });
+              // return showMessage("minigames_not_ready").then((ok) => {
+              //   if (ok) routeShownRef.current[ROUTE_PATHS.MINIGAMES] = true;
+              // });
             }
           })
           .otherwise(() => Promise.resolve());
       }, 2000);
     },
-    [showMessage, showMessages, isHydrated]
+    [showMessage, showMessages, isHydrated],
   );
 
   useEffect(() => {

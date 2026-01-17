@@ -3,52 +3,39 @@ import { FootballModel } from "@/3d-objects/models/football";
 import { GoalPost } from "@/3d-objects/models/goalPost";
 import { CloudEffect, TapEffects } from "@/3d-objects/ParticleEffects";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
-import { InteractiveObject } from "@/molecules/InteractiveObject";
 import { FLOOR_Y_POSITION } from "@/molecules/Scene";
 import { BasketBox } from "@/physics/BasketBox";
-import { ROUTE_PATHS, useCoreStore } from "@/store";
+import {
+  ROUTE_PATHS,
+  useCoreStore,
+  useMiniGameStore,
+  useViewStore,
+} from "@/store";
 import { useMessageStore } from "@/store/messageStore";
 import { GradientTexture, Grid, Html } from "@react-three/drei";
-import { CuboidCollider } from "@react-three/rapier";
+import {
+  CuboidCollider,
+  RapierRigidBody,
+  RigidBody,
+} from "@react-three/rapier";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BackSide } from "three";
+import { match } from "ts-pattern";
+import { PingPongGame } from "./games/PingPongGame";
+import { PingPongPaddle } from "@/3d-objects/models/pingPongPaddle";
+import { FootballGame } from "./games/FootballGame";
+import { PointsCounter } from "@/molecules/PointsCounter";
 
 export function MiniGamesScene() {
   const { checkUnlockedRoutes } = useCoreStore();
-  const goalsScored = useRef(0);
-  const [score, setScore] = useState(0);
-
-  const [ballKey, setBallKey] = useState(0);
-  const isResetting = useRef(false); // Cooldown lock
+  const activeGame = useMiniGameStore((s) => s.activeGame);
+  const { setActiveGame, finishGame } = useMiniGameStore();
+  const score = useMiniGameStore((s) => s.session.score);
 
   const navigate = useNavigate();
-  const { showMessage } = useMessageStore();
-  const { triggerQuest } = useQuestSystem();
 
   const isAllowedToAcces = checkUnlockedRoutes(ROUTE_PATHS.MINIGAMES);
-
-  const createParticles = useCallback((x = 0, y = 2, z = 0, count = 50) => {
-    if ((window as any).createTapParticles) {
-      (window as any).createTapParticles(x, y, z, count);
-    }
-  }, []);
-
-  const onGoalScored = () => {
-    if (isResetting.current) return;
-    isResetting.current = true;
-
-    createParticles();
-    showMessage("minigames_home_goal_scored");
-    triggerQuest("minigames_goal_scored");
-
-    setScore((prev) => prev + 1);
-
-    setTimeout(() => {
-      setBallKey((prev) => prev + 1);
-      isResetting.current = false;
-    }, 1000);
-  };
 
   useEffect(() => {
     if (!isAllowedToAcces) {
@@ -57,42 +44,49 @@ export function MiniGamesScene() {
     }
   }, [isAllowedToAcces]);
 
+  const api = useRef<RapierRigidBody>(null);
+
   return (
     <>
+      {match(activeGame)
+        .with("PING_PONG", () => <PingPongGame onExit={finishGame} />)
+        .with("FOOTBALL", () => <FootballGame onExit={finishGame} />)
+        .otherwise(() => (
+          // This is your "Lobby" view
+          <group>
+            <group onClick={() => setActiveGame("FOOTBALL")}>
+              <FootballModel position={[1, 5, 0]} />
+            </group>
+
+            <group onClick={() => setActiveGame("PING_PONG")}>
+              <PingPongPaddle
+                rotation={[Math.PI / 2, 0, 0]}
+                position={[-2, 0, 0]}
+              />
+            </group>
+
+            {/* bottom fake shadow */}
+            <mesh
+              rotation={[-Math.PI / 2, 0, 0]}
+              position={[0, FLOOR_Y_POSITION - 0.5, 0]}
+            >
+              <circleGeometry args={[1, 16, 16]} />
+              <meshToonMaterial color="#111820" transparent opacity={0.5} />
+            </mesh>
+
+            <BasketBox
+              position={[0, 3.3 + FLOOR_Y_POSITION, 2]}
+              width={7.5}
+              depth={7}
+              height={6}
+              wallThickness={0.02}
+            />
+          </group>
+        ))}
+
       <TapEffects id="tap_effect_confetti" />
 
-      {/* bottom fake shadow */}
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, FLOOR_Y_POSITION - 0.5, 0]}
-      >
-        <circleGeometry args={[1, 16, 16]} />
-        <meshToonMaterial color="#111820" transparent opacity={0.5} />
-      </mesh>
-
-      <FootballModel position={[-1, 2, 0]} key={ballKey} />
-
-      <CloudEffect preview={false} />
-
-      <GrassShader position={[0, -0.8, 0]} preview={false} />
-
-      <CuboidCollider args={[7 / 2, 0.02, 7 / 2]} position={[0, 4.5, 0]} />
-      <BasketBox
-        position={[0, 3.3 + FLOOR_Y_POSITION, -1]}
-        width={7.5}
-        depth={7}
-        height={6}
-        wallThickness={0.02}
-      />
-
-      <GoalPost
-        position={[0, -1.2, -3]}
-        scale={2}
-        onEnter={onGoalScored}
-        onLeave={() => {
-          // console.log("left goal");
-        }}
-      />
+      {activeGame !== "LOBBY" && <PointsCounter number={score} />}
 
       <mesh>
         <sphereGeometry args={[100, 16, 16]} />

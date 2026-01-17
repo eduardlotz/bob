@@ -51,7 +51,7 @@ export enum QUESTS_STORE_VERSION {
 
 function migrateStore(oldState: any, fromVersion: number): any {
   console.log(
-    `Quests Migration triggered: oldversion=${fromVersion}, migration version=${QUESTS_STORE_VERSION.LATEST}`
+    `Quests Migration triggered: oldversion=${fromVersion}, migration version=${QUESTS_STORE_VERSION.LATEST}`,
   );
 
   let migratedState = { ...oldState };
@@ -148,7 +148,7 @@ const initialQuests: Quest[] = [
   },
   {
     id: "portfolio_quest_1",
-    title: "Portfolio Redesign #67",
+    title: "Weltraumspaziergang",
     description: "Schau dir ein paar meiner kreativen Arbeiten an",
     icon: "✨",
     progress: 0,
@@ -203,14 +203,14 @@ export const useQuestStore = create<QuestStore>()(
           quests: state.quests.map((quest) =>
             quest.id === questId
               ? { ...quest, progress: Math.min(progress, quest.maxProgress) }
-              : quest
+              : quest,
           ),
         })),
 
       completeQuest: (questId) =>
         set((state) => ({
           quests: state.quests.map((quest) =>
-            quest.id === questId ? { ...quest, completed: true } : quest
+            quest.id === questId ? { ...quest, completed: true } : quest,
           ),
         })),
 
@@ -222,7 +222,7 @@ export const useQuestStore = create<QuestStore>()(
       setActiveQuests: (routeId) => {
         const state = get();
         const routeQuests = state.quests.filter(
-          (quest) => quest.routeId === routeId
+          (quest) => quest.routeId === routeId,
         );
         const questIds = routeQuests.map((quest) => quest.id);
 
@@ -260,12 +260,12 @@ export const useQuestStore = create<QuestStore>()(
         ({
           quests: state.quests,
           activeQuests: state.activeQuests,
-        } as QuestStore),
+        }) as QuestStore,
       migrate: (persisted: any, fromVersion: number) => {
         if (!persisted) return initialQuests;
 
         return migrateStore(persisted, fromVersion || 0);
       },
-    }
-  )
+    },
+  ),
 );
