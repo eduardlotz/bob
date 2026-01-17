@@ -1,23 +1,20 @@
 import React, { useRef, useState } from "react";
 import { useThree, useFrame, ThreeEvent } from "@react-three/fiber";
 import { RapierRigidBody } from "@react-three/rapier";
-import { Vector3, Plane, Vector2 } from "three";
-import { useCoreStore, useViewStore } from "@/store"; // Assuming this exists based on your snippet
+import { Vector3, Vector2, Plane } from "three";
+import { useCoreStore, useViewStore } from "@/store";
 import { Line } from "@react-three/drei";
 
-// --- Visual Debug Component ---
-const DragDebug = ({ start, end }: { start: Vector3; end: Vector3 }) => {
-  return (
-    <Line
-      points={[start, end]} // Array of points
-      color="red"
-      lineWidth={1} // In pixels (default)
-      depthTest={false} // See it through walls
-      opacity={0.5}
-      transparent
-    />
-  );
-};
+const DragDebug = ({ start, end }: { start: Vector3; end: Vector3 }) => (
+  <Line
+    points={[start, end]}
+    color="red"
+    lineWidth={2}
+    depthTest={false}
+    transparent
+    opacity={0.5}
+  />
+);
 
 type DragMode = "kinematic" | "spring";
 
@@ -25,20 +22,15 @@ type GrabbableProps = {
   children: React.ReactElement;
   rigidBodyRef: React.RefObject<RapierRigidBody>;
   mode?: DragMode;
-  // Locks & Limits
   lockX?: boolean;
   lockY?: boolean;
   lockZ?: boolean;
   min?: { x?: number; y?: number; z?: number };
   max?: { x?: number; y?: number; z?: number };
-  // Physics Settings
-  stiffness?: number; // How strong the pull is
-  damping?: number; // How much to slow down vibration (air resistance)
-  throwMult?: number; // Multiplier for throw velocity
-  freezeRotation?: boolean; // Stop rotation while dragging?
-  // Visuals
-  debug?: boolean;
-  // Events
+  stiffness?: number;
+  damping?: number;
+  throwMult?: number;
+  freezeRotation?: boolean;
   onDragStart?: () => void;
   onDragEnd?: () => void;
 };
@@ -46,237 +38,205 @@ type GrabbableProps = {
 export const Grabbable = ({
   children,
   rigidBodyRef,
-  mode = "spring", // Changed default to spring for more natural feel
+  mode = "spring",
   lockX = false,
   lockY = false,
   lockZ = false,
   min,
   max,
-  stiffness = 80, // Higher default for PD controller
-  damping = 2, // Damping adds weight
-  throwMult = 1.0,
+  stiffness = 80,
+  damping = 6,
+  throwMult = 1,
   freezeRotation = false,
   onDragStart,
   onDragEnd,
 }: GrabbableProps) => {
-  const { camera, raycaster, size } = useThree();
-  const [isDragging, setIsDragging] = useState(false);
-  const { cameraControlsRef } = useViewStore(); // Keep your store logic
-  const controls = cameraControlsRef?.current;
+  const { camera, size } = useThree();
+  const { cameraControlsRef } = useViewStore();
   const { physicsDebugEnabled: debug } = useCoreStore();
 
-  // Refs for math to reduce GC
-  const plane = useRef(new Plane());
-  const intersection = useRef(new Vector3());
-  const offset = useRef(new Vector3());
-  const targetPos = useRef(new Vector3());
+  const controls = cameraControlsRef?.current;
+
+  const [isDragging, setIsDragging] = useState(false);
+
   const mouseUV = useRef(new Vector2());
+  const prevMouseUV = useRef(new Vector2());
 
-  // Velocity smoothing buffer for clean throws
+  const grabDepth = useRef(0);
+  const screenOffset = useRef(new Vector2());
+
   const velocityBuffer = useRef<Vector3[]>([]);
-  const MAX_BUFFER = 5;
+  const MAX_BUFFER = 6;
 
-  // Debug state for the line renderer
-  const [debugStart, setDebugStart] = useState(new Vector3());
-  const [debugEnd, setDebugEnd] = useState(new Vector3());
+  const debugStart = useRef(new Vector3());
+  const debugEnd = useRef(new Vector3());
+
+  const dragPlane = useRef(new Plane());
+
+  const updateMouseUV = (e: PointerEvent | ThreeEvent<PointerEvent>) => {
+    mouseUV.current.set(
+      (e.clientX / size.width) * 2 - 1,
+      -(e.clientY / size.height) * 2 + 1,
+    );
+  };
+
+  const cursorToPlane = (uv: Vector2, out = new Vector3()) => {
+    const rayOrigin = camera.position;
+    const rayDir = new Vector3(uv.x, uv.y, 0.5)
+      .unproject(camera)
+      .sub(camera.position)
+      .normalize();
+
+    const t =
+      -(rayOrigin.dot(dragPlane.current.normal) + dragPlane.current.constant) /
+      rayDir.dot(dragPlane.current.normal);
+
+    return out.copy(rayOrigin).add(rayDir.multiplyScalar(t));
+  };
 
   const handlePointerDown = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
     const body = rigidBodyRef.current;
     if (!body) return;
 
-    if (controls) (controls as any).enabled = false;
+    if (controls) controls.enabled = false;
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
 
-    // 1. Setup Drag Plane (Billboarding towards camera)
-    const worldPos = body.translation();
-    const currentWorldVec = new Vector3(worldPos.x, worldPos.y, worldPos.z);
+    updateMouseUV(e);
 
-    plane.current.setFromNormalAndCoplanarPoint(
-      camera.getWorldDirection(new Vector3()).negate(),
-      currentWorldVec
-    );
+    const pos = body.translation();
+    const worldPos = new Vector3(pos.x, pos.y, pos.z);
 
-    // 2. Calculate Offset (Grab point relative to center)
-    // We update raycaster manually to ensure it matches the exact click frame
-    raycaster.setFromCamera(
-      new Vector2(
-        (e.clientX / size.width) * 2 - 1,
-        -(e.clientY / size.height) * 2 + 1
-      ),
-      camera
-    );
+    const camForward = new Vector3();
+    camera.getWorldDirection(camForward);
 
-    if (raycaster.ray.intersectPlane(plane.current, intersection.current)) {
-      offset.current.subVectors(currentWorldVec, intersection.current);
-    }
+    dragPlane.current.setFromNormalAndCoplanarPoint(camForward, worldPos);
 
-    // 3. Physics Setup
-    body.wakeUp();
+    const projected = worldPos.clone().project(camera);
+    grabDepth.current = projected.z;
 
-    if (mode === "kinematic") {
-      body.setBodyType(2, true); // KinematicPosition
-    } else {
-      // For spring mode, we don't disable gravity anymore.
-      // We let the PD controller fight gravity. It feels heavier/better.
-      if (freezeRotation) body.setAngvel({ x: 0, y: 0, z: 0 }, true);
-    }
+    screenOffset.current.set(projected.x, projected.y).sub(mouseUV.current);
 
     velocityBuffer.current = [];
+    prevMouseUV.current.copy(mouseUV.current);
+
+    body.wakeUp();
+    if (mode === "kinematic") body.setBodyType(2, true);
+    if (freezeRotation) body.setAngvel({ x: 0, y: 0, z: 0 }, true);
+
     setIsDragging(true);
-    if (onDragStart) onDragStart();
+    onDragStart?.();
   };
 
   const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
     if (!isDragging) return;
-    mouseUV.current.set(
-      (e.clientX / size.width) * 2 - 1,
-      -(e.clientY / size.height) * 2 + 1
-    );
+    prevMouseUV.current.copy(mouseUV.current);
+    updateMouseUV(e);
   };
 
   const handlePointerUp = (e: ThreeEvent<PointerEvent>) => {
     if (!isDragging) return;
     const body = rigidBodyRef.current;
+    if (!body) return;
 
-    if (controls) (controls as any).enabled = true;
+    if (controls) controls.enabled = true;
 
-    if (body) {
-      if (mode === "kinematic") {
-        body.setBodyType(0, true); // Restore Dynamic
-      }
+    let throwVel = new Vector3();
 
-      // CALCULATE THROW
-      // Average the velocity buffer for a smooth throw
-      if (velocityBuffer.current.length > 0) {
-        const avgVel = new Vector3();
-        velocityBuffer.current.forEach((v) => avgVel.add(v));
-        avgVel
-          .divideScalar(velocityBuffer.current.length)
-          .multiplyScalar(throwMult);
-
-        // Apply Throw
-        body.setLinvel(avgVel, true);
-      }
+    if (velocityBuffer.current.length) {
+      for (const v of velocityBuffer.current) throwVel.add(v);
+      throwVel.divideScalar(velocityBuffer.current.length);
     }
+
+    if (lockX) throwVel.x = 0;
+    if (lockY) throwVel.y = 0;
+    if (lockZ) throwVel.z = 0;
+
+    if (throwVel.lengthSq() < 1e-4) {
+      camera.getWorldDirection(throwVel);
+      if (lockX) throwVel.x = 0;
+      if (lockY) throwVel.y = 0;
+      if (lockZ) throwVel.z = 0;
+    }
+
+    throwVel.normalize().multiplyScalar(throwMult);
+
+    body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+    body.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    body.applyImpulse(
+      {
+        x: throwVel.x,
+        y: throwVel.y,
+        z: throwVel.z,
+      },
+      true,
+    );
 
     (e.target as HTMLElement).releasePointerCapture(e.pointerId);
     setIsDragging(false);
-    if (onDragEnd) onDragEnd();
+    onDragEnd?.();
   };
 
-  useFrame((state, delta) => {
+  useFrame((_, delta) => {
     if (!isDragging || !rigidBodyRef.current) return;
-
     const body = rigidBodyRef.current;
-    raycaster.setFromCamera(mouseUV.current, camera);
 
-    if (raycaster.ray.intersectPlane(plane.current, intersection.current)) {
-      // 1. Calculate Target Position
-      targetPos.current.addVectors(intersection.current, offset.current);
+    const target = cursorToPlane(
+      mouseUV.current.clone().add(screenOffset.current),
+    );
 
-      const currentPos = body.translation();
-      const currentPosVec = new Vector3(
-        currentPos.x,
-        currentPos.y,
-        currentPos.z
-      );
+    const pos = body.translation();
+    const currentPos = new Vector3(pos.x, pos.y, pos.z);
 
-      // 2. Apply Constraints
-      if (lockX) targetPos.current.x = currentPos.x;
-      if (lockY) targetPos.current.y = currentPos.y;
-      if (lockZ) targetPos.current.z = currentPos.z;
+    if (lockX) target.x = currentPos.x;
+    if (lockY) target.y = currentPos.y;
+    if (lockZ) target.z = currentPos.z;
 
-      if (min) {
-        if (min.x !== undefined)
-          targetPos.current.x = Math.max(min.x, targetPos.current.x);
-        if (min.y !== undefined)
-          targetPos.current.y = Math.max(min.y, targetPos.current.y);
-        if (min.z !== undefined)
-          targetPos.current.z = Math.max(min.z, targetPos.current.z);
-      }
-      if (max) {
-        if (max.x !== undefined)
-          targetPos.current.x = Math.min(max.x, targetPos.current.x);
-        if (max.y !== undefined)
-          targetPos.current.y = Math.min(max.y, targetPos.current.y);
-        if (max.z !== undefined)
-          targetPos.current.z = Math.min(max.z, targetPos.current.z);
-      }
+    if (min?.x !== undefined) target.x = Math.max(min.x, target.x);
+    if (min?.y !== undefined) target.y = Math.max(min.y, target.y);
+    if (min?.z !== undefined) target.z = Math.max(min.z, target.z);
 
-      // 3. Move Logic
-      if (mode === "kinematic") {
-        body.setNextKinematicTranslation(targetPos.current);
+    if (max?.x !== undefined) target.x = Math.min(max.x, target.x);
+    if (max?.y !== undefined) target.y = Math.min(max.y, target.y);
+    if (max?.z !== undefined) target.z = Math.min(max.z, target.z);
 
-        // Calculate velocity for the throw buffer
-        const instantaneousVel = new Vector3()
-          .subVectors(targetPos.current, currentPosVec)
-          .multiplyScalar(1 / delta);
+    if (mode === "kinematic") {
+      body.setNextKinematicTranslation(target);
+      const vel = target
+        .clone()
+        .sub(currentPos)
+        .multiplyScalar(1 / delta);
+      velocityBuffer.current.push(vel);
+    } else {
+      const lv = body.linvel();
+      const currentVel = new Vector3(lv.x, lv.y, lv.z);
 
-        // Push to buffer
-        velocityBuffer.current.push(instantaneousVel);
-        if (velocityBuffer.current.length > MAX_BUFFER)
-          velocityBuffer.current.shift();
-      } else {
-        // SPRING / FORCE MODE (PD Controller)
-        // Force = (Target - Current) * Stiffness - Velocity * Damping
-        const currentVel = body.linvel();
-        const currentVelVec = new Vector3(
-          currentVel.x,
-          currentVel.y,
-          currentVel.z
-        );
+      const force = target
+        .clone()
+        .sub(currentPos)
+        .multiplyScalar(stiffness)
+        .sub(currentVel.multiplyScalar(damping));
 
-        const direction = new Vector3().subVectors(
-          targetPos.current,
-          currentPosVec
-        );
+      body.applyImpulse(force.multiplyScalar(delta * body.mass()), true);
 
-        // PD Control calculation
-        const force = direction
-          .multiplyScalar(stiffness)
-          .sub(currentVelVec.multiplyScalar(damping));
+      velocityBuffer.current.push(currentVel.clone());
+    }
 
-        // Apply as impulse to account for mass automatically
-        // Multiplying by delta makes it force-like behavior integrated over time
-        body.applyImpulse(force.multiplyScalar(delta * body.mass()), true);
+    if (velocityBuffer.current.length > MAX_BUFFER)
+      velocityBuffer.current.shift();
 
-        // Optional: reduce rotation while dragging to make it easier to handle
-        if (freezeRotation) {
-          body.setAngvel({ x: 0, y: 0, z: 0 }, true);
-        } else {
-          // Apply a little angular damping so it doesn't spin forever
-          const angVel = body.angvel();
-          body.setAngvel(
-            {
-              x: angVel.x * 0.9,
-              y: angVel.y * 0.9,
-              z: angVel.z * 0.9,
-            },
-            true
-          );
-        }
-
-        // Push current velocity to buffer for throw consistency
-        velocityBuffer.current.push(
-          new Vector3(currentVel.x, currentVel.y, currentVel.z)
-        );
-        if (velocityBuffer.current.length > MAX_BUFFER)
-          velocityBuffer.current.shift();
-      }
-
-      // 4. Update Debug Visuals
-      if (debug) {
-        setDebugStart(currentPosVec);
-        setDebugEnd(targetPos.current);
-      }
+    if (debug) {
+      debugStart.current.copy(currentPos);
+      debugEnd.current.copy(target);
     }
   });
 
   return (
     <>
-      {debug && isDragging && <DragDebug start={debugStart} end={debugEnd} />}
-      {React.cloneElement(children as React.ReactElement, {
+      {debug && isDragging && (
+        <DragDebug start={debugStart.current} end={debugEnd.current} />
+      )}
+      {React.cloneElement(children, {
         onPointerDown: handlePointerDown,
         onPointerMove: handlePointerMove,
         onPointerUp: handlePointerUp,
