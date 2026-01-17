@@ -5,25 +5,18 @@ import { immer } from "zustand/middleware/immer";
 export type MiniGameType = "LOBBY" | "FOOTBALL" | "PING_PONG";
 
 interface MiniGameState {
-  // Navigation
   activeGame: MiniGameType;
   setActiveGame: (game: MiniGameType) => void;
 
-  // Persistent Highscores (Saved to LocalStorage)
-  highScores: {
-    FOOTBALL: number;
-    PING_PONG: number;
-  };
+  highScores: Record<MiniGameType, number>;
 
-  // Temporary Session Data (Reset when game starts/ends)
   session: {
     score: number;
   };
 
-  // Actions
   incrementScore: () => void;
   resetScore: () => void;
-  finishGame: () => void; // Saves highscore and resets session
+  finishGame: () => void;
 }
 
 export const useMiniGameStore = create<MiniGameState>()(
@@ -32,6 +25,7 @@ export const useMiniGameStore = create<MiniGameState>()(
       activeGame: "LOBBY",
 
       highScores: {
+        LOBBY: 0,
         FOOTBALL: 0,
         PING_PONG: 0,
       },
@@ -43,7 +37,7 @@ export const useMiniGameStore = create<MiniGameState>()(
       setActiveGame: (game) =>
         set((state) => {
           state.activeGame = game;
-          state.session.score = 0; // Reset session whenever we switch games
+          state.session.score = 0;
         }),
 
       incrementScore: () =>
@@ -61,7 +55,6 @@ export const useMiniGameStore = create<MiniGameState>()(
           const game = state.activeGame;
           if (game === "LOBBY") return;
 
-          // Check if current session beat the persistent highscore
           if (state.session.score > state.highScores[game]) {
             state.highScores[game] = state.session.score;
           }
@@ -73,7 +66,6 @@ export const useMiniGameStore = create<MiniGameState>()(
     {
       name: "mini-game-storage",
       storage: createJSONStorage(() => localStorage),
-      // Only persist highScores, not the current session or active game
       partialize: (state) => ({ highScores: state.highScores }),
     },
   ),

@@ -1,8 +1,9 @@
 import * as THREE from "three";
-import React, { useEffect, useRef } from "react";
+import React, { forwardRef, useRef } from "react";
 import { Outlines, useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
-import { a, useSpring } from "@react-spring/three";
+import { RapierRigidBody, RigidBody } from "@react-three/rapier";
+import { Grabbable } from "@/physics/Grabbable";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -24,64 +25,81 @@ interface Props {
   rotation?: [number, number, number];
   scale?: [number, number, number];
   outlineColor?: string;
+  enablePhysics?: boolean;
 }
 
-export const PingPongPaddle = ({
-  scale = [1, 1, 1],
-  position = [0, 0, 0],
-  outlineColor = "#4a1919",
-  ...props
-}: Props) => {
-  const group = useRef<THREE.Group>(null!);
-  const { nodes, materials } = useGLTF(PATH) as GLTFResult;
+export const PingPongPaddle = forwardRef(
+  (
+    {
+      scale = [1, 1, 1],
+      position = [0, 0, 0],
+      outlineColor = "#4a1919",
+      enablePhysics = false,
+      ...props
+    }: Props,
+    ref: any,
+  ) => {
+    const rigidRef = useRef<RapierRigidBody>(null);
 
-  const [spring, api] = useSpring(() => ({
-    scale: [0, 0, 0], // start invisible
-    config: { tension: 200, friction: 15 },
-  }));
+    const { nodes, materials } = useGLTF(PATH) as GLTFResult;
 
-  useEffect(() => {
-    api.start({
-      scale: scale,
-      config: { tension: 300, friction: 10 },
-    });
-  }, []);
-
-  return (
-    <a.group
-      ref={group}
-      scale={spring.scale.get() as [number, number, number]}
-      castShadow
-      receiveShadow
-      position={position}
-      rotation={props.rotation}
-    >
-      <mesh
+    const model = (
+      <group
+        ref={ref}
+        scale={scale}
         castShadow
         receiveShadow
-        geometry={nodes.Table_Tennis_Paddle_Cube033_1.geometry}
-        material={materials.DD9944}
+        position={position}
+        rotation={props.rotation}
       >
-        <Outlines thickness={0.02} color={"#000000"} screenspace />
-      </mesh>
-      <mesh
-        castShadow
-        receiveShadow
-        geometry={nodes.Table_Tennis_Paddle_Cube033_1_1.geometry}
-        material={materials["1A1A1A"]}
+        <mesh
+          castShadow
+          receiveShadow
+          geometry={nodes.Table_Tennis_Paddle_Cube033_1.geometry}
+          material={materials.DD9944}
+        >
+          <Outlines thickness={0.02} color={"#000000"} screenspace />
+        </mesh>
+        <mesh
+          castShadow
+          receiveShadow
+          geometry={nodes.Table_Tennis_Paddle_Cube033_1_1.geometry}
+          material={materials["1A1A1A"]}
+        >
+          <Outlines thickness={0.02} color={"#000000"} screenspace />
+        </mesh>
+        <mesh
+          castShadow
+          receiveShadow
+          geometry={nodes.Table_Tennis_Paddle_Cube033_1_2.geometry}
+          material={materials.F44336}
+        >
+          <Outlines thickness={0.02} color={"#000000"} screenspace />
+        </mesh>
+      </group>
+    );
+
+    if (!enablePhysics) return model;
+
+    return (
+      <Grabbable
+        stiffness={100}
+        damping={5}
+        rigidBodyRef={rigidRef}
+        mode="spring"
       >
-        <Outlines thickness={0.02} color={"#000000"} screenspace />
-      </mesh>
-      <mesh
-        castShadow
-        receiveShadow
-        geometry={nodes.Table_Tennis_Paddle_Cube033_1_2.geometry}
-        material={materials.F44336}
-      >
-        <Outlines thickness={0.02} color={"#000000"} screenspace />
-      </mesh>
-    </a.group>
-  );
-};
+        <RigidBody
+          {...props}
+          ref={rigidRef}
+          colliders="trimesh"
+          restitution={0.3}
+          friction={0.8}
+        >
+          {model}
+        </RigidBody>
+      </Grabbable>
+    );
+  },
+);
 
 useGLTF.preload(PATH);

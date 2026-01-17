@@ -71,7 +71,7 @@ export function GoalPost({
       {/* Trigger volume */}
       <CuboidCollider
         args={[width / 2, height / 2, 0.25 * scale]}
-        position={[0, height / 2, -0.32 * scale]}
+        position={[0, height / 2, -0.35 * scale]}
         sensor
         onIntersectionEnter={onEnter}
         onIntersectionExit={onLeave}

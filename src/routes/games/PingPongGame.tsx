@@ -1,11 +1,13 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { CuboidCollider, RapierRigidBody } from "@react-three/rapier";
 
 import { CharacterBall } from "@/components/CharacterBall";
 import { Paddle } from "@/3d-objects/PingPongPaddle";
-import { useMiniGameStore, useViewStore } from "@/store";
+import { useAppStore, useMiniGameStore, useViewStore } from "@/store";
 import { useCursor } from "@/hooks/useCursor";
 import { useFrame } from "@react-three/fiber";
+import CameraControlsImpl from "camera-controls";
+
 import {
   CAMERA_HEIGHT,
   CAMERA_Y_POSITION,
@@ -18,9 +20,10 @@ export function PingPongGame({ onExit }: { onExit: () => void }) {
   const ballApi = useRef<RapierRigidBody>(null!);
   const paddleApi = useRef<RapierRigidBody>(null!);
   const cursor = useCursorStore();
+  const { isMobile } = useAppStore();
 
   const mousePosition = useCursor({
-    condition: () => true,
+    condition: () => !isMobile,
     positionFactor: 2.5,
   });
 
@@ -30,7 +33,17 @@ export function PingPongGame({ onExit }: { onExit: () => void }) {
   useEffect(() => {
     cursor.hide();
 
-    () => cursor.show();
+    if (isMobile && cameraControlsRef?.current) {
+      cameraControlsRef.current.touches.one = CameraControlsImpl.ACTION.NONE;
+    }
+
+    () => {
+      if (isMobile && cameraControlsRef?.current) {
+        cameraControlsRef.current.touches.one =
+          CameraControlsImpl.ACTION.TOUCH_ROTATE;
+      }
+      cursor.show();
+    };
   }, []);
 
   // camera follows cursor
@@ -68,7 +81,7 @@ export function PingPongGame({ onExit }: { onExit: () => void }) {
 
   return (
     <group>
-      <CharacterBall ref={ballApi} />
+      <CharacterBall ref={ballApi} position={[0, 5, 0]} />
 
       <Paddle ref={paddleApi} onCollide={handleCollision} />
 
