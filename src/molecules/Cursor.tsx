@@ -112,9 +112,8 @@ export function Cursor({ attachToParent }: CursorProps) {
               .with("hover", () => <CursorHoverIcon />)
               .with("grab", () => <CursorGrabIcon />)
               .with("grabbing", () => <CursorGrabbingIcon />)
-              .otherwise(() => (
-                <CursorIcon />
-              ))}
+              .with("default", () => <CursorIcon />)
+              .otherwise(() => null)}
           </motion.div>
         )}
       </AnimatePresence>

@@ -12,7 +12,7 @@ import { Route, useCoreStore } from "@/store/core/store";
 import { useNavigate } from "react-router-dom";
 import { match } from "ts-pattern";
 import { LockIcon } from "@/icons/lock";
-import { useAppStore } from "@/store";
+import { useAppStore, useMiniGameStore } from "@/store";
 import { useViewStore } from "@/store/viewStore";
 import { Magnetic } from "@/layout/Magnetic";
 import { useMessageStore } from "@/store/messageStore";
@@ -140,6 +140,7 @@ export function HeadNavigation({
   onEmotionUpdate?: (data: { emotionState: any }) => void;
 }) {
   const [cameraZoomAnimation, setCameraZoomAnimation] = useState(false);
+  const { activeGame } = useMiniGameStore();
 
   const { emotionState, handleTap, triggerEmotion } = useBlobEmotions();
   const {
@@ -303,7 +304,7 @@ function OptionsGroup({
       x = Math.max(-halfSafeWidth - 40, Math.min(halfSafeWidth, x));
       y = Math.max(
         -halfSafeHeight + effectiveBottomOffset,
-        Math.min(halfSafeHeight, y)
+        Math.min(halfSafeHeight, y),
       );
 
       return new THREE.Vector3(x, y, 0).add(screenCenter);

@@ -39,7 +39,7 @@ import { BlackCap } from "@/3d-objects/models/blackCap";
 import { useCursor } from "@/hooks/useCursor";
 import { useCursorStore } from "@/store/core/cursor";
 import { ROUTE_PATHS } from "@/store/config/routes";
-import { useAppStore } from "@/store";
+import { useAppStore, useMiniGameStore } from "@/store";
 import { playTapSound } from "@/utils/soundSystem";
 import { resolveTapSoundForEffect } from "@/utils/sound/configs";
 import { BallCollider, RigidBody } from "@react-three/rapier";
@@ -95,7 +95,7 @@ const createEyeGeometries = () => {
 
   blinkGeometry.setAttribute(
     "position",
-    new Float32BufferAttribute(blinkPositions, 3)
+    new Float32BufferAttribute(blinkPositions, 3),
   );
   blinkGeometry.computeVertexNormals();
 
@@ -119,7 +119,7 @@ const createEyeGeometries = () => {
 
   madGeometry.setAttribute(
     "position",
-    new Float32BufferAttribute(madPositions, 3)
+    new Float32BufferAttribute(madPositions, 3),
   );
   madGeometry.computeVertexNormals();
 
@@ -143,7 +143,7 @@ const createEyeGeometries = () => {
 
   happyGeometry.setAttribute(
     "position",
-    new Float32BufferAttribute(happyPositions, 3)
+    new Float32BufferAttribute(happyPositions, 3),
   );
   happyGeometry.computeVertexNormals();
 
@@ -167,7 +167,7 @@ const createEyeGeometries = () => {
 
   dizzyGeometry.setAttribute(
     "position",
-    new Float32BufferAttribute(dizzyPositions, 3)
+    new Float32BufferAttribute(dizzyPositions, 3),
   );
   dizzyGeometry.computeVertexNormals();
 
@@ -245,7 +245,7 @@ export function BlobHead({
   >([]);
   const [blinking, setBlinking] = useState(false);
   const [idleAnimation, setIdleAnimation] = useState<"none" | "spin" | "tilt">(
-    "none"
+    "none",
   );
   const [idleAnimationStart, setIdleAnimationStart] = useState(0);
   const [lastActivity, setLastActivity] = useState(Date.now());
@@ -280,10 +280,13 @@ export function BlobHead({
   }));
 
   useEffect(() => {
-    const blinkInterval = setInterval(() => {
-      setBlinking(true);
-      setTimeout(() => setBlinking(false), 150);
-    }, 4000 + Math.random() * 1000);
+    const blinkInterval = setInterval(
+      () => {
+        setBlinking(true);
+        setTimeout(() => setBlinking(false), 150);
+      },
+      4000 + Math.random() * 1000,
+    );
     return () => clearInterval(blinkInterval);
   }, []);
 
@@ -384,7 +387,7 @@ export function BlobHead({
       newStars.forEach((star, index) => {
         setTimeout(() => {
           setDizzyStars((prev) =>
-            prev.map((s) => (s.id === star.id ? { ...s, visible: true } : s))
+            prev.map((s) => (s.id === star.id ? { ...s, visible: true } : s)),
           );
         }, index * 200);
       });
@@ -405,7 +408,7 @@ export function BlobHead({
           showOptions,
           orientation,
           acceleration,
-          permissionGranted
+          permissionGranted,
         );
       } else {
         handleDesktopMovement(clock, delta, showOptions);
@@ -434,7 +437,7 @@ export function BlobHead({
           ...star,
           orbitAngle: star.orbitAngle + star.orbitSpeed * delta,
           spinAngle: star.spinAngle + star.spinSpeed * delta,
-        }))
+        })),
       );
     }
   });
@@ -447,7 +450,7 @@ export function BlobHead({
     showOptions: boolean,
     orientation: DeviceOrientation,
     acceleration: DeviceMotionEventAcceleration,
-    permissionGranted: boolean
+    permissionGranted: boolean,
   ) => {
     if (permissionGranted) {
       const {
@@ -468,13 +471,13 @@ export function BlobHead({
         accelX,
         accelY,
         orientGamma,
-        orientBeta
+        orientBeta,
       );
 
       const lookDirection = new Vector3(
         -targetRotX,
         targetRotY,
-        targetRotZ
+        targetRotZ,
       ).normalize();
 
       const baseZoom = showOptions
@@ -486,7 +489,7 @@ export function BlobHead({
       const cameraPosition = new Vector3(
         0,
         CAMERA_HEIGHT,
-        baseZoom + zoomOffset
+        baseZoom + zoomOffset,
       );
       const target = cameraPosition.clone().add(lookDirection);
 
@@ -498,7 +501,7 @@ export function BlobHead({
           target.x,
           target.y,
           target.z,
-          true
+          true,
         );
       }
     } else {
@@ -530,7 +533,7 @@ export function BlobHead({
           handCamSwayX + cameraShakeX,
           CAMERA_Y_POSITION + handCamSwayY + cameraShakeY,
           0,
-          true
+          true,
         );
       }
     }
@@ -539,7 +542,7 @@ export function BlobHead({
   const handleDesktopMovement = (
     clock: Clock,
     delta: number,
-    showOptions: boolean
+    showOptions: boolean,
   ) => {
     const targetRotY = mousePosition.x * MAX_ROTATION_X;
     const targetRotX =
@@ -576,7 +579,7 @@ export function BlobHead({
         cursorPos.x + handCamSwayX + cameraShakeX,
         cursorPos.y + CAMERA_Y_POSITION + handCamSwayY + cameraShakeY,
         cursorPos.z,
-        true
+        true,
       );
     }
   };
@@ -585,22 +588,22 @@ export function BlobHead({
     rotX: number,
     rotY: number,
     rotZ: number,
-    delta: number
+    delta: number,
   ) => {
     headRef.current.rotation.y = MathUtils.lerp(
       headRef.current.rotation.y,
       rotY,
-      1 - Math.exp(-4 * delta)
+      1 - Math.exp(-4 * delta),
     );
     headRef.current.rotation.x = MathUtils.lerp(
       headRef.current.rotation.x,
       rotX,
-      1 - Math.exp(-4 * delta)
+      1 - Math.exp(-4 * delta),
     );
     headRef.current.rotation.z = MathUtils.lerp(
       headRef.current.rotation.z,
       rotZ,
-      1 - Math.exp(-3 * delta)
+      1 - Math.exp(-3 * delta),
     );
   };
 
@@ -610,7 +613,7 @@ export function BlobHead({
     accelX: number,
     accelY: number,
     orientGamma: number,
-    orientBeta: number
+    orientBeta: number,
   ) => {
     const shakeStrength = 0.6;
     const shakeOffsetX = MathUtils.clamp(accelX * shakeStrength, -0.4, 0.4);
@@ -621,12 +624,12 @@ export function BlobHead({
     headRef.current.position.x = MathUtils.lerp(
       headRef.current.position.x,
       shakeOffsetX + orientGamma * 0.2,
-      1 - Math.exp(-2 * delta)
+      1 - Math.exp(-2 * delta),
     );
     headRef.current.position.y = MathUtils.lerp(
       headRef.current.position.y,
       floatY + shakeOffsetY + orientBeta * 0.2,
-      1 - Math.exp(-2 * delta)
+      1 - Math.exp(-2 * delta),
     );
   };
 
@@ -662,7 +665,7 @@ export function BlobHead({
         headRef.current.rotation.y = MathUtils.lerp(
           headRef.current.rotation.y,
           0,
-          1 - Math.exp(-8 * delta)
+          1 - Math.exp(-8 * delta),
         );
       }
     } else if (idleAnimation === "tilt") {
@@ -684,7 +687,7 @@ export function BlobHead({
         headRef.current.rotation.y = MathUtils.lerp(
           headRef.current.rotation.y,
           0,
-          1 - Math.exp(-4 * delta)
+          1 - Math.exp(-4 * delta),
         );
         headRef.current.rotation.x = lookUpEase * 0.6;
       } else if (tiltPhase < 3) {
@@ -695,7 +698,7 @@ export function BlobHead({
         headRef.current.rotation.x = MathUtils.lerp(
           headRef.current.rotation.x,
           0.2,
-          1 - Math.exp(-4 * delta)
+          1 - Math.exp(-4 * delta),
         );
       } else {
         const returnProgress = tiltPhase - 3;
@@ -704,12 +707,12 @@ export function BlobHead({
         headRef.current.rotation.y = MathUtils.lerp(
           headRef.current.rotation.y,
           0,
-          1 - Math.exp(-6 * delta)
+          1 - Math.exp(-6 * delta),
         );
         headRef.current.rotation.x = MathUtils.lerp(
           headRef.current.rotation.x,
           0,
-          1 - Math.exp(-6 * delta)
+          1 - Math.exp(-6 * delta),
         );
       }
     }
@@ -784,18 +787,18 @@ export function BlobHead({
       newPositions[i] = MathUtils.lerp(
         currentPositions[i],
         targetPositions[i],
-        0.1
+        0.1,
       );
     }
 
     // Apply the morphed positions to both eyes
     leftEye.geometry.setAttribute(
       "position",
-      new Float32BufferAttribute(newPositions, 3)
+      new Float32BufferAttribute(newPositions, 3),
     );
     rightEye.geometry.setAttribute(
       "position",
-      new Float32BufferAttribute(newPositions, 3)
+      new Float32BufferAttribute(newPositions, 3),
     );
 
     leftEye.geometry.computeVertexNormals();
@@ -809,7 +812,7 @@ export function BlobHead({
     rightEye.position.y = MathUtils.lerp(
       currentRightY,
       baseY + eyeOffsetY,
-      0.2
+      0.2,
     );
   };
 
@@ -819,7 +822,7 @@ export function BlobHead({
         (window as any).createTapParticles(x, y, z, count);
       }
     },
-    []
+    [],
   );
 
   const onClick = (e: any) => {
@@ -858,7 +861,7 @@ export function BlobHead({
     const tapEffectId = selectedTapEffect?.id || "tap_effect_default";
     const soundConfig = resolveTapSoundForEffect(
       tapEffectId,
-      audioSelections.tapEffectAudioId
+      audioSelections.tapEffectAudioId,
     );
     playTapSound(soundConfig.id);
 
@@ -870,18 +873,18 @@ export function BlobHead({
 
   const selectedBlobForm = useMemo(
     () => getSelectedBlobForm(blobForms),
-    [blobForms]
+    [blobForms],
   );
   const blobFormType = useMemo(
     () => getBlobFormType(selectedBlobForm.id),
-    [selectedBlobForm.id]
+    [selectedBlobForm.id],
   );
 
   const calculateCostumePosition = useCallback(
     (
       basePosition: [number, number, number],
       itemType: "hat" | "accessory",
-      itemId?: string
+      itemId?: string,
     ): [number, number, number] => {
       const [baseX, baseY, baseZ] = basePosition;
       const { parameters } = selectedBlobForm;
@@ -950,7 +953,7 @@ export function BlobHead({
 
       return [adjustedX, adjustedY, adjustedZ];
     },
-    [selectedBlobForm, blobFormType]
+    [selectedBlobForm, blobFormType],
   );
 
   const calculateEyePosition = useCallback(
@@ -984,16 +987,16 @@ export function BlobHead({
 
       return [adjustedX, adjustedY, adjustedZ];
     },
-    [selectedBlobForm, blobFormType]
+    [selectedBlobForm, blobFormType],
   );
 
   const renderBobItems = () => {
     const previewItems = bobItems.filter(
-      (b) => b.preview && b.type === previewMode
+      (b) => b.preview && b.type === previewMode,
     );
 
     const enabledItems = bobItems.filter(
-      (b) => b.enabled && b.type !== previewMode
+      (b) => b.enabled && b.type !== previewMode,
     );
 
     const allEquippedItems = previewMode
@@ -1021,7 +1024,7 @@ export function BlobHead({
             position={calculateCostumePosition(
               [0, 0.1, 0.7],
               "accessory",
-              item.id
+              item.id,
             )}
             scale={[1.6, 1.6, 1.6]}
             preview={!item.enabled && !!item.preview}
@@ -1119,7 +1122,7 @@ export function BlobHead({
           <BlobForm
             formType={blobFormType}
             parameters={selectedBlobForm.parameters}
-            blobColor={blobColor || "#ff6b9d"}
+            blobColor={blobColor || "#ffffff"}
             outlineColor={outlineColor || "#000000"}
           />
 

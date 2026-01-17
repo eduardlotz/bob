@@ -106,10 +106,11 @@ export const useAppStore = create<AppStore>()(
     }),
     {
       name: "app-store",
-    }
-  )
+    },
+  ),
 );
 
 export * from "./core/store";
+export * from "./minigames";
 export * from "./core/quests";
 export * from "./viewStore";

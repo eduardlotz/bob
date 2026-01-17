@@ -261,9 +261,9 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
   {
     id: "minigames_welcome",
     text: [
-      "Ja mooooin, bock was zu zocken??",
-      "außer dem Fußball und dem dem Tor hinter mir steht hier leider noch nix ☹️",
-      "wenn dir das nicht reicht, musst du wohl nochmal wieder kommen",
+      "ja mooooin, bock was zu zocken??",
+      "klick den Fußball oder den Tischtennisschläger an",
+      "ist beides aber noch in Arbeit, also erwarte kein GTA 🤓",
     ],
     label: "Bob",
     repeatRule: "oncePerPersist",
@@ -272,30 +272,30 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
       emotion: { state: "happy", durationMs: 4000 },
     },
   },
-  {
-    id: "minigames_not_ready",
-    text: [
-      "Wie Sie sehen, sehen Sie nichts",
-      "hier ist gibt es leider noch nichts neues",
-      "vielleicht ja morgen...",
-    ],
-    label: "Bob",
-    repeatRule: "oncePerSession",
-    audioEnabled: true,
-    options: {
-      emotion: { state: "sad", durationMs: 4000 },
-    },
-  },
-  {
-    id: "minigames_home_goal_scored",
-    text: ["TOOOOR!! 🎉⚽️"],
-    label: "Bob",
-    repeatRule: "always",
-    audioEnabled: true,
-    options: {
-      emotion: { state: "happy", durationMs: 4000 },
-    },
-  },
+  // {
+  //   id: "minigames_not_ready",
+  //   text: [
+  //     "Wie Sie sehen, sehen Sie nichts",
+  //     "hier ist gibt es leider noch nichts neues",
+  //     "vielleicht ja morgen...",
+  //   ],
+  //   label: "Bob",
+  //   repeatRule: "oncePerSession",
+  //   audioEnabled: true,
+  //   options: {
+  //     emotion: { state: "sad", durationMs: 4000 },
+  //   },
+  // },
+  // {
+  //   id: "minigames_home_goal_scored",
+  //   text: ["TOOOOR!! 🎉⚽️"],
+  //   label: "Bob",
+  //   repeatRule: "always",
+  //   audioEnabled: true,
+  //   options: {
+  //     emotion: { state: "happy", durationMs: 4000 },
+  //   },
+  // },
 ];
 
 export const getMessageById = (id: string): MessageConfig | undefined =>

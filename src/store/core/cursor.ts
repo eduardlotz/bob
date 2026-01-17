@@ -3,6 +3,7 @@ import { useViewStore, ViewMode } from "../viewStore";
 
 export type CursorVariant =
   | "default"
+  | "hidden"
   | "hover"
   | "active"
   | "grab"
@@ -17,11 +18,13 @@ type CursorStore = CursorSignals & {
   variant: CursorVariant;
   setPointerDown: (v: boolean) => void;
   setHoveringClickable: (v: boolean) => void;
+  hide: () => void;
+  show: () => void;
 };
 
 function resolveCursorVariant(
   viewMode: ViewMode,
-  { isPointerDown, isHoveringClickable }: CursorSignals
+  { isPointerDown, isHoveringClickable }: CursorSignals,
 ): CursorVariant {
   if (isHoveringClickable) return isPointerDown ? "active" : "hover";
   if (viewMode === "object") {
@@ -35,6 +38,8 @@ export const useCursorStore = create<CursorStore>((set, get) => ({
   variant: "default",
   isPointerDown: false,
   isHoveringClickable: false,
+  hide: () => set({ variant: "hidden" }),
+  show: () => set({ variant: "default" }),
 
   setPointerDown: (isPointerDown) =>
     set(() => {

@@ -15,26 +15,26 @@ export const useQuestSystem = () => {
 
   const routeId = useMemo(
     () => ROUTE_DICTIONARY[currentRoute] || "route_home",
-    [currentRoute]
+    [currentRoute],
   );
 
   const currentQuests = useMemo(
     () => quests.filter((quest) => quest.routeId === routeId),
-    [quests, routeId]
+    [quests, routeId],
   );
 
   const completedQuests = useMemo(
     () => currentQuests.filter((q: any) => q.completed).length,
-    [currentQuests]
+    [currentQuests],
   );
 
   const totalReward = useMemo(
     () =>
       currentQuests.reduce(
         (sum: number, q: any) => sum + (q.completed ? q.reward : 0),
-        0
+        0,
       ),
-    [currentQuests]
+    [currentQuests],
   );
 
   const triggerQuest = useCallback(
@@ -44,7 +44,7 @@ export const useQuestSystem = () => {
         (quest) =>
           (quest.routeId ? quest.routeId === routeId : true) &&
           !quest.completed &&
-          quest.trigger?.action === action
+          quest.trigger?.action === action,
       );
 
       relevantQuests.forEach((quest) => {
@@ -58,7 +58,7 @@ export const useQuestSystem = () => {
         const progressIncrement = value || quest.trigger?.value || 1;
         const newProgress = Math.min(
           quest.progress + progressIncrement,
-          quest.maxProgress
+          quest.maxProgress,
         );
 
         updateQuestProgress(quest.id, newProgress);
@@ -77,14 +77,14 @@ export const useQuestSystem = () => {
         }
       });
     },
-    [routeId, updateQuestProgress, completeQuest, addTaps]
+    [routeId, updateQuestProgress, completeQuest, addTaps],
   );
 
   const triggerInteraction = useCallback(
     (elementId: string) => {
       triggerQuest(`click_${elementId}`);
     },
-    [triggerQuest]
+    [triggerQuest],
   );
 
   return {

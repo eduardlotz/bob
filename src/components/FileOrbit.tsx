@@ -270,7 +270,7 @@ function VideoPlane({
     matRef.current.opacity = THREE.MathUtils.lerp(
       matRef.current.opacity,
       targetOpacity,
-      delta * 20
+      delta * 20,
     );
 
     meshRef.current.visible = matRef.current.opacity > 0.01;
@@ -362,7 +362,7 @@ function ImagePlane({
     matRef.current.opacity = THREE.MathUtils.lerp(
       matRef.current.opacity,
       targetOpacity,
-      delta * 20
+      delta * 20,
     );
 
     meshRef.current.visible = matRef.current.opacity > 0.01;
@@ -415,10 +415,13 @@ function MediaItem({
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
+    if (distanceRef.current > cull.cullingDistance) return;
 
     if (focusedImageTitle !== title) {
       focusOnTarget({ position, distance: 8 });
       focusOnImage(title);
+      triggerQuest("click_portfolio_item");
+      playUISound();
     }
   };
 
@@ -457,13 +460,7 @@ function MediaItem({
         setPointerDown(false);
       }}
       onPointerDown={(e) => {
-        if (distanceRef.current > cull.cullingDistance) return;
-
         setPointerDown(true);
-        if (!isFocused) {
-          triggerQuest("click_creative_image");
-          playUISound();
-        }
       }}
       onPointerUp={() => setPointerDown(false)}
     >
@@ -569,7 +566,7 @@ export function FileOrbit({ radius = 60 }: { radius?: number }) {
       //   pts.push(new THREE.Vector3(r, phi, theta));
       // else
       pts.push(
-        new THREE.Vector3().setFromSpherical(spherical.set(r, phi, theta))
+        new THREE.Vector3().setFromSpherical(spherical.set(r, phi, theta)),
       );
     }
     return pts;
