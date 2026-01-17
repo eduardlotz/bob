@@ -64,8 +64,8 @@ export const FootballGame = ({ onExit }: { onExit: () => void }) => {
   });
 
   const resetBall = () => {
-    ballApi.current.setTranslation({ x: 0, y: 5, z: 0 }, true);
-    ballApi.current.setLinvel({ x: 0, y: 10, z: 0 }, true);
+    ballApi.current.setTranslation({ x: 0, y: 3, z: 0 }, true);
+    ballApi.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
   };
 
   const onGoalScored = () => {
@@ -94,7 +94,7 @@ export const FootballGame = ({ onExit }: { onExit: () => void }) => {
 
       <FootBallKeeper position={[0, 0.5, -3]} />
 
-      <CharacterBall ref={ballApi} position={[-1, 2, 0]} />
+      <CharacterBall ref={ballApi} position={[0, 3, 0]} />
       {/* <FootballModel position={[-1, 2, 0]} key={ballKey} /> */}
       <GrassShader position={[0, -0.8, 0]} preview={false} />
 
