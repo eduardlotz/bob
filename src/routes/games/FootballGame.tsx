@@ -64,13 +64,13 @@ export const FootballGame = ({ onExit }: { onExit: () => void }) => {
   });
 
   const resetBall = () => {
-    ballApi.current.setTranslation({ x: 0, y: 3, z: 0 }, true);
-    ballApi.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+    setBallKey((prev) => prev + 1);
+    isResetting.current = false;
   };
 
   const onGoalScored = () => {
-    // if (isResetting.current) return;
-    // isResetting.current = true;
+    if (isResetting.current) return;
+    isResetting.current = true;
 
     createParticles();
     // showMessage("minigames_home_goal_scored");
@@ -94,8 +94,8 @@ export const FootballGame = ({ onExit }: { onExit: () => void }) => {
 
       <FootBallKeeper position={[0, 0.5, -3]} />
 
-      <CharacterBall ref={ballApi} position={[0, 3, 0]} />
-      {/* <FootballModel position={[-1, 2, 0]} key={ballKey} /> */}
+      {/* <CharacterBall ref={ballApi} position={[0, 3, 0]} /> */}
+      <FootballModel position={[0, 3, 0]} key={ballKey} />
       <GrassShader position={[0, -0.8, 0]} preview={false} />
 
       <CuboidCollider args={[7 / 2, 0.02, 7 / 2]} position={[0, 4.5, 0]} />
