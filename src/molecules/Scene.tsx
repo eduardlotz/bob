@@ -16,11 +16,12 @@ import { Suspense, useRef, useState, useEffect } from "react";
 
 import { useAppStore, useCoreStore } from "../store";
 import { useViewStore } from "../store/viewStore";
-import { ROUTE_PATHS } from "../store/config/routes";
+import { ROUTE_IDS, ROUTE_PATHS } from "../store/config/routes";
 import { FISHEYE_CONFIG } from "../store/config/themes";
 import {
   attachListenerToCamera,
   playWorldSound,
+  stopAllWorldSounds,
   stopSoundsById,
 } from "@/utils/soundSystem";
 import { PortfolioScene } from "@/routes/PortfolioScene";
@@ -63,12 +64,10 @@ const Scene = ({
   const {
     setCameraControlsRef,
     resetToDefaultView,
-    isDefaultView,
-    transitionToView,
     setDefaultViewMode,
+    transitionToView,
   } = useViewStore();
   const { statisticsVisible, physicsDebugEnabled } = useCoreStore();
-  const { isMuted } = useSoundSystem();
 
   const { currentRoute } = useAppStore();
 
@@ -93,19 +92,42 @@ const Scene = ({
     setVisible(isHome);
 
     if (isHome) {
-      // stopSoundsById(DEFAULT_PINK_NOISE.id);
-      if (!isMuted) playWorldSound(DEFAULT_WORLD_MUSIC.id);
       setDefaultViewMode("fixed");
-      if (!isDefaultView()) {
-        setTimeout(() => {
-          // resetToDefaultView();
-          // transitionToView("default");
-        }, 100);
+    } else if (currentRoute === ROUTE_PATHS.PORTFOLIO)
+      setTimeout(() => transitionToView("portfolio"), 300);
+  }, [isHome]);
+
+  // route based music
+  // default: lofi world music
+  // portfolio: pink noise
+  useEffect(() => {
+    let currentWorldSoundId = null;
+
+    switch (currentRoute) {
+      case ROUTE_PATHS.HOME: {
+        // currentWorldSoundId = DEFAULT_WORLD_MUSIC.id;
+        currentWorldSoundId = null;
+        break;
+      }
+
+      case ROUTE_PATHS.PORTFOLIO: {
+        currentWorldSoundId = DEFAULT_PINK_NOISE.id;
+        break;
+      }
+
+      default: {
+        currentWorldSoundId = null;
+        break;
       }
     }
 
-    return () => stopSoundsById(DEFAULT_WORLD_MUSIC.id);
-  }, [isHome]);
+    if (currentWorldSoundId)
+      playWorldSound(currentWorldSoundId, { stopPrevious: true });
+
+    return () => {
+      if (currentWorldSoundId) stopSoundsById(currentWorldSoundId);
+    };
+  }, [currentRoute]);
 
   return (
     <>

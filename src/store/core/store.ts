@@ -4,8 +4,14 @@ import { persist } from "zustand/middleware";
 import { createIndexedDBStorage } from "../indexedDB";
 import { match } from "ts-pattern";
 import { ROUTE_PATHS, ROUTE_IDS, ROUTE_CONFIG } from "../config/routes";
-import { toast } from "sonner";
-import { setCurrentTapSound as engineSetCurrentTapSound } from "@/utils/soundSystem";
+
+import {
+  setCurrentTapSound as engineSetCurrentTapSound,
+  setMasterVolume as engineSetMasterVolume,
+  setTypeVolume as engineSetTypeVolume,
+  enable as engineEnable,
+  disable as engineDisable,
+} from "@/utils/soundSystem";
 import { resolveTapSoundForEffect } from "@/utils/sound/configs";
 import { THEME_IDS, THEME_CONFIG } from "../config/themes";
 import { initialTapUpgrades } from "@/shop-items/upgrades";
@@ -1542,6 +1548,24 @@ export const useCoreStore = create<GameStore>()(
           state.recentManualTaps = [];
 
           state.updateComputedValueCache?.();
+
+          try {
+            const sys = state.soundSystem;
+
+            engineSetMasterVolume(sys.masterVolume);
+            engineSetTypeVolume("tap", sys.tapVolume);
+            engineSetTypeVolume("world", sys.worldVolume);
+            engineSetTypeVolume("ui", sys.uiVolume);
+            engineSetTypeVolume("text", (sys as any).textVolume ?? 1);
+
+            if (sys.enabled) {
+              engineEnable();
+            } else {
+              engineDisable();
+            }
+          } catch (err) {
+            console.warn("Failed to sync audio engine during hydration:", err);
+          }
         },
         // onRehydrateStorage: (state) => {
         //   console.log("Game store rehydrated:", state);

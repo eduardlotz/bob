@@ -10,16 +10,76 @@ import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { extend, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { geometry } from "maath";
 
-interface PortfolioItem {
+type ViewCullMode = "default" | "focused";
+
+interface CullConfig {
+  cullingDistance: number;
+  fadeStart: number;
+  videoPlayDistance: number;
+}
+
+function resolveCullConfig({
+  isMobile,
+  viewMode,
+  isFocusedItem,
+}: {
+  isMobile: boolean;
+  viewMode: ViewCullMode;
+  isFocusedItem: boolean;
+}): CullConfig {
+  const base = isMobile ? CONFIG.low : CONFIG.high;
+
+  if (isFocusedItem) {
+    return {
+      cullingDistance: base.cullingDistance,
+      fadeStart: base.cullingDistance,
+      videoPlayDistance: base.videoPlayDistance * 100,
+    };
+  }
+
+  if (viewMode === "default") {
+    return {
+      cullingDistance: base.cullingDistance,
+      fadeStart: base.cullingDistance * 0.5,
+      videoPlayDistance: base.videoPlayDistance,
+    };
+  }
+
+  const reduced = base.cullingDistance * (isMobile ? 0.5 : 0.75);
+
+  return {
+    cullingDistance: reduced,
+    fadeStart: reduced * 0.5,
+    videoPlayDistance: 0,
+  };
+}
+
+export type MediaMeta =
+  | { type: "text"; label: string; value: string }
+  | { type: "link"; label: string; href: string }
+  | { type: "tag"; value: string }
+  | { type: "credits"; role: string; name: string };
+
+export interface PortfolioItem {
   url: string;
   title: string;
   type?: "image" | "video";
   link?: string;
   sound?: SoundConfig;
+  meta?: MediaMeta[];
 }
 
 const ITEMS: PortfolioItem[] = [
-  { url: "/images/portfolio/face_study.jpeg", title: "3D Gesicht Studie 1/2" },
+  {
+    url: "/images/portfolio/face_study.jpeg",
+    title: "3D Gesicht Studie 1/2",
+    meta: [
+      { type: "text", label: "Year", value: "2024" },
+      { type: "tag", value: "Blender" },
+      { type: "tag", value: "Lighting Study" },
+      { type: "credits", role: "Artist", name: "Eddie" },
+    ],
+  },
   { url: "/images/portfolio/gradient_gem.jpeg", title: "3D Licht Studie" },
   {
     url: "/videos/portfolio/face-emotions-study.mp4",
@@ -91,9 +151,9 @@ const ITEMS: PortfolioItem[] = [
 
 // Configuration
 const CONFIG = {
-  low: { cullingDistance: 50, maxTextureSize: 1024 / 2, videoPlayDistance: 8 },
+  low: { cullingDistance: 30, maxTextureSize: 1024 / 2, videoPlayDistance: 10 },
   high: {
-    cullingDistance: 60,
+    cullingDistance: 40,
     maxTextureSize: 1024,
     videoPlayDistance: 10,
   },
@@ -129,10 +189,12 @@ function getMediaScale(width: number, height: number): [number, number] {
 function VideoPlane({
   url,
   distanceRef,
+  cull,
   onClick,
 }: {
   url: string;
   distanceRef: React.MutableRefObject<number>;
+  cull: CullConfig;
   onClick: (e: ThreeEvent<MouseEvent>) => void;
 }) {
   const meshRef = useRef<THREE.Mesh>(null);
@@ -144,8 +206,6 @@ function VideoPlane({
 
   const scaleRef = useRef<[number, number]>([8, 8]);
   const readyRef = useRef(false);
-  const { isMobile } = useAppStore();
-  const renderConfig = isMobile ? CONFIG.low : CONFIG.high;
 
   useEffect(() => {
     if (readyRef.current) return;
@@ -162,14 +222,12 @@ function VideoPlane({
       const h = video.videoHeight || 9;
       scaleRef.current = getMediaScale(w, h);
 
-      // video texture
       const vTex = new THREE.VideoTexture(video);
       vTex.colorSpace = THREE.SRGBColorSpace;
       vTex.minFilter = THREE.LinearFilter;
       vTex.magFilter = THREE.LinearFilter;
       videoTex.current = vTex;
 
-      // poster
       const canvas = document.createElement("canvas");
       canvas.width = w;
       canvas.height = h;
@@ -194,22 +252,34 @@ function VideoPlane({
     };
   }, [url]);
 
-  useFrame(() => {
+  useFrame((state, delta) => {
     if (!meshRef.current || !matRef.current) return;
 
     const d = distanceRef.current;
-    const fadeStart = renderConfig.videoPlayDistance;
-    const fadeEnd = renderConfig.cullingDistance;
 
-    let opacity = 1;
-    if (d > fadeStart) opacity = 1 - (d - fadeStart) / (fadeEnd - fadeStart);
-    matRef.current.opacity = Math.max(0, Math.min(1, opacity));
+    let targetOpacity = 1;
+    if (d > cull.cullingDistance) {
+      targetOpacity = 0;
+    } else if (d > cull.fadeStart) {
+      targetOpacity =
+        1 - (d - cull.fadeStart) / (cull.cullingDistance - cull.fadeStart);
+    }
+
+    targetOpacity = Math.max(0, Math.min(1, targetOpacity));
+
+    matRef.current.opacity = THREE.MathUtils.lerp(
+      matRef.current.opacity,
+      targetOpacity,
+      delta * 20
+    );
+
+    meshRef.current.visible = matRef.current.opacity > 0.01;
 
     if (!readyRef.current) return;
 
     meshRef.current.scale.set(scaleRef.current[0], scaleRef.current[1], 1);
 
-    if (d < renderConfig.videoPlayDistance) {
+    if (d < cull.videoPlayDistance) {
       if (matRef.current.map !== videoTex.current) {
         matRef.current.map = videoTex.current!;
         matRef.current.needsUpdate = true;
@@ -244,10 +314,12 @@ const textureCache = new Map<string, THREE.Texture>();
 function ImagePlane({
   url,
   distanceRef,
+  cull,
   onClick,
 }: {
   url: string;
   distanceRef: React.MutableRefObject<number>;
+  cull: CullConfig;
   onClick: (e: ThreeEvent<MouseEvent>) => void;
 }) {
   const meshRef = useRef<THREE.Mesh>(null);
@@ -275,17 +347,25 @@ function ImagePlane({
     });
   }, [url]);
 
-  useFrame(() => {
+  useFrame((state, delta) => {
     if (!meshRef.current || !matRef.current) return;
 
     const d = distanceRef.current;
-    const fadeStart = renderConfig.cullingDistance * 0.8;
-    const fadeEnd = renderConfig.cullingDistance;
 
-    let opacity = 1;
-    if (d > fadeStart) opacity = 1 - (d - fadeStart) / (fadeEnd - fadeStart);
+    let targetOpacity = 1;
+    if (d > cull.fadeStart) {
+      targetOpacity =
+        1 - (d - cull.fadeStart) / (cull.cullingDistance - cull.fadeStart);
+    }
+    targetOpacity = Math.max(0, Math.min(1, targetOpacity));
 
-    matRef.current.opacity = Math.max(0, Math.min(1, opacity));
+    matRef.current.opacity = THREE.MathUtils.lerp(
+      matRef.current.opacity,
+      targetOpacity,
+      delta * 20
+    );
+
+    meshRef.current.visible = matRef.current.opacity > 0.01;
 
     if (texRef.current && matRef.current.map !== texRef.current) {
       matRef.current.map = texRef.current;
@@ -302,7 +382,7 @@ function ImagePlane({
         ref={matRef}
         color="#ffffff"
         transparent
-        opacity={0}
+        opacity={0} // Start at 0, fade in
         toneMapped={false}
       />
     </mesh>
@@ -324,9 +404,9 @@ function MediaItem({
   const { focusOnTarget, focusOnImage, focusedImageTitle } = useViewStore();
   const { triggerQuest } = useQuestSystem();
   const { isMobile } = useAppStore();
-  const renderConfig = isMobile ? CONFIG.low : CONFIG.high;
 
-  const currentlyActive = focusedImageTitle === title;
+  const isFocused = focusedImageTitle === item.title;
+  const viewMode: ViewCullMode = focusedImageTitle ? "focused" : "default";
   const setHovering = useCursorStore.getState().setHoveringClickable;
   const setPointerDown = useCursorStore.getState().setPointerDown;
 
@@ -348,28 +428,39 @@ function MediaItem({
     distanceRef.current = camera.position.distanceTo(position);
   });
 
-  if (
-    distanceRef.current > renderConfig.cullingDistance + 20 &&
-    !currentlyActive
-  )
-    return null;
+  const cull = resolveCullConfig({
+    isMobile,
+    viewMode,
+    isFocusedItem: isFocused,
+  });
+
+  // --- CHANGED: REMOVED HARD CULLING ---
+  // If we return null here, the component unmounts instantly and cannot fade out.
+  // We rely on the components (ImagePlane/VideoPlane) to set visible={false}
+  // when opacity hits 0.
+  // -------------------------------------
 
   return (
     <Billboard
       position={position}
       onPointerEnter={(e) => {
+        // Prevent interaction if invisible (far away)
+        if (distanceRef.current > cull.cullingDistance) return;
+
         e.stopPropagation();
         setHoveredObject({ title });
-        if (!currentlyActive) setHovering(true);
+        if (!isFocused) setHovering(true);
       }}
       onPointerLeave={() => {
         setHoveredObject(null);
         setHovering(false);
         setPointerDown(false);
       }}
-      onPointerDown={() => {
+      onPointerDown={(e) => {
+        if (distanceRef.current > cull.cullingDistance) return;
+
         setPointerDown(true);
-        if (!currentlyActive) {
+        if (!isFocused) {
           triggerQuest("click_creative_image");
           playUISound();
         }
@@ -377,9 +468,19 @@ function MediaItem({
       onPointerUp={() => setPointerDown(false)}
     >
       {isVideo ? (
-        <VideoPlane url={url} onClick={handleClick} distanceRef={distanceRef} />
+        <VideoPlane
+          url={url}
+          onClick={handleClick}
+          distanceRef={distanceRef}
+          cull={cull}
+        />
       ) : (
-        <ImagePlane url={url} onClick={handleClick} distanceRef={distanceRef} />
+        <ImagePlane
+          url={url}
+          onClick={handleClick}
+          distanceRef={distanceRef}
+          cull={cull}
+        />
       )}
     </Billboard>
   );

@@ -127,16 +127,16 @@ const preloadDefaultAudioFiles = async () => {
             (error) => {
               console.error(`Failed to preload ${config.id}:`, error);
               resolve();
-            }
+            },
           );
-        })
-    )
+        }),
+    ),
   );
 
   if (DEBUG_LOGS)
     console.log(
       "Audio preloading complete. Loaded buffers:",
-      Array.from(audioBuffers.keys())
+      Array.from(audioBuffers.keys()),
     );
 };
 
@@ -154,7 +154,7 @@ const initializeAudioListener = () => {
     if (DEBUG_LOGS) {
       console.log(
         "Three.js Audio Listener initialized, configs loaded:",
-        Array.from(configs.keys())
+        Array.from(configs.keys()),
       );
     }
     return audioListener;
@@ -189,7 +189,7 @@ export const attachListenerToCamera = (camera: THREE.Camera): void => {
 };
 
 const getRandomDetune = (
-  detuneConfig: NonNullable<SoundConfig["detune"]>
+  detuneConfig: NonNullable<SoundConfig["detune"]>,
 ): number => {
   return (
     Math.random() * (detuneConfig.maxSemitones - detuneConfig.minSemitones) +
@@ -228,8 +228,8 @@ const calculateFinalVolume = (config: SoundConfig): number => {
     config.type === "world"
       ? state.worldEnabled !== false
       : config.type === "tap"
-      ? state.tapEnabled !== false
-      : true;
+        ? state.tapEnabled !== false
+        : true;
   const v = baseVolume * typeVolume * master * (typeEnabled ? 0.7 : 0);
   return Number.isFinite(v) ? v : 0;
 };
@@ -292,7 +292,7 @@ const cleanupSound = (instanceId: string): void => {
 };
 
 const getOrLoadBuffer = async (
-  cfg: SoundConfig
+  cfg: SoundConfig,
 ): Promise<AudioBuffer | null> => {
   const cached = audioBuffers.get(cfg.id);
   if (cached) return cached;
@@ -308,14 +308,14 @@ const getOrLoadBuffer = async (
       (error) => {
         console.error(`Failed to load audio file: ${cfg.filePath}`, error);
         resolve(null);
-      }
+      },
     );
   });
 };
 
 export const playSound = async (
   soundId: string,
-  options?: Partial<SoundConfig>
+  options?: Partial<SoundConfig>,
 ): Promise<void> => {
   if (!state.enabled || state.masterVolume <= 0) {
     if (DEBUG_LOGS)
@@ -380,7 +380,7 @@ export const playSound = async (
         gainParam.setValueAtTime(0, ctx.currentTime);
         gainParam.linearRampToValueAtTime(
           finalVolume,
-          ctx.currentTime + fadeInMs / 1000
+          ctx.currentTime + fadeInMs / 1000,
         );
       } catch {
         applyVolumeImmediate(anySound, finalVolume);
@@ -433,7 +433,7 @@ const stopSoundInternal = (instanceId: string, fadeOutMs?: number): void => {
     const anySound = instance.sound as any;
     const fadeMs = Math.max(
       0,
-      fadeOutMs || (instance.config as any).fadeOut || 0
+      fadeOutMs || (instance.config as any).fadeOut || 0,
     );
     const ctx: AudioContext | undefined = anySound?.context;
     const gainParam: any = anySound?.gain?.gain;
@@ -491,7 +491,7 @@ export const stopSound = (instanceId: string): void => {
 
 export const stopSoundsByType = (type: SoundConfig["type"]): void => {
   const soundsToStop = Array.from(sounds).filter(
-    ([_, instance]) => instance.config.type === type
+    ([_, instance]) => instance.config.type === type,
   );
 
   for (const [instanceId] of soundsToStop) {
@@ -587,7 +587,7 @@ export const setMasterVolume = (volume: number): void => {
 
 export const setTypeVolume = (
   type: SoundConfig["type"],
-  volume: number
+  volume: number,
 ): void => {
   const clampedVolume = Math.max(0, Math.min(1, volume));
   const safe = clamp01Safe(clampedVolume);
@@ -615,7 +615,7 @@ const updateAllVolumes = (): void => {
     const newVolume = calculateFinalVolume(instance.config);
     applyVolumeImmediate(
       instance.sound as any,
-      Number.isFinite(newVolume) ? newVolume : 0
+      Number.isFinite(newVolume) ? newVolume : 0,
     );
   }
 };
@@ -686,7 +686,7 @@ export const playTapSound = (soundId: string = currentTapSoundId) => {
 
 export const playWorldSound = (
   soundId: string,
-  options?: Partial<SoundConfig>
+  options?: Partial<SoundConfig>,
 ) => {
   if (state.worldEnabled === false) return;
   playSound(soundId, { loop: true, fadeIn: 5000, fadeOut: 5000, ...options });
@@ -727,7 +727,7 @@ export const setWorldVolume = (volume: number) => {
       const newVolume = calculateFinalVolume(instance.config);
       applyVolumeImmediate(
         instance.sound as any,
-        Number.isFinite(newVolume) ? newVolume : 0
+        Number.isFinite(newVolume) ? newVolume : 0,
       );
     }
   } catch {}
