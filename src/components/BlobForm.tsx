@@ -14,7 +14,7 @@ export const BlobForm = React.memo(
     switch (formType) {
       case "sphere":
         return (
-          <mesh castShadow>
+          <mesh castShadow receiveShadow>
             <sphereGeometry
               args={[
                 parameters.sphereRadius || 1,
@@ -37,6 +37,7 @@ export const BlobForm = React.memo(
             ]}
             radius={parameters.cubeRadius || 0.2}
             castShadow
+            receiveShadow
           >
             <meshToonMaterial color={blobColor} />
             <Outlines thickness={0.0125} color={outlineColor} screenspace />
@@ -46,12 +47,12 @@ export const BlobForm = React.memo(
       default:
         // fallback to sphere
         return (
-          <mesh castShadow>
+          <mesh castShadow receiveShadow>
             <sphereGeometry args={[1, 64, 64]} />
             <meshToonMaterial color={blobColor} />
             <Outlines thickness={0.0125} color={outlineColor} screenspace />
           </mesh>
         );
     }
-  }
+  },
 );

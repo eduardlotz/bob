@@ -3,6 +3,7 @@ import { FootballModel } from "@/3d-objects/models/football";
 import { FootBallKeeper } from "@/3d-objects/models/footballKeeper";
 import { GoalPost } from "@/3d-objects/models/goalPost";
 import { CloudEffect } from "@/3d-objects/ParticleEffects";
+import { CharacterBall } from "@/components/CharacterBall";
 import { useCursor } from "@/hooks/useCursor";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
 import {
@@ -12,21 +13,24 @@ import {
 } from "@/molecules/HeadNavigation";
 import { FLOOR_Y_POSITION } from "@/molecules/Scene";
 import { BasketBox } from "@/physics/BasketBox";
-import { useMiniGameStore, useViewStore } from "@/store";
+import { useAppStore, useMiniGameStore, useViewStore } from "@/store";
 import { useMessageStore } from "@/store/messageStore";
 import { useFrame } from "@react-three/fiber";
-import { CuboidCollider } from "@react-three/rapier";
+import { CuboidCollider, RapierRigidBody } from "@react-three/rapier";
 import { useState, useRef, useCallback } from "react";
 import { Vector3 } from "three";
 
 export const FootballGame = ({ onExit }: { onExit: () => void }) => {
   const { incrementScore } = useMiniGameStore();
+  const { isMobile } = useAppStore();
 
   const [ballKey, setBallKey] = useState(0);
+  const ballApi = useRef<RapierRigidBody>(null!);
+
   const isResetting = useRef(false);
 
   const mousePosition = useCursor({
-    condition: () => true,
+    condition: () => !isMobile,
     positionFactor: 2.5,
   });
 
@@ -59,9 +63,14 @@ export const FootballGame = ({ onExit }: { onExit: () => void }) => {
     }
   });
 
+  const resetBall = () => {
+    ballApi.current.setTranslation({ x: 0, y: 5, z: 0 }, true);
+    ballApi.current.setLinvel({ x: 0, y: 10, z: 0 }, true);
+  };
+
   const onGoalScored = () => {
-    if (isResetting.current) return;
-    isResetting.current = true;
+    // if (isResetting.current) return;
+    // isResetting.current = true;
 
     createParticles();
     // showMessage("minigames_home_goal_scored");
@@ -70,8 +79,7 @@ export const FootballGame = ({ onExit }: { onExit: () => void }) => {
     incrementScore();
 
     setTimeout(() => {
-      setBallKey((prev) => prev + 1);
-      isResetting.current = false;
+      resetBall();
     }, 1000);
   };
 
@@ -85,7 +93,9 @@ export const FootballGame = ({ onExit }: { onExit: () => void }) => {
       <CloudEffect preview={false} />
 
       <FootBallKeeper position={[0, 0.5, -3]} />
-      <FootballModel position={[-1, 2, 0]} key={ballKey} />
+
+      <CharacterBall ref={ballApi} position={[-1, 2, 0]} />
+      {/* <FootballModel position={[-1, 2, 0]} key={ballKey} /> */}
       <GrassShader position={[0, -0.8, 0]} preview={false} />
 
       <CuboidCollider args={[7 / 2, 0.02, 7 / 2]} position={[0, 4.5, 0]} />
@@ -95,6 +105,13 @@ export const FootballGame = ({ onExit }: { onExit: () => void }) => {
         depth={7}
         height={6}
         wallThickness={0.02}
+      />
+
+      <CuboidCollider
+        args={[3, 1.2, 0.5]}
+        position={[0, 3.8, -3.8]}
+        sensor
+        onIntersectionEnter={resetBall}
       />
 
       <GoalPost

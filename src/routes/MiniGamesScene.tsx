@@ -55,13 +55,15 @@ export function MiniGamesScene() {
           // This is your "Lobby" view
           <group>
             <group onClick={() => setActiveGame("FOOTBALL")}>
-              <FootballModel position={[1, 5, 0]} />
+              <FootballModel position={[1, 7, 0]} scale={[5, 5, 5]} />
             </group>
 
             <group onClick={() => setActiveGame("PING_PONG")}>
               <PingPongPaddle
-                rotation={[Math.PI / 2, 0, 0]}
-                position={[-2, 0, 0]}
+                rotation={[0, 0, 0]}
+                position={[-2, 7, 0]}
+                scale={[0.7, 0.7, 0.7]}
+                enablePhysics
               />
             </group>
 
@@ -75,11 +77,22 @@ export function MiniGamesScene() {
             </mesh>
 
             <BasketBox
-              position={[0, 3.3 + FLOOR_Y_POSITION, 2]}
-              width={7.5}
-              depth={7}
-              height={6}
-              wallThickness={0.02}
+              position={[0, 4 + FLOOR_Y_POSITION + 0.55, 2]}
+              width={10}
+              depth={10}
+              height={10}
+              wallThickness={0.1}
+            />
+
+            <CuboidCollider
+              args={[3, 3, 0.1]}
+              position={[2.5, 0, -2]}
+              rotation={[0, Math.PI / 9, 0]}
+            />
+            <CuboidCollider
+              args={[3, 3, 0.1]}
+              position={[-2.5, 0, -2]}
+              rotation={[0, -Math.PI / 9, 0]}
             />
           </group>
         ))}

@@ -247,7 +247,7 @@ interface GameStateActions {
   selectBlobForm: (blobFormId: string) => void;
   updateBlobFormParameters: (
     blobFormId: string,
-    parameters: Partial<import("@/types/blobForms").BlobFormParameters>
+    parameters: Partial<import("@/types/blobForms").BlobFormParameters>,
   ) => void;
   resetBlobFormParameters: (blobFormId: string) => void;
 
@@ -350,7 +350,7 @@ export const initialThemes: Theme[] = Object.values(THEME_CONFIG).map(
     outlineColor: themeConfig.outlineColor,
     eyeColor: themeConfig.eyeColor,
     chatColor: themeConfig.chatColor,
-  })
+  }),
 );
 
 export const initialRoutes: Route[] = [
@@ -607,7 +607,7 @@ export const useCoreStore = create<GameStore>()(
               upgrade.level >= upgrade.maxLevel ||
               !state.canAfford(
                 upgrade.baseCost *
-                  Math.pow(upgrade.costMultiplier, upgrade.level)
+                  Math.pow(upgrade.costMultiplier, upgrade.level),
               )
             ) {
               return state;
@@ -618,7 +618,7 @@ export const useCoreStore = create<GameStore>()(
               Math.pow(upgrade.costMultiplier, upgrade.level);
 
             let updatedUpgrades = state.upgrades.map((u) =>
-              u.id === upgradeId ? { ...u, level: u.level + 1 } : u
+              u.id === upgradeId ? { ...u, level: u.level + 1 } : u,
             );
 
             return {
@@ -646,7 +646,7 @@ export const useCoreStore = create<GameStore>()(
             let updatedTapEffects = state.tapEffects.map((t) =>
               t.id === effectId
                 ? { ...t, purchased: true, enabled: true }
-                : { ...t, enabled: false }
+                : { ...t, enabled: false },
             );
 
             return {
@@ -688,7 +688,7 @@ export const useCoreStore = create<GameStore>()(
         purchaseDecoration: (decorationId: string) => {
           set((state) => {
             const decoration = state.decorations.find(
-              (d) => d.id === decorationId
+              (d) => d.id === decorationId,
             );
             if (
               !decoration ||
@@ -701,7 +701,7 @@ export const useCoreStore = create<GameStore>()(
             const updatedDecorations = state.decorations.map((d) =>
               d.id === decorationId
                 ? { ...d, purchased: true, enabled: true }
-                : d
+                : d,
             );
 
             return {
@@ -714,14 +714,14 @@ export const useCoreStore = create<GameStore>()(
         previewDecoration: (decorationId: string) => {
           set((state) => {
             const decoration = state.decorations.find(
-              (d) => d.id === decorationId
+              (d) => d.id === decorationId,
             );
             if (!decoration) {
               return state;
             }
 
             const updatedDecorations = state.decorations.map((d) =>
-              d.id === decorationId ? { ...d, preview: true } : d
+              d.id === decorationId ? { ...d, preview: true } : d,
             );
 
             return {
@@ -755,7 +755,7 @@ export const useCoreStore = create<GameStore>()(
                     ...b,
                     enabled:
                       b.type === bobItem.type ? b.id === bobItemId : b.enabled,
-                  }
+                  },
             );
 
             return {
@@ -840,7 +840,7 @@ export const useCoreStore = create<GameStore>()(
             }
 
             const updatedBlobForms = state.blobForms.map((f) =>
-              f.id === blobFormId ? { ...f, unlocked: true } : f
+              f.id === blobFormId ? { ...f, unlocked: true } : f,
             );
 
             return {
@@ -873,13 +873,13 @@ export const useCoreStore = create<GameStore>()(
 
         updateBlobFormParameters: (
           blobFormId: string,
-          parameters: Partial<import("@/types/blobForms").BlobFormParameters>
+          parameters: Partial<import("@/types/blobForms").BlobFormParameters>,
         ) => {
           set((state) => {
             const updatedBlobForms = state.blobForms.map((f) =>
               f.id === blobFormId
                 ? { ...f, parameters: { ...f.parameters, ...parameters } }
-                : f
+                : f,
             );
 
             return {
@@ -898,7 +898,7 @@ export const useCoreStore = create<GameStore>()(
             const updatedBlobForms = state.blobForms.map((f) =>
               f.id === blobFormId
                 ? { ...f, parameters: { ...defaultParameters } }
-                : f
+                : f,
             );
 
             return {
@@ -921,7 +921,7 @@ export const useCoreStore = create<GameStore>()(
                 const updatedRoutes = state.routes.map((r) =>
                   r.id === routeId
                     ? { ...r, purchased: true, unlocked: true }
-                    : r
+                    : r,
                 );
 
                 return {
@@ -935,7 +935,7 @@ export const useCoreStore = create<GameStore>()(
                   const updatedRoutes = state.routes.map((r) =>
                     r.id === routeId
                       ? { ...r, purchased: true, unlocked: true }
-                      : r
+                      : r,
                   );
 
                   return {
@@ -943,7 +943,7 @@ export const useCoreStore = create<GameStore>()(
                     taps: state.taps - route.cost,
                     routes: updatedRoutes,
                   };
-                }
+                },
               )
               .otherwise(() => state);
           });
@@ -956,7 +956,7 @@ export const useCoreStore = create<GameStore>()(
               route.path === routePath &&
               route.unlocked &&
               route.purchased &&
-              !route.isLocked
+              !route.isLocked,
           );
         },
 
@@ -1034,14 +1034,14 @@ export const useCoreStore = create<GameStore>()(
         toggleDecoration: (decorationId: string) => {
           set((state) => {
             const decoration = state.decorations.find(
-              (d) => d.id === decorationId
+              (d) => d.id === decorationId,
             );
             if (!decoration || !decoration.purchased) {
               return state;
             }
 
             const updatedDecorations = state.decorations.map((d) =>
-              d.id === decorationId ? { ...d, enabled: !d.enabled } : d
+              d.id === decorationId ? { ...d, enabled: !d.enabled } : d,
             );
 
             return {
@@ -1061,7 +1061,7 @@ export const useCoreStore = create<GameStore>()(
             const updatedEffects = state.tapEffects.map((e) =>
               e.id === tapEffectId
                 ? { ...e, enabled: !e.enabled }
-                : { ...e, enabled: false }
+                : { ...e, enabled: false },
             );
 
             // TODO: fix individual tap sounds
@@ -1093,7 +1093,7 @@ export const useCoreStore = create<GameStore>()(
             }
 
             const updatedWeatherEffects = state.weatherEffects.map((w) =>
-              w.id === effectId ? { ...w, enabled: !w.enabled } : w
+              w.id === effectId ? { ...w, enabled: !w.enabled } : w,
             );
 
             return {
@@ -1314,7 +1314,7 @@ export const useCoreStore = create<GameStore>()(
             const s = useCoreStore.getState();
             const cfg = resolveTapSoundForEffect(
               id,
-              s.audioSelections.tapEffectAudioId
+              s.audioSelections.tapEffectAudioId,
             );
             if (cfg && cfg.id) {
               if (cfg.filePath) engineSetCurrentTapSound(cfg.id, cfg.filePath);
@@ -1415,7 +1415,7 @@ export const useCoreStore = create<GameStore>()(
           }
 
           const multiplierUpgrades = state.upgrades.filter(
-            (u) => u.effect.type === "tapMultiplier"
+            (u) => u.effect.type === "tapMultiplier",
           );
 
           if (multiplierUpgrades.length === 0) {
@@ -1463,7 +1463,7 @@ export const useCoreStore = create<GameStore>()(
         getTotalTapMultiplierUncached: () => {
           const state = get();
           const multiplierUpgrades = state.upgrades.filter(
-            (u) => u.effect.type === "tapMultiplier"
+            (u) => u.effect.type === "tapMultiplier",
           );
 
           if (multiplierUpgrades.length === 0) {
@@ -1512,7 +1512,7 @@ export const useCoreStore = create<GameStore>()(
           const tapsPerSecond = state.getTotalTapsPerSecond();
           const tapMultiplier = state.getTotalTapMultiplier();
           const baseOfflineTaps = Math.floor(
-            tapsPerSecond * secondsSinceLastTap
+            tapsPerSecond * secondsSinceLastTap,
           );
           const offlineTaps = Math.floor(baseOfflineTaps * tapMultiplier);
 
@@ -1528,7 +1528,6 @@ export const useCoreStore = create<GameStore>()(
         version: GAME_STORE_VERSION.LATEST,
         storage: createIndexedDBStorage<GameStore>(),
         migrate: migrateCoreStore,
-        // partialize: partializePersisted,
         partialize: (state) => partializePersisted(state) as GameStore,
         onRehydrateStorage: () => (state?: GameStore) => {
           if (!state) return;
@@ -1549,117 +1548,24 @@ export const useCoreStore = create<GameStore>()(
 
           state.updateComputedValueCache?.();
 
-          try {
-            const sys = state.soundSystem;
+          const sys = state.soundSystem;
 
-            engineSetMasterVolume(sys.masterVolume);
-            engineSetTypeVolume("tap", sys.tapVolume);
-            engineSetTypeVolume("world", sys.worldVolume);
-            engineSetTypeVolume("ui", sys.uiVolume);
-            engineSetTypeVolume("text", (sys as any).textVolume ?? 1);
+          engineSetMasterVolume(sys.masterVolume);
+          engineSetTypeVolume("tap", sys.tapVolume);
+          engineSetTypeVolume("world", sys.worldVolume);
+          engineSetTypeVolume("ui", sys.uiVolume);
+          engineSetTypeVolume("text", (sys as any).textVolume ?? 1);
 
-            if (sys.enabled) {
-              engineEnable();
-            } else {
-              engineDisable();
-            }
-          } catch (err) {
-            console.warn("Failed to sync audio engine during hydration:", err);
+          if (sys.enabled) {
+            engineEnable();
+          } else {
+            engineDisable();
           }
         },
-        // onRehydrateStorage: (state) => {
-        //   console.log("Game store rehydrated:", state);
-
-        //   import("./migration")
-        //     .then((m) => m.queueStorageMigration())
-        //     .catch((e) =>
-        //       console.error("Failed to queue storage migration", e)
-        //     );
-
-        //   // TODO: check safer purge method or if even needed
-        //   // const needsPurge = state?.lastSchemaUpdate < PURGE_DATE;
-        //   const needsPurge = false;
-
-        //   if (needsPurge) {
-        //     try {
-        //       // TODO: correctly migrate
-        //       import("./gameStore").then((gameStore) =>
-        //         gameStore.useGameStore.setState(state)
-        //       );
-
-        //       toast.success(
-        //         `Store migrated from V${state.version} to V${GAME_STORE_VERSION.LATEST}`
-        //       );
-
-        //       setTimeout(() => {
-        //         try {
-        //           import("./messageStore").then((messageStore) => {
-        //             messageStore.useMessageStore.setState({
-        //               isHydrated: true,
-        //               repeatFlags: {},
-        //               seenThisSession: {},
-        //             });
-        //             console.log(
-        //               "Re-hydrated message store and cleared repeat flags after game store migration"
-        //             );
-        //           });
-        //         } catch (e) {
-        //           console.warn("Failed to re-hydrate message store:", e);
-        //         }
-        //       }, 100);
-        //     } catch (error) {
-        //       console.error("Error during store migration:", error);
-        //       toast.error(
-        //         "Store Migration fehlgeschlagen, manche Inhalte könnten fehlen."
-        //       );
-        //     }
-        //   }
-
-        //   try {
-        //     const prefs = state.soundPreferences;
-        //     const enabled = prefs?.enabled ?? true;
-        //     const muted = prefs?.muted ?? false;
-        //     useGameStore.setState((s) => ({
-        //       ...s,
-        //       soundSystem: {
-        //         ...s.soundSystem,
-        //         enabled,
-        //       },
-        //       soundPreferences: { enabled, muted },
-        //     }));
-        //     try {
-        //       const current = useGameStore.getState();
-        //       engineSetMasterVolume(
-        //         muted
-        //           ? 0
-        //           : current.soundSystem?.masterVolume || DEFAULT_MASTER_VOLUME
-        //       );
-        //     } catch {}
-        //   } catch {}
-
-        //   try {
-        //     const s = useGameStore.getState();
-        //     engineSetTapEnabled(!!s.soundSystem.tapEnabled);
-        //     const worldId = s.audioSelections.worldMusicId;
-        //     if (worldId) {
-        //       const track = tryGetWorldSoundById(worldId);
-        //       if (track) engineSetWorldMusic(track.filePath, track.id);
-        //     }
-        //     const selectedTap = s.tapEffects.find((u) => u.enabled);
-        //     const cfg = resolveTapSoundForEffect(
-        //       selectedTap?.id || "tap_effect_default",
-        //       s.audioSelections.tapEffectAudioId
-        //     );
-        //     if (cfg && cfg.id) {
-        //       if (cfg.filePath) engineSetCurrentTapSound(cfg.id, cfg.filePath);
-        //       else engineSetCurrentTapSound(cfg.id);
-        //     }
-        //   } catch {}
-        // },
-      }
+      },
     ),
     {
       name: "game-store",
-    }
-  )
+    },
+  ),
 );

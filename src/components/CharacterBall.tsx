@@ -1,12 +1,17 @@
-import { useMemo } from "react";
-import { RigidBody, BallCollider, RapierRigidBody } from "@react-three/rapier";
+import { forwardRef, useMemo } from "react";
+import { RigidBody, BallCollider } from "@react-three/rapier";
 import { BlobForm } from "./BlobForm"; // Adjust path
 import { useCoreStore } from "@/store";
 import React from "react";
 import { SphereGeometry } from "three";
+import { Grabbable } from "@/physics/Grabbable";
+
+interface Props {
+  position: [number, number, number];
+}
 
 // TODO: add emotions like blink and dizzy on hit
-export const CharacterBall = React.forwardRef<RapierRigidBody>((props, ref) => {
+export const CharacterBall = forwardRef((props: Props, ref: any) => {
   const { currentTheme } = useCoreStore();
 
   const blobColor = currentTheme?.blobColor;
@@ -19,38 +24,40 @@ export const CharacterBall = React.forwardRef<RapierRigidBody>((props, ref) => {
   }, []);
 
   return (
-    <RigidBody
-      ref={ref}
-      colliders={false}
-      ccd
-      angularDamping={0.5}
-      restitution={1.1}
-      enabledTranslations={[true, true, false]} // The "2D" Game Constraint
-      position={[0, 5, 0]}
-    >
-      <BallCollider args={[0.3]} />
+    <Grabbable rigidBodyRef={ref} mode={"spring"} stiffness={50} damping={1}>
+      <RigidBody
+        ref={ref}
+        colliders={false}
+        ccd
+        angularDamping={0.5}
+        restitution={1.1}
+        enabledTranslations={[true, true, false]} // The "2D" Game Constraint
+        position={props.position}
+      >
+        <BallCollider args={[0.3]} />
 
-      <group scale={0.3}>
-        <BlobForm
-          formType="sphere"
-          parameters={{
-            sphereRadius: 1,
-            sphereWidthSegments: 32,
-            sphereHeightSegments: 32,
-          }}
-          blobColor={blobColor || "#ffffff"}
-          outlineColor={outlineColor || "#000000"}
-        />
+        <group scale={0.3}>
+          <BlobForm
+            formType="sphere"
+            parameters={{
+              sphereRadius: 1,
+              sphereWidthSegments: 32,
+              sphereHeightSegments: 32,
+            }}
+            blobColor={blobColor || "#ffffff"}
+            outlineColor={outlineColor || "#000000"}
+          />
 
-        <group position={[0, 0.2, 0.85]}>
-          <mesh geometry={eyeGeoms} position={[-0.45, 0, 0]}>
-            <meshToonMaterial color={eyeColor || "#000000"} />
-          </mesh>
-          <mesh geometry={eyeGeoms} position={[0.45, 0, 0]}>
-            <meshToonMaterial color={eyeColor || "#000000"} />
-          </mesh>
+          <group position={[0, 0.2, 0.85]}>
+            <mesh geometry={eyeGeoms} position={[-0.45, 0, 0]}>
+              <meshToonMaterial color={eyeColor || "#000000"} />
+            </mesh>
+            <mesh geometry={eyeGeoms} position={[0.45, 0, 0]}>
+              <meshToonMaterial color={eyeColor || "#000000"} />
+            </mesh>
+          </group>
         </group>
-      </group>
-    </RigidBody>
+      </RigidBody>
+    </Grabbable>
   );
 });

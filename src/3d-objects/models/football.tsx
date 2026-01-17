@@ -24,10 +24,10 @@ interface Props {
 }
 
 export const FootballModel = forwardRef(
-  ({ scale = [1, 1, 1], ...props }: Props, ref: any) => {
+  ({ scale = [3, 3, 3], ...props }: Props, ref: any) => {
     const { nodes, materials } = useGLTF(PATH) as GLTFResult;
 
-    const api = useRef<RapierRigidBody>(null);
+    const rigidRef = useRef<RapierRigidBody>(null);
 
     const { setHoveredObject } = useFloatingBar();
 
@@ -44,10 +44,15 @@ export const FootballModel = forwardRef(
     };
 
     return (
-      <Grabbable stiffness={100} damping={5} rigidBodyRef={api} mode="spring">
+      <Grabbable
+        stiffness={50}
+        damping={1}
+        rigidBodyRef={rigidRef}
+        mode="spring"
+      >
         <RigidBody
           {...props}
-          ref={api}
+          ref={rigidRef}
           colliders="ball"
           restitution={0.2}
           friction={0.5}
@@ -58,12 +63,12 @@ export const FootballModel = forwardRef(
             geometry={nodes.Soccerball__0.geometry}
             material={materials["Scene_-_Root"]}
             // rotation={[-Math.PI / 2, 0, 0]}
-            scale={[3, 3, 3]}
+            scale={scale}
           />
         </RigidBody>
       </Grabbable>
     );
-  }
+  },
 );
 
 useGLTF.preload(PATH);

@@ -26,7 +26,7 @@ export const Paddle = React.forwardRef<
     vec.add(dir.multiplyScalar(state.camera.position.length()));
 
     paddleRef.current.setNextKinematicTranslation({
-      x: vec.x,
+      x: vec.x * 1.5,
       y: vec.y,
       z: 0,
     });
@@ -34,11 +34,11 @@ export const Paddle = React.forwardRef<
     paddleRef.current.setNextKinematicRotation({
       x: 0,
       y: 0,
-      z: (state.pointer.x * Math.PI) / 8,
+      z: (state.pointer.x * Math.PI) / (Math.PI * 5),
       w: 1,
     });
 
-    easing.damp3(visualGroup.current.position, [0, 0, 0], 0.2, delta);
+    easing.damp3(visualGroup.current.position, [0, 0, 0], 0.15, delta);
   });
 
   return (
