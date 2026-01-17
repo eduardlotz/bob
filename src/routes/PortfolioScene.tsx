@@ -28,16 +28,6 @@ export function PortfolioScene() {
 
   useEffect(() => {
     setDefaultViewMode("object");
-    // const timer = setTimeout(() => resetToDefaultView(), 300);
-    // transitionToView("portfolio");
-
-    // stopSoundsById(DEFAULT_WORLD_MUSIC.id);
-    if (!isMuted) playWorldSound(DEFAULT_PINK_NOISE.id);
-
-    return () => {
-      // clearTimeout(timer);
-      stopSoundsById(DEFAULT_PINK_NOISE.id);
-    };
   }, []);
 
   return (

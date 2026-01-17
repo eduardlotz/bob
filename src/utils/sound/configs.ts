@@ -26,7 +26,7 @@ export const DEFAULT_SOUND_CONFIGS: SoundConfig[] = [
     id: DEFAULT_WORLD_MUSIC.id,
     filePath: DEFAULT_WORLD_MUSIC.filePath,
     type: "world",
-    volume: 0.5,
+    volume: 0.2,
     loop: true,
     stopPrevious: true,
     distanceAttenuation: false,
@@ -155,7 +155,7 @@ export const TAP_EFFECT_TO_DEFAULT_TAP_SOUND: Record<string, string> = {
 
 export const resolveTapSoundForEffect = (
   effectUpgradeId: string,
-  overrideTapAudioId?: string
+  overrideTapAudioId?: string,
 ) => {
   const resolvedId =
     overrideTapAudioId ||

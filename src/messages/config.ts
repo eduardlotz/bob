@@ -169,15 +169,13 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
   {
     id: "portfolio_welcome",
     text: [
-      "Willkommen im ersten kreativeren Bereich 🧑‍🎨",
-      "Hier darfst du dich sogar frei bewegen",
       "Eddie's Design Portfolio, verstreut in einem eigenen kleinen Universum",
-      "Tipp ein Bild, um es dir genauer anzuschauen 🔍",
+      "Tipp ein Bild an, um es dir genauer anzuschauen 🔍",
     ],
     label: "Bob",
     options: {
       typingSpeedMs: 25,
-      baseDismissMs: 2000,
+      baseDismissMs: 1000,
       contentLengthFactorMs: 50,
       tailEnabled: false,
       emotion: { state: "happy", durationMs: 3000 },
@@ -185,7 +183,7 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
     repeatRule: "oncePerPersist",
     audioEnabled: true,
     positionOffset: [0, 0, 0],
-    nextDelayMs: 1800,
+    nextDelayMs: 200,
   },
   {
     id: "dev_message",
