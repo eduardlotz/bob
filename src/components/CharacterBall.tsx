@@ -8,6 +8,11 @@ import { Grabbable } from "@/physics/Grabbable";
 
 interface Props {
   position: [number, number, number];
+  scale: [number, number, number] | number;
+  ccd?: boolean;
+  angularDamping?: number;
+  restitution?: number;
+  enabledTranslations?: [boolean, boolean, boolean];
 }
 
 // TODO: add emotions like blink and dizzy on hit
@@ -23,20 +28,27 @@ export const CharacterBall = forwardRef((props: Props, ref: any) => {
     return sphere.clone();
   }, []);
 
+  const rigidSettings = {
+    ccd: props?.ccd ?? true,
+    angularDamping: props?.angularDamping ?? 0.5,
+    restitution: props?.restitution ?? 1.1,
+    enabledTranslations: props?.enabledTranslations ?? [true, true, false],
+  };
+
   return (
     <Grabbable rigidBodyRef={ref} mode={"spring"} stiffness={50} damping={1}>
       <RigidBody
         ref={ref}
         colliders={false}
-        ccd
-        angularDamping={0.5}
-        restitution={1.1}
-        enabledTranslations={[true, true, false]} // The "2D" Game Constraint
+        ccd={rigidSettings.ccd}
+        angularDamping={rigidSettings.angularDamping}
+        restitution={rigidSettings.restitution}
+        enabledTranslations={rigidSettings.enabledTranslations}
         position={props.position}
       >
-        <BallCollider args={[0.3]} />
+        <BallCollider args={[1]} scale={props.scale} />
 
-        <group scale={0.3}>
+        <group scale={props.scale}>
           <BlobForm
             formType="sphere"
             parameters={{

@@ -1,7 +1,12 @@
 import React from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
-import { useAppStore, ROUTE_PATHS, useViewStore } from "@/store";
+import {
+  useAppStore,
+  ROUTE_PATHS,
+  useViewStore,
+  useMiniGameStore,
+} from "@/store";
 import { MenuIcon } from "@/icons/menu";
 import { CloseIcon } from "@/icons/close";
 import { useKeyPress } from "@/hooks/useKeyPress";
@@ -13,6 +18,7 @@ import { BobPhone } from "./BobPhone";
 import { playUISound } from "@/utils/soundSystem";
 import { SCENE_REVEAL_DURATION } from "./SceneWithLoader";
 import { OrbitFormControls } from "./orbitFormControls";
+import { BackToLobbyButton } from "./BackToLobbyButton";
 
 export function BottomNavigation() {
   const {
@@ -29,6 +35,8 @@ export function BottomNavigation() {
     toggleOptions,
     closeOptionsWithAnimation,
   } = useAppStore();
+
+  const { activeGame } = useMiniGameStore();
 
   useKeyPress("Escape", () => {
     resetToDefaultView();
@@ -50,6 +58,7 @@ export function BottomNavigation() {
   const showTapUpgrades = !showOptions && isHomeRoute && !isPhoneView();
   const showOrbitFormControls =
     !showOptions && isPortfolioRoute && !isPhoneView() && !isImageFocused;
+  const showBackToLobby = activeGame !== "LOBBY";
 
   return (
     <HugColumn
@@ -66,60 +75,63 @@ export function BottomNavigation() {
     >
       <TapUpgrades show={showTapUpgrades} />
       {/* <OrbitFormControls show={showOrbitFormControls} /> */}
+      <BackToLobbyButton show={showBackToLobby} />
       <HugRow $gap={"8px"} layout>
         <AnimatePresence mode="popLayout">
           {/* {!isHomeRoute && <ProgressTracker />} */}
 
-          <Magnetic key="menu-button-magnet">
-            <MenuButton
-              key="menu-button"
-              onClick={handleMenuButtonClick}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              $isActive={showOptions}
-              initial={{ opacity: 0, y: 40, filter: "blur(6px)" }}
-              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              exit={{ opacity: 0, y: 40, filter: "blur(6px)" }}
-              transition={{
-                type: "spring" as const,
-                bounce: 0.5,
-              }}
-              layout="position"
-            >
-              <AnimatePresence mode="popLayout">
-                {showOptions ? (
-                  <motion.span
-                    key="close-menu-icon"
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0, opacity: 0 }}
-                    transition={{
-                      duration: 0.25,
-                      type: "spring" as const,
-                      bounce: 0.5,
-                    }}
-                  >
-                    <CloseIcon />
-                  </motion.span>
-                ) : (
-                  <motion.span
-                    key="show-menu-icon"
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0, opacity: 0 }}
-                    transition={{
-                      duration: 0.25,
-                      type: "spring" as const,
-                      bounce: 0.5,
-                    }}
-                  >
-                    <MenuIcon />
-                  </motion.span>
-                )}
-              </AnimatePresence>
-              <span>Menü</span>
-            </MenuButton>
-          </Magnetic>
+          {!showBackToLobby && (
+            <Magnetic key="menu-button-magnet">
+              <MenuButton
+                key="menu-button"
+                onClick={handleMenuButtonClick}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                $isActive={showOptions}
+                initial={{ opacity: 0, y: 40, filter: "blur(6px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                exit={{ opacity: 0, y: 40, filter: "blur(6px)" }}
+                transition={{
+                  type: "spring" as const,
+                  bounce: 0.5,
+                }}
+                layout="position"
+              >
+                <AnimatePresence mode="popLayout">
+                  {showOptions ? (
+                    <motion.span
+                      key="close-menu-icon"
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      transition={{
+                        duration: 0.25,
+                        type: "spring" as const,
+                        bounce: 0.5,
+                      }}
+                    >
+                      <CloseIcon />
+                    </motion.span>
+                  ) : (
+                    <motion.span
+                      key="show-menu-icon"
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      transition={{
+                        duration: 0.25,
+                        type: "spring" as const,
+                        bounce: 0.5,
+                      }}
+                    >
+                      <MenuIcon />
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+                <span>Menü</span>
+              </MenuButton>
+            </Magnetic>
+          )}
 
           <BobPhone />
         </AnimatePresence>
