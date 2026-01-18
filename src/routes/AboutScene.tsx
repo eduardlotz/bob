@@ -166,8 +166,8 @@ export function AboutScene() {
         position={[0, FLOOR_Y_POSITION + 5, 0]}
         width={10}
         depth={10}
-        height={10}
-        wallThickness={0.02}
+        height={11.5}
+        wallThickness={0.2}
       />
       {/* bottom fake shadow */}
       <mesh

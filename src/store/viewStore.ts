@@ -33,6 +33,7 @@ export type CameraViewId =
   | "default"
   | "upgrades"
   | "portfolio"
+  | "minigames"
   | "navigation"
   | "phone:home"
   | "phone:shop"
@@ -101,6 +102,12 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
       easing: "easeInOutCubic",
     },
     defaultViewMode: "object",
+  },
+  minigames: {
+    id: "minigames",
+    name: "Minigames View",
+    position: [0, CAMERA_HEIGHT, HIDDEN_OPTIONS_CAMERA_ZOOM],
+    target: [0, CAMERA_Y_POSITION, 0],
   },
   "phone:home": {
     id: "phone:home",
@@ -287,7 +294,7 @@ export const useViewStore = create<ViewStore>()(
         }));
 
         get().applyViewModeToControls(
-          viewConfig.defaultViewMode ?? get().viewMode
+          viewConfig.defaultViewMode ?? get().viewMode,
         );
 
         try {
@@ -297,7 +304,7 @@ export const useViewStore = create<ViewStore>()(
             controls.setLookAt(
               ...viewConfig.position,
               ...viewConfig.target,
-              true
+              true,
             );
             setTimeout(() => set({ isTransitioning: false }), 0);
           }
@@ -346,7 +353,7 @@ export const useViewStore = create<ViewStore>()(
         });
 
         get().applyViewModeToControls(
-          viewConfig.defaultViewMode ?? get().viewMode
+          viewConfig.defaultViewMode ?? get().viewMode,
         );
 
         try {
@@ -395,14 +402,14 @@ export const useViewStore = create<ViewStore>()(
               lastFocusPosition.y,
               lastFocusPosition.z,
               ...viewConfig.target,
-              true
+              true,
             );
             setTimeout(() => set({ isTransitioning: false }), 0);
           } else if (viewConfig.position && viewConfig.target) {
             controls.setLookAt(
               ...viewConfig.position,
               ...viewConfig.target,
-              true
+              true,
             );
             setTimeout(() => set({ isTransitioning: false }), 0);
           }
@@ -480,7 +487,7 @@ export const useViewStore = create<ViewStore>()(
             position.x,
             position.y,
             position.z,
-            true
+            true,
           );
 
           controls.mouseButtons.left = CameraControlsImpl.ACTION.TRUCK;
@@ -520,7 +527,7 @@ export const useViewStore = create<ViewStore>()(
           target.x,
           target.y,
           target.z,
-          true
+          true,
         );
 
         set({
@@ -534,6 +541,6 @@ export const useViewStore = create<ViewStore>()(
     }),
     {
       name: "view-store",
-    }
-  )
+    },
+  ),
 );
