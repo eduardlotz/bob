@@ -1,5 +1,4 @@
 import { GrassShader } from "@/3d-objects/GrassShader";
-import { FootballModel } from "@/3d-objects/models/football";
 import { FootBallKeeper } from "@/3d-objects/models/footballKeeper";
 import { GoalPost } from "@/3d-objects/models/goalPost";
 import { CloudEffect } from "@/3d-objects/ParticleEffects";
@@ -64,8 +63,8 @@ export const FootballGame = ({ onExit }: { onExit: () => void }) => {
   });
 
   const resetBall = () => {
-    setBallKey((prev) => prev + 1);
-    isResetting.current = false;
+    ballApi.current.setTranslation({ x: 0, y: 5, z: 0 }, true);
+    ballApi.current.setLinvel({ x: 0, y: 10, z: 0 }, true);
   };
 
   const onGoalScored = () => {
@@ -85,17 +84,18 @@ export const FootballGame = ({ onExit }: { onExit: () => void }) => {
 
   return (
     <>
-      <mesh position={[-8, 0, 0]} onClick={onExit}>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color="red" />
-      </mesh>
-
       <CloudEffect preview={false} />
 
       <FootBallKeeper position={[0, 0.5, -3]} />
 
-      {/* <CharacterBall ref={ballApi} position={[0, 3, 0]} /> */}
-      <FootballModel position={[0, 3, 0]} key={ballKey} />
+      <CharacterBall
+        ref={ballApi}
+        position={[0, 3, 0]}
+        ccd={false}
+        enabledTranslations={[true, true, true]}
+        key={ballKey}
+        scale={0.3}
+      />
       <GrassShader position={[0, -0.8, 0]} preview={false} />
 
       <CuboidCollider args={[7 / 2, 0.02, 7 / 2]} position={[0, 4.5, 0]} />

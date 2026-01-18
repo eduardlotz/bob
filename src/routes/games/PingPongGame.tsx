@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { CuboidCollider, RapierRigidBody } from "@react-three/rapier";
 
 import { CharacterBall } from "@/components/CharacterBall";
@@ -81,7 +81,7 @@ export function PingPongGame({ onExit }: { onExit: () => void }) {
 
   return (
     <group>
-      <CharacterBall ref={ballApi} position={[0, 5, 0]} />
+      <CharacterBall ref={ballApi} position={[0, 5, 0]} scale={0.3} />
 
       <Paddle ref={paddleApi} onCollide={handleCollision} />
 
@@ -91,11 +91,6 @@ export function PingPongGame({ onExit }: { onExit: () => void }) {
         sensor
         onIntersectionEnter={resetBall}
       />
-
-      <mesh position={[-8, 0, 0]} onClick={onExit}>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color="red" />
-      </mesh>
     </group>
   );
 }
