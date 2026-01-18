@@ -1,16 +1,18 @@
 import { HugColumn } from "@/layout";
 import { Magnetic } from "@/layout/Magnetic";
-import { useMiniGameStore } from "@/store";
+import { useMiniGameStore, useViewStore } from "@/store";
 import { AnimatePresence, motion } from "motion/react";
 import styled from "styled-components";
 import { playUISound } from "@/utils/soundSystem";
 
 export const BackToLobbyButton = ({ show }: { show: boolean }) => {
   const { finishGame } = useMiniGameStore();
+  const { setViewMode, transitionToView } = useViewStore();
 
   const onTriggerClick = () => {
     finishGame();
     playUISound();
+    setViewMode("fixed");
   };
 
   return (

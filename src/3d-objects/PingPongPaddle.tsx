@@ -48,10 +48,10 @@ export const Paddle = React.forwardRef<
       colliders={false}
       onContactForce={(e) => {
         onCollide(e);
-        if (e.totalForceMagnitude > 50) visualGroup.current.position.y = -0.15;
+        // if (e.totalForceMagnitude > 50) visualGroup.current.position.y = -0.15;
       }}
     >
-      <CylinderCollider args={[0.1, 1]} />
+      <CylinderCollider args={[0.1, 1]} position={[0, 0, 0.5]} />
       <group ref={visualGroup}>
         <PingPongPaddle
           position={[0, 0, 3]}

@@ -63,8 +63,9 @@ export const FootballGame = ({ onExit }: { onExit: () => void }) => {
   });
 
   const resetBall = () => {
-    ballApi.current.setTranslation({ x: 0, y: 5, z: 0 }, true);
-    ballApi.current.setLinvel({ x: 0, y: 10, z: 0 }, true);
+    ballApi.current.setTranslation({ x: 0, y: 3, z: 0 }, true);
+    ballApi.current.setLinvel({ x: 0, y: 3, z: 0 }, true);
+    isResetting.current = false;
   };
 
   const onGoalScored = () => {
@@ -101,10 +102,10 @@ export const FootballGame = ({ onExit }: { onExit: () => void }) => {
       <CuboidCollider args={[7 / 2, 0.02, 7 / 2]} position={[0, 4.5, 0]} />
       <BasketBox
         position={[0, 3.3 + FLOOR_Y_POSITION, -1]}
-        width={7.5}
+        width={6.6}
         depth={7}
         height={6}
-        wallThickness={0.02}
+        wallThickness={0.2}
       />
 
       <CuboidCollider
