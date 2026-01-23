@@ -70,6 +70,7 @@ export interface PortfolioItem {
 }
 
 const ITEMS: PortfolioItem[] = [
+  { url: "/images/portfolio/gradient_gem.jpeg", title: "3D Licht Studie" },
   {
     url: "/images/portfolio/face_study.jpeg",
     title: "3D Gesicht Studie 1/2",
@@ -80,48 +81,18 @@ const ITEMS: PortfolioItem[] = [
       { type: "credits", role: "Artist", name: "Eddie" },
     ],
   },
-  { url: "/images/portfolio/gradient_gem.jpeg", title: "3D Licht Studie" },
   {
     url: "/videos/portfolio/face-emotions-study.mp4",
     title: "3D Gesicht Studie 2/2",
     type: "video",
-  },
-  { url: "/images/portfolio/bubbles-cover.jpeg", title: "bubbles" },
-  { url: "/images/portfolio/du-fehlst-cover.jpeg", title: "du fehlst" },
-  {
-    url: "/images/portfolio/hassliebe-slowie-cover.jpeg",
-    title: "hassliebe (slowie version)",
-  },
-  { url: "/images/portfolio/hsd-dingeundinge.jpeg", title: "Dinge/Undinge" },
-  {
-    url: "/images/portfolio/peaceofmind-clothing.jpeg",
-    title: "Peace of Mind Prints",
   },
   {
     url: "/videos/portfolio/lego-gravity-field.mp4",
     title: "3D Physics Studie",
     type: "video",
   },
-  { url: "/images/portfolio/soundcheck-cover.jpeg", title: "Soundchecks" },
-  { url: "/images/portfolio/soundcloud-cover.jpeg", title: "Mixes" },
-  {
-    url: "/images/portfolio/hassliebe-fast-version-cover.jpeg",
-    title: "hassliebe (fast version)",
-  },
-  {
-    url: "/videos/portfolio/peace-of-mind-roses-explo.mp4",
-    title: "Peace & Roses",
-    type: "video",
-  },
-  { url: "/images/portfolio/hassliebe_cover.jpeg", title: "hassliebe" },
   { url: "/images/portfolio/first_character.jpeg", title: "3D Körper Studie" },
   { url: "/images/portfolio/fluffy_bear.jpeg", title: "3D Haare Studie" },
-  { url: "/images/portfolio/peace_of_mind_red.jpeg", title: "Shirt Prints" },
-  { url: "/images/portfolio/noisy_wallpaper.jpeg", title: "Noise & Peace" },
-  {
-    url: "/images/portfolio/peace_of_mind_orange.jpeg",
-    title: "Starve the ego",
-  },
   {
     url: "/videos/portfolio/what-the-figma.mp4",
     title: "Wie zum Figma",
@@ -131,11 +102,7 @@ const ITEMS: PortfolioItem[] = [
     url: "/images/portfolio/toon_character.jpeg",
     title: "3D Low Poly Character",
   },
-  {
-    url: "/images/portfolio/peace_of_mind_logos.jpeg",
-    title: "Peace of Mind Variants",
-  },
-  { url: "/images/portfolio/warum_cover.jpeg", title: "warum" },
+  { url: "/images/portfolio/tinyplanet_skateboard.jpeg", title: "Tiny Planet" },
   {
     url: "/images/portfolio/skateboard_stickers.jpeg",
     title: "Skateboard Stickers",
@@ -145,7 +112,46 @@ const ITEMS: PortfolioItem[] = [
     title: "3D Grease Pencil Studie",
     type: "video",
   },
-  { url: "/images/portfolio/tinyplanet_skateboard.jpeg", title: "Tiny Planet" },
+
+  {
+    url: "/videos/portfolio/peace-of-mind-roses-explo.mp4",
+    title: "Peace & Roses",
+    type: "video",
+  },
+
+  {
+    url: "/images/portfolio/peace_of_mind_logos.jpeg",
+    title: "Peace of Mind Variants",
+  },
+  {
+    url: "/images/portfolio/peaceofmind-clothing.jpeg",
+    title: "Peace of Mind Prints",
+  },
+  {
+    url: "/images/portfolio/peace_of_mind_orange.jpeg",
+    title: "Starve the ego",
+  },
+  { url: "/images/portfolio/peace_of_mind_red.jpeg", title: "Shirt Prints" },
+  { url: "/images/portfolio/noisy_wallpaper.jpeg", title: "Noise & Peace" },
+  { url: "/images/portfolio/hsd-dingeundinge.jpeg", title: "Dinge/Undinge" },
+  { url: "/images/portfolio/bubbles-cover.jpeg", title: "bubbles brand" },
+  { url: "/images/portfolio/bubbles-detail.jpeg", title: "bubbles app" },
+  { url: "/images/portfolio/dingsda.jpeg", title: "dingsda app" },
+  { url: "/images/portfolio/fetzclub.jpeg", title: "fetzclub app" },
+
+  { url: "/images/portfolio/hassliebe_cover.jpeg", title: "hassliebe" },
+  {
+    url: "/images/portfolio/hassliebe-fast-version-cover.jpeg",
+    title: "hassliebe (fast version)",
+  },
+  {
+    url: "/images/portfolio/hassliebe-slowie-cover.jpeg",
+    title: "hassliebe (slowie version)",
+  },
+  { url: "/images/portfolio/soundcloud-cover.jpeg", title: "Mixes" },
+  { url: "/images/portfolio/du-fehlst-cover.jpeg", title: "du fehlst" },
+  { url: "/images/portfolio/soundcheck-cover.jpeg", title: "Soundchecks" },
+  { url: "/images/portfolio/warum_cover.jpeg", title: "warum" },
   { url: "/images/portfolio/warum_v2.jpeg", title: "warum (edit)" },
 ];
 

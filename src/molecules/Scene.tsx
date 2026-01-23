@@ -151,6 +151,7 @@ const Scene = ({
             <CameraControls
               ref={cameraControlsRef}
               truckSpeed={TRUCK_SPEED}
+              azimuthRotateSpeed={0.3}
               // minPolarAngle={1.55}
               // maxPolarAngle={1.6}
               // minDistance={4}
