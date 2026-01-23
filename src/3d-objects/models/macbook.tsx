@@ -72,7 +72,7 @@ export const MacbookModel = ({ scale = [1, 1, 1], ...props }: Props) => {
   const { nodes, materials } = useGLTF(PATH) as GLTFResult;
   const screenTexture = useLoader(
     THREE.TextureLoader,
-    "/images/screentexture.jpg"
+    "/images/screentexture.jpg",
   );
   // const screenTexture = useLoader(
   //   THREE.TextureLoader,
@@ -202,10 +202,10 @@ export const MacbookModel = ({ scale = [1, 1, 1], ...props }: Props) => {
           />
 
           {/* SCREEN  */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, -1.9]}>
+          {/* <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, -1.9]}>
             <planeGeometry args={[5.1, 3]} />
             <meshStandardMaterial map={screenTexture} />
-          </mesh>
+          </mesh> */}
         </group>
         <group position={[-15.03, 0.03, 0.6]} scale={5.8}>
           <mesh

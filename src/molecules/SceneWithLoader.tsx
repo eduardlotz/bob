@@ -126,16 +126,30 @@ export const CustomLoader = ({
             <AnimatePresence mode="popLayout" initial={false}>
               <ProgressContainer>
                 {!finished ? (
-                  <ProgressBar
-                    key="progress"
-                    layoutId="transition-element"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.2 }}
-                    style={{ borderRadius: "50px", opacity: 1 }}
-                  >
-                    <ProgressFill style={{ width: `${percentage}%` }} />
-                  </ProgressBar>
+                  <>
+                    <ProgressBar
+                      key="progress"
+                      layoutId="transition-element"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.2 }}
+                      style={{ borderRadius: "50px", opacity: 1 }}
+                    >
+                      <ProgressFill style={{ width: `${percentage}%` }} />
+                    </ProgressBar>
+                    <ProgressText
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      transition={{
+                        duration: 0.2,
+                        type: "spring",
+                        bounce: 0.7,
+                      }}
+                    >
+                      {Math.round(percentage)}%
+                    </ProgressText>
+                  </>
                 ) : (
                   <StartButton
                     key="button"
@@ -288,4 +302,10 @@ const ProgressFill = styled(motion.div)`
   border-radius: 2px;
   transition: width 0.3s ease;
   overflow: hidden;
+`;
+
+const ProgressText = styled(motion.div)`
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
 `;
