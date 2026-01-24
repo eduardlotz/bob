@@ -76,7 +76,7 @@ export function OptionsApp() {
 
   const initialIndex = useMemo(
     () => themes.findIndex((t) => t.active),
-    [activeTab]
+    [activeTab],
   );
   const currentItem = data[0];
 
@@ -180,7 +180,7 @@ export function OptionsApp() {
         </ShopContainer>
       </FixedAnchor>
     ),
-    [currentItem]
+    [currentItem, activeTab],
   );
 
   const AudioView = useCallback(() => {
@@ -352,7 +352,7 @@ export function OptionsApp() {
       {activeTab === "theme" &&
         createPortal(
           <ThemeOverlays />,
-          document.getElementById("motion-root")!
+          document.getElementById("motion-root")!,
         )}
 
       {activeTab !== "theme" && (

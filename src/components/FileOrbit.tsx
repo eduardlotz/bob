@@ -443,17 +443,10 @@ function MediaItem({
     isFocusedItem: isFocused,
   });
 
-  // --- CHANGED: REMOVED HARD CULLING ---
-  // If we return null here, the component unmounts instantly and cannot fade out.
-  // We rely on the components (ImagePlane/VideoPlane) to set visible={false}
-  // when opacity hits 0.
-  // -------------------------------------
-
   return (
     <Billboard
       position={position}
       onPointerEnter={(e) => {
-        // Prevent interaction if invisible (far away)
         if (distanceRef.current > cull.cullingDistance) return;
 
         e.stopPropagation();
