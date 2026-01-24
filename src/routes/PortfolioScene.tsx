@@ -28,6 +28,7 @@ export function PortfolioScene() {
 
   useEffect(() => {
     setDefaultViewMode("object");
+    setTimeout(() => resetToDefaultView(), 300);
   }, []);
 
   return (

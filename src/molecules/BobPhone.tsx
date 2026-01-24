@@ -97,7 +97,7 @@ export const BobPhone = () => {
   const activeAppName = activeApp ? AppNameMap[activeApp] : "";
 
   const showStatusBar = ["", "quests", "chat", "debug"].includes(
-    activeApp ?? ""
+    activeApp ?? "",
   );
 
   const handleAudioButtonClick = () => {

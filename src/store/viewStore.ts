@@ -379,7 +379,7 @@ export const useViewStore = create<ViewStore>()(
             controls.minPolarAngle = 1.55;
             controls.maxPolarAngle = 1.6;
             controls.minDistance = 2.5;
-            controls.maxDistance = 72;
+            controls.maxDistance = 72.5;
           } else {
             controls.maxPolarAngle = 2;
             controls.minPolarAngle = 0.2;

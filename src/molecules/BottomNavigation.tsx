@@ -60,6 +60,9 @@ export function BottomNavigation() {
     !showOptions && isPortfolioRoute && !isPhoneView() && !isImageFocused;
   const showBackToLobby = activeGame !== "LOBBY";
 
+  const hideNavigation =
+    currentRoute === ROUTE_PATHS.PORTFOLIO && isImageFocused;
+
   return (
     <HugColumn
       $align="center"
@@ -78,9 +81,7 @@ export function BottomNavigation() {
       <BackToLobbyButton show={showBackToLobby} />
       <HugRow $gap={"8px"} layout>
         <AnimatePresence mode="popLayout">
-          {/* {!isHomeRoute && <ProgressTracker />} */}
-
-          {!showBackToLobby && (
+          {!showBackToLobby && !hideNavigation && (
             <Magnetic key="menu-button-magnet">
               <MenuButton
                 key="menu-button"
@@ -133,7 +134,7 @@ export function BottomNavigation() {
             </Magnetic>
           )}
 
-          <BobPhone />
+          {!hideNavigation && <BobPhone />}
         </AnimatePresence>
       </HugRow>
     </HugColumn>

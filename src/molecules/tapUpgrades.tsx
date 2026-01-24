@@ -36,6 +36,10 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
     triggerQuest(`${upgradeId}_level`);
   };
 
+  const canAffordUpgrade = tapUpgrades.some((t) =>
+    canAfford(t.baseCost * Math.pow(t.costMultiplier, t.level)),
+  );
+
   return (
     <AnimatePresence>
       {show && (
@@ -156,12 +160,29 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
                 </motion.span>
               )}
             </TriggerContainer>
+            {!showUpgrades && canAffordUpgrade && (
+              <UpgradeIndicator
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+              />
+            )}
           </Magnetic>
         </HugColumn>
       )}
     </AnimatePresence>
   );
 };
+
+const UpgradeIndicator = styled(motion.span)`
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  height: 12px;
+  width: 12px;
+  background: red;
+  border-radius: 50%;
+`;
 
 const LevelContainer = styled.div`
   display: flex;
