@@ -19,7 +19,6 @@ export function ViewControls() {
     isCreativeView,
     isPhoneView,
     isImageFocused,
-    focusedImageTitle,
     isNavigationView,
     resetToDefaultView,
     isTransitioning,
@@ -52,8 +51,8 @@ export function ViewControls() {
   };
 
   const title = isImageFocused
-    ? focusedImageTitle
-    : VIEWID_TITLE_MAP[currentView as keyof typeof VIEWID_TITLE_MAP] ?? "";
+    ? "Zurück zur Übersicht"
+    : (VIEWID_TITLE_MAP[currentView as keyof typeof VIEWID_TITLE_MAP] ?? "");
 
   return (
     <AnimatePresence>

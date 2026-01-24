@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { useMemo, useRef, useEffect } from "react";
-import { Billboard } from "@react-three/drei";
+import { Billboard, Html } from "@react-three/drei";
 import { useFloatingBar } from "@/layout/FloatingBar";
 import { useCursorStore } from "@/store/core/cursor";
 import { useAppStore, useCoreStore, useViewStore } from "@/store";
@@ -9,6 +9,9 @@ import { SoundConfig } from "@/utils/sound/types";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { extend, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { geometry } from "maath";
+import styled from "styled-components";
+import { AnimatePresence, motion } from "motion/react";
+import { MotionVariants } from "@/styles/motion";
 
 type ViewCullMode = "default" | "focused";
 
@@ -45,7 +48,7 @@ function resolveCullConfig({
     };
   }
 
-  const reduced = base.cullingDistance * (isMobile ? 0.5 : 0.75);
+  const reduced = base.cullingDistance * 0.1;
 
   return {
     cullingDistance: reduced,
@@ -60,6 +63,12 @@ export type MediaMeta =
   | { type: "tag"; value: string }
   | { type: "credits"; role: string; name: string };
 
+export interface PortfolioLink {
+  type: "soundcloud" | "instagram" | "external";
+  href: string;
+  label?: string;
+}
+
 export interface PortfolioItem {
   url: string;
   title: string;
@@ -67,92 +76,492 @@ export interface PortfolioItem {
   link?: string;
   sound?: SoundConfig;
   meta?: MediaMeta[];
+  links?: PortfolioLink[];
 }
 
 const ITEMS: PortfolioItem[] = [
-  { url: "/images/portfolio/gradient_gem.jpeg", title: "3D Licht Studie" },
+  {
+    url: "/images/portfolio/gradient_gem.jpeg",
+    title: "3D Licht Studie",
+    meta: [
+      {
+        type: "text",
+        label: "Lichter",
+        value: "",
+      },
+      {
+        type: "text",
+        label: "3D Studie",
+        value: "2025",
+      },
+      { type: "text", label: "Tools", value: "Blender" },
+    ],
+  },
   {
     url: "/images/portfolio/face_study.jpeg",
     title: "3D Gesicht Studie 1/2",
     meta: [
-      { type: "text", label: "Year", value: "2024" },
-      { type: "tag", value: "Blender" },
-      { type: "tag", value: "Lighting Study" },
-      { type: "credits", role: "Artist", name: "Eddie" },
+      {
+        type: "text",
+        label: "Topologie von Gesichtern",
+        value: "",
+      },
+      {
+        type: "text",
+        label: "3D Studie",
+        value: "2023",
+      },
+      { type: "text", label: "Tools", value: "Blender" },
     ],
   },
   {
     url: "/videos/portfolio/face-emotions-study.mp4",
     title: "3D Gesicht Studie 2/2",
     type: "video",
+    meta: [
+      {
+        type: "text",
+        label: "Animation von Gesichtern",
+        value: "",
+      },
+      {
+        type: "text",
+        label: "3D Studie",
+        value: "2023",
+      },
+      { type: "text", label: "Tools", value: "Blender" },
+    ],
   },
   {
     url: "/videos/portfolio/lego-gravity-field.mp4",
     title: "3D Physics Studie",
     type: "video",
+    meta: [
+      {
+        type: "text",
+        label: "RigidBody Forces",
+        value: "",
+      },
+      {
+        type: "text",
+        label: "3D Studie",
+        value: "2025",
+      },
+      { type: "text", label: "Tools", value: "Blender" },
+    ],
   },
-  { url: "/images/portfolio/first_character.jpeg", title: "3D Körper Studie" },
-  { url: "/images/portfolio/fluffy_bear.jpeg", title: "3D Haare Studie" },
+  {
+    url: "/images/portfolio/first_character.jpeg",
+    title: "3D Körper Studie",
+    meta: [
+      {
+        type: "text",
+        label: "Modeling/Rigging von Menschen",
+        value: "",
+      },
+      {
+        type: "text",
+        label: "3D Studie",
+        value: "2025",
+      },
+      { type: "text", label: "Tools", value: "Blender" },
+    ],
+  },
+  {
+    url: "/images/portfolio/fluffy_bear.jpeg",
+    title: "3D Haare Studie",
+    meta: [
+      {
+        type: "text",
+        label: "Haarsimulation",
+        value: "",
+      },
+      {
+        type: "text",
+        label: "3D Studie",
+        value: "2025",
+      },
+      { type: "text", label: "Tools", value: "Blender" },
+    ],
+  },
   {
     url: "/videos/portfolio/what-the-figma.mp4",
     title: "Wie zum Figma",
     type: "video",
+    meta: [
+      {
+        type: "text",
+        label: "Wie zum Figma",
+        value: "2025",
+      },
+      { type: "text", label: "Tools", value: "Blender" },
+    ],
   },
   {
     url: "/images/portfolio/toon_character.jpeg",
     title: "3D Low Poly Character",
+    meta: [
+      {
+        type: "text",
+        label: "Low Poly / toon shading",
+        value: "",
+      },
+      {
+        type: "text",
+        label: "3D Studie",
+        value: "2025",
+      },
+      { type: "text", label: "Tools", value: "Blender" },
+    ],
   },
-  { url: "/images/portfolio/tinyplanet_skateboard.jpeg", title: "Tiny Planet" },
+  {
+    url: "/images/portfolio/tinyplanet_skateboard.jpeg",
+    title: "Tiny Planet",
+    meta: [
+      {
+        type: "text",
+        label: "tiny planet",
+        value: "2025",
+      },
+      { type: "text", label: "Tools", value: "Blender\nFigma" },
+    ],
+  },
   {
     url: "/images/portfolio/skateboard_stickers.jpeg",
     title: "Skateboard Stickers",
+    meta: [
+      {
+        type: "text",
+        label: "Sticker Decals",
+        value: "",
+      },
+      {
+        type: "text",
+        label: "3D Studie",
+        value: "2025",
+      },
+      { type: "text", label: "Tools", value: "Blender\nFigma" },
+    ],
   },
   {
     url: "/videos/portfolio/beer-books.mp4",
     title: "3D Grease Pencil Studie",
     type: "video",
+    meta: [
+      {
+        type: "text",
+        label: "Grease Pencil",
+        value: "",
+      },
+      {
+        type: "text",
+        label: "3D Studie",
+        value: "2025",
+      },
+      { type: "text", label: "Tools", value: "Blender" },
+    ],
   },
 
   {
     url: "/videos/portfolio/peace-of-mind-roses-explo.mp4",
     title: "Peace & Roses",
     type: "video",
+    meta: [
+      {
+        type: "text",
+        label: "Peace & Roses",
+        value: "2026",
+      },
+      { type: "text", label: "Tools", value: "Blender" },
+    ],
   },
 
   {
     url: "/images/portfolio/peace_of_mind_logos.jpeg",
-    title: "Peace of Mind Variants",
+    title: "Peace of Mind Logos",
+    meta: [
+      {
+        type: "text",
+        label: "Peace of mind logos",
+        value: "2023 — 2025",
+      },
+      { type: "text", label: "Tools", value: "Figma" },
+    ],
   },
   {
     url: "/images/portfolio/peaceofmind-clothing.jpeg",
     title: "Peace of Mind Prints",
+    meta: [
+      {
+        type: "text",
+        label: "Peace of mind prints",
+        value: "2023 — 2025",
+      },
+      { type: "text", label: "Tools", value: "Figma" },
+    ],
   },
   {
     url: "/images/portfolio/peace_of_mind_orange.jpeg",
     title: "Starve the ego",
+    meta: [
+      {
+        type: "text",
+        label: "Starve the Ego — feed the soul",
+        value: "2024",
+      },
+      { type: "text", label: "Tools", value: "Figma" },
+    ],
   },
-  { url: "/images/portfolio/peace_of_mind_red.jpeg", title: "Shirt Prints" },
-  { url: "/images/portfolio/noisy_wallpaper.jpeg", title: "Noise & Peace" },
-  { url: "/images/portfolio/hsd-dingeundinge.jpeg", title: "Dinge/Undinge" },
-  { url: "/images/portfolio/bubbles-cover.jpeg", title: "bubbles brand" },
-  { url: "/images/portfolio/bubbles-detail.jpeg", title: "bubbles app" },
-  { url: "/images/portfolio/dingsda.jpeg", title: "dingsda app" },
-  { url: "/images/portfolio/fetzclub.jpeg", title: "fetzclub app" },
+  {
+    url: "/images/portfolio/peace_of_mind_red.jpeg",
+    title: "Shirt Prints",
+    meta: [
+      {
+        type: "text",
+        label: "Print Ideen",
+        value: "2024",
+      },
+      { type: "text", label: "Tools", value: "Figma" },
+    ],
+  },
+  {
+    url: "/images/portfolio/noisy_wallpaper.jpeg",
+    title: "Noise & Peace",
+    meta: [
+      {
+        type: "text",
+        label: "Noise & Peace",
+        value: "2025",
+      },
+      { type: "text", label: "Tools", value: "Blender" },
+    ],
+  },
+  {
+    url: "/images/portfolio/hsd-dingeundinge.jpeg",
+    title: "Dinge/Undinge",
+    meta: [
+      {
+        type: "text",
+        label: "Hochschule Düsseldorf Eignungsprüfung",
+        value: "",
+      },
+      {
+        type: "text",
+        label: "Dinge / Undinge",
+        value: "2023",
+      },
+      { type: "text", label: "Tools", value: "Figma Photoshop" },
+    ],
+  },
+  {
+    url: "/images/portfolio/bubbles-cover.jpeg",
+    title: "bubbles brand",
+    meta: [
+      {
+        type: "text",
+        label: "bubbles (brand)",
+        value: "2023",
+      },
+      { type: "text", label: "Tools", value: "Figma" },
+    ],
+  },
+  {
+    url: "/images/portfolio/bubbles-detail.jpeg",
+    title: "bubbles app",
+    meta: [
+      {
+        type: "text",
+        label: "bubbles (ui)",
+        value: "2023",
+      },
+      { type: "text", label: "Tools", value: "Figma" },
+    ],
+  },
+  {
+    url: "/images/portfolio/dingsda.jpeg",
+    title: "dingsda app",
+    meta: [
+      {
+        type: "text",
+        label: "dingsda quiz (ui)",
+        value: "2023",
+      },
+      { type: "text", label: "Tools", value: "Figma" },
+    ],
+  },
+  {
+    url: "/images/portfolio/fetzclub.jpeg",
+    title: "fetzclub app",
+    meta: [
+      {
+        type: "text",
+        label: "fetzclub app (ui)",
+        value: "2023",
+      },
+      { type: "text", label: "Tools", value: "Figma" },
+    ],
+  },
 
-  { url: "/images/portfolio/hassliebe_cover.jpeg", title: "hassliebe" },
+  {
+    url: "/images/portfolio/hassliebe_cover.jpeg",
+    title: "hassliebe",
+    meta: [
+      { type: "text", label: "Hassliebe", value: "2024" },
+      { type: "text", label: "Sound Design", value: "Auxy Studio" },
+      {
+        type: "text",
+        label: "Cover Design",
+        value: "Blender\nFigma\nPhotoshop",
+      },
+    ],
+    links: [
+      {
+        type: "soundcloud",
+        href: "https://soundcloud.com/captainlowie/hassliebe",
+        label: "Auf Soundcloud anhören",
+      },
+    ],
+  },
   {
     url: "/images/portfolio/hassliebe-fast-version-cover.jpeg",
     title: "hassliebe (fast version)",
+    meta: [
+      { type: "text", label: "Hassliebe (fast version)", value: "2025" },
+      { type: "text", label: "Sound Design", value: "Auxy Studio" },
+      {
+        type: "text",
+        label: "Cover Design",
+        value: "Blender\nFigma\nPhotoshop",
+      },
+    ],
+    links: [
+      {
+        type: "soundcloud",
+        href: "https://soundcloud.com/captainlowie/hassliebe-fast-version",
+        label: "Auf Soundcloud anhören",
+      },
+    ],
   },
   {
     url: "/images/portfolio/hassliebe-slowie-cover.jpeg",
     title: "hassliebe (slowie version)",
+    meta: [
+      { type: "text", label: "Hassliebe (slowie version)", value: "2025" },
+      { type: "text", label: "Sound Design", value: "Auxy Studio" },
+      {
+        type: "text",
+        label: "Cover Design",
+        value: "Blender\nFigma\nPhotoshop",
+      },
+    ],
+    links: [
+      {
+        type: "soundcloud",
+        href: "https://soundcloud.com/captainlowie/hassliebe-slowie-version",
+        label: "Auf Soundcloud anhören",
+      },
+    ],
   },
-  { url: "/images/portfolio/soundcloud-cover.jpeg", title: "Mixes" },
-  { url: "/images/portfolio/du-fehlst-cover.jpeg", title: "du fehlst" },
-  { url: "/images/portfolio/soundcheck-cover.jpeg", title: "Soundchecks" },
-  { url: "/images/portfolio/warum_cover.jpeg", title: "warum" },
-  { url: "/images/portfolio/warum_v2.jpeg", title: "warum (edit)" },
+  {
+    url: "/images/portfolio/soundcloud-cover.jpeg",
+    title: "Mixes",
+    meta: [
+      { type: "text", label: "Techno Mixes", value: "2023 — 2024" },
+      { type: "text", label: "Mixing", value: "rekordbox" },
+      {
+        type: "text",
+        label: "Cover Design",
+        value: "Figma iphone 12 kamera",
+      },
+    ],
+    links: [
+      {
+        type: "soundcloud",
+        href: "https://soundcloud.com/captainlowie/sets/mixes-23-24",
+        label: "Auf Soundcloud anhören",
+      },
+    ],
+  },
+  {
+    url: "/images/portfolio/du-fehlst-cover.jpeg",
+    title: "du fehlst",
+    meta: [
+      { type: "text", label: "du fehlst", value: "2025" },
+      { type: "text", label: "Sound Design", value: "Auxy Studio" },
+      {
+        type: "text",
+        label: "Cover Design",
+        value: "iphone 12 kamera Photoshop",
+      },
+    ],
+    links: [
+      {
+        type: "soundcloud",
+        href: "https://soundcloud.com/captainlowie/du-fehlst",
+        label: "Auf Soundcloud anhören",
+      },
+    ],
+  },
+  {
+    url: "/images/portfolio/soundcheck-cover.jpeg",
+    title: "Soundchecks",
+    meta: [
+      { type: "text", label: "Soundchecks", value: "2025" },
+      { type: "text", label: "Mixing", value: "rekordbox" },
+      {
+        type: "text",
+        label: "Cover Design",
+        value: "Blender Figma iphone 12 kamera",
+      },
+    ],
+    links: [
+      {
+        type: "soundcloud",
+        href: "https://soundcloud.com/captainlowie/sets/soundchecks",
+        label: "Auf Soundcloud anhören",
+      },
+    ],
+  },
+  {
+    url: "/images/portfolio/warum_cover.jpeg",
+    title: "warum",
+    meta: [
+      { type: "text", label: "warum", value: "2025" },
+      { type: "text", label: "Sound Design", value: "Auxy Studio" },
+      {
+        type: "text",
+        label: "Cover Design",
+        value: "Blender\nFigma\nPhotoshop",
+      },
+    ],
+    links: [
+      {
+        type: "soundcloud",
+        href: "https://soundcloud.com/captainlowie/warum",
+        label: "Auf Soundcloud anhören",
+      },
+    ],
+  },
+  {
+    url: "/images/portfolio/warum_v2.jpeg",
+    title: "warum (edit)",
+    meta: [
+      { type: "text", label: "warum (edit)", value: "2026" },
+      { type: "text", label: "Sound Design", value: "Auxy Studio" },
+      {
+        type: "text",
+        label: "Cover Design",
+        value: "Blender\nFigma\nPhotoshop",
+      },
+    ],
+    links: [
+      {
+        type: "soundcloud",
+        href: "https://soundcloud.com/captainlowie/warum-edit",
+        label: "Auf Soundcloud anhören",
+      },
+    ],
+  },
 ];
 
 // Configuration
@@ -191,6 +600,54 @@ function getMediaScale(width: number, height: number): [number, number] {
   const factor = max / Math.max(width, height);
   return [width * factor, height * factor];
 }
+
+const PortfolioMetaOverlay = ({
+  item,
+  isActive,
+}: {
+  item: PortfolioItem;
+  isActive: boolean;
+}) => {
+  return (
+    <group position={[0, 15, 0]}>
+      <Html
+        style={{
+          width: "29.5rem",
+          maxWidth: "92vw",
+          pointerEvents: "none",
+          transform: "translate3d(50%, 0, 0)",
+        }}
+        zIndexRange={[20, 0]}
+      >
+        <AnimatePresence mode="popLayout">
+          {isActive && (
+            <MetaWrapper
+              initial={"initial"}
+              animate={"animate"}
+              exit={"exit"}
+              variants={MotionVariants.OptionButton}
+              key={item.title}
+            >
+              {item.meta?.map((m, i) => (
+                <MetaRow key={i}>
+                  {"label" in m && <MetaLeft>{m.label}</MetaLeft>}
+                  {"value" in m && <MetaRight>{m.value}</MetaRight>}
+                </MetaRow>
+              ))}
+
+              {item.links?.map((link, i) => (
+                <PillLink key={i} href={link.href} target="_blank">
+                  {link.label}
+                  <ExternalLinkIcon />
+                </PillLink>
+              ))}
+            </MetaWrapper>
+          )}
+        </AnimatePresence>
+      </Html>
+    </group>
+  );
+};
 
 function VideoPlane({
   url,
@@ -444,41 +901,45 @@ function MediaItem({
   });
 
   return (
-    <Billboard
-      position={position}
-      onPointerEnter={(e) => {
-        if (distanceRef.current > cull.cullingDistance) return;
+    <>
+      <PortfolioMetaOverlay isActive={isFocused} item={item} />
 
-        e.stopPropagation();
-        setHoveredObject({ title });
-        if (!isFocused) setHovering(true);
-      }}
-      onPointerLeave={() => {
-        setHoveredObject(null);
-        setHovering(false);
-        setPointerDown(false);
-      }}
-      onPointerDown={(e) => {
-        setPointerDown(true);
-      }}
-      onPointerUp={() => setPointerDown(false)}
-    >
-      {isVideo ? (
-        <VideoPlane
-          url={url}
-          onClick={handleClick}
-          distanceRef={distanceRef}
-          cull={cull}
-        />
-      ) : (
-        <ImagePlane
-          url={url}
-          onClick={handleClick}
-          distanceRef={distanceRef}
-          cull={cull}
-        />
-      )}
-    </Billboard>
+      <Billboard
+        position={position}
+        onPointerEnter={(e) => {
+          if (distanceRef.current > cull.cullingDistance) return;
+
+          e.stopPropagation();
+          setHoveredObject({ title });
+          if (!isFocused) setHovering(true);
+        }}
+        onPointerLeave={() => {
+          setHoveredObject(null);
+          setHovering(false);
+          setPointerDown(false);
+        }}
+        onPointerDown={(e) => {
+          setPointerDown(true);
+        }}
+        onPointerUp={() => setPointerDown(false)}
+      >
+        {isVideo ? (
+          <VideoPlane
+            url={url}
+            onClick={handleClick}
+            distanceRef={distanceRef}
+            cull={cull}
+          />
+        ) : (
+          <ImagePlane
+            url={url}
+            onClick={handleClick}
+            distanceRef={distanceRef}
+            cull={cull}
+          />
+        )}
+      </Billboard>
+    </>
   );
 }
 
@@ -584,3 +1045,95 @@ export function FileOrbit({ radius = 60 }: { radius?: number }) {
     </group>
   );
 }
+
+export const MetaWrapper = styled(motion.div)`
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+  pointer-events: auto;
+  background-color: rgba(14, 14, 14, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: white;
+
+  padding: 1.5rem 2rem;
+  border-radius: 2.5rem;
+  max-width: 22.5rem;
+`;
+
+export const MetaRow = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: flex-start;
+  width: 18.75rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  font-weight: 500;
+  text-transform: uppercase;
+  > * {
+    margin: 0;
+  }
+`;
+
+export const MetaLeft = styled.p`
+  text-align: left;
+  line-height: 1.25;
+`;
+
+export const MetaRight = styled(MetaLeft)`
+  text-align: left;
+  margin-left: max(2.5rem, 80%);
+`;
+
+export const PillLink = styled.a`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: center;
+
+  padding: 12px 32px;
+  min-width: 200px;
+
+  border-radius: 9999px;
+
+  font-weight: 600;
+  font-family: "Open Sauce Two";
+  font-size: 1rem;
+  color: #ffffff;
+  text-decoration: none;
+  text-align: center;
+
+  background: linear-gradient(180deg, #f87903 0%, #c56308 100%);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 -1px 1px rgba(0, 0, 0, 0.15);
+
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    background: linear-gradient(180deg, #ff9f38 0%, #e66610 100%);
+
+    color: white;
+  }
+`;
+
+const ExternalLinkIcon = () => (
+  <svg
+    width={16}
+    height={16}
+    viewBox="0 0 16 16"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M14 6L14 2M14 2H10M14 2L8.66667 7.33333M6.66667 3.33333H5.2C4.0799 3.33333 3.51984 3.33333 3.09202 3.55132C2.71569 3.74307 2.40973 4.04903 2.21799 4.42535C2 4.85318 2 5.41323 2 6.53333V10.8C2 11.9201 2 12.4802 2.21799 12.908C2.40973 13.2843 2.71569 13.5903 3.09202 13.782C3.51984 14 4.0799 14 5.2 14H9.46667C10.5868 14 11.1468 14 11.5746 13.782C11.951 13.5903 12.2569 13.2843 12.4487 12.908C12.6667 12.4802 12.6667 11.9201 12.6667 10.8V9.33333"
+      stroke="white"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
