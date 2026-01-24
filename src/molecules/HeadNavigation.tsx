@@ -1,12 +1,10 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import * as THREE from "three";
-import { useFrame } from "@react-three/fiber";
 import { Html, Float, CameraControls } from "@react-three/drei";
 import { motion } from "motion/react";
 import { MotionVariants } from "@/styles/motion";
 import { BlobHead } from "./BlobHead";
 import { useBlobEmotions } from "@/hooks/useBlobEmotions";
-import { toast } from "sonner";
 import styled from "styled-components";
 import { Route, useCoreStore } from "@/store/core/store";
 import { useNavigate } from "react-router-dom";
@@ -17,9 +15,8 @@ import { useViewStore } from "@/store/viewStore";
 import { Magnetic } from "@/layout/Magnetic";
 import { useMessageStore } from "@/store/messageStore";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
-import { useCursor } from "@/hooks/useCursor";
 import { useKeyPress } from "@/hooks/useKeyPress";
-import { playUISound, stopAllWorldSounds } from "@/utils/soundSystem";
+import { playUISound } from "@/utils/soundSystem";
 
 //#region constants
 export const CAMERA_Y_POSITION = 1;
@@ -353,7 +350,6 @@ function Option({
   const optionRef = useRef<THREE.Group>(null!);
   const navigate = useNavigate();
   const { currentRoute } = useAppStore();
-  const { resetToDefaultView, defaultViewMode, setViewMode } = useViewStore();
   const { triggerQuest } = useQuestSystem();
   const { canAfford, purchaseRoute } = useCoreStore();
   const { showMessage } = useMessageStore();
@@ -364,10 +360,7 @@ function Option({
 
   const resetCamAndNavigate = () => {
     navigate(route.path);
-    // resetToDefaultView();
     hideOptions();
-
-    // stopAllWorldSounds();
   };
 
   const handleOptionClick = () => {
