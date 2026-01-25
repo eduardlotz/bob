@@ -26,9 +26,7 @@ export interface MessageConfig {
   repeatRule: MessageRepeatRule;
   dismissTimeout?: number;
   persistKey?: string;
-  audioEnabled?: boolean;
   positionOffset?: Vector3Tuple;
-  nextDelayMs?: number;
   lines?: string[];
 }
 
@@ -59,9 +57,6 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
       emotion: { state: "happy", durationMs: 5000 },
     },
     repeatRule: "oncePerPersist",
-    audioEnabled: true,
-    positionOffset: [0, 0, 0],
-    nextDelayMs: 3200,
   },
   {
     id: "return_greeting_1",
@@ -75,9 +70,6 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
       emotion: { state: "dizzy", durationMs: 3000 },
     },
     repeatRule: "oncePerSession",
-    audioEnabled: true,
-    positionOffset: [0, 0, 0],
-    nextDelayMs: 2200,
   },
   {
     id: "return_greeting_2",
@@ -91,9 +83,6 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
       emotion: { state: "happy", durationMs: 4000 },
     },
     repeatRule: "oncePerSession",
-    audioEnabled: true,
-    positionOffset: [0, 0, 0],
-    nextDelayMs: 2200,
   },
   {
     id: "return_greeting_3",
@@ -106,9 +95,6 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
       tailEnabled: false,
     },
     repeatRule: "oncePerSession",
-    audioEnabled: true,
-    positionOffset: [0, 0, 0],
-    nextDelayMs: 2200,
   },
   {
     id: "return_greeting_4",
@@ -122,9 +108,6 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
       emotion: { state: "suspicious", durationMs: 4000 },
     },
     repeatRule: "oncePerSession",
-    audioEnabled: true,
-    positionOffset: [0, 0, 0],
-    nextDelayMs: 2200,
   },
   {
     id: "first_tap_hint",
@@ -141,9 +124,6 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
       emotion: { state: "thinking", durationMs: 4000 },
     },
     repeatRule: "oncePerPersist",
-    audioEnabled: true,
-    positionOffset: [0, 0, 0],
-    nextDelayMs: 1800,
   },
   {
     id: "about_welcome",
@@ -162,15 +142,13 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
       emotion: { state: "happy", durationMs: 3000 },
     },
     repeatRule: "oncePerPersist",
-    audioEnabled: true,
-    positionOffset: [0, 0, 0],
-    nextDelayMs: 1800,
   },
   {
     id: "portfolio_welcome",
     text: [
-      "Eddie's Design Portfolio, verstreut in einem eigenen kleinen Universum",
-      "Tipp ein Bild an, um es dir genauer anzuschauen 🔍",
+      "Willkommen im Portfolio-Universum",
+      "Hier kannst du dir private Arbeiten von Eddie anschauen",
+      "Tipp ein Bild an, um mehr Infos anzuzeigen. Manche enthalten sogar Links 🔗",
     ],
     label: "Bob",
     options: {
@@ -181,10 +159,9 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
       emotion: { state: "happy", durationMs: 3000 },
     },
     repeatRule: "oncePerPersist",
-    audioEnabled: true,
-    positionOffset: [0, 0, 0],
-    nextDelayMs: 200,
+    positionOffset: [0, 5, 0],
   },
+
   {
     id: "dev_message",
     text: [
@@ -205,9 +182,6 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
       emotion: { state: "happy", durationMs: 4000 },
     },
     repeatRule: "always",
-    audioEnabled: true,
-    positionOffset: [0, 0, 0],
-    nextDelayMs: 1800,
   },
   {
     id: "dev_message_2",
@@ -223,37 +197,26 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
       tailEnabled: false,
     },
     repeatRule: "always",
-    audioEnabled: true,
-    positionOffset: [0, 0, 0],
-    nextDelayMs: 1800,
   },
+
   {
     id: "route_locked",
     text: ["Das ist noch nicht fertig 😥"],
     label: "Bob",
     repeatRule: "always",
-    audioEnabled: true,
   },
   {
     id: "cannot_afford",
     text: ["Das kannst du dir nicht leisten :("],
     label: "Bob",
     repeatRule: "always",
-    audioEnabled: true,
   },
-  {
-    id: "upgrade_is_maxxed",
-    text: ["Da geht nichts mehr, maxxed out 💯"],
-    label: "Bob",
-    repeatRule: "always",
-    audioEnabled: true,
-  },
+
   {
     id: "chat_theme_preview",
     text: ["So wird der Chat aussehen", " 👁️👅👁️"],
     label: "Vorschau",
     repeatRule: "always",
-    audioEnabled: true,
     options: {
       emotion: { state: "happy", durationMs: 4000 },
     },
@@ -267,35 +230,10 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
     ],
     label: "Bob",
     repeatRule: "oncePerPersist",
-    audioEnabled: true,
     options: {
       emotion: { state: "happy", durationMs: 4000 },
     },
   },
-  // {
-  //   id: "minigames_not_ready",
-  //   text: [
-  //     "Wie Sie sehen, sehen Sie nichts",
-  //     "hier ist gibt es leider noch nichts neues",
-  //     "vielleicht ja morgen...",
-  //   ],
-  //   label: "Bob",
-  //   repeatRule: "oncePerSession",
-  //   audioEnabled: true,
-  //   options: {
-  //     emotion: { state: "sad", durationMs: 4000 },
-  //   },
-  // },
-  // {
-  //   id: "minigames_home_goal_scored",
-  //   text: ["TOOOOR!! 🎉⚽️"],
-  //   label: "Bob",
-  //   repeatRule: "always",
-  //   audioEnabled: true,
-  //   options: {
-  //     emotion: { state: "happy", durationMs: 4000 },
-  //   },
-  // },
 ];
 
 export const getMessageById = (id: string): MessageConfig | undefined =>

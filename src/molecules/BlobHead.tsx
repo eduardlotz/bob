@@ -243,6 +243,16 @@ export function BlobHead({
       spinAngle: number;
     }>
   >([]);
+  const starsRef = useRef<Group>(null);
+  const starData = useRef(
+    Array.from({ length: 5 }, (_, i) => ({
+      orbitAngle: i * 72 * (Math.PI / 180),
+      orbitRadius: 1.5 + Math.random() * 0.5,
+      orbitSpeed: 1 + Math.random() * 2,
+      offset: Math.random() * Math.PI, // for a vertical bobbing effect
+    })),
+  );
+
   const [blinking, setBlinking] = useState(false);
   const [idleAnimation, setIdleAnimation] = useState<"none" | "spin" | "tilt">(
     "none",
@@ -267,16 +277,15 @@ export function BlobHead({
     !isMobile &&
     (isDefaultView() || isNavigationView());
 
-  // MAYDO: check why the head needs this weird cursor tracking
   const mousePosition = useCursor({
     condition: () => shouldFollowCursor,
     positionFactor: 2.5,
   });
 
-  // default size a little bigger, maybe fix directly inside BobForm.tsx
+  // default size a little bigger, MAYDO fix directly inside BobForm.tsx
   const [spring, api] = useSpring(() => ({
     scale: [1.2, 1.2, 1.2],
-    config: { tension: 200, friction: 15 },
+    config: { tension: 300, friction: 12 },
   }));
 
   useEffect(() => {
@@ -289,21 +298,6 @@ export function BlobHead({
     );
     return () => clearInterval(blinkInterval);
   }, []);
-
-  // micro "happy" jump when emotion switches to happy
-  useEffect(() => {
-    if (emotionState === "happy") {
-      api.start({
-        scale: [1.35, 1.15, 1.35],
-        config: { tension: 420, friction: 10 },
-      });
-      api.start({
-        scale: [1.2, 1.2, 1.2],
-        config: { tension: 300, friction: 12 },
-        delay: 140,
-      });
-    }
-  }, [emotionState]);
 
   // inactivity animations (spin & look around)
   // MAYDO: add camera panning in idle mode
@@ -417,7 +411,7 @@ export function BlobHead({
 
     animateEyes(delta);
 
-    if (emotionState === "dizzy") {
+    if (emotionState === "dizzy" && starsRef.current) {
       const wobbleX = Math.sin(clock.getElapsedTime() * 8) * 0.6;
       const wobbleY = Math.cos(clock.getElapsedTime() * 6) * 0.2;
       const wobbleZ = Math.sin(clock.getElapsedTime() * 10) * 0.4;
@@ -432,13 +426,20 @@ export function BlobHead({
       headRef.current.position.x += posWobbleX * delta;
       headRef.current.position.y += posWobbleY * delta;
 
-      setDizzyStars((prev) =>
-        prev.map((star) => ({
-          ...star,
-          orbitAngle: star.orbitAngle + star.orbitSpeed * delta,
-          spinAngle: star.spinAngle + star.spinSpeed * delta,
-        })),
-      );
+      const time = clock.getElapsedTime();
+
+      starsRef.current.children.forEach((star, i) => {
+        const data = starData.current[i];
+
+        data.orbitAngle += data.orbitSpeed * delta;
+
+        const x = Math.cos(data.orbitAngle) * data.orbitRadius;
+        const z = Math.sin(data.orbitAngle) * data.orbitRadius;
+        const y = Math.sin(time * 2 + data.offset) * 0.2;
+
+        star.position.set(x, y, z);
+        star.rotation.y += 5 * delta;
+      });
     }
   });
 
@@ -719,7 +720,6 @@ export function BlobHead({
   };
 
   const animateEyes = (delta: number) => {
-    // Safety checks
     if (!leftEyeRef.current || !rightEyeRef.current || !eyeGeometries.current) {
       return;
     }
@@ -834,15 +834,17 @@ export function BlobHead({
       createParticles(COUNTER_POS[0], COUNTER_POS[1], COUNTER_POS[2]);
     }
 
-    // trigger bob bounce animation
+    // trigger bob bounce
     api.start({
-      scale: [1.45, 1.15, 1.35],
+      scale: [1.35, 1.15, 1.35],
       config: { tension: 420, friction: 10 },
     });
+
     api.start({
       scale: [1.2, 1.2, 1.2],
-      config: { tension: 300, friction: 10 },
-      delay: 150,
+      config: { tension: 300, friction: 12 },
+      delay: 140,
+      reset: true,
     });
 
     // trigger camera zoom
@@ -1115,7 +1117,7 @@ export function BlobHead({
             setPointerDown(false);
           }}
           castShadow
-          scale={spring.scale.get() as [number, number, number]}
+          scale={spring.scale as any}
           rotation={[0, Math.PI, 0]}
           // position={[0, 2, 0]}
         >
@@ -1139,30 +1141,11 @@ export function BlobHead({
 
           {attachedItems}
 
-          {emotionState === "dizzy" &&
-            dizzyStars.map((star) => {
-              if (!star.visible) return null;
-
-              const orbitX = Math.cos(star.orbitAngle) * star.orbitRadius;
-              const orbitZ = Math.sin(star.orbitAngle) * star.orbitRadius;
-              const orbitY = 1.5 + Math.sin(star.orbitAngle * 2) * 0.2;
-
-              return (
-                <group
-                  key={star.id}
-                  position={[orbitX, orbitY, orbitZ]}
-                  scale={[star.scale, star.scale, star.scale]}
-                >
-                  <Star3D
-                    rotation={[
-                      Math.sin(star.spinAngle) * 0.1,
-                      star.spinAngle,
-                      Math.sin(star.spinAngle * 0.5) * 0.05,
-                    ]}
-                  />
-                </group>
-              );
-            })}
+          <group ref={starsRef} visible={emotionState === "dizzy"}>
+            {[...Array(5)].map((_, i) => (
+              <Star3D />
+            ))}
+          </group>
         </a.group>
       </RigidBody>
     </>

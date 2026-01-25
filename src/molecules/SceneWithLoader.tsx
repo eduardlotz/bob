@@ -174,12 +174,10 @@ export const CustomLoader = ({
 
 export const SceneWithLoader = ({
   permissionGranted,
-  onEmotionUpdate,
   onLoaded,
   ...rest
 }: {
   permissionGranted: boolean;
-  onEmotionUpdate?: (data: { emotionState: any }) => void;
   onLoaded?: () => void;
 }) => {
   const { isMobile, emotionData, setPermissionGranted } = useAppStore();
@@ -217,11 +215,7 @@ export const SceneWithLoader = ({
       )}
 
       <Suspense fallback={null}>
-        <Scene
-          permissionGranted={permissionGranted}
-          onEmotionUpdate={onEmotionUpdate}
-          {...rest}
-        />
+        <Scene permissionGranted={permissionGranted} {...rest} />
       </Suspense>
 
       {!isMobile && <Cursor attachToParent />}

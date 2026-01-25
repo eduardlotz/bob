@@ -57,7 +57,7 @@ export interface MessageStoreState {
   // core actions
   showMessage: (
     id: string,
-    overrides?: Partial<MessageOptions>
+    overrides?: Partial<MessageOptions>,
   ) => Promise<boolean>;
   dismissMessage: (force?: boolean) => Promise<boolean>;
   dismissMessageById: (id: string, force?: boolean) => Promise<boolean>;
@@ -81,7 +81,7 @@ export interface MessageStoreState {
   // batch actions
   showMessages: (
     ids: readonly string[],
-    overrides?: Partial<MessageOptions>
+    overrides?: Partial<MessageOptions>,
   ) => Promise<boolean[]>;
   clearAllMessages: () => void;
 
@@ -103,7 +103,7 @@ const DEFAULT_OPTIONS: Required<MessageOptions> = {
 const QUEUE_LIMIT = 50;
 
 const validateMessageConfig = (
-  config: MessageConfig | null | undefined
+  config: MessageConfig | null | undefined,
 ): config is MessageConfig => {
   if (!config) return false;
   if (!config.id || typeof config.id !== "string") return false;
@@ -117,7 +117,7 @@ const validateMessageConfig = (
 
 const canShowMessage = (
   state: MessageStoreState,
-  config: MessageConfig
+  config: MessageConfig,
 ): boolean => {
   if (state.systemPaused) return false;
   if (!validateMessageConfig(config)) return false;
@@ -129,26 +129,24 @@ const canShowMessage = (
     .exhaustive();
 };
 
-// calculate minimum display time based on message length and options
 const calculateMinimumDisplayTime = (
   config: MessageConfig,
-  options: Required<MessageOptions>
+  options: Required<MessageOptions>,
 ): number => {
   const text = Array.isArray(config.text)
     ? config.text.join(" ")
     : String(config.text ?? "");
   const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-  const perWordMs = 240; // ~250ms/word, slightly faster to avoid blocking
+  const perWordMs = 250;
   const readingMs = Math.max(800, Math.round(words * perWordMs));
   const minDisplay = Math.max(800, options.minimumDisplayMs || 1200);
-  const total = Math.max(minDisplay, readingMs);
-  // return Math.min(15000, total); // cap at 15s
+  const total = Math.min(minDisplay, readingMs);
   return total;
 };
 
 const insertIntoQueue = (
   currentQueue: readonly QueueItem[],
-  newItem: QueueItem
+  newItem: QueueItem,
 ): readonly QueueItem[] => {
   // prevent duplicate entries
   if (currentQueue.some((item) => item.id === newItem.id)) {
@@ -174,7 +172,7 @@ const insertIntoQueue = (
 const withErrorHandling = <T extends any[], R>(
   fn: (...args: T) => R,
   fallback: R,
-  onError?: (error: Error) => void
+  onError?: (error: Error) => void,
 ) => {
   return (...args: T): R => {
     try {
@@ -211,12 +209,12 @@ export const useMessageStore = create<MessageStoreState>()(
         showMessage: withErrorHandling(
           async (
             id: string,
-            overrides?: Partial<MessageOptions>
+            overrides?: Partial<MessageOptions>,
           ): Promise<boolean> => {
             const cfg = getMessageById(id);
             if (!validateMessageConfig(cfg)) {
               console.warn(
-                `[messageStore] Invalid message config for id: ${id}`
+                `[messageStore] Invalid message config for id: ${id}`,
               );
               return false;
             }
@@ -284,7 +282,7 @@ export const useMessageStore = create<MessageStoreState>()(
             return true;
           },
           Promise.resolve(false),
-          (error) => set({ lastError: error.message })
+          (error) => set({ lastError: error.message }),
         ),
 
         dismissMessage: withErrorHandling(
@@ -319,7 +317,7 @@ export const useMessageStore = create<MessageStoreState>()(
             const cfg = getMessageById(nextItem.id);
             if (!validateMessageConfig(cfg)) {
               console.warn(
-                `[messageStore] Invalid queued message: ${nextItem.id}`
+                `[messageStore] Invalid queued message: ${nextItem.id}`,
               );
               set({
                 queue: state.queue.slice(1),
@@ -362,7 +360,7 @@ export const useMessageStore = create<MessageStoreState>()(
             return true;
           },
           Promise.resolve(false),
-          (error) => set({ lastError: error.message })
+          (error) => set({ lastError: error.message }),
         ),
 
         dismissMessageById: withErrorHandling(
@@ -385,7 +383,7 @@ export const useMessageStore = create<MessageStoreState>()(
             return wasInQueue;
           },
           Promise.resolve(false),
-          (error) => set({ lastError: error.message })
+          (error) => set({ lastError: error.message }),
         ),
 
         resetMessage: withErrorHandling(
@@ -403,7 +401,7 @@ export const useMessageStore = create<MessageStoreState>()(
             });
           },
           undefined,
-          (error) => set({ lastError: error.message })
+          (error) => set({ lastError: error.message }),
         ),
 
         setPreference: <T>(key: string, value: T) => {
@@ -532,7 +530,7 @@ export const useMessageStore = create<MessageStoreState>()(
 
         showMessages: async (
           ids: readonly string[],
-          overrides?: Partial<MessageOptions>
+          overrides?: Partial<MessageOptions>,
         ): Promise<boolean[]> => {
           const results: boolean[] = [];
           for (const id of ids) {
@@ -540,7 +538,7 @@ export const useMessageStore = create<MessageStoreState>()(
               async () => {
                 results.push(await get().showMessage(id, overrides));
               },
-              overrides?.baseDismissMs ? overrides?.baseDismissMs : 10
+              overrides?.baseDismissMs ? overrides?.baseDismissMs : 10,
             );
           }
           return results;
@@ -593,18 +591,18 @@ export const useMessageStore = create<MessageStoreState>()(
             repeatFlags: state.repeatFlags,
             preferences: state.preferences,
             archive: state.archive,
-          } as Pick<
+          }) as Pick<
             MessageStoreState,
             "repeatFlags" | "preferences" | "archive"
-          > as unknown as MessageStoreState),
+          > as unknown as MessageStoreState,
         onRehydrateStorage: () => (state) => {
           if (state) {
             useMessageStore.setState({ isHydrated: true });
           }
         },
-      }
-    )
-  )
+      },
+    ),
+  ),
 );
 
 // store helper

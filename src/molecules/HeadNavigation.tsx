@@ -130,23 +130,13 @@ export const MOTION_VARIANTS = {
 export function HeadNavigation({
   cameraControlsRef,
   permissionGranted,
-  onEmotionUpdate,
 }: {
   cameraControlsRef: React.RefObject<CameraControls>;
   permissionGranted: boolean;
-  onEmotionUpdate?: (data: { emotionState: any }) => void;
 }) {
   const [cameraZoomAnimation, setCameraZoomAnimation] = useState(false);
-  const { activeGame } = useMiniGameStore();
-
   const { emotionState, handleTap, triggerEmotion } = useBlobEmotions();
-  const {
-    isTransitioning,
-    isNavigationView,
-    resetToDefaultView,
-    isObjectView,
-    currentView,
-  } = useViewStore();
+  const { isNavigationView, resetToDefaultView, currentView } = useViewStore();
 
   const {
     isMobile,
@@ -203,11 +193,9 @@ export function HeadNavigation({
       window.removeEventListener("bob-emotion", handler as EventListener);
   }, [triggerEmotion]);
 
-  useEffect(() => {
-    if (onEmotionUpdate) {
-      onEmotionUpdate({ emotionState });
-    }
-  }, [emotionState, onEmotionUpdate]);
+  // useEffect(() => {
+  //   onEmotionUpdate({ emotionState });
+  // }, [emotionState]);
 
   return (
     <>
