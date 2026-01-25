@@ -608,6 +608,8 @@ const PortfolioMetaOverlay = ({
   item: PortfolioItem;
   isActive: boolean;
 }) => {
+  const { isMobile } = useAppStore();
+  const overlayTransform = isMobile ? "-50%, 40vh" : "50%, 0";
   return (
     <group position={[0, 15, 0]}>
       <Html
@@ -615,9 +617,10 @@ const PortfolioMetaOverlay = ({
           width: "29.5rem",
           maxWidth: "92vw",
           pointerEvents: "none",
-          transform: "translate3d(50%, 0, 0)",
+          transform: `translate3d(${overlayTransform}, 0)`,
         }}
         zIndexRange={[20, 0]}
+        distanceFactor={isMobile ? 60 : undefined}
       >
         <AnimatePresence mode="popLayout">
           {isActive && (
