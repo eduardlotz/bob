@@ -118,7 +118,7 @@ export function OptionsApp() {
   // TODO: fix re-render every second
   const ThemeOverlays = useCallback(
     () => (
-      <FixedAnchor key="options-app-container-anchor">
+      <FixedAnchor>
         <ShopContainer
           key="options-app-container"
           // initial={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(6px)" }}

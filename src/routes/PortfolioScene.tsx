@@ -7,7 +7,8 @@ import { useNavigate } from "react-router-dom";
 
 export function PortfolioScene() {
   const { checkUnlockedRoutes } = useCoreStore();
-  const { resetToDefaultView, setDefaultViewMode } = useViewStore();
+  const { resetToDefaultView, setDefaultViewMode, isDefaultView } =
+    useViewStore();
   const navigate = useNavigate();
 
   const isAllowedToAcces = checkUnlockedRoutes(ROUTE_PATHS.PORTFOLIO);
@@ -21,7 +22,9 @@ export function PortfolioScene() {
 
   useEffect(() => {
     setDefaultViewMode("object");
-    setTimeout(() => resetToDefaultView(), 300);
+    setTimeout(() => {
+      if (!isDefaultView()) resetToDefaultView();
+    }, 300);
   }, []);
 
   return (

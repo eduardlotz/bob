@@ -152,7 +152,7 @@ export const CustomLoader = ({
                   </>
                 ) : (
                   <StartButton
-                    key="button"
+                    key="start-button"
                     layoutId="transition-element"
                     onClick={handleEnter}
                     initial={{ opacity: 0, scale: 0.9 }}

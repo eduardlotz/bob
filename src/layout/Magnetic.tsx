@@ -62,6 +62,7 @@ export function Magnetic({
       style={{
         x: springX,
         y: springY,
+        position: "relative",
       }}
     >
       {children}
