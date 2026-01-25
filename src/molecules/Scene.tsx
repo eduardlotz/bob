@@ -53,13 +53,7 @@ const Debug = () => {
 export const FLOOR_Y_POSITION = -1.5;
 const TRUCK_SPEED = 5;
 
-const Scene = ({
-  permissionGranted,
-  onEmotionUpdate,
-}: {
-  permissionGranted: boolean;
-  onEmotionUpdate?: (data: { emotionState: EmotionState }) => void;
-}) => {
+const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
   const cameraControlsRef = useRef<CameraControls>(null!);
   const {
     setCameraControlsRef,
@@ -169,9 +163,6 @@ const Scene = ({
                 <HeadNavigation
                   cameraControlsRef={cameraControlsRef}
                   permissionGranted={permissionGranted}
-                  onEmotionUpdate={(data) => {
-                    onEmotionUpdate?.(data);
-                  }}
                 />
               )}
 

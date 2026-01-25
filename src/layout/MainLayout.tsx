@@ -5,7 +5,7 @@ import styled from "styled-components";
 import { useAppStore } from "@/store";
 
 export default function MainLayout({ children }: any) {
-  const { permissionGranted, setIsMobile, setEmotionData } = useAppStore();
+  const { permissionGranted, setIsMobile } = useAppStore();
 
   useEffect(() => {
     const isMobile =
@@ -17,10 +17,7 @@ export default function MainLayout({ children }: any) {
 
   return (
     <Container>
-      <SceneWithLoader
-        permissionGranted={permissionGranted}
-        onEmotionUpdate={setEmotionData}
-      />
+      <SceneWithLoader permissionGranted={permissionGranted} />
       <ViewControls />
       {children}
     </Container>

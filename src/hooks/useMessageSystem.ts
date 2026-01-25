@@ -11,13 +11,12 @@ export function useMessageSystem() {
   const { showMessage, showMessages, systemPaused } = useMessageStore();
   const lastRouteRef = useRef<string | null>(null);
   const { manualTaps } = useCoreStore();
-  const hasShownFirstTapRef = useRef(false);
   const prevTapRef = useRef(0);
   const routeShownRef = useRef<Record<string, boolean>>({});
   const routeChangeTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // show welcome message on first visit, else random greeting
-  // show about message on first /about visit
+  // show welcome message for every route on first visit
+  // show random greeting on home re-visit
   // TODO: refactor for scalability
   const handleRouteChange = useCallback(
     async (route: string) => {
@@ -107,16 +106,11 @@ export function useMessageSystem() {
     };
   }, [currentRoute, isHydrated, handleRouteChange]);
 
+  const autoTapHintThreshold = 7;
+  // tap related messages
   useEffect(() => {
-    const prev = prevTapRef.current;
-    prevTapRef.current = manualTaps;
-
-    if (hasShownFirstTapRef.current || systemPaused) return;
-
-    const threshold = 5;
-    if (prev < threshold && manualTaps >= threshold) {
-      hasShownFirstTapRef.current = true;
+    if (manualTaps >= autoTapHintThreshold) {
       showMessage("first_tap_hint");
     }
-  }, [manualTaps, showMessage, systemPaused]);
+  }, [manualTaps]);
 }
