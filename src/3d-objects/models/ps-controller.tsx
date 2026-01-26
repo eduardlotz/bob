@@ -58,7 +58,7 @@ export const PSControllerModel = forwardRef(
       e.stopPropagation();
 
       setHoveredObject({
-        title: "Videospiele",
+        title: "Retro Videospiele",
       });
     };
 
@@ -75,7 +75,10 @@ export const PSControllerModel = forwardRef(
           restitution={0.5}
           friction={0.7}
         >
-          <group dispose={null}>
+          <group
+            onPointerEnter={handlePointerEnter}
+            onPointerLeave={handlePointerLeave}
+          >
             <group name="Sketchfab_Scene">
               <group
                 name="Sketchfab_model"
@@ -367,7 +370,7 @@ export const PSControllerModel = forwardRef(
         </RigidBody>
       </Grabbable>
     );
-  }
+  },
 );
 
 useGLTF.preload(PATH);

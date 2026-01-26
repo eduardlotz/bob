@@ -35,7 +35,7 @@ export const CameraModel = forwardRef(
       e.stopPropagation();
 
       setHoveredObject({
-        title: "Videospiele",
+        title: "Fotografie",
       });
     };
 
@@ -52,7 +52,10 @@ export const CameraModel = forwardRef(
           restitution={0.5}
           friction={0.7}
         >
-          <group dispose={null}>
+          <group
+            onPointerEnter={handlePointerEnter}
+            onPointerLeave={handlePointerLeave}
+          >
             <group scale={0.3}>
               <mesh
                 geometry={nodes.M_Camera_T_Camera_0.geometry}
@@ -66,7 +69,7 @@ export const CameraModel = forwardRef(
         </RigidBody>
       </Grabbable>
     );
-  }
+  },
 );
 
 useGLTF.preload(PATH);

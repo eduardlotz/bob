@@ -35,7 +35,7 @@ export const XboxControllerModel = forwardRef(
       e.stopPropagation();
 
       setHoveredObject({
-        title: "Videospiele",
+        title: "Xbox zocken",
       });
     };
 
@@ -62,7 +62,7 @@ export const XboxControllerModel = forwardRef(
         </RigidBody>
       </Grabbable>
     );
-  }
+  },
 );
 
 useGLTF.preload(PATH);
