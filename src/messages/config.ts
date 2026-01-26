@@ -42,11 +42,10 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
   {
     id: "welcome_home",
     text: [
-      "Willkommen auf der persönlichen Website von Eduard Lotz!",
-      "ich bin Bob 😗✌️",
-      "ich bin quasi dein persönlicher Begleiter hier",
-      "zum Start kannst du mich ja erstmal antippen 🫵",
-      "danach schauen wir mal weiter",
+      "Hallööööchen, ich bin der Bob 😗✌️",
+      "Willkommen in Eddies eigener Ecke im Internet!",
+      "ich werde dich hier begleiten und mit Infos versorgen",
+      "zum Start kannst du mich ja erstmal antippen 🫵 macht spaß!",
     ],
     label: "Bob",
     options: {
@@ -128,12 +127,12 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
   {
     id: "about_welcome",
     text: [
-      "Hier gibts leider noch nicht viel zu sehen",
+      "Hier fehlt leider noch einiges",
       "Sorry 🥀😔",
-      "ich fülle aktuell noch den Karton mit Dingen, die mich interessieren",
-      "schau doch mal rein und wühl ein bisschen rum 👀",
+      "im Karton kannst du aber schon ein paar von Eddie's Interessen finden",
+      "such doch mal nach dem Plumbob 👀",
     ],
-    label: "Eddie",
+    label: "Bob",
     options: {
       typingSpeedMs: 25,
       baseDismissMs: 2000,
@@ -225,8 +224,7 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
     id: "minigames_welcome",
     text: [
       "ja mooooin, bock was zu zocken??",
-      "klick den Fußball oder den Tischtennisschläger an",
-      "ist beides aber noch in Arbeit, also erwarte kein GTA 🤓",
+      "tap dafür einfach den Fußball ⚽️ oder den Tischtennisschläger 🏓 an",
     ],
     label: "Bob",
     repeatRule: "oncePerPersist",
