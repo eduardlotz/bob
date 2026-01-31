@@ -16,11 +16,13 @@ export const AppInfo = styled.p`
 
   color: #ffffff;
   font-weight: 600;
+  word-break: keep-all;
+  white-space: nowrap;
 `;
 
 // TODO: refactor/split + design system
 export const ShopContainer = styled(motion.div)`
-  width: 520px;
+  width: 300px;
   padding: 4px;
   max-width: 100%;
 
@@ -51,7 +53,9 @@ export const ItemStatusChip = styled(motion.div)<{
 
   padding: 4px 8px;
   border-radius: 0.625rem;
-  box-shadow: 0px 0.5px 2px rgba(0, 0, 0, 0.07), 0 1.5px 5px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0px 0.5px 2px rgba(0, 0, 0, 0.07),
+    0 1.5px 5px rgba(0, 0, 0, 0.05);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 
@@ -162,16 +166,18 @@ export const ToggleButton = styled(motion.button)<{
   align-items: center;
   justify-content: center;
   padding: 0.5rem 0.75rem;
-  background: ${(p) => (p.$active ? "#ffffff" : "#3a3a3a")};
+  background: ${(p) =>
+    p.$active ? "var(--text-color)" : "rgba(255, 255, 255, 0.1)"};
   border: none;
-  color: ${(p) => (p.$active ? "#212121" : "#ffffff")};
+  color: ${(p) => (p.$active ? "var(--primary-color)" : "#ffffff")};
   font-size: 1rem;
   font-weight: 700;
   border-radius: 5rem;
   width: ${(p) => (p.$fillRow ? "100%" : "auto")};
 
   &:hover {
-    background: ${(p) => (p.$active ? "#ffffff" : "#5c5c5c")};
+    background: ${(p) =>
+      p.$active ? "var(--text-color)" : "rgba(147, 147, 147, 0.25)"};
   }
 `;
 
@@ -295,7 +301,9 @@ export const PaginationButton = styled.button`
   border-radius: 1rem;
   background: var(--blob-color);
   color: var(--outline-color);
-  box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.15), 0px 0px 8px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0px 0px 4px rgba(0, 0, 0, 0.15),
+    0px 0px 8px rgba(0, 0, 0, 0.1);
   z-index: 0;
 
   svg {
@@ -308,7 +316,7 @@ export const PaginationButton = styled.button`
   }
 `;
 
-export const ShopItemButton = styled.button<{
+export const ShopItemButton = styled(motion.button)<{
   $selected: boolean;
   $purchased: boolean;
   $canAfford: boolean;
@@ -321,15 +329,14 @@ export const ShopItemButton = styled.button<{
   border-radius: 0.875rem;
 
   background-color: ${(p) =>
-    p.$selected ? "rgba(0,0,0,1)" : "rgba(0,0,0,0.25)"};
-  /* color: ${(p) => (p.$selected ? "#212121" : "#ffffff")}; */
-  color: #ffffff;
+    p.$selected ? "rgba(255,255,255,1)" : "rgba(0,0,0,0.25)"};
+  color: ${(p) => (p.$selected ? "#212121" : "#ffffff")};
   border: ${(p) =>
     p.$selected
-      ? "2px solid rgba(255,255,255,1)"
+      ? "2px solid rgba(255,255,255,0)"
       : p.$purchased
-      ? "2px solid rgba(255,255,255,0.5)"
-      : "2px solid transparent"};
+        ? "2px solid rgba(255,255,255,0.5)"
+        : "2px solid transparent"};
   font-size: 1rem;
   font-weight: 600;
 
@@ -340,7 +347,8 @@ export const ShopItemButton = styled.button<{
   width: fit-content;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.75);
+    background-color: ${(p) =>
+      p.$selected ? "rgba(255,255,255,1)" : "rgba(0,0,0,0.5)"};
   }
 `;
 

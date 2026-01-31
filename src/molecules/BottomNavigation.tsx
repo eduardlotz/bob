@@ -161,6 +161,7 @@ export const NavButton = styled(motion.button)<{ $isActive?: boolean }>`
   justify-content: center;
 
   pointer-events: auto;
+  z-index: 1000;
 
   span {
     display: flex;

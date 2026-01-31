@@ -68,6 +68,7 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
 
   // shop items are only visible on home route
   const isHome = currentRoute === ROUTE_PATHS.HOME;
+  const isPortfolio = currentRoute === ROUTE_PATHS.PORTFOLIO;
   const [visible, setVisible] = useState(isHome);
   // TODO: add grid options to UI
   const showGrid = isHome;
@@ -84,13 +85,10 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
   }));
 
   useEffect(() => {
-    setVisible(isHome);
-
-    if (isHome) {
-      setDefaultViewMode("fixed");
-    } else if (currentRoute === ROUTE_PATHS.PORTFOLIO)
+    if (isPortfolio) {
       setTimeout(() => transitionToView("portfolio"), 300);
-  }, [isHome]);
+    } else setDefaultViewMode("fixed");
+  }, [isPortfolio]);
 
   // route based music
   // default: lofi world music
@@ -168,7 +166,7 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
 
               <MessageBubble anchor={[0, 2.4, 0]} />
 
-              <a.group visible={visible} scale={spring.scale}>
+              <a.group visible={isHome} scale={spring.scale}>
                 <TapCounter />
                 <SceneDecorations />
                 <TapEffects />

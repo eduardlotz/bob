@@ -56,7 +56,7 @@ export const CardboxModel = forwardRef(
     return (
       <a.group
         ref={group}
-        scale={spring.scale.get() as [number, number, number]}
+        scale={spring.scale as any}
         castShadow
         receiveShadow
         position={props.position}
@@ -89,7 +89,7 @@ export const CardboxModel = forwardRef(
         </group>
       </a.group>
     );
-  }
+  },
 );
 
 useGLTF.preload(PATH);

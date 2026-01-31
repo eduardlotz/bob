@@ -117,7 +117,7 @@ export function ShopApp() {
 
   const initialIndex = useMemo(
     () => shopViewsWithItems[activeTab].findIndex((t) => t.enabled),
-    []
+    [],
   );
   const currentItem = data[0];
 
@@ -276,15 +276,24 @@ export function ShopApp() {
             </PaginationButton>
 
             <ShopItemButton
-              key={currentItem.id + "_action_button"}
+              key={buttonLabel + "_action_button"}
               $selected={currentItem.enabled}
               $purchased={currentItem.purchased}
               $canAfford={canAfford(currentItem.cost)}
               onClick={handleButton}
               role="button"
               disabled={!currentItem.purchased && !canAfford(currentItem.cost)}
+              layout
             >
-              {buttonLabel}
+              <motion.span
+                key={buttonLabel + "_action_label"}
+                animate={{ filter: "blur(0px)", scale: 1 }}
+                initial={{ filter: "blur(2px)", scale: 0.9 }}
+                exit={{ filter: "blur(2px)", scale: 0.9 }}
+                layout="preserve-aspect"
+              >
+                {buttonLabel}
+              </motion.span>
             </ShopItemButton>
 
             <PaginationButton onClick={handleNext} disabled={pageCount === 1}>

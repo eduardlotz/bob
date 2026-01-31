@@ -70,13 +70,9 @@ interface Props {
 export const MacbookModel = ({ scale = [1, 1, 1], ...props }: Props) => {
   const group = useRef<THREE.Group>(null!);
   const { nodes, materials } = useGLTF(PATH) as GLTFResult;
-  const screenTexture = useLoader(
-    THREE.TextureLoader,
-    "/images/screentexture.jpg",
-  );
   // const screenTexture = useLoader(
   //   THREE.TextureLoader,
-  //   "/textures/wood_floor.jpg"
+  //   "/images/screentexture.jpg",
   // );
 
   const [spring, api] = useSpring(() => ({
@@ -94,7 +90,7 @@ export const MacbookModel = ({ scale = [1, 1, 1], ...props }: Props) => {
   return (
     <a.group
       ref={group}
-      scale={spring.scale.get() as [number, number, number]}
+      scale={spring.scale as any}
       castShadow
       receiveShadow
       position={props.position}

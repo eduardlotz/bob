@@ -56,7 +56,7 @@ export const BookshelfModel = ({ scale = [1, 1, 1], ...props }: Props) => {
   return (
     <a.group
       ref={group}
-      scale={spring.scale.get() as [number, number, number]}
+      scale={spring.scale as any}
       castShadow
       receiveShadow
       position={props.position}

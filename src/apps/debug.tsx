@@ -202,13 +202,6 @@ export const DebugApp = () => {
           </ListItemContainer>
         </HugColumn>
       </SettingsWrapper>
-      <SettingsWrapper>
-        <h5>Auto-Tap</h5>
-
-        <ToggleButton $active={!isPaused} onClick={toggleGamePaused}>
-          {!isPaused ? "ON" : "OFF"}
-        </ToggleButton>
-      </SettingsWrapper>
 
       <DividerWithLabel>Utilities</DividerWithLabel>
 
@@ -223,14 +216,22 @@ export const DebugApp = () => {
 
       <SettingsWrapper>
         <HugColumn $gap={"0.5rem"}>
-          <h5>Unlock Items</h5>
+          <h5>Unlock Everything</h5>
           <p>[Shop items, routes & upgrades]</p>
         </HugColumn>
 
-        <ActionButton onClick={buyAllUpgrades}>Unlock</ActionButton>
+        <ActionButton onClick={buyAllUpgrades}>Unlock 💯</ActionButton>
       </SettingsWrapper>
 
-      <Divider />
+      <DividerWithLabel>Toggles</DividerWithLabel>
+
+      <SettingsWrapper>
+        <h5>Auto-Tap</h5>
+
+        <ToggleButton $active={!isPaused} onClick={toggleGamePaused}>
+          {!isPaused ? "ON" : "OFF"}
+        </ToggleButton>
+      </SettingsWrapper>
 
       <SettingsWrapper>
         <h5>Physic Debugger</h5>
@@ -262,14 +263,14 @@ export const DebugApp = () => {
         </ToggleButton>
       </SettingsWrapper>
 
-      <DividerWithLabel>Gefährlich</DividerWithLabel>
+      <DividerWithLabel>Danger zone</DividerWithLabel>
       <SettingsWrapper $variant="destructive">
-        <h5>Quests zurücksetzen</h5>
+        <h5>Reset Quests</h5>
         <ActionButton
           $variant="destructive"
           onClick={() =>
             confirm(
-              "Die Quests App wird zurückgesetzt und geupdated.\nBist du sicher?"
+              "Die Quests App wird zurückgesetzt und geupdated.\nBist du sicher?",
             ) && resetAllQuests()
           }
         >
@@ -278,12 +279,12 @@ export const DebugApp = () => {
       </SettingsWrapper>
 
       <SettingsWrapper $variant="destructive">
-        <h5>Spiel zurücksetzen</h5>
+        <h5>Reset Everything</h5>
 
         <ActionButton
           onClick={() =>
             confirm(
-              "Das gesamte Spiel wird zurückgesetzt und geupdated.\nBist du sicher"
+              "Das gesamte Spiel wird zurückgesetzt und geupdated.\nBist du sicher",
             ) && resetEverything()
           }
           $variant="destructive"

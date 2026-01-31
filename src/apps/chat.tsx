@@ -50,7 +50,7 @@ export const ChatApp = () => {
     <>
       <HugColumn
         style={{
-          width: "25rem",
+          width: "360px",
           maxWidth: "100%",
           maxHeight: "23rem",
           overflowY: "auto",
@@ -97,6 +97,10 @@ const AppInfo = styled.p`
   color: var(--text-color);
   opacity: 0.5;
   padding: 0.25rem;
+  margin: 0 1rem;
+  text-wrap: balance;
+  text-align: center;
+  line-height: 1.25;
 `;
 
 const MessageContainer = styled(motion.div)`

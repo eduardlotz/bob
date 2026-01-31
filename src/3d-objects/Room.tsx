@@ -1,12 +1,12 @@
-import { forwardRef, useEffect, useRef } from "react";
-import { TextureLoader, RepeatWrapping, Mesh } from "three";
+import { forwardRef, useRef } from "react";
+import { TextureLoader, Mesh } from "three";
 import { useLoader, extend, useFrame } from "@react-three/fiber";
 import { Decal } from "@react-three/drei";
 import { FLOOR_Y_POSITION } from "@/molecules/Scene";
 import { GridToonMaterial } from "./GridToonMaterial";
 import { WoodToonMaterial } from "./WoodToonMaterial";
 import * as THREE from "three";
-import { useAppStore, useViewStore } from "@/store";
+import { useAppStore } from "@/store";
 import { a, useSpring } from "@react-spring/three";
 
 extend({ GridToonMaterial, WoodToonMaterial });
@@ -15,7 +15,6 @@ const ROOM_SIZE = 20;
 
 export const Room = forwardRef(
   ({ posterUrls = [] }: { posterUrls?: string[] }, ref) => {
-    const { transitionToView } = useViewStore();
     const { showOptions } = useAppStore();
     const [spring, api] = useSpring(() => ({
       position: [0, FLOOR_Y_POSITION + 1.5, 10],
@@ -91,10 +90,7 @@ export const Room = forwardRef(
           ))}
         </mesh>
 
-        <a.mesh
-          rotation={[0, -Math.PI, 0]}
-          position={spring.position.get() as [number, number, number]}
-        >
+        <a.mesh rotation={[0, -Math.PI, 0]} position={spring.position as any}>
           <planeGeometry args={[ROOM_SIZE, ROOM_SIZE]} />
           <gridToonMaterial
             uGridDensity={12}
@@ -130,7 +126,7 @@ export const Room = forwardRef(
         </mesh>
       </group>
     );
-  }
+  },
 );
 
 Room.displayName = "Room";

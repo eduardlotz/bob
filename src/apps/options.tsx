@@ -4,7 +4,7 @@ import { ArrowLeftIcon, ArrowRightIcon } from "@/icons/arrow";
 import { FillColumn, FillRow, HugRow, ListItemContainer } from "@/layout";
 import { Divider, RowLabel, ValueChip, ValueSlider } from "@/layout/atoms";
 import { CameraViewId, useCoreStore, useViewStore } from "@/store";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import styled from "styled-components";
@@ -49,6 +49,10 @@ type OptionsTab = "theme" | "audio" | "graphics";
 
 const tabs = [
   {
+    id: "graphics" as OptionsTab,
+    name: "Grafik",
+  },
+  {
     id: "theme" as OptionsTab,
     name: "Theme",
   },
@@ -56,16 +60,12 @@ const tabs = [
     id: "audio" as OptionsTab,
     name: "Audio",
   },
-  {
-    id: "graphics" as OptionsTab,
-    name: "Grafik",
-  },
 ];
 
 const APP_ID: CameraViewId = "phone:options";
 
 export function OptionsApp() {
-  const [activeTab, setActiveTab] = useState<OptionsTab>("theme");
+  const [activeTab, setActiveTab] = useState<OptionsTab>("graphics");
 
   const { themes, activateTheme, previewTheme, resetPreview } = useCoreStore();
 
@@ -117,70 +117,89 @@ export function OptionsApp() {
 
   // TODO: fix re-render every second
   const ThemeOverlays = useCallback(
-    () => (
+    ({ visible }: { visible: boolean }) => (
       <FixedAnchor>
-        <ShopContainer
-          key="options-app-container"
-          // initial={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(6px)" }}
-          initial={false}
-          animate={{ opacity: 1, scaleX: 1, y: 0, filter: "blur(0px)" }}
-          exit={{ opacity: 0, scaleX: 0.9, y: 80, filter: "blur(6px)" }}
-          transition={{
-            type: "spring" as const,
-            bounce: 0.5,
-          }}
-        >
-          <ContentControls>
-            <ItemStatusChip $variant="dark">
-              <span>{currentItem.name}</span>
-            </ItemStatusChip>
+        <AnimatePresence>
+          {visible && (
+            <ShopContainer
+              key="options-app-container"
+              // initial={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(6px)" }}
+              initial={false}
+              animate={{ opacity: 1, scaleX: 1, y: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, scaleX: 0.9, y: 80, filter: "blur(6px)" }}
+              transition={{
+                type: "spring" as const,
+                bounce: 0.5,
+              }}
+            >
+              <ContentControls>
+                <ItemStatusChip $variant="dark">
+                  <span>{currentItem.name}</span>
+                </ItemStatusChip>
 
-            <FillRow $justify="space-between">
-              <PaginationButton onClick={handlePrev} disabled={pageCount === 1}>
-                <ArrowLeftIcon />
-              </PaginationButton>
+                <FillRow $justify="space-between">
+                  <PaginationButton
+                    onClick={handlePrev}
+                    disabled={pageCount === 1}
+                  >
+                    <ArrowLeftIcon />
+                  </PaginationButton>
 
-              <ShopItemButton
-                key={currentItem.id + "_action_button"}
-                $selected={currentItem.active}
-                $purchased // themes are for free (for now)
-                $canAfford
-                disabled={currentItem.active}
-                onClick={handleButton}
-                role="button"
-              >
-                {buttonLabel}
-              </ShopItemButton>
+                  <ShopItemButton
+                    key={buttonLabel + "_action_button"}
+                    $selected={currentItem.active}
+                    $purchased // themes are for free (for now)
+                    $canAfford
+                    disabled={currentItem.active}
+                    onClick={handleButton}
+                    role="button"
+                    layout
+                  >
+                    <motion.span
+                      key={buttonLabel + "_action_label"}
+                      animate={{ filter: "blur(0px)", scale: 1 }}
+                      initial={{ filter: "blur(2px)", scale: 0.9 }}
+                      exit={{ filter: "blur(2px)", scale: 0.9 }}
+                      layout="preserve-aspect"
+                    >
+                      {buttonLabel}
+                    </motion.span>
+                  </ShopItemButton>
 
-              <PaginationButton onClick={handleNext} disabled={pageCount === 1}>
-                <ArrowRightIcon />
-              </PaginationButton>
-            </FillRow>
+                  <PaginationButton
+                    onClick={handleNext}
+                    disabled={pageCount === 1}
+                  >
+                    <ArrowRightIcon />
+                  </PaginationButton>
+                </FillRow>
 
-            <PaginationDots key={`pagination-dots-${activeTab}`}>
-              {Array(pageCount)
-                .fill(null)
-                .map((_, i) => (
-                  <motion.button
-                    key={`options-pagination-dots-${i}`}
-                    animate={{
-                      width: page === i ? "16px" : "12px",
-                      opacity: page === i ? 1 : 0.25,
-                    }}
-                    initial={{ width: "12px", opacity: 0.25 }}
-                    // whileHover={{ width: "24px" }}
-                    // style={{
-                    //   transformOrigin: "center",
-                    // }}
-                    // initial={false}
-                  ></motion.button>
-                ))}
-            </PaginationDots>
-          </ContentControls>
-        </ShopContainer>
+                <PaginationDots key={`pagination-dots-${activeTab}`}>
+                  {Array(pageCount)
+                    .fill(null)
+                    .map((_, i) => (
+                      <motion.button
+                        key={`options-pagination-dots-${i}`}
+                        animate={{
+                          width: page === i ? "16px" : "12px",
+                          opacity: page === i ? 1 : 0.25,
+                        }}
+                        initial={{ width: "12px", opacity: 0.25 }}
+                        // whileHover={{ width: "24px" }}
+                        // style={{
+                        //   transformOrigin: "center",
+                        // }}
+                        // initial={false}
+                      ></motion.button>
+                    ))}
+                </PaginationDots>
+              </ContentControls>
+            </ShopContainer>
+          )}
+        </AnimatePresence>
       </FixedAnchor>
     ),
-    [currentItem, activeTab],
+    [currentItem],
   );
 
   const AudioView = useCallback(() => {
@@ -192,6 +211,12 @@ export function OptionsApp() {
         key="general-options-view"
         style={{ height: "fit-content" }}
       >
+        <FillRow $align="center" $justify="center" $gap={"1rem"}>
+          <Divider />
+          <AppInfo>Audio Status: {sound.audioStatus}</AppInfo>
+          <Divider />
+        </FillRow>
+
         <FillColumn $gap={"1.5rem"}>
           <ListItemContainer
             $gridTemplateColumns="0.5fr 1fr"
@@ -295,12 +320,6 @@ export function OptionsApp() {
             />
           </ListItemContainer>
         </FillColumn>
-
-        <Divider />
-
-        <FillRow $align="center" $justify="center" $gap={"1rem"}>
-          <AppInfo>Audio Status: {sound.audioStatus}</AppInfo>
-        </FillRow>
       </FillColumn>
     );
   }, []);
@@ -319,51 +338,50 @@ export function OptionsApp() {
               Lade die Seite am besten nochmal neu, wenn du die Qualität änderst
             </p>
           </FillColumn>
-          <FillColumn $gap={"0.5rem"} $align="flex-end">
-            <ToggleButton
-              $fillRow
-              onClick={() => setGraphicsMode("auto")}
-              $active={mode === "auto"}
-            >
-              Auto
-            </ToggleButton>
-            <ToggleButton
-              $fillRow
-              onClick={() => setGraphicsMode("low")}
-              $active={mode === "low"}
-            >
-              Niedrig
-            </ToggleButton>
-            <ToggleButton
-              $fillRow
-              onClick={() => setGraphicsMode("high")}
-              $active={mode === "high"}
-            >
-              Hoch
-            </ToggleButton>
-          </FillColumn>
         </SettingsWrapper>
+        <FillColumn $gap={"0.5rem"} $align="flex-end">
+          <ToggleButton
+            $fillRow
+            onClick={() => setGraphicsMode("auto")}
+            $active={mode === "auto"}
+          >
+            Auto
+          </ToggleButton>
+          <ToggleButton
+            $fillRow
+            onClick={() => setGraphicsMode("low")}
+            $active={mode === "low"}
+          >
+            Niedrig
+          </ToggleButton>
+          <ToggleButton
+            $fillRow
+            onClick={() => setGraphicsMode("high")}
+            $active={mode === "high"}
+          >
+            Hoch
+          </ToggleButton>
+        </FillColumn>
       </FillColumn>
     );
   }, []);
 
   return (
     <>
-      {activeTab === "theme" &&
-        createPortal(
-          <ThemeOverlays />,
-          document.getElementById("motion-root")!,
-        )}
+      {createPortal(
+        <ThemeOverlays visible={activeTab === "theme"} />,
+        document.getElementById("motion-root")!,
+      )}
 
       {activeTab !== "theme" && (
         <FillColumn
           style={{
-            width: "25rem",
+            width: "20rem",
             maxWidth: "100%",
             maxHeight: "23rem",
             overflowY: "auto",
 
-            borderRadius: "1.75rem",
+            borderRadius: "1.25rem",
             background: "rgba(0, 0, 0, 0.25)",
             padding: "1rem",
             zIndex: -1,

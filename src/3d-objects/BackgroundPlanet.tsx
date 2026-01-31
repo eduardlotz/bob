@@ -14,7 +14,8 @@ export const BackgroundPlanet = () => {
       THEME_CONFIG.DEFAULT
     : THEME_CONFIG.DEFAULT;
 
-  const planetColors = [...themeConfig.planetColors];
+  // const planetColors = [...themeConfig.planetColors];
+  const planetColors = ["#ffffff", "#C5BDD5", "#85799F"];
 
   return (
     <mesh>

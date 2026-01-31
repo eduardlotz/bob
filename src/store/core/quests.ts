@@ -46,7 +46,8 @@ export enum QUESTS_STORE_VERSION {
   V0 = 0,
   V1 = 1000000, // version 1.00.00
   V2 = 1000001, // version 1.00.01
-  LATEST = V2,
+  V3 = 1000002, // version 1.00.01
+  LATEST = V3,
 }
 
 function migrateStore(oldState: any, fromVersion: number): any {
@@ -66,6 +67,11 @@ function migrateStore(oldState: any, fromVersion: number): any {
     migratedState = { ...migratedState, initialQuests };
   }
 
+  // remove too easy quests
+  if (fromVersion < QUESTS_STORE_VERSION.V3) {
+    migratedState = initialQuests;
+  }
+
   migratedState.version = QUESTS_STORE_VERSION.LATEST;
   return migratedState;
 }
@@ -74,13 +80,13 @@ const initialQuests: Quest[] = [
   {
     id: "auto_tap_milestone_1",
     title: "Passives Einkommen",
-    description: "Komm in die Auto-Tap Gruppe 🔁🫵",
+    description: "Kauf deine ersten Auto-Tap upgrades",
     icon: "🔁",
     progress: 0,
-    maxProgress: 1,
+    maxProgress: 2,
     reward: {
-      type: "item_reward",
-      amount: "chickenLittleGlasses",
+      type: "taps_reward",
+      amount: 0,
     },
     completed: false,
     routeId: ROUTE_IDS.HOME,
@@ -90,43 +96,43 @@ const initialQuests: Quest[] = [
       value: 1,
     },
   },
-  {
-    id: "tap_multilier_milestone_1",
-    title: "Double it and give it to me",
-    description: "Kauf dein erstes Multiplikator Upgrade",
-    icon: "🙌",
-    progress: 0,
-    maxProgress: 1,
-    reward: {
-      type: "taps_reward",
-      amount: 0,
-    },
-    completed: false,
-    routeId: ROUTE_IDS.HOME,
-    type: "interaction",
-    trigger: {
-      action: "tap_multiplier_level",
-      value: 1,
-    },
-  },
-  {
-    id: "about_quest_1",
-    title: "Kennlernphase",
-    description: "Schalte die “Über Mich”-Seite frei",
-    icon: "👤",
-    progress: 0,
-    maxProgress: 1,
-    reward: {
-      type: "taps_reward",
-      amount: 1000,
-    },
-    completed: false,
-    type: "interaction",
-    trigger: {
-      action: `purchase_route_about`,
-      value: 1,
-    },
-  },
+  // {
+  //   id: "tap_multilier_milestone_1",
+  //   title: "Double it and give it to me",
+  //   description: "Kauf dein erstes Multiplikator Upgrade",
+  //   icon: "🙌",
+  //   progress: 0,
+  //   maxProgress: 1,
+  //   reward: {
+  //     type: "taps_reward",
+  //     amount: 0,
+  //   },
+  //   completed: false,
+  //   routeId: ROUTE_IDS.HOME,
+  //   type: "interaction",
+  //   trigger: {
+  //     action: "tap_multiplier_level",
+  //     value: 1,
+  //   },
+  // },
+  // {
+  //   id: "about_quest_1",
+  //   title: "Kennlernphase",
+  //   description: "Schalte die “Über Mich”-Seite frei",
+  //   icon: "👤",
+  //   progress: 0,
+  //   maxProgress: 1,
+  //   reward: {
+  //     type: "taps_reward",
+  //     amount: 1000,
+  //   },
+  //   completed: false,
+  //   type: "interaction",
+  //   trigger: {
+  //     action: `purchase_route_about`,
+  //     value: 1,
+  //   },
+  // },
   {
     id: "about_quest_2",
     title: "Sul Sul!",
@@ -167,8 +173,8 @@ const initialQuests: Quest[] = [
   },
   {
     id: "minigames_quest_1",
-    title: "Ich wär ja fast Profi geworden, aber",
-    description: "Bring das Runde ins Eckige",
+    title: "Das Runde ins Eckige",
+    description: "Mach ein Tor im Fußball Minigame",
     icon: "⚽️",
     progress: 0,
     maxProgress: 1,

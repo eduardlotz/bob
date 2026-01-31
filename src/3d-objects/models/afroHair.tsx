@@ -52,7 +52,7 @@ export const AfroHair = ({
     <a.group
       key={Number(props.preview)}
       ref={group}
-      scale={spring.scale.get() as [number, number, number]}
+      scale={spring.scale as any}
       castShadow
       receiveShadow
       position={props.position}

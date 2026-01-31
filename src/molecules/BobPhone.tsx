@@ -12,7 +12,7 @@ import { useCoreStore, useViewStore } from "@/store";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { SpeakerIcon } from "@/icons/speaker";
 import { ShopApp, ShopIcon, TapCounterChip } from "@/apps/shop";
-import { ArrowLeftIcon } from "@/icons/arrow";
+import { ArrowLeftIcon, SmallArrowLeftIcon } from "@/icons/arrow";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { DebugApp, DebugIcon } from "@/apps/debug";
 import { useClickOutside } from "@/hooks/useClickOutside";
@@ -89,7 +89,7 @@ export const BobPhone = () => {
   };
 
   const { toggle, isMuted, isEnabled } = useSoundSystem();
-  const { setSoundEnabled } = useCoreStore();
+  const { setSoundEnabled, resetPreview } = useCoreStore();
 
   const activeAppView = () => BOB_APPS.find((a) => a.id === activeApp)?.view;
   const activeAppBottomAction = () =>
@@ -111,8 +111,7 @@ export const BobPhone = () => {
   };
 
   const onTriggerClick = () => {
-    // isOpen ? resetToDefaultView() : transitionToView("phone:home");
-
+    setActiveApp(undefined);
     resetToDefaultView();
     setIsOpen((prev) => !prev);
   };
@@ -135,8 +134,12 @@ export const BobPhone = () => {
   });
 
   useEffect(() => {
-    if (currentView.startsWith("phone:")) setIsOpen(true);
-    else setIsOpen(false);
+    if (currentView.startsWith("phone:")) {
+      setIsOpen(true);
+      resetPreview();
+    } else {
+      setIsOpen(false);
+    }
   }, [currentView]);
 
   return (
@@ -334,7 +337,7 @@ export const BobPhone = () => {
                       onClick={goToHomeScreen}
                       data-ui-sound-id="ui-tap-close"
                     >
-                      <ArrowLeftIcon />
+                      <SmallArrowLeftIcon />
                     </BackHomeButton>
 
                     <AppName>{activeAppName}</AppName>
@@ -371,11 +374,11 @@ const BackHomeButton = styled.button`
   display: flex;
   align-items: center;
 
-  padding: 8px 12px;
+  padding: 8px 16px;
   height: 2.5rem;
   border-radius: 50px;
-  background-color: rgba(255, 255, 255, 0.05);
-  color: white;
+  background-color: white;
+  color: var(--primary-color);
   position: absolute;
   left: 0;
   top: 0;

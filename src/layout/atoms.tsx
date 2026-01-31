@@ -323,6 +323,7 @@ const DividerContainer = styled(FillRow)`
 
   font-weight: 500;
   text-transform: uppercase;
+  white-space: nowrap;
 `;
 
 export const DevSlider = styled.input`
@@ -380,12 +381,12 @@ export const DevActionButton = styled.button<{
       $variant === "primary"
         ? "var(--accent-color)"
         : $variant === "danger"
-        ? "#b30f0f"
-        : $variant === "accent"
-        ? "#ffd700"
-        : $active
-        ? "var(--text-color)"
-        : "rgba(255, 255, 255, 0.18)"};
+          ? "#b30f0f"
+          : $variant === "accent"
+            ? "#ffd700"
+            : $active
+              ? "var(--text-color)"
+              : "rgba(255, 255, 255, 0.18)"};
   background-color: rgba(255, 255, 255, 0.08);
   color: #ffffff;
   font-size: 13px;

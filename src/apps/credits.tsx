@@ -42,24 +42,14 @@ export const CreditsApp = () => {
         <h5>Inspirations</h5>
         <Divider />
         <p>
-          Chester's "Digital Garden"{" "}
+          Bruno Simon{" "}
           <b>
-            <a target="_blank" href="https://chester.how/">
-              chester.how
+            <a target="_blank" href="https://bruno-simon.com">
+              bruno-simon.com
             </a>
           </b>
         </p>
-        <p>
-          Mike Caulfield's "The Garden and the Stream"{" "}
-          <b>
-            <a
-              target="_blank"
-              href="https://hapgood.us/2015/10/17/the-garden-and-the-stream-a-technopastoral/"
-            >
-              hapgood.us
-            </a>
-          </b>
-        </p>
+
         <p>
           Benji Taylor{" "}
           <b>
@@ -68,22 +58,16 @@ export const CreditsApp = () => {
             </a>
           </b>
         </p>
+
         <p>
-          Bruno Simon{" "}
+          Chester's "Digital Garden"{" "}
           <b>
-            <a target="_blank" href="https://bruno-simon.com">
-              bruno-simon.com
+            <a target="_blank" href="https://chester.how/">
+              chester.how
             </a>
           </b>
         </p>
-        <p>
-          Neal Agarwal{" "}
-          <b>
-            <a target="_blank" href="https://neal.fun">
-              neal.fun
-            </a>
-          </b>
-        </p>
+
         <p>
           Nate Parrott{" "}
           <b>
@@ -92,16 +76,20 @@ export const CreditsApp = () => {
             </a>
           </b>
         </p>
+
+        <p>
+          Neal Agarwal{" "}
+          <b>
+            <a target="_blank" href="https://neal.fun">
+              neal.fun
+            </a>
+          </b>
+        </p>
+
         <p>
           Xavier (Jack){" "}
           <a target="_blank" href="https://kmk0.com">
             kmk0.com
-          </a>
-        </p>
-        <p>
-          Daniel Kuntz{" "}
-          <a target="_blank" href="http://kuntz.io/">
-            kuntz.io
           </a>
         </p>
       </ListSectionItem>
@@ -247,57 +235,5 @@ const ListSectionItem = styled(FillColumn)`
       color: rgba(0255, 255, 255, 1);
       font-weight: 500;
     }
-  }
-`;
-
-const ToggleButton = styled.button<{ $active: boolean }>`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem 0.75rem;
-  background: #fff;
-  border: none;
-  color: #212121;
-  font-size: 1rem;
-  font-weight: 700;
-  border-radius: 5rem;
-  opacity: ${(p) => (p.$active ? 1 : 0.5)};
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.9);
-  }
-`;
-const ActionButton = styled.button<{ $variant?: "destructive" | "default" }>`
-  display: flex;
-  width: fit-content;
-  white-space: nowrap;
-  align-items: center;
-  justify-content: center;
-  max-height: 2.25rem;
-
-  padding: 0.5rem 0.75rem;
-  border-radius: 50px;
-  opacity: 1;
-
-  font-size: 1rem;
-  font-weight: 700;
-
-  background-color: #fff;
-  color: #212121;
-
-  ${(p) =>
-    p.$variant === "destructive" &&
-    `
-    background-color: #ff0000;
-    color: #ffffff;
-  `}
-
-  &:disabled {
-    color: #ffffff81;
-    background: #0000001e;
-  }
-
-  &:hover:not(:disabled) {
-    background: rgba(0, 0, 0, 0.5);
   }
 `;

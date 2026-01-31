@@ -48,7 +48,7 @@ export const BuilderHelmet = ({
     <a.group
       ref={group}
       key={Number(props.preview)}
-      scale={spring.scale.get() as [number, number, number]}
+      scale={spring.scale as any}
       position={props.position}
       rotation={props.rotation}
     >

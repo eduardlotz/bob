@@ -1,24 +1,11 @@
-import { GrassShader } from "@/3d-objects/GrassShader";
 import { FootballModel } from "@/3d-objects/models/football";
-import { GoalPost } from "@/3d-objects/models/goalPost";
-import { CloudEffect, TapEffects } from "@/3d-objects/ParticleEffects";
-import { useQuestSystem } from "@/hooks/useQuestSystem";
+import { TapEffects } from "@/3d-objects/ParticleEffects";
 import { FLOOR_Y_POSITION } from "@/molecules/Scene";
 import { BasketBox } from "@/physics/BasketBox";
-import {
-  ROUTE_PATHS,
-  useCoreStore,
-  useMiniGameStore,
-  useViewStore,
-} from "@/store";
-import { useMessageStore } from "@/store/messageStore";
-import { GradientTexture, Grid, Html } from "@react-three/drei";
-import {
-  CuboidCollider,
-  RapierRigidBody,
-  RigidBody,
-} from "@react-three/rapier";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { ROUTE_PATHS, useCoreStore, useMiniGameStore } from "@/store";
+import { GradientTexture, Grid } from "@react-three/drei";
+import { CuboidCollider } from "@react-three/rapier";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { BackSide } from "three";
 import { match } from "ts-pattern";
@@ -43,8 +30,6 @@ export function MiniGamesScene() {
       navigate(ROUTE_PATHS.HOME, { replace: true });
     }
   }, [isAllowedToAcces]);
-
-  const api = useRef<RapierRigidBody>(null);
 
   return (
     <>
