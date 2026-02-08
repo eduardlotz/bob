@@ -62,7 +62,7 @@ export const SkateboardModel = forwardRef(
         </RigidBody>
       </Grabbable>
     );
-  }
+  },
 );
 
 useGLTF.preload(PATH);

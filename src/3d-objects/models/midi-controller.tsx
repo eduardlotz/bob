@@ -41,7 +41,7 @@ export const MidiControllerModel = forwardRef(
       e.stopPropagation();
 
       setHoveredObject({
-        title: "Musik machen",
+        title: "Elektronische Musik",
       });
     };
 
@@ -96,7 +96,7 @@ export const MidiControllerModel = forwardRef(
         </RigidBody>
       </Grabbable>
     );
-  }
+  },
 );
 
 useGLTF.preload(PATH);

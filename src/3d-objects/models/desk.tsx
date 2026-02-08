@@ -3,6 +3,8 @@ import React, { useEffect, useRef } from "react";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
+import { useFloatingBar } from "@/layout/FloatingBar";
+import { useViewStore } from "@/store";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -38,6 +40,22 @@ export const DeskModel = ({ scale = [1, 1, 1], ...props }: Props) => {
     });
   }, []);
 
+  const { currentView } = useViewStore();
+  const { setHoveredObject } = useFloatingBar();
+
+  const handlePointerEnter = (e: any) => {
+    e.stopPropagation();
+
+    if (currentView !== "desk")
+      setHoveredObject({
+        title: "Mein Tisch",
+      });
+  };
+
+  const handlePointerLeave = () => {
+    setHoveredObject(null);
+  };
+
   return (
     <a.group
       ref={group}
@@ -46,6 +64,8 @@ export const DeskModel = ({ scale = [1, 1, 1], ...props }: Props) => {
       receiveShadow
       position={props.position}
       rotation={props.rotation}
+      onPointerEnter={handlePointerEnter}
+      onPointerLeave={handlePointerLeave}
     >
       <mesh geometry={nodes.Cube007.geometry} material={materials.MetalBlack} />
       <mesh geometry={nodes.Cube007_1.geometry} material={materials.DeskWood} />

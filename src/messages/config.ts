@@ -172,7 +172,7 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
       "aber das kommt vielleicht noch irgendwann. in form von vorauswahlen oder so",
       "mal gucken",
     ],
-    label: "Bob (dev)",
+    label: "Bob",
     options: {
       typingSpeedMs: 25,
       baseDismissMs: 2000,

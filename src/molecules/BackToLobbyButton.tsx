@@ -4,6 +4,8 @@ import { useMiniGameStore, useViewStore } from "@/store";
 import { AnimatePresence, motion } from "motion/react";
 import styled from "styled-components";
 import { playUISound } from "@/utils/soundSystem";
+import { CloseIcon } from "@/icons/close";
+import { SmallArrowLeftIcon } from "@/icons/arrow";
 
 export const BackToLobbyButton = ({ show }: { show: boolean }) => {
   const { finishGame } = useMiniGameStore();
@@ -16,7 +18,7 @@ export const BackToLobbyButton = ({ show }: { show: boolean }) => {
   };
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="popLayout">
       {show && (
         <HugColumn
           key="back-to-lobby-wrapper"
@@ -28,6 +30,7 @@ export const BackToLobbyButton = ({ show }: { show: boolean }) => {
             type: "spring" as const,
             bounce: 0.5,
           }}
+          layout
           $gap={"0.75rem"}
           $align="center"
           $justify="flex-end"
@@ -41,6 +44,8 @@ export const BackToLobbyButton = ({ show }: { show: boolean }) => {
               layout
               style={{ borderRadius: "50px" }}
             >
+              <SmallArrowLeftIcon />
+
               <motion.span
                 initial={{ filter: "blur(6px)", opacity: 0, y: -20 }}
                 animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
@@ -50,7 +55,7 @@ export const BackToLobbyButton = ({ show }: { show: boolean }) => {
                   bounce: 0.2,
                 }}
               >
-                Mini-Spiel beenden
+                Spiel beenden
               </motion.span>
             </TriggerContainer>
           </Magnetic>
@@ -78,6 +83,7 @@ const TriggerContainer = styled(motion.button)`
   color: #212121;
   margin: 0 auto;
   overflow: clip;
+  gap: 0.5rem;
 
   span {
     max-height: 1.5rem;

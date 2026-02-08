@@ -8,6 +8,7 @@ import { RapierRigidBody, RigidBody } from "@react-three/rapier";
 import { Grabbable } from "@/physics/Grabbable";
 import { useCoreStore } from "@/store";
 import { previewMaterialProps } from "@/shop-items/utils";
+import { useFloatingBar } from "@/layout/FloatingBar";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -37,6 +38,20 @@ export const GreenDiamond = ({
   const { nodes } = useGLTF(PATH) as GLTFResult;
   const { previewMode } = useCoreStore();
 
+  const { setHoveredObject } = useFloatingBar();
+
+  const handlePointerEnter = (e: any) => {
+    e.stopPropagation();
+
+    setHoveredObject({
+      title: "Plumbob",
+    });
+  };
+
+  const handlePointerLeave = () => {
+    setHoveredObject(null);
+  };
+
   return (
     <Grabbable rigidBodyRef={api} mode={"spring"}>
       <RigidBody
@@ -47,7 +62,11 @@ export const GreenDiamond = ({
         friction={0.4}
       >
         <group rotation={[-Math.PI / 2, 0, 0]} scale={0.24}>
-          <mesh geometry={nodes.Plumbob_Material001_0.geometry}>
+          <mesh
+            geometry={nodes.Plumbob_Material001_0.geometry}
+            onPointerEnter={handlePointerEnter}
+            onPointerLeave={handlePointerLeave}
+          >
             <meshPhongMaterial
               color="#b7e822"
               {...(previewMode === "decoration" ? previewMaterialProps : {})}

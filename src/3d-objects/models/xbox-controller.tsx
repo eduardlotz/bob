@@ -35,7 +35,7 @@ export const XboxControllerModel = forwardRef(
       e.stopPropagation();
 
       setHoveredObject({
-        title: "Xbox zocken",
+        title: "Xbox",
       });
     };
 
