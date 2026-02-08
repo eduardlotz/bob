@@ -39,7 +39,7 @@ const APP_ID: CameraViewId = "phone:debug";
 
 export const DebugApp = () => {
   const { resetQuests } = useQuestSystem();
-  const { clearShownFlags, clearAllMessages } = useMessageStore();
+  const { clearShownFlags, clearAllMessages, showMessages } = useMessageStore();
 
   const {
     viewDebuggerVisible,
@@ -204,6 +204,19 @@ export const DebugApp = () => {
       </SettingsWrapper>
 
       <DividerWithLabel>Utilities</DividerWithLabel>
+
+      <SettingsWrapper>
+        <HugColumn $gap={"0.5rem"}>
+          <h5>Chat</h5>
+          <p>Test message system</p>
+        </HugColumn>
+
+        <ActionButton
+          onClick={() => showMessages(["dev_message", "dev_message_2"])}
+        >
+          Send 💬
+        </ActionButton>
+      </SettingsWrapper>
 
       <SettingsWrapper>
         <HugColumn $gap={"0.5rem"}>

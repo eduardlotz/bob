@@ -65,6 +65,7 @@ export function BottomNavigation() {
 
   return (
     <HugColumn
+      layout
       $align="center"
       $gap="0.75rem"
       style={{
@@ -79,7 +80,7 @@ export function BottomNavigation() {
       <TapUpgrades show={showTapUpgrades} />
       {/* <OrbitFormControls show={showOrbitFormControls} /> */}
       <BackToLobbyButton show={showBackToLobby} />
-      <HugRow $gap={"8px"} layout>
+      <HugRow $gap={"8px"} style={{ height: showBackToLobby ? 0 : "auto" }}>
         <AnimatePresence mode="popLayout">
           {!showBackToLobby && !hideNavigation && (
             <Magnetic key="menu-button-magnet">
@@ -134,7 +135,7 @@ export function BottomNavigation() {
             </Magnetic>
           )}
 
-          {!hideNavigation && <BobPhone />}
+          {!showBackToLobby && !hideNavigation && <BobPhone />}
         </AnimatePresence>
       </HugRow>
     </HugColumn>

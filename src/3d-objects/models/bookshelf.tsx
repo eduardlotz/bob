@@ -3,6 +3,8 @@ import React, { useEffect, useRef } from "react";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
+import { useViewStore } from "@/store";
+import { useFloatingBar } from "@/layout/FloatingBar";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -53,6 +55,22 @@ export const BookshelfModel = ({ scale = [1, 1, 1], ...props }: Props) => {
     });
   }, []);
 
+  const { currentView } = useViewStore();
+  const { setHoveredObject } = useFloatingBar();
+
+  const handlePointerEnter = (e: any) => {
+    e.stopPropagation();
+
+    if (currentView !== "bookshelf")
+      setHoveredObject({
+        title: "Meine Bücher",
+      });
+  };
+
+  const handlePointerLeave = () => {
+    setHoveredObject(null);
+  };
+
   return (
     <a.group
       ref={group}
@@ -61,6 +79,8 @@ export const BookshelfModel = ({ scale = [1, 1, 1], ...props }: Props) => {
       receiveShadow
       position={props.position}
       rotation={props.rotation}
+      onPointerEnter={handlePointerEnter}
+      onPointerLeave={handlePointerLeave}
     >
       <group rotation={[Math.PI / 2, 0, 0]}>
         <mesh

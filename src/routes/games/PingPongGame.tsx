@@ -44,7 +44,7 @@ export function PingPongGame({ onExit }: { onExit: () => void }) {
       }
       cursor.show();
     };
-  }, []);
+  }, [cameraControlsRef, isMobile]);
 
   // camera follows cursor
   // TODO: export to shared or extend viewstore

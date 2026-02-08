@@ -14,10 +14,10 @@ import { format } from "date-fns/format";
 
 const AUDIO_CHAR_DURATION_MS = 85;
 const AUDIO_LEAD_TIME_MS = 5;
-const TYPING_SPEED_MS = 18;
-const BASE_LINE_DELAY_MS = 800;
+const TYPING_SPEED_MS = 15;
+const BASE_LINE_DELAY_MS = 600;
 const CHAR_READING_MS = 25;
-const MIN_DISMISS_MS = 3000;
+const MIN_DISMISS_MS = 1000;
 
 export interface MessageBubbleProps {
   anchor?: [number, number, number];
@@ -53,8 +53,8 @@ const useTypewriterAudio = (text: string, isTyping: boolean) => {
               0.1,
               Math.min(
                 0.6,
-                0.8 * (soundSystem.textVolume ?? DEFAULT_TEXT_VOLUME)
-              )
+                0.8 * (soundSystem.textVolume ?? DEFAULT_TEXT_VOLUME),
+              ),
             );
             textSynth.playCharBlip(duration, adjustedVolume);
           } catch (e) {}
@@ -62,7 +62,7 @@ const useTypewriterAudio = (text: string, isTyping: boolean) => {
         audioRef.current.index++;
         audioRef.current.timeout = window.setTimeout(
           playNext,
-          AUDIO_LEAD_TIME_MS
+          AUDIO_LEAD_TIME_MS,
         );
       }
     };
@@ -203,7 +203,7 @@ export const MessageBubble = memo(function MessageBubble({
         const totalChars = allLines.join("").length;
         const readingTime = Math.max(
           MIN_DISMISS_MS,
-          totalChars * CHAR_READING_MS + 1500
+          totalChars * CHAR_READING_MS,
         );
 
         // TODO: don't dismiss if user is hovering
@@ -237,7 +237,7 @@ export const MessageBubble = memo(function MessageBubble({
         processLinesRecursive(allLines, index + 1, messageId);
       }, nextStepDelay);
     },
-    [markFullyRevealed]
+    [markFullyRevealed],
   );
 
   // TODO: reveal full message on click, dismiss if all revealed

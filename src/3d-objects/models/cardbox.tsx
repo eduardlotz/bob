@@ -3,6 +3,8 @@ import React, { forwardRef, useEffect, useRef } from "react";
 import { Outlines, useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
+import { useViewStore } from "@/store";
+import { useFloatingBar } from "@/layout/FloatingBar";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -53,6 +55,22 @@ export const CardboxModel = forwardRef(
       });
     }, []);
 
+    const { currentView } = useViewStore();
+    const { setHoveredObject } = useFloatingBar();
+
+    const handlePointerEnter = (e: any) => {
+      e.stopPropagation();
+
+      if (currentView !== "cardbox")
+        setHoveredObject({
+          title: "Meine Interessen",
+        });
+    };
+
+    const handlePointerLeave = () => {
+      setHoveredObject(null);
+    };
+
     return (
       <a.group
         ref={group}
@@ -61,6 +79,8 @@ export const CardboxModel = forwardRef(
         receiveShadow
         position={props.position}
         rotation={props.rotation}
+        onPointerEnter={handlePointerEnter}
+        onPointerLeave={handlePointerLeave}
       >
         <group rotation={[Math.PI / 2, 0, 0]}>
           <mesh
