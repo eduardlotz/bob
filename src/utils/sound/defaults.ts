@@ -1,6 +1,6 @@
 export const DEFAULT_WORLD_MUSIC = {
-  id: "world-lofi",
-  filePath: "/audio/lofi-music.mp3",
+  id: "world-jazz",
+  filePath: "/audio/jazz-piano-music.mp3",
 };
 
 export const DEFAULT_TAP_SOUND = {
