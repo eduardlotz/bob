@@ -81,7 +81,7 @@ export const PRESETS = {
   },
 
   soft: {
-    masterVolume: 0.12,
+    masterVolume: 0.8,
     oscillatorType: "sine",
     rootFrequency: 440,
     scale: [0, 4, 7, 11] as const,
@@ -295,3 +295,4 @@ export class TextSynth {
 }
 
 export const textSynth = new TextSynth("bob");
+export const uiSynthSound = new TextSynth("soft");

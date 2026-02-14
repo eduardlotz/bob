@@ -305,19 +305,13 @@ export function ShopApp() {
             {Array(pageCount)
               .fill(null)
               .map((_, i) => (
-                <motion.button
+                <motion.div
                   key={`shop_pagination_dot_${i}`}
                   animate={{
-                    width: page === i ? "16px" : "12px",
-                    opacity: page === i ? 1 : 0.25,
+                    width: page === i ? "20px" : "8px",
+                    opacity: page === i ? 1 : 0.3,
                   }}
-                  initial={{ width: "12px", opacity: 0.25 }}
-                  // onClick={() => goTo(i)}
-                  // whileHover={{ width: "24px" }}
-                  // style={{
-                  //   transformOrigin: "center",
-                  // }}
-                ></motion.button>
+                />
               ))}
           </PaginationDots>
         </ContentControls>

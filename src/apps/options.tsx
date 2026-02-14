@@ -174,23 +174,17 @@ export function OptionsApp() {
                   </PaginationButton>
                 </FillRow>
 
-                <PaginationDots key={`pagination-dots-${activeTab}`}>
+                <PaginationDots>
                   {Array(pageCount)
                     .fill(null)
                     .map((_, i) => (
-                      <motion.button
+                      <motion.div
                         key={`options-pagination-dots-${i}`}
                         animate={{
-                          width: page === i ? "16px" : "12px",
-                          opacity: page === i ? 1 : 0.25,
+                          width: page === i ? "20px" : "8px",
+                          opacity: page === i ? 1 : 0.5,
                         }}
-                        initial={{ width: "12px", opacity: 0.25 }}
-                        // whileHover={{ width: "24px" }}
-                        // style={{
-                        //   transformOrigin: "center",
-                        // }}
-                        // initial={false}
-                      ></motion.button>
+                      />
                     ))}
                 </PaginationDots>
               </ContentControls>
