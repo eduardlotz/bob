@@ -12,12 +12,12 @@ import { resumeAudioContext, unlockAudioContext } from "@/utils/soundSystem";
 import { DEFAULT_TEXT_VOLUME } from "@/utils/sound/defaults";
 import { format } from "date-fns/format";
 
-const AUDIO_CHAR_DURATION_MS = 85;
-const AUDIO_LEAD_TIME_MS = 5;
-const TYPING_SPEED_MS = 15;
-const BASE_LINE_DELAY_MS = 600;
-const CHAR_READING_MS = 25;
-const MIN_DISMISS_MS = 1000;
+const AUDIO_CHAR_DURATION_MS = 30;
+const AUDIO_LEAD_TIME_MS = 20;
+const TYPING_SPEED_MS = 25;
+const BASE_LINE_DELAY_MS = 500;
+const CHAR_READING_MS = 50;
+const MIN_DISMISS_MS = 1800;
 
 export interface MessageBubbleProps {
   anchor?: [number, number, number];
@@ -48,15 +48,7 @@ const useTypewriterAudio = (text: string, isTyping: boolean) => {
           soundSystem.masterVolume > 0
         ) {
           try {
-            const duration = AUDIO_CHAR_DURATION_MS;
-            const adjustedVolume = Math.max(
-              0.1,
-              Math.min(
-                0.6,
-                0.8 * (soundSystem.textVolume ?? DEFAULT_TEXT_VOLUME),
-              ),
-            );
-            textSynth.playCharBlip(duration, adjustedVolume);
+            textSynth.playChar(char, AUDIO_CHAR_DURATION_MS);
           } catch (e) {}
         }
         audioRef.current.index++;
@@ -200,7 +192,10 @@ export const MessageBubble = memo(function MessageBubble({
         setIsTyping(false);
         markFullyRevealed();
 
-        const totalChars = allLines.join("").length;
+        const totalChars = allLines
+          .slice(allLines.length - 3, 3)
+          .join("").length;
+
         const readingTime = Math.max(
           MIN_DISMISS_MS,
           totalChars * CHAR_READING_MS,
@@ -237,7 +232,7 @@ export const MessageBubble = memo(function MessageBubble({
         processLinesRecursive(allLines, index + 1, messageId);
       }, nextStepDelay);
     },
-    [markFullyRevealed],
+    [],
   );
 
   // TODO: reveal full message on click, dismiss if all revealed

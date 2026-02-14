@@ -87,15 +87,11 @@ export const CustomLoader = ({
               $align="center"
               $justify="center"
               key="loading-screen-infos"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0, opacity: 0 }}
               $gap={"2rem"}
             >
               <MotionIconWrapper
                 variants={MotionVariants.Pulse}
                 animate={!finished ? "animate" : "initial"}
-                initial="initial"
                 layoutId="page-logo"
                 layout="position"
               >
@@ -109,9 +105,6 @@ export const CustomLoader = ({
               >
                 <motion.div
                   key={!isMuted ? "on" : "off"}
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0, opacity: 0 }}
                   transition={{
                     duration: 0.2,
                     type: "spring",

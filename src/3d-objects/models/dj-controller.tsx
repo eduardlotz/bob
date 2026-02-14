@@ -26,42 +26,16 @@ interface Props {
 export const DjControllerModel = forwardRef(
   ({ scale = [1, 1, 1], ...props }: Props, ref: any) => {
     const { nodes, materials } = useGLTF(PATH) as GLTFResult;
-    const api = useRef<RapierRigidBody>(null);
-
-    const { setHoveredObject } = useFloatingBar();
-
-    const handlePointerEnter = (e: any) => {
-      e.stopPropagation();
-
-      setHoveredObject({
-        title: "Musik mixen",
-      });
-    };
-
-    const handlePointerLeave = () => {
-      setHoveredObject(null);
-    };
 
     return (
-      <Grabbable rigidBodyRef={api} mode={"spring"}>
-        <RigidBody
-          {...props}
-          ref={api}
-          colliders="cuboid"
-          restitution={0.5}
-          friction={0.7}
-        >
-          <mesh
-            onPointerEnter={handlePointerEnter}
-            onPointerLeave={handlePointerLeave}
-            geometry={nodes.DJGear_mesh.geometry}
-            material={materials.DJGear_mat}
-            scale={0.1}
-          />
-        </RigidBody>
-      </Grabbable>
+      <mesh
+        position={props.position}
+        geometry={nodes.DJGear_mesh.geometry}
+        material={materials.DJGear_mat}
+        scale={0.13}
+      />
     );
-  }
+  },
 );
 
 useGLTF.preload(PATH);

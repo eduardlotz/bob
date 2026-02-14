@@ -48,7 +48,7 @@ export const DeskModel = ({ scale = [1, 1, 1], ...props }: Props) => {
 
     if (currentView !== "desk")
       setHoveredObject({
-        title: "Mein Tisch",
+        title: "Musik",
       });
   };
 
