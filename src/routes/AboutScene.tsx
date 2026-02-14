@@ -22,6 +22,7 @@ import { DeskSpeakersModel } from "@/3d-objects/models/desk-speakers";
 import { PSControllerModel } from "@/3d-objects/models/ps-controller";
 import { CameraModel } from "@/3d-objects/models/camera";
 import { GreenDiamond } from "@/3d-objects/models/greenDiamond";
+import { MusicOverlay } from "@/layout/game-ui/music";
 
 export function AboutScene() {
   const { checkUnlockedRoutes } = useCoreStore();
@@ -29,7 +30,6 @@ export function AboutScene() {
   const navigate = useNavigate();
 
   const isAllowedToAcces = checkUnlockedRoutes(ROUTE_PATHS.ABOUT);
-  const isInObjectMode = getCurrentViewConfig()?.id === "bookshelf";
 
   useEffect(() => {
     if (!isAllowedToAcces) {
@@ -58,22 +58,29 @@ export function AboutScene() {
         viewId="desk"
       >
         <DeskModel
-          position={[-4, FLOOR_Y_POSITION + 1.2 - 0.55, 0]}
+          position={[-3.5, FLOOR_Y_POSITION + 0.7, 0]}
           rotation={[0, 0, 0]}
-          scale={[2, 2, 2]}
+          scale={[2.5, 2.5, 2.5]}
         />
 
         <DeskSpeakersModel
-          position={[-4.3, FLOOR_Y_POSITION + 1.46 - 0.55, 0]}
-          rotation={[-1.58, 0, 0]}
-          scale={[0.146, 0.146, 0.146]}
+          position={[-3.75, FLOOR_Y_POSITION + 1, 1.25]}
+          rotation={[0, 0.3, 0]}
         />
 
-        <MacbookModel
-          position={[-3.85, FLOOR_Y_POSITION + 1.271 - 0.55, 0]}
-          rotation={[0, 1.58, 0]}
-          scale={[0.4, 0.4, 0.4]}
+        <DeskSpeakersModel
+          position={[-3.75, FLOOR_Y_POSITION + 1, -1.25]}
+          rotation={[0, -0.3, 0]}
         />
+
+        <DjControllerModel position={[-3, FLOOR_Y_POSITION + 1, 0]} />
+
+        {getCurrentViewConfig()?.id === "desk" && (
+          <MusicOverlay
+            position={[-4, FLOOR_Y_POSITION + 2, 0]}
+            rotation={[0, Math.PI / 2, 0]}
+          />
+        )}
       </InteractiveObject>
 
       <InteractiveObject
@@ -88,7 +95,7 @@ export function AboutScene() {
           scale={[2, 2, 2]}
         />
 
-        {isInObjectMode && (
+        {getCurrentViewConfig()?.id === "bookshelf" && (
           <InProgressOverlay
             position={[2.8, FLOOR_Y_POSITION + 2, -2.8]}
             rotation={[0, -0.75, 0]}
@@ -108,11 +115,6 @@ export function AboutScene() {
 
       <MidiControllerModel
         position={[4, FLOOR_Y_POSITION + 6, 2]}
-        rotation={[1.2, 0, -0.2]}
-      />
-
-      <DjControllerModel
-        position={[4, FLOOR_Y_POSITION + 1, 2]}
         rotation={[1.2, 0, -0.2]}
       />
 
@@ -152,14 +154,8 @@ export function AboutScene() {
           height={1.9}
           wallThickness={0.22}
         />
-
-        {/* <BaguetteModel
-          position={[-3.6, FLOOR_Y_POSITION + 5, -1.6]}
-          rotation={[-1.25, 0, -2.5]}
-        /> */}
       </InteractiveObject>
 
-      {/* <Room posterUrls={["/images/portrait.jpg"]} /> */}
       <Room />
 
       <BasketBox

@@ -8,18 +8,16 @@ import { useSoundSystem } from "@/hooks/useSoundSystem";
 
 type GLTFResult = GLTF & {
   nodes: {
-    ["Desk_Speakers_01_Cube-Mesh"]: THREE.Mesh;
-    ["Desk_Speakers_01_Cube-Mesh_1"]: THREE.Mesh;
-    ["Desk_Speakers_01_Cube-Mesh_2"]: THREE.Mesh;
+    Cube_1: THREE.Mesh;
+    Cube_2: THREE.Mesh;
   };
   materials: {
-    ["795548"]: THREE.MeshStandardMaterial;
-    ["1A1A1A"]: THREE.MeshStandardMaterial;
-    ["455A64"]: THREE.MeshStandardMaterial;
+    Speaker: THREE.MeshStandardMaterial;
+    Body: THREE.MeshStandardMaterial;
   };
 };
 
-const PATH = "gltf/desk-speakers.glb";
+const PATH = "gltf/music_speaker.glb";
 
 interface Props {
   position: [number, number, number];
@@ -28,7 +26,7 @@ interface Props {
 }
 
 export const DeskSpeakersModel = forwardRef(
-  ({ scale = [1, 1, 1], ...props }: Props, ref: any) => {
+  ({ scale = [1, 1.2, 1.1], ...props }: Props, ref: any) => {
     const group = useRef<THREE.Group>(null!);
     const { nodes, materials } = useGLTF(PATH) as GLTFResult;
     const { isMuted } = useSoundSystem();
@@ -54,28 +52,34 @@ export const DeskSpeakersModel = forwardRef(
       group.current.scale.set(
         scale[0] + (isMuted ? 0 : bounce.current),
         scale[1] * (isMuted ? 1 : squeeze),
-        scale[2] * (isMuted ? 1 : squeeze)
+        scale[2] * (isMuted ? 1 : squeeze),
       );
     });
 
     return (
       <a.group ref={group} position={props.position} rotation={props.rotation}>
-        <group rotation={[Math.PI / 2, 0, 0]}>
-          <mesh geometry={nodes["Desk_Speakers_01_Cube-Mesh"].geometry}>
-            <meshToonMaterial color={"#191919"} />
+        <group dispose={null}>
+          <mesh
+            castShadow
+            receiveShadow
+            geometry={nodes.Cube_1.geometry}
+            material={materials.Speaker}
+          >
+            {/* <meshToonMaterial color="#e4e41a" /> */}
           </mesh>
           <mesh
-            geometry={nodes["Desk_Speakers_01_Cube-Mesh_1"].geometry}
-            material={materials["1A1A1A"]}
-          />
-          <mesh
-            geometry={nodes["Desk_Speakers_01_Cube-Mesh_2"].geometry}
-            material={materials["455A64"]}
-          />
+            castShadow
+            receiveShadow
+            geometry={nodes.Cube_2.geometry}
+            // material={materials.Body}
+          >
+            {/* <meshToonMaterial color="#34343b" /> */}
+            <meshPhongMaterial color="#1b1b1e" />
+          </mesh>
         </group>
       </a.group>
     );
-  }
+  },
 );
 
 useGLTF.preload(PATH);

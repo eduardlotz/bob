@@ -6,7 +6,7 @@ import { ArrowLeftIcon } from "@/icons/arrow";
 import { playUISound } from "@/utils/soundSystem";
 
 const VIEWID_TITLE_MAP = {
-  desk: "Mein Tisch",
+  desk: "Musik",
   bookshelf: "Meine Bücher",
   computer: "Mein Computer",
   cardbox: "Meine Interessen",
