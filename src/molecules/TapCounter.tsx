@@ -87,10 +87,11 @@ export const formatNumber = (num: number): string => {
 };
 
 const BASE_INTERVAL = 1; // min: 1 bounce per second
-const MIN_INTERVAL = 0.1; // max: 10 bounce per second
+const MIN_INTERVAL = 0.25; // max: 4 bounces per second
 
 let accumulator = 0;
 
+// TODO: move tap interval to debug / add method to let user choose
 export const TapCounter = () => {
   const { taps, themes, previewMode, getAutoTapRate, addAutoTaps, isPaused } =
     useCoreStore();
@@ -123,7 +124,7 @@ export const TapCounter = () => {
     // higher level → smaller interval
     const interval = Math.max(
       MIN_INTERVAL,
-      BASE_INTERVAL / Math.max(1, getAutoTapRate())
+      BASE_INTERVAL / Math.max(1, getAutoTapRate()),
     );
 
     accumulator += delta;
