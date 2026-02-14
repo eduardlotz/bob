@@ -87,7 +87,7 @@ export const DEFAULT_SOUND_CONFIGS: SoundConfig[] = [
 export const WORLD_SOUNDS = [
   {
     id: DEFAULT_WORLD_MUSIC.id,
-    name: "Lo-Fi Ambient",
+    name: "Jazz Piano Ambient",
     filePath: DEFAULT_WORLD_MUSIC.filePath,
     icon: "🎵",
     showInShop: true,

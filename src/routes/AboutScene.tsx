@@ -76,7 +76,7 @@ export function AboutScene() {
 
         {getCurrentViewConfig()?.id === "desk" && (
           <MusicOverlay
-            position={[-4, FLOOR_Y_POSITION + 2, 0]}
+            position={[-3.8, FLOOR_Y_POSITION + 2, 0]}
             rotation={[0, Math.PI / 2, 0]}
           />
         )}

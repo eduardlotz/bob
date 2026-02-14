@@ -12,7 +12,7 @@ import { match } from "ts-pattern";
 import { a, useSpring } from "@react-spring/three";
 import { Physics } from "@react-three/rapier";
 import { Perf } from "r3f-perf";
-import { Suspense, useRef, useState, useEffect } from "react";
+import { Suspense, useRef, useState, useEffect, useMemo } from "react";
 
 import { useAppStore, useCoreStore, useMiniGameStore } from "../store";
 import { useViewStore } from "../store/viewStore";
@@ -70,6 +70,7 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
   const isHome = currentRoute === ROUTE_PATHS.HOME;
   const isPortfolio = currentRoute === ROUTE_PATHS.PORTFOLIO;
   const [visible, setVisible] = useState(isHome);
+
   // TODO: add grid options to UI
   const showGrid = isHome;
   const showBackground = isHome;
@@ -91,36 +92,35 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
   }, [isPortfolio]);
 
   // route based music
-  // default: lofi world music
+  // default: jazz world music
   // portfolio: pink noise
-  useEffect(() => {
-    let currentWorldSoundId = null;
 
+  const worldMusicId = useMemo(() => {
     switch (currentRoute) {
       case ROUTE_PATHS.HOME: {
-        // currentWorldSoundId = DEFAULT_WORLD_MUSIC.id;
-        currentWorldSoundId = null;
-        break;
+        return DEFAULT_WORLD_MUSIC.id;
       }
 
       case ROUTE_PATHS.PORTFOLIO: {
-        currentWorldSoundId = DEFAULT_PINK_NOISE.id;
-        break;
+        return DEFAULT_PINK_NOISE.id;
       }
 
       default: {
-        currentWorldSoundId = null;
-        break;
+        return null;
       }
     }
+  }, [currentRoute]);
 
-    if (currentWorldSoundId)
-      playWorldSound(currentWorldSoundId, { stopPrevious: true });
+  useEffect(() => {
+    if (!worldMusicId) return;
+
+    stopAllWorldSounds();
+    playWorldSound(worldMusicId, { stopPrevious: true });
 
     return () => {
-      if (currentWorldSoundId) stopSoundsById(currentWorldSoundId);
+      stopSoundsById(worldMusicId);
     };
-  }, [currentRoute]);
+  }, [worldMusicId]);
 
   return (
     <>

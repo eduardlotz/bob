@@ -478,7 +478,7 @@ export const initialGameState: GameState = {
     effectsEnabled: true,
   },
   audioSelections: {
-    worldMusicId: "world-lofi",
+    worldMusicId: "world-jazz",
     tapEffectId: "tap_effect_default",
     worldSoundIds: [],
     tapEffectAudioId: undefined,
