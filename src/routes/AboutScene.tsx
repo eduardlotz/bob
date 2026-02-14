@@ -1,11 +1,10 @@
 import { useCoreStore } from "@/store/core/store";
 import { ROUTE_PATHS, useViewStore } from "@/store";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect } from "react";
 import { InteractiveObject } from "../molecules/InteractiveObject";
 import { useNavigate } from "react-router-dom";
 import { useSpring } from "@react-spring/three";
 import { DeskModel } from "@/3d-objects/models/desk";
-import { MacbookModel } from "@/3d-objects/models/macbook";
 import { FLOOR_Y_POSITION } from "../molecules/Scene";
 import { BookshelfModel } from "@/3d-objects/models/bookshelf";
 import { Html } from "@react-three/drei";
