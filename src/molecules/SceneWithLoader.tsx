@@ -14,7 +14,7 @@ import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { SpeakerIcon } from "@/icons/speaker";
 import { StatusPillButton } from "@/apps/ui";
 
-export const SCENE_REVEAL_DURATION = 0.5;
+export const SCENE_REVEAL_DURATION = 0.3;
 
 export const CustomLoader = ({
   onFadeOutComplete,
@@ -67,13 +67,12 @@ export const CustomLoader = ({
           key="loader"
           initial={{
             clipPath: "circle(100% at 50% 50%)",
-            opacity: 1,
           }}
           exit={{
             clipPath: "circle(0% at 50% 50%)",
             transition: {
               duration: SCENE_REVEAL_DURATION,
-              ease: [0.26, 0, 0.24, 1],
+              ease: "easeOut",
             },
           }}
         >

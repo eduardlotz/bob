@@ -30,7 +30,7 @@ export const DEFAULT_UI_SOUND_2 = {
 
 export const DEFAULT_MASTER_VOLUME = 0.7;
 export const DEFAULT_TAP_VOLUME = 0.6;
-export const DEFAULT_WORLD_VOLUME = 0.8;
+export const DEFAULT_WORLD_VOLUME = 0.3;
 export const DEFAULT_UI_VOLUME = 0.7;
 export const DEFAULT_TEXT_VOLUME = 0.6;
 

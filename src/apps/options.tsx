@@ -49,23 +49,23 @@ type OptionsTab = "theme" | "audio" | "graphics";
 
 const tabs = [
   {
-    id: "graphics" as OptionsTab,
-    name: "Grafik",
+    id: "audio" as OptionsTab,
+    name: "Audio",
   },
   {
     id: "theme" as OptionsTab,
     name: "Theme",
   },
   {
-    id: "audio" as OptionsTab,
-    name: "Audio",
+    id: "graphics" as OptionsTab,
+    name: "Grafik",
   },
 ];
 
 const APP_ID: CameraViewId = "phone:options";
 
 export function OptionsApp() {
-  const [activeTab, setActiveTab] = useState<OptionsTab>("graphics");
+  const [activeTab, setActiveTab] = useState<OptionsTab>("audio");
 
   const { themes, activateTheme, previewTheme, resetPreview } = useCoreStore();
 

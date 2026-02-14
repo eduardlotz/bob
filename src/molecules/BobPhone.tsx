@@ -223,45 +223,56 @@ export const BobPhone = () => {
           >
             <HugColumn
               $gap={activeApp ? "4px" : "0"}
-              layout="position"
+              layout
+              // layout="position"
               $align="center"
             >
-              {showStatusBar && (
-                <FillRow>
-                  <StatusPill layout="position">
-                    {currentHour}
-                    <Blinking
-                      style={{
-                        paddingLeft: "0.1ch",
-                        paddingRight: "0.05ch",
-                      }}
-                    >
-                      :
-                    </Blinking>
-                    {currentMinutes}
-                  </StatusPill>
-
-                  <StatusPillButton
-                    $active={!isMuted}
-                    onClick={handleAudioButtonClick}
-                    layout="position"
+              <AnimatePresence mode="popLayout">
+                {showStatusBar && (
+                  <FillRow
+                    key={"bob-phone-statusbar"}
+                    initial={{ filter: "blur(4px)", opacity: 0 }}
+                    animate={{ filter: "blur(0px)", opacity: 1 }}
+                    exit={{ filter: "blur(4px)", opacity: 0 }}
+                    transition={{
+                      ease: "easeOut",
+                    }}
                   >
-                    <motion.div
-                      key={!isMuted ? "on" : "off"}
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0, opacity: 0 }}
-                      transition={{
-                        duration: 0.2,
-                        type: "spring",
-                        bounce: 0.7,
-                      }}
+                    <StatusPill layout="position">
+                      {currentHour}
+                      <Blinking
+                        style={{
+                          paddingLeft: "0.1ch",
+                          paddingRight: "0.05ch",
+                        }}
+                      >
+                        :
+                      </Blinking>
+                      {currentMinutes}
+                    </StatusPill>
+
+                    <StatusPillButton
+                      $active={!isMuted}
+                      onClick={handleAudioButtonClick}
+                      layout="position"
                     >
-                      <SpeakerIcon muted={isMuted} />
-                    </motion.div>
-                  </StatusPillButton>
-                </FillRow>
-              )}
+                      <motion.div
+                        key={!isMuted ? "on" : "off"}
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0, opacity: 0 }}
+                        transition={{
+                          duration: 0.2,
+                          type: "spring",
+                          bounce: 0.7,
+                        }}
+                      >
+                        <SpeakerIcon muted={isMuted} />
+                      </motion.div>
+                    </StatusPillButton>
+                  </FillRow>
+                )}
+              </AnimatePresence>
               <FillColumn
                 key={activeApp}
                 $gap={activeApp ? "4px" : "0"}
@@ -289,6 +300,7 @@ export const BobPhone = () => {
                   type: "spring" as const,
                   bounce: 0.4,
                 }}
+                layout
               >
                 {activeApp ? (
                   activeAppView()
