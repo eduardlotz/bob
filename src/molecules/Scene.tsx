@@ -144,10 +144,6 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
               ref={cameraControlsRef}
               truckSpeed={TRUCK_SPEED}
               azimuthRotateSpeed={0.3}
-              // minPolarAngle={1.55}
-              // maxPolarAngle={1.6}
-              // minDistance={4}
-              // maxDistance={73}
             />
             <ambientLight intensity={2} />
             <PerspectiveCamera makeDefault position={[0, 0, 3]} />

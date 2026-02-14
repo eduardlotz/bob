@@ -1,7 +1,17 @@
+import {
+  ContentControls,
+  FixedAnchor,
+  PaginationButton,
+  PaginationDots,
+  ShopContainer,
+} from "@/apps/ui";
+import { ArrowLeftIcon, ArrowRightIcon } from "@/icons/arrow";
 import { Html } from "@react-three/drei";
 import { motion } from "motion/react";
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import styled from "styled-components";
+import { FillRow } from "..";
 
 const SOUNDCLOUD_URLS = [
   "https://soundcloud.com/captainlowie/ist-das-leben-nicht-schoen",
@@ -42,39 +52,74 @@ export const MusicOverlay = (props: {
 
   const embedUrl = toEmbedUrl(SOUNDCLOUD_URLS[currentIndex]);
 
-  return (
-    <group>
-      <Html
-        position={props.position}
-        transform
-        scale={[0.08, 0.08, 0.08]}
-        rotation={props.rotation}
+  const NavigationOverlays = (
+    <FixedAnchor>
+      <ShopContainer
+        key="music-navigations-container"
+        initial={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(6px)" }}
+        animate={{ opacity: 1, scaleX: 1, y: 0, filter: "blur(0px)" }}
+        exit={{ opacity: 0, scaleX: 0.9, y: 80, filter: "blur(6px)" }}
+        transition={{
+          type: "spring" as const,
+          bounce: 0.5,
+        }}
       >
-        <OverlayBody key="music-ui-body">
-          <iframe
-            key={currentIndex}
-            width="100%"
-            height="250"
-            allow="autoplay"
-            src={embedUrl}
-            style={{ border: "none", display: "block" }}
-          />
-          {total > 1 && (
-            <NavRow>
-              <NavButton onClick={prevTrack} aria-label="Previous track">
-                &#8249;
-              </NavButton>
-              <TrackCounter>
-                {currentIndex + 1} / {total}
-              </TrackCounter>
-              <NavButton onClick={nextTrack} aria-label="Next track">
-                &#8250;
-              </NavButton>
-            </NavRow>
+        <ContentControls>
+          <FillRow $justify="space-between">
+            <PaginationButton onClick={prevTrack}>
+              <ArrowLeftIcon />
+            </PaginationButton>
+
+            <PaginationButton onClick={nextTrack}>
+              <ArrowRightIcon />
+            </PaginationButton>
+          </FillRow>
+
+          <PaginationDots>
+            {Array(total)
+              .fill(null)
+              .map((_, i) => (
+                <motion.span
+                  key={`music_pagination_dot_${i}`}
+                  animate={{
+                    width: currentIndex === i ? "20px" : "8px",
+                    opacity: currentIndex === i ? 1 : 0.5,
+                  }}
+                />
+              ))}
+          </PaginationDots>
+        </ContentControls>
+      </ShopContainer>
+    </FixedAnchor>
+  );
+
+  return (
+    <>
+      <group>
+        <Html
+          position={props.position}
+          transform
+          scale={[0.08, 0.08, 0.08]}
+          rotation={props.rotation}
+        >
+          <OverlayBody key="music-ui-body">
+            <iframe
+              key={currentIndex}
+              width="100%"
+              height="250"
+              allow="autoplay"
+              src={embedUrl}
+              style={{ border: "none", display: "block" }}
+            />
+          </OverlayBody>
+
+          {createPortal(
+            NavigationOverlays,
+            document.getElementById("motion-root")!,
           )}
-        </OverlayBody>
-      </Html>
-    </group>
+        </Html>
+      </group>
+    </>
   );
 };
 

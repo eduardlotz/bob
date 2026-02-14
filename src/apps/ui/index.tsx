@@ -277,13 +277,13 @@ export const PaginationDots = styled.div`
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 2px;
+  padding: 4px;
   border-radius: 50px;
   background: rgba(0, 0, 0, 0.15);
 
-  button {
-    height: 6px;
-    width: 6px;
+  > * {
+    height: 8px;
+    width: 8px;
     background: #fff;
     opacity: 0.25;
     border-radius: 50px;
