@@ -61,28 +61,26 @@ export const ChatApp = () => {
         $gap={"0.25rem"}
         ref={containerRef}
       >
-        <AnimatePresence mode="popLayout">
-          {archive.map((msg, i) => (
-            <MessageContainer
-              key={msg.id}
-              initial={{ opacity: 0, y: 10, filter: "blur(6px)" }}
-              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              exit={{ opacity: 0, y: 10, filter: "blur(6px)" }}
-              transition={{
-                type: "spring" as const,
-                bounce: 0.5,
-                delay: 0.03 * i,
-              }}
-            >
-              <Text>{msg.text}</Text>
+        {archive.map((msg, i) => (
+          <MessageContainer
+            key={msg.id}
+            initial={{ opacity: 0, y: 10, filter: "blur(6px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            exit={{ opacity: 0, y: 10, filter: "blur(6px)" }}
+            transition={{
+              type: "spring" as const,
+              bounce: 0.5,
+              delay: 0.03 * i,
+            }}
+          >
+            <Text>{msg.text}</Text>
 
-              <TimeTag>
-                {msg.sender ? `${msg.sender} · ` : ""}
-                {format(msg.time, "dd.MM.yy")}
-              </TimeTag>
-            </MessageContainer>
-          ))}
-        </AnimatePresence>
+            <TimeTag>
+              {msg.sender ? `${msg.sender} · ` : ""}
+              {format(msg.time, "dd.MM.yy")}
+            </TimeTag>
+          </MessageContainer>
+        ))}
       </HugColumn>
       <FillRow $align="center" $justify="center">
         <AppInfo>Einmalige Nachrichten werden hier gespeichert</AppInfo>

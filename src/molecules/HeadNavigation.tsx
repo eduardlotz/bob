@@ -191,11 +191,7 @@ export function HeadNavigation({
     window.addEventListener("bob-emotion", handler as EventListener);
     return () =>
       window.removeEventListener("bob-emotion", handler as EventListener);
-  }, [triggerEmotion]);
-
-  // useEffect(() => {
-  //   onEmotionUpdate({ emotionState });
-  // }, [emotionState]);
+  }, []);
 
   return (
     <>

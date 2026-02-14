@@ -149,7 +149,8 @@ export const CreditsApp = () => {
         </p>
         <Divider />
         <p>
-          In Dreamland <b>by Chillpeach</b> (youtube.com/watch?v=DSWYAclv2I8)
+          Jazz Piano Medley <b>by Tri-Tachyon</b> -
+          https://soundcloud.com/tri-tachyon/albums
         </p>
       </ListSectionItem>
       <ListSectionItem>

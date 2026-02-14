@@ -39,7 +39,7 @@ export interface VoiceConfig {
 
 export const PRESETS = {
   bob: {
-    masterVolume: 0.35,
+    masterVolume: 0.25,
     oscillatorType: "sine",
     rootFrequency: 340,
     scale: [0, 2, 4, 7, 9] as const,
