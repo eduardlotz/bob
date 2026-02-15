@@ -40,7 +40,7 @@ const toEmbedUrl = (shareUrl: string) => {
 };
 
 export const MusicOverlay = (props: {
-  position: [number, number, number];
+  position?: [number, number, number];
   rotation?: [number, number, number];
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -62,8 +62,20 @@ export const MusicOverlay = (props: {
         transition={{
           type: "spring" as const,
           bounce: 0.5,
+          delay: 0.5,
         }}
       >
+        <OverlayBody key="music-ui-body">
+          <iframe
+            key={currentIndex}
+            width="100%"
+            height="350"
+            allow="autoplay"
+            src={embedUrl}
+            style={{ border: "none", display: "block" }}
+          />
+        </OverlayBody>
+
         <ContentControls>
           <FillRow $justify="space-between">
             <PaginationButton onClick={prevTrack}>
@@ -97,22 +109,11 @@ export const MusicOverlay = (props: {
     <>
       <group>
         <Html
-          position={props.position}
-          transform
-          scale={[0.08, 0.08, 0.08]}
-          rotation={props.rotation}
+        // position={props.position}
+        // transform
+        // scale={[0.08, 0.08, 0.08]}
+        // rotation={props.rotation}
         >
-          <OverlayBody key="music-ui-body">
-            <iframe
-              key={currentIndex}
-              width="100%"
-              height="250"
-              allow="autoplay"
-              src={embedUrl}
-              style={{ border: "none", display: "block" }}
-            />
-          </OverlayBody>
-
           {createPortal(
             NavigationOverlays,
             document.getElementById("motion-root")!,
@@ -129,7 +130,10 @@ const OverlayBody = styled(motion.div)`
   display: flex;
   flex-direction: column;
   gap: 0px;
+  width: 350px;
   max-width: 600px;
+  border-radius: 8px;
+  overflow: clip;
 
   * {
     margin: 0;

@@ -146,7 +146,6 @@ export const BobPhone = () => {
     <>
       <Magnetic key="bob-phone-trigger-magnet">
         <NavButton
-          layout="position"
           key="bob-phone-trigger"
           onClick={onTriggerClick}
           whileHover={{ scale: 1.05 }}
@@ -161,6 +160,7 @@ export const BobPhone = () => {
             delay: 0.1,
           }}
           ref={triggerRef}
+          layout="position"
         >
           <AnimatePresence mode="popLayout">
             {isOpen ? (
@@ -298,7 +298,8 @@ export const BobPhone = () => {
                 }}
                 transition={{
                   type: "spring" as const,
-                  bounce: 0.4,
+                  bounce: 0.5,
+                  visualDuration: 0.3,
                 }}
                 layout
               >
