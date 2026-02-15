@@ -298,20 +298,20 @@ function OptionsGroup({
         const position = routePositions[index];
 
         return (
-          <Float
-            floatIntensity={3}
-            floatingRange={[0.2, 0.1]}
-            speed={1.5}
+          // <Float
+          //   floatIntensity={3}
+          //   floatingRange={[0.2, 0.1]}
+          //   speed={1.5}
+          //   >
+          <Option
             key={route.id}
-          >
-            <Option
-              initialPosition={position}
-              route={route}
-              index={index}
-              hideOptions={hideOptions}
-              isClosing={isClosing}
-            />
-          </Float>
+            initialPosition={position}
+            route={route}
+            index={index}
+            hideOptions={hideOptions}
+            isClosing={isClosing}
+          />
+          // </Float>
         );
       })}
     </group>
@@ -368,41 +368,39 @@ function Option({
   return (
     <group ref={optionRef} position={position}>
       <Html position={[0, 1.5, 0]}>
-        <Magnetic distance={1} active={route.purchased}>
-          <NavigationBubble
-            key={route.id}
-            initial={MotionVariants.OptionButton.initial}
-            animate={
-              isClosing
-                ? MotionVariants.OptionButton.exit
-                : MotionVariants.OptionButton.animate({
-                    delay: index,
-                    isDisabled: !route.purchased,
-                    isLocked: route.isLocked,
-                  })
-            }
-            $active={isActive}
-            $locked={!route.isLocked}
-            exit={MotionVariants.OptionButton.exit}
-            whileHover={MotionVariants.OptionButton.hover({
-              isDisabled: !route.purchased,
-              isLocked: route.isLocked,
-            })}
-            whileTap={MotionVariants.OptionButton.tap}
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={handleOptionClick}
-            data-ui-sound-id="ui-tap-close"
-          >
-            {!route.purchased && <PriceChip>{route.cost} 🫵</PriceChip>}
-            {route.isLocked && (
-              <PriceChip>
-                <LockIcon />
-              </PriceChip>
-            )}
-            <RouteName>{route.name}</RouteName>
-            <BackgroundColor $active={isActive} />
-          </NavigationBubble>
-        </Magnetic>
+        <NavigationBubble
+          key={route.id}
+          initial={MotionVariants.OptionButton.initial}
+          animate={
+            isClosing
+              ? MotionVariants.OptionButton.exit
+              : MotionVariants.OptionButton.animate({
+                  delay: index,
+                  isDisabled: !route.purchased,
+                  isLocked: route.isLocked,
+                })
+          }
+          $active={isActive}
+          $locked={!route.isLocked}
+          exit={MotionVariants.OptionButton.exit}
+          whileHover={MotionVariants.OptionButton.hover({
+            isDisabled: !route.purchased,
+            isLocked: route.isLocked,
+          })}
+          whileTap={MotionVariants.OptionButton.tap}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={handleOptionClick}
+          data-ui-sound-id="ui-tap-close"
+        >
+          {!route.purchased && <PriceChip>{route.cost} 🫵</PriceChip>}
+          {route.isLocked && (
+            <PriceChip>
+              <LockIcon />
+            </PriceChip>
+          )}
+          <RouteName>{route.name}</RouteName>
+          <BackgroundColor $active={isActive} />
+        </NavigationBubble>
       </Html>
     </group>
   );
