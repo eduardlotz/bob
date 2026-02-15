@@ -1878,6 +1878,7 @@ __metadata:
     react-error-boundary: "npm:^6.0.3"
     react-router-dom: "npm:^7.8.0"
     react-use-measure: "npm:^2.1.7"
+    sileo: "npm:^0.0.7"
     sonner: "npm:^2.0.7"
     styled-components: "npm:^6.1.19"
     styled-reset: "npm:^4.5.2"
@@ -3489,6 +3490,17 @@ __metadata:
   version: 4.1.0
   resolution: "signal-exit@npm:4.1.0"
   checksum: 10c0/41602dce540e46d599edba9d9860193398d135f7ff72cab629db5171516cfae628d21e7bfccde1bbfdf11c48726bc2a6d1a8fb8701125852fbfda7cf19c6aa83
+  languageName: node
+  linkType: hard
+
+"sileo@npm:^0.0.7":
+  version: 0.0.7
+  resolution: "sileo@npm:0.0.7"
+  peerDependencies:
+    lucide-react: ">=0.300"
+    react: ">=18"
+    react-dom: ">=18"
+  checksum: 10c0/78344c81390ac15dc9c613d503dcfc650d5294576e28dd1162296abe81845b1c6faf46b8ccae18fff7c18ab2d02038c7276c0b7081235bec5982a2f71657311d
   languageName: node
   linkType: hard
 

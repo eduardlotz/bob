@@ -4,6 +4,7 @@ import { useCoreStore } from "@/store/core/store";
 import { useAppStore } from "@/store";
 import { toast } from "sonner";
 import { ROUTE_DICTIONARY } from "@/store/config/routes";
+import { sileo } from "sileo";
 
 export const useQuestSystem = () => {
   const { currentRoute } = useAppStore();
@@ -70,9 +71,13 @@ export const useQuestSystem = () => {
             ? addTaps(quest.reward.amount as number)
             : purchaseBobItem(quest.reward.amount as string, true);
 
-          toast.success(`${quest.title}`, {
+          // toast.success(`${quest.title}`, {
+          //   description: quest.description,
+          //   duration: 3000,
+          // });
+          sileo.success({
+            title: `${quest.title}`,
             description: quest.description,
-            duration: 3000,
           });
         }
       });
