@@ -43,6 +43,7 @@ import {
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { sileo } from "sileo";
 
 const Debug = () => {
   const { width } = useThree((s) => s.size);
@@ -247,7 +248,10 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
         const onRestored = () => {
           window.location.reload();
           navigate(ROUTE_PATHS.HOME);
-          toast.error("Ein Fehler ist aufgetreten...");
+
+          sileo.error({
+            title: "Ein Fehler ist aufgetreten...",
+          });
         };
 
         canvas.addEventListener("webglcontextlost", onLost, false);

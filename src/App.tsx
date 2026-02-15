@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { FullScreen, ContentWidth, FillColumn } from "@/layout";
 import MainLayout from "@/layout/MainLayout";
 import { GlobalStyle } from "@/styles/global";
-import { Toaster } from "sonner";
+import { Toaster } from "sileo";
 import styled from "styled-components";
 import {
   getRouteLabelByPath,
@@ -85,12 +85,10 @@ export default function App() {
         <GlobalStyle />
 
         <Toaster
-          duration={5000}
           position="top-center"
           offset={"1.25rem"}
-          theme="dark"
-          icons={{
-            success: (
+          options={{
+            icon: (
               <svg
                 width={20}
                 height={20}
@@ -114,6 +112,11 @@ export default function App() {
                 />
               </svg>
             ),
+            fill: "#212121",
+            styles: {
+              title: "toast-title",
+              description: "toast-desc",
+            },
           }}
         />
         <AnimatePresence mode="sync">

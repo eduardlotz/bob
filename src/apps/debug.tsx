@@ -5,6 +5,7 @@ import { formatNumber } from "@/molecules/TapCounter";
 import { CameraViewId, useCoreStore, useQuestStore } from "@/store";
 import { useMessageStore } from "@/store/messageStore";
 import { ActionButton, SettingsWrapper, ToggleButton } from "./ui";
+import { sileo } from "sileo";
 
 export const DebugIcon = () => (
   <svg
@@ -204,6 +205,24 @@ export const DebugApp = () => {
       </SettingsWrapper>
 
       <DividerWithLabel>Utilities</DividerWithLabel>
+
+      <SettingsWrapper>
+        <HugColumn $gap={"0.5rem"}>
+          <h5>Toasts</h5>
+          <p>Test notifications</p>
+        </HugColumn>
+
+        <ActionButton
+          onClick={() =>
+            sileo.success({
+              title: "Info Toast",
+              description: "Lorem Ipsum dolor sit amet",
+            })
+          }
+        >
+          Send 🍞
+        </ActionButton>
+      </SettingsWrapper>
 
       <SettingsWrapper>
         <HugColumn $gap={"0.5rem"}>

@@ -66,9 +66,18 @@ export const GlobalStyle = createGlobalStyle`
         border: none;
         box-shadow: none;
         pointer-events: auto;
-/* 
-        &:not(:disabled) {
-            cursor: pointer;
-        } */
+    }
+
+    [data-sileo-viewport] {
+        z-index: 9999;
+    }
+
+    .toast-title {
+      color: #eaeaea;
+    }
+
+    .toast-desc {
+      color: #afafaf;
+      text-align: center;
     }
 `;
