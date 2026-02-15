@@ -112,8 +112,14 @@ export const BobPhone = () => {
 
   const onTriggerClick = () => {
     setActiveApp(undefined);
-    resetToDefaultView();
     setIsOpen((prev) => !prev);
+    if (isOpen) {
+      resetToDefaultView();
+      setIsOpen(false);
+    } else {
+      setIsOpen(true);
+      transitionToView("phone:home");
+    }
   };
 
   const currentHour = format(new Date(), "HH");

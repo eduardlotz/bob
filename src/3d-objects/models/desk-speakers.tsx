@@ -26,7 +26,7 @@ interface Props {
 }
 
 export const DeskSpeakersModel = forwardRef(
-  ({ scale = [1, 1.2, 1.1], ...props }: Props, ref: any) => {
+  ({ scale = [1.5, 1.2, 1.1], ...props }: Props, ref: any) => {
     const group = useRef<THREE.Group>(null!);
     const { nodes, materials } = useGLTF(PATH) as GLTFResult;
     const { isMuted } = useSoundSystem();
