@@ -238,6 +238,7 @@ export function ShopApp() {
           type: "spring" as const,
           bounce: 0.5,
         }}
+        layoutRoot
       >
         <ContentControls>
           {currentItem && (

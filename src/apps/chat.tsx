@@ -60,6 +60,7 @@ export const ChatApp = () => {
         }}
         $gap={"0.25rem"}
         ref={containerRef}
+        layoutRoot
       >
         {archive.map((msg, i) => (
           <MessageContainer
@@ -83,7 +84,7 @@ export const ChatApp = () => {
         ))}
       </HugColumn>
       <FillRow $align="center" $justify="center">
-        <AppInfo>Einmalige Nachrichten werden hier gespeichert</AppInfo>
+        <AppInfo>Archiv für alte Nachrichten</AppInfo>
       </FillRow>
     </>
   );

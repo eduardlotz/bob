@@ -6,10 +6,10 @@ import { ArrowLeftIcon } from "@/icons/arrow";
 import { playUISound } from "@/utils/soundSystem";
 
 const VIEWID_TITLE_MAP = {
-  desk: "Musik",
-  bookshelf: "Meine Bücher",
+  desk: "Musik & Mixes",
+  bookshelf: "Bücher",
   computer: "Mein Computer",
-  cardbox: "Meine Interessen",
+  cardbox: "Interessen & Hobbies",
 } satisfies Partial<Record<CameraViewId, string>>;
 
 export function ViewControls() {

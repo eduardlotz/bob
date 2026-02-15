@@ -27,6 +27,7 @@ export function BottomNavigation() {
     isPhoneView,
     transitionToView,
     isImageFocused,
+    isObjectView,
   } = useViewStore();
 
   const {
@@ -61,7 +62,8 @@ export function BottomNavigation() {
   const showBackToLobby = activeGame !== "LOBBY";
 
   const hideNavigation =
-    currentRoute === ROUTE_PATHS.PORTFOLIO && isImageFocused;
+    (currentRoute === ROUTE_PATHS.PORTFOLIO && isImageFocused) ||
+    (isObjectView() && !isPhoneView());
 
   return (
     <HugColumn

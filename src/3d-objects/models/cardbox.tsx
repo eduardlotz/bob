@@ -63,7 +63,7 @@ export const CardboxModel = forwardRef(
 
       if (currentView !== "cardbox")
         setHoveredObject({
-          title: "Meine Interessen",
+          title: "Interessen & Hobbies",
         });
     };
 

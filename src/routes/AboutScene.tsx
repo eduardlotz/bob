@@ -74,12 +74,7 @@ export function AboutScene() {
 
         <DjControllerModel position={[-3, FLOOR_Y_POSITION + 1, 0]} />
 
-        {getCurrentViewConfig()?.id === "desk" && (
-          <MusicOverlay
-            position={[-3.8, FLOOR_Y_POSITION + 2, 0]}
-            rotation={[0, Math.PI / 2, 0]}
-          />
-        )}
+        {getCurrentViewConfig()?.id === "desk" && <MusicOverlay />}
       </InteractiveObject>
 
       <InteractiveObject
