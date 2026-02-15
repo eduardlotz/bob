@@ -37,6 +37,7 @@ export const CreditsApp = () => {
         borderRadius: "1.25rem",
       }}
       $gap={"0.25rem"}
+      layoutRoot
     >
       <ListSectionItem>
         <h5>Inspirations</h5>

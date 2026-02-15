@@ -63,7 +63,7 @@ export const BookshelfModel = ({ scale = [1, 1, 1], ...props }: Props) => {
 
     if (currentView !== "bookshelf")
       setHoveredObject({
-        title: "Meine Bücher",
+        title: "Bücher & Inspirationen",
       });
   };
 

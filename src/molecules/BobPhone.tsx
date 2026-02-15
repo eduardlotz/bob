@@ -39,6 +39,7 @@ interface BobAppData {
   icon: any; // fix type, jsx not working
   view: React.JSX.Element;
   bottomAction?: React.JSX.Element;
+  hideStatusBar?: boolean;
 }
 
 const BOB_APPS: Array<BobAppData> = [
@@ -52,6 +53,7 @@ const BOB_APPS: Array<BobAppData> = [
     icon: ShopIcon,
     view: <ShopApp />,
     bottomAction: <TapCounterChip />,
+    hideStatusBar: true,
   },
   {
     id: "quests",
@@ -63,6 +65,7 @@ const BOB_APPS: Array<BobAppData> = [
     icon: OptionsIcon,
     view: <OptionsApp />,
     // bottomAction: <AppInfo style={{ marginRight: "0.5rem" }}>Beta</AppInfo>,
+    hideStatusBar: true,
   },
   {
     id: "credits",
@@ -92,13 +95,10 @@ export const BobPhone = () => {
   const { setSoundEnabled, resetPreview } = useCoreStore();
 
   const activeAppView = () => BOB_APPS.find((a) => a.id === activeApp)?.view;
+  const hideStatusBar = BOB_APPS.find((a) => a.id === activeApp)?.hideStatusBar;
   const activeAppBottomAction = () =>
     BOB_APPS.find((a) => a.id === activeApp)?.bottomAction;
   const activeAppName = activeApp ? AppNameMap[activeApp] : "";
-
-  const showStatusBar = ["", "quests", "chat", "debug"].includes(
-    activeApp ?? "",
-  );
 
   const handleAudioButtonClick = () => {
     toggle();
@@ -135,11 +135,12 @@ export const BobPhone = () => {
 
   useEffect(() => {
     if (currentView.startsWith("phone:")) {
-      setIsOpen(true);
+      // setIsOpen(true);
       resetPreview();
-    } else {
-      setIsOpen(false);
     }
+    //  else {
+    //   setIsOpen(false);
+    // }
   }, [currentView]);
 
   return (
@@ -201,12 +202,39 @@ export const BobPhone = () => {
         {isOpen && (
           <BobPhoneBody
             key="bob-phone-body"
-            initial={{ opacity: 0, scaleX: 0.95, y: 40, filter: "blur(6px)" }}
-            animate={{ opacity: 1, scaleX: 1, y: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, scaleX: 0.95, y: 40, filter: "blur(6px)" }}
+            initial={{
+              opacity: 0,
+              scaleX: 1.05,
+              rotateX: -15,
+              y: 12,
+              filter: "blur(6px)",
+            }}
+            animate={{
+              opacity: 1,
+              scaleX: 1,
+              rotateX: 0,
+              y: 0,
+              filter: "blur(0px)",
+            }}
+            exit={{
+              opacity: 0,
+              scaleX: 0.95,
+              rotateX: -5,
+              y: -12,
+              filter: "blur(6px)",
+              // transition: {
+              //   ease: "circOut",
+              //   duration: 0.1,
+              // },
+            }}
             transition={{
-              duration: 0.2,
-              ease: "easeInOut",
+              // duration: 0.2,
+              // ease: "easeInOut",
+              type: "spring" as const,
+              bounce: 0.5,
+              visualDuration: 0.3,
+              // ease: "circOut",
+              // duration: 0.2,
               layout: {
                 type: "spring",
                 mass: 0.5,
@@ -218,17 +246,19 @@ export const BobPhone = () => {
             style={{
               borderRadius: "24px",
               opacity: 0,
+              transformPerspective: 900,
+              transformStyle: "preserve-3d",
             }}
             layout
           >
             <HugColumn
               $gap={activeApp ? "4px" : "0"}
-              layout
-              // layout="position"
+              // layout
+              layout="position"
               $align="center"
             >
               <AnimatePresence mode="popLayout">
-                {showStatusBar && (
+                {!hideStatusBar && (
                   <FillRow
                     key={"bob-phone-statusbar"}
                     initial={{ filter: "blur(4px)", opacity: 0 }}
@@ -280,84 +310,106 @@ export const BobPhone = () => {
                 $justify="center"
                 initial={{
                   opacity: 0,
-                  scaleX: 0.95,
-                  y: 40,
-                  filter: "blur(6px)",
+                  // scaleX: 0.95,
+                  scaleY: 1.05,
+                  // filter: "blur(4px)",
                 }}
                 animate={{
                   opacity: 1,
-                  scaleX: 1,
-                  y: 0,
-                  filter: "blur(0px)",
+                  // scaleX: 1,
+                  scaleY: 1,
+                  // filter: "blur(0px)",
                 }}
                 exit={{
                   opacity: 0,
-                  scaleX: 0.95,
-                  y: 80,
-                  filter: "blur(6px)",
+                  // scaleX: 0.95,
+                  scaleY: 1.05,
+                  // filter: "blur(4px)",
                 }}
                 transition={{
-                  type: "spring" as const,
-                  bounce: 0.5,
-                  visualDuration: 0.3,
+                  // type: "spring" as const,
+                  // bounce: 0.5,
+                  // visualDuration: 0.3,
+                  ease: "circOut",
+                  duration: 0.2,
                 }}
                 layout
               >
-                {activeApp ? (
-                  activeAppView()
-                ) : (
-                  <AppGrid
-                    key="app-grid"
-                    initial={{
-                      opacity: 0,
-                      scale: 0.95,
-                      filter: "blur(4px)",
-                      y: 12,
-                    }}
-                    animate={{
-                      opacity: 1,
-                      scale: 1,
-                      filter: "blur(0px)",
-                      y: 0,
-                    }}
-                    exit={{
-                      opacity: 0,
-                      scale: 0.95,
-                      filter: "blur(4px)",
-                      y: 12,
-                    }}
-                    transition={{
-                      // type: "spring",
-                      // bounce: 0.4,
-                      duration: 0.2,
-                      ease: "easeInOut",
-                    }}
-                  >
-                    {BOB_APPS.map((app) => (
-                      <AppContainer
-                        key={app.id}
-                        onClick={() => openApp(app.id)}
-                      >
-                        {app.icon()}
-                        <AppLabel>{AppNameMap[app.id]}</AppLabel>
-                      </AppContainer>
-                    ))}
-                  </AppGrid>
-                )}
-                {activeApp && (
-                  <AppBottomActions key="app_bottom_actions">
-                    <BackHomeButton
-                      onClick={goToHomeScreen}
-                      data-ui-sound-id="ui-tap-close"
+                <AnimatePresence mode="popLayout">
+                  {activeApp ? (
+                    activeAppView()
+                  ) : (
+                    <AppGrid
+                      key="app-grid"
+                      initial={{
+                        opacity: 0,
+                        scaleX: 1.05,
+                        filter: "blur(4px)",
+                      }}
+                      animate={{
+                        opacity: 1,
+                        scaleX: 1,
+                        filter: "blur(0px)",
+                      }}
+                      exit={{
+                        opacity: 0,
+                        scaleX: 1.05,
+                        filter: "blur(4px)",
+                      }}
+                      transition={{
+                        type: "spring" as const,
+                        bounce: 0.5,
+                        visualDuration: 0.3,
+                      }}
                     >
-                      <SmallArrowLeftIcon />
-                    </BackHomeButton>
+                      {BOB_APPS.map((app) => (
+                        <AppContainer
+                          key={app.id}
+                          onClick={() => openApp(app.id)}
+                        >
+                          {app.icon()}
+                          <AppLabel>{AppNameMap[app.id]}</AppLabel>
+                        </AppContainer>
+                      ))}
+                    </AppGrid>
+                  )}
+                </AnimatePresence>
+                <AnimatePresence mode="popLayout">
+                  {activeApp && (
+                    <AppBottomActions
+                      key="app_bottom_actions"
+                      initial={{
+                        opacity: 0,
+                        scaleX: 1.25,
+                      }}
+                      animate={{
+                        opacity: 1,
+                        scaleX: 1,
+                      }}
+                      exit={{
+                        opacity: 0,
+                        scaleX: 1.25,
+                      }}
+                      transition={{
+                        type: "spring" as const,
+                        bounce: 0.2,
+                        visualDuration: 0.3,
+                      }}
+                      layout="position"
+                    >
+                      <BackHomeButton
+                        onClick={goToHomeScreen}
+                        data-ui-sound-id="ui-tap-close"
+                      >
+                        <SmallArrowLeftIcon />
+                      </BackHomeButton>
 
-                    <AppName>{activeAppName}</AppName>
+                      <AppName>{activeAppName}</AppName>
 
-                    <AppAction>{activeAppBottomAction()}</AppAction>
-                  </AppBottomActions>
-                )}
+                      <AppAction>{activeAppBottomAction()}</AppAction>
+                    </AppBottomActions>
+                  )}
+                </AnimatePresence>
               </FillColumn>
             </HugColumn>
           </BobPhoneBody>
@@ -413,6 +465,7 @@ const BobPhoneBody = styled(motion.div)`
 
   overflow: clip;
   overflow-clip-margin: 0.25rem;
+  transform-origin: bottom center;
 
   min-width: 18rem;
   width: fit-content;

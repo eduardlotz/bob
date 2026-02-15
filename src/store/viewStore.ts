@@ -129,7 +129,7 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
     position: [-2.5, 0.5, 0],
     target: [-3.5, 0.4, 0],
     transition: {
-      duration: 1200,
+      duration: 800,
       easing: "easeInOutCubic",
     },
     defaultViewMode: "object",
@@ -137,10 +137,10 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   bookshelf: {
     id: "bookshelf",
     name: "Bookshelf View",
-    position: [1, 1, 1],
-    target: [3, 0, -3],
+    position: [1.75, 0.5, -1],
+    target: [3.75, 0.5, -4],
     transition: {
-      duration: 1200,
+      duration: 550,
       easing: "easeInOutCubic",
     },
     defaultViewMode: "object",
