@@ -79,11 +79,15 @@ const BOB_APPS: Array<BobAppData> = [
   },
 ];
 
+interface BobPhoneProps {
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
+}
+
 // MAYDO: check ref error
-export const BobPhone = () => {
+export const BobPhone = (props: BobPhoneProps) => {
   const containerRef = useRef(null);
   const triggerRef = useRef(null);
-  const [isOpen, setIsOpen] = useState(false);
   const { transitionToView, currentView, resetToDefaultView } = useViewStore();
   const [activeApp, setActiveApp] = useState<AppId | undefined>();
 
@@ -112,12 +116,11 @@ export const BobPhone = () => {
 
   const onTriggerClick = () => {
     setActiveApp(undefined);
-    setIsOpen((prev) => !prev);
-    if (isOpen) {
+    if (props.isOpen) {
       resetToDefaultView();
-      setIsOpen(false);
+      props.setIsOpen(false);
     } else {
-      setIsOpen(true);
+      props.setIsOpen(true);
       transitionToView("phone:home");
     }
   };
@@ -126,14 +129,14 @@ export const BobPhone = () => {
   const currentMinutes = format(new Date(), "mm");
 
   useKeyPress("Escape", () => {
-    if (isOpen) {
+    if (props.isOpen) {
       onTriggerClick();
       playUISound("ui-tap-close");
     }
   });
 
   useClickOutside([containerRef, triggerRef], () => {
-    if (currentView === "phone:home" && isOpen) {
+    if (currentView === "phone:home" && props.isOpen) {
       onTriggerClick();
       playUISound("ui-tap-close");
     }
@@ -151,61 +154,59 @@ export const BobPhone = () => {
 
   return (
     <>
-      <Magnetic key="bob-phone-trigger-magnet">
-        <NavButton
-          key="bob-phone-trigger"
-          onClick={onTriggerClick}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          $isActive={isOpen}
-          initial={{ opacity: 0, y: 40, filter: "blur(6px)" }}
-          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          exit={{ opacity: 0, y: 40, filter: "blur(6px)" }}
-          transition={{
-            type: "spring" as const,
-            bounce: 0.5,
-            delay: 0.1,
-          }}
-          ref={triggerRef}
-          layout="position"
-        >
-          <AnimatePresence mode="popLayout">
-            {isOpen ? (
-              <motion.span
-                key="close-phone-icon"
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{
-                  duration: 0.25,
-                  type: "spring" as const,
-                  bounce: 0.5,
-                }}
-              >
-                <CloseIcon />
-              </motion.span>
-            ) : (
-              <motion.span
-                key="show-phone-icon"
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{
-                  duration: 0.25,
-                  type: "spring" as const,
-                  bounce: 0.5,
-                }}
-              >
-                <PhoneMenuIcon />
-              </motion.span>
-            )}
-          </AnimatePresence>
-          <span>Phone</span>
-        </NavButton>
-      </Magnetic>
+      <NavButton
+        key="bob-phone-trigger"
+        onClick={onTriggerClick}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        $isActive={props.isOpen}
+        initial={{ opacity: 0, y: 40, filter: "blur(6px)" }}
+        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+        exit={{ opacity: 0, y: 40, filter: "blur(6px)" }}
+        transition={{
+          type: "spring" as const,
+          bounce: 0.5,
+          delay: 0.1,
+        }}
+        ref={triggerRef}
+        layout="position"
+      >
+        <AnimatePresence mode="popLayout">
+          {props.isOpen ? (
+            <motion.span
+              key="close-phone-icon"
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              transition={{
+                duration: 0.25,
+                type: "spring" as const,
+                bounce: 0.5,
+              }}
+            >
+              <CloseIcon />
+            </motion.span>
+          ) : (
+            <motion.span
+              key="show-phone-icon"
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              transition={{
+                duration: 0.25,
+                type: "spring" as const,
+                bounce: 0.5,
+              }}
+            >
+              <PhoneMenuIcon />
+            </motion.span>
+          )}
+        </AnimatePresence>
+        <span>Phone</span>
+      </NavButton>
 
       <AnimatePresence mode="wait">
-        {isOpen && (
+        {props.isOpen && (
           <BobPhoneBody
             key="bob-phone-body"
             initial={{
@@ -310,32 +311,23 @@ export const BobPhone = () => {
                 )}
               </AnimatePresence>
               <FillColumn
-                key={activeApp}
+                key={activeApp ?? "app-grid-wrapper"}
                 $gap={activeApp ? "4px" : "0"}
                 $align="center"
                 $justify="center"
                 initial={{
                   opacity: 0,
-                  // scaleX: 0.95,
                   scaleY: 1.05,
-                  // filter: "blur(4px)",
                 }}
                 animate={{
                   opacity: 1,
-                  // scaleX: 1,
                   scaleY: 1,
-                  // filter: "blur(0px)",
                 }}
                 exit={{
                   opacity: 0,
-                  // scaleX: 0.95,
                   scaleY: 1.05,
-                  // filter: "blur(4px)",
                 }}
                 transition={{
-                  // type: "spring" as const,
-                  // bounce: 0.5,
-                  // visualDuration: 0.3,
                   ease: "circOut",
                   duration: 0.2,
                 }}
@@ -380,42 +372,41 @@ export const BobPhone = () => {
                     </AppGrid>
                   )}
                 </AnimatePresence>
-                <AnimatePresence mode="popLayout">
-                  {activeApp && (
-                    <AppBottomActions
-                      key="app_bottom_actions"
-                      initial={{
-                        opacity: 0,
-                        scaleX: 1.25,
-                      }}
-                      animate={{
-                        opacity: 1,
-                        scaleX: 1,
-                      }}
-                      exit={{
-                        opacity: 0,
-                        scaleX: 1.25,
-                      }}
-                      transition={{
-                        type: "spring" as const,
-                        bounce: 0.2,
-                        visualDuration: 0.3,
-                      }}
-                      layout="position"
+
+                {activeApp && (
+                  <AppBottomActions
+                    key="app_bottom_actions"
+                    initial={{
+                      opacity: 0,
+                      scaleX: 1.25,
+                    }}
+                    animate={{
+                      opacity: 1,
+                      scaleX: 1,
+                    }}
+                    exit={{
+                      opacity: 0,
+                      scaleX: 1.25,
+                    }}
+                    transition={{
+                      type: "spring" as const,
+                      bounce: 0.2,
+                      visualDuration: 0.3,
+                    }}
+                    layout
+                  >
+                    <BackHomeButton
+                      onClick={goToHomeScreen}
+                      data-ui-sound-id="ui-tap-close"
                     >
-                      <BackHomeButton
-                        onClick={goToHomeScreen}
-                        data-ui-sound-id="ui-tap-close"
-                      >
-                        <SmallArrowLeftIcon />
-                      </BackHomeButton>
+                      <SmallArrowLeftIcon />
+                    </BackHomeButton>
 
-                      <AppName>{activeAppName}</AppName>
+                    <AppName>{activeAppName}</AppName>
 
-                      <AppAction>{activeAppBottomAction()}</AppAction>
-                    </AppBottomActions>
-                  )}
-                </AnimatePresence>
+                    <AppAction>{activeAppBottomAction()}</AppAction>
+                  </AppBottomActions>
+                )}
               </FillColumn>
             </HugColumn>
           </BobPhoneBody>

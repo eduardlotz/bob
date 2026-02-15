@@ -119,78 +119,66 @@ export function OptionsApp() {
   const ThemeOverlays = useCallback(
     ({ visible }: { visible: boolean }) => (
       <FixedAnchor>
-        <AnimatePresence>
-          {visible && (
-            <ShopContainer
-              key="options-app-container"
-              // initial={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(6px)" }}
-              initial={false}
-              animate={{ opacity: 1, scaleX: 1, y: 0, filter: "blur(0px)" }}
-              exit={{ opacity: 0, scaleX: 0.9, y: 80, filter: "blur(6px)" }}
-              transition={{
-                type: "spring" as const,
-                bounce: 0.5,
-              }}
-            >
-              <ContentControls>
-                <ItemStatusChip $variant="dark">
-                  <span>{currentItem.name}</span>
-                </ItemStatusChip>
+        {visible && (
+          <ShopContainer>
+            <ContentControls>
+              <ItemStatusChip $variant="dark">
+                <span>{currentItem.name}</span>
+              </ItemStatusChip>
 
-                <FillRow $justify="space-between">
-                  <PaginationButton
-                    onClick={handlePrev}
-                    disabled={pageCount === 1}
+              <FillRow $justify="space-between">
+                <PaginationButton
+                  onClick={handlePrev}
+                  disabled={pageCount === 1}
+                >
+                  <ArrowLeftIcon />
+                </PaginationButton>
+
+                <ShopItemButton
+                  key={buttonLabel + "_action_button"}
+                  $selected={currentItem.active}
+                  $purchased // themes are for free (for now)
+                  $canAfford
+                  disabled={currentItem.active}
+                  onClick={handleButton}
+                  role="button"
+                  layout
+                >
+                  <motion.span
+                    key={buttonLabel + "_action_label"}
+                    animate={{ filter: "blur(0px)", scale: 1 }}
+                    initial={{ filter: "blur(2px)", scale: 0.9 }}
+                    exit={{ filter: "blur(2px)", scale: 0.9 }}
+                    layout="preserve-aspect"
                   >
-                    <ArrowLeftIcon />
-                  </PaginationButton>
+                    {buttonLabel}
+                  </motion.span>
+                </ShopItemButton>
 
-                  <ShopItemButton
-                    key={buttonLabel + "_action_button"}
-                    $selected={currentItem.active}
-                    $purchased // themes are for free (for now)
-                    $canAfford
-                    disabled={currentItem.active}
-                    onClick={handleButton}
-                    role="button"
-                    layout
-                  >
-                    <motion.span
-                      key={buttonLabel + "_action_label"}
-                      animate={{ filter: "blur(0px)", scale: 1 }}
-                      initial={{ filter: "blur(2px)", scale: 0.9 }}
-                      exit={{ filter: "blur(2px)", scale: 0.9 }}
-                      layout="preserve-aspect"
-                    >
-                      {buttonLabel}
-                    </motion.span>
-                  </ShopItemButton>
+                <PaginationButton
+                  onClick={handleNext}
+                  disabled={pageCount === 1}
+                >
+                  <ArrowRightIcon />
+                </PaginationButton>
+              </FillRow>
 
-                  <PaginationButton
-                    onClick={handleNext}
-                    disabled={pageCount === 1}
-                  >
-                    <ArrowRightIcon />
-                  </PaginationButton>
-                </FillRow>
-
-                <PaginationDots>
-                  {Array(pageCount)
-                    .fill(null)
-                    .map((_, i) => (
-                      <motion.div
-                        key={`options-pagination-dots-${i}`}
-                        animate={{
-                          width: page === i ? "20px" : "8px",
-                          opacity: page === i ? 1 : 0.5,
-                        }}
-                      />
-                    ))}
-                </PaginationDots>
-              </ContentControls>
-            </ShopContainer>
-          )}
-        </AnimatePresence>
+              <PaginationDots>
+                {Array(pageCount)
+                  .fill(null)
+                  .map((_, i) => (
+                    <motion.div
+                      key={`options-pagination-dots-${i}`}
+                      animate={{
+                        width: page === i ? "20px" : "8px",
+                        opacity: page === i ? 1 : 0.5,
+                      }}
+                    />
+                  ))}
+              </PaginationDots>
+            </ContentControls>
+          </ShopContainer>
+        )}
       </FixedAnchor>
     ),
     [currentItem],
@@ -200,11 +188,7 @@ export function OptionsApp() {
     const sound = useSoundSystem();
 
     return (
-      <FillColumn
-        $gap={"1rem"}
-        key="general-options-view"
-        style={{ height: "fit-content" }}
-      >
+      <FillColumn $gap={"1rem"} style={{ height: "fit-content" }}>
         <FillRow $align="center" $justify="center" $gap={"1rem"}>
           <Divider />
           <AppInfo>Audio Status: {sound.audioStatus}</AppInfo>
@@ -324,7 +308,7 @@ export function OptionsApp() {
     const mode = graphicPreferences.qualityMode;
 
     return (
-      <FillColumn $gap={"1rem"} key="general-options-view">
+      <FillColumn $gap={"1rem"}>
         <SettingsWrapper $align="flex-start">
           <FillColumn $align="flex-start" $justify="flex-start" $gap={"0.5rem"}>
             <h5>Hinweis</h5>
@@ -393,7 +377,6 @@ export function OptionsApp() {
               duration: 0.6,
             },
           }}
-          // key="options-views-container"
           key={activeTab + "-views-container"}
           layout
         >

@@ -18,7 +18,7 @@ export const Room = forwardRef(
     const { showOptions } = useAppStore();
     const [spring, api] = useSpring(() => ({
       position: [0, FLOOR_Y_POSITION + 1.5, 10],
-      config: { tension: 120, friction: 14 },
+      config: { tension: 120, friction: 14, bounce: 0.5 },
     }));
 
     const wallRef = useRef<Mesh>(null);

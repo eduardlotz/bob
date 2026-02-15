@@ -70,11 +70,10 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
   // shop items are only visible on home route
   const isHome = currentRoute === ROUTE_PATHS.HOME;
   const isPortfolio = currentRoute === ROUTE_PATHS.PORTFOLIO;
-  const [visible, setVisible] = useState(isHome);
 
   // TODO: add grid options to UI
   const showGrid = isHome;
-  const showBackground = isHome;
+  const showBackground = isHome || currentRoute === ROUTE_PATHS.ABOUT;
 
   useEffect(() => {
     setCameraControlsRef(cameraControlsRef);

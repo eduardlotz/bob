@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -17,10 +17,10 @@ import { MenuButton } from "@/layout/atoms";
 import { BobPhone } from "./BobPhone";
 import { playUISound } from "@/utils/soundSystem";
 import { SCENE_REVEAL_DURATION } from "./SceneWithLoader";
-import { OrbitFormControls } from "./orbitFormControls";
 import { BackToLobbyButton } from "./BackToLobbyButton";
 
 export function BottomNavigation() {
+  const [showPhone, setShowPhone] = useState(false);
   const {
     currentView,
     resetToDefaultView,
@@ -54,6 +54,11 @@ export function BottomNavigation() {
       transitionToView("navigation");
     }
     toggleOptions();
+    if (showPhone) setShowPhone(false);
+  };
+
+  const handlePhoneClick = (open: boolean) => {
+    setShowPhone(open);
   };
 
   const showTapUpgrades = !showOptions && isHomeRoute && !isPhoneView();
@@ -85,59 +90,59 @@ export function BottomNavigation() {
       <HugRow $gap={"8px"} style={{ height: showBackToLobby ? 0 : "auto" }}>
         <AnimatePresence mode="popLayout">
           {!showBackToLobby && !hideNavigation && (
-            <Magnetic key="menu-button-magnet">
-              <MenuButton
-                key="menu-button"
-                onClick={handleMenuButtonClick}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                $isActive={showOptions}
-                initial={{ opacity: 0, y: 40, filter: "blur(6px)" }}
-                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                exit={{ opacity: 0, y: 40, filter: "blur(6px)" }}
-                transition={{
-                  type: "spring" as const,
-                  bounce: 0.5,
-                }}
-                layout="position"
-              >
-                <AnimatePresence mode="popLayout">
-                  {showOptions ? (
-                    <motion.span
-                      key="close-menu-icon"
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0, opacity: 0 }}
-                      transition={{
-                        duration: 0.25,
-                        type: "spring" as const,
-                        bounce: 0.5,
-                      }}
-                    >
-                      <CloseIcon />
-                    </motion.span>
-                  ) : (
-                    <motion.span
-                      key="show-menu-icon"
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0, opacity: 0 }}
-                      transition={{
-                        duration: 0.25,
-                        type: "spring" as const,
-                        bounce: 0.5,
-                      }}
-                    >
-                      <MenuIcon />
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-                <span>Menü</span>
-              </MenuButton>
-            </Magnetic>
+            <MenuButton
+              key="menu-button"
+              onClick={handleMenuButtonClick}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              $isActive={showOptions}
+              initial={{ opacity: 0, y: 40, filter: "blur(6px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: 40, filter: "blur(6px)" }}
+              transition={{
+                type: "spring" as const,
+                bounce: 0.5,
+              }}
+              layout="position"
+            >
+              <AnimatePresence mode="popLayout">
+                {showOptions ? (
+                  <motion.span
+                    key="close-menu-icon"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    transition={{
+                      duration: 0.25,
+                      type: "spring" as const,
+                      bounce: 0.5,
+                    }}
+                  >
+                    <CloseIcon />
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="show-menu-icon"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    transition={{
+                      duration: 0.25,
+                      type: "spring" as const,
+                      bounce: 0.5,
+                    }}
+                  >
+                    <MenuIcon />
+                  </motion.span>
+                )}
+              </AnimatePresence>
+              <span>Menü</span>
+            </MenuButton>
           )}
 
-          {!showBackToLobby && !hideNavigation && <BobPhone />}
+          {!showBackToLobby && !hideNavigation && (
+            <BobPhone isOpen={showPhone} setIsOpen={handlePhoneClick} />
+          )}
         </AnimatePresence>
       </HugRow>
     </HugColumn>
