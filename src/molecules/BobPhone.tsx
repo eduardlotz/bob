@@ -22,8 +22,17 @@ import { playUISound } from "@/utils/soundSystem";
 import { ChatApp, ChatIcon } from "@/apps/chat";
 import { CreditsApp, CreditsIcon } from "@/apps/credits";
 import { StatusPillButton } from "@/apps/ui";
+import { CameraApp, CameraIcon } from "@/apps/camera";
+import { usePhoneBodyClip } from "@/hooks/usePhoneClip";
 
-type AppId = "shop" | "options" | "chat" | "quests" | "credits" | "debug";
+type AppId =
+  | "shop"
+  | "options"
+  | "chat"
+  | "quests"
+  | "credits"
+  | "debug"
+  | "camera";
 
 const AppNameMap: Record<AppId, string> = {
   shop: "Shop",
@@ -32,6 +41,7 @@ const AppNameMap: Record<AppId, string> = {
   quests: "Quests",
   credits: "Credits",
   debug: "Debug",
+  camera: "Camera",
 };
 
 interface BobAppData {
@@ -59,6 +69,12 @@ const BOB_APPS: Array<BobAppData> = [
     id: "quests",
     icon: QuestsIcon,
     view: <QuestsApp />,
+  },
+  {
+    id: "camera",
+    icon: CameraIcon,
+    view: <CameraApp onOpenGallery={() => console.log("gallery")} />,
+    hideStatusBar: true,
   },
   {
     id: "options",
@@ -90,6 +106,8 @@ export const BobPhone = (props: BobPhoneProps) => {
   const triggerRef = useRef(null);
   const { transitionToView, currentView, resetToDefaultView } = useViewStore();
   const [activeApp, setActiveApp] = useState<AppId | undefined>();
+
+  const clipStyle = usePhoneBodyClip();
 
   const openApp = (appName: AppId) => {
     setActiveApp(appName);
@@ -208,6 +226,7 @@ export const BobPhone = (props: BobPhoneProps) => {
       <AnimatePresence mode="wait">
         {props.isOpen && (
           <BobPhoneBody
+            data-phone-body
             key="bob-phone-body"
             initial={{
               opacity: 0,
@@ -251,6 +270,7 @@ export const BobPhone = (props: BobPhoneProps) => {
             }}
             ref={containerRef}
             style={{
+              ...clipStyle,
               borderRadius: "24px",
               opacity: 0,
               transformPerspective: 900,

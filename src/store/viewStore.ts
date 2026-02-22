@@ -40,6 +40,7 @@ export type CameraViewId =
   | "phone:debug"
   | "phone:quests"
   | "phone:options"
+  | "phone:camera"
   | "desk"
   | "bookshelf"
   | "computer"
@@ -83,6 +84,16 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
     name: "Shop View",
     position: [0, CAMERA_HEIGHT - 0.5, VISIBLE_OPTIONS_CAMERA_ZOOM - 1],
     target: [0, CAMERA_Y_POSITION - 0.5, 0],
+    transition: {
+      duration: 1000,
+      easing: "easeInOutCubic",
+    },
+  },
+  "phone:camera": {
+    id: "phone:camera",
+    name: "Camera View",
+    position: [0, CAMERA_HEIGHT - 1.5, VISIBLE_OPTIONS_CAMERA_ZOOM - 2],
+    target: [0, CAMERA_Y_POSITION - 1.5, 0],
     transition: {
       duration: 1000,
       easing: "easeInOutCubic",

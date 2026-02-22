@@ -44,6 +44,7 @@ import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { sileo } from "sileo";
+import { CameraGLBridge } from "@/bridges/CameraBridge";
 
 const Debug = () => {
   const { width } = useThree((s) => s.size);
@@ -236,6 +237,7 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
       gl={{
         powerPreference: "high-performance",
         // antialias: false,
+        preserveDrawingBuffer: true,
       }}
       onCreated={({ gl }) => {
         const canvas = gl.domElement;
@@ -269,9 +271,13 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
       dpr={dpr}
       {...props}
     >
-      <PerformanceMonitor factor={1} onChange={handlePerformanceChange}>
-        {children}
-      </PerformanceMonitor>
+      <>
+        <CameraGLBridge />
+
+        <PerformanceMonitor factor={1} onChange={handlePerformanceChange}>
+          {children}
+        </PerformanceMonitor>
+      </>
     </Canvas>
   );
 };
