@@ -2,7 +2,12 @@ import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { HugColumn, ListItemContainer } from "@/layout";
 import { Divider, DividerWithLabel } from "@/layout/atoms";
 import { formatNumber } from "@/molecules/TapCounter";
-import { CameraViewId, useCoreStore, useQuestStore } from "@/store";
+import {
+  CameraViewId,
+  useCameraStore,
+  useCoreStore,
+  useQuestStore,
+} from "@/store";
 import { useMessageStore } from "@/store/messageStore";
 import { ActionButton, SettingsWrapper, ToggleButton } from "./ui";
 import { sileo } from "sileo";
@@ -73,9 +78,14 @@ export const DebugApp = () => {
     version: questsVersion,
   } = useQuestStore();
 
+  const { clearAll } = useCameraStore();
+
   const resetEverything = () => {
     // reset shop, upgrades, options, routes, debug, sound
     resetGameStore();
+
+    // reset camera
+    clearAll();
 
     // reset chat + flags
     clearShownFlags();

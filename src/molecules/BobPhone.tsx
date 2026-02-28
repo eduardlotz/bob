@@ -73,7 +73,7 @@ const BOB_APPS: Array<BobAppData> = [
   {
     id: "camera",
     icon: CameraIcon,
-    view: <CameraApp onOpenGallery={() => console.log("gallery")} />,
+    view: <CameraApp />,
     hideStatusBar: true,
   },
   {
