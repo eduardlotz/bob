@@ -1,8 +1,7 @@
-import { FillColumn, FillRow, HugColumn, HugRow } from "@/layout";
-import { CameraViewId, useQuestStore } from "@/store";
+import { FillRow, HugColumn } from "@/layout";
 import { useMessageStore } from "@/store/messageStore";
 import { format } from "date-fns/format";
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 import { useEffect, useRef } from "react";
 import styled from "styled-components";
 
@@ -10,28 +9,155 @@ export const ChatIcon = () => (
   <svg
     width={80}
     height={80}
-    viewBox="0 0 80 80"
+    viewBox="0 0 100 100"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
   >
-    <rect width={80} height={80} rx={24} fill="#4277F7" />
-    <g clipPath="url(#clip0_3544_2460)">
+    <g filter="url(#filter0_ii_3758_748)">
+      <rect
+        width={100}
+        height={100}
+        rx={30}
+        fill="url(#paint0_linear_3758_748)"
+      />
+    </g>
+    <g filter="url(#filter1_ii_3758_748)">
       <path
         fillRule="evenodd"
         clipRule="evenodd"
-        d="M26.7676 25.6773C30.022 22.423 34.7148 20.8018 40.4635 20.8018C46.2122 20.8018 50.9051 22.423 54.1594 25.6773C57.4137 28.9316 59.0349 33.6245 59.0349 39.3732C59.0349 45.1219 57.4137 49.8147 54.1594 53.069C50.9051 56.3233 46.2122 57.9447 40.4635 57.9447C37.3014 57.9447 34.4605 57.4556 31.9974 56.4701L24.4343 58.9913C22.1668 59.747 20.0288 57.5504 20.8456 55.3042L23.4691 48.0899C22.415 45.5695 21.8921 42.6429 21.8921 39.3732C21.8921 33.6245 23.5133 28.9316 26.7676 25.6773ZM40.6403 42.0482C42.0173 42.0482 43.1336 40.9319 43.1336 39.5549C43.1336 38.1779 42.0173 37.0616 40.6403 37.0616C39.2633 37.0616 38.147 38.1779 38.147 39.5549C38.147 40.9319 39.2633 42.0482 40.6403 42.0482ZM34.0564 39.5549C34.0564 40.9319 32.9401 42.0482 31.5632 42.0482C30.1862 42.0482 29.0699 40.9319 29.0699 39.5549C29.0699 38.1779 30.1862 37.0616 31.5632 37.0616C32.9401 37.0616 34.0564 38.1779 34.0564 39.5549ZM49.716 42.0482C51.0931 42.0482 52.2094 40.9319 52.2094 39.5549C52.2094 38.1779 51.0931 37.0616 49.716 37.0616C48.3391 37.0616 47.2228 38.1779 47.2228 39.5549C47.2228 40.9319 48.3391 42.0482 49.716 42.0482Z"
-        fill="#D7E0FF"
+        d="M33.4527 32.0964C37.5206 28.0285 43.3867 26.002 50.5726 26.002C57.7584 26.002 63.6246 28.0285 67.6924 32.0964C71.7603 36.1643 73.7867 42.0304 73.7867 49.2162C73.7867 56.4021 71.7603 62.2682 67.6924 66.336C63.6246 70.4039 57.7584 72.4307 50.5726 72.4307C46.6199 72.4307 43.0688 71.8192 39.99 70.5874L30.536 73.7389C27.7017 74.6835 25.0292 71.9378 26.0502 69.1299L29.3295 60.1121C28.0119 56.9617 27.3583 53.3034 27.3583 49.2162C27.3583 42.0304 29.3848 36.1643 33.4527 32.0964ZM50.7936 52.5599C52.5148 52.5599 53.9101 51.1646 53.9101 49.4433C53.9101 47.7221 52.5148 46.3268 50.7936 46.3268C49.0723 46.3268 47.6769 47.7221 47.6769 49.4433C47.6769 51.1646 49.0723 52.5599 50.7936 52.5599ZM42.5637 49.4433C42.5637 51.1646 41.1683 52.5599 39.4471 52.5599C37.7259 52.5599 36.3305 51.1646 36.3305 49.4433C36.3305 47.7221 37.7259 46.3268 39.4471 46.3268C41.1683 46.3268 42.5637 47.7221 42.5637 49.4433ZM62.1382 52.5599C63.8596 52.5599 65.2549 51.1646 65.2549 49.4433C65.2549 47.7221 63.8596 46.3268 62.1382 46.3268C60.4171 46.3268 59.0217 47.7221 59.0217 49.4433C59.0217 51.1646 60.4171 52.5599 62.1382 52.5599Z"
+        fill="url(#paint1_linear_3758_748)"
       />
     </g>
     <defs>
-      <clipPath id="clip0_3544_2460">
-        <rect
-          width={40}
-          height={40}
-          fill="white"
-          transform="translate(19.75 20)"
+      <filter
+        id="filter0_ii_3758_748"
+        x={0}
+        y={-2.5}
+        width={100}
+        height={102.5}
+        filterUnits="userSpaceOnUse"
+        colorInterpolationFilters="sRGB"
+      >
+        <feFlood floodOpacity={0} result="BackgroundImageFix" />
+        <feBlend
+          mode="normal"
+          in="SourceGraphic"
+          in2="BackgroundImageFix"
+          result="shape"
         />
-      </clipPath>
+        <feColorMatrix
+          in="SourceAlpha"
+          type="matrix"
+          values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+          result="hardAlpha"
+        />
+        <feOffset dy={-2.5} />
+        <feGaussianBlur stdDeviation={3.75} />
+        <feComposite in2="hardAlpha" operator="arithmetic" k2={-1} k3={1} />
+        <feColorMatrix
+          type="matrix"
+          values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.5 0"
+        />
+        <feBlend
+          mode="normal"
+          in2="shape"
+          result="effect1_innerShadow_3758_748"
+        />
+        <feColorMatrix
+          in="SourceAlpha"
+          type="matrix"
+          values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+          result="hardAlpha"
+        />
+        <feOffset dy={-1.25} />
+        <feGaussianBlur stdDeviation={1.25} />
+        <feComposite in2="hardAlpha" operator="arithmetic" k2={-1} k3={1} />
+        <feColorMatrix
+          type="matrix"
+          values="0 0 0 0 0.0483713 0 0 0 0 0.183741 0 0 0 0 0.510222 0 0 0 0.64 0"
+        />
+        <feBlend
+          mode="normal"
+          in2="effect1_innerShadow_3758_748"
+          result="effect2_innerShadow_3758_748"
+        />
+      </filter>
+      <filter
+        id="filter1_ii_3758_748"
+        x={25.8281}
+        y={23.502}
+        width={47.9609}
+        height={50.4268}
+        filterUnits="userSpaceOnUse"
+        colorInterpolationFilters="sRGB"
+      >
+        <feFlood floodOpacity={0} result="BackgroundImageFix" />
+        <feBlend
+          mode="normal"
+          in="SourceGraphic"
+          in2="BackgroundImageFix"
+          result="shape"
+        />
+        <feColorMatrix
+          in="SourceAlpha"
+          type="matrix"
+          values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+          result="hardAlpha"
+        />
+        <feOffset dy={-2.5} />
+        <feGaussianBlur stdDeviation={3.75} />
+        <feComposite in2="hardAlpha" operator="arithmetic" k2={-1} k3={1} />
+        <feColorMatrix
+          type="matrix"
+          values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.5 0"
+        />
+        <feBlend
+          mode="normal"
+          in2="shape"
+          result="effect1_innerShadow_3758_748"
+        />
+        <feColorMatrix
+          in="SourceAlpha"
+          type="matrix"
+          values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+          result="hardAlpha"
+        />
+        <feOffset dy={-1.25} />
+        <feGaussianBlur stdDeviation={1.25} />
+        <feComposite in2="hardAlpha" operator="arithmetic" k2={-1} k3={1} />
+        <feColorMatrix
+          type="matrix"
+          values="0 0 0 0 0.258824 0 0 0 0 0.466667 0 0 0 0 0.968627 0 0 0 0.4 0"
+        />
+        <feBlend
+          mode="normal"
+          in2="effect1_innerShadow_3758_748"
+          result="effect2_innerShadow_3758_748"
+        />
+      </filter>
+      <linearGradient
+        id="paint0_linear_3758_748"
+        x1={50}
+        y1={0}
+        x2={50}
+        y2={100}
+        gradientUnits="userSpaceOnUse"
+      >
+        <stop stopColor="#4277F7" />
+        <stop offset={1} stopColor="#274691" />
+      </linearGradient>
+      <linearGradient
+        id="paint1_linear_3758_748"
+        x1={49.8074}
+        y1={26.002}
+        x2={50.0322}
+        y2={74.9998}
+        gradientUnits="userSpaceOnUse"
+      >
+        <stop stopColor="#D7E0FF" />
+        <stop offset={1} stopColor="#97ADFA" />
+      </linearGradient>
     </defs>
   </svg>
 );
@@ -44,10 +170,14 @@ export const ChatApp = () => {
     containerRef.current?.scrollTo({
       top: containerRef.current.scrollHeight + 8, //0.25rem gap
     });
-  });
+  }, []);
 
   return (
     <>
+      <FillRow $align="center" $justify="center">
+        <AppInfo>Archiv für alte Nachrichten</AppInfo>
+      </FillRow>
+
       <HugColumn
         style={{
           width: "360px",
@@ -55,7 +185,7 @@ export const ChatApp = () => {
           maxHeight: "23rem",
           overflowY: "auto",
           borderRadius: "1.75rem",
-          background: "rgba(0, 0, 0, 0.25)",
+          background: "rgba(33, 33, 33, 0.15)",
           padding: "0.25rem",
         }}
         $gap={"0.25rem"}
@@ -83,9 +213,6 @@ export const ChatApp = () => {
           </MessageContainer>
         ))}
       </HugColumn>
-      <FillRow $align="center" $justify="center">
-        <AppInfo>Archiv für alte Nachrichten</AppInfo>
-      </FillRow>
     </>
   );
 };
@@ -93,7 +220,7 @@ export const ChatApp = () => {
 const AppInfo = styled.p`
   font-size: 0.875rem;
   font-weight: 400;
-  color: var(--text-color);
+  color: #212121;
   opacity: 0.5;
   padding: 0.25rem;
   margin: 0 1rem;

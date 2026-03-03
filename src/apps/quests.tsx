@@ -1,22 +1,196 @@
 import { FillColumn, FillRow, HugColumn } from "@/layout";
 import { CameraViewId, useQuestStore } from "@/store";
+import { AnimatePresence, motion } from "motion/react";
 import styled from "styled-components";
 
 export const QuestsIcon = () => (
   <svg
     width={80}
     height={80}
-    viewBox="0 0 80 80"
+    viewBox="0 0 100 100"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
   >
-    <rect width={80} height={80} rx={24} fill="#D6E46E" />
-    <path
-      fillRule="evenodd"
-      clipRule="evenodd"
-      d="M28.826 28.8563C26.4244 31.2579 25.0006 34.9289 25.0006 40.0152C25.0006 45.1015 26.4244 48.7727 28.826 51.1741C31.2276 53.5759 34.8987 54.9996 39.985 54.9996C45.0712 54.9996 48.7423 53.5759 51.144 51.1741C53.5454 48.7727 54.9694 45.1015 54.9694 40.0152C54.9694 38.8318 55.9288 37.8724 57.1123 37.8724C58.2957 37.8724 59.2551 38.8318 59.2551 40.0152C59.2551 45.8904 57.596 50.783 54.1743 54.2047C50.7526 57.6264 45.8601 59.2853 39.985 59.2853C34.1098 59.2853 29.2172 57.6264 25.7956 54.2047C22.3739 50.783 20.7148 45.8904 20.7148 40.0152C20.7148 34.1401 22.3739 29.2475 25.7956 25.8258C29.2172 22.4041 34.1098 20.7451 39.985 20.7451C41.1684 20.7451 42.1278 21.7045 42.1278 22.888C42.1278 24.0715 41.1684 25.0308 39.985 25.0308C34.8987 25.0308 31.2276 26.4547 28.826 28.8563ZM39.3345 30.9199C39.5964 32.074 38.8732 33.222 37.719 33.4839C36.1721 33.835 35.111 34.5523 34.4108 35.5267C33.6932 36.5254 33.2218 37.9819 33.2218 40.014C33.2218 42.4695 33.9058 44.0853 34.9098 45.0893C35.9138 46.0933 37.5296 46.7773 39.9851 46.7773C42.1167 46.7773 43.6146 46.2593 44.6186 45.4791C45.6007 44.7158 46.318 43.5415 46.6091 41.802C46.8045 40.6348 47.9091 39.8469 49.0763 40.0423C50.2437 40.2377 51.0314 41.3423 50.836 42.5095C50.3983 45.1249 49.2174 47.3329 47.2484 48.863C45.3012 50.3761 42.7949 51.063 39.9851 51.063C36.7407 51.063 33.9034 50.1439 31.8793 48.1198C29.8552 46.0957 28.9361 43.2584 28.9361 40.014C28.9361 37.336 29.5594 34.9339 30.9305 33.0258C32.3191 31.0934 34.3409 29.8559 36.7705 29.3045C37.9246 29.0425 39.0726 29.7658 39.3345 30.9199ZM47.1024 35.9273L41.5004 41.5292C40.6636 42.3661 39.3068 42.3661 38.47 41.5292C37.6331 40.6924 37.6332 39.3356 38.47 38.4988L44.0732 32.8955C43.5031 30.4954 44.2122 27.9557 45.9722 26.1955L50.32 21.8477C50.674 21.4935 51.188 21.3507 51.674 21.4713C52.16 21.5919 52.5477 21.9582 52.6951 22.4369L53.8428 26.1583L57.5643 27.3059C58.0428 27.4535 58.4091 27.841 58.5297 28.3271C58.6503 28.8132 58.5077 29.327 58.1534 29.6812L53.806 34.0289C52.0448 35.7899 49.5034 36.4988 47.1024 35.9273Z"
-      fill="#FCFFD7"
-    />
+    <g filter="url(#filter0_ii_3758_762)">
+      <rect
+        width={100}
+        height={100}
+        rx={30}
+        fill="url(#paint0_linear_3758_762)"
+      />
+    </g>
+    <g clipPath="url(#clip0_3758_762)">
+      <g filter="url(#filter1_dii_3758_762)">
+        <path
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d="M32.126 32.1807C28.2859 36.0208 26.0091 41.8909 26.0091 50.0238C26.0091 58.1568 28.2859 64.027 32.126 67.8669C35.9661 71.7073 41.8362 73.9838 49.9691 73.9838C58.1021 73.9838 63.9721 71.7073 67.8124 67.8669C71.6523 64.027 73.9293 58.1568 73.9293 50.0238C73.9293 48.1315 75.4634 46.5974 77.3557 46.5974C79.248 46.5974 80.7821 48.1315 80.7821 50.0238C80.7821 59.4182 78.1292 67.2415 72.6578 72.7128C67.1865 78.1841 59.3635 80.8366 49.9691 80.8366C40.5748 80.8366 32.7516 78.1841 27.2803 72.7128C21.809 67.2415 19.1562 59.4182 19.1562 50.0238C19.1562 40.6295 21.809 32.8063 27.2803 27.335C32.7516 21.8637 40.5748 19.2109 49.9691 19.2109C51.8615 19.2109 53.3956 20.745 53.3956 22.6374C53.3956 24.5297 51.8615 26.0638 49.9691 26.0638C41.8362 26.0638 35.9661 28.3406 32.126 32.1807ZM48.9291 35.4804C49.3479 37.3259 48.1914 39.1614 46.3459 39.5803C43.8724 40.1416 42.1757 41.2887 41.0561 42.8467C39.9086 44.4436 39.1549 46.7726 39.1549 50.0218C39.1549 53.9482 40.2486 56.5319 41.8539 58.1373C43.4593 59.7427 46.043 60.8363 49.9694 60.8363C53.3778 60.8363 55.7729 60.0081 57.3783 58.7605C58.9488 57.54 60.0956 55.6623 60.5612 52.8809C60.8736 51.0145 62.6399 49.7547 64.5061 50.0672C66.3729 50.3796 67.6324 52.1459 67.3199 54.0122C66.62 58.1942 64.7318 61.7247 61.5834 64.1714C58.4698 66.5909 54.4622 67.6892 49.9694 67.6892C44.7816 67.6892 40.2448 66.2195 37.0083 62.983C33.7717 59.7464 32.302 55.2096 32.302 50.0218C32.302 45.7397 33.2987 41.8987 35.4911 38.8477C37.7114 35.7578 40.9443 33.779 44.8292 32.8973C46.6747 32.4785 48.5102 33.635 48.9291 35.4804ZM63.2562 43.7737C62.0594 43.6964 60.8333 44.0038 59.9853 44.8519L52.3924 52.4447C51.0543 53.7828 48.8848 53.7828 47.5467 52.4447C46.2086 51.1066 46.2086 48.9371 47.5467 47.599L55.1424 40.0033C55.99 39.1557 56.2976 37.9303 56.2208 36.7341C56.0131 33.4994 57.1914 30.2777 59.5428 27.9261L66.4948 20.974C67.0609 20.4077 67.8828 20.1793 68.6599 20.3721C69.437 20.5649 70.057 21.1507 70.2927 21.916L71.5898 26.122C71.9265 27.2135 72.781 28.0679 73.8725 28.4046L78.0784 29.7016C78.8437 29.9377 79.4294 30.5572 79.6222 31.3345C79.815 32.1118 79.587 32.9334 79.0205 33.4997L72.069 40.4517C69.7161 42.8043 66.4923 43.9826 63.2562 43.7737Z"
+          fill="#212121"
+        />
+        <path
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d="M32.126 32.1807C28.2859 36.0208 26.0091 41.8909 26.0091 50.0238C26.0091 58.1568 28.2859 64.027 32.126 67.8669C35.9661 71.7073 41.8362 73.9838 49.9691 73.9838C58.1021 73.9838 63.9721 71.7073 67.8124 67.8669C71.6523 64.027 73.9293 58.1568 73.9293 50.0238C73.9293 48.1315 75.4634 46.5974 77.3557 46.5974C79.248 46.5974 80.7821 48.1315 80.7821 50.0238C80.7821 59.4182 78.1292 67.2415 72.6578 72.7128C67.1865 78.1841 59.3635 80.8366 49.9691 80.8366C40.5748 80.8366 32.7516 78.1841 27.2803 72.7128C21.809 67.2415 19.1562 59.4182 19.1562 50.0238C19.1562 40.6295 21.809 32.8063 27.2803 27.335C32.7516 21.8637 40.5748 19.2109 49.9691 19.2109C51.8615 19.2109 53.3956 20.745 53.3956 22.6374C53.3956 24.5297 51.8615 26.0638 49.9691 26.0638C41.8362 26.0638 35.9661 28.3406 32.126 32.1807ZM48.9291 35.4804C49.3479 37.3259 48.1914 39.1614 46.3459 39.5803C43.8724 40.1416 42.1757 41.2887 41.0561 42.8467C39.9086 44.4436 39.1549 46.7726 39.1549 50.0218C39.1549 53.9482 40.2486 56.5319 41.8539 58.1373C43.4593 59.7427 46.043 60.8363 49.9694 60.8363C53.3778 60.8363 55.7729 60.0081 57.3783 58.7605C58.9488 57.54 60.0956 55.6623 60.5612 52.8809C60.8736 51.0145 62.6399 49.7547 64.5061 50.0672C66.3729 50.3796 67.6324 52.1459 67.3199 54.0122C66.62 58.1942 64.7318 61.7247 61.5834 64.1714C58.4698 66.5909 54.4622 67.6892 49.9694 67.6892C44.7816 67.6892 40.2448 66.2195 37.0083 62.983C33.7717 59.7464 32.302 55.2096 32.302 50.0218C32.302 45.7397 33.2987 41.8987 35.4911 38.8477C37.7114 35.7578 40.9443 33.779 44.8292 32.8973C46.6747 32.4785 48.5102 33.635 48.9291 35.4804ZM63.2562 43.7737C62.0594 43.6964 60.8333 44.0038 59.9853 44.8519L52.3924 52.4447C51.0543 53.7828 48.8848 53.7828 47.5467 52.4447C46.2086 51.1066 46.2086 48.9371 47.5467 47.599L55.1424 40.0033C55.99 39.1557 56.2976 37.9303 56.2208 36.7341C56.0131 33.4994 57.1914 30.2777 59.5428 27.9261L66.4948 20.974C67.0609 20.4077 67.8828 20.1793 68.6599 20.3721C69.437 20.5649 70.057 21.1507 70.2927 21.916L71.5898 26.122C71.9265 27.2135 72.781 28.0679 73.8725 28.4046L78.0784 29.7016C78.8437 29.9377 79.4294 30.5572 79.6222 31.3345C79.815 32.1118 79.587 32.9334 79.0205 33.4997L72.069 40.4517C69.7161 42.8043 66.4923 43.9826 63.2562 43.7737Z"
+          fill="url(#paint1_linear_3758_762)"
+        />
+      </g>
+    </g>
+    <defs>
+      <filter
+        id="filter0_ii_3758_762"
+        x={0}
+        y={-2.5}
+        width={100}
+        height={102.5}
+        filterUnits="userSpaceOnUse"
+        colorInterpolationFilters="sRGB"
+      >
+        <feFlood floodOpacity={0} result="BackgroundImageFix" />
+        <feBlend
+          mode="normal"
+          in="SourceGraphic"
+          in2="BackgroundImageFix"
+          result="shape"
+        />
+        <feColorMatrix
+          in="SourceAlpha"
+          type="matrix"
+          values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+          result="hardAlpha"
+        />
+        <feOffset dy={-2.5} />
+        <feGaussianBlur stdDeviation={3.75} />
+        <feComposite in2="hardAlpha" operator="arithmetic" k2={-1} k3={1} />
+        <feColorMatrix
+          type="matrix"
+          values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.5 0"
+        />
+        <feBlend
+          mode="normal"
+          in2="shape"
+          result="effect1_innerShadow_3758_762"
+        />
+        <feColorMatrix
+          in="SourceAlpha"
+          type="matrix"
+          values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+          result="hardAlpha"
+        />
+        <feOffset dy={-1.25} />
+        <feGaussianBlur stdDeviation={1.25} />
+        <feComposite in2="hardAlpha" operator="arithmetic" k2={-1} k3={1} />
+        <feColorMatrix
+          type="matrix"
+          values="0 0 0 0 0.866667 0 0 0 0 0.278431 0 0 0 0 0.329412 0 0 0 0.5 0"
+        />
+        <feBlend
+          mode="normal"
+          in2="effect1_innerShadow_3758_762"
+          result="effect2_innerShadow_3758_762"
+        />
+      </filter>
+      <filter
+        id="filter1_dii_3758_762"
+        x={17.4293}
+        y={16.0129}
+        width={65.0789}
+        height={67.4144}
+        filterUnits="userSpaceOnUse"
+        colorInterpolationFilters="sRGB"
+      >
+        <feFlood floodOpacity={0} result="BackgroundImageFix" />
+        <feColorMatrix
+          in="SourceAlpha"
+          type="matrix"
+          values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+          result="hardAlpha"
+        />
+        <feOffset dy={0.863467} />
+        <feGaussianBlur stdDeviation={0.863467} />
+        <feComposite in2="hardAlpha" operator="out" />
+        <feColorMatrix
+          type="matrix"
+          values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.3 0"
+        />
+        <feBlend
+          mode="normal"
+          in2="BackgroundImageFix"
+          result="effect1_dropShadow_3758_762"
+        />
+        <feBlend
+          mode="normal"
+          in="SourceGraphic"
+          in2="effect1_dropShadow_3758_762"
+          result="shape"
+        />
+        <feColorMatrix
+          in="SourceAlpha"
+          type="matrix"
+          values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+          result="hardAlpha"
+        />
+        <feOffset dy={-3.198} />
+        <feGaussianBlur stdDeviation={4.797} />
+        <feComposite in2="hardAlpha" operator="arithmetic" k2={-1} k3={1} />
+        <feColorMatrix
+          type="matrix"
+          values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.5 0"
+        />
+        <feBlend
+          mode="normal"
+          in2="shape"
+          result="effect2_innerShadow_3758_762"
+        />
+        <feColorMatrix
+          in="SourceAlpha"
+          type="matrix"
+          values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+          result="hardAlpha"
+        />
+        <feOffset dy={-1.599} />
+        <feGaussianBlur stdDeviation={1.599} />
+        <feComposite in2="hardAlpha" operator="arithmetic" k2={-1} k3={1} />
+        <feColorMatrix
+          type="matrix"
+          values="0 0 0 0 0.992157 0 0 0 0 0.811765 0 0 0 0 0.0980392 0 0 0 0.25 0"
+        />
+        <feBlend
+          mode="normal"
+          in2="effect2_innerShadow_3758_762"
+          result="effect3_innerShadow_3758_762"
+        />
+      </filter>
+      <linearGradient
+        id="paint0_linear_3758_762"
+        x1={50}
+        y1={0}
+        x2={50}
+        y2={100}
+        gradientUnits="userSpaceOnUse"
+      >
+        <stop stopColor="#EFD779" />
+        <stop offset={1} stopColor="#EBBD07" />
+      </linearGradient>
+      <linearGradient
+        id="paint1_linear_3758_762"
+        x1={49.9692}
+        y1={19.2695}
+        x2={49.9692}
+        y2={80.8366}
+        gradientUnits="userSpaceOnUse"
+      >
+        <stop stopColor="#FCF7E3" />
+        <stop offset={1} stopColor="#EFD779" />
+      </linearGradient>
+      <clipPath id="clip0_3758_762">
+        <rect
+          width={63.96}
+          height={63.96}
+          fill="white"
+          transform="translate(18.0156 18.0195)"
+        />
+      </clipPath>
+    </defs>
   </svg>
 );
 
@@ -25,14 +199,20 @@ export const QuestsApp = () => {
 
   return (
     <HugColumn style={{ width: "320px", maxWidth: "100%" }} $gap={"0.25rem"}>
-      {quests.map((quest) => (
+      {quests.map((quest, index) => (
         <QuestListItem $completed={quest.completed} key={quest.id}>
           <FillColumn $align="flex-start" $gap={".25rem"}>
             <QuestName>{quest.title}</QuestName>
             <QuestInfos>{quest.description}</QuestInfos>
           </FillColumn>
 
-          <QuestIcon>{quest.completed ? <QuestCheckmarkIcon /> : ""}</QuestIcon>
+          <QuestIcon
+            animate={{ scale: 1, filter: "blur(0px)", opacity: 1 }}
+            initial={{ scale: 0, filter: "blur(4px)", opacity: 0 }}
+            transition={{ delay: 0.6 + index * 0.05 }}
+          >
+            {quest.completed ? <QuestCheckmarkIcon /> : ""}
+          </QuestIcon>
         </QuestListItem>
       ))}
     </HugColumn>
@@ -54,12 +234,12 @@ const QuestCheckmarkIcon = () => (
   </svg>
 );
 
-const QuestIcon = styled.span`
+const QuestIcon = styled(motion.div)`
   position: absolute;
-  right: 0.75rem;
-  margin: auto 0;
+  right: 0.5rem;
+  top: 0.5rem;
 
-  color: #dddd4a;
+  color: #4178f7;
 `;
 
 const QuestListItem = styled(FillRow)<{
@@ -69,20 +249,23 @@ const QuestListItem = styled(FillRow)<{
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+  position: relative;
 
   padding: 1rem;
   pointer-events: auto;
   border-radius: 1.25rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(33, 33, 33, 0.05);
+  color: #212121;
 
   ${(p) =>
     p.$completed &&
     `
-    background: radial-gradient(circle at top, rgba(255,255,84,0.2), rgba(255,255,255,0.1));
-    border: 1.5px solid rgba(255, 255, 84, 0.2);
+    background: rgba(65, 120, 247, 0.1);
+    
+    border: 1.5px solid #4178f7;
 
     h5 {
-      color: #dddd4a;
+      color: #4178f7;
     }
 
     p {
