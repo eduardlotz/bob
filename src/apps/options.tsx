@@ -379,6 +379,7 @@ export function OptionsApp() {
                 $selected={currentItem.active}
                 $purchased // themes are for free (for now)
                 $canAfford
+                whileTap={{ scale: 0.95 }}
                 disabled={currentItem.active}
                 onClick={handleButton}
                 role="button"
