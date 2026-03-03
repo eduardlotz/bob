@@ -113,4 +113,5 @@ export const useAppStore = create<AppStore>()(
 export * from "./core/store";
 export * from "./minigames";
 export * from "./core/quests";
+export * from "./core/camera";
 export * from "./viewStore";
