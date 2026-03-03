@@ -17,8 +17,8 @@ import {
 import { useCameraStore } from "@/store";
 import { useGLBridge } from "@/store/core/gl";
 import { createPortal } from "react-dom";
-import { TabButton, TabPanel } from "./ui";
-import { FillRow } from "@/layout";
+import { AppInfo, TabButton, TabPanel } from "./ui";
+import { FillColumn, FillRow } from "@/layout";
 
 // ─── Camera icon ───────────────────────────────────────────────────────────────
 
@@ -421,65 +421,62 @@ export const CameraApp = () => {
       )}
 
       <CameraRoot ref={phoneBodyRef}>
-        <AnimatePresence mode="popLayout" initial={false}>
-          {/* ══ CAMERA VIEW ══════════════════════════════════════════════════ */}
-          {view === "camera" && (
-            <ControlRow>
-              {/* Last photo thumbnail — opens gallery */}
-              <GalleryThumb
-                onClick={() => setView("gallery")}
-                disabled={photos.length === 0}
-              >
-                {photos[0] ? (
-                  <img
-                    src={photos[0].dataUrl}
-                    alt=""
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      borderRadius: 8,
-                    }}
-                  />
-                ) : (
-                  <GalleryTabIcon />
-                )}
-              </GalleryThumb>
-              <FillRow $align="center" $justify="center">
-                <ShutterButton
-                  onClick={handleCapture}
-                  whileTap={{ scale: 0.95 }}
-                  transition={{ type: "spring", bounce: 0.6, duration: 0.2 }}
-                >
-                  <ShutterInner />
-                </ShutterButton>
-              </FillRow>
-            </ControlRow>
-          )}
-
-          {/* ══ GALLERY VIEW ═════════════════════════════════════════════════ */}
-          {view === "gallery" && (
-            <div
-              style={{
-                width: "100%",
-                // position: "relative",
-                maxWidth: "300px",
-                height: "420px",
-                overflow: "auto",
-              }}
+        {/* ══ CAMERA VIEW ══════════════════════════════════════════════════ */}
+        {view === "camera" && (
+          <ControlRow>
+            {/* Last photo thumbnail — opens gallery */}
+            <GalleryThumb
+              onClick={() => setView("gallery")}
+              disabled={photos.length === 0}
             >
-              {photos.length === 0 ? (
-                <EmptyGallery>
-                  <GalleryTabIcon />
-                  <span>Noch nichts hier...</span>
-                </EmptyGallery>
+              {photos[0] ? (
+                <img
+                  src={photos[0].dataUrl}
+                  alt=""
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    borderRadius: 8,
+                  }}
+                />
               ) : (
-                <PhotoGrid>
+                <GalleryTabIcon />
+              )}
+            </GalleryThumb>
+            <FillRow $align="center" $justify="center">
+              <ShutterButton
+                onClick={handleCapture}
+                whileTap={{ scale: 0.95 }}
+                transition={{ type: "spring", bounce: 0.6, duration: 0.2 }}
+              >
+                <ShutterInner />
+              </ShutterButton>
+            </FillRow>
+          </ControlRow>
+        )}
+
+        {/* ══ GALLERY VIEW ═════════════════════════════════════════════════ */}
+        {view === "gallery" && (
+          <FillColumn
+            style={{
+              maxWidth: "300px",
+              height: "420px",
+              minHeight: "100px",
+              overflow: "auto",
+              // height: isLightboxOpen ? "340px" : "auto",
+            }}
+          >
+            {photos.length > 0 ? (
+              <PhotoGrid>
+                <AnimatePresence mode="popLayout">
                   {photos.map((photo) => (
                     <PhotoThumb
                       key={photo.id}
                       layoutId={`photo-${photo.id}`}
                       onClick={() => openLightbox(photo.id)}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
                     >
                       <img
                         src={photo.dataUrl}
@@ -493,76 +490,85 @@ export const CameraApp = () => {
                       />
                     </PhotoThumb>
                   ))}
-                </PhotoGrid>
-              )}
+                </AnimatePresence>
+              </PhotoGrid>
+            ) : (
+              <FillColumn $justify="center" $align="center" style={{ flex: 1 }}>
+                <AppInfo
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                >
+                  Noch nichts hier..
+                </AppInfo>
+              </FillColumn>
+            )}
 
-              {/* ── Lightbox ──────────────────────────────────────────────── */}
-              <AnimatePresence>
-                {isLightboxOpen && lightboxPhoto && (
-                  <LightboxOverlay
-                    key="lightbox-overlay"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.18 }}
-                    onClick={closeLightbox}
+            {/* ── Lightbox ──────────────────────────────────────────────── */}
+            <AnimatePresence>
+              {isLightboxOpen && lightboxPhoto && (
+                <LightboxOverlay
+                  key="lightbox-overlay"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.18 }}
+                  onClick={closeLightbox}
+                >
+                  <motion.div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 8,
+                      width: "100%",
+                      alignItems: "center",
+                    }}
                   >
-                    <motion.div
-                      onClick={(e) => e.stopPropagation()}
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 8,
-                        width: "100%",
-                        alignItems: "center",
+                    <LightboxImageWrap
+                      layoutId={`photo-${lightboxPhoto.id}`}
+                      transition={{
+                        type: "spring",
+                        bounce: 0.25,
+                        visualDuration: 0.28,
                       }}
+                      onClick={closeLightbox}
                     >
-                      <LightboxImageWrap
-                        layoutId={`photo-${lightboxPhoto.id}`}
-                        transition={{
-                          type: "spring",
-                          bounce: 0.25,
-                          visualDuration: 0.28,
+                      <img
+                        src={lightboxPhoto.dataUrl}
+                        alt=""
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          display: "block",
                         }}
-                        onClick={closeLightbox}
-                      >
-                        <img
-                          src={lightboxPhoto.dataUrl}
-                          alt=""
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                            display: "block",
-                          }}
-                        />
-                      </LightboxImageWrap>
+                      />
+                    </LightboxImageWrap>
 
-                      <LightboxActions>
-                        <IconAction
-                          $variant="download"
-                          onClick={() => downloadPhoto(lightboxPhoto)}
-                          title="Download"
-                          whileTap={{ scale: 0.9 }}
-                        >
-                          Download
-                        </IconAction>
-                        <IconAction
-                          $variant="delete"
-                          onClick={() => handleDelete(lightboxPhoto.id)}
-                          title="Delete"
-                          whileTap={{ scale: 0.9 }}
-                        >
-                          Löschen
-                        </IconAction>
-                      </LightboxActions>
-                    </motion.div>
-                  </LightboxOverlay>
-                )}
-              </AnimatePresence>
-            </div>
-          )}
-        </AnimatePresence>
+                    <FillColumn $gap={"8px"} $padding="0 1rem">
+                      <IconAction
+                        $variant="download"
+                        onClick={() => downloadPhoto(lightboxPhoto)}
+                        title="Download"
+                        whileTap={{ scale: 0.9 }}
+                      >
+                        Download
+                      </IconAction>
+                      <IconAction
+                        $variant="delete"
+                        onClick={() => handleDelete(lightboxPhoto.id)}
+                        title="Delete"
+                        whileTap={{ scale: 0.9 }}
+                      >
+                        Löschen
+                      </IconAction>
+                    </FillColumn>
+                  </motion.div>
+                </LightboxOverlay>
+              )}
+            </AnimatePresence>
+          </FillColumn>
+        )}
 
         <TabPanel>
           <TabButton
@@ -673,7 +679,7 @@ const ViewfinderBorder = styled.div`
   pointer-events: none;
 `;
 
-const CameraRoot = styled.div`
+const CameraRoot = styled(motion.div)`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -754,11 +760,9 @@ const ShutterInner = styled.div`
 const PhotoGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 3px;
+  gap: 4px;
   width: 100%;
-  overflow-y: auto;
-  border-radius: 10px;
-  overflow-x: hidden;
+
   &::-webkit-scrollbar {
     display: none;
   }
@@ -785,26 +789,14 @@ const PhotoThumb = styled(motion.div)`
     transition: transform 0.15s ease-out;
   }
 `;
-
-const EmptyGallery = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 24px;
-  color: rgba(255, 255, 255, 0.3);
-  font-size: 12px;
-`;
-
 // Lightbox
 const LightboxOverlay = styled(motion.div)`
   position: absolute;
   inset: 0;
   z-index: 10;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(33, 33, 33, 0.8);
   backdrop-filter: blur(8px);
-  border-radius: 10px;
+  border-radius: 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -829,37 +821,13 @@ const LightboxImageWrap = styled(motion.div)`
   }
 `;
 
-const LightboxTimestamp = styled.div`
-  position: absolute;
-  bottom: 1.5rem;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(4px);
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 10px;
-  font-family: monospace;
-  letter-spacing: 0.06em;
-  padding: 3px 10px;
-  border-radius: 50px;
-  white-space: nowrap;
-  pointer-events: none;
-`;
-
-const LightboxActions = styled.div`
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-`;
-
 const IconAction = styled(motion.button)<{ $variant?: "delete" | "download" }>`
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   height: 36px;
+  width: 100%;
   padding: 0 16px;
   border-radius: 50px;
   background: ${({ $variant }) =>

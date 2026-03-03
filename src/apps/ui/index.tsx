@@ -2,7 +2,7 @@ import { FillRow } from "@/layout";
 import { motion } from "motion/react";
 import styled from "styled-components";
 
-export const AppInfo = styled.p`
+export const AppInfo = styled(motion.p)`
   opacity: 0.5;
 
   display: flex;
@@ -301,6 +301,8 @@ export const PaginationDots = styled.div`
   padding: 4px;
   border-radius: 50px;
   background: rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 
   > div > div {
     height: 8px;
@@ -323,7 +325,8 @@ export const PaginationButton = styled.button`
   /* background: var(--blob-color); */
   background: transparent;
   color: white;
-  transition: background-color 0.1s ease-out;
+  transition: 0.1s ease-out;
+  transition-property: background-color, transform;
   z-index: 0;
 
   svg {
@@ -333,6 +336,11 @@ export const PaginationButton = styled.button`
 
   &:hover {
     background-color: rgba(33, 33, 33, 0.1);
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.95);
   }
 
   &:disabled {
@@ -348,20 +356,17 @@ export const ShopItemButton = styled(motion.button)<{
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
 
   padding: 0.5rem 0.75rem;
   border-radius: 0.875rem;
+  height: 2.75rem;
 
   background-color: ${(p) =>
     p.$selected ? "rgba(33, 33, 33, 0.2)" : "#4178F7"};
 
   color: ${(p) => (p.$selected ? "#ffffff" : "#ffffff")};
-  border: ${(p) =>
-    p.$selected
-      ? "2px solid rgba(255,255,255,0)"
-      : p.$purchased
-        ? "2px solid rgba(255,255,255,0.5)"
-        : "2px solid transparent"};
+
   font-size: 1rem;
   font-weight: 600;
 

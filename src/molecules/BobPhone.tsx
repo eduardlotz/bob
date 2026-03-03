@@ -55,6 +55,23 @@ interface BobAppData {
 
 const BOB_APPS: Array<BobAppData> = [
   {
+    id: "credits",
+    icon: CreditsIcon,
+    view: <CreditsApp />,
+  },
+  {
+    id: "options",
+    icon: OptionsIcon,
+    view: <OptionsApp />,
+    // bottomAction: <AppInfo style={{ marginRight: "0.5rem" }}>Beta</AppInfo>,
+    hideStatusBar: true,
+  },
+  {
+    id: "debug",
+    icon: DebugIcon,
+    view: <DebugApp />,
+  },
+  {
     id: "chat",
     icon: ChatIcon,
     view: <ChatApp />,
@@ -76,23 +93,6 @@ const BOB_APPS: Array<BobAppData> = [
     icon: CameraIcon,
     view: <CameraApp />,
     hideStatusBar: true,
-  },
-  {
-    id: "options",
-    icon: OptionsIcon,
-    view: <OptionsApp />,
-    // bottomAction: <AppInfo style={{ marginRight: "0.5rem" }}>Beta</AppInfo>,
-    hideStatusBar: true,
-  },
-  {
-    id: "credits",
-    icon: CreditsIcon,
-    view: <CreditsApp />,
-  },
-  {
-    id: "debug",
-    icon: DebugIcon,
-    view: <DebugApp />,
   },
 ];
 
@@ -375,7 +375,7 @@ export const BobPhone = (props: BobPhoneProps) => {
                 }}
                 layout
               >
-                <AnimatePresence mode="popLayout">
+                <AnimatePresence mode="popLayout" initial={false}>
                   {activeApp ? (
                     activeAppView()
                   ) : (
@@ -494,7 +494,7 @@ const AppGrid = styled(motion.div)`
   width: 100%;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  grid-gap: 1rem;
+  grid-gap: 0.5rem 1rem;
   padding: 8px;
   place-items: center;
   width: 18rem;
