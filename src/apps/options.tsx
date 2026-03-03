@@ -347,7 +347,7 @@ export function OptionsApp() {
     ];
 
     return (
-      <FillColumn $gap="1rem" style={{ height: "fit-content" }}>
+      <FillColumn $gap="1rem" style={{ height: "fit-content", width: "24rem" }}>
         <FillRow $align="center" $justify="center" $gap="1rem">
           <Divider />
           <AppInfo>Audio Status: {sound.audioStatus}</AppInfo>
@@ -449,13 +449,13 @@ export function OptionsApp() {
       {activeTab !== "theme" && (
         <FillColumn
           style={{
-            width: "20rem",
+            // width: "24rem",
             maxWidth: "100%",
             maxHeight: "23rem",
             overflowY: "auto",
 
             borderRadius: "1.25rem",
-            background: "rgba(33, 33, 33, 0.1)",
+            background: "rgba(33, 33, 33, 0.05)",
             padding: "1rem",
             // zIndex: -1,
           }}
@@ -480,7 +480,6 @@ export function OptionsApp() {
       )}
 
       <TabPanel
-        layout
         transition={{
           type: "spring",
           bounce: 0.2,
@@ -494,7 +493,7 @@ export function OptionsApp() {
       >
         {tabs.map((tab) => (
           <TabButton
-            layout="position"
+            layout
             transition={{
               type: "spring",
               bounce: 0.2,
@@ -517,17 +516,21 @@ export function OptionsApp() {
   );
 }
 
-const VolumeRow = styled(FillRow)`
+const VolumeRow = styled.div`
+  display: grid;
+  grid-template-columns: 0.25fr 1fr;
+
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  grid-gap: 1rem;
+  width: 100%;
 `;
 
 const VolumeControls = styled.div`
   display: flex;
   gap: 0.5rem;
   align-items: center;
-  width: 60%;
+  width: 100%;
 `;
 
 const StepButton = styled.button<{ $flex: number; $visible: boolean }>`

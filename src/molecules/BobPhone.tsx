@@ -375,7 +375,7 @@ export const BobPhone = (props: BobPhoneProps) => {
                 }}
                 layout
               >
-                <AnimatePresence mode="popLayout" initial={false}>
+                <AnimatePresence mode="popLayout">
                   {activeApp ? (
                     activeAppView()
                   ) : (

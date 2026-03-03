@@ -185,7 +185,7 @@ export const ChatApp = () => {
           maxHeight: "23rem",
           overflowY: "auto",
           borderRadius: "1.75rem",
-          background: "rgba(33, 33, 33, 0.15)",
+          background: "rgba(33, 33, 33, 0.05)",
           padding: "0.25rem",
         }}
         $gap={"0.25rem"}
