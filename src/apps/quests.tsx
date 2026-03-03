@@ -209,7 +209,7 @@ export const QuestsApp = () => {
           <QuestIcon
             animate={{ scale: 1, filter: "blur(0px)", opacity: 1 }}
             initial={{ scale: 0, filter: "blur(4px)", opacity: 0 }}
-            transition={{ delay: 0.6 + index * 0.05 }}
+            transition={{ delay: 0.5 + index * 0.2 }}
           >
             {quest.completed ? <QuestCheckmarkIcon /> : ""}
           </QuestIcon>
