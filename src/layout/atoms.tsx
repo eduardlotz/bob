@@ -170,19 +170,16 @@ export const MenuButton = styled(motion.button)<{ $isActive?: boolean }>`
   height: 3.625rem;
   width: 4.625rem;
   background-color: rgba(0, 0, 0, 0.25);
-  color: var(--text-color);
+  color: rgba(255, 255, 255, 0.9);
   gap: 0.125rem;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 
-  outline: 2px solid transparent;
-  outline-color: ${(props) => (props.$isActive ? "#ffffff" : "transparent")};
-  outline-offset: ${(props) => (props.$isActive ? "3px" : "0")};
   pointer-events: auto;
   border-radius: 1.5rem;
 
   &:hover {
-    background-color: rgba(0, 0, 0, 0.4);
+    background-color: rgba(0, 0, 0, 0.35);
   }
 
   span {

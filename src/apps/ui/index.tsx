@@ -355,9 +355,9 @@ export const ShopItemButton = styled(motion.button)<{
 export const StatusPillButton = styled(motion.button)<{ $active: boolean }>`
   font-size: 1rem;
   color: ${(p) =>
-    p.$active ? "rgba(255,255,255,1)" : "rgba(255,255,255,.75)"};
+    p.$active ? "#4178F7" : "rgba(0, 0, 0, 0.35)"};
   background: ${(p) =>
-    p.$active ? "rgba(255,255,255,0.1)" : "rgba(0, 0, 0, 0.25)"};
+    p.$active ? "rgba(65, 120, 247, 0.12)" : "rgba(0, 0, 0, 0.06)"};
   padding: 8px 12px;
   border-radius: 100px;
 

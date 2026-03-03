@@ -136,7 +136,7 @@ export function BottomNavigation() {
                   </motion.span>
                 )}
               </AnimatePresence>
-              <span>Menü</span>
+              <span>Menu</span>
             </MenuButton>
           )}
 
@@ -156,12 +156,11 @@ export const NavButton = styled(motion.button)<{ $isActive?: boolean }>`
   border-radius: 1.5rem;
   gap: 0.125rem;
 
-  background: var(--primary-color);
-  color: var(--text-color);
-
-  outline: 2px solid transparent;
-  outline-color: ${(props) => (props.$isActive ? "#ffffff" : "transparent")};
-  outline-offset: ${(props) => (props.$isActive ? "3px" : "0")};
+  background: ${(props) => (props.$isActive ? "rgba(255, 255, 255, 0.85)" : "rgba(255, 255, 255, 0.65)")};
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: #1a1a1a;
+  border: 1.5px solid ${(props) => (props.$isActive ? "rgba(0, 0, 0, 0.15)" : "rgba(0, 0, 0, 0.08)")};
 
   display: flex;
   flex-direction: column;

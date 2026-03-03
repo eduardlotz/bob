@@ -1,28 +1,10 @@
 import { usePagination } from "@/hooks/usePagination";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
-import { ArrowLeftIcon, ArrowRightIcon } from "@/icons/arrow";
-import { FillColumn, FillRow, HugRow, ListItemContainer } from "@/layout";
-import { Divider, RowLabel, ValueChip, ValueSlider } from "@/layout/atoms";
+import { FillColumn } from "@/layout";
 import { CameraViewId, useCoreStore, useViewStore } from "@/store";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
 import styled from "styled-components";
-import { match } from "ts-pattern";
-import {
-  AppInfo,
-  ContentControls,
-  FixedAnchor,
-  ItemStatusChip,
-  PaginationButton,
-  PaginationDots,
-  SettingsWrapper,
-  ShopContainer,
-  ShopItemButton,
-  TabButton,
-  TabPanel,
-  ToggleButton,
-} from "./ui";
 
 export const OptionsIcon = () => (
   <svg
@@ -45,29 +27,26 @@ export const OptionsIcon = () => (
   </svg>
 );
 
-type OptionsTab = "theme" | "audio" | "graphics";
+type OptionsTab = "general" | "audio";
 
 const tabs = [
   {
+    id: "general" as OptionsTab,
+    name: "General",
+  },
+  {
     id: "audio" as OptionsTab,
     name: "Audio",
-  },
-  {
-    id: "theme" as OptionsTab,
-    name: "Theme",
-  },
-  {
-    id: "graphics" as OptionsTab,
-    name: "Grafik",
   },
 ];
 
 const APP_ID: CameraViewId = "phone:options";
 
 export function OptionsApp() {
-  const [activeTab, setActiveTab] = useState<OptionsTab>("audio");
+  const [activeTab, setActiveTab] = useState<OptionsTab>("general");
 
-  const { themes, activateTheme, previewTheme, resetPreview } = useCoreStore();
+  const { themes, activateTheme, previewTheme, resetPreview, currentTheme } =
+    useCoreStore();
 
   const { transitionToView } = useViewStore();
 
@@ -80,6 +59,12 @@ export function OptionsApp() {
   );
   const currentItem = data[0];
 
+  // Language state (local for now)
+  const [language, setLanguage] = useState<"de" | "en">("de");
+  // Auto-tap animation toggles
+  const [autoTap1, setAutoTap1] = useState(true);
+  const [autoTap2, setAutoTap2] = useState(false);
+
   useEffect(() => {
     transitionToView(APP_ID);
     goTo(initialIndex);
@@ -88,125 +73,32 @@ export function OptionsApp() {
   }, []);
 
   useEffect(() => {
-    if (activeTab === "theme") previewTheme(currentItem.id);
-    else resetPreview();
+    if (activeTab === "general") {
+      // Preview current theme selection
+    } else {
+      resetPreview();
+    }
   }, [page, activeTab]);
 
   const handleTabChange = (id: OptionsTab) => {
-    if (id === "theme") goTo(initialIndex);
     setActiveTab(id);
   };
 
-  const handleButton = () => {
-    activateTheme(currentItem.id);
+  const handleThemeSelect = (themeId: string) => {
+    activateTheme(themeId);
   };
 
-  const buttonLabel = match(currentItem)
-    .with({ active: true }, () => "Aktiv")
-    .otherwise(() => "Auswählen");
-
-  const handleNext = () => {
-    if (hasNext) next();
-    else goTo(0);
-  };
-
-  const handlePrev = () => {
-    if (hasPrev) prev();
-    else goTo(pageCount - 1);
-  };
-
-  // TODO: fix re-render every second
-  const ThemeOverlays = useCallback(
-    ({ visible }: { visible: boolean }) => (
-      <FixedAnchor>
-        {visible && (
-          <ShopContainer>
-            <ContentControls>
-              <ItemStatusChip $variant="dark">
-                <span>{currentItem.name}</span>
-              </ItemStatusChip>
-
-              <FillRow $justify="space-between">
-                <PaginationButton
-                  onClick={handlePrev}
-                  disabled={pageCount === 1}
-                >
-                  <ArrowLeftIcon />
-                </PaginationButton>
-
-                <ShopItemButton
-                  key={buttonLabel + "_action_button"}
-                  $selected={currentItem.active}
-                  $purchased // themes are for free (for now)
-                  $canAfford
-                  disabled={currentItem.active}
-                  onClick={handleButton}
-                  role="button"
-                  layout
-                >
-                  <motion.span
-                    key={buttonLabel + "_action_label"}
-                    animate={{ filter: "blur(0px)", scale: 1 }}
-                    initial={{ filter: "blur(2px)", scale: 0.9 }}
-                    exit={{ filter: "blur(2px)", scale: 0.9 }}
-                    layout="preserve-aspect"
-                  >
-                    {buttonLabel}
-                  </motion.span>
-                </ShopItemButton>
-
-                <PaginationButton
-                  onClick={handleNext}
-                  disabled={pageCount === 1}
-                >
-                  <ArrowRightIcon />
-                </PaginationButton>
-              </FillRow>
-
-              <PaginationDots>
-                {Array(pageCount)
-                  .fill(null)
-                  .map((_, i) => (
-                    <motion.div
-                      key={`options-pagination-dots-${i}`}
-                      animate={{
-                        width: page === i ? "20px" : "8px",
-                        opacity: page === i ? 1 : 0.5,
-                      }}
-                    />
-                  ))}
-              </PaginationDots>
-            </ContentControls>
-          </ShopContainer>
-        )}
-      </FixedAnchor>
-    ),
-    [currentItem],
-  );
+  const isDarkActive = currentTheme?.id === "DARK";
 
   const AudioView = useCallback(() => {
     const sound = useSoundSystem();
 
     return (
-      <FillColumn $gap={"1rem"} style={{ height: "fit-content" }}>
-        <FillRow $align="center" $justify="center" $gap={"1rem"}>
-          <Divider />
-          <AppInfo>Audio Status: {sound.audioStatus}</AppInfo>
-          <Divider />
-        </FillRow>
-
-        <FillColumn $gap={"1.5rem"}>
-          <ListItemContainer
-            $gridTemplateColumns="0.5fr 1fr"
-            $align="center"
-            $justify="space-between"
-            $gap={"1rem"}
-          >
-            <HugRow $gap={"0.5rem"}>
-              <RowLabel>Master</RowLabel>
-              <ValueChip>{Math.round(sound.masterVolume * 100)}%</ValueChip>
-            </HugRow>
-            <ValueSlider
+      <OptionsContent>
+        <OptionsSection>
+          <OptionRow>
+            <OptionRowLabel>Master</OptionRowLabel>
+            <OptionSlider
               type="range"
               min={0}
               max={1}
@@ -216,19 +108,12 @@ export function OptionsApp() {
                 sound.setMasterVolume(parseFloat(e.target.value))
               }
             />
-          </ListItemContainer>
+            <OptionValue>{Math.round(sound.masterVolume * 100)}%</OptionValue>
+          </OptionRow>
 
-          <ListItemContainer
-            $gridTemplateColumns="0.5fr 1fr"
-            $align="center"
-            $justify="space-between"
-            $gap={"1rem"}
-          >
-            <HugRow $gap={"0.5rem"}>
-              <RowLabel>Musik</RowLabel>
-              <ValueChip>{Math.round(sound.worldVolume * 100)}%</ValueChip>
-            </HugRow>
-            <ValueSlider
+          <OptionRow>
+            <OptionRowLabel>Music</OptionRowLabel>
+            <OptionSlider
               type="range"
               min={0}
               max={1}
@@ -236,19 +121,12 @@ export function OptionsApp() {
               value={sound.worldVolume}
               onChange={(e) => sound.setWorldVolume(parseFloat(e.target.value))}
             />
-          </ListItemContainer>
+            <OptionValue>{Math.round(sound.worldVolume * 100)}%</OptionValue>
+          </OptionRow>
 
-          <ListItemContainer
-            $gridTemplateColumns="0.5fr 1fr"
-            $align="center"
-            $justify="space-between"
-            $gap={"1rem"}
-          >
-            <HugRow $gap={"0.5rem"}>
-              <RowLabel>Effekte</RowLabel>
-              <ValueChip>{Math.round(sound.tapVolume * 100)}%</ValueChip>
-            </HugRow>
-            <ValueSlider
+          <OptionRow>
+            <OptionRowLabel>Effects</OptionRowLabel>
+            <OptionSlider
               type="range"
               min={0}
               max={1}
@@ -256,19 +134,12 @@ export function OptionsApp() {
               value={sound.tapVolume}
               onChange={(e) => sound.setTapVolume(parseFloat(e.target.value))}
             />
-          </ListItemContainer>
+            <OptionValue>{Math.round(sound.tapVolume * 100)}%</OptionValue>
+          </OptionRow>
 
-          <ListItemContainer
-            $gridTemplateColumns="0.5fr 1fr"
-            $align="center"
-            $justify="space-between"
-            $gap={"1rem"}
-          >
-            <HugRow $gap={"0.5rem"}>
-              <RowLabel>UI</RowLabel>
-              <ValueChip>{Math.round(sound.uiVolume * 100)}%</ValueChip>
-            </HugRow>
-            <ValueSlider
+          <OptionRow>
+            <OptionRowLabel>UI</OptionRowLabel>
+            <OptionSlider
               type="range"
               min={0}
               max={1}
@@ -276,19 +147,12 @@ export function OptionsApp() {
               value={sound.uiVolume}
               onChange={(e) => sound.setUIVolume(parseFloat(e.target.value))}
             />
-          </ListItemContainer>
+            <OptionValue>{Math.round(sound.uiVolume * 100)}%</OptionValue>
+          </OptionRow>
 
-          <ListItemContainer
-            $gridTemplateColumns="0.5fr 1fr"
-            $align="center"
-            $justify="space-between"
-            $gap={"1rem"}
-          >
-            <HugRow $gap={"0.5rem"}>
-              <RowLabel>Chat</RowLabel>
-              <ValueChip>{Math.round(sound.textVolume * 100)}%</ValueChip>
-            </HugRow>
-            <ValueSlider
+          <OptionRow>
+            <OptionRowLabel>Chat</OptionRowLabel>
+            <OptionSlider
               type="range"
               min={0}
               max={1}
@@ -296,96 +160,136 @@ export function OptionsApp() {
               value={sound.textVolume}
               onChange={(e) => sound.setTextVolume(parseFloat(e.target.value))}
             />
-          </ListItemContainer>
-        </FillColumn>
-      </FillColumn>
+            <OptionValue>{Math.round(sound.textVolume * 100)}%</OptionValue>
+          </OptionRow>
+        </OptionsSection>
+      </OptionsContent>
     );
   }, []);
 
-  const GraphicsView = useCallback(() => {
-    const { graphicPreferences, setGraphicsMode } = useCoreStore();
+  const GeneralView = () => (
+    <OptionsContent>
+      <OptionsSection>
+        <SettingItem>
+          <SettingTextGroup>
+            <SettingTitle>Auto-Tap Animation</SettingTitle>
+            <SettingDescription>
+              Auto-Taps werden auch{"\n"}ohne Animation gesammelt
+            </SettingDescription>
+          </SettingTextGroup>
+          <IOSToggle $active={autoTap1} onClick={() => setAutoTap1(!autoTap1)}>
+            <IOSToggleThumb $active={autoTap1} />
+          </IOSToggle>
+        </SettingItem>
 
-    const mode = graphicPreferences.qualityMode;
+        <SettingItem>
+          <SettingTextGroup>
+            <SettingTitle>Auto-Tap Animation</SettingTitle>
+            <SettingDescription>
+              Auto-Taps werden auch{"\n"}ohne Animation gesammelt
+            </SettingDescription>
+          </SettingTextGroup>
+          <IOSToggle $active={autoTap2} onClick={() => setAutoTap2(!autoTap2)}>
+            <IOSToggleThumb $active={autoTap2} />
+          </IOSToggle>
+        </SettingItem>
+      </OptionsSection>
 
-    return (
-      <FillColumn $gap={"1rem"}>
-        <SettingsWrapper $align="flex-start">
-          <FillColumn $align="flex-start" $justify="flex-start" $gap={"0.5rem"}>
-            <h5>Hinweis</h5>
-            <p>
-              Lade die Seite am besten nochmal neu, wenn du die Qualität änderst
-            </p>
-          </FillColumn>
-        </SettingsWrapper>
-        <FillColumn $gap={"0.5rem"} $align="flex-end">
-          <ToggleButton
-            $fillRow
-            onClick={() => setGraphicsMode("auto")}
-            $active={mode === "auto"}
+      <OptionsDivider />
+
+      <SettingRow>
+        <SettingRowLabel>Language</SettingRowLabel>
+        <PillGroup>
+          <PillOption
+            $active={language === "de"}
+            onClick={() => setLanguage("de")}
           >
-            Auto
-          </ToggleButton>
-          <ToggleButton
-            $fillRow
-            onClick={() => setGraphicsMode("low")}
-            $active={mode === "low"}
+            German
+          </PillOption>
+          <PillOption
+            $active={language === "en"}
+            onClick={() => setLanguage("en")}
           >
-            Niedrig
-          </ToggleButton>
-          <ToggleButton
-            $fillRow
-            onClick={() => setGraphicsMode("high")}
-            $active={mode === "high"}
+            English
+          </PillOption>
+        </PillGroup>
+      </SettingRow>
+
+      <SettingRow>
+        <SettingRowLabel>Theme</SettingRowLabel>
+        <PillGroup>
+          <PillOption
+            $active={!isDarkActive}
+            onClick={() => handleThemeSelect("DEFAULT")}
           >
-            Hoch
-          </ToggleButton>
-        </FillColumn>
-      </FillColumn>
-    );
-  }, []);
+            Light
+          </PillOption>
+          <PillOption
+            $active={isDarkActive}
+            onClick={() => handleThemeSelect("DARK")}
+          >
+            Dark
+          </PillOption>
+        </PillGroup>
+      </SettingRow>
+    </OptionsContent>
+  );
 
   return (
     <>
-      {createPortal(
-        <ThemeOverlays visible={activeTab === "theme"} />,
-        document.getElementById("motion-root")!,
-      )}
+      <FillColumn
+        style={{
+          width: "22rem",
+          maxWidth: "100%",
+          maxHeight: "26rem",
+          overflowY: "auto",
+          gap: 0,
+        }}
+        animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
+        initial={{ y: 15, opacity: 0, filter: "blur(6px)" }}
+        exit={{ y: 15, opacity: 0, filter: "blur(6px)" }}
+        transition={{
+          type: "spring" as const,
+          bounce: 0.1,
+          visualDuration: 0.2,
+          layout: {
+            type: "spring",
+            bounce: 0.2,
+            duration: 0.6,
+          },
+        }}
+        key={activeTab + "-views-container"}
+        layout
+      >
+        <AnimatePresence mode="popLayout">
+          {activeTab === "audio" && (
+            <motion.div
+              key="audio-view"
+              initial={{ opacity: 0, x: 12 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -12 }}
+              transition={{ type: "spring", bounce: 0.2, visualDuration: 0.2 }}
+              style={{ width: "100%" }}
+            >
+              <AudioView />
+            </motion.div>
+          )}
+          {activeTab === "general" && (
+            <motion.div
+              key="general-view"
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 12 }}
+              transition={{ type: "spring", bounce: 0.2, visualDuration: 0.2 }}
+              style={{ width: "100%" }}
+            >
+              <GeneralView />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </FillColumn>
 
-      {activeTab !== "theme" && (
-        <FillColumn
-          style={{
-            width: "20rem",
-            maxWidth: "100%",
-            maxHeight: "23rem",
-            overflowY: "auto",
-
-            borderRadius: "1.25rem",
-            background: "rgba(0, 0, 0, 0.25)",
-            padding: "1rem",
-            zIndex: -1,
-          }}
-          animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
-          initial={{ y: 15, opacity: 0, filter: "blur(6px)" }}
-          exit={{ y: 15, opacity: 0, filter: "blur(6px)" }}
-          transition={{
-            type: "spring" as const,
-            bounce: 0.1,
-            visualDuration: 0.2,
-            layout: {
-              type: "spring",
-              bounce: 0.2,
-              duration: 0.6,
-            },
-          }}
-          key={activeTab + "-views-container"}
-          layout
-        >
-          {activeTab === "audio" && <AudioView />}
-          {activeTab === "graphics" && <GraphicsView />}
-        </FillColumn>
-      )}
-
-      <TabPanel
+      <OptionsTabPanel
         layout
         transition={{
           type: "spring",
@@ -399,7 +303,7 @@ export function OptionsApp() {
         }}
       >
         {tabs.map((tab) => (
-          <TabButton
+          <OptionsTabButton
             layout="position"
             transition={{
               type: "spring",
@@ -411,14 +315,196 @@ export function OptionsApp() {
                 visualDuration: 0.2,
               },
             }}
-            key={tab.id + "_shop_tab"}
+            key={tab.id + "_options_tab"}
             $active={activeTab === tab.id}
             onClick={() => handleTabChange(tab.id)}
           >
             {tab.name}
-          </TabButton>
+          </OptionsTabButton>
         ))}
-      </TabPanel>
+      </OptionsTabPanel>
     </>
   );
 }
+
+/* ── Options styled components ── */
+
+const OptionsContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0.75rem;
+`;
+
+const OptionsSection = styled.div`
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: 1rem;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`;
+
+const OptionsDivider = styled.hr`
+  border: none;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.08);
+  margin: 0.75rem 1rem;
+`;
+
+const SettingItem = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+`;
+
+const SettingTextGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+`;
+
+const SettingTitle = styled.span`
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #1a1a1a;
+`;
+
+const SettingDescription = styled.span`
+  font-size: 0.8125rem;
+  color: rgba(0, 0, 0, 0.45);
+  line-height: 1.3;
+  white-space: pre-line;
+`;
+
+/* iOS-style toggle */
+const IOSToggle = styled.button<{ $active: boolean }>`
+  position: relative;
+  width: 3.25rem;
+  height: 2rem;
+  border-radius: 1rem;
+  background: ${(p) => (p.$active ? "#4178F7" : "rgba(0, 0, 0, 0.18)")};
+  flex-shrink: 0;
+  transition: background 0.25s ease;
+  padding: 2px;
+`;
+
+const IOSToggleThumb = styled.div<{ $active: boolean }>`
+  width: 1.625rem;
+  height: 1.625rem;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.25s ease;
+  transform: translateX(${(p) => (p.$active ? "1.25rem" : "0")});
+`;
+
+/* Setting row with label + pills */
+const SettingRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.375rem 1rem;
+`;
+
+const SettingRowLabel = styled.span`
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #1a1a1a;
+`;
+
+const PillGroup = styled.div`
+  display: flex;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 0.5rem;
+  padding: 2px;
+  gap: 2px;
+`;
+
+const PillOption = styled.button<{ $active: boolean }>`
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.4375rem;
+  font-size: 0.875rem;
+  font-weight: ${(p) => (p.$active ? "700" : "500")};
+  background: ${(p) => (p.$active ? "white" : "transparent")};
+  color: ${(p) => (p.$active ? "#1a1a1a" : "rgba(0, 0, 0, 0.5)")};
+  box-shadow: ${(p) => (p.$active ? "0 1px 3px rgba(0,0,0,0.1)" : "none")};
+  transition: all 0.2s ease;
+`;
+
+/* Slider rows for audio */
+const OptionRow = styled.div`
+  display: grid;
+  grid-template-columns: 4rem 1fr 2.5rem;
+  align-items: center;
+  gap: 0.75rem;
+`;
+
+const OptionRowLabel = styled.span`
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1a1a1a;
+`;
+
+const OptionValue = styled.span`
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.45);
+  text-align: right;
+`;
+
+const OptionSlider = styled.input`
+  width: 100%;
+  height: 0.375rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.1);
+  outline: none;
+  appearance: none;
+
+  &::-webkit-slider-thumb {
+    appearance: none;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+    border: none;
+  }
+
+  &::-moz-range-thumb {
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+    border: none;
+  }
+`;
+
+/* Options tab panel (light themed) */
+const OptionsTabPanel = styled(motion.div)`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-gap: 4px;
+  width: 100%;
+  padding: 4px;
+`;
+
+const OptionsTabButton = styled(motion.button)<{ $active: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  color: ${(p) => (p.$active ? "#fff" : "rgba(0, 0, 0, 0.5)")};
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 5rem;
+  background: ${(p) => (p.$active ? "#1a1a1a" : "rgba(0, 0, 0, 0.06)")};
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: ${(p) => (p.$active ? "#1a1a1a" : "rgba(0, 0, 0, 0.1)")};
+  }
+`;

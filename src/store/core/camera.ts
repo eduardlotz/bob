@@ -9,15 +9,18 @@ export interface CapturedPhoto {
 
 interface CameraStore {
   photos: CapturedPhoto[];
+  subViewName: string;
   addPhoto: (dataUrl: string) => void;
   deletePhoto: (id: string) => void;
   clearAll: () => void;
+  setSubViewName: (name: string) => void;
 }
 
 export const useCameraStore = create<CameraStore>()(
   persist(
     (set) => ({
       photos: [],
+      subViewName: "Camera",
 
       addPhoto: (dataUrl) =>
         set((s) => ({
@@ -31,7 +34,12 @@ export const useCameraStore = create<CameraStore>()(
         set((s) => ({ photos: s.photos.filter((p) => p.id !== id) })),
 
       clearAll: () => set({ photos: [] }),
+
+      setSubViewName: (name) => set({ subViewName: name }),
     }),
-    { name: "bob-camera-store" },
+    {
+      name: "bob-camera-store",
+      partialize: (state) => ({ photos: state.photos }),
+    },
   ),
 );

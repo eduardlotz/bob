@@ -246,7 +246,7 @@ function ViewfinderOverlay({
   const { left, top, right, bottom, width, height } = finder;
   const cx = left + width / 2;
   const cy = top + height / 2;
-  const br = 14; // border-radius of the viewfinder window
+  const br = 20; // border-radius of the viewfinder window
 
   // Even-odd fill rule punches the viewfinder out cleanly
   const cutoutPath = `
@@ -274,7 +274,7 @@ function ViewfinderOverlay({
         }}
         xmlns="http://www.w3.org/2000/svg"
       >
-        <path d={cutoutPath} fill="rgba(0,0,0,0.65)" fillRule="evenodd" />
+        <path d={cutoutPath} fill="rgba(0,0,0,0.45)" fillRule="evenodd" />
       </DimSvg>
 
       {/* Viewfinder border */}
@@ -374,7 +374,7 @@ const APP_ID: CameraViewId = "phone:camera";
 export const CameraApp = () => {
   const gl = useGLBridge((s) => s.gl);
   const { transitionToView } = useViewStore();
-  const { addPhoto, photos, deletePhoto } = useCameraStore();
+  const { addPhoto, photos, deletePhoto, setSubViewName } = useCameraStore();
 
   const phoneBodyRef = useRef<HTMLDivElement>(null);
   const finderRectRef = useRef<FinderRect | null>(null);
@@ -385,7 +385,13 @@ export const CameraApp = () => {
 
   useEffect(() => {
     transitionToView(APP_ID);
+    setSubViewName("Camera");
+    return () => setSubViewName("Camera");
   }, []);
+
+  useEffect(() => {
+    setSubViewName(view === "gallery" ? "Gallery" : "Camera");
+  }, [view]);
 
   const handleFinderRect = useCallback((rect: FinderRect | null) => {
     finderRectRef.current = rect;
@@ -457,19 +463,6 @@ export const CameraApp = () => {
       )}
 
       <CameraRoot ref={phoneBodyRef}>
-        {/* ── Tab bar ── */}
-        <TabBar>
-          <Tab $active={view === "camera"} onClick={() => setView("camera")}>
-            <CameraTabIcon />
-          </Tab>
-          <Tab $active={view === "gallery"} onClick={() => setView("gallery")}>
-            <GalleryTabIcon />
-            {photos.length > 0 && (
-              <TabBadge>{photos.length > 99 ? "99+" : photos.length}</TabBadge>
-            )}
-          </Tab>
-        </TabBar>
-
         <AnimatePresence mode="popLayout" initial={false}>
           {/* ══ CAMERA VIEW ══════════════════════════════════════════════════ */}
           {view === "camera" && (
@@ -511,8 +504,6 @@ export const CameraApp = () => {
                 >
                   <ShutterInner />
                 </ShutterButton>
-
-                <div style={{ width: 44 }} />
               </ControlRow>
             </motion.div>
           )}
@@ -529,7 +520,6 @@ export const CameraApp = () => {
                 width: "100%",
                 position: "relative",
                 maxWidth: "360px",
-                height: "420px",
               }}
             >
               {photos.length === 0 ? (
@@ -756,10 +746,10 @@ const DimSvg = styled.svg`
 
 const ViewfinderBorder = styled.div`
   position: absolute;
-  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
   box-shadow:
-    inset 0 0 0 1px rgba(0, 0, 0, 0.15),
-    0 0 0 1px rgba(0, 0, 0, 0.1);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 2px 12px rgba(0, 0, 0, 0.15);
   pointer-events: none;
 `;
 
@@ -818,11 +808,11 @@ const Tab = styled.button<{ $active?: boolean }>`
   border-radius: 8px;
   border: 1px solid
     ${({ $active }) =>
-      $active ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.1)"};
+      $active ? "rgba(0,0,0,0.15)" : "rgba(0,0,0,0.06)"};
   background: ${({ $active }) =>
-    $active ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.06)"};
+    $active ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.04)"};
   color: ${({ $active }) =>
-    $active ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.45)"};
+    $active ? "#1a1a1a" : "rgba(0,0,0,0.35)"};
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -856,19 +846,20 @@ const TabBadge = styled.span`
 const ControlRow = styled.div`
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   width: 100%;
   padding: 4px 4px;
+  gap: 12px;
 `;
 
 const GalleryThumb = styled.button`
   width: 44px;
   height: 44px;
   border-radius: 10px;
-  border: 1.5px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.08);
+  border: 1.5px solid rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.04);
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(0, 0, 0, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -883,16 +874,16 @@ const GalleryThumb = styled.button`
     cursor: default;
   }
   &:not(:disabled):hover {
-    border-color: rgba(255, 255, 255, 0.4);
+    border-color: rgba(0, 0, 0, 0.2);
   }
 `;
 
 const ShutterButton = styled(motion.button)`
-  width: 58px;
-  height: 58px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
-  border: 3px solid rgba(255, 255, 255, 0.75);
+  background: rgba(0, 0, 0, 0.04);
+  border: 3px solid rgba(0, 0, 0, 0.2);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -901,22 +892,23 @@ const ShutterButton = styled(motion.button)`
 `;
 
 const ShutterInner = styled.div`
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: white;
+  background: #1a1a1a;
 `;
 
 // Gallery
 const PhotoGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 3px;
+  gap: 6px;
   width: 100%;
-  max-height: 220px;
+  max-height: 420px;
   overflow-y: auto;
   border-radius: 10px;
   overflow-x: hidden;
+  padding: 4px;
   &::-webkit-scrollbar {
     display: none;
   }
@@ -924,10 +916,10 @@ const PhotoGrid = styled.div`
 
 const PhotoThumb = styled(motion.div)`
   aspect-ratio: 1;
-  border-radius: 4px;
+  border-radius: 10px;
   overflow: hidden;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.04);
   & img {
     width: 100%;
     height: 100%;
@@ -943,7 +935,7 @@ const EmptyGallery = styled.div`
   justify-content: center;
   gap: 8px;
   padding: 24px;
-  color: rgba(255, 255, 255, 0.3);
+  color: rgba(0, 0, 0, 0.3);
   font-size: 12px;
 `;
 
