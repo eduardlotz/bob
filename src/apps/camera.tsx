@@ -1,7 +1,12 @@
 import { CameraViewId, CapturedPhoto, useViewStore } from "@/store";
 
 import styled, { keyframes } from "styled-components";
-import { AnimatePresence, motion, LayoutGroup } from "motion/react";
+import {
+  AnimatePresence,
+  motion,
+  LayoutGroup,
+  useAnimationFrame,
+} from "motion/react";
 import {
   useCallback,
   useEffect,
@@ -12,6 +17,8 @@ import {
 import { useCameraStore } from "@/store";
 import { useGLBridge } from "@/store/core/gl";
 import { createPortal } from "react-dom";
+import { TabButton, TabPanel } from "./ui";
+import { FillRow } from "@/layout";
 
 // ─── Camera icon ───────────────────────────────────────────────────────────────
 
@@ -174,8 +181,8 @@ export const CameraIcon = () => (
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
-const FINDER_GAP = 10; // gap between phone body top and viewfinder bottom
-const FINDER_ASPECT = 4 / 3; // portrait aspect ratio (w:h = 3:4)
+const FINDER_GAP = 60; // gap between phone body top and viewfinder bottom
+const FINDER_ASPECT = 5 / 4; // portrait aspect ratio (w:h = 3:4)
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -205,7 +212,7 @@ function ViewfinderOverlay({
 }: OverlayProps) {
   const [finder, setFinder] = useState<FinderRect | null>(null);
 
-  useLayoutEffect(() => {
+  useAnimationFrame(() => {
     const compute = () => {
       const body = phoneBodyRef.current;
       if (!body) {
@@ -215,7 +222,7 @@ function ViewfinderOverlay({
       const br = body.getBoundingClientRect();
 
       const width = br.width;
-      const height = width * FINDER_ASPECT; // portrait: taller than wide
+      const height = width * FINDER_ASPECT;
 
       const rect: FinderRect = {
         left: br.left,
@@ -239,13 +246,11 @@ function ViewfinderOverlay({
       clearInterval(iv);
       clearTimeout(t);
     };
-  }, [phoneBodyRef, onFinderRect]);
+  });
 
   if (!finder) return null;
 
   const { left, top, right, bottom, width, height } = finder;
-  const cx = left + width / 2;
-  const cy = top + height / 2;
   const br = 14; // border-radius of the viewfinder window
 
   // Even-odd fill rule punches the viewfinder out cleanly
@@ -287,47 +292,6 @@ function ViewfinderOverlay({
           borderRadius: br,
         }}
       />
-
-      {/* Corner brackets */}
-      {(
-        [
-          { top: top + 8, left: left + 8, bw: "2px 0 0 2px", br2: "5px 0 0 0" },
-          {
-            top: top + 8,
-            left: right - 28,
-            bw: "2px 2px 0 0",
-            br2: "0 5px 0 0",
-          },
-          {
-            top: bottom - 28,
-            left: left + 8,
-            bw: "0 0 2px 2px",
-            br2: "0 0 0 5px",
-          },
-          {
-            top: bottom - 28,
-            left: right - 28,
-            bw: "0 0 2px 2px",
-            br2: "0 0 5px 0",
-          },
-        ] as const
-      ).map((s, i) => (
-        <CornerBracket
-          key={i}
-          style={{
-            top: s.top,
-            left: s.left,
-            borderWidth: s.bw,
-            borderRadius: s.br2,
-          }}
-        />
-      ))}
-
-      {/* Reticle crosshair */}
-      <Reticle style={{ left: cx - 16, top: cy - 16 }}>
-        <ReticleH />
-        <ReticleV />
-      </Reticle>
 
       {/* Shutter flash */}
       <AnimatePresence>
@@ -446,7 +410,7 @@ export const CameraApp = () => {
   const isLightboxOpen = lightboxPhoto != null;
 
   return (
-    <LayoutGroup>
+    <>
       {/* Viewfinder overlay — only shown in camera mode */}
       {view === "camera" && (
         <ViewfinderOverlay
@@ -457,85 +421,57 @@ export const CameraApp = () => {
       )}
 
       <CameraRoot ref={phoneBodyRef}>
-        {/* ── Tab bar ── */}
-        <TabBar>
-          <Tab $active={view === "camera"} onClick={() => setView("camera")}>
-            <CameraTabIcon />
-          </Tab>
-          <Tab $active={view === "gallery"} onClick={() => setView("gallery")}>
-            <GalleryTabIcon />
-            {photos.length > 0 && (
-              <TabBadge>{photos.length > 99 ? "99+" : photos.length}</TabBadge>
-            )}
-          </Tab>
-        </TabBar>
-
         <AnimatePresence mode="popLayout" initial={false}>
           {/* ══ CAMERA VIEW ══════════════════════════════════════════════════ */}
           {view === "camera" && (
-            <motion.div
-              key="camera-controls"
-              initial={{ opacity: 0, x: -12 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -12 }}
-              transition={{ type: "spring", bounce: 0.3, visualDuration: 0.22 }}
-              style={{ width: "100%" }}
-            >
-              <ControlRow>
-                {/* Last photo thumbnail — opens gallery */}
-                <GalleryThumb
-                  onClick={() => photos.length > 0 && setView("gallery")}
-                  disabled={photos.length === 0}
-                >
-                  {photos[0] ? (
-                    <motion.img
-                      layoutId={`photo-thumb-${photos[0].id}`}
-                      src={photos[0].dataUrl}
-                      alt=""
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        borderRadius: 8,
-                      }}
-                    />
-                  ) : (
-                    <GalleryTabIcon />
-                  )}
-                </GalleryThumb>
-
+            <ControlRow>
+              {/* Last photo thumbnail — opens gallery */}
+              <GalleryThumb
+                onClick={() => setView("gallery")}
+                disabled={photos.length === 0}
+              >
+                {photos[0] ? (
+                  <img
+                    src={photos[0].dataUrl}
+                    alt=""
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      borderRadius: 8,
+                    }}
+                  />
+                ) : (
+                  <GalleryTabIcon />
+                )}
+              </GalleryThumb>
+              <FillRow $align="center" $justify="center">
                 <ShutterButton
                   onClick={handleCapture}
-                  whileTap={{ scale: 0.88 }}
+                  whileTap={{ scale: 0.95 }}
                   transition={{ type: "spring", bounce: 0.6, duration: 0.2 }}
                 >
                   <ShutterInner />
                 </ShutterButton>
-
-                <div style={{ width: 44 }} />
-              </ControlRow>
-            </motion.div>
+              </FillRow>
+            </ControlRow>
           )}
 
           {/* ══ GALLERY VIEW ═════════════════════════════════════════════════ */}
           {view === "gallery" && (
-            <motion.div
-              key="gallery"
-              initial={{ opacity: 0, x: 12 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 12 }}
-              transition={{ type: "spring", bounce: 0.3, visualDuration: 0.22 }}
+            <div
               style={{
                 width: "100%",
-                position: "relative",
-                maxWidth: "360px",
+                // position: "relative",
+                maxWidth: "300px",
                 height: "420px",
+                overflow: "auto",
               }}
             >
               {photos.length === 0 ? (
                 <EmptyGallery>
                   <GalleryTabIcon />
-                  <span>No photos yet</span>
+                  <span>Noch nichts hier...</span>
                 </EmptyGallery>
               ) : (
                 <PhotoGrid>
@@ -544,13 +480,6 @@ export const CameraApp = () => {
                       key={photo.id}
                       layoutId={`photo-${photo.id}`}
                       onClick={() => openLightbox(photo.id)}
-                      whileHover={{ scale: 1.04 }}
-                      whileTap={{ scale: 0.96 }}
-                      transition={{
-                        type: "spring",
-                        bounce: 0.4,
-                        visualDuration: 0.18,
-                      }}
                     >
                       <img
                         src={photo.dataUrl}
@@ -595,6 +524,7 @@ export const CameraApp = () => {
                           bounce: 0.25,
                           visualDuration: 0.28,
                         }}
+                        onClick={closeLightbox}
                       >
                         <img
                           src={lightboxPhoto.dataUrl}
@@ -606,33 +536,16 @@ export const CameraApp = () => {
                             display: "block",
                           }}
                         />
-                        <LightboxTimestamp>
-                          {new Date(lightboxPhoto.takenAt).toLocaleTimeString(
-                            [],
-                            {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                              second: "2-digit",
-                            },
-                          )}
-                        </LightboxTimestamp>
                       </LightboxImageWrap>
 
                       <LightboxActions>
-                        <IconAction
-                          onClick={closeLightbox}
-                          title="Close"
-                          whileTap={{ scale: 0.9 }}
-                        >
-                          <CloseIcon />
-                        </IconAction>
                         <IconAction
                           $variant="download"
                           onClick={() => downloadPhoto(lightboxPhoto)}
                           title="Download"
                           whileTap={{ scale: 0.9 }}
                         >
-                          <DownloadIcon />
+                          Download
                         </IconAction>
                         <IconAction
                           $variant="delete"
@@ -640,38 +553,35 @@ export const CameraApp = () => {
                           title="Delete"
                           whileTap={{ scale: 0.9 }}
                         >
-                          <TrashIcon />
+                          Löschen
                         </IconAction>
                       </LightboxActions>
                     </motion.div>
                   </LightboxOverlay>
                 )}
               </AnimatePresence>
-            </motion.div>
+            </div>
           )}
         </AnimatePresence>
+
+        <TabPanel>
+          <TabButton
+            $active={view === "camera"}
+            onClick={() => setView("camera")}
+          >
+            Kamera
+          </TabButton>
+          <TabButton
+            $active={view === "gallery"}
+            onClick={() => setView("gallery")}
+          >
+            Fotos
+          </TabButton>
+        </TabPanel>
       </CameraRoot>
-    </LayoutGroup>
+    </>
   );
 };
-
-// ─── Icons ─────────────────────────────────────────────────────────────────────
-
-const CameraTabIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-    <circle cx="12" cy="13" r="4" />
-  </svg>
-);
 
 const GalleryTabIcon = () => (
   <svg
@@ -763,40 +673,6 @@ const ViewfinderBorder = styled.div`
   pointer-events: none;
 `;
 
-const CornerBracket = styled.div`
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  border-style: solid;
-  border-color: rgba(255, 255, 255, 0.7);
-`;
-
-const Reticle = styled.div`
-  position: absolute;
-  width: 32px;
-  height: 32px;
-`;
-
-const ReticleH = styled.div`
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-50%);
-`;
-
-const ReticleV = styled.div`
-  position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateX(-50%);
-`;
-
 const CameraRoot = styled.div`
   display: flex;
   flex-direction: column;
@@ -805,66 +681,26 @@ const CameraRoot = styled.div`
   width: 100%;
 `;
 
-const TabBar = styled.div`
-  display: flex;
-  gap: 4px;
-  width: 100%;
-  padding: 0 2px;
-`;
-
-const Tab = styled.button<{ $active?: boolean }>`
-  flex: 1;
-  height: 32px;
-  border-radius: 8px;
-  border: 1px solid
-    ${({ $active }) =>
-      $active ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.1)"};
-  background: ${({ $active }) =>
-    $active ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.06)"};
-  color: ${({ $active }) =>
-    $active ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.45)"};
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  position: relative;
-  transition:
-    background 0.15s,
-    border-color 0.15s,
-    color 0.15s;
-`;
-
-const TabBadge = styled.span`
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  background: #f87171;
-  color: white;
-  border-radius: 50%;
-  min-width: 16px;
-  height: 16px;
-  font-size: 9px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 3px;
-  pointer-events: none;
-`;
-
 const ControlRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
   padding: 4px 4px;
+  position: relative;
 `;
 
 const GalleryThumb = styled.button`
   width: 44px;
   height: 44px;
   border-radius: 10px;
+
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  margin: auto 0;
+
   border: 1.5px solid rgba(255, 255, 255, 0.2);
   background: rgba(255, 255, 255, 0.08);
   cursor: pointer;
@@ -891,20 +727,27 @@ const ShutterButton = styled(motion.button)`
   width: 58px;
   height: 58px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
-  border: 3px solid rgba(255, 255, 255, 0.75);
+  background: rgba(0, 0, 0, 0.06);
+  border: 3px solid rgba(0, 0, 0, 0.75);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+
+  &:hover {
+    > div {
+      transform: scale(1.05);
+    }
+  }
 `;
 
 const ShutterInner = styled.div`
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: white;
+  background: #000000;
+  transition: transform 0.1s ease-out;
 `;
 
 // Gallery
@@ -913,7 +756,6 @@ const PhotoGrid = styled.div`
   grid-template-columns: repeat(3, 1fr);
   gap: 3px;
   width: 100%;
-  max-height: 220px;
   overflow-y: auto;
   border-radius: 10px;
   overflow-x: hidden;
@@ -928,11 +770,19 @@ const PhotoThumb = styled(motion.div)`
   overflow: hidden;
   cursor: pointer;
   background: rgba(255, 255, 255, 0.05);
-  & img {
+
+  &:hover {
+    img {
+      transform: scale(1.15);
+    }
+  }
+
+  img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
+    transition: transform 0.15s ease-out;
   }
 `;
 
@@ -1012,25 +862,18 @@ const IconAction = styled(motion.button)<{ $variant?: "delete" | "download" }>`
   height: 36px;
   padding: 0 16px;
   border-radius: 50px;
-  border: 1px solid
-    ${({ $variant }) =>
-      $variant === "delete"
-        ? "rgba(248,113,113,0.35)"
-        : $variant === "download"
-          ? "rgba(96,165,250,0.35)"
-          : "rgba(255,255,255,0.15)"};
   background: ${({ $variant }) =>
     $variant === "delete"
-      ? "rgba(248,113,113,0.12)"
+      ? "#FF0000"
       : $variant === "download"
-        ? "rgba(96,165,250,0.12)"
-        : "rgba(255,255,255,0.08)"};
+        ? "#4178F7"
+        : "rgba(33,33,33,0.15)"};
   color: ${({ $variant }) =>
     $variant === "delete"
-      ? "#f87171"
+      ? "#ffffff"
       : $variant === "download"
-        ? "#60a5fa"
-        : "rgba(255,255,255,0.65)"};
+        ? "#ffffff"
+        : "rgba(33,33,33,1)"};
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
@@ -1039,9 +882,9 @@ const IconAction = styled(motion.button)<{ $variant?: "delete" | "download" }>`
   &:hover {
     background: ${({ $variant }) =>
       $variant === "delete"
-        ? "rgba(248,113,113,0.22)"
+        ? "#ff0000e1"
         : $variant === "download"
-          ? "rgba(96,165,250,0.22)"
-          : "rgba(255,255,255,0.15)"};
+          ? "#4178f7d4"
+          : "rgba(33,33,33,0.08)"};
   }
 `;

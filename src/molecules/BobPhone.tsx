@@ -3,7 +3,6 @@ import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
 import { CloseIcon } from "@/icons/close";
 import { NavButton } from "./BottomNavigation";
-import { Magnetic } from "@/layout/Magnetic";
 import { FillColumn, FillRow, HugColumn } from "@/layout";
 import { format } from "date-fns/format";
 
@@ -12,7 +11,6 @@ import { useCoreStore, useViewStore } from "@/store";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { SpeakerIcon } from "@/icons/speaker";
 import { ShopApp, ShopIcon, TapCounterChip } from "@/apps/shop";
-import { ArrowLeftIcon, SmallArrowLeftIcon } from "@/icons/arrow";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { DebugApp, DebugIcon } from "@/apps/debug";
 import { useClickOutside } from "@/hooks/useClickOutside";
