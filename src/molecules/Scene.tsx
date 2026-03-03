@@ -35,13 +35,8 @@ import { BackgroundPlanet } from "../3d-objects/BackgroundPlanet";
 import { TapEffects } from "../3d-objects/ParticleEffects";
 import { SceneDecorations } from "@/3d-objects/Decorations";
 import { MiniGamesScene } from "@/routes/MiniGamesScene";
-import { EmotionState } from "@/hooks/useBlobEmotions";
-import {
-  DEFAULT_PINK_NOISE,
-  DEFAULT_WORLD_MUSIC,
-} from "@/utils/sound/defaults";
-import { useSoundSystem } from "@/hooks/useSoundSystem";
-import { toast } from "sonner";
+import { DEFAULT_PINK_NOISE } from "@/utils/sound/defaults";
+
 import { useNavigate } from "react-router-dom";
 import { sileo } from "sileo";
 import { CameraGLBridge } from "@/bridges/CameraBridge";
@@ -98,9 +93,9 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
 
   const worldMusicId = useMemo(() => {
     switch (currentRoute) {
-      case ROUTE_PATHS.HOME: {
-        return DEFAULT_WORLD_MUSIC.id;
-      }
+      // case ROUTE_PATHS.HOME: {
+      //   return DEFAULT_WORLD_MUSIC.id;
+      // }
 
       case ROUTE_PATHS.PORTFOLIO: {
         return DEFAULT_PINK_NOISE.id;
@@ -203,17 +198,10 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
   const canvasRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
   const [dpr, setDpr] = useState(2);
-  const { graphicPreferences } = useCoreStore();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (graphicPreferences.qualityMode === "high") setDpr(2);
-    else if (graphicPreferences.qualityMode === "low") setDpr(1);
-  }, [graphicPreferences.qualityMode]);
-
   const handlePerformanceChange = ({ factor }: { factor: number }) => {
-    if (graphicPreferences.qualityMode == "auto")
-      setDpr(Math.max(Math.floor(0.5 + 1.5 * factor), 1));
+    setDpr(Math.max(Math.floor(0.5 + 1.5 * factor), 1));
   };
 
   useEffect(() => {

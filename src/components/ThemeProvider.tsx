@@ -99,12 +99,18 @@ const GlobalStyle = createGlobalStyle<{ theme: StyledTheme | undefined }>`
   }
 
   a, button {
-    &:focus {
-      outline-color: var(--text-color);
+    &:focus-visible {
+      /* outline-color: var(--text-color); */
+      /* outline-color: #4178F7; */
+      outline-color: white;
       outline-width: 2px;
       outline-style: solid;
       outline-offset: 3px;
     }
+
+     /* &:focus:not(:focus-visible) {
+      outline: none;
+    } */
   }
 
   a {
@@ -170,7 +176,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       root.style.setProperty("--accent-color", activeTheme.colors.accent);
       root.style.setProperty(
         "--background-color",
-        activeTheme.colors.background
+        activeTheme.colors.background,
       );
       root.style.setProperty("--text-color", activeTheme.colors.text);
       root.style.setProperty("--counter-color", activeTheme.counterColor);
@@ -181,23 +187,23 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
       root.style.setProperty(
         "--border-color",
-        activeTheme.colors.border || "#e9ecef"
+        activeTheme.colors.border || "#e9ecef",
       );
       root.style.setProperty(
         "--card-background",
-        activeTheme.colors.cardBackground || "#f8f9fa"
+        activeTheme.colors.cardBackground || "#f8f9fa",
       );
       root.style.setProperty(
         "--success-color",
-        activeTheme.colors.success || "#4CAF50"
+        activeTheme.colors.success || "#4CAF50",
       );
       root.style.setProperty(
         "--danger-color",
-        activeTheme.colors.danger || "#dc3545"
+        activeTheme.colors.danger || "#dc3545",
       );
       root.style.setProperty(
         "--warning-color",
-        activeTheme.colors.warning || "#ffc107"
+        activeTheme.colors.warning || "#ffc107",
       );
 
       document.body.style.backgroundColor = activeTheme.colors.background;

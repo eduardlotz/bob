@@ -22,8 +22,11 @@ import { playUISound } from "@/utils/soundSystem";
 import { ChatApp, ChatIcon } from "@/apps/chat";
 import { CreditsApp, CreditsIcon } from "@/apps/credits";
 import { StatusPillButton } from "@/apps/ui";
+
 import { CameraApp, CameraIcon } from "@/apps/camera";
 import { usePhoneBodyClip } from "@/hooks/usePhoneClip";
+
+import { ChevronLeftIcon } from "@/icons/chevron";
 
 type AppId =
   | "shop"
@@ -233,7 +236,7 @@ export const BobPhone = (props: BobPhoneProps) => {
               scaleX: 1.05,
               rotateX: -15,
               y: 12,
-              filter: "blur(6px)",
+              filter: "blur(2px)",
             }}
             animate={{
               opacity: 1,
@@ -247,7 +250,7 @@ export const BobPhone = (props: BobPhoneProps) => {
               scaleX: 0.95,
               rotateX: -5,
               y: -12,
-              filter: "blur(6px)",
+              filter: "blur(2px)",
               // transition: {
               //   ease: "circOut",
               //   duration: 0.1,
@@ -285,7 +288,28 @@ export const BobPhone = (props: BobPhoneProps) => {
               $align="center"
             >
               <AnimatePresence mode="popLayout">
-                {!hideStatusBar && (
+                {activeApp ? (
+                  <AppBottomActions
+                    key="app_bottom_actions"
+                    initial={{ filter: "blur(4px)", opacity: 0 }}
+                    animate={{ filter: "blur(0px)", opacity: 1 }}
+                    exit={{ filter: "blur(4px)", opacity: 0 }}
+                    transition={{
+                      ease: "easeOut",
+                    }}
+                  >
+                    <BackHomeButton
+                      onClick={goToHomeScreen}
+                      data-ui-sound-id="ui-tap-close"
+                    >
+                      <ChevronLeftIcon />
+
+                      <AppName>{activeAppName}</AppName>
+                    </BackHomeButton>
+
+                    <AppAction>{activeAppBottomAction()}</AppAction>
+                  </AppBottomActions>
+                ) : (
                   <FillRow
                     key={"bob-phone-statusbar"}
                     initial={{ filter: "blur(4px)", opacity: 0 }}
@@ -392,41 +416,6 @@ export const BobPhone = (props: BobPhoneProps) => {
                     </AppGrid>
                   )}
                 </AnimatePresence>
-
-                {activeApp && (
-                  <AppBottomActions
-                    key="app_bottom_actions"
-                    initial={{
-                      opacity: 0,
-                      scaleX: 1.25,
-                    }}
-                    animate={{
-                      opacity: 1,
-                      scaleX: 1,
-                    }}
-                    exit={{
-                      opacity: 0,
-                      scaleX: 1.25,
-                    }}
-                    transition={{
-                      type: "spring" as const,
-                      bounce: 0.2,
-                      visualDuration: 0.3,
-                    }}
-                    layout
-                  >
-                    <BackHomeButton
-                      onClick={goToHomeScreen}
-                      data-ui-sound-id="ui-tap-close"
-                    >
-                      <SmallArrowLeftIcon />
-                    </BackHomeButton>
-
-                    <AppName>{activeAppName}</AppName>
-
-                    <AppAction>{activeAppBottomAction()}</AppAction>
-                  </AppBottomActions>
-                )}
               </FillColumn>
             </HugColumn>
           </BobPhoneBody>
@@ -456,16 +445,24 @@ const BackHomeButton = styled.button`
   display: flex;
   align-items: center;
 
-  padding: 8px 16px;
+  padding: 0.375rem;
+  padding-right: 0.75rem;
   height: 2.5rem;
   border-radius: 50px;
-  background-color: white;
-  color: var(--primary-color);
+  background-color: rgba(33, 33, 33, 0);
+  /* color: var(--primary-color); */
+  color: #4178f7;
   position: absolute;
   left: 0;
   top: 0;
   bottom: 0;
   margin: auto 0;
+
+  transition: background-color 0.1s ease-out;
+
+  &:hover {
+    background-color: rgba(33, 33, 33, 0.05);
+  }
 `;
 
 const AppName = styled.h5`
@@ -487,7 +484,8 @@ const BobPhoneBody = styled(motion.div)`
   min-width: 18rem;
   width: fit-content;
   max-width: calc(100vw - 40px);
-  background: var(--primary-color);
+  /* background: var(--primary-color); */
+  background: #f2f2f3;
   padding: 4px;
   border-radius: 24px;
   z-index: 999;
@@ -511,32 +509,19 @@ const AppContainer = styled.button`
   background: none;
   border-radius: 24px;
   padding: 0px;
+  padding-bottom: 8px;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 
-  &:after {
-    content: "";
-    position: absolute;
-    margin: auto;
-    top: 0px;
-    bottom: 0px;
-    width: calc(100% + 8px);
-    height: calc(100% + 8px);
-    background: rgba(255, 255, 255, 0.15);
-    opacity: 0;
-    z-index: -1;
-    border-radius: 24px;
-    scale: 0.95;
-    transition: 0.25s cubic-bezier(0.4, 0.9, 0.4, 1);
-    transition-property: scale, opacity;
+  svg {
+    transition: transform 0.1s ease-out;
   }
 
   @media (hover: hover) {
     &:not(:disabled):hover {
-      &:after {
-        opacity: 1;
-        scale: 1;
+      svg {
+        transform: scale(1.05) rotate(3deg);
       }
     }
   }
@@ -544,18 +529,18 @@ const AppContainer = styled.button`
 
 const AppLabel = styled.span`
   font-size: 0.75rem;
-  color: white;
-  background-color: rgba(0, 0, 0, 0.5);
+  color: #212121;
+  background-color: rgba(33, 33, 33, 0.1);
   font-weight: 700;
   padding: 0.25rem 0.5rem;
-  border-radius: 50px;
+  border-radius: 0.625rem;
 `;
 
 const StatusPill = styled(motion.div)`
   font-size: 1rem;
   font-weight: 600;
-  color: white;
-  background: rgba(255, 255, 255, 0.1);
+  color: #212121;
+  background: rgba(33, 33, 33, 0.08);
   padding: 8px 12px;
   border-radius: 100px;
 

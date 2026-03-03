@@ -243,9 +243,9 @@ export const DevSliderLabel = styled.div`
 
 export const RowLabel = styled.label`
   /* font-size: 0.875rem; */
-  font-size: 0.875rem;
-  color: var(--text-color);
-  font-weight: 500;
+  font-size: 1rem;
+  color: #212121;
+  font-weight: 700;
 `;
 
 export const ValueChip = styled.p`
@@ -255,18 +255,18 @@ export const ValueChip = styled.p`
   padding: 0.25rem 0.5rem;
 
   font-size: 0.75rem;
-  background-color: rgba(255, 255, 255, 0.15);
+  background-color: rgba(33, 33, 33, 0.05);
   border-radius: 0.75rem;
 
-  color: #ffffff;
-  font-weight: 600;
+  color: #212121;
+  font-weight: 900;
 `;
 
 export const ValueSlider = styled.input`
   width: 100%;
   height: 1rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(33, 33, 33, 0.1);
   outline: none;
   appearance: none;
   position: relative;
@@ -276,7 +276,7 @@ export const ValueSlider = styled.input`
     width: 0.5rem;
     height: 0.5rem;
     border-radius: 0.5rem;
-    background: #ffffff;
+    background: #212121;
     /* box-shadow: 0px 0px 0px 3px rgba(255, 255, 255, 0.15); */
     border: none;
   }
@@ -285,7 +285,7 @@ export const ValueSlider = styled.input`
     width: 0.5rem;
     height: 0.5rem;
     border-radius: 0.5rem;
-    background: #ffffff;
+    background: #212121;
     /* box-shadow: 0px 0px 0px 3px rgba(255, 255, 255, 0.15); */
     border: none;
   }
@@ -321,91 +321,8 @@ const DividerContainer = styled(FillRow)`
   font-size: 0.75rem;
   letter-spacing: 0.1em;
 
-  font-weight: 500;
+  font-weight: 700;
+  color: #212121;
   text-transform: uppercase;
   white-space: nowrap;
-`;
-
-export const DevSlider = styled.input`
-  width: 100%;
-  height: 8px;
-  border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.15) 0%,
-    rgba(255, 255, 255, 0.08) 100%
-  );
-  outline: none;
-  appearance: none;
-  position: relative;
-
-  &::-webkit-slider-thumb {
-    appearance: none;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: var(--accent-color);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-  }
-
-  &::-moz-range-thumb {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: var(--accent-color);
-    border: none;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-  }
-`;
-
-export const DevSliderValue = styled.div`
-  text-align: right;
-  font-size: 12px;
-  color: #ffffff;
-  opacity: 0.85;
-`;
-
-// Shared dev action button + description (for cohesive debugger panels)
-export const DevActionButton = styled.button<{
-  $variant?: "default" | "primary" | "danger" | "accent";
-  $active?: boolean;
-}>`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 12px 16px;
-  max-width: 100%;
-  border-radius: 10px;
-  border: 1.5px solid
-    ${({ $variant, $active }) =>
-      $variant === "primary"
-        ? "var(--accent-color)"
-        : $variant === "danger"
-          ? "#b30f0f"
-          : $variant === "accent"
-            ? "#ffd700"
-            : $active
-              ? "var(--text-color)"
-              : "rgba(255, 255, 255, 0.18)"};
-  background-color: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 600;
-  transition: 0.2s;
-  transition-property: background-color, border-color, color, transform;
-
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.14);
-    transform: translateY(-1px);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-`;
-
-export const DevActionDescription = styled.div`
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.75);
-  margin-top: 6px;
 `;
