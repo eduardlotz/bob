@@ -11,7 +11,8 @@ import { motion } from "motion/react";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import styled from "styled-components";
-import { FillRow } from "..";
+import { FillRow, HugRow } from "..";
+import { ChevronLeftIcon, ChevronRightIcon } from "@/icons/chevron";
 
 const SOUNDCLOUD_URLS = [
   "https://soundcloud.com/captainlowie/ist-das-leben-nicht-schoen",
@@ -77,28 +78,28 @@ export const MusicOverlay = (props: {
         </OverlayBody>
 
         <ContentControls>
-          <FillRow $justify="space-between">
+          <PaginationDots>
             <PaginationButton onClick={prevTrack}>
-              <ArrowLeftIcon />
+              <ChevronLeftIcon />
             </PaginationButton>
+
+            <HugRow $gap={"4px"}>
+              {Array(total)
+                .fill(null)
+                .map((_, i) => (
+                  <motion.div
+                    key={`music_pagination_dot_${i}`}
+                    animate={{
+                      width: currentIndex === i ? "20px" : "8px",
+                      opacity: currentIndex === i ? 1 : 0.5,
+                    }}
+                  />
+                ))}
+            </HugRow>
 
             <PaginationButton onClick={nextTrack}>
-              <ArrowRightIcon />
+              <ChevronRightIcon />
             </PaginationButton>
-          </FillRow>
-
-          <PaginationDots>
-            {Array(total)
-              .fill(null)
-              .map((_, i) => (
-                <motion.span
-                  key={`music_pagination_dot_${i}`}
-                  animate={{
-                    width: currentIndex === i ? "20px" : "8px",
-                    opacity: currentIndex === i ? 1 : 0.5,
-                  }}
-                />
-              ))}
           </PaginationDots>
         </ContentControls>
       </ShopContainer>

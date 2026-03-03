@@ -301,6 +301,8 @@ export const PaginationDots = styled.div`
   padding: 4px;
   border-radius: 50px;
   background: rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 
   > div > div {
     height: 8px;

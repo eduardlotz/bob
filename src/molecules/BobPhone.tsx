@@ -494,7 +494,7 @@ const AppGrid = styled(motion.div)`
   width: 100%;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  grid-gap: 1rem;
+  grid-gap: 0.5rem 1rem;
   padding: 8px;
   place-items: center;
   width: 18rem;
