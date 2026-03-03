@@ -11,10 +11,10 @@ export const AppInfo = styled.p`
   padding: 0.25rem 0.5rem;
 
   font-size: 0.75rem;
-  background-color: rgba(255, 255, 255, 0.15);
+  background-color: rgba(33, 33, 33, 0.1);
   border-radius: 0.75rem;
 
-  color: #ffffff;
+  color: #212121;
   font-weight: 600;
   word-break: keep-all;
   white-space: nowrap;
@@ -31,7 +31,7 @@ export const ShopContainer = styled(motion.div)`
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  gap: 24px;
+  gap: 40px;
 
   pointer-events: auto;
 `;
@@ -44,7 +44,7 @@ export const ItemStatusChip = styled(motion.div)<{
   justify-content: center;
   gap: 0.25rem;
 
-  background-color: #ffff54;
+  background-color: rgba(33, 33, 33, 0.1);
   color: #212121;
 
   font-size: 0.875rem;
@@ -130,7 +130,7 @@ export const SettingsWrapper = styled(FillRow)<{
   padding: 1rem;
   pointer-events: auto;
   border-radius: 1.25rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(33, 33, 33, 0.05);
 
   ${(p) =>
     p.$variant === "destructive" &&
@@ -141,7 +141,7 @@ export const SettingsWrapper = styled(FillRow)<{
   h5 {
     font-size: 1rem;
     font-weight: 600;
-    color: var(--text-color);
+    color: #212121;
   }
 
   p {
@@ -149,7 +149,7 @@ export const SettingsWrapper = styled(FillRow)<{
     font-weight: 400;
     line-height: 1.4;
     opacity: 0.6;
-    color: var(--text-color);
+    color: #212121;
   }
 
   b {
@@ -162,22 +162,45 @@ export const ToggleButton = styled(motion.button)<{
   $active: boolean;
   $fillRow?: boolean;
 }>`
-  display: flex;
+  position: relative;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 0.5rem 0.75rem;
-  background: ${(p) =>
-    p.$active ? "var(--text-color)" : "rgba(255, 255, 255, 0.1)"};
+  padding: 0;
+  width: 52px;
+  height: 32px;
+  border-radius: 999px;
   border: none;
-  color: ${(p) => (p.$active ? "var(--primary-color)" : "#ffffff")};
-  font-size: 1rem;
-  font-weight: 700;
-  border-radius: 5rem;
-  width: ${(p) => (p.$fillRow ? "100%" : "auto")};
+  cursor: pointer;
+  outline: none;
+  width: ${(p) => (p.$fillRow ? "100%" : "52px")};
 
-  &:hover {
-    background: ${(p) =>
-      p.$active ? "var(--text-color)" : "rgba(147, 147, 147, 0.25)"};
+  background: ${(p) => (p.$active ? "#007AFF" : "rgba(33,33,33,0.1)")};
+
+  transition: background 0.25s ease;
+
+  span {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 26px;
+    height: 26px;
+    border-radius: 2rem;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+
+    transform: ${(p) => (p.$active ? "translateX(20px)" : "translateX(0)")};
+
+    transition: 0.15s ease-out;
+    transition-property: transform width;
+    transform-origin: ${(p) => (p.$active ? "right" : "left")};
+  }
+
+  &:active span {
+    width: 28px;
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.4);
   }
 `;
 
@@ -198,8 +221,8 @@ export const ActionButton = styled(motion.button)<{
   font-size: 1rem;
   font-weight: 700;
 
-  background-color: #fff;
-  color: #212121;
+  background-color: #212121;
+  color: #ffffff;
 
   &:disabled {
     color: #ffffff81;
@@ -207,7 +230,7 @@ export const ActionButton = styled(motion.button)<{
   }
 
   &:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.8);
+    background: rgba(33, 33, 33, 0.9);
   }
 
   ${(p) =>
@@ -226,18 +249,14 @@ export const FixedAnchor = styled.div`
   position: absolute;
   left: 0;
   right: 0;
-  bottom: calc(env(safe-area-inset-bottom) + 188px);
+  bottom: calc(env(safe-area-inset-bottom) + 190px);
   margin: 0 auto;
   width: fit-content;
   max-width: calc(100vw - 40px);
 `;
 
-export const TabPanel = styled(motion.div)`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-gap: 4px;
-  background: var(--primary-color);
-  width: 100%;
+export const TabPanel = styled(FillRow)`
+  gap: 4px;
   border-radius: 6rem;
 `;
 
@@ -246,18 +265,20 @@ export const TabButton = styled(motion.button)<{ $active: boolean }>`
   align-items: center;
   justify-content: center;
   padding: 0.5rem 0.75rem;
+  width: 100%;
+
   border: none;
-  color: ${(p) => (p.$active ? "rgba(0,0,0,1)" : "rgba(255,255,255,1)")};
+  color: ${(p) => (p.$active ? "#ffffff" : "#212121")};
   font-size: 1rem;
   font-weight: 700;
   border-radius: 5rem;
-  background: ${(p) =>
-    p.$active ? "rgba(255,255,255,1)" : "rgba(255,255,255,0.05)"};
+  background: ${(p) => (p.$active ? "#212121" : "rgba(33,33,33,0.05)")};
 
   &:hover {
     background: ${(p) =>
-      p.$active ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.15)"};
-    color: ${(p) => (p.$active ? "rgba(0,0,0,1)" : "rgba(255,255,255,1)")};
+      p.$active ? "rgba(33,33,33,0.9)" : "rgba(33,33,33,0.1)"};
+    /* color: ${(p) =>
+      p.$active ? "rgba(0,0,0,1)" : "rgba(255,255,255,1)"}; */
   }
 `;
 
@@ -276,12 +297,12 @@ export const PaginationDots = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 0.75rem;
   padding: 4px;
   border-radius: 50px;
   background: rgba(0, 0, 0, 0.15);
 
-  > * {
+  > div > div {
     height: 8px;
     width: 8px;
     background: #fff;
@@ -295,20 +316,23 @@ export const PaginationButton = styled.button`
   align-items: center;
   justify-content: center;
 
-  height: 3rem;
-  width: 3rem;
+  height: 2.5rem;
+  width: 2.5rem;
 
-  border-radius: 1rem;
-  background: var(--blob-color);
-  color: var(--outline-color);
-  box-shadow:
-    0px 0px 4px rgba(0, 0, 0, 0.15),
-    0px 0px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 20rem;
+  /* background: var(--blob-color); */
+  background: transparent;
+  color: white;
+  transition: background-color 0.1s ease-out;
   z-index: 0;
 
   svg {
-    height: 20px;
-    width: 20px;
+    height: 1.5rem;
+    width: 1.5rem;
+  }
+
+  &:hover {
+    background-color: rgba(33, 33, 33, 0.1);
   }
 
   &:disabled {
@@ -329,8 +353,9 @@ export const ShopItemButton = styled(motion.button)<{
   border-radius: 0.875rem;
 
   background-color: ${(p) =>
-    p.$selected ? "rgba(255,255,255,1)" : "rgba(0,0,0,0.25)"};
-  color: ${(p) => (p.$selected ? "#212121" : "#ffffff")};
+    p.$selected ? "rgba(33, 33, 33, 0.2)" : "#4178F7"};
+
+  color: ${(p) => (p.$selected ? "#ffffff" : "#ffffff")};
   border: ${(p) =>
     p.$selected
       ? "2px solid rgba(255,255,255,0)"
@@ -345,19 +370,19 @@ export const ShopItemButton = styled(motion.button)<{
   opacity: ${(props) => (props.$purchased || props.$canAfford ? 1 : 0.5)};
 
   width: fit-content;
+  min-width: 180px;
 
   &:hover {
     background-color: ${(p) =>
-      p.$selected ? "rgba(255,255,255,1)" : "rgba(0,0,0,0.5)"};
+      p.$selected ? "rgba(33,33,33,0.5)" : "#376ae0"};
   }
 `;
 
 export const StatusPillButton = styled(motion.button)<{ $active: boolean }>`
   font-size: 1rem;
-  color: ${(p) =>
-    p.$active ? "rgba(255,255,255,1)" : "rgba(255,255,255,.75)"};
+  color: ${(p) => (p.$active ? "#4178F7" : "#21212178")};
   background: ${(p) =>
-    p.$active ? "rgba(255,255,255,0.1)" : "rgba(0, 0, 0, 0.25)"};
+    p.$active ? "rgba(65, 120, 247, 0.1)" : "rgba(33, 33, 33, 0.1)"};
   padding: 8px 12px;
   border-radius: 100px;
 
@@ -367,4 +392,51 @@ export const StatusPillButton = styled(motion.button)<{ $active: boolean }>`
   > * {
     height: 1.25rem;
   }
+`;
+
+// segmented control -- unfinished
+
+export const SegmentedControl = styled.div`
+  display: flex;
+  align-items: center;
+  background-color: rgba(118, 118, 128, 0.12);
+  border-radius: 20rem;
+  padding: 2px;
+  width: 100%;
+  position: relative;
+`;
+
+export const SegmentedTrack = styled.div`
+  display: flex;
+  width: 100%;
+  position: relative;
+`;
+
+export const SegmentedThumb = styled(motion.div)`
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border-radius: 20rem;
+  background: #ffffff;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.08);
+`;
+
+export const SegmentedOption = styled.button<{ $active: boolean }>`
+  flex: 1;
+  z-index: 1;
+  position: relative;
+  padding: 6px 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  color: ${({ $active }) => ($active ? "#000000" : "#3c3c43")};
+  transition:
+    color 0.2s ease,
+    font-weight 0.2s ease;
+  border-radius: 20rem;
+  white-space: nowrap;
 `;
