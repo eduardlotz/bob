@@ -55,6 +55,23 @@ interface BobAppData {
 
 const BOB_APPS: Array<BobAppData> = [
   {
+    id: "credits",
+    icon: CreditsIcon,
+    view: <CreditsApp />,
+  },
+  {
+    id: "options",
+    icon: OptionsIcon,
+    view: <OptionsApp />,
+    // bottomAction: <AppInfo style={{ marginRight: "0.5rem" }}>Beta</AppInfo>,
+    hideStatusBar: true,
+  },
+  {
+    id: "debug",
+    icon: DebugIcon,
+    view: <DebugApp />,
+  },
+  {
     id: "chat",
     icon: ChatIcon,
     view: <ChatApp />,
@@ -76,23 +93,6 @@ const BOB_APPS: Array<BobAppData> = [
     icon: CameraIcon,
     view: <CameraApp />,
     hideStatusBar: true,
-  },
-  {
-    id: "options",
-    icon: OptionsIcon,
-    view: <OptionsApp />,
-    // bottomAction: <AppInfo style={{ marginRight: "0.5rem" }}>Beta</AppInfo>,
-    hideStatusBar: true,
-  },
-  {
-    id: "credits",
-    icon: CreditsIcon,
-    view: <CreditsApp />,
-  },
-  {
-    id: "debug",
-    icon: DebugIcon,
-    view: <DebugApp />,
   },
 ];
 
