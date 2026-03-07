@@ -22,6 +22,8 @@ import { PSControllerModel } from "@/3d-objects/models/ps-controller";
 import { CameraModel } from "@/3d-objects/models/camera";
 import { GreenDiamond } from "@/3d-objects/models/greenDiamond";
 import { MusicOverlay } from "@/layout/game-ui/music";
+import { BookStacks } from "@/3d-objects/BookStacks";
+import { BookTable } from "@/3d-objects/models/bookTable";
 
 export function AboutScene() {
   const { checkUnlockedRoutes } = useCoreStore();
@@ -83,18 +85,18 @@ export function AboutScene() {
         mode="view"
         viewId="bookshelf"
       >
-        <BookshelfModel
-          position={[3, FLOOR_Y_POSITION - 0.55, -3]}
-          rotation={[0, -0.75, 0]}
-          scale={[2, 2, 2]}
+        <BookStacks
+          viewId="bookshelf"
+          position={[3, FLOOR_Y_POSITION + 1, -4]}
+          rotation={[0, (Math.PI / 2) * 2, 0]}
+          scale={[3, 3, 3]}
         />
 
-        {getCurrentViewConfig()?.id === "bookshelf" && (
-          <InProgressOverlay
-            position={[2.8, FLOOR_Y_POSITION + 2, -2.8]}
-            rotation={[0, -0.75, 0]}
-          />
-        )}
+        <BookTable
+          position={[3, FLOOR_Y_POSITION + 0.4, -4]}
+          rotation={[0, (Math.PI / 2) * 2, 0]}
+          scale={[1.15, 1.15, 1.15]}
+        />
       </InteractiveObject>
 
       <XboxControllerModel

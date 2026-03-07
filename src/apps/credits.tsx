@@ -287,6 +287,9 @@ export const CreditsApp = () => {
         <p>
           Table Tennis Paddle <b>by jeremy</b> (poly.pizza/m/2UlIPzTzLM9)
         </p>
+        <p>
+          Coffee Table <b>by Francisco Hui</b>via Poly Pizza
+        </p>
       </ListSectionItem>
       <ListSectionItem>
         <h5>Sounds & Music</h5>

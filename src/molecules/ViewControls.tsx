@@ -7,7 +7,7 @@ import { playUISound } from "@/utils/soundSystem";
 
 const VIEWID_TITLE_MAP = {
   desk: "Musik & Mixes",
-  bookshelf: "Bücher & Inspirationen",
+  bookshelf: "Buchsammlung",
   computer: "Apps & Seiten",
   cardbox: "Interessen & Hobbies",
 } satisfies Partial<Record<CameraViewId, string>>;
