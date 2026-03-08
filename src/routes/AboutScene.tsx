@@ -87,13 +87,13 @@ export function AboutScene() {
       >
         <BookStacks
           viewId="bookshelf"
-          position={[3, FLOOR_Y_POSITION + 1, -4]}
-          rotation={[0, (Math.PI / 2) * 2, 0]}
+          position={[2, FLOOR_Y_POSITION + 1, -4]}
+          rotation={[0, (Math.PI / 2) * 4, 0]}
           scale={[3, 3, 3]}
         />
 
         <BookTable
-          position={[3, FLOOR_Y_POSITION + 0.4, -4]}
+          position={[2, FLOOR_Y_POSITION + 0.4, -4]}
           rotation={[0, (Math.PI / 2) * 2, 0]}
           scale={[1.15, 1.15, 1.15]}
         />

@@ -138,8 +138,8 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   desk: {
     id: "desk",
     name: "Desk View",
-    position: [-2.5, 0.5, 0],
-    target: [-3.5, 0.4, 0],
+    position: [-2.5, 0.5, -0.5],
+    target: [-3.5, 0, -0.5],
     transition: {
       duration: 800,
       easing: "easeInOutCubic",
@@ -149,8 +149,8 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   bookshelf: {
     id: "bookshelf",
     name: "Bookshelf View",
-    position: [3.5, 1, -2.25],
-    target: [4, 0.5, -4],
+    position: [2, 1, -3],
+    target: [2, 0, -4],
     transition: {
       duration: 550,
       easing: "easeInOutCubic",
