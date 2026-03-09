@@ -22,7 +22,7 @@ import { PSControllerModel } from "@/3d-objects/models/ps-controller";
 import { CameraModel } from "@/3d-objects/models/camera";
 import { GreenDiamond } from "@/3d-objects/models/greenDiamond";
 import { MusicOverlay } from "@/layout/game-ui/music";
-import { BookStacks } from "@/3d-objects/BookStacks";
+import { BookStacks } from "@/3d-objects/books/index";
 import { BookTable } from "@/3d-objects/models/bookTable";
 
 export function AboutScene() {

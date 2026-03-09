@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "motion/react";
 import styled from "styled-components";
 import { ArrowLeftIcon } from "@/icons/arrow";
 import { playUISound } from "@/utils/soundSystem";
+import { useBooksStore } from "@/store";
 
 const VIEWID_TITLE_MAP = {
   desk: "Musik & Mixes",
@@ -24,12 +25,15 @@ export function ViewControls() {
     isTransitioning,
   } = useViewStore();
 
+  const { focusedBook } = useBooksStore();
+
   const showControls =
     isImageFocused ||
     (!isDefaultView() &&
       !isPhoneView() &&
       !isCreativeView() &&
-      !isNavigationView());
+      !isNavigationView() &&
+      !focusedBook);
 
   // escape key to return to default view
   useKeyPress("Escape", () => {

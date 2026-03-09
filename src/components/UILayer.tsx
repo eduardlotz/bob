@@ -8,7 +8,7 @@ import { useCoreStore } from "@/store/core/store";
 
 import { AnimatePresence, motion } from "motion/react";
 import { useAppStore } from "@/store";
-import { BookPortalOverlay } from "@/3d-objects/BookStacks";
+import { BookPortalOverlay } from "@/3d-objects/books/overlay";
 
 interface UILayerProps {
   permissionGranted: boolean;
