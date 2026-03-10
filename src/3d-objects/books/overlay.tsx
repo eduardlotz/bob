@@ -15,6 +15,7 @@ import {
   FooterNav,
   HeaderTitle,
   Heart,
+  HeartsContainer,
   HeartsRow,
   HeroAuthor,
   HeroRow,
@@ -33,6 +34,10 @@ import { ChevronLeftIcon, ChevronRightIcon } from "@/icons/chevron";
 import { memo, useCallback, useMemo } from "react";
 import { StackData, STACKS, TAG_PAL } from ".";
 import { CoverCanvas } from "./bookCover";
+import { CloseIcon } from "@/icons/close";
+import { HeartIcon } from "@/icons/heart";
+import { FillColumn, HugColumn, HugRow } from "@/layout";
+import { PaginationDots, PaginationButton, FixedAnchor } from "@/apps/ui";
 
 // ── Store ─────────────────────────────────────────────────────────────────
 // Stripped down: we only need to know if the panel is open.
@@ -66,10 +71,10 @@ function stackForBookIdx(booksIdx: number): StackData | null {
 
 // ── BookContent ───────────────────────────────────────────────────────────
 const SLIDE_VARIANTS = {
-  initial: { opacity: 0, y: 10 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -8 },
-  transition: { duration: 0.17 },
+  initial: { filter: "blur(12px)", opacity: 0, scale: 0.95 },
+  animate: { filter: "blur(0px)", opacity: 1, scale: 1 },
+  exit: { filter: "blur(12px)", opacity: 0, scale: 1.05 },
+  transition: { duration: 0.3 },
 };
 
 const BookContent = memo(
@@ -78,99 +83,105 @@ const BookContent = memo(
     const tags: string[] = (book as any).tags ?? [];
 
     return (
-      <motion.div
-        {...SLIDE_VARIANTS}
-        style={{
-          flex: 1,
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-          minHeight: 0,
-        }}
-      >
-        <PanelScroll>
-          <HeroRow>
-            <div
-              style={{
-                flexShrink: 0,
-                borderRadius: 6,
-                overflow: "hidden",
-                boxShadow: "0 4px 18px rgba(0,0,0,.17)",
-              }}
-            >
-              <CoverCanvas book={book} w={72} h={108} />
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-              <HeartsRow>
-                {Array.from({ length: 5 }, (_, i) => (
-                  <Heart key={i} $on={i < book.rating}>
-                    ♥
-                  </Heart>
-                ))}
-              </HeartsRow>
-              <HeroTitle>{book.title}</HeroTitle>
-              <HeroAuthor>{book.author}</HeroAuthor>
-            </div>
-          </HeroRow>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          {...SLIDE_VARIANTS}
+          style={{
+            flex: 1,
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0,
+          }}
+          key={`book-${book.id}`}
+        >
+          <PanelScroll>
+            <HeroRow>
+              <div
+                style={{
+                  flexShrink: 0,
+                  borderRadius: 6,
+                  overflow: "hidden",
+                  boxShadow: "0 4px 18px rgba(0,0,0,.17)",
+                }}
+              >
+                <CoverCanvas book={book} w={80} h={120} />
+              </div>
+              <FillColumn $gap={"4px"} $justify="center" $align="flex-start">
+                <HeartsContainer>
+                  {Array.from({ length: 5 }, (_, i) => (
+                    <HeartIcon key={i + "heart-icon"} />
+                  ))}
+                </HeartsContainer>
+                <HugColumn $gap={0}>
+                  <HeroTitle>{book.title}</HeroTitle>
+                  <HeroAuthor>{book.author}</HeroAuthor>
+                </HugColumn>
+              </FillColumn>
+            </HeroRow>
 
-          {(tags.length > 0 || book.favorite) && (
-            <>
-              <Rule />
-              <SectionLabel>Tags</SectionLabel>
-              <TagsWrap>
-                {tags.map((t, i) => {
-                  const p = TAG_PAL[i % TAG_PAL.length];
-                  return (
-                    <TagPill key={t} $bg={p.bg} $fg={p.fg} $bd={p.bd}>
-                      {t}
-                    </TagPill>
-                  );
-                })}
-                {book.favorite && (
-                  <TagPill
-                    $bg={TAG_PAL[4].bg}
-                    $fg={TAG_PAL[4].fg}
-                    $bd={TAG_PAL[4].bd}
-                  >
-                    ♥ Favorit
-                  </TagPill>
-                )}
-              </TagsWrap>
-            </>
-          )}
-
-          <Rule />
-          <SectionLabel>Rezension</SectionLabel>
-          <ReviewText>{book.review}</ReviewText>
-
-          {book.related.length > 0 && (
-            <>
-              <Rule />
-              <SectionLabel>Ähnliche Themen</SectionLabel>
-              {book.related.map((rid) => {
-                const rb = BOOK_BY_ID.get(rid);
-                return rb ? (
-                  <BookListItem key={rid} onClick={() => navigateToBookId(rid)}>
-                    <div
-                      style={{
-                        flexShrink: 0,
-                        borderRadius: 3,
-                        overflow: "hidden",
-                      }}
+            {(tags.length > 0 || book.favorite) && (
+              <>
+                <Rule />
+                <SectionLabel>Tags</SectionLabel>
+                <TagsWrap>
+                  {tags.map((t, i) => {
+                    const p = TAG_PAL[i % TAG_PAL.length];
+                    return (
+                      <TagPill key={t} $bg={p.bg} $fg={p.fg} $bd={p.bd}>
+                        {t}
+                      </TagPill>
+                    );
+                  })}
+                  {book.favorite && (
+                    <TagPill
+                      $bg={TAG_PAL[4].bg}
+                      $fg={TAG_PAL[4].fg}
+                      $bd={TAG_PAL[4].bd}
                     >
-                      <CoverCanvas book={rb} w={32} h={48} />
-                    </div>
-                    <BookItemMeta>
-                      <span className="title">{rb.title}</span>
-                      <span className="author">{rb.author}</span>
-                    </BookItemMeta>
-                  </BookListItem>
-                ) : null;
-              })}
-            </>
-          )}
-        </PanelScroll>
-      </motion.div>
+                      ♥ Favorit
+                    </TagPill>
+                  )}
+                </TagsWrap>
+              </>
+            )}
+
+            <Rule />
+            <SectionLabel>Rezension</SectionLabel>
+            <ReviewText>{book.review}</ReviewText>
+
+            {book.related.length > 0 && (
+              <>
+                <Rule />
+                <SectionLabel>Ähnliche Themen</SectionLabel>
+                {book.related.map((rid) => {
+                  const rb = BOOK_BY_ID.get(rid);
+                  return rb ? (
+                    <BookListItem
+                      key={rid}
+                      onClick={() => navigateToBookId(rid)}
+                    >
+                      <div
+                        style={{
+                          flexShrink: 0,
+                          borderRadius: 3,
+                          overflow: "hidden",
+                        }}
+                      >
+                        <CoverCanvas book={rb} w={32} h={48} />
+                      </div>
+                      <BookItemMeta>
+                        <span className="title">{rb.title}</span>
+                        <span className="author">{rb.author}</span>
+                      </BookItemMeta>
+                    </BookListItem>
+                  ) : null;
+                })}
+              </>
+            )}
+          </PanelScroll>
+        </motion.div>
+      </AnimatePresence>
     );
   },
 );
@@ -263,48 +274,11 @@ export const BookPortalOverlay = () => {
             }
             transition={{ type: "spring", bounce: 0.2, duration: 0.42 }}
           >
-            <PanelHeader>
-              {/* Stack name as breadcrumb label — no navigation, just context */}
-              <HeaderTitle>{activeStack.def.label}</HeaderTitle>
-              <CloseBtn onClick={onClose} aria-label="Schließen">
-                ×
-              </CloseBtn>
-            </PanelHeader>
+            <CloseBtn onClick={onClose} aria-label="Schließen">
+              <CloseIcon />
+            </CloseBtn>
 
-            <AnimatePresence mode="wait" initial={false}>
-              <BookContent
-                key={`book-${focusedBook.id}`}
-                book={focusedBook}
-                stack={activeStack}
-              />
-            </AnimatePresence>
-
-            <PanelFooter>
-              <FooterNav>
-                <FooterBtn onClick={prevBook}>
-                  <ChevronLeftIcon />
-                </FooterBtn>
-
-                {/* Dots — one per book in the current stack */}
-                <DotsRow>
-                  {Array.from({ length: activeStack.books.length }, (_, i) => (
-                    <motion.div
-                      key={i}
-                      animate={{
-                        width: i === posInStack ? "18px" : "6px",
-                        opacity: i === posInStack ? 1 : 0.18,
-                        background: i === posInStack ? "#111" : "#aaa",
-                      }}
-                      style={{ height: 6, borderRadius: 3 }}
-                    />
-                  ))}
-                </DotsRow>
-
-                <FooterBtn onClick={nextBook}>
-                  <ChevronRightIcon />
-                </FooterBtn>
-              </FooterNav>
-            </PanelFooter>
+            <BookContent book={focusedBook} stack={activeStack} />
           </Panel>
         )}
       </AnimatePresence>
@@ -313,30 +287,37 @@ export const BookPortalOverlay = () => {
       <AnimatePresence>
         {isOpen && (
           <>
-            <FloatArrow
-              key="prev"
-              $side="left"
-              $mobile={isMobile}
-              onClick={prevBook}
-              initial={{ opacity: 0, x: -14 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -14 }}
-              transition={{ type: "spring", bounce: 0.4 }}
-            >
-              <ChevronLeftIcon />
-            </FloatArrow>
-            <FloatArrow
-              key="next"
-              $side="right"
-              $mobile={isMobile}
-              onClick={nextBook}
-              initial={{ opacity: 0, x: 14 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 14 }}
-              transition={{ type: "spring", bounce: 0.4 }}
-            >
-              <ChevronRightIcon />
-            </FloatArrow>
+            <FixedAnchor>
+              <PaginationDots key={`shop-pagination-dots-${activeStack}`}>
+                <PaginationButton
+                  onClick={prevBook}
+                  disabled={posInStack === 0}
+                >
+                  <ChevronLeftIcon />
+                </PaginationButton>
+
+                <HugRow $gap={"4px"}>
+                  {Array(activeStack.books.length)
+                    .fill(null)
+                    .map((_, i) => (
+                      <motion.div
+                        key={`shop_pagination_dot_${i}`}
+                        animate={{
+                          width: i === posInStack ? "20px" : "8px",
+                          opacity: i === posInStack ? 1 : 0.3,
+                        }}
+                      />
+                    ))}
+                </HugRow>
+
+                <PaginationButton
+                  onClick={nextBook}
+                  disabled={posInStack === activeStack.books.length - 1}
+                >
+                  <ChevronRightIcon />
+                </PaginationButton>
+              </PaginationDots>
+            </FixedAnchor>
           </>
         )}
       </AnimatePresence>

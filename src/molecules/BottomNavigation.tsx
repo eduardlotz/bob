@@ -6,6 +6,8 @@ import {
   ROUTE_PATHS,
   useViewStore,
   useMiniGameStore,
+  useBooksStore,
+  CAMERA_VIEWS,
 } from "@/store";
 import { MenuIcon } from "@/icons/menu";
 import { CloseIcon } from "@/icons/close";
@@ -36,6 +38,8 @@ export function BottomNavigation() {
     toggleOptions,
     closeOptionsWithAnimation,
   } = useAppStore();
+
+  const { focusedBook } = useBooksStore();
 
   const { activeGame } = useMiniGameStore();
 
@@ -68,6 +72,8 @@ export function BottomNavigation() {
 
   const hideNavigation =
     (isPortfolioRoute && isImageFocused) ||
+    focusedBook ||
+    currentView === CAMERA_VIEWS.bookshelf.id ||
     (isObjectView() && !isPhoneView() && !isPortfolioRoute);
 
   return (

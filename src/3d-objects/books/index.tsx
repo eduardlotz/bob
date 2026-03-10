@@ -12,7 +12,12 @@ import {
   MICRO_XZ,
   SingleBook,
 } from "./singleBook";
-import { _moveCameraToStack, _restoreDeskCamera } from "./utils";
+import {
+  _moveCameraToStack,
+  _restoreDeskCamera,
+  _setBrowseControls,
+  _setFocusedControls,
+} from "./utils";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Layout constants
@@ -187,10 +192,9 @@ export function BookStacks({
 
   const viewActive = currentView === viewId;
 
-  // ── Keep the module-level ref in sync ────────────────────────────────────
   useEffect(() => {
     BOOK_GROUP_REF.current = groupRef.current;
-  });
+  }, []);
 
   // ── View enter / leave ────────────────────────────────────────────────────
   useEffect(() => {
@@ -205,14 +209,13 @@ export function BookStacks({
   // ── Book focus / dismiss ──────────────────────────────────────────────────
   useEffect(() => {
     if (focusedBook) {
-      // Camera moves to the book's stack — driven by overlay.tsx via
-      // _moveCameraToStack when activeStack changes, so nothing to do here.
+      _setFocusedControls();
       return;
+    } else {
+      _setBrowseControls();
     }
 
-    // Book was dismissed: restore fixed controls & desk overview
     _restoreDeskCamera();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusedBook?.id]);
 
   const focusedBookId = focusedBook?.id ?? null;

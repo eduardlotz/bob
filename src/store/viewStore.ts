@@ -138,8 +138,8 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   desk: {
     id: "desk",
     name: "Desk View",
-    position: [-2.5, 0.5, -0.5],
-    target: [-3.5, 0, -0.5],
+    position: [-2.5, 0.5, 0],
+    target: [-3.5, 0, 0],
     transition: {
       duration: 800,
       easing: "easeInOutCubic",

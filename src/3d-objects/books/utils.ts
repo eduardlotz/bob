@@ -233,14 +233,14 @@ export function _restoreDeskCamera() {
  * Call when entering the bookshelf view or dismissing a focused book.
  */
 export function _setBrowseControls() {
-  useViewStore.setState({ viewMode: "fixed" }); // keeps outer app logic happy
+  useViewStore.setState({ viewMode: "fixed" });
   const controls = getCameraControls();
   if (!controls) return;
-  controls.mouseButtons.left = CameraControlsImpl.ACTION.ROTATE;
-  controls.mouseButtons.right = CameraControlsImpl.ACTION.NONE;
-  controls.mouseButtons.wheel = CameraControlsImpl.ACTION.DOLLY;
-  controls.touches.one = CameraControlsImpl.ACTION.TOUCH_ROTATE;
-  controls.touches.two = CameraControlsImpl.ACTION.TOUCH_DOLLY;
+  controls.mouseButtons.left = CameraControlsImpl.ACTION.TRUCK;
+  controls.mouseButtons.right = CameraControlsImpl.ACTION.TRUCK;
+  controls.mouseButtons.wheel = CameraControlsImpl.ACTION.NONE;
+  controls.touches.one = CameraControlsImpl.ACTION.TOUCH_TRUCK;
+  controls.touches.two = CameraControlsImpl.ACTION.TOUCH_TRUCK;
 }
 
 /**
@@ -249,7 +249,8 @@ export function _setBrowseControls() {
  * Call when a book becomes focused.
  */
 export function _setFocusedControls() {
-  useViewStore.setState({ viewMode: "object" });
+  //   useViewStore.setState({ viewMode: "object" });
+  useViewStore.setState({ viewMode: "fixed" });
   const controls = getCameraControls();
   if (!controls) return;
   controls.mouseButtons.left = CameraControlsImpl.ACTION.NONE;

@@ -2,9 +2,10 @@ import { CameraViewId, useViewStore, ViewMode } from "@/store/viewStore";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { motion, AnimatePresence } from "motion/react";
 import styled from "styled-components";
-import { ArrowLeftIcon } from "@/icons/arrow";
+import { ArrowLeftIcon, SmallArrowLeftIcon } from "@/icons/arrow";
 import { playUISound } from "@/utils/soundSystem";
 import { useBooksStore } from "@/store";
+import { Magnetic } from "@/layout/Magnetic";
 
 const VIEWID_TITLE_MAP = {
   desk: "Musik & Mixes",
@@ -20,6 +21,7 @@ export function ViewControls() {
     isCreativeView,
     isPhoneView,
     isImageFocused,
+    focusedImageTitle,
     isNavigationView,
     resetToDefaultView,
     isTransitioning,
@@ -55,39 +57,62 @@ export function ViewControls() {
   };
 
   const title = isImageFocused
-    ? "Zurück zur Übersicht"
+    ? focusedImageTitle
     : (VIEWID_TITLE_MAP[currentView as keyof typeof VIEWID_TITLE_MAP] ?? "");
 
   return (
     <AnimatePresence>
       {showControls && (
         <ViewControlsWrapper>
-          <BackButton
+          {/* <BackButton
             onClick={handleBackClick}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             key="view-controls-back-button"
-            initial={{ y: -120, filter: "blur(6px)" }}
+            initial={{ y: 120, filter: "blur(6px)" }}
             animate={{
               y: 0,
               filter: "blur(0px)",
             }}
-            exit={{ y: -120, filter: "blur(6px)" }}
+            exit={{ y: 120, filter: "blur(6px)" }}
             transition={{ duration: 0.5, ease: "circInOut" }}
             data-ui-sound-id="ui-tap-close"
           >
             <ArrowLeftIcon />
-          </BackButton>
+          </BackButton> */}
+
+          <Magnetic>
+            <TriggerContainer
+              onClick={handleBackClick}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95, transition: { duration: 0.1 } }}
+              key="view-controls-back-button"
+              initial={{ y: 120, filter: "blur(6px)" }}
+              animate={{
+                y: 0,
+                filter: "blur(0px)",
+              }}
+              exit={{ y: 120, filter: "blur(6px)" }}
+              transition={{ duration: 0.5, ease: "circInOut" }}
+              data-ui-sound-id="ui-tap-close"
+              style={{ borderRadius: "50px" }}
+            >
+              <SmallArrowLeftIcon />
+
+              <span>Zurück</span>
+            </TriggerContainer>
+          </Magnetic>
+
           <CurrentViewChip
             key="view-controls-current-view-chip"
-            initial={{ y: -20, scale: 0.9, opacity: 0, filter: "blur(6px)" }}
+            initial={{ y: 20, scale: 0.9, opacity: 0, filter: "blur(6px)" }}
             animate={{
               y: 0,
               scale: 1,
               opacity: 1,
               filter: "blur(0px)",
             }}
-            exit={{ y: -120, scale: 0.9, opacity: 0, filter: "blur(6px)" }}
+            exit={{ y: 120, scale: 0.9, opacity: 0, filter: "blur(6px)" }}
             transition={{ duration: 0.5, ease: "circInOut", delay: 0.15 }}
           >
             {title}
@@ -100,7 +125,7 @@ export function ViewControls() {
 
 const ViewControlsWrapper = styled(motion.div)`
   position: absolute;
-  top: 40px;
+  bottom: 40px;
   left: 0;
   right: 0;
   z-index: 100;
@@ -149,5 +174,30 @@ const BackButton = styled(motion.button)`
 
   svg {
     height: 14px;
+  }
+`;
+
+const TriggerContainer = styled(motion.button)`
+  display: inline-flex;
+  width: fit-content;
+  white-space: nowrap;
+  align-items: center;
+  justify-content: center;
+  max-height: 2.25rem;
+
+  padding: 0.5rem 0.75rem;
+  border-radius: 50px;
+  background-color: #fff;
+  opacity: 1;
+
+  font-size: 1rem;
+  font-weight: 700;
+  color: #212121;
+  margin: 0 auto;
+  overflow: clip;
+  gap: 0.5rem;
+
+  span {
+    max-height: 1.5rem;
   }
 `;

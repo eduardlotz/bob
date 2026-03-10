@@ -226,7 +226,6 @@ export const FocusedBookMesh = ({
       targetScale.current = 0;
       dragging.current = false;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusedBook?.id]);
 
   useFrame(({ camera }) => {
@@ -247,14 +246,14 @@ export const FocusedBookMesh = ({
       curWorldPos.current.lerp(_t.targetW, FOCUS_POS_LERP);
 
       if (!dragging.current) {
-        spin.current = Math.max(-1.2, Math.min(1.2, spin.current + 0.001));
+        spin.current = spin.current + 0.001;
       }
 
       _t.toCamera.copy(camera.position).sub(curWorldPos.current).normalize();
 
       const yaw = Math.atan2(_t.toCamera.x, _t.toCamera.z);
       const baseX = Math.PI / 2 - 1 + 0.5;
-      const baseY = yaw;
+      const baseY = yaw - 0.25;
 
       _t.euler.set(
         baseX + dragPitch.current,

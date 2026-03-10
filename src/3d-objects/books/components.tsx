@@ -1,3 +1,4 @@
+import { HugRow } from "@/layout";
 import { motion } from "motion/react";
 import { css, styled } from "styled-components";
 
@@ -7,9 +8,10 @@ export const Panel = styled(motion.aside)<{ $mobile: boolean }>`
   position: fixed;
   z-index: 40;
   pointer-events: auto;
-  background: rgba(248, 246, 241, 0.97);
-  backdrop-filter: blur(30px) saturate(1.6);
-  -webkit-backdrop-filter: blur(30px) saturate(1.6);
+
+  border-radius: 20px;
+  background: #f2f2f3;
+
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -19,16 +21,18 @@ export const Panel = styled(motion.aside)<{ $mobile: boolean }>`
           left: 0;
           right: 0;
           bottom: 0;
-          height: 72vh;
+          height: 60vh;
           border-radius: 20px 20px 0 0;
           box-shadow: 0 -8px 48px rgba(0, 0, 0, 0.22);
         `
       : css`
-          top: 0;
-          right: 0;
-          bottom: 0;
+          top: 4px;
+          right: 4px;
+          bottom: 4px;
+          margin: auto 4rem;
           width: ${PANEL_W};
           max-width: 90vw;
+          height: 72vh;
           border-left: 1px solid rgba(0, 0, 0, 0.07);
           box-shadow: -10px 0 52px rgba(0, 0, 0, 0.13);
         `}
@@ -68,18 +72,30 @@ export const BackBtn = styled.button`
 `;
 
 export const CloseBtn = styled.button`
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.08);
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  bottom: 4px;
+  z-index: 10;
+
+  width: 48px;
+  height: 40px;
+  border-radius: 10rem;
+  background: rgba(33, 33, 33, 0.1);
   border: none;
   font-size: 1.15rem;
-  color: #555;
+  color: #212121;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: background 0.15s;
+
+  svg {
+    width: 24px;
+    height: 24px;
+  }
+
   &:hover {
     background: rgba(0, 0, 0, 0.14);
   }
@@ -217,6 +233,13 @@ export const HeroRow = styled.div`
   margin-bottom: 4px;
 `;
 
+export const HeartsContainer = styled(HugRow)`
+  padding: 4px;
+  border-radius: 20rem;
+  background-color: rgba(33, 33, 33, 0.05);
+  gap: 0;
+`;
+
 export const HeartsRow = styled.div`
   display: flex;
   gap: 3px;
@@ -228,16 +251,19 @@ export const Heart = styled.span<{ $on: boolean }>`
 `;
 
 export const HeroTitle = styled.h2`
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #111;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #212121;
+  letter-spacing: -1.5%;
   margin: 0;
-  line-height: 1.3;
+  line-height: 1.15;
 `;
 
 export const HeroAuthor = styled.p`
-  font-size: 0.8rem;
-  color: #888;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #212121;
+  opacity: 0.6;
   margin: 0;
 `;
 
@@ -266,13 +292,17 @@ export const TagPill = styled.span<{ $bg: string; $fg: string; $bd: string }>`
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 5px 12px;
-  border-radius: 20px;
-  font-size: 0.74rem;
-  font-weight: 500;
-  background: ${({ $bg }) => $bg};
-  color: ${({ $fg }) => $fg};
-  border: 1px solid ${({ $bd }) => $bd};
+  /* padding: 0.25rem 0.625rem; */
+
+  padding: 0.25rem 0.5rem 0.25rem 0.425rem;
+  border-radius: 20rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  /* background: ${({ $bg }) => $bg}; */
+  background: rgba(33, 33, 33, 0.1);
+  /* color: ${({ $fg }) => $fg}; */
+  color: #212121;
+  /* border: 1px solid ${({ $bd }) => $bd}; */
 `;
 
 export const ReviewText = styled.p`
@@ -293,24 +323,18 @@ export const FloatArrow = styled(motion.button)<{
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
-  height: 42px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: rgba(14, 12, 8, 0.52);
-  backdrop-filter: blur(14px);
-  color: rgba(255, 255, 255, 0.88);
+  /* border: 1.5px solid #212121; */
+  background: #f2f2f3;
+  /* backdrop-filter: blur(12px); */
+  color: #212121;
   cursor: pointer;
-  transition:
-    background 0.15s,
-    border-color 0.15s;
+
   svg {
-    width: 18px;
-    height: 18px;
-  }
-  &:hover {
-    background: rgba(35, 28, 18, 0.7);
-    border-color: rgba(255, 255, 255, 0.4);
+    width: 24px;
+    height: 24px;
   }
 
   ${({ $side, $mobile }) => {
@@ -322,9 +346,7 @@ export const FloatArrow = styled(motion.button)<{
     return css`
       top: 50%;
       transform: translateY(-50%);
-      ${$side === "left"
-        ? "left: 1.25rem;"
-        : `right: calc(${PANEL_W} + 1.25rem);`}
+      ${$side === "left" ? "left: 20vw;" : `right: calc(${PANEL_W} + 18vw);`}
       &:active {
         transform: translateY(-50%) scale(0.93);
       }
