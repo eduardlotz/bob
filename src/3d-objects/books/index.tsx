@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { memo, useEffect, useRef } from "react";
 
-import { BOOKS, useBooksStore, useViewStore } from "@/store";
+import { Book, BOOKS, useBooksStore, useViewStore } from "@/store";
 
 import {
   BOOK_D,
@@ -13,43 +13,65 @@ import {
   SingleBook,
 } from "./singleBook";
 import {
-  _moveCameraToStack,
   _restoreDeskCamera,
+  _restoreFullControls,
   _setBrowseControls,
   _setFocusedControls,
 } from "./utils";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Layout constants
-// ─────────────────────────────────────────────────────────────────────────────
+const MAX_BOOKS_PER_STACK = 15;
+const MAX_STACKS_PER_STATUS = 3;
 
-// Hard physical limit — beyond ~10 books a stack becomes too tall to look
-// natural on a desk. Adjust down if your camera sits low.
-const MAX_PER_STACK = Math.ceil(BOOKS.length / 5); // always exactly 5 stacks
+const GROUP_SPACING = 0.35; // X gap between status groups
 
-// Grid geometry — how many columns before wrapping to the next row.
-// 5 cols × 2 rows = 10 stacks × 8 books = 80 books max on one table.
-const GRID_COLS = 5;
+// TODO: check if stupid
+/**
+ * Predefined (dX, dZ) offsets for 1, 2, or 3 stacks inside a group.
+ * Kept small enough that no stack exits the table surface regardless of
+ * GROUP_SPACING or the parent group's world-scale.
+ *
+ *  • 1 stack  → centred at group origin
+ *  • 2 stacks → slight diagonal to avoid a perfectly symmetric look
+ *  • 3 stacks → loose triangle, none exceeding ±0.14 in Z or ±0.06 in X
+ */
+const WITHIN_GROUP_OFFSETS: Record<number, Array<[number, number]>> = {
+  1: [[0, 0]],
+  2: [
+    [-0.1, -0.1],
+    [0.07, 0.09],
+  ],
+  3: [
+    [-0.1, -0.13],
+    [0.06, 0.01],
+    [-0.1, 0.13],
+  ],
+};
 
-// World-unit spacing between stack centres.
-const COL_SPACING = 0.24; // X axis
-const ROW_SPACING = 0.22; // Z axis
-
-// Small deterministic jitter so stacks don't look machine-stamped.
-// Using trigonometric functions of the stack index keeps it reproducible.
 function jitterX(i: number) {
-  return Math.sin(i * 2.399) * 0.012; // Fibonacci-angle spread
+  return Math.sin(i * 2.399) * 0.005;
 }
 function jitterZ(i: number) {
-  return Math.cos(i * 1.618) * 0.01;
+  return Math.cos(i * 1.618) * 0.004;
 }
 function jitterRotY(i: number) {
-  return Math.sin(i * 3.141 + 1) * 0.18;
+  return Math.sin(i * 3.141 + 1) * 0.055;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Stack definitions — generated once from BOOKS at module load time
-// ─────────────────────────────────────────────────────────────────────────────
+type StatusKey = Book["status"];
+
+export const STATUS_LABELS: Record<StatusKey, string> = {
+  "have-read": "Gelesen",
+  "currently-reading": "Lese ich aktuell",
+  "will-read": "Möchte ich lesen",
+  "wanna-buy": "Möchte ich kaufen",
+};
+
+const STATUS_ORDER: StatusKey[] = [
+  "have-read",
+  "currently-reading",
+  "will-read",
+  "wanna-buy",
+];
 
 export interface StackDef {
   x: number;
@@ -60,59 +82,75 @@ export interface StackDef {
 
 export interface StackData {
   def: StackDef;
-  books: (typeof BOOKS)[number][];
-  startIdx: number;
+  books: Book[];
+  // bookIndices[i] is this book's index in the global BOOKS array
+  bookIndices: number[];
   stackIdx: number;
+  statusGroup: StatusKey;
 }
 
-export const STACKS: StackData[] = (() => {
-  const numStacks = Math.ceil(BOOKS.length / MAX_PER_STACK);
-  const rows = Math.ceil(numStacks / GRID_COLS);
+export const STACKS: StackData[] = [];
+export const STACKS_BY_STATUS = new Map<StatusKey, StackData[]>();
 
-  // Centre the grid around (0, 0) in XZ
-  const totalW = (Math.min(numStacks, GRID_COLS) - 1) * COL_SPACING;
-  const totalD = (rows - 1) * ROW_SPACING;
+(() => {
+  const groups = new Map<StatusKey, Array<{ book: Book; idx: number }>>();
+  BOOKS.forEach((book, idx) => {
+    if (!groups.has(book.status)) groups.set(book.status, []);
+    groups.get(book.status)!.push({ book, idx });
+  });
 
-  let bookIdx = 0;
-  const stacks: StackData[] = [];
+  let globalStackIdx = 0;
+  const totalWidth = (STATUS_ORDER.length - 1) * GROUP_SPACING;
 
-  for (let si = 0; si < numStacks; si++) {
-    const col = si % GRID_COLS;
-    const row = Math.floor(si / GRID_COLS);
+  STATUS_ORDER.forEach((status, groupIdx) => {
+    const entries = groups.get(status) ?? [];
+    if (entries.length === 0) return;
 
-    const x = -totalW / 2 + col * COL_SPACING + jitterX(si);
-    const z = -totalD / 2 + row * ROW_SPACING + jitterZ(si);
-    const rotY = jitterRotY(si);
+    const groupX = -totalWidth / 2 + groupIdx * GROUP_SPACING;
 
-    const count = Math.min(MAX_PER_STACK, BOOKS.length - bookIdx);
+    const numStacks = Math.min(
+      MAX_STACKS_PER_STATUS,
+      Math.max(1, Math.ceil(entries.length / MAX_BOOKS_PER_STACK)),
+    );
+    const perStack = Math.ceil(entries.length / numStacks);
 
-    stacks.push({
-      def: { x, z, rotY, label: `Stapel ${si + 1}` },
-      books: BOOKS.slice(bookIdx, bookIdx + count),
-      startIdx: bookIdx,
-      stackIdx: si,
-    });
+    const offsets = WITHIN_GROUP_OFFSETS[Math.min(numStacks, 3)];
+    const statusStacks: StackData[] = [];
 
-    bookIdx += count;
-  }
+    for (let si = 0; si < numStacks; si++) {
+      const slice = entries.slice(si * perStack, (si + 1) * perStack);
+      if (slice.length === 0) continue;
 
-  return stacks;
+      const [odx, odz] = offsets[si] ?? [0, 0];
+
+      const stack: StackData = {
+        def: {
+          x: groupX + odx + jitterX(globalStackIdx),
+          z: odz + jitterZ(globalStackIdx),
+          rotY: jitterRotY(globalStackIdx),
+          label: STATUS_LABELS[status],
+        },
+        books: slice.map((e) => e.book),
+        bookIndices: slice.map((e) => e.idx),
+        stackIdx: globalStackIdx,
+        statusGroup: status,
+      };
+
+      STACKS.push(stack);
+      statusStacks.push(stack);
+      globalStackIdx++;
+    }
+
+    STACKS_BY_STATUS.set(status, statusStacks);
+  });
 })();
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Module-level refs (live outside React to avoid closures)
-// ─────────────────────────────────────────────────────────────────────────────
-
+// TODO: check if module ref bad
 export const BOOK_GROUP_REF: { current: THREE.Group | null } = {
   current: null,
 };
 export const bookMeshRefs = new Map<number, THREE.Mesh>();
-
 export const BOOK_GEO = new THREE.BoxGeometry(BOOK_W, BOOK_D, BOOK_H);
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TAG_PAL — colour palette for overlay tag pills
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const TAG_PAL = [
   { bg: "rgba(52,199,89,.13)", fg: "#1D7A38", bd: "rgba(52,199,89,.26)" },
@@ -121,17 +159,6 @@ export const TAG_PAL = [
   { bg: "rgba(0,122,255,.11)", fg: "#0055B8", bd: "rgba(0,122,255,.22)" },
   { bg: "rgba(255,59,48,.09)", fg: "#B52B22", bd: "rgba(255,59,48,.18)" },
 ] as const;
-
-// ─────────────────────────────────────────────────────────────────────────────
-// BookStack — renders one physical stack of books
-//
-// Interaction model (simplified):
-//   • Any book in any stack is directly clickable as long as no book is
-//     currently focused — no "open stack" step required.
-//   • canInteract = !focusedBookId (and view must be active, enforced above).
-//   • The group itself has no click handler; individual SingleBook meshes
-//     handle their own pointer events.
-// ─────────────────────────────────────────────────────────────────────────────
 
 const BookStack = memo(
   ({
@@ -142,37 +169,32 @@ const BookStack = memo(
     stack: StackData;
     focusedBookId: number | null;
     viewActive: boolean;
-  }) => {
-    // Books are interactable whenever the view is active and nothing is focused
-    const canInteract = viewActive && focusedBookId === null;
-
-    return (
-      <group
-        position={[stack.def.x, 0, stack.def.z]}
-        rotation={[0, stack.def.rotY, 0]}
-      >
-        {stack.books.map((book, i) => {
-          const [ox, oz] = MICRO_XZ[i % MICRO_XZ.length];
-          return (
-            <SingleBook
-              key={book.id}
-              book={book}
-              pos={[ox, BOOK_D * 0.5 + i * BOOK_D, oz]}
-              rotY={MICRO_ROT[i % MICRO_ROT.length]}
-              isTop={i === stack.books.length - 1}
-              booksIdx={stack.startIdx + i}
-              hidden={book.id === focusedBookId}
-              canInteract={canInteract}
-            />
-          );
-        })}
-      </group>
-    );
-  },
+  }) => (
+    <group
+      position={[stack.def.x, 0, stack.def.z]}
+      rotation={[0, stack.def.rotY, 0]}
+    >
+      {stack.books.map((book, i) => {
+        const [ox, oz] = MICRO_XZ[i % MICRO_XZ.length];
+        return (
+          <SingleBook
+            key={book.id}
+            book={book}
+            pos={[ox, BOOK_D * 0.5 + i * BOOK_D, oz]}
+            rotY={MICRO_ROT[i % MICRO_ROT.length]}
+            isTop={i === stack.books.length - 1}
+            booksIdx={stack.bookIndices[i]}
+            hidden={book.id === focusedBookId}
+            canInteract={viewActive}
+          />
+        );
+      })}
+    </group>
+  ),
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BookStacks — scene root for all stacks + the focused-book lift mesh
+// BookStacks — scene root
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function BookStacks({
@@ -196,27 +218,20 @@ export function BookStacks({
     BOOK_GROUP_REF.current = groupRef.current;
   }, []);
 
-  // ── View enter / leave ────────────────────────────────────────────────────
   useEffect(() => {
     if (!viewActive) {
       useBooksStore.getState().clearFocus();
+      _restoreFullControls();
       return;
     }
-    // Entering this view: lock orbit & restore the desk-overview camera
-    _restoreDeskCamera();
-  }, [viewActive]);
 
-  // ── Book focus / dismiss ──────────────────────────────────────────────────
-  useEffect(() => {
     if (focusedBook) {
       _setFocusedControls();
-      return;
     } else {
       _setBrowseControls();
+      _restoreDeskCamera();
     }
-
-    _restoreDeskCamera();
-  }, [focusedBook?.id]);
+  }, [focusedBook?.id, viewActive]);
 
   const focusedBookId = focusedBook?.id ?? null;
 

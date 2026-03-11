@@ -257,6 +257,8 @@ export const HeroTitle = styled.h2`
   letter-spacing: -1.5%;
   margin: 0;
   line-height: 1.15;
+  max-width: 80%;
+  hyphens: auto;
 `;
 
 export const HeroAuthor = styled.p`

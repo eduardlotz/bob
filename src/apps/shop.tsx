@@ -560,7 +560,10 @@ export function ShopApp() {
             </motion.span>
           </ShopItemButton>
 
-          <PaginationDots key={`shop-pagination-dots-${activeTab}`}>
+          <PaginationDots
+            key={`shop-pagination-dots-${activeTab}`}
+            $contrastMode
+          >
             <PaginationButton onClick={handlePrev} disabled={pageCount === 1}>
               <ChevronLeftIcon />
             </PaginationButton>

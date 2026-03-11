@@ -23,22 +23,22 @@ export function paintCover(
   W: number,
   H: number,
 ) {
-  ctx.fillStyle = b.bg;
+  const bg = b.fallbackBackgroundColor;
+  const fg = b.fallbackTextColor;
+
+  ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
-  // Left filled rectangle
-  ctx.fillStyle = b.fg;
+  ctx.fillStyle = fg;
   ctx.fillRect(0, H * 0.38, W * 0.48, H * 0.62);
 
-  // Right outlined rectangle
-  ctx.strokeStyle = b.fg;
+  ctx.strokeStyle = fg;
   ctx.lineWidth = Math.max(2, W * 0.018);
   ctx.strokeRect(W * 0.38, H * 0.27, W * 0.58, H * 0.7);
 
-  // Title — large bold, top-left, word-wrapped
   const titleFS = Math.floor(W * 0.17);
   ctx.font = `bold ${titleFS}px sans-serif`;
-  ctx.fillStyle = b.fg;
+  ctx.fillStyle = fg;
   ctx.textAlign = "left";
   const words = b.title.toUpperCase().split(" ");
   const lines: string[] = [];
@@ -57,11 +57,10 @@ export function paintCover(
     ctx.fillText(l, W * 0.06, H * 0.1 + titleFS + i * (titleFS * 1.15)),
   );
 
-  // Author — bold, bottom-right
   const authorFS = Math.floor(W * 0.1);
   ctx.font = `bold ${authorFS}px sans-serif`;
   ctx.textAlign = "right";
-  ctx.fillStyle = b.fg;
+  ctx.fillStyle = fg;
   b.author
     .split(" ")
     .forEach((part, i) =>
@@ -81,11 +80,24 @@ const coverCache = new Map<number, THREE.CanvasTexture>();
 
 export function getCoverTex(b: Book): THREE.CanvasTexture {
   if (!coverCache.has(b.id)) {
-    const cv = document.createElement("canvas");
-    cv.width = 128;
-    cv.height = 192;
-    paintCover(cv.getContext("2d")!, b, 128, 192);
-    coverCache.set(b.id, new THREE.CanvasTexture(cv));
+    const canvas = document.createElement("canvas");
+    canvas.width = 128;
+    canvas.height = 192;
+    paintCover(canvas.getContext("2d")!, b, 128, 192);
+    const tex = new THREE.CanvasTexture(canvas);
+    coverCache.set(b.id, tex);
+
+    if (b.isbn) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const ctx = canvas.getContext("2d")!;
+        ctx.clearRect(0, 0, 128, 192);
+        ctx.drawImage(img, 0, 0, 128, 192);
+        tex.needsUpdate = true;
+      };
+      img.src = `https://covers.openlibrary.org/b/isbn/${b.isbn}-M.jpg`;
+    }
   }
   return coverCache.get(b.id)!;
 }
@@ -109,16 +121,24 @@ export function getSolid(hex: string, opacity = 1): THREE.MeshStandardMaterial {
   return matCache.get(k)!;
 }
 
+const PAGE_MAT = new THREE.MeshStandardMaterial({
+  color: "#f5f0e8",
+  roughness: 0.9,
+  metalness: 0,
+});
+
 export function makeMats(
   b: Book,
   showCover: boolean,
   opacity = 1,
 ): THREE.Material | THREE.Material[] {
-  const spine = getSolid(b.bg, opacity);
-  const back = getSolid(b.bg, opacity);
-  const pages = getSolid("#f5f0e8", opacity);
+  const spine = getSolid(b.fallbackBackgroundColor, opacity);
+  const back = getSolid(b.fallbackBackgroundColor, opacity);
+  const pages = opacity < 1 ? getSolid("#f5f0e8", opacity) : PAGE_MAT;
 
-  if (!showCover) return spine;
+  if (!showCover) {
+    return [pages, spine, spine, back, pages, pages];
+  }
 
   const coverMat = new THREE.MeshStandardMaterial({
     map: getCoverTex(b),
@@ -128,20 +148,23 @@ export function makeMats(
     opacity,
   });
 
-  // face order: [+X=pages, -X=spine, +Y=cover, -Y=back, +Z=top-pages, -Z=bottom-pages]
   return [pages, spine, coverMat, back, pages, pages];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Camera helpers
+// Camera — focus on a stack
+//
+// Uses a fixed world-space offset from the target (above + slightly toward
+// viewer) rather than a stack-rotation-relative offset.  This means:
+//
+//   • Camera only travels the small XZ delta between stacks → no big swings
+//   • View angle is always consistent (slight top-down from front)
+//   • Neighbouring stacks stay clearly below the camera → no clipping
 // ─────────────────────────────────────────────────────────────────────────────
 
-// How far above and behind a stack the camera positions itself.
-// Y is raised to clear the tallest possible stack; Z pulls back enough to
-// frame all books in the stack at a comfortable angle.
-const CAM_Y_BASE = 0.5; // base height above stack origin
-const CAM_Y_PER_BOOK = 0.015; // extra height per book in stack
-const CAM_Z_BACK = 1; // pull-back distance along local -Z
+// Fixed offset in world space from the look-at target.
+// Y = above the target, Z = toward the viewer (camera-controls default is -Z forward)
+const FOCUS_CAM_OFFSET = new THREE.Vector3(0, 0.38, 0.42);
 
 function getCameraControls() {
   return useViewStore.getState().cameraControlsRef?.current as
@@ -150,11 +173,6 @@ function getCameraControls() {
     | undefined;
 }
 
-/**
- * Move the camera to frame a specific stack.
- * The look-target is the top of the stack so the camera tilts naturally
- * downward rather than shooting at the table surface.
- */
 export function _moveCameraToStack(idx: number) {
   const controls = getCameraControls();
   if (!controls || !BOOK_GROUP_REF.current) return;
@@ -164,30 +182,13 @@ export function _moveCameraToStack(idx: number) {
 
   BOOK_GROUP_REF.current.updateWorldMatrix(true, false);
 
-  // Look-at target: mid-height of the stack in world space
-  const stackTopY = BOOK_D * stack.books.length;
-  const targetLocal = new THREE.Vector3(
-    stack.def.x,
-    stackTopY * 0.7,
-    stack.def.z,
-  );
+  // Target = mid-height of the stack, in world space
+  const stackMidY = BOOK_D * stack.books.length * 2;
+  const targetLocal = new THREE.Vector3(stack.def.x, stackMidY, stack.def.z);
   const targetWorld = BOOK_GROUP_REF.current.localToWorld(targetLocal.clone());
 
-  // Camera position: above and behind the stack along its rotated Z axis.
-  // We apply the stack's own rotY so "behind" means "away from the camera axis".
-  const groupQuat = BOOK_GROUP_REF.current.getWorldQuaternion(
-    new THREE.Quaternion(),
-  );
-  const stackQuat = new THREE.Quaternion().setFromEuler(
-    new THREE.Euler(0, stack.def.rotY, 0),
-  );
-  const combinedQuat = groupQuat.multiply(stackQuat);
-
-  const camY = CAM_Y_BASE + CAM_Y_PER_BOOK * stack.books.length;
-  const camOffset = new THREE.Vector3(0, camY, CAM_Z_BACK).applyQuaternion(
-    combinedQuat,
-  );
-  const camWorld = targetWorld.clone().add(camOffset);
+  // Camera = target + fixed world-space offset (no rotation applied)
+  const camWorld = targetWorld.clone().add(FOCUS_CAM_OFFSET);
 
   controls.setLookAt(
     camWorld.x,
@@ -200,9 +201,6 @@ export function _moveCameraToStack(idx: number) {
   );
 }
 
-/**
- * Restore the wide desk overview camera.
- */
 export function _restoreDeskCamera() {
   const controls = getCameraControls();
   if (!controls) return;
@@ -213,43 +211,34 @@ export function _restoreDeskCamera() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Camera control mode helpers
+// Camera control modes
 //
-// Three distinct modes:
+//  BROWSE  (desk view)
+//    Left-drag / touch-one  → TRUCK (pan XZ)
+//    Wheel / pinch          → ZOOM  (inspect stacks from above)
+//    Right-drag             → TRUCK
 //
-//   BROWSE  — user is looking at the desk / stacks.
-//             Left-drag and touch-one both orbit so they can inspect stacks.
+//  FOCUSED (book is lifted)
+//    All inputs disabled — pointer is owned by the book interaction.
 //
-//   FOCUSED — a book is lifted; orbit is disabled so pointer-drag rotates
-//             the book instead of fighting the camera.
-//
-// (The old _setOrbitControls / _setFixedControls naming was inverted and
-// conflated these two cases — "fixed" was used for browse entry which
-// accidentally killed left-click orbiting on desktop.)
+//  DEFAULT (any other route / view)
+//    Full controls restored so nothing bleeds into other parts of the app.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * BROWSE mode — full orbit with mouse left-button and one-finger touch.
- * Call when entering the bookshelf view or dismissing a focused book.
- */
+/** Call when entering the bookshelf view. Pan + zoom only, no orbit. */
 export function _setBrowseControls() {
   useViewStore.setState({ viewMode: "fixed" });
   const controls = getCameraControls();
   if (!controls) return;
   controls.mouseButtons.left = CameraControlsImpl.ACTION.TRUCK;
   controls.mouseButtons.right = CameraControlsImpl.ACTION.TRUCK;
-  controls.mouseButtons.wheel = CameraControlsImpl.ACTION.NONE;
+  controls.mouseButtons.wheel = CameraControlsImpl.ACTION.ZOOM;
   controls.touches.one = CameraControlsImpl.ACTION.TOUCH_TRUCK;
-  controls.touches.two = CameraControlsImpl.ACTION.TOUCH_TRUCK;
+  controls.touches.two = CameraControlsImpl.ACTION.TOUCH_ZOOM_TRUCK;
 }
 
-/**
- * FOCUSED mode — all camera interaction disabled.
- * Pointer events are consumed by the focused book mesh for drag-rotation.
- * Call when a book becomes focused.
- */
+/** Call when a book becomes focused. All camera input disabled. */
 export function _setFocusedControls() {
-  //   useViewStore.setState({ viewMode: "object" });
   useViewStore.setState({ viewMode: "fixed" });
   const controls = getCameraControls();
   if (!controls) return;
@@ -258,4 +247,20 @@ export function _setFocusedControls() {
   controls.mouseButtons.wheel = CameraControlsImpl.ACTION.NONE;
   controls.touches.one = CameraControlsImpl.ACTION.NONE;
   controls.touches.two = CameraControlsImpl.ACTION.NONE;
+}
+
+/**
+ * Call when LEAVING the bookshelf view entirely.
+ * Restores full orbit + zoom so other routes / scenes work correctly.
+ * Without this, the truck-only or no-input overrides from the bookshelf
+ * bleed into every other camera-controlled view in the app.
+ */
+export function _restoreFullControls() {
+  const controls = getCameraControls();
+  if (!controls) return;
+  controls.mouseButtons.left = CameraControlsImpl.ACTION.ROTATE;
+  controls.mouseButtons.right = CameraControlsImpl.ACTION.TRUCK;
+  controls.mouseButtons.wheel = CameraControlsImpl.ACTION.ZOOM;
+  controls.touches.one = CameraControlsImpl.ACTION.TOUCH_ROTATE;
+  controls.touches.two = CameraControlsImpl.ACTION.TOUCH_ZOOM_TRUCK;
 }

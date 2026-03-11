@@ -236,6 +236,7 @@ interface GameFlags {
   isPaused: boolean;
   isHydrated: boolean;
   isReady: boolean;
+  cookiesAccepted: boolean;
 }
 
 interface GameStateActions {
@@ -275,6 +276,7 @@ interface GameStateActions {
 
   setGraphicsMode: (mode: QualityMode) => void;
   toggleParticleEffects: () => void;
+  acceptCookies: () => void;
 
   setWorldMusicId: (id: string) => void;
   setTapEffectId: (id: string) => void;
@@ -496,6 +498,7 @@ const initialGameFlags: GameFlags = {
   isPaused: false,
   isHydrated: false,
   isReady: false,
+  cookiesAccepted: false,
 };
 
 const initialGameComputedValues: GameComputed = {
@@ -536,6 +539,7 @@ const partializePersisted = (state: GameStore): PersistedGameStore => ({
   graphicPreferences: state.graphicPreferences,
   // selectedOrbitForm: state.selectedOrbitForm,
   selectedOrbitForm: "EQUATORIAL_RING", // TODO: add configs with minMax angles/zooms for other forms or delete select option altogether
+  cookiesAccepted: state.cookiesAccepted,
 });
 
 // TODO: split storeCreate into groups for better readability
@@ -1121,6 +1125,13 @@ export const useCoreStore = create<GameStore>()(
           set((state) => ({
             ...state,
             isPaused: false,
+          }));
+        },
+
+        acceptCookies: () => {
+          set((state) => ({
+            ...state,
+            cookiesAccepted: true,
           }));
         },
 

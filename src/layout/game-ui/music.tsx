@@ -13,6 +13,7 @@ import { createPortal } from "react-dom";
 import styled from "styled-components";
 import { FillRow, HugRow } from "..";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/icons/chevron";
+import { useCoreStore } from "@/store";
 
 const SOUNDCLOUD_URLS = [
   "https://soundcloud.com/captainlowie/ist-das-leben-nicht-schoen",
@@ -45,6 +46,7 @@ export const MusicOverlay = (props: {
   rotation?: [number, number, number];
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const { cookiesAccepted, acceptCookies } = useCoreStore();
 
   const total = SOUNDCLOUD_URLS.length;
 
@@ -60,25 +62,51 @@ export const MusicOverlay = (props: {
         initial={{ opacity: 0, scaleX: 0.9, y: 40, filter: "blur(6px)" }}
         animate={{ opacity: 1, scaleX: 1, y: 0, filter: "blur(0px)" }}
         exit={{ opacity: 0, scaleX: 0.9, y: 80, filter: "blur(6px)" }}
-        transition={{
-          type: "spring" as const,
-          bounce: 0.5,
-          delay: 0.5,
-        }}
+        transition={{ type: "spring" as const, bounce: 0.5, delay: 0.5 }}
       >
         <OverlayBody key="music-ui-body">
-          <iframe
-            key={currentIndex}
-            width="100%"
-            height="350"
-            allow="autoplay"
-            src={embedUrl}
-            style={{ border: "none", display: "block" }}
-          />
+          {!cookiesAccepted ? (
+            <div
+              style={{
+                height: 250,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                gap: 16,
+                padding: 20,
+                textAlign: "center",
+                background: "#212121",
+                borderRadius: "2rem",
+              }}
+            >
+              <p>
+                Es werden Daten an SoundCloud übertragen und Cookies gesetzt.
+              </p>
+
+              <SoundcloudButton
+                onClick={acceptCookies}
+                style={{
+                  padding: "10px 16px",
+                  cursor: "pointer",
+                }}
+              >
+                Player laden
+              </SoundcloudButton>
+            </div>
+          ) : (
+            <iframe
+              key={currentIndex}
+              width="100%"
+              height="350"
+              allow="autoplay"
+              src={embedUrl}
+              style={{ border: "none", display: "block" }}
+            />
+          )}
         </OverlayBody>
 
-        <ContentControls>
-          <PaginationDots>
+        {cookiesAccepted && (
+          <PaginationDots $contrastMode>
             <PaginationButton onClick={prevTrack}>
               <ChevronLeftIcon />
             </PaginationButton>
@@ -101,30 +129,22 @@ export const MusicOverlay = (props: {
               <ChevronRightIcon />
             </PaginationButton>
           </PaginationDots>
-        </ContentControls>
+        )}
       </ShopContainer>
     </FixedAnchor>
   );
 
   return (
-    <>
-      <group>
-        <Html
-        // position={props.position}
-        // transform
-        // scale={[0.08, 0.08, 0.08]}
-        // rotation={props.rotation}
-        >
-          {createPortal(
-            NavigationOverlays,
-            document.getElementById("motion-root")!,
-          )}
-        </Html>
-      </group>
-    </>
+    <group>
+      <Html>
+        {createPortal(
+          NavigationOverlays,
+          document.getElementById("motion-root")!,
+        )}
+      </Html>
+    </group>
   );
 };
-
 const OverlayBody = styled(motion.div)`
   padding: 0px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -142,38 +162,36 @@ const OverlayBody = styled(motion.div)`
   }
 `;
 
-const NavRow = styled.div`
+export const SoundcloudButton = styled.button`
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  background: white;
-  padding: 6px 12px;
-`;
+  gap: 0.5rem;
+  justify-content: center;
 
-const NavButton = styled.button`
-  background: none;
-  border: 1px solid black;
-  border-radius: 4px;
-  color: black;
+  padding: 12px 32px;
+  min-width: 200px;
+
+  border-radius: 9999px;
+
+  font-weight: 600;
+  font-family: "Open Sauce Two";
+  font-size: 1rem;
+  color: #ffffff;
+  text-decoration: none;
+  text-align: center;
+
+  background: linear-gradient(180deg, #f87903 0%, #c56308 100%);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 -1px 1px rgba(0, 0, 0, 0.15);
+
   cursor: pointer;
-
-  padding: 2px 12px 4px;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease,
-    border-color 0.15s ease;
+  transition: all 0.2s ease-in-out;
 
   &:hover {
-    background: black;
-    color: #fff;
-  }
+    background: linear-gradient(180deg, #ff9f38 0%, #e66610 100%);
 
-  &:active {
-    background: black;
+    color: white;
   }
-`;
-
-const TrackCounter = styled.span`
-  font-size: 0.75rem;
-  color: black;
 `;

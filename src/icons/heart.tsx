@@ -1,8 +1,9 @@
 import { IconProps } from "./types";
 
-export const HeartIcon = ({ color }: IconProps) => {
+export const HeartIcon = ({ color, style }: IconProps) => {
   return (
     <svg
+      style={style}
       width="16"
       height="16"
       viewBox="0 0 16 16"

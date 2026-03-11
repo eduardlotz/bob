@@ -34,6 +34,7 @@ export const SingleBook = memo(
   }) => {
     const { setHoveredObject } = useFloatingBar();
     const setFocused = useBooksStore((s) => s.setFocused);
+    const clearFocus = useBooksStore((s) => s.clearFocus);
     const focusedBook = useBooksStore((s) => s.focusedBook);
 
     const mats = useMemo(
@@ -68,11 +69,15 @@ export const SingleBook = memo(
 
     const onClick = useCallback(
       (e: ThreeEvent<MouseEvent>) => {
-        if (!canInteract || focusedBook) return;
-        e.stopPropagation();
-        setFocused(booksIdx);
+        if (!canInteract) return;
+        if (focusedBook) {
+          clearFocus();
+        } else {
+          e.stopPropagation();
+          setFocused(booksIdx);
+        }
       },
-      [booksIdx, canInteract, focusedBook, setFocused],
+      [booksIdx, canInteract, clearFocus, focusedBook, setFocused],
     );
 
     return (
@@ -110,6 +115,9 @@ const FOCUS_DIST = 0.62;
 const FOCUS_POS_LERP = 0.14;
 const FOCUS_DISMISS_LERP = 0.22;
 
+// How many pixels of movement constitute a drag (not a click)
+const DRAG_THRESHOLD_PX = 4;
+
 // Pre-allocated temporaries – avoids per-frame GC pressure
 const _t = {
   invMat: new THREE.Matrix4(),
@@ -132,6 +140,7 @@ export const FocusedBookMesh = ({
   groupRef: RefObject<THREE.Group | null>;
 }) => {
   const focusedBook = useBooksStore((s) => s.focusedBook);
+  const clearFocus = useBooksStore((s) => s.clearFocus);
 
   const [renderBook, setRenderBook] = useState<Book | null>(null);
   const meshRef = useRef<THREE.Mesh>(null);
@@ -147,6 +156,8 @@ export const FocusedBookMesh = ({
   const dragYaw = useRef(0);
   const dragPitch = useRef(0);
   const dragging = useRef(false);
+  // Tracks whether the pointer moved enough to count as a drag (not a click)
+  const hasDragged = useRef(false);
   const lastX = useRef(0);
   const lastY = useRef(0);
 
@@ -156,7 +167,15 @@ export const FocusedBookMesh = ({
       if (!dragging.current) return;
       const dx = e.clientX - lastX.current;
       const dy = e.clientY - lastY.current;
-      // in the global pointermove listener:
+
+      // Mark as a real drag once movement exceeds threshold
+      if (
+        !hasDragged.current &&
+        (Math.abs(dx) > DRAG_THRESHOLD_PX || Math.abs(dy) > DRAG_THRESHOLD_PX)
+      ) {
+        hasDragged.current = true;
+      }
+
       dragYaw.current = Math.max(
         -1.2,
         Math.min(1.2, dragYaw.current + dx * 0.005),
@@ -219,12 +238,14 @@ export const FocusedBookMesh = ({
       dragYaw.current = 0;
       dragPitch.current = 0;
       dragging.current = false;
+      hasDragged.current = false;
 
       setRenderBook(focusedBook);
     } else {
       isDismissing.current = true;
       targetScale.current = 0;
       dragging.current = false;
+      hasDragged.current = false;
     }
   }, [focusedBook?.id]);
 
@@ -300,9 +321,9 @@ export const FocusedBookMesh = ({
       castShadow
       onPointerDown={(e) => {
         e.stopPropagation();
-        // Capture pointer so move/up fire even outside the mesh
         (e.target as Element).setPointerCapture(e.pointerId);
         dragging.current = true;
+        hasDragged.current = false; // reset each new press
         lastX.current = e.clientX;
         lastY.current = e.clientY;
       }}
@@ -312,6 +333,19 @@ export const FocusedBookMesh = ({
       }}
       onPointerCancel={() => {
         dragging.current = false;
+      }}
+      onClick={(e) => {
+        // If the pointer moved enough to count as a drag, swallow the click
+        // so it doesn't propagate to background books and clear focus.
+        // If it was a genuine tap, let clearFocus happen via the background.
+        if (hasDragged.current) {
+          e.stopPropagation();
+        } else {
+          // Genuine click on the focused book itself — clear focus
+          e.stopPropagation();
+          clearFocus();
+        }
+        hasDragged.current = false;
       }}
     />
   );
