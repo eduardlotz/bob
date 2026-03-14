@@ -1,6 +1,6 @@
 import { FillRow } from "@/layout";
 import { motion } from "motion/react";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 
 export const AppInfo = styled(motion.p)`
   opacity: 0.5;
@@ -293,16 +293,48 @@ export const ContentControls = styled.div`
   margin: 0 auto;
 `;
 
-export const PaginationDots = styled.div`
+export const PaginationDots = styled.div<{
+  $contrastMode?: boolean;
+  $mobileBottomAnchor?: boolean;
+}>`
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
   padding: 4px;
   border-radius: 50px;
-  background: rgba(0, 0, 0, 0.15);
+  background: rgba(33, 33, 33, 0.5);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+
+  ${({ $contrastMode }) => {
+    return $contrastMode
+      ? css`
+          backdrop-filter: none;
+          background: #212121;
+          border: 1.5px solid #ffffff58;
+        `
+      : "";
+  }}
+
+  ${({ $mobileBottomAnchor }) => {
+    return $mobileBottomAnchor
+      ? css`
+          @media (width <= 785px) {
+            position: fixed;
+            bottom: 40px;
+            left: 0;
+            right: 0;
+            width: fit-content;
+            margin: 0 auto;
+            pointer-events: auto;
+            z-index: 100;
+          }
+        `
+      : "";
+  }}
+
+   
 
   > div > div {
     height: 8px;

@@ -135,7 +135,7 @@ export default function App() {
 
         <FullScreen>
           {viewDebuggerVisible && (
-            <ViewDebug>
+            <ViewDebug layout>
               <p>
                 CameraControls:{" "}
                 {cameraControlsRef?.current?.active ? "active" : "-"}
@@ -166,9 +166,8 @@ export default function App() {
               <p>Current View: {currentView}</p>
               <p>Previous View: {previousView}</p>
               <hr />
-              <p>Image Focused?: {isImageFocused ? "yes " : "no"}</p>
-              <p>Current ViewMode: {viewMode}</p>
               <p>Default ViewMode: {defaultViewMode}</p>
+              <p>Current ViewMode: {viewMode}</p>
               <p>Previous ViewMode: {previousViewMode}</p>
             </ViewDebug>
           )}
@@ -201,18 +200,26 @@ export default function App() {
 
 const ViewDebug = styled(motion.div)`
   position: fixed;
-  bottom: 0;
-  left: 0;
+  top: 8px;
+  left: 8px;
   right: 0;
-  width: 200px;
-  background: white;
-  color: black;
-  font-size: 12px;
-  font-family: monospace !important;
-  border: 2px solid black;
+
+  min-width: fit-content;
+  width: fit-content;
+  max-width: calc(100vw - 32px);
+
+  color: #ffffff;
+  padding: 12px 16px;
+  border-radius: 24px;
+  background-color: rgba(0, 0, 0, 0.2);
+  -webkit-backdrop-filter: blur(32px);
+  backdrop-filter: blur(32px);
+  /* letter-spacing: -2%; */
+  font-weight: 600;
+
+  font-size: 14px;
   pointer-events: none;
   z-index: 1;
-  padding: 12px;
   word-break: break-all;
 `;
 

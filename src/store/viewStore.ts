@@ -89,16 +89,6 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
       easing: "easeInOutCubic",
     },
   },
-  "phone:camera": {
-    id: "phone:camera",
-    name: "Camera View",
-    position: [0, CAMERA_HEIGHT, HIDDEN_OPTIONS_CAMERA_ZOOM],
-    target: [0, CAMERA_Y_POSITION - 1, 0],
-    transition: {
-      duration: 1000,
-      easing: "easeInOutCubic",
-    },
-  },
   upgrades: {
     id: "upgrades",
     name: "Upgrades View",
@@ -134,11 +124,22 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
     id: "phone:quests",
     name: "Quests View",
   },
+  "phone:camera": {
+    id: "phone:camera",
+    name: "Camera View",
+    position: [0, CAMERA_HEIGHT, HIDDEN_OPTIONS_CAMERA_ZOOM],
+    target: [0, CAMERA_Y_POSITION - 1, 0],
+    transition: {
+      duration: 1000,
+      easing: "easeInOutCubic",
+    },
+    defaultViewMode: "object",
+  },
   desk: {
     id: "desk",
     name: "Desk View",
     position: [-2.5, 0.5, 0],
-    target: [-3.5, 0.4, 0],
+    target: [-3.5, 0, 0],
     transition: {
       duration: 800,
       easing: "easeInOutCubic",
@@ -148,8 +149,8 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   bookshelf: {
     id: "bookshelf",
     name: "Bookshelf View",
-    position: [1.75, 0.5, -1],
-    target: [3.75, 0.5, -4],
+    position: [2, 1, -3],
+    target: [2, 0, -4],
     transition: {
       duration: 550,
       easing: "easeInOutCubic",

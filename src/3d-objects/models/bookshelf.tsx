@@ -37,22 +37,29 @@ interface Props {
   position: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
+  /**
+   * When true, the coloured book meshes (Cube033_1 … Cube033_8) are hidden so
+   * BookshelfBooks can overlay R3F-generated books in their place.
+   * The shelf frame (Cube033 / BrownDark) is always rendered.
+   */
+  hideGltfBooks?: boolean;
 }
 
-export const BookshelfModel = ({ scale = [1, 1, 1], ...props }: Props) => {
+export const BookshelfModel = ({
+  scale = [1, 1, 1],
+  hideGltfBooks = false,
+  ...props
+}: Props) => {
   const group = useRef<THREE.Group>(null!);
   const { nodes, materials } = useGLTF(PATH) as GLTFResult;
 
   const [spring, api] = useSpring(() => ({
-    scale: [0, 0, 0], // start invisible
+    scale: [0, 0, 0],
     config: { tension: 200, friction: 15 },
   }));
 
   useEffect(() => {
-    api.start({
-      scale: scale,
-      config: { tension: 300, friction: 10 },
-    });
+    api.start({ scale, config: { tension: 300, friction: 10 } });
   }, []);
 
   const { currentView } = useViewStore();
@@ -60,16 +67,11 @@ export const BookshelfModel = ({ scale = [1, 1, 1], ...props }: Props) => {
 
   const handlePointerEnter = (e: any) => {
     e.stopPropagation();
-
     if (currentView !== "bookshelf")
-      setHoveredObject({
-        title: "Bücher & Inspirationen",
-      });
+      setHoveredObject({ title: "Buchsammlung" });
   };
 
-  const handlePointerLeave = () => {
-    setHoveredObject(null);
-  };
+  const handlePointerLeave = () => setHoveredObject(null);
 
   return (
     <a.group
@@ -83,42 +85,45 @@ export const BookshelfModel = ({ scale = [1, 1, 1], ...props }: Props) => {
       onPointerLeave={handlePointerLeave}
     >
       <group rotation={[Math.PI / 2, 0, 0]}>
+        {/* Shelf frame — always rendered */}
         <mesh
           geometry={nodes.Cube033.geometry}
           material={materials["BrownDark.049"]}
         />
-        <mesh
-          geometry={nodes.Cube033_1.geometry}
-          material={materials["PurpleDark.003"]}
-        />
-        <mesh
-          geometry={nodes.Cube033_2.geometry}
-          material={materials["White.034"]}
-        />
-        <mesh
-          geometry={nodes.Cube033_3.geometry}
-          material={materials["Metal.080"]}
-        />
-        <mesh
-          geometry={nodes.Cube033_4.geometry}
-          material={materials["BlueDark.003"]}
-        />
-        <mesh
-          geometry={nodes.Cube033_5.geometry}
-          material={materials["GreenDark.007"]}
-        />
-        <mesh
-          geometry={nodes.Cube033_6.geometry}
-          material={materials["WoodDark.005"]}
-        />
-        <mesh
-          geometry={nodes.Cube033_7.geometry}
-          material={materials["StoneDark.001"]}
-        />
-        <mesh
-          geometry={nodes.Cube033_8.geometry}
-          material={materials["Black.030"]}
-        />
+
+        {/* Book meshes — hidden when using R3F-generated books */}
+        {!hideGltfBooks && (
+          <>
+            <mesh
+              geometry={nodes.Cube033_1.geometry}
+              material={materials["PurpleDark.003"]}
+            />
+            <mesh
+              geometry={nodes.Cube033_2.geometry}
+              material={materials["White.034"]}
+            />
+            <mesh
+              geometry={nodes.Cube033_4.geometry}
+              material={materials["BlueDark.003"]}
+            />
+            <mesh
+              geometry={nodes.Cube033_5.geometry}
+              material={materials["GreenDark.007"]}
+            />
+            <mesh
+              geometry={nodes.Cube033_6.geometry}
+              material={materials["WoodDark.005"]}
+            />
+            <mesh
+              geometry={nodes.Cube033_7.geometry}
+              material={materials["StoneDark.001"]}
+            />
+            <mesh
+              geometry={nodes.Cube033_8.geometry}
+              material={materials["Black.030"]}
+            />
+          </>
+        )}
       </group>
     </a.group>
   );
