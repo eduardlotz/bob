@@ -234,7 +234,7 @@ const StackNav = memo(
   ({ book, posInStack, stackSize, onPrev, onNext }: StackNavProps) => {
     const sc = STATUS_COLORS[book.status];
     // Clamp dot display to max 7 — collapse beyond that
-    const MAX_DOTS = 7;
+    const MAX_DOTS = 10;
     const showDots = stackSize <= MAX_DOTS;
 
     return (
@@ -425,18 +425,19 @@ export const BookPortalOverlay = () => {
     [focusedIdx],
   );
 
-  // Books scoped to the current stack only
-  const stackIndices = useMemo<number[]>(
-    () => activeStack?.bookIndices ?? [],
-    [activeStack],
-  );
+  // All books sharing the same status — this is the full loop domain
+  const statusIndices = useMemo<number[]>(() => {
+    if (!focusedBook) return [];
+    const stacks = STACKS_BY_STATUS.get(focusedBook.status) ?? [];
+    return stacks.flatMap((s) => s.bookIndices);
+  }, [focusedBook?.status]);
 
-  // Position of the focused book within its stack (0-based)
+  // Position of the focused book within its status group (0-based)
   const posInStack = useMemo<number>(() => {
     if (focusedIdx === null) return 0;
-    const idx = stackIndices.indexOf(focusedIdx);
+    const idx = statusIndices.indexOf(focusedIdx);
     return idx === -1 ? 0 : idx;
-  }, [focusedIdx, stackIndices]);
+  }, [focusedIdx, statusIndices]);
 
   // Move camera whenever the active stack changes
   useEffect(() => {
@@ -447,18 +448,18 @@ export const BookPortalOverlay = () => {
 
   const isOpen = !!focusedBook && activeStack !== null;
 
-  // Infinite loop within the current stack
+  // Infinite loop across all books in the same status group
   const prevBook = useCallback(() => {
-    if (stackIndices.length === 0) return;
-    const next = (posInStack - 1 + stackIndices.length) % stackIndices.length;
-    useBooksStore.getState().setFocused(stackIndices[next]);
-  }, [posInStack, stackIndices]);
+    if (statusIndices.length === 0) return;
+    const next = (posInStack - 1 + statusIndices.length) % statusIndices.length;
+    useBooksStore.getState().setFocused(statusIndices[next]);
+  }, [posInStack, statusIndices]);
 
   const nextBook = useCallback(() => {
-    if (stackIndices.length === 0) return;
-    const next = (posInStack + 1) % stackIndices.length;
-    useBooksStore.getState().setFocused(stackIndices[next]);
-  }, [posInStack, stackIndices]);
+    if (statusIndices.length === 0) return;
+    const next = (posInStack + 1) % statusIndices.length;
+    useBooksStore.getState().setFocused(statusIndices[next]);
+  }, [posInStack, statusIndices]);
 
   const onClose = useCallback(() => {
     useBooksStore.getState().clearFocus();
@@ -500,11 +501,11 @@ export const BookPortalOverlay = () => {
           {/* Scrollable book content */}
           <BookContent book={focusedBook} />
 
-          {/* iOS-style nav — always visible, scoped to current stack */}
+          {/* iOS-style nav — always visible, scoped to status group */}
           <StackNav
             book={focusedBook}
             posInStack={posInStack}
-            stackSize={stackIndices.length}
+            stackSize={statusIndices.length}
             onPrev={prevBook}
             onNext={nextBook}
           />
