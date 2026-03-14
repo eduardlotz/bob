@@ -20,13 +20,13 @@ import {
   TagsWrap,
 } from "./components";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/icons/chevron";
-import { memo, useCallback, useEffect, useMemo } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { StackData, STACKS, STACKS_BY_STATUS, STATUS_LABELS, TAG_PAL } from ".";
 import { CoverCanvas } from "./bookCover";
 import { CloseIcon } from "@/icons/close";
 import { HeartIcon } from "@/icons/heart";
 import { FillColumn, HugColumn, HugRow } from "@/layout";
-import { PaginationDots, PaginationButton, FixedAnchor } from "@/apps/ui";
+import styled from "styled-components";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Store
@@ -47,11 +47,12 @@ export const useBookOverlay = create<BookOverlayStore>((set) => ({
   },
 }));
 
+export const OVERLAY_ROOT_ID = "motion-root";
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Find the stack that contains a given BOOKS-array index. */
 function stackForBookIdx(booksIdx: number | null): StackData | null {
   if (booksIdx === null) return null;
   return STACKS.find((s) => s.bookIndices.includes(booksIdx)) ?? null;
@@ -105,6 +106,103 @@ const SLIDE_VARIANTS = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Styled primitives
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Sticky footer bar pinned to the bottom of the panel.
+ * Sits above the scroll area via flex column layout in Panel.
+ */
+const NavBar = styled.div`
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3rem;
+  padding: 10px 16px 14px;
+  border-top: 1px solid rgba(0, 0, 0, 0.07);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+`;
+
+const NavChevron = styled.button<{ disabled?: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: ${({ disabled }) =>
+    disabled ? "transparent" : "rgba(0,0,0,0.05)"};
+  color: ${({ disabled }) =>
+    disabled ? "rgba(0,0,0,0.18)" : "rgba(0,0,0,0.75)"};
+  cursor: ${({ disabled }) => (disabled ? "default" : "pointer")};
+  transition:
+    background 0.15s,
+    color 0.15s;
+  flex-shrink: 0;
+
+  &:hover:not(:disabled) {
+    background: rgba(0, 0, 0, 0.09);
+  }
+  &:active:not(:disabled) {
+    background: rgba(0, 0, 0, 0.13);
+  }
+`;
+
+/** iOS-style dot track sitting between the two chevrons */
+const DotTrack = styled.div`
+  /* flex: 1; */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+`;
+
+const DotRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 5px;
+`;
+
+const Dot = styled.span<{ $active: boolean }>`
+  width: ${({ $active }) => ($active ? "16px" : "6px")};
+  height: 6px;
+  border-radius: 3px;
+  background: ${({ $active }) =>
+    $active ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0.15)"};
+  transition:
+    width 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background 0.22s ease;
+`;
+
+const NavCounter = styled.span`
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.38);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+`;
+
+/** Inline status pill shown in the nav — smaller than the hero pill */
+const NavStatusPill = styled.span<{ $bg: string; $fg: string; $bd: string }>`
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  background: ${({ $bg }) => $bg};
+  color: ${({ $fg }) => $fg};
+  border: 1px solid ${({ $bd }) => $bd};
+  white-space: nowrap;
+`;
+
+// ─────────────────────────────────────────────────────────────────────────────
 // RatingStars
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -119,7 +217,64 @@ function RatingStars({ rating }: { rating: 1 | 2 | 3 | 4 | 5 }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BookContent — animated panel body for one book
+// StackNav — iOS-style nav bar, stack-scoped, always visible
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface StackNavProps {
+  book: Book;
+  /** 0-based position within the current stack */
+  posInStack: number;
+  /** Total books in the current stack */
+  stackSize: number;
+  onPrev: () => void;
+  onNext: () => void;
+}
+
+const StackNav = memo(
+  ({ book, posInStack, stackSize, onPrev, onNext }: StackNavProps) => {
+    const sc = STATUS_COLORS[book.status];
+    // Clamp dot display to max 7 — collapse beyond that
+    const MAX_DOTS = 7;
+    const showDots = stackSize <= MAX_DOTS;
+
+    return (
+      <NavBar>
+        <NavChevron
+          onClick={onPrev}
+          // Always enabled — navigation loops infinitely
+          aria-label="Previous book"
+        >
+          <ChevronLeftIcon />
+        </NavChevron>
+
+        <DotTrack>
+          <NavStatusPill $bg={sc.bg} $fg={sc.fg} $bd={sc.bd}>
+            {STATUS_LABELS[book.status]}
+          </NavStatusPill>
+
+          {showDots ? (
+            <DotRow>
+              {Array.from({ length: stackSize }, (_, i) => (
+                <Dot key={i} $active={i === posInStack} />
+              ))}
+            </DotRow>
+          ) : (
+            <NavCounter>
+              {posInStack + 1} / {stackSize}
+            </NavCounter>
+          )}
+        </DotTrack>
+
+        <NavChevron onClick={onNext} aria-label="Next book">
+          <ChevronRightIcon />
+        </NavChevron>
+      </NavBar>
+    );
+  },
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BookContent
 // ─────────────────────────────────────────────────────────────────────────────
 
 const BookContent = memo(({ book }: { book: Book }) => {
@@ -156,13 +311,13 @@ const BookContent = memo(({ book }: { book: Book }) => {
 
             <FillColumn $gap="4px" $justify="center" $align="flex-start">
               {book.rating && <RatingStars rating={book.rating} />}
-              <HugColumn $gap={0}>
+              <HugColumn $gap={0} style={{ width: "100%" }}>
                 <HeroTitle>{book.title}</HeroTitle>
                 <HeroAuthor>{book.author}</HeroAuthor>
               </HugColumn>
-              <TagPill $bg={sc.bg} $fg={sc.fg} $bd={sc.bd}>
+              {/* <TagPill $bg={sc.bg} $fg={sc.fg} $bd={sc.bd}>
                 {STATUS_LABELS[book.status]}
-              </TagPill>
+              </TagPill> */}
             </FillColumn>
           </HeroRow>
 
@@ -256,82 +411,34 @@ const BookContent = memo(({ book }: { book: Book }) => {
   );
 });
 
-interface StatusFloatingBarProps {
-  /** Index of the focused book within the flattened status book list. */
-  posInStatus: number;
-  /** Total books across all stacks of this status. */
-  totalInStatus: number;
-  onPrev: () => void;
-  onNext: () => void;
-}
-
-const StatusFloatingBar = memo(
-  ({ posInStatus, totalInStatus, onPrev, onNext }: StatusFloatingBarProps) => {
-    return (
-      <FixedAnchor>
-        <PaginationDots $contrastMode $mobileBottomAnchor>
-          <PaginationButton onClick={onPrev} disabled={posInStatus === 0}>
-            <ChevronLeftIcon />
-          </PaginationButton>
-
-          <HugRow $gap="10px" style={{ alignItems: "center" }}>
-            <p
-              style={{
-                fontSize: 11,
-                fontWeight: 500,
-                fontVariantNumeric: "tabular-nums",
-                minWidth: 36,
-                textAlign: "right",
-              }}
-            >
-              {posInStatus + 1} / {totalInStatus}
-            </p>
-          </HugRow>
-
-          <PaginationButton
-            onClick={onNext}
-            disabled={posInStatus === totalInStatus - 1}
-          >
-            <ChevronRightIcon />
-          </PaginationButton>
-        </PaginationDots>
-      </FixedAnchor>
-    );
-  },
-);
+// ─────────────────────────────────────────────────────────────────────────────
+// BookPortalOverlay
+// ─────────────────────────────────────────────────────────────────────────────
 
 export const BookPortalOverlay = () => {
   const { isMobile } = useAppStore();
   const focusedBook = useBooksStore((s) => s.focusedBook);
   const focusedIdx = useBooksStore((s) => s.focusedIdx);
 
-  // The stack that contains the currently focused book (null when nothing focused)
   const activeStack = useMemo<StackData | null>(
     () => stackForBookIdx(focusedIdx),
     [focusedIdx],
   );
 
-  // All stacks that belong to the same status as the focused book
-  const statusStacks = useMemo<StackData[]>(() => {
-    if (!focusedBook) return [];
-    return STACKS_BY_STATUS.get(focusedBook.status) ?? [];
-  }, [focusedBook?.status]);
-
-  // Flat ordered list of ALL book indices across every stack of this status.
-  // Navigating prev/next moves through this list.
-  const allStatusIndices = useMemo<number[]>(
-    () => statusStacks.flatMap((s) => s.bookIndices),
-    [statusStacks],
+  // Books scoped to the current stack only
+  const stackIndices = useMemo<number[]>(
+    () => activeStack?.bookIndices ?? [],
+    [activeStack],
   );
 
-  // Position of the focused book within that flat list (0-based, clamped)
-  const posInStatus = useMemo<number>(() => {
-    if (focusedIdx === null || allStatusIndices.length === 0) return 0;
-    const idx = allStatusIndices.indexOf(focusedIdx);
+  // Position of the focused book within its stack (0-based)
+  const posInStack = useMemo<number>(() => {
+    if (focusedIdx === null) return 0;
+    const idx = stackIndices.indexOf(focusedIdx);
     return idx === -1 ? 0 : idx;
-  }, [focusedIdx, allStatusIndices]);
+  }, [focusedIdx, stackIndices]);
 
-  // Move camera to the active stack whenever it changes
+  // Move camera whenever the active stack changes
   useEffect(() => {
     if (activeStack !== null) {
       _moveCameraToStack(activeStack.stackIdx);
@@ -340,20 +447,18 @@ export const BookPortalOverlay = () => {
 
   const isOpen = !!focusedBook && activeStack !== null;
 
-  // Navigate to the previous book in this status (loops at start)
+  // Infinite loop within the current stack
   const prevBook = useCallback(() => {
-    if (allStatusIndices.length === 0) return;
-    const next =
-      (posInStatus - 1 + allStatusIndices.length) % allStatusIndices.length;
-    useBooksStore.getState().setFocused(allStatusIndices[next]);
-  }, [posInStatus, allStatusIndices]);
+    if (stackIndices.length === 0) return;
+    const next = (posInStack - 1 + stackIndices.length) % stackIndices.length;
+    useBooksStore.getState().setFocused(stackIndices[next]);
+  }, [posInStack, stackIndices]);
 
-  // Navigate to the next book in this status (loops at end)
   const nextBook = useCallback(() => {
-    if (allStatusIndices.length === 0) return;
-    const next = (posInStatus + 1) % allStatusIndices.length;
-    useBooksStore.getState().setFocused(allStatusIndices[next]);
-  }, [posInStatus, allStatusIndices]);
+    if (stackIndices.length === 0) return;
+    const next = (posInStack + 1) % stackIndices.length;
+    useBooksStore.getState().setFocused(stackIndices[next]);
+  }, [posInStack, stackIndices]);
 
   const onClose = useCallback(() => {
     useBooksStore.getState().clearFocus();
@@ -361,51 +466,51 @@ export const BookPortalOverlay = () => {
 
   const root =
     typeof document !== "undefined"
-      ? document.getElementById("motion-root")
+      ? document.getElementById(OVERLAY_ROOT_ID)
       : null;
 
   const content = (
-    <>
-      {/* ── Side panel ──────────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {isOpen && focusedBook && activeStack && (
-          <Panel
-            key="panel"
-            $mobile={isMobile}
-            initial={
-              isMobile
-                ? { y: "100%", opacity: 0 }
-                : { x: 80, opacity: 0, filter: "blur(6px)" }
-            }
-            animate={
-              isMobile
-                ? { y: "0%", opacity: 1 }
-                : { x: 0, opacity: 1, filter: "blur(0px)" }
-            }
-            exit={
-              isMobile
-                ? { y: "100%", opacity: 0 }
-                : { x: 80, opacity: 0, filter: "blur(6px)" }
-            }
-            transition={{ type: "spring", bounce: 0.2, duration: 0.42 }}
-          >
-            <CloseBtn onClick={onClose} aria-label="Schließen">
-              <CloseIcon />
-            </CloseBtn>
-            <BookContent book={focusedBook} />
-          </Panel>
-        )}
-      </AnimatePresence>
-
+    <AnimatePresence>
       {isOpen && focusedBook && activeStack && (
-        <StatusFloatingBar
-          posInStatus={posInStatus}
-          totalInStatus={allStatusIndices.length}
-          onPrev={prevBook}
-          onNext={nextBook}
-        />
+        <Panel
+          key="panel"
+          $mobile={isMobile}
+          layout
+          initial={
+            isMobile
+              ? { y: "100%", opacity: 0 }
+              : { x: 80, opacity: 0, filter: "blur(6px)" }
+          }
+          animate={
+            isMobile
+              ? { y: "0%", opacity: 1 }
+              : { x: 0, opacity: 1, filter: "blur(0px)" }
+          }
+          exit={
+            isMobile
+              ? { y: "100%", opacity: 0 }
+              : { x: 80, opacity: 0, filter: "blur(6px)" }
+          }
+          transition={{ type: "spring", bounce: 0.2, duration: 0.42 }}
+        >
+          <CloseBtn onClick={onClose} aria-label="Schließen">
+            <CloseIcon />
+          </CloseBtn>
+
+          {/* Scrollable book content */}
+          <BookContent book={focusedBook} />
+
+          {/* iOS-style nav — always visible, scoped to current stack */}
+          <StackNav
+            book={focusedBook}
+            posInStack={posInStack}
+            stackSize={stackIndices.length}
+            onPrev={prevBook}
+            onNext={nextBook}
+          />
+        </Panel>
       )}
-    </>
+    </AnimatePresence>
   );
 
   if (!root) return null;

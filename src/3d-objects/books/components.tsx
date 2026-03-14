@@ -2,7 +2,7 @@ import { HugRow } from "@/layout";
 import { motion } from "motion/react";
 import { css, styled } from "styled-components";
 
-const PANEL_W = "340px";
+const PANEL_W = "400px";
 
 export const Panel = styled(motion.aside)<{ $mobile: boolean }>`
   position: fixed;
@@ -29,10 +29,10 @@ export const Panel = styled(motion.aside)<{ $mobile: boolean }>`
           top: 4px;
           right: 4px;
           bottom: 4px;
-          margin: auto 4rem;
+          margin: auto clamp(4px, 5vw, 6rem);
           width: ${PANEL_W};
           max-width: 90vw;
-          height: 72vh;
+          height: 54vh;
           border-left: 1px solid rgba(0, 0, 0, 0.07);
           box-shadow: -10px 0 52px rgba(0, 0, 0, 0.13);
         `}

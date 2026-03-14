@@ -1,5 +1,5 @@
 import { useFloatingBar } from "@/layout/FloatingBar";
-import { Book, useBooksStore } from "@/store";
+import { Book, useAppStore, useBooksStore } from "@/store";
 import { ThreeEvent, useFrame } from "@react-three/fiber";
 import {
   memo,
@@ -31,9 +31,30 @@ const FOCUS_SCALE = 1.1;
 const FOCUS_DIST = 0.62;
 const FOCUS_POS_LERP = 0.14;
 const FOCUS_DISMISS_LERP = 0.22;
-
-// How many pixels of movement constitute a drag (not a click)
 const DRAG_THRESHOLD_PX = 4;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pre-allocated frame temporaries — avoids per-frame GC pressure
+// ─────────────────────────────────────────────────────────────────────────────
+const _t = {
+  invMat: new THREE.Matrix4(),
+  pQuat: new THREE.Quaternion(),
+  pScale: new THREE.Vector3(),
+  pPos: new THREE.Vector3(),
+  localPos: new THREE.Vector3(),
+  localQuat: new THREE.Quaternion(),
+  tQuat: new THREE.Quaternion(),
+  toCamera: new THREE.Vector3(),
+  camFwd: new THREE.Vector3(),
+  camRight: new THREE.Vector3(),
+  camUp: new THREE.Vector3(),
+  targetW: new THREE.Vector3(),
+  euler: new THREE.Euler(0, 0, 0, "XYZ"),
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SingleBook
+// ─────────────────────────────────────────────────────────────────────────────
 
 export const SingleBook = memo(
   ({
@@ -74,7 +95,6 @@ export const SingleBook = memo(
 
     const onOver = useCallback(
       (e: ThreeEvent<PointerEvent>) => {
-        // Don't interact with background books when one is focused
         if (!canInteract || focusedBook) return;
         e.stopPropagation();
         setHoveredObject({ title: book.title });
@@ -118,21 +138,9 @@ export const SingleBook = memo(
   },
 );
 
-// Pre-allocated temporaries – avoids per-frame GC pressure
-const _t = {
-  invMat: new THREE.Matrix4(),
-  pQuat: new THREE.Quaternion(),
-  pScale: new THREE.Vector3(),
-  pPos: new THREE.Vector3(),
-  localPos: new THREE.Vector3(),
-  localQuat: new THREE.Quaternion(),
-  tQuat: new THREE.Quaternion(),
-  toCamera: new THREE.Vector3(),
-  camFwd: new THREE.Vector3(),
-  camRight: new THREE.Vector3(),
-  targetW: new THREE.Vector3(),
-  euler: new THREE.Euler(0, 0, 0, "XYZ"),
-};
+// ─────────────────────────────────────────────────────────────────────────────
+// FocusedBookMesh
+// ─────────────────────────────────────────────────────────────────────────────
 
 export const FocusedBookMesh = ({
   groupRef,
@@ -141,6 +149,7 @@ export const FocusedBookMesh = ({
 }) => {
   const focusedBook = useBooksStore((s) => s.focusedBook);
   const clearFocus = useBooksStore((s) => s.clearFocus);
+  const isMobile = useAppStore((s) => s.isMobile);
 
   const [renderBook, setRenderBook] = useState<Book | null>(null);
   const meshRef = useRef<THREE.Mesh>(null);
@@ -156,7 +165,6 @@ export const FocusedBookMesh = ({
   const dragYaw = useRef(0);
   const dragPitch = useRef(0);
   const dragging = useRef(false);
-  // Tracks whether the pointer moved enough to count as a drag (not a click)
   const hasDragged = useRef(false);
   const lastX = useRef(0);
   const lastY = useRef(0);
@@ -168,7 +176,6 @@ export const FocusedBookMesh = ({
       const dx = e.clientX - lastX.current;
       const dy = e.clientY - lastY.current;
 
-      // Mark as a real drag once movement exceeds threshold
       if (
         !hasDragged.current &&
         (Math.abs(dx) > DRAG_THRESHOLD_PX || Math.abs(dy) > DRAG_THRESHOLD_PX)
@@ -177,10 +184,7 @@ export const FocusedBookMesh = ({
       }
 
       dragYaw.current -= dx * 0.005; // free horizontal orbit
-      dragPitch.current = Math.max(
-        -0.6,
-        Math.min(0.6, dragPitch.current + dy * 0.005),
-      );
+      dragPitch.current += dy * 0.005; // free vertical orbit
 
       lastX.current = e.clientX;
       lastY.current = e.clientY;
@@ -231,7 +235,6 @@ export const FocusedBookMesh = ({
       isDismissing.current = false;
       active.current = true;
 
-      // Reset drag state for new book
       spin.current = 0;
       dragYaw.current = 0;
       dragPitch.current = 0;
@@ -256,16 +259,23 @@ export const FocusedBookMesh = ({
     if (!isDismissing.current) {
       camera.getWorldDirection(_t.camFwd);
       _t.camRight.crossVectors(_t.camFwd, camera.up).normalize();
+      // Screen-up: perpendicular to both forward and right
+      _t.camUp.crossVectors(_t.camRight, _t.camFwd).normalize();
 
-      _t.targetW
-        .copy(camera.position)
-        .addScaledVector(_t.camFwd, FOCUS_DIST)
-        .addScaledVector(_t.camRight, -0.2);
+      _t.targetW.copy(camera.position).addScaledVector(_t.camFwd, FOCUS_DIST);
+
+      if (isMobile) {
+        // Center horizontally, push up so the book sits above the bottom sheet
+        _t.targetW.addScaledVector(_t.camUp, 0.28);
+      } else {
+        // Slight left offset on desktop
+        _t.targetW.addScaledVector(_t.camRight, -0.2);
+      }
 
       curWorldPos.current.lerp(_t.targetW, FOCUS_POS_LERP);
 
       if (!dragging.current) {
-        spin.current = spin.current + 0.001;
+        spin.current += 0.001;
       }
 
       _t.toCamera.copy(camera.position).sub(curWorldPos.current).normalize();
@@ -321,7 +331,7 @@ export const FocusedBookMesh = ({
         e.stopPropagation();
         (e.target as Element).setPointerCapture(e.pointerId);
         dragging.current = true;
-        hasDragged.current = false; // reset each new press
+        hasDragged.current = false;
         lastX.current = e.clientX;
         lastY.current = e.clientY;
       }}
@@ -333,13 +343,9 @@ export const FocusedBookMesh = ({
         dragging.current = false;
       }}
       onClick={(e) => {
-        // If the pointer moved enough to count as a drag, swallow the click
-        // so it doesn't propagate to background books and clear focus.
-        // If it was a genuine tap, let clearFocus happen via the background.
         if (hasDragged.current) {
           e.stopPropagation();
         } else {
-          // Genuine click on the focused book itself — clear focus
           e.stopPropagation();
           clearFocus();
         }

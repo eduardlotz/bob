@@ -1,74 +1,70 @@
 import { Book } from "@/store";
-import { memo, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { paintCover } from "./utils";
-
-// ─────────────────────────────────────────────────────────────────────────────
-// OpenLibrary cover URL helper
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Returns the OpenLibrary cover image URL for an ISBN.
- * Sizes: "S" (small), "M" (medium ~180px tall), "L" (large ~400px tall)
- */
-export function openLibraryCoverUrl(
-  isbn: string,
-  size: "S" | "M" | "L" = "M",
-): string {
-  return `https://covers.openlibrary.org/b/isbn/${isbn}-${size}.jpg`;
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CoverCanvas
 //
-// Renders a 2-D canvas for use inside the detail panel.
-// Strategy:
-//   1. Immediately paint the deterministic fallback cover.
-//   2. Asynchronously load the OpenLibrary thumbnail by ISBN.
-//   3. If the image loads, replace the canvas contents.
-//   4. If it fails (404, network, etc.) the fallback stays visible.
+// Renders a book cover onto a <canvas> element.
+// If the book has an ISBN we attempt to load the jacket from OpenLibrary.
+// Their "no cover found" response is a tiny placeholder image (< 50 px wide),
+// so we measure naturalWidth before painting and silently keep the fallback
+// when the server returns a placeholder.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const CoverCanvas = memo(
-  ({ book, w, h }: { book: Book; w: number; h: number }) => {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
+interface CoverCanvasProps {
+  book: Book;
+  w: number;
+  h: number;
+  style?: React.CSSProperties;
+}
 
-    useEffect(() => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
+export function CoverCanvas({ book, w, h, style }: CoverCanvasProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-      // Step 1 — instant fallback
-      paintCover(ctx, book, w, h);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-      // Step 2 — async OpenLibrary cover
-      if (!book.isbn) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-      let cancelled = false;
-      const img = new Image();
-      img.crossOrigin = "anonymous";
+    // Always paint the fallback first — visible immediately
+    paintCover(ctx, book, w, h);
 
-      img.onload = () => {
-        if (cancelled) return;
-        ctx.clearRect(0, 0, w, h);
-        ctx.drawImage(img, 0, 0, w, h);
-      };
+    if (!book.isbn) return;
 
-      // On error we simply keep the already-painted fallback — no action needed.
-      img.src = openLibraryCoverUrl(book.isbn, w >= 100 ? "M" : "S");
+    let cancelled = false;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
 
-      return () => {
-        cancelled = true;
-      };
-    }, [book.id, book.isbn, w, h]);
+    img.onload = () => {
+      if (cancelled) return;
+      // OpenLibrary returns a ~1×1 gif when no cover exists — ignore it
+      if (img.naturalWidth < 50 || img.naturalHeight < 50) return;
 
-    return (
-      <canvas
-        ref={canvasRef}
-        width={w}
-        height={h}
-        style={{ display: "block" }}
-      />
-    );
-  },
-);
+      const ctx2 = canvas.getContext("2d");
+      if (!ctx2) return;
+      ctx2.clearRect(0, 0, w, h);
+      ctx2.drawImage(img, 0, 0, w, h);
+    };
+
+    // onerror: network failure or 404 → fallback canvas already painted, no action
+    img.src = `https://covers.openlibrary.org/b/isbn/${book.isbn}-L.jpg`;
+
+    return () => {
+      cancelled = true;
+    };
+    // Re-run only when the book identity changes (isbn / fallback colors)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [book.id, book.isbn, w, h]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      width={w}
+      height={h}
+      style={{ display: "block", ...style }}
+    />
+  );
+}

@@ -466,9 +466,9 @@ export const BOOKS: Book[] = [
     author: "Thomas Erikson",
     rating: 5,
     status: "have-read",
-    fallbackBackgroundColor: "#5a1800",
-    fallbackTextColor: "#ffd5b8",
-    isbn: "9781250179630",
+    fallbackBackgroundColor: "#66BB63",
+    fallbackTextColor: "#ffffff",
+    isbn: "9781250420466",
     url: "",
   },
   // {
