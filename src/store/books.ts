@@ -568,7 +568,7 @@ export const BOOKS: Book[] = [
   },
   {
     id: 50,
-    title: "Multiple Intelligences: New Horizons in Theory and Practice",
+    title: "Multiple Intelligences",
     author: "Howard E. Gardner",
     status: "will-read",
     fallbackBackgroundColor: "#003850",

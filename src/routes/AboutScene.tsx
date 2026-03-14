@@ -99,6 +99,8 @@ export function AboutScene() {
         />
       </InteractiveObject>
 
+      {/* INTEREST / HOBBY ITEMS */}
+
       <XboxControllerModel
         position={[3.5, FLOOR_Y_POSITION + 4, 2]}
         rotation={[1.2, 0.9, -0.2]}
@@ -130,6 +132,8 @@ export function AboutScene() {
           rotation={[1.2, 0, -0.2]}
         />
       </InteractiveObject>
+
+      {/* INTEREST / HOBBY CARDBOX */}
 
       <InteractiveObject
         questAction="click_box"

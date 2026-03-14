@@ -20,171 +20,12 @@ import { createPortal } from "react-dom";
 import { AppInfo, TabButton, TabPanel } from "./ui";
 import { FillColumn, FillRow } from "@/layout";
 
-// ─── Camera icon ───────────────────────────────────────────────────────────────
-
 export const CameraIcon = () => (
-  <svg
-    width={80}
-    height={80}
-    viewBox="0 0 100 100"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <g filter="url(#filter0_ii_3736_1492)">
-      <path
-        d="M0 30C0 13.4315 13.4315 0 30 0H70C86.5685 0 100 13.4315 100 30V70C100 86.5685 86.5685 100 70 100H30C13.4315 100 0 86.5685 0 70V30Z"
-        fill="#CEAE91"
-      />
-      <path
-        d="M0 30C0 13.4315 13.4315 0 30 0H70C86.5685 0 100 13.4315 100 30V70C100 86.5685 86.5685 100 70 100H30C13.4315 100 0 86.5685 0 70V30Z"
-        fill="url(#paint0_radial_3736_1492)"
-      />
-    </g>
-    <g filter="url(#filter1_ii_3736_1492)">
-      <path
-        d="M50.4707 23.75C56.8431 23.75 62.7124 27.2141 65.792 32.793L66.1602 33.46C67.2142 33.5488 68.2687 33.6394 69.3223 33.7305C73.8013 34.1177 77.488 37.5689 78.1445 42.0166C78.7389 46.0465 79.2754 50.1987 79.2754 54.4375C79.2753 58.6759 78.7389 62.8259 78.1445 66.8555C77.4883 71.3034 73.8015 74.7553 69.3223 75.1426C62.8951 75.6976 56.4583 76.25 50.002 76.25C43.5456 76.25 37.1089 75.6976 30.6816 75.1426C26.2018 74.7557 22.5128 71.3037 21.8564 66.8555C21.2619 62.8259 20.7267 58.6758 20.7266 54.4375C20.7266 50.1987 21.2618 46.0465 21.8564 42.0166C22.513 37.5685 26.202 34.1173 30.6816 33.7305C31.7289 33.64 32.783 33.5493 33.8428 33.46L34.2109 32.793C37.2906 27.2141 43.1598 23.75 49.5322 23.75H50.4707ZM50.0029 42.5176C43.2583 42.5177 39.464 46.3121 39.4639 53.0566C39.464 59.8013 43.2583 63.5956 50.0029 63.5957C56.7476 63.5956 60.5419 59.8013 60.542 53.0566C60.5419 46.3121 56.7475 42.5177 50.0029 42.5176ZM69.3789 38.75C68.3434 38.75 67.5039 39.5895 67.5039 40.625C67.5039 41.6605 68.3434 42.5 69.3789 42.5C70.4144 42.5 71.2539 41.6605 71.2539 40.625C71.2539 39.5895 70.4144 38.75 69.3789 38.75Z"
-        fill="url(#paint1_radial_3736_1492)"
-      />
-    </g>
-    <defs>
-      <filter
-        id="filter0_ii_3736_1492"
-        x={0}
-        y={-2.5}
-        width={100}
-        height={102.5}
-        filterUnits="userSpaceOnUse"
-        colorInterpolationFilters="sRGB"
-      >
-        <feFlood floodOpacity={0} result="BackgroundImageFix" />
-        <feBlend
-          mode="normal"
-          in="SourceGraphic"
-          in2="BackgroundImageFix"
-          result="shape"
-        />
-        <feColorMatrix
-          in="SourceAlpha"
-          type="matrix"
-          values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
-          result="hardAlpha"
-        />
-        <feOffset dy={-2.5} />
-        <feGaussianBlur stdDeviation={3.75} />
-        <feComposite in2="hardAlpha" operator="arithmetic" k2={-1} k3={1} />
-        <feColorMatrix
-          type="matrix"
-          values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.5 0"
-        />
-        <feBlend
-          mode="normal"
-          in2="shape"
-          result="effect1_innerShadow_3736_1492"
-        />
-        <feColorMatrix
-          in="SourceAlpha"
-          type="matrix"
-          values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
-          result="hardAlpha"
-        />
-        <feOffset dy={-1.25} />
-        <feGaussianBlur stdDeviation={1.25} />
-        <feComposite in2="hardAlpha" operator="arithmetic" k2={-1} k3={1} />
-        <feColorMatrix
-          type="matrix"
-          values="0 0 0 0 0.866667 0 0 0 0 0.278431 0 0 0 0 0.329412 0 0 0 0.5 0"
-        />
-        <feBlend
-          mode="normal"
-          in2="effect1_innerShadow_3736_1492"
-          result="effect2_innerShadow_3736_1492"
-        />
-      </filter>
-      <filter
-        id="filter1_ii_3736_1492"
-        x={20.7266}
-        y={21.4628}
-        width={58.5469}
-        height={54.7872}
-        filterUnits="userSpaceOnUse"
-        colorInterpolationFilters="sRGB"
-      >
-        <feFlood floodOpacity={0} result="BackgroundImageFix" />
-        <feBlend
-          mode="normal"
-          in="SourceGraphic"
-          in2="BackgroundImageFix"
-          result="shape"
-        />
-        <feColorMatrix
-          in="SourceAlpha"
-          type="matrix"
-          values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
-          result="hardAlpha"
-        />
-        <feOffset dy={-2.28723} />
-        <feGaussianBlur stdDeviation={3.43085} />
-        <feComposite in2="hardAlpha" operator="arithmetic" k2={-1} k3={1} />
-        <feColorMatrix
-          type="matrix"
-          values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.5 0"
-        />
-        <feBlend
-          mode="normal"
-          in2="shape"
-          result="effect1_innerShadow_3736_1492"
-        />
-        <feColorMatrix
-          in="SourceAlpha"
-          type="matrix"
-          values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
-          result="hardAlpha"
-        />
-        <feOffset dy={-1.14362} />
-        <feGaussianBlur stdDeviation={1.14362} />
-        <feComposite in2="hardAlpha" operator="arithmetic" k2={-1} k3={1} />
-        <feColorMatrix
-          type="matrix"
-          values="0 0 0 0 0.8 0 0 0 0 0.729412 0 0 0 0 0.929412 0 0 0 0.68 0"
-        />
-        <feBlend
-          mode="normal"
-          in2="effect1_innerShadow_3736_1492"
-          result="effect2_innerShadow_3736_1492"
-        />
-      </filter>
-      <radialGradient
-        id="paint0_radial_3736_1492"
-        cx={0}
-        cy={0}
-        r={1}
-        gradientUnits="userSpaceOnUse"
-        gradientTransform="translate(50 50) rotate(90) scale(50 127.014)"
-      >
-        <stop stopColor="#C5B1EC" />
-        <stop offset={1} stopColor="#EDEAF2" />
-      </radialGradient>
-      <radialGradient
-        id="paint1_radial_3736_1492"
-        cx={0}
-        cy={0}
-        r={1}
-        gradientTransform="matrix(-0.00203496 36.0174 -73.0896 -0.0022773 50.0029 40.2326)"
-        gradientUnits="userSpaceOnUse"
-      >
-        <stop stopColor="#FBD4EC" />
-        <stop offset={1} stopColor="#FDFBFC" />
-      </radialGradient>
-    </defs>
-  </svg>
+  <img src={"/images/app-logos/camera.png"} height={80} width={80} />
 );
-
-// ─── Constants ─────────────────────────────────────────────────────────────────
 
 const FINDER_GAP = 60; // gap between phone body top and viewfinder bottom
 const FINDER_ASPECT = 5 / 4; // portrait aspect ratio (w:h = 3:4)
-
-// ─── Types ─────────────────────────────────────────────────────────────────────
 
 interface FinderRect {
   left: number;
@@ -196,8 +37,6 @@ interface FinderRect {
 }
 
 type AppView = "camera" | "gallery";
-
-// ─── Viewfinder overlay ────────────────────────────────────────────────────────
 
 interface OverlayProps {
   phoneBodyRef: React.RefObject<HTMLDivElement>;

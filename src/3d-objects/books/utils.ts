@@ -4,19 +4,6 @@ import * as THREE from "three";
 import { BOOK_GROUP_REF, STACKS } from ".";
 import { BOOK_D } from "./singleBook";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Colour helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
-export function lighten(hex: string, a: number): string {
-  const n = parseInt(hex.replace("#", ""), 16);
-  return `rgb(${Math.min(255, ((n >> 16) & 255) + a)},${Math.min(255, ((n >> 8) & 255) + a)},${Math.min(255, (n & 255) + a)})`;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Book cover painting
-// ─────────────────────────────────────────────────────────────────────────────
-
 export function paintCover(
   ctx: CanvasRenderingContext2D,
   b: Book,
@@ -29,53 +16,87 @@ export function paintCover(
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
-  ctx.fillStyle = fg;
-  ctx.fillRect(0, H * 0.38, W * 0.48, H * 0.62);
+  const marginX = W * 0.08;
+  const panelTop = H * 0.06;
+  const panelBot = H * 0.4;
+  const panelW = W - marginX * 2;
 
-  ctx.strokeStyle = fg;
-  ctx.lineWidth = Math.max(2, W * 0.018);
-  ctx.strokeRect(W * 0.38, H * 0.27, W * 0.58, H * 0.7);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(marginX, panelTop, panelW, panelBot - panelTop);
 
-  const titleFS = Math.floor(W * 0.17);
-  ctx.font = `bold ${titleFS}px sans-serif`;
+  const barH = Math.max(4, H * 0.038);
   ctx.fillStyle = fg;
+  ctx.fillRect(marginX, panelBot, panelW, barH);
+
+  const pad = W * 0.06;
+  const textX = marginX + pad;
+  const maxW = panelW - pad * 2;
+  // Available vertical space for title inside the panel (leave room for author)
+  const maxTitleH = (panelBot - panelTop) * 0.65;
+
+  // ── Auto-size title to fit ≤ 3 lines ─────────────────────────────────────
+  const MAX_LINES = 3;
+  const TITLE_MAX = Math.floor(W * 0.13);
+  const TITLE_MIN = Math.floor(W * 0.07);
+
+  let titleFS = TITLE_MAX;
+  let titleLines: string[] = [];
+
   ctx.textAlign = "left";
-  const words = b.title.toUpperCase().split(" ");
-  const lines: string[] = [];
-  let cur = "";
-  for (const w of words) {
-    const t = cur ? `${cur} ${w}` : w;
-    if (ctx.measureText(t).width > W * 0.7 && cur) {
-      lines.push(cur);
-      cur = w;
-    } else {
-      cur = t;
+  ctx.textBaseline = "top";
+
+  for (let fs = TITLE_MAX; fs >= TITLE_MIN; fs -= 2) {
+    ctx.font = `${fs}px sans-serif`;
+    const lines = wrapText(ctx, b.title, maxW);
+    const lineH = fs * 1.25;
+    if (lines.length <= MAX_LINES && lines.length * lineH <= maxTitleH) {
+      titleFS = fs;
+      titleLines = lines;
+      break;
     }
+    // Keep last attempt as fallback (TITLE_MIN)
+    titleFS = fs;
+    titleLines = lines.slice(0, MAX_LINES);
   }
-  if (cur) lines.push(cur);
-  lines.forEach((l, i) =>
-    ctx.fillText(l, W * 0.06, H * 0.1 + titleFS + i * (titleFS * 1.15)),
+
+  ctx.font = `${titleFS}px sans-serif`;
+  ctx.fillStyle = "#1a1a1a";
+  const lineH = titleFS * 1.25;
+  titleLines.forEach((line, i) =>
+    ctx.fillText(line, textX, panelTop + H * 0.05 + i * lineH),
   );
 
-  const authorFS = Math.floor(W * 0.1);
-  ctx.font = `bold ${authorFS}px sans-serif`;
-  ctx.textAlign = "right";
-  ctx.fillStyle = fg;
-  b.author
-    .split(" ")
-    .forEach((part, i) =>
-      ctx.fillText(
-        part.toUpperCase(),
-        W * 0.96,
-        H * 0.88 + i * (authorFS * 1.2),
-      ),
-    );
+  // ── Author ────────────────────────────────────────────────────────────────
+  const authorFS = Math.floor(W * 0.085);
+  ctx.font = `${authorFS}px serif`;
+  ctx.fillStyle = "#3a3a3a";
+  const authorY =
+    panelTop + H * 0.05 + titleLines.length * lineH + authorFS * 0.5;
+  ctx.fillText(b.author, textX, authorY);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Texture / material caches
-// ─────────────────────────────────────────────────────────────────────────────
+function wrapText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+): string[] {
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let current = "";
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (ctx.measureText(candidate).width > maxWidth && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = candidate;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
 
+// ── Cover texture ─────────────────────────────────────────────────────────────
 const coverCache = new Map<number, THREE.CanvasTexture>();
 
 export function getCoverTex(b: Book): THREE.CanvasTexture {
@@ -91,12 +112,16 @@ export function getCoverTex(b: Book): THREE.CanvasTexture {
       const img = new Image();
       img.crossOrigin = "anonymous";
       img.onload = () => {
+        // OpenLibrary serves a tiny placeholder (~1×1) when no cover exists.
+        // Keep the fallback canvas if the image is suspiciously small.
+        if (img.naturalWidth < 50 || img.naturalHeight < 50) return;
         const ctx = canvas.getContext("2d")!;
         ctx.clearRect(0, 0, 128, 192);
         ctx.drawImage(img, 0, 0, 128, 192);
         tex.needsUpdate = true;
       };
-      img.src = `https://covers.openlibrary.org/b/isbn/${b.isbn}-M.jpg`;
+      // onerror = network failure → fallback canvas stays, no action needed
+      img.src = `https://covers.openlibrary.org/b/isbn/${b.isbn}-L.jpg`;
     }
   }
   return coverCache.get(b.id)!;
@@ -140,10 +165,8 @@ export function makeMats(
     return [pages, spine, spine, back, pages, pages];
   }
 
-  const coverMat = new THREE.MeshStandardMaterial({
+  const coverMat = new THREE.MeshBasicMaterial({
     map: getCoverTex(b),
-    roughness: 0.65,
-    metalness: 0,
     transparent: opacity < 1,
     opacity,
   });
@@ -260,7 +283,47 @@ export function _restoreFullControls() {
   if (!controls) return;
   controls.mouseButtons.left = CameraControlsImpl.ACTION.ROTATE;
   controls.mouseButtons.right = CameraControlsImpl.ACTION.TRUCK;
-  controls.mouseButtons.wheel = CameraControlsImpl.ACTION.ZOOM;
+  controls.mouseButtons.wheel = CameraControlsImpl.ACTION.DOLLY;
   controls.touches.one = CameraControlsImpl.ACTION.TOUCH_ROTATE;
-  controls.touches.two = CameraControlsImpl.ACTION.TOUCH_ZOOM_TRUCK;
+  controls.touches.two = CameraControlsImpl.ACTION.TOUCH_DOLLY;
+}
+
+// utils.ts
+
+export function enterBookshelfView() {
+  const store = useViewStore.getState();
+  const controls = getCameraControls();
+  if (!controls) return;
+
+  // Update store state without triggering applyViewModeToControls or reset()
+  store.setCurrentView("bookshelf");
+
+  // Set controls FIRST — on mobile any touch during the fly-in must already
+  // be in truck mode, not orbit
+  controls.mouseButtons.left = CameraControlsImpl.ACTION.TRUCK;
+  controls.mouseButtons.right = CameraControlsImpl.ACTION.TRUCK;
+  controls.mouseButtons.wheel = CameraControlsImpl.ACTION.NONE;
+  controls.touches.one = CameraControlsImpl.ACTION.TOUCH_TRUCK;
+  controls.touches.two = CameraControlsImpl.ACTION.TOUCH_TRUCK;
+
+  // Single setLookAt — no competing calls
+  const d = CAMERA_VIEWS.bookshelf;
+  if (d.position && d.target) {
+    controls.setLookAt(...d.position, ...d.target, true);
+  }
+}
+
+export function enterFocusedBookView(stackIdx: number) {
+  const controls = getCameraControls();
+  if (!controls) return;
+
+  // Disable all input first
+  controls.mouseButtons.left = CameraControlsImpl.ACTION.NONE;
+  controls.mouseButtons.right = CameraControlsImpl.ACTION.NONE;
+  controls.mouseButtons.wheel = CameraControlsImpl.ACTION.NONE;
+  controls.touches.one = CameraControlsImpl.ACTION.NONE;
+  controls.touches.two = CameraControlsImpl.ACTION.NONE;
+
+  // Then move — no input can interrupt
+  _moveCameraToStack(stackIdx);
 }

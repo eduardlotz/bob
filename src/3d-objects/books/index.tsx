@@ -17,6 +17,8 @@ import {
   _restoreFullControls,
   _setBrowseControls,
   _setFocusedControls,
+  enterBookshelfView,
+  enterFocusedBookView,
 } from "./utils";
 
 const MAX_BOOKS_PER_STACK = 15;
@@ -193,10 +195,6 @@ const BookStack = memo(
   ),
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// BookStacks — scene root
-// ─────────────────────────────────────────────────────────────────────────────
-
 export function BookStacks({
   viewId,
   position = [0, 0, 0] as [number, number, number],
@@ -210,6 +208,7 @@ export function BookStacks({
 }) {
   const currentView = useViewStore((s) => s.currentView);
   const focusedBook = useBooksStore((s) => s.focusedBook);
+
   const groupRef = useRef<THREE.Group>(null);
 
   const viewActive = currentView === viewId;
@@ -226,10 +225,12 @@ export function BookStacks({
     }
 
     if (focusedBook) {
-      _setFocusedControls();
+      const stackIdx = STACKS.findIndex((s) =>
+        s.books.some((b) => b.id === focusedBook.id),
+      );
+      enterFocusedBookView(stackIdx);
     } else {
-      _setBrowseControls();
-      _restoreDeskCamera();
+      enterBookshelfView();
     }
   }, [focusedBook?.id, viewActive]);
 

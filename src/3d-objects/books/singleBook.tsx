@@ -14,6 +14,27 @@ import * as THREE from "three";
 import { makeMats } from "./utils";
 import { BOOK_GEO, bookMeshRefs, STACKS } from ".";
 
+export const BOOK_W = 0.14; // spine width  X
+export const BOOK_D = 0.025; // thickness    Y (stacking axis when flat)
+export const BOOK_H = 0.2; // page height  Z
+
+export const MICRO_XZ = [
+  [0, 0],
+  [0.006, -0.004],
+  [-0.005, 0.006],
+  [0.008, -0.002],
+  [-0.003, 0.007],
+] as const;
+export const MICRO_ROT = [0, 0.04, -0.06, 0.03, -0.04] as const;
+
+const FOCUS_SCALE = 1.1;
+const FOCUS_DIST = 0.62;
+const FOCUS_POS_LERP = 0.14;
+const FOCUS_DISMISS_LERP = 0.22;
+
+// How many pixels of movement constitute a drag (not a click)
+const DRAG_THRESHOLD_PX = 4;
+
 export const SingleBook = memo(
   ({
     book,
@@ -97,27 +118,6 @@ export const SingleBook = memo(
   },
 );
 
-export const BOOK_W = 0.14; // spine width  X
-export const BOOK_D = 0.025; // thickness    Y (stacking axis when flat)
-export const BOOK_H = 0.2; // page height  Z
-
-export const MICRO_XZ = [
-  [0, 0],
-  [0.006, -0.004],
-  [-0.005, 0.006],
-  [0.008, -0.002],
-  [-0.003, 0.007],
-] as const;
-export const MICRO_ROT = [0, 0.04, -0.06, 0.03, -0.04] as const;
-
-const FOCUS_SCALE = 1.1;
-const FOCUS_DIST = 0.62;
-const FOCUS_POS_LERP = 0.14;
-const FOCUS_DISMISS_LERP = 0.22;
-
-// How many pixels of movement constitute a drag (not a click)
-const DRAG_THRESHOLD_PX = 4;
-
 // Pre-allocated temporaries – avoids per-frame GC pressure
 const _t = {
   invMat: new THREE.Matrix4(),
@@ -176,14 +176,12 @@ export const FocusedBookMesh = ({
         hasDragged.current = true;
       }
 
-      dragYaw.current = Math.max(
-        -1.2,
-        Math.min(1.2, dragYaw.current + dx * 0.005),
-      );
+      dragYaw.current -= dx * 0.005; // free horizontal orbit
       dragPitch.current = Math.max(
         -0.6,
         Math.min(0.6, dragPitch.current + dy * 0.005),
       );
+
       lastX.current = e.clientX;
       lastY.current = e.clientY;
     };

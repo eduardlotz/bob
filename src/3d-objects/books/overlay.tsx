@@ -47,8 +47,6 @@ export const useBookOverlay = create<BookOverlayStore>((set) => ({
   },
 }));
 
-export const OVERLAY_ROOT_ID = "motion-root";
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
@@ -258,43 +256,17 @@ const BookContent = memo(({ book }: { book: Book }) => {
   );
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// StatusFloatingBar
-//
-// Shows:
-//   • Status label badge  (left)
-//   • One dot per STACK in the status (middle) — active dot widens + highlights,
-//     clicking a dot jumps to that stack's first book
-//   • Book counter  "3 / 12"  (right of dots)
-//   • Prev / Next arrows that loop through ALL books of the status across stacks
-// ─────────────────────────────────────────────────────────────────────────────
-
 interface StatusFloatingBarProps {
-  status: Book["status"];
   /** Index of the focused book within the flattened status book list. */
   posInStatus: number;
   /** Total books across all stacks of this status. */
   totalInStatus: number;
-  /** Which stack (by stackIdx) currently contains the focused book. */
-  activeStackIdx: number;
-  /** All stacks belonging to this status. */
-  statusStacks: StackData[];
   onPrev: () => void;
   onNext: () => void;
 }
 
 const StatusFloatingBar = memo(
-  ({
-    status,
-    posInStatus,
-    totalInStatus,
-    activeStackIdx,
-    statusStacks,
-    onPrev,
-    onNext,
-  }: StatusFloatingBarProps) => {
-    const sc = STATUS_COLORS[status];
-
+  ({ posInStatus, totalInStatus, onPrev, onNext }: StatusFloatingBarProps) => {
     return (
       <FixedAnchor>
         <PaginationDots $contrastMode $mobileBottomAnchor>
@@ -307,7 +279,6 @@ const StatusFloatingBar = memo(
               style={{
                 fontSize: 11,
                 fontWeight: 500,
-                // color: "rgba(0,0,0,.45)",
                 fontVariantNumeric: "tabular-nums",
                 minWidth: 36,
                 textAlign: "right",
@@ -317,7 +288,6 @@ const StatusFloatingBar = memo(
             </p>
           </HugRow>
 
-          {/* → Next */}
           <PaginationButton
             onClick={onNext}
             disabled={posInStatus === totalInStatus - 1}
@@ -329,10 +299,6 @@ const StatusFloatingBar = memo(
     );
   },
 );
-
-// ─────────────────────────────────────────────────────────────────────────────
-// BookPortalOverlay
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const BookPortalOverlay = () => {
   const { isMobile } = useAppStore();
@@ -395,7 +361,7 @@ export const BookPortalOverlay = () => {
 
   const root =
     typeof document !== "undefined"
-      ? document.getElementById(OVERLAY_ROOT_ID)
+      ? document.getElementById("motion-root")
       : null;
 
   const content = (
@@ -433,11 +399,8 @@ export const BookPortalOverlay = () => {
 
       {isOpen && focusedBook && activeStack && (
         <StatusFloatingBar
-          status={focusedBook.status}
           posInStatus={posInStatus}
           totalInStatus={allStatusIndices.length}
-          activeStackIdx={activeStack.stackIdx}
-          statusStacks={statusStacks}
           onPrev={prevBook}
           onNext={nextBook}
         />

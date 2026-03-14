@@ -511,14 +511,37 @@ const AppContainer = styled.button`
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  position: relative;
 
-  svg {
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: #212121;
+    opacity: 0;
+    filter: blur(8px);
+    border-radius: 50%;
+    transform: translateY(6px) scale(0.85);
+    z-index: 0;
+    transition:
+      transform 0.1s ease-out,
+      opacity 0.1s ease-out;
+  }
+
+  img {
+    position: relative;
+    z-index: 1;
     transition: transform 0.1s ease-out;
   }
 
   @media (hover: hover) {
     &:not(:disabled):hover {
-      svg {
+      &::before {
+        transform: translateY(10px) scale(0.8);
+        opacity: 0.07;
+      }
+
+      img {
         transform: scale(1.05) rotate(3deg);
       }
     }
