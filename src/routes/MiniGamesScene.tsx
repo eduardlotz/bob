@@ -13,6 +13,7 @@ import { PingPongGame } from "./games/PingPongGame";
 import { PingPongPaddle } from "@/3d-objects/models/pingPongPaddle";
 import { FootballGame } from "./games/FootballGame";
 import { PointsCounter } from "@/molecules/PointsCounter";
+import { FlappyBirdArcade, FlappyBirdGame } from "./games/FlappyBirdGame";
 
 export function MiniGamesScene() {
   const { checkUnlockedRoutes } = useCoreStore();
@@ -36,6 +37,7 @@ export function MiniGamesScene() {
       {match(activeGame)
         .with("PING_PONG", () => <PingPongGame onExit={finishGame} />)
         .with("FOOTBALL", () => <FootballGame onExit={finishGame} />)
+        .with("FLAPPY_BIRD", () => <FlappyBirdGame onExit={finishGame} />)
         .otherwise(() => (
           // This is your "Lobby" view
           <group>
@@ -49,6 +51,13 @@ export function MiniGamesScene() {
                 position={[-2, 7, 0]}
                 scale={[0.7, 0.7, 0.7]}
                 enablePhysics
+              />
+            </group>
+
+            <group onClick={() => setActiveGame("FLAPPY_BIRD")}>
+              <FlappyBirdArcade
+                position={[0, 5, 0.5]}
+                scale={[0.5, 0.5, 0.5]}
               />
             </group>
 
