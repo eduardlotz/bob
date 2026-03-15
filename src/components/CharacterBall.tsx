@@ -4,16 +4,16 @@ import { BlobForm } from "./BlobForm"; // Adjust path
 import { useCoreStore } from "@/store";
 import React from "react";
 import { SphereGeometry } from "three";
-import { Grabbable } from "@/physics/Grabbable";
 
-interface Props {
+type Props = Omit<
+  React.ComponentProps<typeof RigidBody>,
+  "children" | "ref" | "colliders" | "position"
+> & {
   position: [number, number, number];
   scale: [number, number, number] | number;
-  ccd?: boolean;
-  angularDamping?: number;
-  restitution?: number;
-  enabledTranslations?: [boolean, boolean, boolean];
-}
+  /** Base collider radius before scale is applied. Defaults to `1`. */
+  colliderRadius?: number;
+};
 
 // TODO: add emotions like blink and dizzy on hit
 export const CharacterBall = forwardRef((props: Props, ref: any) => {
@@ -28,48 +28,51 @@ export const CharacterBall = forwardRef((props: Props, ref: any) => {
     return sphere.clone();
   }, []);
 
-  const rigidSettings = {
-    ccd: props?.ccd ?? true,
-    angularDamping: props?.angularDamping ?? 0.5,
-    restitution: props?.restitution ?? 1.1,
-    enabledTranslations: props?.enabledTranslations ?? [true, true, false],
-  };
+  const {
+    position,
+    scale,
+    colliderRadius = 1,
+    ccd = true,
+    angularDamping = 0.5,
+    restitution = 1.1,
+    enabledTranslations = [true, true, false],
+    ...rigidBodyProps
+  } = props;
 
   return (
-    <Grabbable rigidBodyRef={ref} mode={"spring"} stiffness={50} damping={1}>
-      <RigidBody
-        ref={ref}
-        colliders={false}
-        ccd={rigidSettings.ccd}
-        angularDamping={rigidSettings.angularDamping}
-        restitution={rigidSettings.restitution}
-        enabledTranslations={rigidSettings.enabledTranslations}
-        position={props.position}
-      >
-        <BallCollider args={[1]} scale={props.scale} />
+    <RigidBody
+      ref={ref}
+      colliders={false}
+      {...rigidBodyProps}
+      ccd={ccd}
+      angularDamping={angularDamping}
+      restitution={restitution}
+      enabledTranslations={enabledTranslations}
+      position={position}
+    >
+      <BallCollider args={[colliderRadius]} scale={scale} />
 
-        <group scale={props.scale}>
-          <BlobForm
-            formType="sphere"
-            parameters={{
-              sphereRadius: 1,
-              sphereWidthSegments: 32,
-              sphereHeightSegments: 32,
-            }}
-            blobColor={blobColor || "#ffffff"}
-            outlineColor={outlineColor || "#000000"}
-          />
+      <group scale={scale}>
+        <BlobForm
+          formType="sphere"
+          parameters={{
+            sphereRadius: 1,
+            sphereWidthSegments: 32,
+            sphereHeightSegments: 32,
+          }}
+          blobColor={blobColor || "#ffffff"}
+          outlineColor={outlineColor || "#000000"}
+        />
 
-          <group position={[0, 0.2, 0.85]}>
-            <mesh geometry={eyeGeoms} position={[-0.45, 0, 0]}>
-              <meshToonMaterial color={eyeColor || "#000000"} />
-            </mesh>
-            <mesh geometry={eyeGeoms} position={[0.45, 0, 0]}>
-              <meshToonMaterial color={eyeColor || "#000000"} />
-            </mesh>
-          </group>
+        <group position={[0, 0.2, 0.85]}>
+          <mesh geometry={eyeGeoms} position={[-0.45, 0, 0]}>
+            <meshToonMaterial color={eyeColor || "#000000"} />
+          </mesh>
+          <mesh geometry={eyeGeoms} position={[0.45, 0, 0]}>
+            <meshToonMaterial color={eyeColor || "#000000"} />
+          </mesh>
         </group>
-      </RigidBody>
-    </Grabbable>
+      </group>
+    </RigidBody>
   );
 });
