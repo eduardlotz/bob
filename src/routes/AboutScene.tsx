@@ -1,5 +1,5 @@
 import { useCoreStore } from "@/store/core/store";
-import { ROUTE_PATHS, useViewStore } from "@/store";
+import { ROUTE_IDS, ROUTE_PATHS, useViewStore } from "@/store";
 import { useEffect } from "react";
 import { InteractiveObject } from "../molecules/InteractiveObject";
 import { useNavigate } from "react-router-dom";
@@ -19,11 +19,12 @@ import { BasketBox } from "@/physics/BasketBox";
 import { DjControllerModel } from "@/3d-objects/models/dj-controller";
 import { DeskSpeakersModel } from "@/3d-objects/models/desk-speakers";
 import { PSControllerModel } from "@/3d-objects/models/ps-controller";
-import { CameraModel } from "@/3d-objects/models/camera";
 import { GreenDiamond } from "@/3d-objects/models/greenDiamond";
 import { MusicOverlay } from "@/layout/game-ui/music";
 import { BookStacks } from "@/3d-objects/books/index";
 import { BookTable } from "@/3d-objects/models/bookTable";
+import { SocialsCorner } from "@/3d-objects/socials";
+import { RigidBodyCameraModel } from "@/3d-objects/models/rigidBodyCamera";
 
 export function AboutScene() {
   const { checkUnlockedRoutes } = useCoreStore();
@@ -57,6 +58,7 @@ export function AboutScene() {
         questValue={30}
         mode="view"
         viewId="desk"
+        position={[0, 0, 1.5]}
       >
         <DeskModel
           position={[-3.5, FLOOR_Y_POSITION + 0.7, 0]}
@@ -78,6 +80,24 @@ export function AboutScene() {
 
         {getCurrentViewConfig()?.id === "desk" && <MusicOverlay />}
       </InteractiveObject>
+
+      {/* SOCIALS CORNER  */}
+
+      <InteractiveObject
+        questAction="click_socials"
+        questValue={30}
+        mode="view"
+        viewId="socials"
+      >
+        <SocialsCorner
+          viewId="socials"
+          position={[-3, FLOOR_Y_POSITION - 0.55, -3.5]}
+          // rotation={[0, Math.PI * 0.15, 0]}
+          scale={[4, 4, 4]}
+        />
+      </InteractiveObject>
+
+      {/* BOOK STACKS + TABLE */}
 
       <InteractiveObject
         questAction="click_books"
@@ -121,7 +141,7 @@ export function AboutScene() {
         rotation={[1.2, 0, -0.2]}
       />
 
-      <CameraModel
+      <RigidBodyCameraModel
         position={[3.5, FLOOR_Y_POSITION + 2, 2]}
         rotation={[1.2, 0, -0.2]}
       />

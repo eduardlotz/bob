@@ -6,14 +6,14 @@ import { useFloatingBar } from "@/layout/FloatingBar";
 
 type GLTFResult = GLTF & {
   nodes: {
-    M_Camera_T_Camera_0: THREE.Mesh;
+    Sphere: THREE.Mesh;
   };
   materials: {
-    T_Camera: THREE.MeshStandardMaterial;
+    ["Material.001"]: THREE.MeshStandardMaterial;
   };
 };
 
-const PATH = "gltf/camera.glb";
+const PATH = "gltf/globe.glb";
 
 interface Props {
   position: [number, number, number];
@@ -21,7 +21,7 @@ interface Props {
   scale?: [number, number, number];
 }
 
-export const CameraModel = forwardRef(
+export const GlobeModel = forwardRef(
   ({ scale = [1, 1, 1], ...props }: Props, ref: any) => {
     const { nodes, materials } = useGLTF(PATH) as GLTFResult;
     const { setHoveredObject } = useFloatingBar();
@@ -45,15 +45,14 @@ export const CameraModel = forwardRef(
         onPointerEnter={handlePointerEnter}
         onPointerLeave={handlePointerLeave}
       >
-        <group scale={0.3}>
-          <mesh
-            geometry={nodes.M_Camera_T_Camera_0.geometry}
-            // material={materials.T_Camera}
-            position={[0, 0, -0.033]}
-          >
-            <meshPhongMaterial color="#4c4c4f" />
-          </mesh>
-        </group>
+        <mesh
+          castShadow
+          receiveShadow
+          geometry={nodes.Sphere.geometry}
+          // material={materials["Material.001"]}
+        >
+          <meshToonMaterial color="#5F9EE8" />
+        </mesh>
       </group>
     );
   },

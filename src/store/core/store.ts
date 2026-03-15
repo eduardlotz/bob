@@ -61,7 +61,14 @@ interface BaseItem {
 
 export interface WeatherEffect extends BaseItem {}
 
-export type ShopItem = DecorationItem | TapEffect | BobItem | WeatherEffect;
+type BlobFormShopItem = BaseItem & BlobFormConfig;
+
+export type ShopItem =
+  | DecorationItem
+  | TapEffect
+  | BobItem
+  | WeatherEffect
+  | BlobFormShopItem;
 
 export interface Upgrade {
   id: string;

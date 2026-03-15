@@ -9,6 +9,7 @@ import { useCoreStore } from "@/store/core/store";
 import { AnimatePresence, motion } from "motion/react";
 import { useAppStore } from "@/store";
 import { BookPortalOverlay } from "@/3d-objects/books/overlay";
+import { SocialsPortalOverlay } from "@/3d-objects/socials/overlay";
 
 interface UILayerProps {
   permissionGranted: boolean;
@@ -24,6 +25,7 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
       <AnimatePresence>
         <MotionRoot id="motion-root"></MotionRoot>
         <BookPortalOverlay />
+        <SocialsPortalOverlay />
       </AnimatePresence>
       <BottomNavigation />
     </UILayerContainer>

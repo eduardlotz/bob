@@ -6,18 +6,21 @@ import { ArrowLeftIcon, SmallArrowLeftIcon } from "@/icons/arrow";
 import { playUISound } from "@/utils/soundSystem";
 import { useBooksStore } from "@/store";
 import { Magnetic } from "@/layout/Magnetic";
+import { useSocialsStore } from "@/store/socials";
 
 const VIEWID_TITLE_MAP = {
   desk: "Musik & Mixes",
   bookshelf: "Buchsammlung",
   computer: "Apps & Seiten",
   cardbox: "Interessen & Hobbies",
+  socials: "Eddie's Ecke",
 } satisfies Partial<Record<CameraViewId, string>>;
 
 export function ViewControls() {
   const {
     currentView,
     isDefaultView,
+    isAboutView,
     isCreativeView,
     isPhoneView,
     isImageFocused,
@@ -28,6 +31,7 @@ export function ViewControls() {
   } = useViewStore();
 
   const { focusedBook } = useBooksStore();
+  const { focusedThrone } = useSocialsStore();
 
   const showControls =
     isImageFocused ||
@@ -35,7 +39,9 @@ export function ViewControls() {
       !isPhoneView() &&
       !isCreativeView() &&
       !isNavigationView() &&
-      !focusedBook);
+      // !isAboutView() &&
+      !focusedBook &&
+      !focusedThrone);
 
   // escape key to return to default view
   useKeyPress("Escape", () => {

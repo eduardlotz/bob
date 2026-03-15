@@ -33,7 +33,6 @@ export const Panel = styled(motion.aside)<{ $mobile: boolean }>`
           width: ${PANEL_W};
           max-width: 90vw;
           height: 54vh;
-          border-left: 1px solid rgba(0, 0, 0, 0.07);
           box-shadow: -10px 0 52px rgba(0, 0, 0, 0.13);
         `}
 `;

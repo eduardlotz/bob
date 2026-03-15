@@ -498,10 +498,8 @@ export const BookPortalOverlay = () => {
             <CloseIcon />
           </CloseBtn>
 
-          {/* Scrollable book content */}
           <BookContent book={focusedBook} />
 
-          {/* iOS-style nav — always visible, scoped to status group */}
           <StackNav
             book={focusedBook}
             posInStack={posInStack}

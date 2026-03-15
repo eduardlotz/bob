@@ -32,6 +32,7 @@ export interface FocusTarget {
 export type CameraViewId =
   | "default"
   | "upgrades"
+  | "about"
   | "portfolio"
   | "minigames"
   | "navigation"
@@ -44,7 +45,8 @@ export type CameraViewId =
   | "desk"
   | "bookshelf"
   | "computer"
-  | "cardbox";
+  | "cardbox"
+  | "socials";
 
 // camera settings for different object views
 export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
@@ -68,6 +70,16 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
       easing: "easeInOutCubic",
     },
     defaultViewMode: "fixed",
+  },
+  about: {
+    id: "about",
+    name: "About Me Room View",
+    position: [0, CAMERA_HEIGHT + 2, HIDDEN_OPTIONS_CAMERA_ZOOM],
+    target: [0, CAMERA_Y_POSITION, 0.5],
+    transition: {
+      duration: 1000,
+      easing: "easeInOutCubic",
+    },
   },
   "phone:shop": {
     id: "phone:shop",
@@ -138,8 +150,8 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   desk: {
     id: "desk",
     name: "Desk View",
-    position: [-2.5, 0.5, 0],
-    target: [-3.5, 0, 0],
+    position: [-2.5, 0.5, 1.5],
+    target: [-3.5, 0, 1.5],
     transition: {
       duration: 800,
       easing: "easeInOutCubic",
@@ -179,6 +191,17 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
     },
     defaultViewMode: "object",
   },
+  socials: {
+    id: "socials",
+    name: "Socials Corner View",
+    position: [-1, 3, -0.5],
+    target: [-3, -1.5, -3.5],
+    transition: {
+      duration: 580,
+      easing: "easeInOutCubic",
+    },
+    defaultViewMode: "object",
+  },
 };
 
 export type ViewMode = "fixed" | "object";
@@ -206,6 +229,7 @@ interface ViewStore {
 
   getCurrentViewConfig: () => CameraView | null;
   isDefaultView: () => boolean;
+  isAboutView: () => boolean;
   isCreativeView: () => boolean;
   isPhoneView: () => boolean;
   isObjectView: () => boolean;
@@ -213,6 +237,7 @@ interface ViewStore {
   getAvailableViews: () => CameraView[];
 
   setDefaultViewMode: (mode: ViewMode) => void;
+  setCameraEnabled: (enabled: boolean) => void;
 
   focusOnTarget: (target: FocusTarget) => Promise<void>;
   isImageFocused: boolean;
@@ -454,6 +479,9 @@ export const useViewStore = create<ViewStore>()(
       isDefaultView: () => {
         return get().currentView === "default";
       },
+      isAboutView: () => {
+        return get().currentView === "about";
+      },
       isCreativeView: () => {
         return get().currentView === "portfolio";
       },
@@ -508,6 +536,12 @@ export const useViewStore = create<ViewStore>()(
           set({ isTransitioning: false });
         }
       },
+      setCameraEnabled: (enabled: boolean) => {
+        const controls = get().cameraControlsRef?.current;
+        if (!controls) return;
+        controls.enabled = enabled;
+      },
+
       isImageFocused: false,
       focusedImageTitle: null,
 

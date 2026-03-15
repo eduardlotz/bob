@@ -266,6 +266,7 @@ export function BlobHead({
 
   const {
     isDefaultView,
+    isAboutView,
     isNavigationView,
     viewMode,
     isTransitioning,
@@ -275,7 +276,9 @@ export function BlobHead({
   const shouldFollowCursor =
     viewMode === "fixed" &&
     !isMobile &&
-    (isDefaultView() || isNavigationView());
+    (isDefaultView() ||
+      // || isAboutView()
+      isNavigationView());
 
   const mousePosition = useCursor({
     condition: () => shouldFollowCursor,

@@ -138,37 +138,79 @@ export default function App() {
             <ViewDebug layout>
               <p>
                 CameraControls:{" "}
-                {cameraControlsRef?.current?.active ? "active" : "-"}
+                <DebugValueChip>
+                  {cameraControlsRef?.current?.active ? "active" : "-"}
+                </DebugValueChip>
               </p>
               <p>
-                LastFocusPoint: x:{lastFocusPosition?.x.toFixed(0)} y:
-                {lastFocusPosition?.y.toFixed(0)} z:
-                {lastFocusPosition?.z.toFixed(0)}
+                LastFocusPoint: x:
+                <DebugValueChip>
+                  {lastFocusPosition?.x.toFixed(0)}
+                </DebugValueChip>{" "}
+                y:
+                <DebugValueChip>
+                  {lastFocusPosition?.y.toFixed(0)}
+                </DebugValueChip>{" "}
+                z:
+                <DebugValueChip>
+                  {lastFocusPosition?.z.toFixed(0)}
+                </DebugValueChip>
               </p>
-              <p>Distance: {cameraControlsRef?.current?.distance.toFixed(2)}</p>
               <p>
-                Polar Angle: {cameraControlsRef?.current?.polarAngle.toFixed(2)}
+                Distance:{" "}
+                <DebugValueChip>
+                  {cameraControlsRef?.current?.distance.toFixed(2)}
+                </DebugValueChip>
+              </p>
+              <p>
+                Polar Angle:{" "}
+                <DebugValueChip>
+                  {cameraControlsRef?.current?.polarAngle.toFixed(2)}
+                </DebugValueChip>
               </p>
               <p>
                 Polar min:{" "}
-                {cameraControlsRef?.current?.minPolarAngle.toFixed(2)}
+                <DebugValueChip>
+                  {cameraControlsRef?.current?.minPolarAngle.toFixed(2)}
+                </DebugValueChip>
               </p>
               <p>
                 Polar max:{" "}
-                {cameraControlsRef?.current?.minPolarAngle.toFixed(2)}
+                <DebugValueChip>
+                  {cameraControlsRef?.current?.minPolarAngle.toFixed(2)}
+                </DebugValueChip>
               </p>
               <p>
                 Azimuth Angle:{" "}
-                {cameraControlsRef?.current?.azimuthAngle.toFixed(2)}
+                <DebugValueChip>
+                  {cameraControlsRef?.current?.azimuthAngle.toFixed(2)}
+                </DebugValueChip>
               </p>
               <hr />
-              <p>transitioning? {isTransitioning ? "yes" : "no"}</p>
-              <p>Current View: {currentView}</p>
-              <p>Previous View: {previousView}</p>
+              <p>
+                transitioning?{" "}
+                <DebugValueChip>
+                  {isTransitioning ? "yes" : "no"}
+                </DebugValueChip>
+              </p>
+              <p>
+                Current View: <DebugValueChip>{currentView}</DebugValueChip>
+              </p>
+              <p>
+                Previous View: <DebugValueChip>{previousView}</DebugValueChip>
+              </p>
               <hr />
-              <p>Default ViewMode: {defaultViewMode}</p>
-              <p>Current ViewMode: {viewMode}</p>
-              <p>Previous ViewMode: {previousViewMode}</p>
+              <p>
+                Default ViewMode:{" "}
+                <DebugValueChip>{defaultViewMode}</DebugValueChip>
+              </p>
+              <p>
+                Current ViewMode: <DebugValueChip>{viewMode}</DebugValueChip>
+              </p>
+              <p>
+                Previous ViewMode:{" "}
+                <DebugValueChip>{previousViewMode}</DebugValueChip>
+              </p>
             </ViewDebug>
           )}
 
@@ -208,6 +250,10 @@ const ViewDebug = styled(motion.div)`
   width: fit-content;
   max-width: calc(100vw - 32px);
 
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
   color: #ffffff;
   padding: 12px 16px;
   border-radius: 24px;
@@ -221,6 +267,18 @@ const ViewDebug = styled(motion.div)`
   pointer-events: none;
   z-index: 1;
   word-break: break-all;
+
+  hr {
+    width: 100%;
+    opacity: 0.5;
+  }
+`;
+
+const DebugValueChip = styled.span`
+  padding: 0px 8px;
+  background-color: #f1f1f1;
+  color: #212121;
+  border-radius: 12px;
 `;
 
 const ContentWrapper = styled(FillColumn)`
