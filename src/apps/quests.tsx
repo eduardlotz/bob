@@ -1,7 +1,9 @@
 import { FillColumn, FillRow, HugColumn } from "@/layout";
-import { CameraViewId, useQuestStore } from "@/store";
-import { AnimatePresence, motion } from "motion/react";
+import { useCoreStore, useQuestStore } from "@/store";
+import { formatNumber } from "@/molecules/TapCounter";
+import { motion } from "motion/react";
 import styled from "styled-components";
+import { ItemStatusChip } from "./ui";
 
 export const QuestsIcon = () => (
   <img src="/images/app-logos/quests.png" height={80} width={80} />
@@ -9,25 +11,45 @@ export const QuestsIcon = () => (
 
 export const QuestsApp = () => {
   const { quests } = useQuestStore();
+  const { bobItems, tapEffects, decorations } = useCoreStore();
+
+  const rewardItems = [...bobItems, ...tapEffects, ...decorations];
 
   return (
     <HugColumn style={{ width: "320px", maxWidth: "100%" }} $gap={"0.25rem"}>
-      {quests.map((quest, index) => (
-        <QuestListItem $completed={quest.completed} key={quest.id}>
-          <FillColumn $align="flex-start" $gap={".25rem"}>
-            <QuestName>{quest.title}</QuestName>
-            <QuestInfos>{quest.description}</QuestInfos>
-          </FillColumn>
+      {quests.map((quest, index) => {
+        const reward =
+          quest.reward.type === "taps_reward"
+            ? `+${formatNumber(Number(quest.reward.amount) || 0)} 🫵`
+            : (() => {
+                const item = rewardItems.find(
+                  (entry) => entry.id === quest.reward.amount,
+                );
+                if (!item) return "+ 🎁";
+                const itemIcon =
+                  "icon" in item && item.icon ? item.icon : "🎁";
+                return `+ ${itemIcon} ${item.name}`;
+              })();
 
-          <QuestIcon
-            animate={{ scale: 1, filter: "blur(0px)", opacity: 1 }}
-            initial={{ scale: 0, filter: "blur(4px)", opacity: 0 }}
-            transition={{ delay: 0.5 + index * 0.2 }}
-          >
-            {quest.completed ? <QuestCheckmarkIcon /> : ""}
-          </QuestIcon>
-        </QuestListItem>
-      ))}
+        return (
+          <QuestListItem $completed={quest.completed} key={quest.id}>
+            <FillColumn $align="flex-start" $gap={".25rem"}>
+              <QuestName>{quest.title}</QuestName>
+              <QuestInfos>{quest.description}</QuestInfos>
+            </FillColumn>
+
+            <RewardChip>{reward}</RewardChip>
+
+            <QuestIcon
+              animate={{ scale: 1, filter: "blur(0px)", opacity: 1 }}
+              initial={{ scale: 0, filter: "blur(4px)", opacity: 0 }}
+              transition={{ delay: 0.5 + index * 0.2 }}
+            >
+              {quest.completed ? <QuestCheckmarkIcon /> : ""}
+            </QuestIcon>
+          </QuestListItem>
+        );
+      })}
     </HugColumn>
   );
 };
@@ -50,9 +72,15 @@ const QuestCheckmarkIcon = () => (
 const QuestIcon = styled(motion.div)`
   position: absolute;
   right: 0.5rem;
-  top: 0.5rem;
+  bottom: 0.5rem;
 
   color: #4178f7;
+`;
+
+const RewardChip = styled(ItemStatusChip)`
+  align-self: flex-start;
+  margin-left: auto;
+  text-transform: none;
 `;
 
 const QuestListItem = styled(FillRow)<{

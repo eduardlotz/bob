@@ -2,7 +2,12 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 
-export type MiniGameType = "LOBBY" | "FOOTBALL" | "PING_PONG" | "FLAPPY_BIRD";
+export type MiniGameType =
+  | "LOBBY"
+  | "FOOTBALL"
+  | "PING_PONG"
+  | "FLAPPY_BIRD"
+  | "SLOT_MACHINE";
 
 interface MiniGameState {
   activeGame: MiniGameType;
@@ -29,6 +34,7 @@ export const useMiniGameStore = create<MiniGameState>()(
         FOOTBALL: 0,
         PING_PONG: 0,
         FLAPPY_BIRD: 0,
+        SLOT_MACHINE: 0,
       },
 
       session: {

@@ -10,7 +10,7 @@ import { Route, useCoreStore } from "@/store/core/store";
 import { useNavigate } from "react-router-dom";
 import { match } from "ts-pattern";
 import { LockIcon } from "@/icons/lock";
-import { useAppStore, useMiniGameStore } from "@/store";
+import { useAppStore } from "@/store";
 import { useViewStore } from "@/store/viewStore";
 import { Magnetic } from "@/layout/Magnetic";
 import { useMessageStore } from "@/store/messageStore";

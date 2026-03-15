@@ -13,8 +13,9 @@ import {
   CAMERA_Y_POSITION,
   HIDDEN_OPTIONS_CAMERA_ZOOM,
 } from "@/molecules/HeadNavigation";
-import { Vector3 } from "three";
+import { BackSide, Vector3 } from "three";
 import { useCursorStore } from "@/store/core/cursor";
+import { GradientTexture } from "@react-three/drei";
 
 export function PingPongGame({ onExit }: { onExit: () => void }) {
   const ballApi = useRef<RapierRigidBody>(null!);
@@ -81,6 +82,17 @@ export function PingPongGame({ onExit }: { onExit: () => void }) {
 
   return (
     <group>
+      <mesh>
+        <sphereGeometry args={[100, 16, 16]} />
+        <meshBasicMaterial side={BackSide}>
+          <GradientTexture
+            stops={[0, 0.5, 1]}
+            colors={["#4857b0", "#969bc1"]}
+            size={1024}
+          />
+        </meshBasicMaterial>
+      </mesh>
+
       <CharacterBall ref={ballApi} position={[0, 5, 0]} scale={0.3} />
 
       <Paddle ref={paddleApi} onCollide={handleCollision} />
