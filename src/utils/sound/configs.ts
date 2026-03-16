@@ -1,51 +1,71 @@
 import {
   DEFAULT_TAP_SOUND,
   DEFAULT_WORLD_MUSIC,
-  DEFAULT_TEXT_SOUND,
   DEFAULT_UI_SOUND,
   DEFAULT_UI_SOUND_2,
-  DEFAULT_UI_SOUND_ALT,
   DEFAULT_PINK_NOISE,
 } from "./defaults";
-import { SoundConfig } from "./types";
+import type { SoundConfig } from "./types";
+
+const defineSound = (config: SoundConfig): SoundConfig => config;
 
 export const DEFAULT_SOUND_CONFIGS: SoundConfig[] = [
-  {
+  defineSound({
     id: DEFAULT_TAP_SOUND.id,
     filePath: DEFAULT_TAP_SOUND.filePath,
     type: "tap",
+    category: "tap",
     volume: 0.3,
+    pool: 12,
     detune: {
       enabled: true,
       minSemitones: -2,
       maxSemitones: 2,
     },
-    stopPrevious: true,
-  },
-  {
+    playback: {
+      overlap: "layer",
+      maxConcurrent: 6,
+      limitBehavior: "stop-oldest",
+    },
+  }),
+  defineSound({
     id: DEFAULT_WORLD_MUSIC.id,
     filePath: DEFAULT_WORLD_MUSIC.filePath,
     type: "world",
+    category: "background",
     volume: 0.2,
     loop: true,
-    stopPrevious: true,
+    pool: 4,
     distanceAttenuation: false,
     detune: { enabled: false, minSemitones: 0, maxSemitones: 0 },
-    fadeIn: 5000,
-    fadeOut: 5000,
-  },
-  {
+    fadeIn: 2500,
+    fadeOut: 1200,
+    playback: {
+      group: "world-music",
+      overlap: "replace-group",
+      maxConcurrent: 1,
+      limitBehavior: "stop-oldest",
+    },
+  }),
+  defineSound({
     id: DEFAULT_PINK_NOISE.id,
     filePath: DEFAULT_PINK_NOISE.filePath,
     type: "world",
+    category: "ambient",
     volume: 0.5,
     loop: true,
-    stopPrevious: false,
+    pool: 4,
     distanceAttenuation: true,
     detune: { enabled: false, minSemitones: 0, maxSemitones: 0 },
-    fadeIn: 5000,
-    fadeOut: 5000,
-  },
+    fadeIn: 2000,
+    fadeOut: 1000,
+    playback: {
+      group: "world-music",
+      overlap: "replace-group",
+      maxConcurrent: 1,
+      limitBehavior: "stop-oldest",
+    },
+  }),
   // {
   //   id: DEFAULT_TEXT_SOUND.id,
   //   filePath: DEFAULT_TEXT_SOUND.filePath,
@@ -55,33 +75,51 @@ export const DEFAULT_SOUND_CONFIGS: SoundConfig[] = [
   //   stopPrevious: false,
   //   layerable: true,
   // },
-  {
+  defineSound({
     id: DEFAULT_UI_SOUND.id,
     filePath: DEFAULT_UI_SOUND.filePath,
     type: "ui",
+    category: "ui",
     volume: 0.3,
+    pool: 8,
     detune: { enabled: true, minSemitones: 0, maxSemitones: 1 },
-    stopPrevious: true,
-  },
-  {
+    playback: {
+      overlap: "restart",
+      maxConcurrent: 2,
+      limitBehavior: "stop-oldest",
+    },
+  }),
+  defineSound({
     id: DEFAULT_UI_SOUND_2.id,
     filePath: DEFAULT_UI_SOUND_2.filePath,
     type: "ui",
+    category: "ui",
     volume: 0.35,
+    pool: 8,
     detune: { enabled: true, minSemitones: 0, maxSemitones: 1 },
-    stopPrevious: true,
-  },
-  {
+    playback: {
+      overlap: "restart",
+      maxConcurrent: 2,
+      limitBehavior: "stop-oldest",
+    },
+  }),
+  defineSound({
     // somehow this import is not working?
     // id: DEFAULT_UI_SOUND_ALT.id,
     // filePath: DEFAULT_UI_SOUND_ALT.filePath,
     id: "ui-tap-close",
     filePath: "/audio/ui_click_sound_close.ogg",
     type: "ui",
+    category: "ui",
     volume: 0.35,
+    pool: 8,
     detune: { enabled: true, minSemitones: 0, maxSemitones: 1 },
-    stopPrevious: true,
-  },
+    playback: {
+      overlap: "restart",
+      maxConcurrent: 2,
+      limitBehavior: "stop-oldest",
+    },
+  }),
 ];
 
 export const WORLD_SOUNDS = [

@@ -1,42 +1,43 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import type { SoundConfig } from "@/utils/sound/types";
 import {
-  playTapSound as playTapSoundUtil,
-  playWorldSound as playWorldSoundUtil,
-  stopAllTapSounds,
-  stopAllWorldSounds,
-  isEnabled,
-  enable as engineEnable,
+  addSoundConfig as engineAddSoundConfig,
   disable as engineDisable,
+  enable as engineEnable,
+  getSoundConfig as engineGetSoundConfig,
+  isEnabled,
+  mute as engineMute,
+  playTapSound as playTapSoundUtil,
+  playUISound as enginePlayUISound,
+  playWorldSound as playWorldSoundUtil,
+  resumeAudioContext,
   setMasterVolume as engineSetMasterVolume,
   setTypeVolume as engineSetTypeVolume,
-  updateWorldSoundVolumes,
-  mute as engineMute,
-  unmute as engineUnmute,
-  resumeAudioContext,
-  unlockAudioContext,
-  playUISound as enginePlayUISound,
-  addSoundConfig as engineAddSoundConfig,
-  playWorldSound as enginePlayWorldSound,
+  stopAllTapSounds,
+  stopAllWorldSounds,
   stopSoundsById as engineStopSoundsById,
+  unlockAudioContext,
+  unmute as engineUnmute,
+  updateWorldSoundVolumes,
 } from "../utils/soundSystem";
-import { getWorldSoundById, tryGetWorldSoundById } from "@/utils/sound/configs";
+import { tryGetWorldSoundById } from "@/utils/sound/configs";
 import { useCoreStore } from "../store/core/store";
 
-let _initPerformed = false;
+let initPerformed = false;
+
+const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
 export interface SoundSystemHook {
   playTapSound: (soundId?: string) => void;
-  playWorldSound: (soundId: string, options?: any) => void;
+  playWorldSound: (soundId: string, options?: Partial<SoundConfig>) => void;
   playUISound: (soundId?: string) => void;
   stopAllTapSounds: () => void;
   stopAllWorldSounds: () => void;
-
   setMasterVolume: (volume: number) => void;
   setTapVolume: (volume: number) => void;
   setWorldVolume: (volume: number) => void;
   setUIVolume: (volume: number) => void;
   setTextVolume: (volume: number) => void;
-
   isEnabled: boolean;
   isMuted: boolean;
   audioStatus: "playing" | "muted" | "stopped";
@@ -46,12 +47,10 @@ export interface SoundSystemHook {
   worldVolume: number;
   uiVolume: number;
   textVolume: number;
-
   enable: () => void;
   disable: () => void;
   start: () => void;
   stop: () => void;
-
   mute: () => void;
   unmute: () => void;
   toggleMute: () => void;
@@ -59,14 +58,116 @@ export interface SoundSystemHook {
 }
 
 export function useSoundSystem(): SoundSystemHook {
-  const soundSystem = useCoreStore((s) => s.soundSystem);
+  const soundSystem = useCoreStore((state) => state.soundSystem);
+  const worldSoundIds = useCoreStore(
+    (state) => state.audioSelections?.worldSoundIds ?? [],
+  );
+  const isPaused = useCoreStore((state) => state.isPaused);
 
-  const lastNonZeroRef = useRef<number>(
-    soundSystem.masterVolume > 0 ? soundSystem.masterVolume : 1
+  const lastNonZeroRef = useRef(
+    soundSystem.masterVolume > 0 ? soundSystem.masterVolume : 1,
+  );
+  const syncedWorldIdsRef = useRef<string[]>([]);
+  const worldPlaybackWasBlockedRef = useRef(false);
+
+  const stopTrackedWorldLayers = useCallback((ids: string[]) => {
+    ids.forEach((id) => {
+      try {
+        engineStopSoundsById(id);
+      } catch (error) {
+        console.warn(`Failed to stop world layer "${id}"`, error);
+      }
+    });
+  }, []);
+
+  const ensureWorldSoundConfig = useCallback((soundId: string) => {
+    if (engineGetSoundConfig(soundId)) return true;
+
+    const track = tryGetWorldSoundById(soundId);
+    if (!track) return false;
+
+    engineAddSoundConfig({
+      id: track.id,
+      filePath: track.filePath,
+      type: "world",
+      category: "ambient",
+      volume: 0.2,
+      loop: true,
+      fadeIn: 2000,
+      fadeOut: 1000,
+      playback: {
+        overlap: "restart",
+        maxConcurrent: 1,
+        limitBehavior: "stop-oldest",
+      },
+    });
+
+    return true;
+  }, []);
+
+  const syncSelectedWorldLayers = useCallback(
+    (forceRestart = false) => {
+      const state = useCoreStore.getState();
+      const nextIds = Array.from(
+        new Set(state.audioSelections?.worldSoundIds ?? []),
+      );
+      const previousIds = syncedWorldIdsRef.current;
+      const canPlayWorldLayers =
+        state.soundSystem.enabled &&
+        state.soundSystem.masterVolume > 0 &&
+        state.soundSystem.worldEnabled !== false &&
+        !state.isPaused;
+
+      if (!canPlayWorldLayers) {
+        stopTrackedWorldLayers(previousIds);
+        syncedWorldIdsRef.current = nextIds;
+        worldPlaybackWasBlockedRef.current = true;
+        return;
+      }
+
+      const idsToStop = forceRestart
+        ? previousIds
+        : previousIds.filter((id) => !nextIds.includes(id));
+      stopTrackedWorldLayers(idsToStop);
+
+      const idsToPlay = forceRestart
+        ? nextIds
+        : nextIds.filter((id) => !previousIds.includes(id));
+
+      idsToPlay.forEach((id) => {
+        try {
+          if (!ensureWorldSoundConfig(id)) return;
+          playWorldSoundUtil(id, { loop: true });
+        } catch (error) {
+          console.error(`Failed to play world layer "${id}"`, error);
+        }
+      });
+
+      syncedWorldIdsRef.current = nextIds;
+      worldPlaybackWasBlockedRef.current = false;
+
+      try {
+        updateWorldSoundVolumes(false);
+      } catch (error) {
+        console.warn("Failed to update world sound volumes", error);
+      }
+    },
+    [ensureWorldSoundConfig, stopTrackedWorldLayers],
+  );
+
+  const setTypeVolume = useCallback(
+    (type: SoundConfig["type"], volume: number) => {
+      try {
+        engineSetTypeVolume(type, clamp01(volume));
+      } catch (error) {
+        console.error(`Failed to set ${type} volume`, error);
+      }
+    },
+    [],
   );
 
   useEffect(() => {
-    if (_initPerformed) return;
+    if (initPerformed) return;
 
     try {
       engineSetMasterVolume(soundSystem.masterVolume);
@@ -76,271 +177,203 @@ export function useSoundSystem(): SoundSystemHook {
       engineSetTypeVolume("text", soundSystem.textVolume);
 
       if (soundSystem.enabled) {
-        try {
-          engineEnable();
-        } catch (err) {
-          console.error("Failed to enable engine on init:", err);
-        }
+        engineEnable();
       } else {
-        try {
-          engineDisable();
-        } catch (err) {
-          console.error("Failed to disable engine on init:", err);
-        }
+        engineDisable();
       }
-
-      if (
-        soundSystem.enabled &&
-        soundSystem.masterVolume > 0 &&
-        soundSystem.worldEnabled !== false
-      ) {
-        queueMicrotask(() => {
-          resumeSelectedWorldLayersSnapshot();
-        });
-      }
-    } catch (err) {
-      console.error("Sound system init error:", err);
+    } catch (error) {
+      console.error("Sound system init error", error);
     }
 
-    _initPerformed = true;
-  }, []);
+    initPerformed = true;
+  }, [
+    soundSystem.enabled,
+    soundSystem.masterVolume,
+    soundSystem.tapVolume,
+    soundSystem.textVolume,
+    soundSystem.uiVolume,
+    soundSystem.worldVolume,
+  ]);
 
-  const setTypeVolume = useCallback((type: string, v: number) => {
-    const clamped = Math.max(0, Math.min(1, v));
-    try {
-      engineSetTypeVolume(type as any, clamped);
-    } catch (err) {
-      console.error(`Failed to set ${type} volume:`, err);
+  useEffect(() => {
+    if (soundSystem.tapEnabled === false) {
+      stopAllTapSounds();
     }
-  }, []);
+  }, [soundSystem.tapEnabled]);
 
-  const resumeSelectedWorldLayersSnapshot = useCallback(() => {
-    const s = useCoreStore.getState();
-    if (!s.soundSystem.enabled) return;
-    if (s.soundSystem.masterVolume <= 0) return;
-    if (s.soundSystem.worldEnabled === false) return;
-    const ids: string[] = s.audioSelections?.worldSoundIds ?? [];
-    if (!ids.length) return;
-
-    try {
-      stopAllWorldSounds();
-    } catch (err) {
-      console.warn("stopAllWorldSounds failed during resume:", err);
-    }
-
-    // microtask to avoid timing issues with engine cleanup
-    queueMicrotask(() => {
-      ids.forEach((id) => {
-        try {
-          const track = tryGetWorldSoundById(id);
-          if (!track) return;
-          engineAddSoundConfig({
-            id: track.id,
-            filePath: track.filePath,
-            type: "world",
-            volume: 0.1,
-            loop: true,
-            stopPrevious: true,
-            distanceAttenuation: false,
-            detune: { enabled: false, minSemitones: 0, maxSemitones: 0 },
-          } as any);
-
-          try {
-            engineStopSoundsById(track.id);
-          } catch (err) {
-            // not fatal — continue
-            console.warn(`engineStopSoundsById failed for ${track.id}:`, err);
-          }
-
-          enginePlayWorldSound(track.id, { loop: true, stopPrevious: true });
-        } catch (err) {
-          console.error("Error while resuming world layer", id, err);
-        }
-      });
-
-      try {
-        updateWorldSoundVolumes(false);
-      } catch (err) {
-        console.warn("updateWorldSoundVolumes failed:", err);
-      }
-    });
-  }, []);
+  useEffect(() => {
+    const forceRestart = worldPlaybackWasBlockedRef.current;
+    syncSelectedWorldLayers(forceRestart);
+  }, [
+    isPaused,
+    soundSystem.enabled,
+    soundSystem.masterVolume,
+    soundSystem.worldEnabled,
+    syncSelectedWorldLayers,
+    worldSoundIds,
+  ]);
 
   const playTapSound = useCallback((soundId?: string) => {
-    const s = useCoreStore.getState();
-    if (s.isPaused) return;
+    const state = useCoreStore.getState();
+    if (state.isPaused) return;
+    if (state.soundSystem.tapEnabled === false) return;
     if (!isEnabled()) return;
+
     try {
-      if (typeof soundId === "string") {
+      if (soundId) {
         playTapSoundUtil(soundId);
       } else {
-        (playTapSoundUtil as any)();
+        playTapSoundUtil();
       }
-    } catch (err) {
-      console.error("playTapSound failed:", err);
+    } catch (error) {
+      console.error("playTapSound failed", error);
     }
   }, []);
 
-  const playWorldSound = useCallback((soundId: string, options?: any) => {
-    const s = useCoreStore.getState();
-    if (!isEnabled() || s.isPaused) return;
-    try {
-      playWorldSoundUtil(soundId, options);
-    } catch (err) {
-      console.error("playWorldSound failed:", err);
-    }
-  }, []);
+  const playWorldSound = useCallback(
+    (soundId: string, options?: Partial<SoundConfig>) => {
+      const state = useCoreStore.getState();
+      if (state.isPaused) return;
+      if (state.soundSystem.worldEnabled === false) return;
+      if (!isEnabled()) return;
 
-  const setMasterVolume = useCallback(
-    (v: number) => {
-      const clamped = Math.max(0, Math.min(1, v));
       try {
-        engineSetMasterVolume(clamped);
-      } catch (err) {
-        console.error("engineSetMasterVolume failed:", err);
-      }
-
-      const store = useCoreStore.getState();
-      store.setMasterVolume(clamped);
-
-      if (clamped > 0) {
-        lastNonZeroRef.current = clamped;
-      }
-
-      if (clamped > 0) {
-        resumeSelectedWorldLayersSnapshot();
+        playWorldSoundUtil(soundId, options);
+      } catch (error) {
+        console.error("playWorldSound failed", error);
       }
     },
-    [resumeSelectedWorldLayersSnapshot]
+    [],
   );
 
+  const playUISound = useCallback((soundId?: string) => {
+    const state = useCoreStore.getState();
+    if (state.isPaused || !state.soundSystem.enabled) return;
+
+    try {
+      if (soundId) {
+        enginePlayUISound(soundId);
+      } else {
+        enginePlayUISound();
+      }
+    } catch (error) {
+      console.error("playUISound failed", error);
+    }
+  }, []);
+
+  const setMasterVolume = useCallback((volume: number) => {
+    const clamped = clamp01(volume);
+
+    try {
+      engineSetMasterVolume(clamped);
+    } catch (error) {
+      console.error("engineSetMasterVolume failed", error);
+    }
+
+    useCoreStore.getState().setMasterVolume(clamped);
+    if (clamped > 0) {
+      lastNonZeroRef.current = clamped;
+    }
+  }, []);
+
   const setTapVolume = useCallback(
-    (v: number) => {
-      const clamped = Math.max(0, Math.min(1, v));
+    (volume: number) => {
+      const clamped = clamp01(volume);
       setTypeVolume("tap", clamped);
       useCoreStore.getState().setTapVolume(clamped);
     },
-    [setTypeVolume]
+    [setTypeVolume],
   );
 
   const setWorldVolume = useCallback(
-    (v: number) => {
-      const clamped = Math.max(0, Math.min(1, v));
+    (volume: number) => {
+      const clamped = clamp01(volume);
       setTypeVolume("world", clamped);
       useCoreStore.getState().setWorldVolume(clamped);
-      try {
-        updateWorldSoundVolumes(false);
-      } catch (err) {
-        console.warn("updateWorldSoundVolumes failed:", err);
-      }
+      updateWorldSoundVolumes(false);
     },
-    [setTypeVolume]
+    [setTypeVolume],
   );
 
   const setUIVolume = useCallback(
-    (v: number) => {
-      const clamped = Math.max(0, Math.min(1, v));
+    (volume: number) => {
+      const clamped = clamp01(volume);
       setTypeVolume("ui", clamped);
       useCoreStore.getState().setUIVolume(clamped);
     },
-    [setTypeVolume]
+    [setTypeVolume],
   );
 
   const setTextVolume = useCallback(
-    (v: number) => {
-      const clamped = Math.max(0, Math.min(1, v));
+    (volume: number) => {
+      const clamped = clamp01(volume);
       setTypeVolume("text", clamped);
       useCoreStore.getState().setTextVolume(clamped);
     },
-    [setTypeVolume]
+    [setTypeVolume],
   );
 
   const enable = useCallback(() => {
     useCoreStore.getState().setSoundEnabled(true);
+
     try {
       engineEnable();
-    } catch (err) {
-      console.error("engineEnable failed:", err);
-    }
-
-    const s = useCoreStore.getState();
-    if (
-      s.soundSystem.masterVolume > 0 &&
-      s.soundSystem.worldEnabled !== false &&
-      Array.isArray(s.audioSelections?.worldSoundIds) &&
-      s.audioSelections.worldSoundIds.length > 0
-    ) {
-      resumeSelectedWorldLayersSnapshot();
-    }
-  }, [resumeSelectedWorldLayersSnapshot]);
-
-  const disable = useCallback(() => {
-    useCoreStore.getState().setSoundEnabled(false);
-    try {
-      engineDisable();
-    } catch (err) {
-      console.error("engineDisable failed:", err);
+    } catch (error) {
+      console.error("engineEnable failed", error);
     }
   }, []);
 
-  // volume-based, does not flip "enabled" flag
+  const disable = useCallback(() => {
+    useCoreStore.getState().setSoundEnabled(false);
+
+    try {
+      engineDisable();
+    } catch (error) {
+      console.error("engineDisable failed", error);
+    }
+  }, []);
+
   const mute = useCallback(() => {
     const store = useCoreStore.getState();
-    const current = store.soundSystem.masterVolume;
-    if (current > 0) {
-      lastNonZeroRef.current = current;
+    if (store.soundSystem.masterVolume > 0) {
+      lastNonZeroRef.current = store.soundSystem.masterVolume;
     }
 
     try {
       engineMute();
-    } catch (err) {
-      console.error("engineMute failed:", err);
+    } catch (error) {
+      console.error("engineMute failed", error);
     }
 
     store.setMasterVolume(0);
   }, []);
 
   const unmute = useCallback(async () => {
-    const restore = lastNonZeroRef.current > 0 ? lastNonZeroRef.current : 1;
+    const restoreVolume = lastNonZeroRef.current > 0 ? lastNonZeroRef.current : 1;
+
     try {
       await resumeAudioContext();
       await unlockAudioContext();
-    } catch (err) {
-      console.warn("resume/unlock audio context failed:", err);
-    }
-
-    try {
       engineUnmute();
-    } catch (err) {
-      console.error("engineUnmute failed:", err);
+    } catch (error) {
+      console.warn("Audio unmute sequence failed", error);
     }
 
-    useCoreStore.getState().setMasterVolume(restore);
-    resumeSelectedWorldLayersSnapshot();
-  }, [resumeSelectedWorldLayersSnapshot]);
+    useCoreStore.getState().setMasterVolume(restoreVolume);
+  }, []);
 
   const toggleMute = useCallback(() => {
-    const store = useCoreStore.getState();
-    const current = store.soundSystem.masterVolume;
-    if (current > 0) {
+    const currentVolume = useCoreStore.getState().soundSystem.masterVolume;
+    if (currentVolume > 0) {
       mute();
     } else {
-      unmute();
+      void unmute();
     }
   }, [mute, unmute]);
 
-  const playUISound = useCallback((soundId?: string) => {
-    try {
-      if (soundId) enginePlayUISound(soundId);
-      else enginePlayUISound();
-    } catch (err) {
-      console.error("playUISound failed:", err);
-    }
-  }, []);
-
   const isActive = useMemo(
     () => soundSystem.enabled && soundSystem.masterVolume > 0,
-    [soundSystem.enabled, soundSystem.masterVolume]
+    [soundSystem.enabled, soundSystem.masterVolume],
   );
 
   return {
@@ -359,14 +392,14 @@ export function useSoundSystem(): SoundSystemHook {
     audioStatus: !soundSystem.enabled
       ? "stopped"
       : soundSystem.masterVolume === 0
-      ? "muted"
-      : "playing",
+        ? "muted"
+        : "playing",
     isActive,
     masterVolume: soundSystem.masterVolume,
     tapVolume: soundSystem.tapVolume,
     worldVolume: soundSystem.worldVolume,
     uiVolume: soundSystem.uiVolume,
-    textVolume: (soundSystem as any).textVolume,
+    textVolume: soundSystem.textVolume,
     enable,
     disable,
     start: enable,
