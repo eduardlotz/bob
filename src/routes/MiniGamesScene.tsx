@@ -14,6 +14,10 @@ import { PingPongPaddle } from "@/3d-objects/models/pingPongPaddle";
 import { FootballGame } from "./games/FootballGame";
 import { PointsCounter } from "@/molecules/PointsCounter";
 import { FlappyBirdArcade, FlappyBirdGame } from "./games/FlappyBirdGame";
+import { playWorldSound, stopSoundsById } from "@/utils/soundSystem";
+import { DEFAULT_WORLD_MUSIC } from "@/utils/sound/defaults";
+
+const MINIGAME_BACKGROUND_TRACK_ID = DEFAULT_WORLD_MUSIC.id;
 
 export function MiniGamesScene() {
   const { checkUnlockedRoutes } = useCoreStore();
@@ -31,6 +35,22 @@ export function MiniGamesScene() {
       navigate(ROUTE_PATHS.HOME, { replace: true });
     }
   }, [isAllowedToAcces]);
+
+  useEffect(() => {
+    const shouldPlayMinigameMusic =
+      activeGame === "PING_PONG" || activeGame === "FLAPPY_BIRD";
+
+    if (!shouldPlayMinigameMusic) {
+      stopSoundsById(MINIGAME_BACKGROUND_TRACK_ID);
+      return;
+    }
+
+    playWorldSound(MINIGAME_BACKGROUND_TRACK_ID, { loop: true });
+
+    return () => {
+      stopSoundsById(MINIGAME_BACKGROUND_TRACK_ID);
+    };
+  }, [activeGame]);
 
   return (
     <>

@@ -28,8 +28,6 @@ const BIRD_START_Y = 1;
 
 export function FlappyBirdGame({ onExit }: { onExit: () => void }) {
   const birdApi = useRef<RapierRigidBody>(null!);
-  const hideCursor = useCursorStore((s) => s.hide);
-  const showCursor = useCursorStore((s) => s.show);
 
   const cameraControlsRef = useViewStore((s) => s.cameraControlsRef);
   const incrementScore = useMiniGameStore((s) => s.incrementScore);
@@ -41,21 +39,17 @@ export function FlappyBirdGame({ onExit }: { onExit: () => void }) {
   const { gl } = useThree();
 
   useEffect(() => {
-    hideCursor();
-
     if (isMobile && cameraControlsRef?.current) {
       cameraControlsRef.current.touches.one = CameraControlsImpl.ACTION.NONE;
     }
 
     return () => {
-      showCursor();
-
       if (isMobile && cameraControlsRef?.current) {
         cameraControlsRef.current.touches.one =
           CameraControlsImpl.ACTION.TOUCH_ROTATE;
       }
     };
-  }, [cameraControlsRef, hideCursor, isMobile, showCursor]);
+  }, [cameraControlsRef, isMobile]);
 
   const flap = useCallback(() => {
     const body = birdApi.current;

@@ -1,9 +1,10 @@
 import {
+  DEFAULT_PING_PONG_HIT_SOUND,
   DEFAULT_TAP_SOUND,
-  DEFAULT_WORLD_MUSIC,
+  DEFAULT_PINK_NOISE,
   DEFAULT_UI_SOUND,
   DEFAULT_UI_SOUND_2,
-  DEFAULT_PINK_NOISE,
+  DEFAULT_WORLD_MUSIC,
 } from "./defaults";
 import type { SoundConfig } from "./types";
 
@@ -90,6 +91,19 @@ export const DEFAULT_SOUND_CONFIGS: SoundConfig[] = [
     },
   }),
   defineSound({
+    id: DEFAULT_PING_PONG_HIT_SOUND.id,
+    filePath: DEFAULT_PING_PONG_HIT_SOUND.filePath,
+    type: "ui",
+    category: "effect",
+    volume: 0.5,
+    pool: 8,
+    playback: {
+      overlap: "layer",
+      maxConcurrent: 3,
+      limitBehavior: "stop-oldest",
+    },
+  }),
+  defineSound({
     id: DEFAULT_UI_SOUND_2.id,
     filePath: DEFAULT_UI_SOUND_2.filePath,
     type: "ui",
@@ -125,12 +139,28 @@ export const DEFAULT_SOUND_CONFIGS: SoundConfig[] = [
     filePath: "/audio/pop-sound.wav",
     type: "tap",
     category: "action",
-    volume: 0.3,
+    volume: 0.2,
     pool: 8,
     detune: { enabled: true, minSemitones: -2, maxSemitones: 2 },
     playback: {
       overlap: "restart",
       maxConcurrent: 3,
+      limitBehavior: "stop-oldest",
+    },
+  }),
+  defineSound({
+    id: "game-background-music",
+    filePath: "/audio/game_background_music.mp3",
+    // filePath: DEFAULT_WORLD_MUSIC.filePath,
+    type: "world",
+    category: "background",
+    volume: 0.35,
+    pool: 4,
+    // detune: { enabled: true, minSemitones: -2, maxSemitones: 2 },
+    playback: {
+      group: "world-music",
+      overlap: "replace-group",
+      maxConcurrent: 1,
       limitBehavior: "stop-oldest",
     },
   }),
