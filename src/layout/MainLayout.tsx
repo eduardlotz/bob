@@ -1,6 +1,7 @@
 import { SceneWithLoader } from "@/molecules/SceneWithLoader";
 import { ViewControls } from "@/molecules/ViewControls";
-import { useEffect, useState } from "react";
+import { MiniGameHighscoreOverlay } from "@/molecules/MiniGameHighscoreOverlay";
+import { useEffect } from "react";
 import styled from "styled-components";
 import { useAppStore } from "@/store";
 
@@ -19,6 +20,7 @@ export default function MainLayout({ children }: any) {
     <Container>
       <SceneWithLoader permissionGranted={permissionGranted} />
       <ViewControls />
+      <MiniGameHighscoreOverlay />
       {children}
     </Container>
   );

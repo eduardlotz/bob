@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { useMiniGameStore } from "@/store";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { playUISound } from "@/utils/soundSystem";
+import { GradientTexture } from "@react-three/drei";
 
 const SYMBOLS = [
   "🍒",
@@ -550,6 +551,17 @@ export function SlotMachineGame({ onExit }: { onExit: () => void }) {
         setReelGroupRef={setReelGroupRef}
         position={[0, 0.05, 0]}
       />
+
+      <mesh>
+        <sphereGeometry args={[100, 16, 16]} />
+        <meshBasicMaterial side={THREE.BackSide}>
+          <GradientTexture
+            stops={[0, 0.2, 1]}
+            colors={["#75b048", "#c196bd", "#96a9c1"]}
+            size={1024}
+          />
+        </meshBasicMaterial>
+      </mesh>
     </group>
   );
 }

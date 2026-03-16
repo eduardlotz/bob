@@ -133,7 +133,6 @@ export const FloatingBarUI: React.FC = () => {
             }}
           >
             <FloatingBarLabel
-              key={hoveredObject?.title}
               initial={{
                 scale: 0.95,
                 filter: "blur(6px)",

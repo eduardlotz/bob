@@ -1,11 +1,10 @@
-import { useEffect, useRef, useCallback } from "react";
-import { RapierRigidBody, RigidBody } from "@react-three/rapier";
+import { useEffect, useRef, useCallback, useMemo } from "react";
+import { BallCollider, RapierRigidBody, RigidBody } from "@react-three/rapier";
 import { useFrame, useThree } from "@react-three/fiber";
 
 import CameraControlsImpl from "camera-controls";
 
 import { useMiniGameStore, useAppStore, useViewStore } from "@/store";
-import { useCursorStore } from "@/store/core/cursor";
 
 import {
   CAMERA_HEIGHT,
@@ -19,14 +18,20 @@ import {
   RING_TUBE_MAX,
   RING_TUBE_MIN,
 } from "@/3d-objects/FlappyRings";
+import { FlappyClouds } from "@/3d-objects/FlappyClouds";
 import { CharacterBall } from "@/components/CharacterBall";
 import { playSound } from "@/utils/soundSystem";
+import { BackSide } from "three";
+import { GradientTexture } from "@react-three/drei";
 
 const FLAP_FORCE = 4;
 const BIRD_START_X = 1;
 const BIRD_START_Y = 1;
+const ARCADE_VISUAL_SCALE = 1.2;
+const ARCADE_COLLIDER_SEGMENTS = 12;
+const ARCADE_COLLIDER_DEPTH_FACTORS = [-1, 1] as const;
 
-export function FlappyBirdGame({ onExit }: { onExit: () => void }) {
+export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
   const birdApi = useRef<RapierRigidBody>(null!);
 
   const cameraControlsRef = useViewStore((s) => s.cameraControlsRef);
@@ -143,6 +148,19 @@ export function FlappyBirdGame({ onExit }: { onExit: () => void }) {
 
   return (
     <group>
+      <FlappyClouds score={score} />
+
+      <mesh>
+        <sphereGeometry args={[100, 16, 16]} />
+        <meshBasicMaterial side={BackSide}>
+          <GradientTexture
+            stops={[0, 1]}
+            colors={["#212c6e", "#a4addf"]}
+            size={1024}
+          />
+        </meshBasicMaterial>
+      </mesh>
+
       <CharacterBall
         ref={birdApi}
         // X locked — prevents bird drifting away from the ring centre-line,
@@ -167,24 +185,74 @@ export function FlappyBirdGame({ onExit }: { onExit: () => void }) {
 }
 
 export function FlappyBirdArcade({ position = [0, 5, 0], ...props }: any) {
-  const rigidRef = useRef<RapierRigidBody>(null);
   const arcadeTube = (RING_TUBE_MIN + RING_TUBE_MAX) * 0.5;
   const arcadeHole = (RING_HOLE_RADIUS_MIN + RING_HOLE_RADIUS_MAX) * 0.5;
   const arcadeRadius = arcadeHole + arcadeTube;
+  const arcadeColliderAngles = useMemo(
+    () =>
+      new Array(ARCADE_COLLIDER_SEGMENTS).fill(0).map((_, index) => {
+        const angle = (index / ARCADE_COLLIDER_SEGMENTS) * Math.PI * 2;
+        return [Math.cos(angle), Math.sin(angle)] as const;
+      }),
+    [],
+  );
 
   return (
     <RigidBody
       {...props}
-      ref={rigidRef}
-      colliders="trimesh"
+      colliders={false}
       restitution={0.3}
       friction={0.8}
       position={position}
     >
       <group>
-        <mesh rotation={[0, 0, 0]} scale={[1.2, 1.2, 1.2]}>
-          <torusGeometry args={[arcadeRadius, arcadeTube, 12, 48]} />
+        {ARCADE_COLLIDER_DEPTH_FACTORS.map((depthFactor, depthIndex) => {
+          const colliderRadius =
+            Math.max(0.06, arcadeTube * 0.75) * ARCADE_VISUAL_SCALE;
+          const colliderDepth =
+            Math.max(0.03, arcadeTube * 0.6) *
+            depthFactor *
+            ARCADE_VISUAL_SCALE;
+          const colliderRingRadius =
+            Math.max(0.12, arcadeRadius - arcadeTube * 0.15) *
+            ARCADE_VISUAL_SCALE;
+
+          return arcadeColliderAngles.map(([cosA, sinA], angleIndex) => (
+            <BallCollider
+              key={`${depthIndex}-${angleIndex}`}
+              args={[colliderRadius]}
+              position={[
+                colliderDepth,
+                cosA * colliderRingRadius,
+                sinA * colliderRingRadius,
+              ]}
+            />
+          ));
+        })}
+
+        <mesh
+          rotation={[0, Math.PI / 2, 0]}
+          scale={[
+            ARCADE_VISUAL_SCALE,
+            ARCADE_VISUAL_SCALE,
+            ARCADE_VISUAL_SCALE,
+          ]}
+        >
+          <torusGeometry args={[arcadeRadius, arcadeTube, 10, 32]} />
           <meshToonMaterial color="#ffcc00" />
+        </mesh>
+
+        {/* Pointer trigger: captures hover/click in the torus hole as well. */}
+        <mesh>
+          <sphereGeometry
+            args={[arcadeHole * ARCADE_VISUAL_SCALE * 0.95, 16, 16]}
+          />
+          <meshBasicMaterial
+            transparent
+            opacity={0}
+            depthWrite={false}
+            toneMapped={false}
+          />
         </mesh>
       </group>
     </RigidBody>

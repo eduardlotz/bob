@@ -22,8 +22,8 @@ export function UILayer({ setPermissionGranted }: UILayerProps) {
   return (
     <UILayerContainer>
       <AnimatePresence>
-        <MotionRoot id="motion-root"></MotionRoot>
-        <BookPortalOverlay />
+        <MotionRoot key="motion-root" id="motion-root"></MotionRoot>
+        <BookPortalOverlay key="book-portal-overlay" />
       </AnimatePresence>
       <BottomNavigation />
     </UILayerContainer>

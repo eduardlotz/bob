@@ -24,18 +24,38 @@ interface MiniGameState {
   finishGame: () => void;
 }
 
+const DEFAULT_HIGH_SCORES: Record<MiniGameType, number> = {
+  LOBBY: 0,
+  FOOTBALL: 0,
+  PING_PONG: 0,
+  FLAPPY_BIRD: 0,
+  SLOT_MACHINE: 0,
+};
+
+const sanitizeScore = (value: unknown) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+};
+
+const commitSessionHighScore = (
+  state: Pick<MiniGameState, "activeGame" | "session" | "highScores">,
+) => {
+  const game = state.activeGame;
+  if (game === "LOBBY") return;
+
+  const currentBest = sanitizeScore(state.highScores[game]);
+  const runScore = sanitizeScore(state.session.score);
+  if (runScore > currentBest) {
+    state.highScores[game] = runScore;
+  }
+};
+
 export const useMiniGameStore = create<MiniGameState>()(
   persist(
-    immer((set, get) => ({
+    immer((set) => ({
       activeGame: "LOBBY",
 
-      highScores: {
-        LOBBY: 0,
-        FOOTBALL: 0,
-        PING_PONG: 0,
-        FLAPPY_BIRD: 0,
-        SLOT_MACHINE: 0,
-      },
+      highScores: { ...DEFAULT_HIGH_SCORES },
 
       session: {
         score: 0,
@@ -54,18 +74,13 @@ export const useMiniGameStore = create<MiniGameState>()(
 
       resetScore: () =>
         set((state) => {
+          commitSessionHighScore(state);
           state.session.score = 0;
         }),
 
       finishGame: () =>
         set((state) => {
-          const game = state.activeGame;
-          if (game === "LOBBY") return;
-
-          if (state.session.score > state.highScores[game]) {
-            state.highScores[game] = state.session.score;
-          }
-
+          commitSessionHighScore(state);
           state.session.score = 0;
           state.activeGame = "LOBBY";
         }),
@@ -74,6 +89,22 @@ export const useMiniGameStore = create<MiniGameState>()(
       name: "mini-game-storage",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ highScores: state.highScores }),
+      merge: (persistedState, currentState) => {
+        const persistedHighScores: Partial<Record<MiniGameType, unknown>> =
+          (persistedState as Partial<MiniGameState> | undefined)?.highScores ??
+          {};
+
+        const mergedHighScores = { ...DEFAULT_HIGH_SCORES };
+        (Object.keys(DEFAULT_HIGH_SCORES) as MiniGameType[]).forEach((game) => {
+          mergedHighScores[game] = sanitizeScore(persistedHighScores[game]);
+        });
+
+        return {
+          ...currentState,
+          ...(persistedState as Partial<MiniGameState>),
+          highScores: mergedHighScores,
+        };
+      },
     },
   ),
 );
