@@ -8,6 +8,11 @@ export const DEFAULT_TAP_SOUND = {
   filePath: "/audio/bing-bong.wav",
 };
 
+export const DEFAULT_PING_PONG_HIT_SOUND = {
+  id: "ping-pong-hit",
+  filePath: "/audio/ping.mp3",
+};
+
 export const DEFAULT_TEXT_SOUND = {
   id: "text-typing",
   filePath: "/audio/pop-sound.wav", // TODO: find a better sound

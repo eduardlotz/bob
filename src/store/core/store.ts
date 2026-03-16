@@ -9,6 +9,8 @@ import {
   setCurrentTapSound as engineSetCurrentTapSound,
   setMasterVolume as engineSetMasterVolume,
   setTypeVolume as engineSetTypeVolume,
+  setTapEnabled as engineSetTapEnabled,
+  setWorldEnabled as engineSetWorldEnabled,
   enable as engineEnable,
   disable as engineDisable,
 } from "@/utils/soundSystem";
@@ -1370,6 +1372,9 @@ export const useCoreStore = create<GameStore>()(
           }));
         },
         setTapEnabled: (enabled: boolean) => {
+          try {
+            engineSetTapEnabled(enabled);
+          } catch {}
           set((state) => ({
             ...state,
             soundSystem: {
@@ -1379,6 +1384,9 @@ export const useCoreStore = create<GameStore>()(
           }));
         },
         setWorldEnabled: (enabled: boolean) => {
+          try {
+            engineSetWorldEnabled(enabled);
+          } catch {}
           set((state) => ({
             ...state,
             soundSystem: {

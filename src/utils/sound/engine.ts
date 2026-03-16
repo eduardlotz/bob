@@ -1,4 +1,5 @@
-import * as THREE from "three";
+import { Howl, Howler } from "howler";
+import type * as THREE from "three";
 import {
   DEFAULT_MASTER_VOLUME,
   DEFAULT_TAP_VOLUME,
@@ -12,13 +13,53 @@ import {
   DEFAULT_UI_SOUND_2,
 } from "./defaults";
 import { DEFAULT_SOUND_CONFIGS } from "./configs";
-import { SoundConfig, SoundInstance, SoundSystemState } from "./types";
+import {
+  NormalizedSoundConfig,
+  SoundConfig,
+  SoundInstance,
+  SoundPlaybackConfig,
+  SoundSystemState,
+  SoundType,
+} from "./types";
 
-// global state
-let sounds = new Map<string, SoundInstance>();
-let configs = new Map<string, SoundConfig>();
-let audioBuffers = new Map<string, AudioBuffer>();
+const WORLD_MENU_ATTENUATION = 0.3;
+
+const DEFAULT_PLAYBACK_BY_TYPE: Record<
+  SoundType,
+  Required<SoundPlaybackConfig>
+> = {
+  tap: {
+    group: "",
+    overlap: "layer",
+    maxConcurrent: 6,
+    limitBehavior: "stop-oldest",
+  },
+  world: {
+    group: "",
+    overlap: "restart",
+    maxConcurrent: 1,
+    limitBehavior: "stop-oldest",
+  },
+  ui: {
+    group: "",
+    overlap: "restart",
+    maxConcurrent: 2,
+    limitBehavior: "stop-oldest",
+  },
+  text: {
+    group: "",
+    overlap: "layer",
+    maxConcurrent: 12,
+    limitBehavior: "stop-oldest",
+  },
+};
+
+const configs = new Map<string, NormalizedSoundConfig>();
+const howls = new Map<string, Howl>();
+const instances = new Map<string, SoundInstance>();
 const instancesBySoundId = new Map<string, Set<string>>();
+const instancesByGroup = new Map<string, Set<string>>();
+
 let state: SoundSystemState = {
   enabled: true,
   masterVolume: DEFAULT_MASTER_VOLUME,
@@ -31,173 +72,20 @@ let state: SoundSystemState = {
 };
 
 let lastNonZeroMasterVolume = state.masterVolume > 0 ? state.masterVolume : 0.5;
+let currentWorldMusicId = DEFAULT_WORLD_MUSIC.id;
+let currentWorldMusicFilePath = DEFAULT_WORLD_MUSIC.filePath;
+let currentTapSoundId = DEFAULT_TAP_SOUND.id;
+let isWorldMenuOpen = false;
 
-let audioListener: THREE.AudioListener | null = null;
-let listenerAttachedToCamera = false;
+const toFinite = (value: unknown, fallback = 0): number =>
+  Number.isFinite(value) ? (value as number) : fallback;
 
-let currentWorldMusicId: string = DEFAULT_WORLD_MUSIC.id;
-let currentWorldMusicFilePath: string = DEFAULT_WORLD_MUSIC.filePath;
-let currentTapSoundId: string = DEFAULT_TAP_SOUND.id;
-let isStartingBackgroundMusic = false;
-
-// resume audio context (required for browser autoplay policies)
-export const resumeAudioContext = async () => {
-  const listener = initializeAudioListener();
-  if (!listener?.context) {
-    console.log("No audio context available");
-    return;
-  }
-
-  if (listener.context.state === "suspended") {
-    console.log("Resuming suspended audio context...");
-    try {
-      await listener.context.resume();
-      console.log("Audio context resumed successfully");
-    } catch (error) {
-      console.error("Failed to resume audio context:", error);
-    }
-  }
+const clamp01 = (value: unknown): number => {
+  const safe = toFinite(value, 0);
+  return Math.max(0, Math.min(1, safe));
 };
 
-// TODO: check if still relevant in 2026
-// Some iOS versions need an actual start/stop of a source node after resume
-// This plays a near-silent, extremely short tone to fully unlock playback
-export const unlockAudioContext = async () => {
-  const listener = initializeAudioListener();
-  const ctx = listener?.context as AudioContext | undefined;
-  if (!ctx) return;
-  try {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    gain.gain.value = 0.0001; // effectively silent
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.05);
-  } catch {}
-};
-
-export const suspendAudioContext = async () => {
-  if (!audioListener?.context) return;
-  try {
-    if (audioListener.context.state === "running") {
-      await audioListener.context.suspend();
-      if (DEBUG_LOGS) console.log("Audio context suspended");
-    }
-  } catch (error) {
-    console.error("Failed to suspend audio context:", error);
-  }
-};
-
-export const getAudioContextState = (): string | null => {
-  try {
-    return audioListener?.context?.state ?? null;
-  } catch {
-    return null;
-  }
-};
-
-export const isAudioContextRunning = (): boolean => {
-  try {
-    return audioListener?.context?.state === "running";
-  } catch {
-    return false;
-  }
-};
-
-const preloadDefaultAudioFiles = async () => {
-  const listener = initializeAudioListener();
-  if (!listener) return;
-
-  const audioLoader = new THREE.AudioLoader();
-
-  await Promise.all(
-    DEFAULT_SOUND_CONFIGS.map(
-      (config) =>
-        new Promise<void>((resolve) => {
-          audioLoader.load(
-            config.filePath,
-            (buffer) => {
-              audioBuffers.set(config.id, buffer as AudioBuffer);
-              if (DEBUG_LOGS)
-                console.log(`Preloaded: ${config.id} (${config.filePath})`);
-              resolve();
-            },
-            undefined,
-            (error) => {
-              console.error(`Failed to preload ${config.id}:`, error);
-              resolve();
-            },
-          );
-        }),
-    ),
-  );
-
-  if (DEBUG_LOGS)
-    console.log(
-      "Audio preloading complete. Loaded buffers:",
-      Array.from(audioBuffers.keys()),
-    );
-};
-
-// TODO: check if really needed
-const initializeAudioListener = () => {
-  if (audioListener) return audioListener;
-
-  try {
-    audioListener = new THREE.AudioListener();
-
-    DEFAULT_SOUND_CONFIGS.forEach((config) => {
-      configs.set(config.id, config);
-    });
-
-    if (DEBUG_LOGS) {
-      console.log(
-        "Three.js Audio Listener initialized, configs loaded:",
-        Array.from(configs.keys()),
-      );
-    }
-    return audioListener;
-  } catch (error) {
-    console.warn("Three.js Audio not supported, sound system disabled");
-    state.enabled = false;
-    return null;
-  }
-};
-
-export const getAudioListener = (): THREE.AudioListener | null => {
-  return initializeAudioListener();
-};
-
-export const attachListenerToCamera = (camera: THREE.Camera): void => {
-  const listener = initializeAudioListener();
-  if (!listener || !camera) return;
-  if (listenerAttachedToCamera) return;
-  try {
-    const parent = (listener as any).parent as THREE.Object3D | undefined;
-    if (!parent) {
-      (camera as any).add(listener);
-      listenerAttachedToCamera = true;
-      if (DEBUG_LOGS) console.log("AudioListener attached to camera");
-    }
-  } catch (e) {
-    try {
-      (camera as any).add(listener);
-      listenerAttachedToCamera = true;
-    } catch {}
-  }
-};
-
-const getRandomDetune = (
-  detuneConfig: NonNullable<SoundConfig["detune"]>,
-): number => {
-  return (
-    Math.random() * (detuneConfig.maxSemitones - detuneConfig.minSemitones) +
-    detuneConfig.minSemitones
-  );
-};
-
-const getTypeVolume = (type: SoundConfig["type"]): number => {
+const getTypeVolume = (type: SoundType): number => {
   switch (type) {
     case "tap":
       return state.tapVolume;
@@ -212,470 +100,486 @@ const getTypeVolume = (type: SoundConfig["type"]): number => {
   }
 };
 
-const toFinite = (n: any, fallback = 0): number =>
-  Number.isFinite(n) ? (n as number) : fallback;
-
-const clamp01Safe = (n: any): number => {
-  const v = toFinite(n, 0);
-  return Math.max(0, Math.min(1, v));
+const isTypeEnabled = (type: SoundType): boolean => {
+  if (type === "tap") return state.tapEnabled !== false;
+  if (type === "world") return state.worldEnabled !== false;
+  return true;
 };
 
-const calculateFinalVolume = (config: SoundConfig): number => {
-  const baseVolume = clamp01Safe((config as any).volume);
-  const typeVolume = clamp01Safe(getTypeVolume(config.type));
-  const master = clamp01Safe(state.masterVolume);
-  const typeEnabled =
-    config.type === "world"
-      ? state.worldEnabled !== false
-      : config.type === "tap"
-        ? state.tapEnabled !== false
-        : true;
-  const v = baseVolume * typeVolume * master * (typeEnabled ? 0.7 : 0);
-  return Number.isFinite(v) ? v : 0;
+const normalizeSoundConfig = (config: SoundConfig): NormalizedSoundConfig => {
+  const defaults = DEFAULT_PLAYBACK_BY_TYPE[config.type];
+  const overlap =
+    config.playback?.overlap ??
+    (config.layerable ? "layer" : undefined) ??
+    (config.stopPrevious ? "restart" : undefined) ??
+    defaults.overlap;
+  const maxConcurrent =
+    config.playback?.maxConcurrent ??
+    (overlap === "replace-group" ? 1 : defaults.maxConcurrent);
+  const pool = Math.max(
+    Math.ceil(toFinite(config.pool, 0)),
+    Math.ceil(maxConcurrent) + 2,
+    6,
+  );
+
+  return {
+    ...config,
+    src: Array.isArray(config.src)
+      ? config.src
+      : [config.src ?? config.filePath].filter(Boolean),
+    category: config.category ?? config.type,
+    loop: !!config.loop,
+    preload: !!config.preload,
+    html5: !!config.html5,
+    pool,
+    fadeIn: Math.max(0, toFinite(config.fadeIn, 0)),
+    fadeOut: Math.max(0, toFinite(config.fadeOut, 0)),
+    distanceAttenuation: !!config.distanceAttenuation,
+    playback: {
+      group: config.playback?.group ?? defaults.group,
+      overlap,
+      maxConcurrent: Math.max(1, Math.ceil(maxConcurrent)),
+      limitBehavior: config.playback?.limitBehavior ?? defaults.limitBehavior,
+    },
+    volume: clamp01(config.volume),
+  };
 };
 
-const applyVolumeImmediate = (audio: any, volume: number) => {
-  try {
-    const v = Number.isFinite(volume) ? volume : 0;
-    const gainParam: any = (audio as any)?.gain?.gain as any;
-    const ctx: AudioContext | undefined = (audio as any)?.context;
-    if (gainParam && ctx) {
-      try {
-        if (typeof gainParam.cancelScheduledValues === "function") {
-          gainParam.cancelScheduledValues(ctx.currentTime);
-        }
-        if (typeof gainParam.setValueAtTime === "function") {
-          gainParam.setValueAtTime(v, ctx.currentTime);
-          return;
-        }
-      } catch {}
-    }
-  } catch {}
-  try {
-    audio.setVolume(volume);
-  } catch {}
-};
+const mergeSoundConfig = (
+  base: NormalizedSoundConfig,
+  overrides?: Partial<SoundConfig>,
+): NormalizedSoundConfig => {
+  if (!overrides) return base;
 
-// TODO: fix cleanup
-const cleanupSound = (instanceId: string): void => {
-  const instance = sounds.get(instanceId);
-  if (instance) {
-    try {
-      const anySound = instance.sound as any;
-      if (anySound?.source) {
-        try {
-          anySound.source.onended = null;
-        } catch {}
-        try {
-          anySound.source.stop(0);
-        } catch {}
-        try {
-          anySound.source.disconnect();
-        } catch {}
-        anySound.source = null;
-      }
-      try {
-        instance.sound.setLoop(false);
-      } catch {}
-      try {
-        instance.sound.stop();
-      } catch {}
-    } finally {
-      const byId = instancesBySoundId.get(instance.config.id);
-      if (byId) {
-        byId.delete(instanceId);
-        if (byId.size === 0) instancesBySoundId.delete(instance.config.id);
-      }
-    }
-  }
-  sounds.delete(instanceId);
-};
-
-const getOrLoadBuffer = async (
-  cfg: SoundConfig,
-): Promise<AudioBuffer | null> => {
-  const cached = audioBuffers.get(cfg.id);
-  if (cached) return cached;
-  return new Promise<AudioBuffer | null>((resolve) => {
-    const audioLoader = new THREE.AudioLoader();
-    audioLoader.load(
-      cfg.filePath,
-      (buffer) => {
-        audioBuffers.set(cfg.id, buffer as AudioBuffer);
-        resolve(buffer as AudioBuffer);
-      },
-      undefined,
-      (error) => {
-        console.error(`Failed to load audio file: ${cfg.filePath}`, error);
-        resolve(null);
-      },
-    );
+  return normalizeSoundConfig({
+    ...base,
+    ...overrides,
+    src: overrides.src ?? base.src,
+    playback: {
+      ...base.playback,
+      ...overrides.playback,
+    },
   });
 };
 
-export const playSound = async (
-  soundId: string,
-  options?: Partial<SoundConfig>,
-): Promise<void> => {
-  if (!state.enabled || state.masterVolume <= 0) {
-    if (DEBUG_LOGS)
-      console.warn("Sound muted or system disabled; skipping play");
-    return;
-  }
+const compareSrc = (left: string[], right: string[]) =>
+  left.length === right.length && left.every((value, index) => value === right[index]);
 
-  const listener = initializeAudioListener();
-  if (!listener) {
-    console.warn("Audio listener not available");
-    return;
-  }
+const getOrCreateHowl = (config: NormalizedSoundConfig): Howl => {
+  const cached = howls.get(config.id);
+  if (cached) return cached;
 
-  if (listener.context.state === "suspended") {
-    console.log("Resuming audio context on first user interaction...");
-    await listener.context.resume();
-  }
-
-  const config = configs.get(soundId);
-  if (!config) {
-    console.warn(`Sound config not found: ${soundId}`);
-    console.log("Available configs:", Array.from(configs.keys()));
-    return;
-  }
-
-  const finalConfig = { ...config, ...options };
-
-  try {
-    if (finalConfig.stopPrevious) {
-      const existing = instancesBySoundId.get(finalConfig.id);
-      if (existing) {
-        existing.forEach((instanceId) => stopSound(instanceId));
-      }
-    }
-
-    const sound = new THREE.Audio(listener);
-
-    const buffer = await getOrLoadBuffer(finalConfig);
-    if (!buffer) return;
-
-    sound.setBuffer(buffer);
-    if (finalConfig.detune?.enabled) {
-      const detune = getRandomDetune(finalConfig.detune);
-      sound.setPlaybackRate(Math.pow(2, detune / 12));
-    }
-
-    const finalVolume = calculateFinalVolume(finalConfig);
-    if (!(finalVolume > 0)) return;
-
-    const anySound = sound as any;
-    const ctx: AudioContext | undefined = anySound?.context;
-    const gainParam: any = anySound?.gain?.gain;
-    const fadeInMs = Math.max(0, (finalConfig as any).fadeIn || 0);
-    if (
-      fadeInMs > 0 &&
-      ctx &&
-      gainParam &&
-      typeof gainParam.setValueAtTime === "function"
-    ) {
+  const howl = new Howl({
+    src: config.src,
+    loop: config.loop,
+    preload: config.preload,
+    html5: config.html5,
+    pool: config.pool,
+    volume: 1,
+    onloaderror: (_, error) => {
+      console.error(`Failed to load sound "${config.id}"`, error);
+    },
+    onplayerror: async () => {
       try {
-        gainParam.cancelScheduledValues(ctx.currentTime);
-        gainParam.setValueAtTime(0, ctx.currentTime);
-        gainParam.linearRampToValueAtTime(
-          finalVolume,
-          ctx.currentTime + fadeInMs / 1000,
-        );
-      } catch {
-        applyVolumeImmediate(anySound, finalVolume);
-      }
-    } else {
-      applyVolumeImmediate(anySound, finalVolume);
-    }
-    if (finalConfig.loop) sound.setLoop(true);
+        await resumeAudioContext();
+      } catch {}
+    },
+  });
 
-    const instance: SoundInstance = {
-      id: `${soundId}-${Date.now()}`,
-      listener,
-      sound,
-      config: finalConfig,
-      startTime: Date.now(),
-      volume: finalVolume,
-      detune: finalConfig.detune?.enabled
-        ? getRandomDetune(finalConfig.detune!)
-        : 0,
-    };
+  howls.set(config.id, howl);
+  return howl;
+};
 
-    sounds.set(instance.id, instance);
-    let setForId = instancesBySoundId.get(finalConfig.id);
-    if (!setForId) {
-      setForId = new Set<string>();
-      instancesBySoundId.set(finalConfig.id, setForId);
-    }
-    setForId.add(instance.id);
+const preloadHowl = async (soundId: string): Promise<void> => {
+  const config = configs.get(soundId);
+  if (!config) return;
 
-    sound.play();
-    if (anySound.source) {
-      anySound.source.onended = () => cleanupSound(instance.id);
-    } else {
-      setTimeout(() => {
-        if (anySound.source) {
-          anySound.source.onended = () => cleanupSound(instance.id);
-        }
-      }, 0);
-    }
-  } catch (error) {
-    console.error(`Failed to play sound ${soundId}:`, error);
+  const howl = getOrCreateHowl(config);
+  if (howl.state() === "loaded") return;
+
+  await new Promise<void>((resolve) => {
+    const finish = () => resolve();
+    howl.once("load", finish);
+    howl.once("loaderror", finish);
+    howl.load();
+  });
+};
+
+const ensureDefaultConfigs = () => {
+  for (const config of DEFAULT_SOUND_CONFIGS) {
+    addSoundConfig(config);
   }
 };
 
-const stopSoundInternal = (instanceId: string, fadeOutMs?: number): void => {
-  const instance = sounds.get(instanceId);
+const getRandomPlaybackRate = (config: NormalizedSoundConfig) => {
+  if (!config.detune?.enabled) return 1;
+
+  const semitones =
+    Math.random() *
+      (config.detune.maxSemitones - config.detune.minSemitones) +
+    config.detune.minSemitones;
+  return Math.pow(2, semitones / 12);
+};
+
+const getAttenuation = (config: NormalizedSoundConfig) =>
+  config.type === "world" && config.distanceAttenuation && isWorldMenuOpen
+    ? WORLD_MENU_ATTENUATION
+    : 1;
+
+const calculateFinalVolume = (
+  config: NormalizedSoundConfig,
+  attenuation = 1,
+): number => {
+  if (!state.enabled) return 0;
+  if (!isTypeEnabled(config.type)) return 0;
+  return (
+    clamp01(config.volume) *
+    clamp01(getTypeVolume(config.type)) *
+    clamp01(state.masterVolume) *
+    clamp01(attenuation)
+  );
+};
+
+const addToIndex = (map: Map<string, Set<string>>, key: string, instanceId: string) => {
+  if (!key) return;
+  const set = map.get(key) ?? new Set<string>();
+  set.add(instanceId);
+  map.set(key, set);
+};
+
+const removeFromIndex = (
+  map: Map<string, Set<string>>,
+  key: string,
+  instanceId: string,
+) => {
+  if (!key) return;
+  const set = map.get(key);
+  if (!set) return;
+  set.delete(instanceId);
+  if (set.size === 0) {
+    map.delete(key);
+  }
+};
+
+const cleanupInstance = (instanceId: string) => {
+  const instance = instances.get(instanceId);
   if (!instance) return;
 
-  try {
-    const anySound = instance.sound as any;
-    const fadeMs = Math.max(
-      0,
-      fadeOutMs || (instance.config as any).fadeOut || 0,
-    );
-    const ctx: AudioContext | undefined = anySound?.context;
-    const gainParam: any = anySound?.gain?.gain;
-    if (
-      fadeMs > 0 &&
-      ctx &&
-      gainParam &&
-      typeof gainParam.setValueAtTime === "function"
-    ) {
-      try {
-        const currentTime = ctx.currentTime;
-        gainParam.cancelScheduledValues(currentTime);
-        const currentValue = ((): number => {
-          try {
-            return typeof gainParam.value === "number" ? gainParam.value : 0;
-          } catch {
-            return 0;
-          }
-        })();
-        gainParam.setValueAtTime(currentValue, currentTime);
-        gainParam.linearRampToValueAtTime(0, currentTime + fadeMs / 1000);
-      } catch {}
-      try {
-        if (anySound?.source?.stop) {
-          anySound.source.stop(ctx.currentTime + fadeMs / 1000 + 0.01);
-        }
-      } catch {}
-    }
-    if (anySound?.source) {
-      try {
-        anySound.source.onended = null;
-      } catch {}
-      try {
-        anySound.source.stop(0);
-      } catch {}
-      try {
-        anySound.source.disconnect();
-      } catch {}
-      anySound.source = null;
-    }
-    try {
-      instance.sound.setLoop(false);
-    } catch {}
-    try {
-      instance.sound.stop();
-    } catch {}
-  } finally {
-    cleanupSound(instanceId);
+  instances.delete(instanceId);
+  removeFromIndex(instancesBySoundId, instance.soundId, instanceId);
+  removeFromIndex(instancesByGroup, instance.config.playback.group, instanceId);
+};
+
+const getInstancesForSound = (soundId: string) =>
+  Array.from(instancesBySoundId.get(soundId) ?? [])
+    .map((instanceId) => instances.get(instanceId))
+    .filter((instance): instance is SoundInstance => !!instance);
+
+const getInstancesForGroup = (group: string) =>
+  Array.from(instancesByGroup.get(group) ?? [])
+    .map((instanceId) => instances.get(instanceId))
+    .filter((instance): instance is SoundInstance => !!instance);
+
+const updateInstanceVolume = (instance: SoundInstance) => {
+  const howl = howls.get(instance.soundId);
+  if (!howl) return;
+  const volume = calculateFinalVolume(instance.config, instance.attenuation);
+  howl.volume(volume, instance.howlId);
+};
+
+const stopSoundInternal = (instanceId: string, fadeOutMs?: number) => {
+  const instance = instances.get(instanceId);
+  if (!instance) return;
+
+  const howl = howls.get(instance.soundId);
+  if (!howl) {
+    cleanupInstance(instanceId);
+    return;
   }
+
+  const fadeOut = Math.max(0, toFinite(fadeOutMs, instance.config.fadeOut));
+  if (fadeOut > 0 && howl.playing(instance.howlId)) {
+    const currentVolume = toFinite(howl.volume(instance.howlId), 0);
+    howl.fade(currentVolume, 0, fadeOut, instance.howlId);
+    globalThis.setTimeout(() => {
+      try {
+        howl.stop(instance.howlId);
+      } catch {}
+      cleanupInstance(instanceId);
+    }, fadeOut + 20);
+    return;
+  }
+
+  try {
+    howl.stop(instance.howlId);
+  } catch {}
+  cleanupInstance(instanceId);
+};
+
+const enforcePlaybackRules = (config: NormalizedSoundConfig): boolean => {
+  const sameSoundInstances = getInstancesForSound(config.id);
+  const groupInstances = config.playback.group
+    ? getInstancesForGroup(config.playback.group)
+    : [];
+
+  switch (config.playback.overlap) {
+    case "restart":
+      sameSoundInstances.forEach((instance) => stopSoundInternal(instance.id));
+      break;
+    case "ignore":
+      if (sameSoundInstances.length > 0) return false;
+      break;
+    case "replace-group":
+      groupInstances.forEach((instance) => stopSoundInternal(instance.id));
+      break;
+    case "layer":
+    default:
+      break;
+  }
+
+  const trackedInstances =
+    config.playback.overlap === "replace-group" && config.playback.group
+      ? getInstancesForGroup(config.playback.group)
+      : getInstancesForSound(config.id);
+
+  if (trackedInstances.length < config.playback.maxConcurrent) {
+    return true;
+  }
+
+  if (config.playback.limitBehavior === "skip-new") {
+    return false;
+  }
+
+  trackedInstances
+    .sort((left, right) => left.startedAt - right.startedAt)
+    .slice(0, trackedInstances.length - config.playback.maxConcurrent + 1)
+    .forEach((instance) => stopSoundInternal(instance.id));
+
+  return true;
+};
+
+const registerInstance = (instance: SoundInstance) => {
+  instances.set(instance.id, instance);
+  addToIndex(instancesBySoundId, instance.soundId, instance.id);
+  addToIndex(instancesByGroup, instance.config.playback.group, instance.id);
+};
+
+export const resumeAudioContext = async () => {
+  const ctx = (Howler as any).ctx as AudioContext | undefined;
+  if (!ctx) return;
+  if (ctx.state === "suspended") {
+    await ctx.resume();
+  }
+};
+
+export const unlockAudioContext = async () => {
+  const ctx = (Howler as any).ctx as AudioContext | undefined;
+  if (!ctx) return;
+
+  try {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    gain.gain.value = 0.0001;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.05);
+  } catch {}
+};
+
+export const suspendAudioContext = async () => {
+  const ctx = (Howler as any).ctx as AudioContext | undefined;
+  if (!ctx) return;
+  if (ctx.state === "running") {
+    await ctx.suspend();
+  }
+};
+
+export const getAudioContextState = (): string | null => {
+  try {
+    return ((Howler as any).ctx as AudioContext | undefined)?.state ?? null;
+  } catch {
+    return null;
+  }
+};
+
+export const isAudioContextRunning = (): boolean =>
+  getAudioContextState() === "running";
+
+export const getAudioListener = (): THREE.AudioListener | null => {
+  return null;
+};
+
+export const attachListenerToCamera = (_camera: THREE.Camera): void => {};
+
+export const playSound = (soundId: string, options?: Partial<SoundConfig>): void => {
+  ensureDefaultConfigs();
+
+  const baseConfig = configs.get(soundId);
+  if (!baseConfig) {
+    console.warn(`Sound config not found: ${soundId}`);
+    return;
+  }
+
+  const config = mergeSoundConfig(baseConfig, options);
+  if (!state.enabled || state.masterVolume <= 0 || !isTypeEnabled(config.type)) {
+    return;
+  }
+
+  if (!enforcePlaybackRules(config)) {
+    return;
+  }
+
+  const howl = getOrCreateHowl(config);
+  const howlId = howl.play();
+  if (typeof howlId !== "number") return;
+
+  howl.loop(config.loop, howlId);
+  howl.rate(getRandomPlaybackRate(config), howlId);
+
+  const instance: SoundInstance = {
+    id: `${config.id}:${Date.now()}:${howlId}`,
+    soundId: config.id,
+    howlId,
+    config,
+    startedAt: Date.now(),
+    attenuation: getAttenuation(config),
+  };
+
+  registerInstance(instance);
+
+  const targetVolume = calculateFinalVolume(config, instance.attenuation);
+  if (config.fadeIn > 0) {
+    howl.volume(0, howlId);
+    howl.fade(0, targetVolume, config.fadeIn, howlId);
+  } else {
+    howl.volume(targetVolume, howlId);
+  }
+
+  howl.once("end", () => cleanupInstance(instance.id), howlId);
+  howl.once("loaderror", () => cleanupInstance(instance.id), howlId);
 };
 
 export const stopSound = (instanceId: string): void => {
   stopSoundInternal(instanceId);
 };
 
-export const stopSoundsByType = (type: SoundConfig["type"]): void => {
-  const soundsToStop = Array.from(sounds).filter(
-    ([_, instance]) => instance.config.type === type,
-  );
-
-  for (const [instanceId] of soundsToStop) {
-    stopSound(instanceId);
-  }
+export const stopSoundsByType = (type: SoundType): void => {
+  Array.from(instances.values())
+    .filter((instance) => instance.config.type === type)
+    .forEach((instance) => stopSoundInternal(instance.id));
 };
 
 export const stopAllSounds = (): void => {
-  for (const instanceId of Array.from(sounds.keys())) {
-    stopSound(instanceId);
-  }
+  Array.from(instances.keys()).forEach((instanceId) => stopSoundInternal(instanceId));
 };
 
 export const forceStopAllSounds = (): void => {
-  for (const [instanceId, instance] of Array.from(sounds)) {
+  Array.from(instances.values()).forEach((instance) => {
     try {
-      const anySound = instance.sound as any;
-      if (anySound?.source) {
-        try {
-          anySound.source.onended = null;
-        } catch {}
-        try {
-          anySound.source.stop(0);
-        } catch {}
-        try {
-          anySound.source.disconnect();
-        } catch {}
-        anySound.source = null;
-      }
-      try {
-        instance.sound.setLoop(false);
-      } catch {}
-      try {
-        instance.sound.stop();
-      } catch {}
-    } finally {
-      cleanupSound(instanceId);
-    }
-  }
-  sounds.clear();
+      howls.get(instance.soundId)?.stop(instance.howlId);
+    } catch {}
+  });
+
+  instances.clear();
   instancesBySoundId.clear();
+  instancesByGroup.clear();
 };
 
-const forceStopSoundsByType = (type: SoundConfig["type"]): void => {
-  for (const [instanceId, instance] of Array.from(sounds)) {
-    if (instance.config.type !== type) continue;
-    try {
-      const anySound = instance.sound as any;
-      if (anySound?.source) {
-        try {
-          anySound.source.onended = null;
-        } catch {}
-        try {
-          anySound.source.stop(0);
-        } catch {}
-        try {
-          anySound.source.disconnect();
-        } catch {}
-        anySound.source = null;
-      }
-      try {
-        instance.sound.setLoop(false);
-      } catch {}
-      try {
-        instance.sound.stop();
-      } catch {}
-    } finally {
-      cleanupSound(instanceId);
-    }
-  }
+const updateAllVolumes = () => {
+  Array.from(instances.values()).forEach(updateInstanceVolume);
 };
 
 export const setMasterVolume = (volume: number): void => {
-  const safe = clamp01Safe(volume);
-  state.masterVolume = safe;
+  state.masterVolume = clamp01(volume);
   if (state.masterVolume > 0) {
     lastNonZeroMasterVolume = state.masterVolume;
   }
-  try {
-    const listener = getAudioListener();
-    if (listener && typeof (listener as any).setMasterVolume === "function") {
-      (listener as any).setMasterVolume(safe);
-    } else if ((listener as any)?.gain?.gain) {
-      const ctx: AudioContext | undefined = (listener as any)?.context;
-      const gainParam: any = (listener as any)?.gain?.gain;
-      if (ctx && gainParam?.setValueAtTime) {
-        gainParam.setValueAtTime(safe, ctx.currentTime);
-      }
-    }
-  } catch {}
   updateAllVolumes();
 };
 
-export const setTypeVolume = (
-  type: SoundConfig["type"],
-  volume: number,
-): void => {
-  const clampedVolume = Math.max(0, Math.min(1, volume));
-  const safe = clamp01Safe(clampedVolume);
-
+export const setTypeVolume = (type: SoundType, volume: number): void => {
+  const next = clamp01(volume);
   switch (type) {
     case "tap":
-      state.tapVolume = safe;
+      state.tapVolume = next;
       break;
     case "world":
-      state.worldVolume = safe;
+      state.worldVolume = next;
       break;
     case "ui":
-      state.uiVolume = safe;
+      state.uiVolume = next;
       break;
     case "text":
-      state.textVolume = safe;
+      state.textVolume = next;
       break;
   }
-
   updateAllVolumes();
-};
-
-const updateAllVolumes = (): void => {
-  for (const [_, instance] of Array.from(sounds)) {
-    const newVolume = calculateFinalVolume(instance.config);
-    applyVolumeImmediate(
-      instance.sound as any,
-      Number.isFinite(newVolume) ? newVolume : 0,
-    );
-  }
 };
 
 export const addSoundConfig = (config: SoundConfig): void => {
-  configs.set(config.id, config);
+  const normalized = normalizeSoundConfig(config);
+  const existing = configs.get(normalized.id);
+  configs.set(normalized.id, normalized);
+
+  if (
+    existing &&
+    (!compareSrc(existing.src, normalized.src) ||
+      existing.html5 !== normalized.html5 ||
+      existing.pool !== normalized.pool)
+  ) {
+    const howl = howls.get(normalized.id);
+    howl?.unload();
+    howls.delete(normalized.id);
+  }
 };
 
 export const removeSoundConfig = (soundId: string): void => {
+  stopSoundsById(soundId);
   configs.delete(soundId);
+  const howl = howls.get(soundId);
+  howl?.unload();
+  howls.delete(soundId);
 };
 
-export const getSoundConfig = (soundId: string): SoundConfig | undefined => {
+export const getSoundConfig = (soundId: string): NormalizedSoundConfig | undefined => {
+  ensureDefaultConfigs();
   return configs.get(soundId);
 };
 
 export const enable = (): void => {
   state.enabled = true;
+  updateAllVolumes();
   resumeAudioContext().catch(() => {});
 };
 
 export const disable = (): void => {
   state.enabled = false;
-  forceStopAllSounds();
+  updateAllVolumes();
 };
 
-// sound actions for clarity (keep contexts running; just stop sounds)
 export const start = enable;
 export const stop = disable;
 
-export const isEnabled = (): boolean => {
-  return state.enabled;
-};
+export const isEnabled = (): boolean => state.enabled;
 
-export const getState = (): SoundSystemState => {
-  return { ...state };
-};
+export const getState = (): SoundSystemState => ({ ...state });
 
-// Distance attenuation for world sounds (when menu is open/closed)
 export const updateWorldSoundVolumes = (isMenuOpen: boolean): void => {
-  for (const [_, instance] of Array.from(sounds)) {
-    if (
-      instance.config.type === "world" &&
-      instance.config.distanceAttenuation
-    ) {
-      const baseVolume = calculateFinalVolume(instance.config);
-      const attenuatedVolume = isMenuOpen ? baseVolume * 0.3 : baseVolume;
-      applyVolumeImmediate(instance.sound as any, attenuatedVolume);
-    }
-  }
+  isWorldMenuOpen = isMenuOpen;
+  Array.from(instances.values())
+    .filter((instance) => instance.config.type === "world")
+    .forEach((instance) => {
+      instance.attenuation = getAttenuation(instance.config);
+      updateInstanceVolume(instance);
+    });
 };
 
-// init audio listeners and preload sound
 export const initializeSoundSystem = async () => {
-  const listener = initializeAudioListener();
-  if (listener) {
-    console.log("Three.js sound system initialized successfully");
-    await preloadDefaultAudioFiles();
-  } else {
-    console.error("Failed to initialize Three.js sound system");
+  ensureDefaultConfigs();
+  await Promise.all(DEFAULT_SOUND_CONFIGS.map((config) => preloadHowl(config.id)));
+  if (DEBUG_LOGS) {
+    console.log("Howler sound system initialized", Array.from(configs.keys()));
   }
 };
 
@@ -684,12 +588,14 @@ export const playTapSound = (soundId: string = currentTapSoundId) => {
   playSound(soundId);
 };
 
-export const playWorldSound = (
-  soundId: string,
-  options?: Partial<SoundConfig>,
-) => {
+export const playWorldSound = (soundId: string, options?: Partial<SoundConfig>) => {
   if (state.worldEnabled === false) return;
-  playSound(soundId, { loop: true, fadeIn: 5000, fadeOut: 5000, ...options });
+  playSound(soundId, {
+    loop: true,
+    fadeIn: 2500,
+    fadeOut: 1200,
+    ...options,
+  });
 };
 
 export const stopAllTapSounds = () => {
@@ -708,11 +614,7 @@ export const getDefaultUISoundId = () => DEFAULT_UI_SOUND.id;
 export const getSecondaryUISoundId = () => DEFAULT_UI_SOUND_2.id;
 
 export const stopSoundsById = (soundConfigId: string): void => {
-  const setForId = instancesBySoundId.get(soundConfigId);
-  if (!setForId || setForId.size === 0) return;
-  for (const instanceId of Array.from(setForId)) {
-    stopSound(instanceId);
-  }
+  getInstancesForSound(soundConfigId).forEach((instance) => stopSoundInternal(instance.id));
 };
 
 export const setTapVolume = (volume: number) => {
@@ -721,24 +623,10 @@ export const setTapVolume = (volume: number) => {
 
 export const setWorldVolume = (volume: number) => {
   setTypeVolume("world", volume);
-  try {
-    for (const [_, instance] of Array.from(sounds)) {
-      if (instance.config.type !== "world") continue;
-      const newVolume = calculateFinalVolume(instance.config);
-      applyVolumeImmediate(
-        instance.sound as any,
-        Number.isFinite(newVolume) ? newVolume : 0,
-      );
-    }
-  } catch {}
 };
 
 export const stopBackgroundMusic = (): void => {
-  const setForId = instancesBySoundId.get(currentWorldMusicId);
-  if (!setForId || setForId.size === 0) return;
-  for (const instanceId of Array.from(setForId)) {
-    stopSoundInternal(instanceId, 400);
-  }
+  getInstancesForGroup("world-music").forEach((instance) => stopSoundInternal(instance.id));
 };
 
 export const mute = (): void => {
@@ -763,7 +651,18 @@ export const toggleMute = (): void => {
 
 export const setTapEnabled = (enabled: boolean): void => {
   state.tapEnabled = !!enabled;
-  if (!state.tapEnabled) stopAllTapSounds();
+  if (!state.tapEnabled) {
+    stopAllTapSounds();
+  }
+  updateAllVolumes();
+};
+
+export const setWorldEnabled = (enabled: boolean): void => {
+  state.worldEnabled = !!enabled;
+  if (!state.worldEnabled) {
+    stopAllWorldSounds();
+  }
+  updateAllVolumes();
 };
 
 export const setWorldMusic = (filePath: string, id: string): void => {
@@ -773,71 +672,64 @@ export const setWorldMusic = (filePath: string, id: string): void => {
     id,
     filePath,
     type: "world",
+    category: "background",
     volume: DEFAULT_WORLD_VOLUME,
     loop: true,
-    stopPrevious: false,
-    distanceAttenuation: false,
-    detune: { enabled: false, minSemitones: 0, maxSemitones: 0 },
+    fadeIn: 2500,
+    fadeOut: 1200,
+    playback: {
+      group: "world-music",
+      overlap: "replace-group",
+      maxConcurrent: 1,
+      limitBehavior: "stop-oldest",
+    },
   });
 };
 
 export const setCurrentTapSound = (id: string, filePath?: string): void => {
   currentTapSoundId = id;
-  if (filePath) {
-    addSoundConfig({
-      id,
-      filePath,
-      type: "tap",
-      volume: state.tapVolume,
-      stopPrevious: true,
-      detune: { enabled: true, minSemitones: -2, maxSemitones: 2 },
-    });
-  }
+  if (!filePath) return;
+
+  addSoundConfig({
+    id,
+    filePath,
+    type: "tap",
+    category: "tap",
+    volume: state.tapVolume,
+    pool: 12,
+    detune: { enabled: true, minSemitones: -2, maxSemitones: 2 },
+    playback: {
+      overlap: "layer",
+      maxConcurrent: 6,
+      limitBehavior: "stop-oldest",
+    },
+  });
 };
 
-// play a simple beep sound using threejs oscillator
 export const testSoundSystem = () => {
-  console.group("Three.js sound system test");
+  console.group("Howler sound system test");
   console.log("Sound system state:", getState());
-  console.log("Audio listener:", audioListener);
-  console.log("Audio context state:", audioListener?.context?.state);
-  console.log("Preloaded buffers:", Array.from(audioBuffers.keys()));
+  console.log("Current world music:", currentWorldMusicId, currentWorldMusicFilePath);
+  console.log("Registered configs:", Array.from(configs.keys()));
+  console.log("Active instances:", Array.from(instances.keys()));
+  console.groupEnd();
 
   try {
-    if (audioListener) {
-      const audioContext = audioListener.context;
-
-      const osc = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-
-      osc.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-
-      osc.frequency.setValueAtTime(440, audioContext.currentTime);
-      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-
-      osc.start();
-      osc.stop(audioContext.currentTime + 0.1);
-
-      console.log("Test beep played successfully");
-    } else {
-      console.error("Audio listener not available");
-    }
+    playUISound();
   } catch (error) {
-    console.error("Test beep failed:", error);
-  } finally {
-    console.groupEnd();
+    console.error("Test sound failed:", error);
   }
 };
 
 export const debugSoundSystem = () => {
-  console.group("=== Three.js Sound System Debug ===");
+  console.group("=== Howler Sound System Debug ===");
   console.log("State:", state);
-  console.log("Audio Listener:", audioListener);
-  console.log("Audio Context State:", audioListener?.context?.state);
-  console.log("Audio Context Sample Rate:", audioListener?.context?.sampleRate);
-  console.log("Preloaded Buffers:", Array.from(audioBuffers.keys()));
-  console.log("Configs:", Array.from(configs.keys()));
-  console.log("Sounds:", Array.from(sounds.keys()));
+  console.log("Current world music:", currentWorldMusicId, currentWorldMusicFilePath);
+  console.log("Configs:", Array.from(configs.entries()));
+  console.log("Howls:", Array.from(howls.keys()));
+  console.log("Instances:", Array.from(instances.values()));
+  console.log("Howler context:", getAudioContextState());
   console.groupEnd();
 };
+
+ensureDefaultConfigs();

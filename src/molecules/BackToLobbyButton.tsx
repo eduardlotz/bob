@@ -3,8 +3,6 @@ import { Magnetic } from "@/layout/Magnetic";
 import { useMiniGameStore, useViewStore } from "@/store";
 import { AnimatePresence, motion } from "motion/react";
 import styled from "styled-components";
-import { playUISound } from "@/utils/soundSystem";
-import { CloseIcon } from "@/icons/close";
 import { SmallArrowLeftIcon } from "@/icons/arrow";
 
 export const BackToLobbyButton = ({ show }: { show: boolean }) => {
@@ -13,7 +11,6 @@ export const BackToLobbyButton = ({ show }: { show: boolean }) => {
 
   const onTriggerClick = () => {
     finishGame();
-    playUISound();
     setViewMode("fixed");
   };
 
@@ -39,6 +36,7 @@ export const BackToLobbyButton = ({ show }: { show: boolean }) => {
             <TriggerContainer
               key="back-to-lobby-trigger"
               onClick={onTriggerClick}
+              data-ui-sound-id="ui-tap-close"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               layout
