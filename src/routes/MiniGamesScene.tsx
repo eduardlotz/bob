@@ -3,7 +3,6 @@ import { TapEffects } from "@/3d-objects/ParticleEffects";
 import { FLOOR_Y_POSITION } from "@/molecules/Scene";
 import { BasketBox } from "@/physics/BasketBox";
 import { ROUTE_PATHS, useCoreStore, useMiniGameStore } from "@/store";
-import { useViewStore } from "@/store/viewStore";
 import { GradientTexture, Grid } from "@react-three/drei";
 import { CuboidCollider } from "@react-three/rapier";
 import { useEffect } from "react";
@@ -15,15 +14,16 @@ import { PingPongPaddle } from "@/3d-objects/models/pingPongPaddle";
 import { FootballGame } from "./games/FootballGame";
 import { PointsCounter } from "@/molecules/PointsCounter";
 import { FlappyBirdArcade, FlappyBirdGame } from "./games/FlappyBirdGame";
-import { SlotMachineArcade, SlotMachineGame } from "./games/SlotMachineGame";
+import { playWorldSound, stopSoundsById } from "@/utils/soundSystem";
+import { DEFAULT_WORLD_MUSIC } from "@/utils/sound/defaults";
+
+const MINIGAME_BACKGROUND_TRACK_ID = DEFAULT_WORLD_MUSIC.id;
 
 export function MiniGamesScene() {
   const { checkUnlockedRoutes } = useCoreStore();
   const activeGame = useMiniGameStore((s) => s.activeGame);
   const { setActiveGame, finishGame } = useMiniGameStore();
   const score = useMiniGameStore((s) => s.session.score);
-  const transitionToView = useViewStore((s) => s.transitionToView);
-  const cameraControlsRef = useViewStore((s) => s.cameraControlsRef);
 
   const navigate = useNavigate();
 
@@ -37,28 +37,33 @@ export function MiniGamesScene() {
   }, [isAllowedToAcces]);
 
   useEffect(() => {
-    if (!cameraControlsRef?.current) return;
-    if (activeGame === "SLOT_MACHINE") {
-      transitionToView("minigames:slot_machine");
+    const shouldPlayMinigameMusic =
+      activeGame === "PING_PONG" || activeGame === "FLAPPY_BIRD";
+
+    if (!shouldPlayMinigameMusic) {
+      stopSoundsById(MINIGAME_BACKGROUND_TRACK_ID);
       return;
     }
 
-    transitionToView("minigames");
-  }, [activeGame, transitionToView, cameraControlsRef]);
+    playWorldSound(MINIGAME_BACKGROUND_TRACK_ID, { loop: true });
+
+    return () => {
+      stopSoundsById(MINIGAME_BACKGROUND_TRACK_ID);
+    };
+  }, [activeGame]);
 
   return (
     <>
       {match(activeGame)
         .with("PING_PONG", () => <PingPongGame onExit={finishGame} />)
-        // .with("FOOTBALL", () => <FootballGame onExit={finishGame} />)
+        .with("FOOTBALL", () => <FootballGame onExit={finishGame} />)
         .with("FLAPPY_BIRD", () => <FlappyBirdGame onExit={finishGame} />)
-        .with("SLOT_MACHINE", () => <SlotMachineGame onExit={finishGame} />)
         .otherwise(() => (
           // This is your "Lobby" view
           <group>
-            {/* <group onClick={() => setActiveGame("FOOTBALL")}>
+            <group onClick={() => setActiveGame("FOOTBALL")}>
               <FootballModel position={[1, 7, 0]} scale={[5, 5, 5]} />
-            </group> */}
+            </group>
 
             <group onClick={() => setActiveGame("PING_PONG")}>
               <PingPongPaddle
@@ -70,11 +75,10 @@ export function MiniGamesScene() {
             </group>
 
             <group onClick={() => setActiveGame("FLAPPY_BIRD")}>
-              <FlappyBirdArcade position={[1, 7, 0]} scale={[0.5, 0.5, 0.5]} />
-            </group>
-
-            <group onClick={() => setActiveGame("SLOT_MACHINE")}>
-              <SlotMachineArcade position={[0, 0, -1.5]} />
+              <FlappyBirdArcade
+                position={[0, 5, 0.5]}
+                scale={[0.5, 0.5, 0.5]}
+              />
             </group>
 
             {/* bottom fake shadow */}
@@ -104,17 +108,6 @@ export function MiniGamesScene() {
               position={[-2.5, 0, -2]}
               rotation={[0, -Math.PI / 9, 0]}
             />
-
-            <mesh>
-              <sphereGeometry args={[100, 16, 16]} />
-              <meshBasicMaterial side={BackSide}>
-                <GradientTexture
-                  stops={[0, 0.5, 1]}
-                  colors={["#4857b0", "#969bc1"]}
-                  size={1024}
-                />
-              </meshBasicMaterial>
-            </mesh>
           </group>
         ))}
 
@@ -122,17 +115,26 @@ export function MiniGamesScene() {
 
       {activeGame !== "LOBBY" && <PointsCounter number={score} />}
 
-      {activeGame === "LOBBY" && (
-        <Grid
-          args={[8, 8]}
-          sectionThickness={2}
-          sectionColor="#ffffff"
-          sectionSize={1.2}
-          cellThickness={0}
-          fadeDistance={4}
-          position={[0, FLOOR_Y_POSITION - 0.55, -0.55]}
-        />
-      )}
+      <mesh>
+        <sphereGeometry args={[100, 16, 16]} />
+        <meshBasicMaterial side={BackSide}>
+          <GradientTexture
+            stops={[0, 0.5, 1]}
+            colors={["#4857b0", "#969bc1"]}
+            size={1024}
+          />
+        </meshBasicMaterial>
+      </mesh>
+
+      <Grid
+        args={[8, 8]}
+        sectionThickness={2}
+        sectionColor="#ffffff"
+        sectionSize={1.2}
+        cellThickness={0}
+        fadeDistance={4}
+        position={[0, FLOOR_Y_POSITION - 0.55, -0.55]}
+      />
     </>
   );
 }

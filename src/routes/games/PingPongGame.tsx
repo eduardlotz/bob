@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { CuboidCollider, RapierRigidBody } from "@react-three/rapier";
 
 import { CharacterBall } from "@/components/CharacterBall";
@@ -13,13 +13,22 @@ import {
   CAMERA_Y_POSITION,
   HIDDEN_OPTIONS_CAMERA_ZOOM,
 } from "@/molecules/HeadNavigation";
-import { BackSide, Vector3 } from "three";
+import { Vector3 } from "three";
 import { useCursorStore } from "@/store/core/cursor";
-import { GradientTexture } from "@react-three/drei";
+import { playSound } from "@/utils/soundSystem";
+import { DEFAULT_PING_PONG_HIT_SOUND } from "@/utils/sound/defaults";
+
+const MIN_HIT_FORCE = 10;
+const SCORE_FORCE_THRESHOLD = 50;
+const SOUND_COOLDOWN_MS = 50;
+
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, value));
 
 export function PingPongGame({ onExit }: { onExit: () => void }) {
   const ballApi = useRef<RapierRigidBody>(null!);
   const paddleApi = useRef<RapierRigidBody>(null!);
+  const lastHitSoundAtRef = useRef(0);
   const cursor = useCursorStore();
   const { isMobile } = useAppStore();
 
@@ -68,11 +77,24 @@ export function PingPongGame({ onExit }: { onExit: () => void }) {
     }
   });
 
-  const handleCollision = (e: any) => {
-    if (e.totalForceMagnitude > 50) {
+  const handleCollision = useCallback((e: { totalForceMagnitude: number }) => {
+    const impact = e.totalForceMagnitude / 100;
+    const now = performance.now();
+
+    if (
+      e.totalForceMagnitude > MIN_HIT_FORCE &&
+      now - lastHitSoundAtRef.current > SOUND_COOLDOWN_MS
+    ) {
+      lastHitSoundAtRef.current = now;
+      playSound(DEFAULT_PING_PONG_HIT_SOUND.id, {
+        volume: clamp(impact / 20, 0.12, 1),
+      });
+    }
+
+    if (e.totalForceMagnitude > SCORE_FORCE_THRESHOLD) {
       incrementScore();
     }
-  };
+  }, [incrementScore]);
 
   const resetBall = () => {
     resetScore();
@@ -82,17 +104,6 @@ export function PingPongGame({ onExit }: { onExit: () => void }) {
 
   return (
     <group>
-      <mesh>
-        <sphereGeometry args={[100, 16, 16]} />
-        <meshBasicMaterial side={BackSide}>
-          <GradientTexture
-            stops={[0, 0.5, 1]}
-            colors={["#4857b0", "#969bc1"]}
-            size={1024}
-          />
-        </meshBasicMaterial>
-      </mesh>
-
       <CharacterBall ref={ballApi} position={[0, 5, 0]} scale={0.3} />
 
       <Paddle ref={paddleApi} onCollide={handleCollision} />

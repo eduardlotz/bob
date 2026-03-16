@@ -6,8 +6,6 @@ import CameraControlsImpl from "camera-controls";
 
 import { useMiniGameStore, useAppStore, useViewStore } from "@/store";
 import { useCursorStore } from "@/store/core/cursor";
-import { useQuestSystem } from "@/hooks/useQuestSystem";
-import { playUISound } from "@/utils/soundSystem";
 
 import {
   CAMERA_HEIGHT,
@@ -22,8 +20,7 @@ import {
   RING_TUBE_MIN,
 } from "@/3d-objects/FlappyRings";
 import { CharacterBall } from "@/components/CharacterBall";
-import { GradientTexture } from "@react-three/drei";
-import { BackSide } from "three";
+import { playSound } from "@/utils/soundSystem";
 
 const FLAP_FORCE = 4;
 const BIRD_START_X = 1;
@@ -31,35 +28,28 @@ const BIRD_START_Y = 1;
 
 export function FlappyBirdGame({ onExit }: { onExit: () => void }) {
   const birdApi = useRef<RapierRigidBody>(null!);
-  const hideCursor = useCursorStore((s) => s.hide);
-  const showCursor = useCursorStore((s) => s.show);
 
   const cameraControlsRef = useViewStore((s) => s.cameraControlsRef);
   const incrementScore = useMiniGameStore((s) => s.incrementScore);
   const resetScore = useMiniGameStore((s) => s.resetScore);
   const score = useMiniGameStore((s) => s.session.score);
   const isMobile = useAppStore((s) => s.isMobile);
-  const { triggerQuest } = useQuestSystem();
 
   const obstacles = useRef<{ reset: () => void } | null>(null);
   const { gl } = useThree();
 
   useEffect(() => {
-    hideCursor();
-
     if (isMobile && cameraControlsRef?.current) {
       cameraControlsRef.current.touches.one = CameraControlsImpl.ACTION.NONE;
     }
 
     return () => {
-      showCursor();
-
       if (isMobile && cameraControlsRef?.current) {
         cameraControlsRef.current.touches.one =
           CameraControlsImpl.ACTION.TOUCH_ROTATE;
       }
     };
-  }, [cameraControlsRef, hideCursor, isMobile, showCursor]);
+  }, [cameraControlsRef, isMobile]);
 
   const flap = useCallback(() => {
     const body = birdApi.current;
@@ -71,7 +61,7 @@ export function FlappyBirdGame({ onExit }: { onExit: () => void }) {
     const currentAng = body.angvel();
     body.setAngvel({ x: 0, y: 0, z: Math.max(currentAng.z, 2.2) }, true);
 
-    playUISound();
+    playSound("pop");
   }, []);
 
   const reset = useCallback(() => {
@@ -87,11 +77,6 @@ export function FlappyBirdGame({ onExit }: { onExit: () => void }) {
 
     obstacles.current?.reset();
   }, [resetScore]);
-
-  const handleScore = useCallback(() => {
-    incrementScore();
-    triggerQuest("minigames_flappy_score");
-  }, [incrementScore, triggerQuest]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -158,17 +143,6 @@ export function FlappyBirdGame({ onExit }: { onExit: () => void }) {
 
   return (
     <group>
-      <mesh>
-        <sphereGeometry args={[100, 16, 16]} />
-        <meshBasicMaterial side={BackSide}>
-          <GradientTexture
-            stops={[0, 0.8, 1]}
-            colors={["#0e1125", "#6d7190"]}
-            size={1024}
-          />
-        </meshBasicMaterial>
-      </mesh>
-
       <CharacterBall
         ref={birdApi}
         // X locked — prevents bird drifting away from the ring centre-line,
@@ -185,7 +159,7 @@ export function FlappyBirdGame({ onExit }: { onExit: () => void }) {
         birdBody={birdApi}
         birdRadius={0.3}
         score={score}
-        onScore={handleScore}
+        onScore={incrementScore}
         onMiss={reset}
       />
     </group>
