@@ -1,10 +1,10 @@
-import { CameraViewId, useViewStore, ViewMode } from "@/store/viewStore";
+import { CameraViewId, useViewStore } from "@/store/viewStore";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { motion, AnimatePresence } from "motion/react";
 import styled from "styled-components";
-import { ArrowLeftIcon, SmallArrowLeftIcon } from "@/icons/arrow";
+import { SmallArrowLeftIcon } from "@/icons/arrow";
 import { playUISound } from "@/utils/soundSystem";
-import { useBooksStore } from "@/store";
+import { ROUTE_PATHS, useAppStore, useBooksStore, useMiniGameStore } from "@/store";
 import { Magnetic } from "@/layout/Magnetic";
 
 const VIEWID_TITLE_MAP = {
@@ -27,23 +27,31 @@ export function ViewControls() {
     isTransitioning,
   } = useViewStore();
 
+  const currentRoute = useAppStore((s) => s.currentRoute);
   const { focusedBook } = useBooksStore();
+  const activeGame = useMiniGameStore((s) => s.activeGame);
 
-  const showControls =
-    isImageFocused ||
-    (!isDefaultView() &&
-      !isPhoneView() &&
-      !isCreativeView() &&
-      !isNavigationView() &&
-      !focusedBook);
+  const isDefault = isDefaultView();
+  const isPhone = isPhoneView();
+  const isCreative = isCreativeView();
+  const isNavigation = isNavigationView();
+  const isGameActive = activeGame !== "LOBBY";
+  const isMinigamesRoute = currentRoute === ROUTE_PATHS.MINIGAMES;
+
+  const shouldHide =
+    isGameActive || isMinigamesRoute || isTransitioning || focusedBook;
+  const isViewEligible =
+    !isDefault && !isPhone && !isCreative && !isNavigation;
+  const showControls = !shouldHide && (isImageFocused || isViewEligible);
 
   // escape key to return to default view
   useKeyPress("Escape", () => {
     if (
-      !isDefaultView() &&
-      !isCreativeView() &&
+      !isDefault &&
+      !isCreative &&
       !isTransitioning &&
-      !isNavigationView()
+      !isNavigation &&
+      !isMinigamesRoute
     ) {
       handleBackClick();
       playUISound("ui-tap-close");

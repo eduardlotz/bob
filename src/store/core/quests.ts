@@ -47,7 +47,8 @@ export enum QUESTS_STORE_VERSION {
   V1 = 1000000, // version 1.00.00
   V2 = 1000001, // version 1.00.01
   V3 = 1000002, // version 1.00.01
-  LATEST = V3,
+  V4 = 1000003, // version 1.00.02
+  LATEST = V4,
 }
 
 function migrateStore(oldState: any, fromVersion: number): any {
@@ -69,6 +70,11 @@ function migrateStore(oldState: any, fromVersion: number): any {
 
   // remove too easy quests
   if (fromVersion < QUESTS_STORE_VERSION.V3) {
+    migratedState = initialQuests;
+  }
+
+  // minigames quest refresh
+  if (fromVersion < QUESTS_STORE_VERSION.V4) {
     migratedState = initialQuests;
   }
 
@@ -172,10 +178,48 @@ const initialQuests: Quest[] = [
     },
   },
   {
-    id: "minigames_quest_1",
-    title: "Das Runde ins Eckige",
-    description: "Mach ein Tor im Fußball Minigame",
-    icon: "⚽️",
+    id: "minigames_flappy_points_10",
+    title: "Flappy Bobbie",
+    description: "Erziele 10 Punkte im Flappy Bird Minigame",
+    icon: "🐦",
+    progress: 0,
+    maxProgress: 10,
+    reward: {
+      type: "taps_reward",
+      amount: 10000,
+    },
+    completed: false,
+    // routeId: ROUTE_IDS.MINIGAMES, // FIX: not working with route
+    type: "interaction",
+    trigger: {
+      action: "minigames_flappy_score",
+      value: 1,
+    },
+  },
+  {
+    id: "minigames_slot_spins_15",
+    title: "Spielsüchtig",
+    description: "Benutze den Slotautomaten 15 Mal",
+    icon: "🎰",
+    progress: 0,
+    maxProgress: 15,
+    reward: {
+      type: "taps_reward",
+      amount: 10000,
+    },
+    completed: false,
+    // routeId: ROUTE_IDS.MINIGAMES, // FIX: not working with route
+    type: "interaction",
+    trigger: {
+      action: "minigames_slot_spin",
+      value: 1,
+    },
+  },
+  {
+    id: "minigames_slot_wins_5",
+    title: "Alles wieder reingeholt",
+    description: "Gewinne am Slotautomaten",
+    icon: "🏆",
     progress: 0,
     maxProgress: 1,
     reward: {
@@ -186,7 +230,7 @@ const initialQuests: Quest[] = [
     // routeId: ROUTE_IDS.MINIGAMES, // FIX: not working with route
     type: "interaction",
     trigger: {
-      action: "minigames_goal_scored",
+      action: "minigames_slot_win",
       value: 1,
     },
   },

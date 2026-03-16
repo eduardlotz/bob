@@ -1,126 +1,185 @@
-import { FootballModel } from "@/3d-objects/models/football";
-import { TapEffects } from "@/3d-objects/ParticleEffects";
+import { useFloatingBar } from "@/layout/FloatingBar";
 import { FLOOR_Y_POSITION } from "@/molecules/Scene";
 import { BasketBox } from "@/physics/BasketBox";
-import { ROUTE_PATHS, useCoreStore, useMiniGameStore } from "@/store";
+import {
+  ROUTE_PATHS,
+  useCoreStore,
+  useMiniGameStore,
+  useViewStore,
+} from "@/store";
+import type { MiniGameType } from "@/store/minigames";
 import { GradientTexture, Grid } from "@react-three/drei";
 import { CuboidCollider } from "@react-three/rapier";
-import { useEffect } from "react";
+import { type ComponentType, type ReactNode, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { BackSide } from "three";
-import { match } from "ts-pattern";
-import { PingPongGame } from "./games/PingPongGame";
+
 import { PingPongPaddle } from "@/3d-objects/models/pingPongPaddle";
-import { FootballGame } from "./games/FootballGame";
+import { TapEffects } from "@/3d-objects/ParticleEffects";
 import { PointsCounter } from "@/molecules/PointsCounter";
-import { FlappyBirdArcade, FlappyBirdGame } from "./games/FlappyBirdGame";
-import { playWorldSound, stopSoundsById } from "@/utils/soundSystem";
 import { DEFAULT_WORLD_MUSIC } from "@/utils/sound/defaults";
+import { playWorldSound, stopSoundsById } from "@/utils/soundSystem";
+import { FlappyBirdArcade, FlappyBirdGame } from "./games/FlappyBirdGame";
+import {
+  MiniGameItem,
+  type SupportedMiniGameType,
+} from "./games/withMiniGameItem";
+import { PingPongGame } from "./games/PingPongGame";
+import { SlotMachineArcade, SlotMachineGame } from "./games/SlotMachineGame";
 
 const MINIGAME_BACKGROUND_TRACK_ID = DEFAULT_WORLD_MUSIC.id;
+const DEFAULT_MINIGAMES_VIEW = "minigames";
 
-export function MiniGamesScene() {
-  const { checkUnlockedRoutes } = useCoreStore();
-  const activeGame = useMiniGameStore((s) => s.activeGame);
-  const { setActiveGame, finishGame } = useMiniGameStore();
-  const score = useMiniGameStore((s) => s.session.score);
+// TODO: refactor minigames view to be included as static view configs like slotmachine
+type MiniGamesView = typeof DEFAULT_MINIGAMES_VIEW | "minigames:slot_machine";
+type MiniGameComponent = ComponentType<{ onExit: () => void }>;
 
-  const navigate = useNavigate();
+interface MiniGameDefinition {
+  label: string;
+  cameraView: MiniGamesView;
+  shouldPlayMusic: boolean;
+  GameComponent: MiniGameComponent;
+  renderLobbyItem: () => ReactNode;
+}
 
-  const isAllowedToAcces = checkUnlockedRoutes(ROUTE_PATHS.MINIGAMES);
+const MINI_GAME_ORDER: SupportedMiniGameType[] = [
+  "SLOT_MACHINE",
+  "PING_PONG",
+  "FLAPPY_BIRD",
+];
 
-  useEffect(() => {
-    if (!isAllowedToAcces) {
-      console.warn("not allowd to access this route");
-      navigate(ROUTE_PATHS.HOME, { replace: true });
-    }
-  }, [isAllowedToAcces]);
+const MINI_GAME_DEFINITIONS: Record<SupportedMiniGameType, MiniGameDefinition> =
+  {
+    SLOT_MACHINE: {
+      label: "Slot Machine",
+      cameraView: "minigames:slot_machine",
+      shouldPlayMusic: false,
+      GameComponent: SlotMachineGame,
+      renderLobbyItem: () => (
+        <SlotMachineArcade position={[0, 0, -2]} scale={[1, 1, 1]} />
+      ),
+    },
+    PING_PONG: {
+      label: "Ping Pong",
+      cameraView: DEFAULT_MINIGAMES_VIEW,
+      shouldPlayMusic: true,
+      GameComponent: PingPongGame,
+      renderLobbyItem: () => (
+        <PingPongPaddle
+          rotation={[0, 0, 0]}
+          position={[-2, 3, 0]}
+          scale={[0.7, 0.7, 0.7]}
+          enablePhysics
+        />
+      ),
+    },
+    FLAPPY_BIRD: {
+      label: "Flappy Bird",
+      cameraView: DEFAULT_MINIGAMES_VIEW,
+      shouldPlayMusic: true,
+      GameComponent: FlappyBirdGame,
+      renderLobbyItem: () => (
+        <FlappyBirdArcade position={[1, 3, 0]} scale={[0.5, 0.5, 0.5]} />
+      ),
+    },
+  };
 
-  useEffect(() => {
-    const shouldPlayMinigameMusic =
-      activeGame === "PING_PONG" || activeGame === "FLAPPY_BIRD";
+const isSupportedMiniGame = (
+  game: MiniGameType,
+): game is SupportedMiniGameType => game in MINI_GAME_DEFINITIONS;
 
-    if (!shouldPlayMinigameMusic) {
-      stopSoundsById(MINIGAME_BACKGROUND_TRACK_ID);
-      return;
-    }
+const getMiniGameDefinition = (game: MiniGameType) =>
+  isSupportedMiniGame(game) ? MINI_GAME_DEFINITIONS[game] : null;
 
-    playWorldSound(MINIGAME_BACKGROUND_TRACK_ID, { loop: true });
+function MiniGamesLobby({
+  onSelect,
+}: {
+  onSelect: (game: SupportedMiniGameType) => void;
+}) {
+  return (
+    <group>
+      {MINI_GAME_ORDER.map((game) => {
+        const definition = MINI_GAME_DEFINITIONS[game];
 
-    return () => {
-      stopSoundsById(MINIGAME_BACKGROUND_TRACK_ID);
-    };
-  }, [activeGame]);
+        return (
+          <MiniGameItem
+            key={game}
+            game={game}
+            label={definition.label}
+            onSelect={onSelect}
+          >
+            {definition.renderLobbyItem()}
+          </MiniGameItem>
+        );
+      })}
 
+      <MiniGamesLobbyBounds />
+    </group>
+  );
+}
+
+function MiniGamesLobbyBounds() {
   return (
     <>
-      {match(activeGame)
-        .with("PING_PONG", () => <PingPongGame onExit={finishGame} />)
-        .with("FOOTBALL", () => <FootballGame onExit={finishGame} />)
-        .with("FLAPPY_BIRD", () => <FlappyBirdGame onExit={finishGame} />)
-        .otherwise(() => (
-          // This is your "Lobby" view
-          <group>
-            <group onClick={() => setActiveGame("FOOTBALL")}>
-              <FootballModel position={[1, 7, 0]} scale={[5, 5, 5]} />
-            </group>
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, FLOOR_Y_POSITION - 0.5, 0]}
+      >
+        <circleGeometry args={[1, 16, 16]} />
+        <meshToonMaterial color="#111820" transparent opacity={0.5} />
+      </mesh>
 
-            <group onClick={() => setActiveGame("PING_PONG")}>
-              <PingPongPaddle
-                rotation={[0, 0, 0]}
-                position={[-2, 7, 0]}
-                scale={[0.7, 0.7, 0.7]}
-                enablePhysics
-              />
-            </group>
+      <BasketBox
+        position={[0, 4 + FLOOR_Y_POSITION + 0.55, 2]}
+        width={10}
+        depth={10}
+        height={10}
+        wallThickness={0.1}
+      />
 
-            <group onClick={() => setActiveGame("FLAPPY_BIRD")}>
-              <FlappyBirdArcade
-                position={[0, 5, 0.5]}
-                scale={[0.5, 0.5, 0.5]}
-              />
-            </group>
+      <CuboidCollider
+        args={[3, 3, 0.1]}
+        position={[2.5, 0, -2]}
+        rotation={[0, Math.PI / 9, 0]}
+      />
+      <CuboidCollider
+        args={[3, 3, 0.1]}
+        position={[-2.5, 0, -2]}
+        rotation={[0, -Math.PI / 9, 0]}
+      />
+    </>
+  );
+}
 
-            {/* bottom fake shadow */}
-            <mesh
-              rotation={[-Math.PI / 2, 0, 0]}
-              position={[0, FLOOR_Y_POSITION - 0.5, 0]}
-            >
-              <circleGeometry args={[1, 16, 16]} />
-              <meshToonMaterial color="#111820" transparent opacity={0.5} />
-            </mesh>
+function MiniGamesContent({
+  activeGame,
+  onSelect,
+  onExit,
+}: {
+  activeGame: MiniGameType;
+  onSelect: (game: SupportedMiniGameType) => void;
+  onExit: () => void;
+}) {
+  const activeDefinition = getMiniGameDefinition(activeGame);
 
-            <BasketBox
-              position={[0, 4 + FLOOR_Y_POSITION + 0.55, 2]}
-              width={10}
-              depth={10}
-              height={10}
-              wallThickness={0.1}
-            />
+  if (!activeDefinition) {
+    return <MiniGamesLobby onSelect={onSelect} />;
+  }
 
-            <CuboidCollider
-              args={[3, 3, 0.1]}
-              position={[2.5, 0, -2]}
-              rotation={[0, Math.PI / 9, 0]}
-            />
-            <CuboidCollider
-              args={[3, 3, 0.1]}
-              position={[-2.5, 0, -2]}
-              rotation={[0, -Math.PI / 9, 0]}
-            />
-          </group>
-        ))}
+  const ActiveGame = activeDefinition.GameComponent;
 
-      <TapEffects id="tap_effect_confetti" />
+  return <ActiveGame onExit={onExit} />;
+}
 
-      {activeGame !== "LOBBY" && <PointsCounter number={score} />}
-
+function MiniGamesBackdrop() {
+  return (
+    <>
       <mesh>
         <sphereGeometry args={[100, 16, 16]} />
         <meshBasicMaterial side={BackSide}>
           <GradientTexture
-            stops={[0, 0.5, 1]}
-            colors={["#4857b0", "#969bc1"]}
+            stops={[0, 0.3, 1]}
+            colors={["#4857b0", "#d7d8e2", "#969bc1"]}
             size={1024}
           />
         </meshBasicMaterial>
@@ -135,6 +194,71 @@ export function MiniGamesScene() {
         fadeDistance={4}
         position={[0, FLOOR_Y_POSITION - 0.55, -0.55]}
       />
+    </>
+  );
+}
+
+export function MiniGamesScene() {
+  const navigate = useNavigate();
+  const { checkUnlockedRoutes } = useCoreStore();
+  const { setHoveredObject } = useFloatingBar();
+  const activeGame = useMiniGameStore((state) => state.activeGame);
+  const score = useMiniGameStore((state) => state.session.score);
+  const setActiveGame = useMiniGameStore((state) => state.setActiveGame);
+  const finishGame = useMiniGameStore((state) => state.finishGame);
+  const transitionToView = useViewStore((state) => state.transitionToView);
+  const cameraControlsRef = useViewStore((state) => state.cameraControlsRef);
+
+  const isAllowedToAccess = checkUnlockedRoutes(ROUTE_PATHS.MINIGAMES);
+  const activeDefinition = getMiniGameDefinition(activeGame);
+
+  useEffect(() => {
+    if (!isAllowedToAccess) {
+      console.warn("not allowed to access this route");
+      navigate(ROUTE_PATHS.HOME, { replace: true });
+    }
+  }, [isAllowedToAccess, navigate]);
+
+  useEffect(() => {
+    if (activeGame !== "LOBBY") {
+      setHoveredObject(null);
+    }
+  }, [activeGame, setHoveredObject]);
+
+  useEffect(() => {
+    if (!activeDefinition?.shouldPlayMusic) {
+      stopSoundsById(MINIGAME_BACKGROUND_TRACK_ID);
+      return;
+    }
+
+    playWorldSound(MINIGAME_BACKGROUND_TRACK_ID, { loop: true });
+
+    return () => {
+      stopSoundsById(MINIGAME_BACKGROUND_TRACK_ID);
+    };
+  }, [activeDefinition]);
+
+  useEffect(() => {
+    if (!cameraControlsRef?.current) return;
+
+    transitionToView(activeDefinition?.cameraView ?? DEFAULT_MINIGAMES_VIEW);
+  }, [activeDefinition, cameraControlsRef, transitionToView]);
+
+  return (
+    <>
+      <MiniGamesContent
+        activeGame={activeGame}
+        onSelect={setActiveGame}
+        onExit={finishGame}
+      />
+
+      <TapEffects id="tap_effect_confetti" />
+
+      {activeGame === "LOBBY" ? (
+        <MiniGamesBackdrop />
+      ) : (
+        <PointsCounter number={score} />
+      )}
     </>
   );
 }

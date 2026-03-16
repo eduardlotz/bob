@@ -6,12 +6,16 @@ import {
   useRef,
 } from "react";
 import { useFrame } from "@react-three/fiber";
-import { RapierRigidBody, RigidBody } from "@react-three/rapier";
+import { BallCollider, RapierRigidBody, RigidBody } from "@react-three/rapier";
 
-const BASE_RING_SPEED = 2.5;
+export const BASE_RING_SPEED = 2.5;
+export const RING_SPEED_SCORE_FACTOR = 0.06;
 const RING_DISTANCE = 7;
-const RING_COUNT = 5;
-const RECYCLE_X = -12;
+const RING_COUNT = 8;
+const RING_START_X = 8;
+const RECYCLE_X = -14;
+const RING_COLLIDER_SEGMENTS = 12;
+const RING_COLLIDER_DEPTH_FACTORS = [-1, 1] as const;
 
 export const RING_TUBE_MIN = 0.12;
 export const RING_TUBE_MAX = 0.24;
@@ -33,8 +37,6 @@ type RingConfig = {
   radius: number;
   tube: number;
   passed: boolean;
-  angle: number;
-  rotSpeed: number;
   wobbleAmp: number;
   wobbleSpeed: number;
   wobblePhase: number;
@@ -45,6 +47,14 @@ export const FlappyRings = forwardRef<any, Props>(function FlappyRings(
   ref,
 ) {
   const bodies = useRef<RapierRigidBody[]>([]);
+  const colliderAngles = useMemo(
+    () =>
+      new Array(RING_COLLIDER_SEGMENTS).fill(0).map((_, index) => {
+        const angle = (index / RING_COLLIDER_SEGMENTS) * Math.PI * 2;
+        return [Math.cos(angle), Math.sin(angle)] as const;
+      }),
+    [],
+  );
 
   const configs = useMemo<RingConfig[]>(
     () =>
@@ -58,14 +68,12 @@ export const FlappyRings = forwardRef<any, Props>(function FlappyRings(
         const baseY = Math.random() * 3;
 
         return {
-          startX: i * RING_DISTANCE + 6,
-          x: i * RING_DISTANCE + 6,
+          startX: i * RING_DISTANCE + RING_START_X,
+          x: i * RING_DISTANCE + RING_START_X,
           baseY,
           radius,
           tube,
           passed: false,
-          angle: Math.random() * Math.PI * 2,
-          rotSpeed: 0.6 + Math.random() * 1.6,
           wobbleAmp: 0.12 + Math.random() * 0.22,
           wobbleSpeed: 0.5 + Math.random() * 0.7,
           wobblePhase: Math.random() * Math.PI * 2,
@@ -90,19 +98,12 @@ export const FlappyRings = forwardRef<any, Props>(function FlappyRings(
         cfg.passed = false;
         cfg.x = cfg.startX;
         cfg.baseY = Math.random() * 3;
-        cfg.angle = Math.random() * Math.PI * 2;
 
         const body = bodies.current[i];
         if (!body) return;
 
         body.setTranslation({ x: cfg.x, y: cfg.baseY, z: 0 }, true);
         body.setNextKinematicTranslation({ x: cfg.x, y: cfg.baseY, z: 0 });
-        body.setNextKinematicRotation({
-          x: Math.sin(cfg.angle / 2),
-          y: 0,
-          z: 0,
-          w: Math.cos(cfg.angle / 2),
-        });
       });
     },
   }));
@@ -116,8 +117,8 @@ export const FlappyRings = forwardRef<any, Props>(function FlappyRings(
     if (!bird) return;
     const birdPos = bird.translation();
 
-    const speed = BASE_RING_SPEED + Math.min(scoreRef.current, 80) * 0.06;
-    const spinBoost = 1 + Math.min(scoreRef.current, 80) * 0.015;
+    const speed =
+      BASE_RING_SPEED + Math.min(scoreRef.current, 80) * RING_SPEED_SCORE_FACTOR;
     let recycleAnchor = Number.NEGATIVE_INFINITY;
 
     cfgRef.current.forEach((cfg) => {
@@ -136,14 +137,6 @@ export const FlappyRings = forwardRef<any, Props>(function FlappyRings(
       const wobble =
         Math.sin(t.current * cfg.wobbleSpeed + cfg.wobblePhase) * cfg.wobbleAmp;
       const nextY = cfg.baseY + wobble;
-
-      cfg.angle += cfg.rotSpeed * spinBoost * delta;
-      body.setNextKinematicRotation({
-        x: Math.sin(cfg.angle / 2),
-        y: 0,
-        z: 0,
-        w: Math.cos(cfg.angle / 2),
-      });
 
       if (!cfg.passed && currentX > birdPos.x && nextX <= birdPos.x) {
         // The ring's centre crosses the bird's X plane this frame.
@@ -210,13 +203,31 @@ export const FlappyRings = forwardRef<any, Props>(function FlappyRings(
             });
           }}
           type="kinematicPosition"
-          colliders="trimesh"
+          colliders={false}
           position={[cfg.startX, cfg.baseY, 0]}
         >
           {/* Rotate so the hole faces the bird along +X */}
+          {RING_COLLIDER_DEPTH_FACTORS.map((depthFactor, depthIndex) => {
+            const colliderRadius = Math.max(0.06, cfg.tube * 0.75);
+            const colliderDepth = Math.max(0.03, cfg.tube * 0.6) * depthFactor;
+            const colliderRingRadius = Math.max(0.12, cfg.radius - cfg.tube * 0.15);
+
+            return colliderAngles.map(([cosA, sinA], angleIndex) => (
+              <BallCollider
+                key={`${depthIndex}-${angleIndex}`}
+                args={[colliderRadius]}
+                position={[
+                  colliderDepth,
+                  cosA * colliderRingRadius,
+                  sinA * colliderRingRadius,
+                ]}
+              />
+            ));
+          })}
+
           <group rotation={[0, Math.PI / 2, 0]}>
             <mesh>
-              <torusGeometry args={[cfg.radius, cfg.tube, 12, 48]} />
+              <torusGeometry args={[cfg.radius, cfg.tube, 10, 32]} />
               <meshToonMaterial color="#ffcc00" />
             </mesh>
           </group>

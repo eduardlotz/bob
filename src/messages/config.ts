@@ -224,7 +224,7 @@ export const MESSAGE_CONFIG: MessageConfig[] = [
     id: "minigames_welcome",
     text: [
       "ja mooooin, bock was zu zocken??",
-      "tap dafür einfach den Fußball ⚽️ oder den Tischtennisschläger 🏓 an",
+      "hier gibt's Ping Pong 🏓, Flappy Bird 🐦 und den Slotautomaten 🎰",
     ],
     label: "Bob",
     repeatRule: "oncePerPersist",
