@@ -14,7 +14,7 @@ import { format } from "date-fns/format";
 
 const AUDIO_CHAR_DURATION_MS = 30;
 const AUDIO_LEAD_TIME_MS = 20;
-const TYPING_SPEED_MS = 25;
+const TYPING_SPEED_MS = 20;
 const BASE_LINE_DELAY_MS = 500;
 const CHAR_READING_MS = 50;
 const MIN_DISMISS_MS = 1800;

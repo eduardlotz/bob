@@ -38,7 +38,7 @@ export default function App() {
     previousViewMode,
     defaultViewMode,
     lastFocusPosition,
-    resetToDefaultView,
+    syncViewToRoute,
   } = useViewStore();
   const { viewDebuggerVisible } = useCoreStore();
 
@@ -55,6 +55,10 @@ export default function App() {
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    syncViewToRoute(location.pathname);
+  }, [location.pathname, syncViewToRoute]);
+
   // sync router with store
   // stop all previous world sounds onRouteChange
   useEffect(() => {
@@ -65,8 +69,6 @@ export default function App() {
         const route = getRouteLabelByPath(location.pathname);
         setCurrentRouteInPretty(route);
         setShowRouteChip(true);
-        setTimeout(() => resetToDefaultView(), 150);
-
         setTimeout(() => {
           setShowRouteChip(false);
         }, 1800);

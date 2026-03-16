@@ -9,6 +9,7 @@ import {
   VISIBLE_OPTIONS_CAMERA_ZOOM,
 } from "@/molecules/HeadNavigation";
 import { ROUTE_PATHS, useAppStore, useCoreStore } from ".";
+import { useMiniGameStore } from "@/store/minigames";
 import { Vector3 } from "three";
 
 export interface CameraView {
@@ -17,6 +18,12 @@ export interface CameraView {
   position?: [number, number, number];
   target?: [number, number, number];
   zoom?: number;
+  cursorFollow?: {
+    strength?: number;
+    yScale?: number;
+    swayX?: number;
+    swayY?: number;
+  };
   transition?: {
     duration?: number;
     easing?: string;
@@ -35,6 +42,7 @@ export type CameraViewId =
   | "about"
   | "portfolio"
   | "minigames"
+  | "minigames:slot_machine"
   | "navigation"
   | "phone:home"
   | "phone:shop"
@@ -47,6 +55,16 @@ export type CameraViewId =
   | "computer"
   | "cardbox"
   | "socials";
+
+const resolveRouteViewId = (route: string): CameraViewId => {
+  if (route === ROUTE_PATHS.PORTFOLIO) return "portfolio";
+  if (route === ROUTE_PATHS.MINIGAMES) {
+    const activeGame = useMiniGameStore.getState().activeGame;
+    if (activeGame === "SLOT_MACHINE") return "minigames:slot_machine";
+    return "minigames";
+  }
+  return "default";
+};
 
 // camera settings for different object views
 export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
@@ -121,6 +139,20 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
     name: "Minigames View",
     position: [0, CAMERA_HEIGHT, HIDDEN_OPTIONS_CAMERA_ZOOM],
     target: [0, CAMERA_Y_POSITION, 0],
+    defaultViewMode: "fixed",
+  },
+  "minigames:slot_machine": {
+    id: "minigames:slot_machine",
+    name: "Slot Machine View",
+    position: [0, CAMERA_HEIGHT + 1.1, HIDDEN_OPTIONS_CAMERA_ZOOM - 0.4],
+    target: [0, CAMERA_Y_POSITION + 1.2, 0],
+    defaultViewMode: "fixed",
+    cursorFollow: {
+      strength: 2.3,
+      yScale: 0.4,
+      swayX: 0.03,
+      swayY: 0.02,
+    },
   },
   "phone:home": {
     id: "phone:home",
@@ -214,6 +246,7 @@ interface ViewStore {
   viewMode: ViewMode; // currently active
   previousViewMode: ViewMode;
   isTransitioning: boolean;
+  pendingView: CameraViewId | null;
 
   cameraControlsRef: React.RefObject<CameraControls> | null;
 
@@ -222,6 +255,7 @@ interface ViewStore {
   setCurrentView: (viewId: CameraViewId) => void;
   setViewMode: (mode: ViewMode) => void;
   setCameraControlsRef: (ref: React.RefObject<CameraControls>) => void;
+  syncViewToRoute: (route: string) => void;
   transitionToView: (viewId: CameraViewId) => Promise<void>;
   transitionBack: () => Promise<void>;
   resetToDefaultView: () => Promise<void>;
@@ -257,6 +291,7 @@ export const useViewStore = create<ViewStore>()(
       viewMode: "fixed",
       previousViewMode: "fixed",
       isTransitioning: false,
+      pendingView: null,
       cameraControlsRef: null,
       lastFocusPosition: null,
 
@@ -285,9 +320,15 @@ export const useViewStore = create<ViewStore>()(
             ? CameraControlsImpl.ACTION.TRUCK
             : CameraControlsImpl.ACTION.ROTATE;
         } else {
-          // restore default target
-          controls.saveState();
-          controls.reset();
+          controls.mouseButtons.left = CameraControlsImpl.ACTION.NONE;
+          controls.mouseButtons.middle = CameraControlsImpl.ACTION.NONE;
+          controls.mouseButtons.right = CameraControlsImpl.ACTION.NONE;
+          controls.touches.one = CameraControlsImpl.ACTION.NONE;
+          controls.touches.two = CameraControlsImpl.ACTION.NONE;
+          controls.minPolarAngle = 0.2;
+          controls.maxPolarAngle = 2;
+          controls.minDistance = 1;
+          controls.maxDistance = 7;
         }
       },
 
@@ -296,16 +337,61 @@ export const useViewStore = create<ViewStore>()(
 
       setCurrentView: (viewId) => set({ currentView: viewId }),
       setViewMode: (mode) => set({ viewMode: mode }),
-      setCameraControlsRef: (ref) => set({ cameraControlsRef: ref }),
+      setCameraControlsRef: (ref) => {
+        set({ cameraControlsRef: ref });
+        if (!ref?.current) return;
+
+        const pendingView = get().pendingView;
+        if (pendingView) {
+          get().transitionToView(pendingView);
+          set({ pendingView: null });
+          return;
+        }
+
+        const route =
+          useAppStore.getState().currentRoute || window.location.pathname;
+        if (route) {
+          get().syncViewToRoute(route);
+        }
+      },
+      syncViewToRoute: (route) => {
+        const viewId = resolveRouteViewId(route);
+        const viewConfig = CAMERA_VIEWS[viewId];
+        if (!viewConfig) return;
+
+        const desiredMode = viewConfig.defaultViewMode ?? "fixed";
+        const { currentView, viewMode, cameraControlsRef, isTransitioning } =
+          get();
+
+        if (currentView === viewId && viewMode === desiredMode && !isTransitioning) {
+          get().applyViewModeToControls(desiredMode);
+
+          if (viewConfig.position && viewConfig.target && cameraControlsRef?.current) {
+            cameraControlsRef.current.setLookAt(
+              ...viewConfig.position,
+              ...viewConfig.target,
+              true,
+            );
+          }
+          return;
+        }
+
+        if (isTransitioning || !cameraControlsRef?.current) {
+          set({
+            currentView: viewId,
+            viewMode: desiredMode,
+            defaultViewMode: desiredMode,
+            previousViewMode: desiredMode,
+            pendingView: viewId,
+          });
+          return;
+        }
+
+        get().transitionToView(viewId);
+      },
 
       transitionToView: async (nextView: CameraViewId) => {
-        const {
-          previousView,
-          cameraControlsRef,
-          isTransitioning,
-          viewMode,
-          defaultViewMode,
-        } = get();
+        const { cameraControlsRef, isTransitioning } = get();
 
         // prevent multiple transitions
         if (isTransitioning || !cameraControlsRef?.current) {
@@ -324,15 +410,27 @@ export const useViewStore = create<ViewStore>()(
           currentView: nextView,
           previousViewMode: state.viewMode,
           viewMode: viewConfig.defaultViewMode ?? state.viewMode,
-          // defaultViewMode: viewConfig.defaultViewMode ?? state.defaultViewMode,
+          defaultViewMode: viewConfig.defaultViewMode ?? state.defaultViewMode,
           isImageFocused: false,
           focusedImageTitle: null,
           lastFocusPosition: null,
+          pendingView: null,
         }));
 
         get().applyViewModeToControls(
           viewConfig.defaultViewMode ?? get().viewMode,
         );
+
+        const finishTransition = () => {
+          set({ isTransitioning: false });
+          const pendingView = get().pendingView;
+          if (pendingView && pendingView !== get().currentView) {
+            set({ pendingView: null });
+            get().transitionToView(pendingView);
+          } else if (pendingView) {
+            set({ pendingView: null });
+          }
+        };
 
         try {
           const controls = cameraControlsRef.current;
@@ -343,11 +441,11 @@ export const useViewStore = create<ViewStore>()(
               ...viewConfig.target,
               true,
             );
-            setTimeout(() => set({ isTransitioning: false }), 0);
+            setTimeout(() => finishTransition(), 0);
           }
         } catch (error) {
           console.error("Camera transition failed:", error);
-          setTimeout(() => set({ isTransitioning: false }), 0);
+          setTimeout(() => finishTransition(), 0);
         }
       },
 
@@ -376,8 +474,9 @@ export const useViewStore = create<ViewStore>()(
 
         // viewMode is set to fixed without transition
         // TODO: fix edge case when going from portfolio -> any other
-        const targetView: CameraViewId =
-          currentRoute === ROUTE_PATHS.PORTFOLIO ? "portfolio" : "default";
+        const targetView: CameraViewId = resolveRouteViewId(
+          currentRoute ?? window.location.pathname,
+        );
 
         const viewConfig = CAMERA_VIEWS[targetView];
 
@@ -396,19 +495,23 @@ export const useViewStore = create<ViewStore>()(
         try {
           const controls = cameraControlsRef.current;
 
-          // reset controls here because on mobile the reset does not work in the reset function (???)
-          controls.mouseButtons.left = CameraControlsImpl.ACTION.ROTATE;
-          controls.touches.one = CameraControlsImpl.ACTION.TOUCH_ROTATE;
-
           // currently only two different defaults (creative -> "orbit view" & rest -> "fixed view")
-          const viewConfig =
-            CAMERA_VIEWS[
-              currentRoute === ROUTE_PATHS.PORTFOLIO ? "portfolio" : "default"
-            ];
+          const viewConfig = CAMERA_VIEWS[targetView];
 
           if (!viewConfig) {
             console.warn(`"${currentView}" view config missing`);
             return;
+          }
+
+          if (viewConfig.defaultViewMode === "object") {
+            controls.mouseButtons.left = CameraControlsImpl.ACTION.ROTATE;
+            controls.touches.one = CameraControlsImpl.ACTION.TOUCH_ROTATE;
+          } else {
+            controls.mouseButtons.left = CameraControlsImpl.ACTION.NONE;
+            controls.mouseButtons.middle = CameraControlsImpl.ACTION.NONE;
+            controls.mouseButtons.right = CameraControlsImpl.ACTION.NONE;
+            controls.touches.one = CameraControlsImpl.ACTION.NONE;
+            controls.touches.two = CameraControlsImpl.ACTION.NONE;
           }
 
           // set polar small angles for portfolio vs bigger for rest

@@ -101,3 +101,18 @@ export const ListItemContainer = styled(motion.div)<{
   justify-content: ${(p) => (p.$justify ? p.$justify : "space-between")};
   grid-gap: ${(p) => (p.$gap ? p.$gap : "0px")};
 `;
+
+export const ScrollArea = styled(motion.div)<{
+  $direction?: "vertical" | "horizontal" | "both";
+}>`
+  all: inherit;
+  /* overflow: ${(p) => (p.$direction === "both" ? "scroll" : "hidden")}; */
+  overflow-y: ${(p) =>
+    p.$direction === "vertical" || p.$direction === "both"
+      ? "scroll"
+      : "hidden"};
+  overflow-x: ${(p) =>
+    p.$direction === "horizontal" || p.$direction === "both"
+      ? "scroll"
+      : "hidden"};
+`;

@@ -1,4 +1,4 @@
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   CameraControls,
   Fisheye,
@@ -40,6 +40,7 @@ import { DEFAULT_PINK_NOISE } from "@/utils/sound/defaults";
 import { useNavigate } from "react-router-dom";
 import { sileo } from "sileo";
 import { CameraGLBridge } from "@/bridges/CameraBridge";
+import { useCursor } from "@/hooks/useCursor";
 
 const Debug = () => {
   const { width } = useThree((s) => s.size);
@@ -52,12 +53,7 @@ const TRUCK_SPEED = 5;
 
 const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
   const cameraControlsRef = useRef<CameraControls>(null!);
-  const {
-    setCameraControlsRef,
-    resetToDefaultView,
-    setDefaultViewMode,
-    transitionToView,
-  } = useViewStore();
+  const { setCameraControlsRef } = useViewStore();
   const { statisticsVisible, physicsDebugEnabled } = useCoreStore();
   const { activeGame } = useMiniGameStore();
 
@@ -65,27 +61,18 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
 
   // shop items are only visible on home route
   const isHome = currentRoute === ROUTE_PATHS.HOME;
-  const isPortfolio = currentRoute === ROUTE_PATHS.PORTFOLIO;
-
   // TODO: add grid options to UI
   const showGrid = isHome;
   const showBackground = isHome || currentRoute === ROUTE_PATHS.ABOUT;
 
   useEffect(() => {
     setCameraControlsRef(cameraControlsRef);
-    resetToDefaultView();
   }, []);
 
   const [spring, api] = useSpring(() => ({
     scale: 1,
     config: { tension: 300, friction: 15 },
   }));
-
-  useEffect(() => {
-    if (isPortfolio) {
-      setTimeout(() => transitionToView("portfolio"), 300);
-    } else setDefaultViewMode("fixed");
-  }, [isPortfolio]);
 
   // route based music
   // default: jazz world music
@@ -124,6 +111,7 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
         <Suspense fallback={null}>
           <AudioListenerBinder />
           <Fisheye zoom={FISHEYE_CONFIG.MIN} renderPriority={2}>
+            <CursorFollowCamera />
             {showGrid && (
               <Grid
                 args={[8, 8]}
@@ -189,6 +177,45 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
 };
 
 export default Scene;
+
+const CursorFollowCamera = () => {
+  const { isMobile } = useAppStore();
+  const { cameraControlsRef, getCurrentViewConfig, viewMode, isTransitioning } =
+    useViewStore();
+  const cursor = useCursor({ condition: () => !isMobile, positionFactor: 1 });
+
+  useFrame(({ clock }) => {
+    if (isMobile) return;
+    if (viewMode !== "fixed" || isTransitioning) return;
+
+    const viewConfig = getCurrentViewConfig();
+    if (!viewConfig?.cursorFollow || !viewConfig.position || !viewConfig.target)
+      return;
+
+    const controls = cameraControlsRef?.current;
+    if (!controls) return;
+
+    const {
+      strength = 2.2,
+      yScale = 0.4,
+      swayX = 0.03,
+      swayY = 0.02,
+    } = viewConfig.cursorFollow;
+
+    const swayXValue = Math.sin(clock.getElapsedTime() * 1) * swayX;
+    const swayYValue = Math.sin(clock.getElapsedTime() * 0.5) * swayY;
+
+    controls.setLookAt(
+      ...viewConfig.position,
+      viewConfig.target[0] + cursor.x * strength + swayXValue,
+      viewConfig.target[1] + cursor.y * strength * yScale + swayYValue,
+      viewConfig.target[2],
+      true,
+    );
+  });
+
+  return null;
+};
 
 type FullScreenCanvasProps = {
   children: any;
