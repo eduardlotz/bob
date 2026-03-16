@@ -120,6 +120,20 @@ export const DEFAULT_SOUND_CONFIGS: SoundConfig[] = [
       limitBehavior: "stop-oldest",
     },
   }),
+  defineSound({
+    id: "pop",
+    filePath: "/audio/pop-sound.wav",
+    type: "tap",
+    category: "action",
+    volume: 0.3,
+    pool: 8,
+    detune: { enabled: true, minSemitones: -2, maxSemitones: 2 },
+    playback: {
+      overlap: "restart",
+      maxConcurrent: 3,
+      limitBehavior: "stop-oldest",
+    },
+  }),
 ];
 
 export const WORLD_SOUNDS = [

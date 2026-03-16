@@ -20,6 +20,7 @@ import {
   RING_TUBE_MIN,
 } from "@/3d-objects/FlappyRings";
 import { CharacterBall } from "@/components/CharacterBall";
+import { playSound } from "@/utils/soundSystem";
 
 const FLAP_FORCE = 4;
 const BIRD_START_X = 1;
@@ -65,6 +66,8 @@ export function FlappyBirdGame({ onExit }: { onExit: () => void }) {
 
     const currentAng = body.angvel();
     body.setAngvel({ x: 0, y: 0, z: Math.max(currentAng.z, 2.2) }, true);
+
+    playSound("pop");
   }, []);
 
   const reset = useCallback(() => {
