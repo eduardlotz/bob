@@ -1,55 +1,97 @@
 import { useFloatingBar } from "@/layout/FloatingBar";
 import { useAppStore } from "@/store";
-import { useSocialsStore, ThroneId } from "@/store/socials";
-import { useFrame, ThreeEvent } from "@react-three/fiber";
+import { useCursorStore } from "@/store/core/cursor";
+import { useSocialsStore } from "@/store/socials";
+import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import {
-  RefObject,
-  useState,
-  useRef,
-  useEffect,
   memo,
   useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
 } from "react";
 import * as THREE from "three";
 
-import { THRONE_META } from "./data";
-import { ThroneDef, throneObjectRefs } from ".";
+import type { ThroneId } from "./data";
+import { throneObjectRefs } from ".";
+import type {
+  ResolvedThroneFocusInteraction,
+  SocialThroneConfig,
+  ThroneFocusInteraction,
+} from "./types";
 
 const PEDESTAL_H = 0.5;
 const PEDESTAL_W = 0.28;
 const PLATFORM_OVERHANG = 0.032;
+const THRONE_OBJECT_SCALE = 0.5;
+const DEFAULT_PEDESTAL_H = 0.5;
+const BODY_MATERIAL = {
+  color: "#17191d",
+  roughness: 0.42,
+  metalness: 0.16,
+};
+const TOP_PLATE_MATERIAL = {
+  color: "#8f6540",
+  roughness: 0.82,
+  metalness: 0.02,
+};
 
-const FOCUS_DIST = 1.5; // same as books
-const FOCUS_POS_LERP = 0.14; // same as books
-const FOCUS_DISMISS_LERP = 0.22; // same as books
+const FOCUS_DIST = 1.5;
+const FOCUS_POS_LERP = 0.14;
+const FOCUS_DISMISS_LERP = 0.22;
 const DRAG_THRESHOLD_PX = 4;
 
+const DEFAULT_FOCUS_INTERACTION: ResolvedThroneFocusInteraction = {
+  allowDrag: true,
+  dismissOnClick: true,
+  dragSensitivity: 0.005,
+  idleSpinSpeed: 0.001,
+  yawLimit: [-Math.PI, Math.PI],
+  pitchLimit: [-0.7, 0.7],
+};
+
 const _t = {
-  invMat: new THREE.Matrix4(),
   pQuat: new THREE.Quaternion(),
   pScale: new THREE.Vector3(),
   pPos: new THREE.Vector3(),
-  localPos: new THREE.Vector3(),
-  localQuat: new THREE.Quaternion(),
   tQuat: new THREE.Quaternion(),
+  baseQuat: new THREE.Quaternion(),
   toCamera: new THREE.Vector3(),
   camFwd: new THREE.Vector3(),
   camRight: new THREE.Vector3(),
   camUp: new THREE.Vector3(),
   targetW: new THREE.Vector3(),
-  euler: new THREE.Euler(0, 0, 0, "XYZ"),
+  euler: new THREE.Euler(0, 0, 0, "YXZ"),
 };
+
+function resolveFocusInteraction(
+  config?: ThroneFocusInteraction,
+): ResolvedThroneFocusInteraction {
+  return {
+    allowDrag: config?.allowDrag ?? DEFAULT_FOCUS_INTERACTION.allowDrag,
+    dismissOnClick:
+      config?.dismissOnClick ?? DEFAULT_FOCUS_INTERACTION.dismissOnClick,
+    dragSensitivity:
+      config?.dragSensitivity ?? DEFAULT_FOCUS_INTERACTION.dragSensitivity,
+    idleSpinSpeed:
+      config?.idleSpinSpeed ?? DEFAULT_FOCUS_INTERACTION.idleSpinSpeed,
+    yawLimit: config?.yawLimit ?? DEFAULT_FOCUS_INTERACTION.yawLimit,
+    pitchLimit: config?.pitchLimit ?? DEFAULT_FOCUS_INTERACTION.pitchLimit,
+  };
+}
 
 export const FocusedThroneMesh = ({
   groupRef,
   throneDefs,
 }: {
   groupRef: RefObject<THREE.Group | null>;
-  throneDefs: ThroneDef[];
+  throneDefs: readonly SocialThroneConfig[];
 }) => {
-  const focusedThrone = useSocialsStore((s) => s.focusedThrone);
-  const clearFocus = useSocialsStore((s) => s.clearFocus);
-  const isMobile = useAppStore((s) => s.isMobile);
+  const focusedThrone = useSocialsStore((state) => state.focusedThrone);
+  const clearFocus = useSocialsStore((state) => state.clearFocus);
+  const isMobile = useAppStore((state) => state.isMobile);
 
   const [renderThrone, setRenderThrone] = useState<ThroneId | null>(null);
 
@@ -60,8 +102,6 @@ export const FocusedThroneMesh = ({
   const targetScale = useRef(0);
   const isDismissing = useRef(false);
   const active = useRef(false);
-
-  // Match FocusedBookMesh: slow idle spin (0.001/frame)
   const spin = useRef(0);
   const dragYaw = useRef(0);
   const dragPitch = useRef(0);
@@ -69,30 +109,74 @@ export const FocusedThroneMesh = ({
   const hasDragged = useRef(false);
   const lastX = useRef(0);
   const lastY = useRef(0);
+  const yawVelocity = useRef(0);
+  const pitchVelocity = useRef(0);
+  const interactionRef = useRef<ResolvedThroneFocusInteraction>(
+    DEFAULT_FOCUS_INTERACTION,
+  );
 
-  // Global pointer — keeps drag alive when cursor leaves the mesh
+  const currentDef = useMemo(
+    () => throneDefs.find((throne) => throne.id === renderThrone) ?? null,
+    [renderThrone, throneDefs],
+  );
+
   useEffect(() => {
-    const onMove = (e: PointerEvent) => {
+    if (!currentDef) return;
+    interactionRef.current = resolveFocusInteraction(
+      currentDef.object.focusInteraction,
+    );
+  }, [currentDef]);
+
+  useEffect(() => {
+    const onMove = (event: PointerEvent) => {
       if (!dragging.current) return;
-      const dx = e.clientX - lastX.current;
-      const dy = e.clientY - lastY.current;
+
+      const dx = event.clientX - lastX.current;
+      const dy = event.clientY - lastY.current;
+
       if (
         !hasDragged.current &&
         (Math.abs(dx) > DRAG_THRESHOLD_PX || Math.abs(dy) > DRAG_THRESHOLD_PX)
       ) {
         hasDragged.current = true;
       }
-      dragYaw.current -= dx * 0.005;
-      dragPitch.current += dy * 0.005;
-      lastX.current = e.clientX;
-      lastY.current = e.clientY;
+
+      const interaction = interactionRef.current;
+      const nextYaw = dragYaw.current - dx * interaction.dragSensitivity;
+      const nextPitch = dragPitch.current + dy * interaction.dragSensitivity;
+      yawVelocity.current = -dx * interaction.dragSensitivity * 0.12;
+      pitchVelocity.current = dy * interaction.dragSensitivity * 0.12;
+
+      dragYaw.current = interaction.yawLimit
+        ? THREE.MathUtils.clamp(
+            nextYaw,
+            interaction.yawLimit[0],
+            interaction.yawLimit[1],
+          )
+        : nextYaw;
+      dragPitch.current = interaction.pitchLimit
+        ? THREE.MathUtils.clamp(
+            nextPitch,
+            interaction.pitchLimit[0],
+            interaction.pitchLimit[1],
+          )
+        : nextPitch;
+
+      lastX.current = event.clientX;
+      lastY.current = event.clientY;
     };
+
     const onUp = () => {
       dragging.current = false;
+      if (interactionRef.current.allowDrag) {
+        useCursorStore.setState({ variant: "grab" });
+      }
     };
+
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
     window.addEventListener("pointercancel", onUp);
+
     return () => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
@@ -100,21 +184,26 @@ export const FocusedThroneMesh = ({
     };
   }, []);
 
-  // Seed start world position from the throne's live object group
   useEffect(() => {
     if (focusedThrone) {
+      const def = throneDefs.find((throne) => throne.id === focusedThrone);
+      if (!def) return;
+
+      interactionRef.current = resolveFocusInteraction(def.object.focusInteraction);
       const src = throneObjectRefs.get(focusedThrone);
+
       if (src) {
         src.getWorldPosition(curWorldPos.current);
         curWorldQuat.current.identity();
       } else if (groupRef.current) {
         groupRef.current.updateWorldMatrix(true, false);
-        const def = throneDefs.find((d) => d.id === focusedThrone);
-        if (def) {
-          groupRef.current.localToWorld(
-            curWorldPos.current.set(def.x, PEDESTAL_H + 0.2, def.z),
-          );
-        }
+        groupRef.current.localToWorld(
+          curWorldPos.current.set(
+            def.x,
+            (def.pedestalHeight ?? DEFAULT_PEDESTAL_H) + 0.2,
+            def.z,
+          ),
+        );
         curWorldQuat.current.identity();
       }
 
@@ -122,36 +211,44 @@ export const FocusedThroneMesh = ({
       targetScale.current = 1.1;
       isDismissing.current = false;
       active.current = true;
-
       spin.current = 0;
       dragYaw.current = 0;
       dragPitch.current = 0;
+      yawVelocity.current = 0;
+      pitchVelocity.current = 0;
       dragging.current = false;
       hasDragged.current = false;
+
+      if (interactionRef.current.allowDrag) {
+        useCursorStore.setState({ variant: "grab" });
+      }
 
       setRenderThrone(focusedThrone);
-    } else {
-      isDismissing.current = true;
-      targetScale.current = 0;
-      dragging.current = false;
-      hasDragged.current = false;
+      return;
     }
-  }, [focusedThrone]);
+
+    isDismissing.current = true;
+    targetScale.current = 0;
+    dragging.current = false;
+    hasDragged.current = false;
+    useCursorStore.setState({ variant: "default" });
+  }, [focusedThrone, groupRef, throneDefs]);
 
   useFrame(({ camera }) => {
-    if (!meshRef.current || !groupRef.current || !active.current) return;
+    if (!groupRef.current || !active.current || !currentDef) {
+      return;
+    }
 
-    const lf = isDismissing.current ? FOCUS_DISMISS_LERP : FOCUS_POS_LERP;
-    curScale.current += (targetScale.current - curScale.current) * lf;
+    const interaction = interactionRef.current;
+    const lerpFactor = isDismissing.current ? FOCUS_DISMISS_LERP : FOCUS_POS_LERP;
+    curScale.current += (targetScale.current - curScale.current) * lerpFactor;
 
     if (!isDismissing.current) {
-      // ── Position: camera-forward + offset, identical to FocusedBookMesh ──
       camera.getWorldDirection(_t.camFwd);
       _t.camRight.crossVectors(_t.camFwd, camera.up).normalize();
       _t.camUp.crossVectors(_t.camRight, _t.camFwd).normalize();
 
       _t.targetW.copy(camera.position).addScaledVector(_t.camFwd, FOCUS_DIST);
-      //   _t.targetW.addScaledVector(_t.camFwd, 0.95);
       if (isMobile) {
         _t.targetW.addScaledVector(_t.camUp, 0.28);
       } else {
@@ -160,73 +257,119 @@ export const FocusedThroneMesh = ({
       }
       curWorldPos.current.lerp(_t.targetW, FOCUS_POS_LERP);
 
-      // ── Stable camera-facing rotation + spin + drag ──
-      if (!dragging.current) spin.current += 0.001;
+      if (!dragging.current) {
+        spin.current += interaction.idleSpinSpeed;
+        dragYaw.current += yawVelocity.current;
+        dragPitch.current += pitchVelocity.current;
+        yawVelocity.current *= 0.94;
+        pitchVelocity.current *= 0.92;
 
-      _t.toCamera.copy(camera.position).sub(curWorldPos.current).normalize();
+        if (interaction.yawLimit) {
+          dragYaw.current = THREE.MathUtils.clamp(
+            dragYaw.current,
+            interaction.yawLimit[0],
+            interaction.yawLimit[1],
+          );
+          yawVelocity.current *= 0.7;
+        }
 
-      const yaw = Math.atan2(_t.toCamera.x, _t.toCamera.z);
-
+        if (interaction.pitchLimit) {
+          dragPitch.current = THREE.MathUtils.clamp(
+            dragPitch.current,
+            interaction.pitchLimit[0],
+            interaction.pitchLimit[1],
+          );
+          pitchVelocity.current *= 0.7;
+        }
+      }
       _t.euler.set(
         dragPitch.current,
-        yaw + spin.current + dragYaw.current,
+        spin.current + dragYaw.current,
         0,
-        "XYZ",
+        "YXZ",
       );
 
       _t.tQuat.setFromEuler(_t.euler);
-      curWorldQuat.current.slerp(_t.tQuat, FOCUS_POS_LERP * 1.8);
+      _t.baseQuat.copy(camera.quaternion).multiply(_t.tQuat);
+      curWorldQuat.current.slerp(_t.baseQuat, FOCUS_POS_LERP * 1.8);
     }
 
-    // ── World → group-local (identical to FocusedBookMesh) ──
-    groupRef.current.updateWorldMatrix(true, false);
-    _t.invMat.copy(groupRef.current.matrixWorld).invert();
-    _t.localPos.copy(curWorldPos.current).applyMatrix4(_t.invMat);
-
     groupRef.current.matrixWorld.decompose(_t.pPos, _t.pQuat, _t.pScale);
-    _t.localQuat.copy(_t.pQuat).invert().multiply(curWorldQuat.current);
-
-    meshRef.current.position.copy(_t.localPos);
-    meshRef.current.quaternion.copy(_t.localQuat);
-    meshRef.current.scale.setScalar(curScale.current);
+    if (meshRef.current) {
+      meshRef.current.position.copy(curWorldPos.current);
+      meshRef.current.quaternion.copy(curWorldQuat.current);
+      meshRef.current.scale.setScalar(
+        _t.pScale.x * curScale.current * THRONE_OBJECT_SCALE,
+      );
+    }
 
     if (isDismissing.current && curScale.current < 0.008) {
       active.current = false;
       isDismissing.current = false;
       setRenderThrone(null);
+      useCursorStore.setState({ variant: "default" });
     }
   });
 
-  if (!renderThrone) return null;
+  if (!currentDef) return null;
 
-  const def = throneDefs.find((d) => d.id === renderThrone)!;
-  const ObjectComponent = def.customModel;
+  const ObjectComponent = currentDef.object.Component;
+  const interaction = resolveFocusInteraction(currentDef.object.focusInteraction);
 
   return (
     <group
       ref={meshRef}
-      onPointerDown={(e) => {
-        e.stopPropagation();
-        (e.target as Element).setPointerCapture(e.pointerId);
+      onPointerOver={(event) => {
+        event.stopPropagation();
+        if (interaction.allowDrag) {
+          useCursorStore.setState({ variant: dragging.current ? "grabbing" : "grab" });
+        }
+      }}
+      onPointerOut={() => {
+        if (!dragging.current) {
+          useCursorStore.setState({ variant: "default" });
+        }
+      }}
+      onPointerDown={(event) => {
+        event.stopPropagation();
+        if (!interaction.allowDrag) return;
+
+        (event.target as Element).setPointerCapture(event.pointerId);
         dragging.current = true;
         hasDragged.current = false;
-        lastX.current = e.clientX;
-        lastY.current = e.clientY;
+        yawVelocity.current = 0;
+        pitchVelocity.current = 0;
+        lastX.current = event.clientX;
+        lastY.current = event.clientY;
+        useCursorStore.setState({ variant: "grabbing" });
       }}
-      onPointerUp={(e) => {
-        e.stopPropagation();
+      onPointerUp={(event) => {
+        event.stopPropagation();
         dragging.current = false;
+        if (interaction.allowDrag) {
+          useCursorStore.setState({ variant: "grab" });
+        }
       }}
       onPointerCancel={() => {
         dragging.current = false;
+        useCursorStore.setState({ variant: "default" });
       }}
-      onClick={(e) => {
-        e.stopPropagation();
-        if (!hasDragged.current) clearFocus();
+      onClick={(event) => {
+        event.stopPropagation();
+        const shouldDismiss = interaction.dismissOnClick && !hasDragged.current;
         hasDragged.current = false;
+        if (shouldDismiss) {
+          clearFocus();
+        }
       }}
     >
-      <ObjectComponent color={def.rimColor} focused={false} isFloating={true} />
+      <ObjectComponent
+        color={currentDef.rimColor}
+        focused={false}
+        isFloating={true}
+        throneId={currentDef.id}
+        interaction={interaction}
+      />
     </group>
   );
 };
@@ -237,40 +380,43 @@ export const Throne = memo(
     focused,
     viewActive,
   }: {
-    def: ThroneDef;
+    def: SocialThroneConfig;
     focused: boolean;
     viewActive: boolean;
   }) => {
     const { setHoveredObject } = useFloatingBar();
-    const setFocused = useSocialsStore((s) => s.setFocused);
-    const clearFocus = useSocialsStore((s) => s.clearFocus);
-    const focusedThrone = useSocialsStore((s) => s.focusedThrone);
-    const meta = THRONE_META[def.id];
+    const setFocused = useSocialsStore((state) => state.setFocused);
+    const clearFocus = useSocialsStore((state) => state.clearFocus);
+    const focusedThrone = useSocialsStore((state) => state.focusedThrone);
 
-    // Register group so FocusedThroneMesh can read its world position
     const objectGroupRef = useCallback(
-      (g: THREE.Group | null) => {
-        if (g) throneObjectRefs.set(def.id, g);
-        else throneObjectRefs.delete(def.id);
+      (group: THREE.Group | null) => {
+        if (group) {
+          throneObjectRefs.set(def.id as ThroneId, group);
+          return;
+        }
+        throneObjectRefs.delete(def.id as ThroneId);
       },
       [def.id],
     );
 
-    const baseColor = new THREE.Color(def.baseColor);
-    const platformColor = new THREE.Color(def.baseColor).lerp(
-      new THREE.Color("#ffffff"),
-      0.14,
+    const interaction = useMemo(
+      () => resolveFocusInteraction(def.object.focusInteraction),
+      [def.object.focusInteraction],
     );
-    const rimColor = new THREE.Color(def.rimColor);
+    const pedestalHeight = def.pedestalHeight ?? DEFAULT_PEDESTAL_H;
+
+    const bodyColor = new THREE.Color(BODY_MATERIAL.color);
+    const topPlateColor = new THREE.Color(TOP_PLATE_MATERIAL.color);
 
     const onOver = useCallback(
-      (e: ThreeEvent<PointerEvent>) => {
+      (event: ThreeEvent<PointerEvent>) => {
         if (!viewActive || focusedThrone) return;
-        e.stopPropagation();
-        setHoveredObject({ title: meta.label });
+        event.stopPropagation();
+        setHoveredObject({ title: def.meta.label });
         document.body.style.cursor = "pointer";
       },
-      [viewActive, focusedThrone, meta.label, setHoveredObject],
+      [def.meta.label, focusedThrone, setHoveredObject, viewActive],
     );
 
     const onOut = useCallback(() => {
@@ -279,19 +425,19 @@ export const Throne = memo(
     }, [setHoveredObject]);
 
     const onClick = useCallback(
-      (e: ThreeEvent<MouseEvent>) => {
+      (event: ThreeEvent<MouseEvent>) => {
         if (!viewActive) return;
         if (focusedThrone) {
           clearFocus();
-        } else {
-          e.stopPropagation();
-          setFocused(def.id);
+          return;
         }
+        event.stopPropagation();
+        setFocused(def.id as ThroneId);
       },
-      [viewActive, focusedThrone, def.id, setFocused, clearFocus],
+      [clearFocus, def.id, focusedThrone, setFocused, viewActive],
     );
 
-    const ObjectComponent = def.customModel;
+    const ObjectComponent = def.object.Component;
 
     return (
       <group
@@ -300,20 +446,25 @@ export const Throne = memo(
         onPointerOut={onOut}
         onClick={onClick}
       >
-        {/* Column */}
-        <mesh position={[0, PEDESTAL_H / 2, 0]} castShadow receiveShadow>
-          <boxGeometry args={[PEDESTAL_W, PEDESTAL_H, PEDESTAL_W]} />
-          <meshToonMaterial color={baseColor} />
+        <mesh position={[0, pedestalHeight / 2, 0]} castShadow receiveShadow>
+          <boxGeometry args={[PEDESTAL_W, pedestalHeight, PEDESTAL_W]} />
+          <meshStandardMaterial
+            color={bodyColor}
+            roughness={BODY_MATERIAL.roughness}
+            metalness={BODY_MATERIAL.metalness}
+          />
         </mesh>
 
-        {/* Accent rim */}
         <mesh position={[0, 0.025, 0]}>
           <boxGeometry args={[PEDESTAL_W + 0.004, 0.018, PEDESTAL_W + 0.004]} />
-          <meshToonMaterial color={rimColor} />
+          <meshStandardMaterial
+            color={bodyColor}
+            roughness={BODY_MATERIAL.roughness}
+            metalness={BODY_MATERIAL.metalness}
+          />
         </mesh>
 
-        {/* Top cap */}
-        <mesh position={[0, PEDESTAL_H + 0.011, 0]} castShadow>
+        <mesh position={[0, pedestalHeight + 0.011, 0]} castShadow>
           <boxGeometry
             args={[
               PEDESTAL_W + PLATFORM_OVERHANG,
@@ -321,22 +472,24 @@ export const Throne = memo(
               PEDESTAL_W + PLATFORM_OVERHANG,
             ]}
           />
-          <meshToonMaterial color={platformColor} />
+          <meshStandardMaterial
+            color={topPlateColor}
+            roughness={TOP_PLATE_MATERIAL.roughness}
+            metalness={TOP_PLATE_MATERIAL.metalness}
+          />
         </mesh>
 
-        {/*
-        Hidden (scale=0) when this is the actively focused throne — only the
-        floating clone from FocusedThroneMesh should be visible, same as books.
-      */}
         <group
           ref={objectGroupRef}
-          position={[0, PEDESTAL_H + 0.02, 0]}
-          scale={focused ? 0 : 1}
+          position={[0, pedestalHeight + 0.02, 0]}
+          scale={focused ? 0 : THRONE_OBJECT_SCALE}
         >
           <ObjectComponent
             color={def.rimColor}
             focused={focused}
             isFloating={false}
+            throneId={def.id}
+            interaction={interaction}
           />
         </group>
       </group>

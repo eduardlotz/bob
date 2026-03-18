@@ -35,7 +35,7 @@ import { BackgroundPlanet } from "../3d-objects/BackgroundPlanet";
 import { TapEffects } from "../3d-objects/ParticleEffects";
 import { SceneDecorations } from "@/3d-objects/Decorations";
 import { MiniGamesScene } from "@/routes/MiniGamesScene";
-import { DEFAULT_PINK_NOISE } from "@/utils/sound/defaults";
+import { DEFAULT_PINK_NOISE, DEFAULT_WORLD_MUSIC } from "@/utils/sound/defaults";
 
 import { useNavigate } from "react-router-dom";
 import { sileo } from "sileo";
@@ -54,7 +54,7 @@ const TRUCK_SPEED = 5;
 const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
   const cameraControlsRef = useRef<CameraControls>(null!);
   const { setCameraControlsRef } = useViewStore();
-  const { statisticsVisible, physicsDebugEnabled } = useCoreStore();
+  const { statisticsVisible, physicsDebugEnabled, isReady } = useCoreStore();
   const { activeGame } = useMiniGameStore();
 
   const { currentRoute } = useAppStore();
@@ -80,30 +80,35 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
 
   const worldMusicId = useMemo(() => {
     switch (currentRoute) {
-      // case ROUTE_PATHS.HOME: {
-      //   return DEFAULT_WORLD_MUSIC.id;
-      // }
-
       case ROUTE_PATHS.PORTFOLIO: {
         return DEFAULT_PINK_NOISE.id;
+      }
+
+      case ROUTE_PATHS.MINIGAMES: {
+        if (activeGame === "PING_PONG" || activeGame === "FLAPPY_BIRD") {
+          return DEFAULT_WORLD_MUSIC.id;
+        }
+
+        return null;
       }
 
       default: {
         return null;
       }
     }
-  }, [currentRoute]);
+  }, [activeGame, currentRoute]);
 
   useEffect(() => {
-    if (!worldMusicId) return;
-
     stopAllWorldSounds();
+
+    if (!isReady || !worldMusicId) return;
+
     playWorldSound(worldMusicId, { stopPrevious: true });
 
     return () => {
       stopSoundsById(worldMusicId);
     };
-  }, [worldMusicId]);
+  }, [isReady, worldMusicId]);
 
   return (
     <>

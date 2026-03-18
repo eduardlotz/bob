@@ -2,6 +2,8 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { createIndexedDBStorage } from "../indexedDB";
 import { ROUTE_IDS } from "../config/routes";
+import { useCoreStore } from "./store";
+import { sileo } from "sileo";
 
 type RewardType = "taps_reward" | "item_reward";
 type RewardId = string;
@@ -35,6 +37,7 @@ export interface QuestStore {
   addQuest: (quest: Quest) => void;
   updateQuestProgress: (questId: string, progress: number) => void;
   completeQuest: (questId: string) => void;
+  triggerQuestAction: (action: string, value?: number) => void;
   getQuestsByRoute: (routeId: string) => Quest[];
   setActiveQuests: (routeId: string) => void;
   clearActiveQuests: () => void;
@@ -48,8 +51,22 @@ export enum QUESTS_STORE_VERSION {
   V2 = 1000001, // version 1.00.01
   V3 = 1000002, // version 1.00.01
   V4 = 1000003, // version 1.00.02
-  LATEST = V4,
+  V5 = 1000004, // socials fun facts unlock quests
+  LATEST = V5,
 }
+
+const mergeQuestLists = (currentQuests: Quest[], defaultQuests: Quest[]) => {
+  const mergedQuests = [...currentQuests];
+  const knownQuestIds = new Set(mergedQuests.map((quest) => quest.id));
+
+  defaultQuests.forEach((quest) => {
+    if (!knownQuestIds.has(quest.id)) {
+      mergedQuests.push(quest);
+    }
+  });
+
+  return mergedQuests;
+};
 
 function migrateStore(oldState: any, fromVersion: number): any {
   console.log(
@@ -78,8 +95,19 @@ function migrateStore(oldState: any, fromVersion: number): any {
     migratedState = initialQuests;
   }
 
-  migratedState.version = QUESTS_STORE_VERSION.LATEST;
-  return migratedState;
+  const normalizedState = Array.isArray(migratedState)
+    ? { quests: migratedState, activeQuests: [] }
+    : { ...migratedState };
+
+  if (fromVersion < QUESTS_STORE_VERSION.V5) {
+    normalizedState.quests = mergeQuestLists(
+      normalizedState.quests ?? [],
+      initialQuests,
+    );
+  }
+
+  normalizedState.version = QUESTS_STORE_VERSION.LATEST;
+  return normalizedState;
 }
 
 const initialQuests: Quest[] = [
@@ -234,6 +262,44 @@ const initialQuests: Quest[] = [
       value: 1,
     },
   },
+  {
+    id: "socials_fun_fact_first_unlock",
+    title: "Erste Notiz",
+    description: "Schalte deinen ersten Fun Fact frei",
+    icon: "📚",
+    progress: 0,
+    maxProgress: 1,
+    reward: {
+      type: "taps_reward",
+      amount: 2500,
+    },
+    completed: false,
+    routeId: ROUTE_IDS.ABOUT,
+    type: "interaction",
+    trigger: {
+      action: "socials_fun_fact_first_unlock",
+      value: 1,
+    },
+  },
+  {
+    id: "socials_fun_fact_last_unlock",
+    title: "Faktenbibliothek",
+    description: "Schalte alle Fun Facts frei",
+    icon: "🗂️",
+    progress: 0,
+    maxProgress: 1,
+    reward: {
+      type: "taps_reward",
+      amount: 5000,
+    },
+    completed: false,
+    routeId: ROUTE_IDS.ABOUT,
+    type: "interaction",
+    trigger: {
+      action: "socials_fun_fact_last_unlock",
+      value: 1,
+    },
+  },
 ];
 
 export const useQuestStore = create<QuestStore>()(
@@ -263,6 +329,45 @@ export const useQuestStore = create<QuestStore>()(
             quest.id === questId ? { ...quest, completed: true } : quest,
           ),
         })),
+
+      triggerQuestAction: (action, value = 1) => {
+        const { addTaps, purchaseBobItem } = useCoreStore.getState();
+        const relevantQuests = get().quests.filter(
+          (quest) => !quest.completed && quest.trigger?.action === action,
+        );
+
+        relevantQuests.forEach((quest) => {
+          const progressIncrement = value || quest.trigger?.value || 1;
+          const newProgress = Math.min(
+            quest.progress + progressIncrement,
+            quest.maxProgress,
+          );
+          const isCompleted = newProgress >= quest.maxProgress;
+
+          set((state) => ({
+            quests: state.quests.map((currentQuest) =>
+              currentQuest.id === quest.id
+                ? {
+                    ...currentQuest,
+                    progress: newProgress,
+                    completed: isCompleted ? true : currentQuest.completed,
+                  }
+                : currentQuest,
+            ),
+          }));
+
+          if (isCompleted) {
+            quest.reward.type === "taps_reward"
+              ? addTaps(quest.reward.amount as number)
+              : purchaseBobItem(quest.reward.amount as string, true);
+
+            sileo.success({
+              title: `${quest.title}`,
+              description: quest.description,
+            });
+          }
+        });
+      },
 
       getQuestsByRoute: (routeId) => {
         const state = get();

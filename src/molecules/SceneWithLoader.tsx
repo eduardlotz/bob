@@ -8,7 +8,11 @@ import { useProgress } from "@react-three/drei";
 import Scene from "@/molecules/Scene";
 import { UILayer } from "@/components/UILayer";
 import { useAppStore, useCoreStore } from "@/store";
-import { initializeSoundSystem } from "@/utils/soundSystem";
+import {
+  initializeSoundSystem,
+  resumeAudioContext,
+  unlockAudioContext,
+} from "@/utils/soundSystem";
 import { Cursor } from "./Cursor";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { SpeakerIcon } from "@/icons/speaker";
@@ -183,6 +187,8 @@ export const SceneWithLoader = ({
   const handleEnter = async () => {
     try {
       await initializeSoundSystem();
+      await resumeAudioContext();
+      await unlockAudioContext();
     } catch (error) {
       console.error("failed to initialize sound system:", error);
     }

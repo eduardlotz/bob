@@ -17,8 +17,6 @@ import { BackSide } from "three";
 import { PingPongPaddle } from "@/3d-objects/models/pingPongPaddle";
 import { TapEffects } from "@/3d-objects/ParticleEffects";
 import { PointsCounter } from "@/molecules/PointsCounter";
-import { DEFAULT_WORLD_MUSIC } from "@/utils/sound/defaults";
-import { playWorldSound, stopSoundsById } from "@/utils/soundSystem";
 import { FlappyBirdArcade, FlappyBirdGame } from "./games/FlappyBirdGame";
 import {
   MiniGameItem,
@@ -27,7 +25,6 @@ import {
 import { PingPongGame } from "./games/PingPongGame";
 import { SlotMachineArcade, SlotMachineGame } from "./games/SlotMachineGame";
 
-const MINIGAME_BACKGROUND_TRACK_ID = DEFAULT_WORLD_MUSIC.id;
 const DEFAULT_MINIGAMES_VIEW = "minigames";
 
 // TODO: refactor minigames view to be included as static view configs like slotmachine
@@ -224,19 +221,6 @@ export function MiniGamesScene() {
       setHoveredObject(null);
     }
   }, [activeGame, setHoveredObject]);
-
-  useEffect(() => {
-    if (!activeDefinition?.shouldPlayMusic) {
-      stopSoundsById(MINIGAME_BACKGROUND_TRACK_ID);
-      return;
-    }
-
-    playWorldSound(MINIGAME_BACKGROUND_TRACK_ID, { loop: true });
-
-    return () => {
-      stopSoundsById(MINIGAME_BACKGROUND_TRACK_ID);
-    };
-  }, [activeDefinition]);
 
   useEffect(() => {
     if (!cameraControlsRef?.current) return;

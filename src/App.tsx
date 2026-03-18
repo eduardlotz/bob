@@ -19,7 +19,6 @@ import About from "./routes/About";
 import { AnimatePresence, motion } from "motion/react";
 import { useMessageSystem } from "@/hooks/useMessageSystem";
 import { FloatingBarProvider, FloatingBarUI } from "./layout/FloatingBar";
-import { stopAllWorldSounds } from "./utils/soundSystem";
 import { CursorInputBridge } from "./bridges/CursorInputBridge";
 import { ClickableBridge } from "./bridges/ClickableBridge";
 import MiniGames from "./routes/MiniGames";
@@ -60,12 +59,10 @@ export default function App() {
   }, [location.pathname, syncViewToRoute]);
 
   // sync router with store
-  // stop all previous world sounds onRouteChange
   useEffect(() => {
     if (currentRoute !== location.pathname) {
       if (mounted) {
         setCurrentRoute(location.pathname);
-        stopAllWorldSounds(); // TODO: check why not working, need to call stopSoundsbyId manually
         const route = getRouteLabelByPath(location.pathname);
         setCurrentRouteInPretty(route);
         setShowRouteChip(true);

@@ -1,8 +1,7 @@
 import * as THREE from "three";
-import React, { forwardRef } from "react";
+import React, { forwardRef, useMemo, type ReactNode } from "react";
 import { useGLTF } from "@react-three/drei";
-import { GLTF } from "three-stdlib";
-import { useFloatingBar } from "@/layout/FloatingBar";
+import { type GLTF } from "three-stdlib";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -15,47 +14,78 @@ type GLTFResult = GLTF & {
 
 const PATH = "gltf/globe.glb";
 
-interface Props {
-  position: [number, number, number];
-  rotation?: [number, number, number];
-  scale?: [number, number, number];
+export function useGlobeModelData() {
+  return useGLTF(PATH) as GLTFResult;
 }
 
-export const GlobeModel = forwardRef(
-  ({ scale = [1, 1, 1], ...props }: Props, ref: any) => {
-    const { nodes, materials } = useGLTF(PATH) as GLTFResult;
-    const { setHoveredObject } = useFloatingBar();
+interface Props extends Omit<React.ComponentProps<"group">, "scale"> {
+  color?: string;
+  shellOpacity?: number;
+  innerGlowOpacity?: number;
+  scale?: [number, number, number];
+  children?: ReactNode;
+}
 
-    const handlePointerEnter = (e: any) => {
-      e.stopPropagation();
+export const GlobeModel = forwardRef<THREE.Group, Props>(
+  (
+    {
+      scale = [1, 1, 1],
+      color = "#5F9EE8",
+      shellOpacity = 1,
+      innerGlowOpacity = 0,
+      children,
+      ...props
+    },
+    ref,
+  ) => {
+    const { nodes } = useGlobeModelData();
+    const meshOffset = useMemo(() => {
+      const geometry = nodes.Sphere.geometry;
+      if (!geometry.boundingBox) {
+        geometry.computeBoundingBox();
+      }
 
-      setHoveredObject({
-        title: "Fotografie",
-      });
-    };
-
-    const handlePointerLeave = () => {
-      setHoveredObject(null);
-    };
+      const center = new THREE.Vector3();
+      geometry.boundingBox?.getCenter(center);
+      return center.multiplyScalar(-1);
+    }, [nodes.Sphere.geometry]);
 
     return (
-      <group
-        {...props}
-        scale={scale}
-        onPointerEnter={handlePointerEnter}
-        onPointerLeave={handlePointerLeave}
-      >
+      <group ref={ref} {...props} scale={scale}>
         <mesh
           castShadow
           receiveShadow
           geometry={nodes.Sphere.geometry}
-          // material={materials["Material.001"]}
+          position={meshOffset}
         >
-          <meshToonMaterial color="#5F9EE8" />
+          <meshStandardMaterial
+            color={color}
+            transparent={shellOpacity < 1}
+            opacity={shellOpacity}
+            roughness={0.46}
+            metalness={0}
+            envMapIntensity={0.1}
+          />
         </mesh>
+        {innerGlowOpacity > 0 && (
+          <mesh
+            geometry={nodes.Sphere.geometry}
+            scale={0.92}
+            position={meshOffset}
+          >
+            <meshToonMaterial
+              color="#d7e9ff"
+              transparent
+              opacity={innerGlowOpacity}
+            />
+          </mesh>
+        )}
+        {children}
       </group>
     );
   },
 );
+
+GlobeModel.displayName = "GlobeModel";
 
 useGLTF.preload(PATH);
