@@ -263,7 +263,7 @@ export function MiniGamesScene() {
         onExit={handleExit}
       />
 
-      <TapEffects id="tap_effect_confetti" />
+      <TapEffects id="tap_effect_laser" />
 
       {activeGame === "LOBBY" ? (
         <MiniGamesBackdrop />
