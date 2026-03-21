@@ -17,7 +17,6 @@ import { useSocialsStore } from "@/store/socials";
 import { playUISound } from "@/utils/soundSystem";
 
 import {
-  FAVORITES,
   FUN_FACT_REVEAL_COST,
   FUN_FACTS,
   SOCIAL_LINKS,
@@ -197,6 +196,41 @@ const FavoriteImage = styled.img`
   height: 100%;
   object-fit: cover;
   display: block;
+`;
+
+const FavoriteFallbackSurface = styled.div<{ $gradient: string }>`
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 20% 18%, rgba(255, 255, 255, 0.74), transparent 34%),
+    linear-gradient(180deg, rgba(255, 250, 244, 0.94), rgba(237, 230, 220, 0.94));
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 16%;
+    border-radius: 999px;
+    background: ${({ $gradient }) => $gradient};
+    box-shadow:
+      0 18px 36px rgba(0, 0, 0, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  }
+
+  &::before {
+    content: "";
+    position: absolute;
+    width: 34%;
+    aspect-ratio: 1;
+    border-radius: 999px;
+    top: 22%;
+    left: 26%;
+    background: rgba(255, 255, 255, 0.18);
+    filter: blur(2px);
+    z-index: 1;
+  }
 `;
 
 const FavoriteMeta = styled.div`
@@ -611,6 +645,34 @@ function FavoritePlatformBadgeMark({ href }: { href: string }) {
   );
 }
 
+function FavoriteCover({ title, artworkUrl, fallbackColors }: {
+  title: string;
+  artworkUrl: string | null;
+  fallbackColors: [string, string, string];
+}) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const gradient = `linear-gradient(145deg, ${fallbackColors[0]}, ${fallbackColors[1]} 58%, ${fallbackColors[2]})`;
+  const showFallback = !artworkUrl || imageFailed;
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [artworkUrl]);
+
+  return (
+    <>
+      {showFallback && <FavoriteFallbackSurface $gradient={gradient} aria-hidden />}
+      {artworkUrl && !imageFailed && (
+        <FavoriteImage
+          src={artworkUrl}
+          alt={title}
+          loading="lazy"
+          onError={() => setImageFailed(true)}
+        />
+      )}
+    </>
+  );
+}
+
 type SocialCanvasBall = {
   id: string;
   href: string;
@@ -1010,9 +1072,11 @@ export function TimelineOverlayContent() {
 }
 
 export function FavoritesOverlayContent() {
+  const favorites = useSocialsStore((state) => state.resolvedFavorites);
+
   return (
     <FavoritesGrid>
-      {FAVORITES.map((favorite) => (
+      {favorites.map((favorite) => (
         <FavoriteCard
           key={favorite.id}
           href={favorite.href}
@@ -1022,11 +1086,15 @@ export function FavoritesOverlayContent() {
           <FavoriteCoverStage>
             <FavoritePlatformBadgeMark href={favorite.href} />
             <FavoriteImageFrame>
-              <FavoriteImage src={favorite.image} alt={favorite.title} />
+              <FavoriteCover
+                title={favorite.title}
+                artworkUrl={favorite.artworkUrl}
+                fallbackColors={favorite.fallbackGradient.colors}
+              />
             </FavoriteImageFrame>
           </FavoriteCoverStage>
           <FavoriteMeta>
-            <FavoriteSubtitle>{favorite.subtitle}</FavoriteSubtitle>
+            <FavoriteSubtitle>{favorite.artist}</FavoriteSubtitle>
             <FavoriteTitle>{favorite.title}</FavoriteTitle>
           </FavoriteMeta>
         </FavoriteCard>

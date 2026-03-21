@@ -1,4 +1,10 @@
-import type { FavoriteEntry, FunFact, SocialLink, TimelineEntry } from "./types";
+import type {
+  FavoriteEntry,
+  FavoriteFallbackGradient,
+  FunFact,
+  SocialLink,
+  TimelineEntry,
+} from "./types";
 
 export const SOCIAL_LINKS: SocialLink[] = [
   {
@@ -151,36 +157,55 @@ export const TIMELINE_ENTRIES: TimelineEntry[] = [
 
 export const FAVORITES: FavoriteEntry[] = [
   {
-    id: "favorite-warum-edit",
-    title: "warum (edit)",
-    subtitle: "SoundCloud edit / 2026",
-    image: "/images/portfolio/warum_v2.jpeg",
-    href: "https://soundcloud.com/captainlowie/warum-edit",
-    color: "#f26d3d",
+    id: "favorite-palm-of-my-hand",
+    title: "Palm of My Hand",
+    artist: "ZHU",
+    album: "Palm of My Hand",
+    href: "https://open.spotify.com/track/4SdTlyC3TJfxsNetvoVlum?si=470a235f1c794dc2",
   },
   {
-    id: "favorite-hassliebe",
-    title: "hassliebe",
-    subtitle: "Track + cover direction",
-    image: "/images/portfolio/hassliebe_cover.jpeg",
-    href: "https://soundcloud.com/captainlowie/hassliebe",
-    color: "#db5c7a",
+    id: "favorite-dew",
+    title: "Dew",
+    artist: "Howling",
+    album: "Dew",
+    href: "https://open.spotify.com/track/42w04qqrG7DpibRE6V2dN7?si=3c38382598294ec8",
   },
   {
-    id: "favorite-soundchecks",
-    title: "Soundchecks",
-    subtitle: "Mixes for late nights",
-    image: "/images/portfolio/soundcheck-cover.jpeg",
-    href: "https://soundcloud.com/captainlowie/sets/soundchecks",
-    color: "#5d8df5",
+    id: "favorite-gnossienne-no-1",
+    title: "Gnossienne No. 1",
+    artist: "Erik Satie",
+    album: "Gnossienne No. 1",
+    href: "https://open.spotify.com/track/5fdp9rXfEixCGLM1Og4EN1?si=6bbbf69c6b674668",
   },
   {
-    id: "favorite-du-fehlst",
-    title: "du fehlst",
-    subtitle: "Single artwork + sound",
-    image: "/images/portfolio/du-fehlst-cover.jpeg",
-    href: "https://soundcloud.com/captainlowie/du-fehlst",
-    color: "#f29f48",
+    id: "favorite-wohin",
+    title: "Wohin",
+    artist: "Steintor Herrenchor",
+    album: "Wohin",
+    href: "https://open.spotify.com/track/2sAp8fbeTgikm6dDVsEeiV?si=1e628657a1d2445a",
+  },
+];
+
+export const FAVORITE_FALLBACK_GRADIENTS: FavoriteFallbackGradient[] = [
+  {
+    id: "copper-dusk",
+    colors: ["#2d1238", "#ba4d65", "#f8be66"],
+  },
+  {
+    id: "lagoon-glow",
+    colors: ["#0f2239", "#1c7cc2", "#8be3ff"],
+  },
+  {
+    id: "moss-haze",
+    colors: ["#10231d", "#2f7f62", "#d5ef9a"],
+  },
+  {
+    id: "velvet-signal",
+    colors: ["#1f1642", "#6f54ff", "#ff9a6c"],
+  },
+  {
+    id: "rose-frequency",
+    colors: ["#311521", "#cb5d88", "#f6d37a"],
   },
 ];
 

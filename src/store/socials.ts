@@ -2,7 +2,11 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 import { FUN_FACTS } from "@/3d-objects/socials/contentData";
-import type { FunFact } from "@/3d-objects/socials/types";
+import {
+  createInitialResolvedFavorites,
+  resolveResolvedFavoritesArtwork,
+} from "@/3d-objects/socials/favorites";
+import type { FunFact, ResolvedFavoriteEntry } from "@/3d-objects/socials/types";
 import type { ThroneId } from "@/3d-objects/socials/data";
 import { useQuestStore } from "@/store/core/quests";
 
@@ -10,6 +14,8 @@ type FunFactId = FunFact["id"];
 
 interface SocialsStore {
   focusedThrone: ThroneId | null;
+  resolvedFavorites: ResolvedFavoriteEntry[];
+  favoritesStatus: "idle" | "loading" | "ready";
   currentFunFactIndex: number;
   funFactRevealToken: number;
   revealedFunFactIds: Record<FunFactId, boolean>;
@@ -27,9 +33,11 @@ interface SocialsStore {
   getUnlockedFunFacts: () => FunFact[];
   getNextUnrevealedFunFactIndex: () => number;
   getNextUnrevealedFunFact: () => FunFact | null;
+  ensureFavoritesLoaded: () => Promise<ResolvedFavoriteEntry[]>;
 }
 
 const FACT_COUNT = FUN_FACTS.length;
+let favoritesLoadPromise: Promise<ResolvedFavoriteEntry[]> | null = null;
 
 const clampFactIndex = (index: number) =>
   Math.max(0, Math.min(index, Math.max(0, FACT_COUNT - 1)));
@@ -113,6 +121,8 @@ export const useSocialsStore = create<SocialsStore>()(
 
       return {
         focusedThrone: null,
+        resolvedFavorites: createInitialResolvedFavorites(),
+        favoritesStatus: "idle",
         currentFunFactIndex: 0,
         funFactRevealToken: 0,
         revealedFunFactIds: {},
@@ -167,6 +177,32 @@ export const useSocialsStore = create<SocialsStore>()(
             (fact) => state.revealedFunFactIds[fact.id] !== true,
           );
           return nextIndex === -1 ? null : FUN_FACTS[nextIndex] ?? null;
+        },
+        ensureFavoritesLoaded: () => {
+          const state = get();
+          if (state.favoritesStatus === "ready") {
+            return Promise.resolve(state.resolvedFavorites);
+          }
+
+          if (!favoritesLoadPromise) {
+            set({ favoritesStatus: "loading" });
+            favoritesLoadPromise = resolveResolvedFavoritesArtwork()
+              .then((resolvedFavorites) => {
+                set({
+                  resolvedFavorites,
+                  favoritesStatus: "ready",
+                });
+                favoritesLoadPromise = Promise.resolve(resolvedFavorites);
+                return resolvedFavorites;
+              })
+              .catch((error) => {
+                favoritesLoadPromise = null;
+                set({ favoritesStatus: "idle" });
+                throw error;
+              });
+          }
+
+          return favoritesLoadPromise;
         },
       };
     },

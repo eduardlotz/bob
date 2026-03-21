@@ -18,6 +18,7 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@types/react-router-dom": "^5.3.3",
+    "album-art": "^4.0.0",
     "date-fns": "^4.1.0",
     "downloadjs": "^1.4.7",
     "eslint": "9.33.0",

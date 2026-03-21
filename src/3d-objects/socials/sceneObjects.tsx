@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 import { GlobeModel } from "../models/globe";
-import { FAVORITES, FUN_FACTS, SOCIAL_LINKS } from "./contentData";
+import { FUN_FACTS, SOCIAL_LINKS } from "./contentData";
 import {
   AnimatedThroneBase,
   createSocialBallDescriptors,
@@ -14,8 +14,6 @@ import {
 } from "./helper";
 import { useSocialsStore } from "@/store/socials";
 import type { ThroneObjectProps } from "./types";
-
-const FAVORITE_PREVIEW_ITEMS = FAVORITES.slice(0, 3);
 const GLOBE_SCALE = 0.82;
 const GLOBE_SCALE_VEC: [number, number, number] = [GLOBE_SCALE, GLOBE_SCALE, GLOBE_SCALE];
 const STATIC_SOCIAL_BALL_RADIUS = 0.05;
@@ -204,7 +202,9 @@ export function SocialsGlobeObject(props: ThroneObjectProps) {
 
 export function FavoritesStackObject(props: ThroneObjectProps) {
   const groupRef = useRef<THREE.Group>(null);
-  const textures = useTexture(FAVORITE_PREVIEW_ITEMS.map((item) => item.image));
+  const resolvedFavorites = useSocialsStore((state) => state.resolvedFavorites);
+  const favoritePreviewItems = resolvedFavorites.slice(0, 3);
+  const textures = useTexture(favoritePreviewItems.map((item) => item.textureUrl));
 
   useEffect(() => {
     const list = Array.isArray(textures) ? textures : [textures];
@@ -222,7 +222,7 @@ export function FavoritesStackObject(props: ThroneObjectProps) {
   return (
     <AnimatedThroneBase {...props} baseHeight={0.19} spinSpeed={0.0008}>
       <group ref={groupRef}>
-        {FAVORITE_PREVIEW_ITEMS.map((item, index) => {
+        {favoritePreviewItems.map((item, index) => {
           const texture = Array.isArray(textures) ? textures[index] : textures;
           const x = (index - 1) * 0.11;
           const y = index * 0.02;

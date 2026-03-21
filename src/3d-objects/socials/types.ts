@@ -76,10 +76,20 @@ export interface TimelineEntry {
 export interface FavoriteEntry {
   id: string;
   title: string;
-  subtitle: string;
-  image: string;
+  artist: string;
+  album: string;
   href: string;
-  color: string;
+}
+
+export interface FavoriteFallbackGradient {
+  id: string;
+  colors: [string, string, string];
+}
+
+export interface ResolvedFavoriteEntry extends FavoriteEntry {
+  artworkUrl: string | null;
+  textureUrl: string;
+  fallbackGradient: FavoriteFallbackGradient;
 }
 
 export interface FunFact {
