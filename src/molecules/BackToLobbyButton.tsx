@@ -1,17 +1,15 @@
 import { HugColumn } from "@/layout";
 import { Magnetic } from "@/layout/Magnetic";
-import { useMiniGameStore, useViewStore } from "@/store";
+import { useMiniGameStore } from "@/store";
 import { AnimatePresence, motion } from "motion/react";
 import styled from "styled-components";
 import { SmallArrowLeftIcon } from "@/icons/arrow";
 
 export const BackToLobbyButton = ({ show }: { show: boolean }) => {
   const { finishGame } = useMiniGameStore();
-  const { setViewMode } = useViewStore();
 
   const onTriggerClick = () => {
     finishGame();
-    setViewMode("fixed");
   };
 
   return (

@@ -4,11 +4,11 @@ import styled, { keyframes } from "styled-components";
 import {
   AnimatePresence,
   motion,
+  useAnimationFrame,
 } from "motion/react";
 import {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -48,42 +48,71 @@ function ViewfinderOverlay({
   onFinderRect,
 }: OverlayProps) {
   const [finder, setFinder] = useState<FinderRect | null>(null);
+  const lastRectRef = useRef<FinderRect | null>(null);
 
-  useLayoutEffect(() => {
-    const compute = () => {
-      const body = phoneBodyRef.current;
-      if (!body) {
+  const computeFinderRect = useCallback(() => {
+    const body = phoneBodyRef.current;
+    if (!body) {
+      if (lastRectRef.current) {
+        lastRectRef.current = null;
+        setFinder(null);
         onFinderRect(null);
-        return;
       }
-      const br = body.getBoundingClientRect();
+      return;
+    }
 
-      const width = br.width;
-      const height = width * FINDER_ASPECT;
+    const bodyRect = body.getBoundingClientRect();
+    const width = bodyRect.width;
+    const height = width * FINDER_ASPECT;
 
-      const rect: FinderRect = {
-        left: br.left,
-        top: br.top - FINDER_GAP - height,
-        right: br.right,
-        bottom: br.top - FINDER_GAP,
-        width,
-        height,
-      };
-      setFinder(rect);
-      onFinderRect(rect);
+    const nextRect: FinderRect = {
+      left: bodyRect.left,
+      top: bodyRect.top - FINDER_GAP - height,
+      right: bodyRect.right,
+      bottom: bodyRect.top - FINDER_GAP,
+      width,
+      height,
     };
 
-    compute();
-    window.addEventListener("resize", compute);
-    // Poll briefly after mount for layout settling
-    const iv = setInterval(compute, 60);
-    const t = setTimeout(() => clearInterval(iv), 600);
-    return () => {
-      window.removeEventListener("resize", compute);
-      clearInterval(iv);
-      clearTimeout(t);
-    };
+    const previousRect = lastRectRef.current;
+    const EPSILON = 0.35;
+    const isUnchanged =
+      previousRect &&
+      Math.abs(previousRect.left - nextRect.left) < EPSILON &&
+      Math.abs(previousRect.top - nextRect.top) < EPSILON &&
+      Math.abs(previousRect.width - nextRect.width) < EPSILON &&
+      Math.abs(previousRect.height - nextRect.height) < EPSILON;
+
+    if (isUnchanged) return;
+
+    lastRectRef.current = nextRect;
+    setFinder(nextRect);
+    onFinderRect(nextRect);
   }, [onFinderRect, phoneBodyRef]);
+
+  useEffect(() => {
+    const body = phoneBodyRef.current;
+    const resizeObserver =
+      typeof ResizeObserver !== "undefined" && body
+        ? new ResizeObserver(computeFinderRect)
+        : null;
+
+    computeFinderRect();
+    window.addEventListener("resize", computeFinderRect);
+    resizeObserver?.observe(body);
+
+    return () => {
+      window.removeEventListener("resize", computeFinderRect);
+      resizeObserver?.disconnect();
+      lastRectRef.current = null;
+      setFinder(null);
+      onFinderRect(null);
+    };
+  }, [computeFinderRect, onFinderRect, phoneBodyRef]);
+
+  useAnimationFrame(() => {
+    computeFinderRect();
+  });
 
   if (!finder) return null;
 
