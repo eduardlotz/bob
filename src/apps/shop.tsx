@@ -78,7 +78,7 @@ export function ShopApp() {
     previewTapEffect,
   } = useCoreStore();
 
-  const { currentView, transitionToView, setViewMode } = useViewStore();
+  const { currentView, transitionToView } = useViewStore();
 
   const shopViewsWithItems: Record<ShopTab, ShopItem[]> = {
     bob: bobItems.filter((b) => b.unlocked !== false),
@@ -99,7 +99,6 @@ export function ShopApp() {
 
   useEffect(() => {
     transitionToView(APP_ID);
-    setViewMode("object");
 
     goTo(initialIndexRef.current);
     return () => resetPreview();
