@@ -231,8 +231,12 @@ export const getTapSoundById = (id: string) =>
 export const TAP_EFFECT_TO_DEFAULT_TAP_SOUND: Record<string, string> = {
   tap_effect_default: DEFAULT_TAP_SOUND.id,
   tap_effect_confetti: DEFAULT_TAP_SOUND.id,
+  tap_effect_smoke: DEFAULT_TAP_SOUND.id,
+  tap_effect_bubbles: DEFAULT_TAP_SOUND.id,
   tap_effect_hearts: DEFAULT_TAP_SOUND.id,
   tap_effect_stars: DEFAULT_TAP_SOUND.id,
+  tap_effect_laser: DEFAULT_TAP_SOUND.id,
+  tap_effect_emojis: DEFAULT_TAP_SOUND.id,
 };
 
 export const resolveTapSoundForEffect = (

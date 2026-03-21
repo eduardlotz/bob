@@ -18,6 +18,7 @@ export interface CameraView {
   position?: [number, number, number];
   target?: [number, number, number];
   zoom?: number;
+  orbit?: CameraOrbitSettings;
   cursorFollow?: {
     strength?: number;
     yScale?: number;
@@ -29,6 +30,18 @@ export interface CameraView {
     easing?: string;
   };
   defaultViewMode?: ViewMode;
+}
+
+export interface CameraOrbitSettings {
+  minPolarAngle?: number;
+  maxPolarAngle?: number;
+  defaultPolarAngle?: number;
+  minAzimuthAngle?: number;
+  maxAzimuthAngle?: number;
+  defaultAzimuthAngle?: number;
+  minDistance?: number;
+  maxDistance?: number;
+  defaultDistance?: number;
 }
 
 export interface FocusTarget {
@@ -61,9 +74,115 @@ const resolveRouteViewId = (route: string): CameraViewId => {
   if (route === ROUTE_PATHS.MINIGAMES) {
     const activeGame = useMiniGameStore.getState().activeGame;
     if (activeGame === "SLOT_MACHINE") return "minigames:slot_machine";
-    return "minigames";
+    return "default";
   }
   return "default";
+};
+
+const DEFAULT_ORBIT_SETTINGS: Required<
+  Pick<
+    CameraOrbitSettings,
+    | "minPolarAngle"
+    | "maxPolarAngle"
+    | "minAzimuthAngle"
+    | "maxAzimuthAngle"
+    | "minDistance"
+    | "maxDistance"
+  >
+> = {
+  minPolarAngle: 0.2,
+  maxPolarAngle: 2,
+  minAzimuthAngle: Number.NEGATIVE_INFINITY,
+  maxAzimuthAngle: Number.POSITIVE_INFINITY,
+  minDistance: 1,
+  maxDistance: 7,
+};
+
+const clampValue = (value: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, value));
+
+const positionToOrbit = (
+  position: [number, number, number],
+  target: [number, number, number],
+) => {
+  const dx = position[0] - target[0];
+  const dy = position[1] - target[1];
+  const dz = position[2] - target[2];
+  const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+  if (distance === 0) return null;
+
+  return {
+    distance,
+    polarAngle: Math.acos(clampValue(dy / distance, -1, 1)),
+    azimuthAngle: Math.atan2(dx, dz),
+  };
+};
+
+const orbitToPosition = (
+  target: [number, number, number],
+  distance: number,
+  polarAngle: number,
+  azimuthAngle: number,
+): [number, number, number] => {
+  const radius = Math.sin(polarAngle) * distance;
+
+  return [
+    target[0] + radius * Math.sin(azimuthAngle),
+    target[1] + Math.cos(polarAngle) * distance,
+    target[2] + radius * Math.cos(azimuthAngle),
+  ];
+};
+
+const resolveOrbitSettings = (viewConfig?: CameraView) => ({
+  ...DEFAULT_ORBIT_SETTINGS,
+  ...viewConfig?.orbit,
+});
+
+const resolveViewPose = (viewConfig?: CameraView) => {
+  if (!viewConfig?.position || !viewConfig.target) return null;
+  if (!viewConfig.orbit) {
+    return {
+      position: viewConfig.position,
+      target: viewConfig.target,
+    };
+  }
+
+  const orbit = resolveOrbitSettings(viewConfig);
+  const baseOrbit = positionToOrbit(viewConfig.position, viewConfig.target);
+
+  if (!baseOrbit) {
+    return {
+      position: viewConfig.position,
+      target: viewConfig.target,
+    };
+  }
+
+  const distance = clampValue(
+    viewConfig.orbit.defaultDistance ?? baseOrbit.distance,
+    orbit.minDistance,
+    orbit.maxDistance,
+  );
+  const polarAngle = clampValue(
+    viewConfig.orbit.defaultPolarAngle ?? baseOrbit.polarAngle,
+    orbit.minPolarAngle,
+    orbit.maxPolarAngle,
+  );
+  const azimuthAngle = clampValue(
+    viewConfig.orbit.defaultAzimuthAngle ?? baseOrbit.azimuthAngle,
+    orbit.minAzimuthAngle,
+    orbit.maxAzimuthAngle,
+  );
+
+  return {
+    position: orbitToPosition(
+      viewConfig.target,
+      distance,
+      polarAngle,
+      azimuthAngle,
+    ),
+    target: viewConfig.target,
+  };
 };
 
 // camera settings for different object views
@@ -77,6 +196,7 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
       duration: 1000,
       easing: "easeInOutCubic",
     },
+    defaultViewMode: "fixed",
   },
   navigation: {
     id: "navigation",
@@ -108,6 +228,7 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
       duration: 1000,
       easing: "easeInOutCubic",
     },
+    defaultViewMode: "object",
   },
   "phone:options": {
     id: "phone:options",
@@ -118,16 +239,25 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
       duration: 1000,
       easing: "easeInOutCubic",
     },
+    defaultViewMode: "fixed",
   },
   upgrades: {
     id: "upgrades",
     name: "Upgrades View",
+    defaultViewMode: "fixed",
   },
   portfolio: {
     id: "portfolio",
     name: "Portfolio Orbit View",
     position: [5, CAMERA_HEIGHT - 0.5, 73],
     target: [0, CAMERA_Y_POSITION - 0.5, 0],
+    orbit: {
+      minPolarAngle: 1.55,
+      maxPolarAngle: 1.6,
+      minDistance: 2.5,
+      maxDistance: 72.5,
+      defaultDistance: 72.5,
+    },
     transition: {
       duration: 1000,
       easing: "easeInOutCubic",
@@ -159,20 +289,33 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
     name: "Phone View",
     position: [0, CAMERA_HEIGHT, HIDDEN_OPTIONS_CAMERA_ZOOM],
     target: [0, CAMERA_Y_POSITION, 0],
+    defaultViewMode: "fixed",
   },
   "phone:debug": {
     id: "phone:debug",
     name: "Debug View",
+    defaultViewMode: "fixed",
   },
   "phone:quests": {
     id: "phone:quests",
     name: "Quests View",
+    defaultViewMode: "fixed",
   },
   "phone:camera": {
     id: "phone:camera",
     name: "Camera View",
-    position: [0, CAMERA_HEIGHT, HIDDEN_OPTIONS_CAMERA_ZOOM],
-    target: [0, CAMERA_Y_POSITION - 1, 0],
+    position: [
+      0,
+      CAMERA_HEIGHT - 0.75,
+      (HIDDEN_OPTIONS_CAMERA_ZOOM + VISIBLE_OPTIONS_CAMERA_ZOOM - 2) / 2,
+    ],
+    target: [0, CAMERA_Y_POSITION - 0.75, 0],
+    orbit: {
+      minPolarAngle: 0.85,
+      maxPolarAngle: 2.15,
+      minDistance: 2,
+      maxDistance: 75,
+    },
     transition: {
       duration: 1000,
       easing: "easeInOutCubic",
@@ -298,8 +441,11 @@ export const useViewStore = create<ViewStore>()(
       applyViewModeToControls: (mode: ViewMode) => {
         const controls = get().cameraControlsRef?.current;
         if (!controls) return;
+        const currentView = get().currentView;
+        const currentViewConfig = CAMERA_VIEWS[currentView];
+        const focusedImageTitle = get().focusedImageTitle;
+        const orbitSettings = resolveOrbitSettings(currentViewConfig);
 
-        // TODO: apply all view mode rules here like cursor or camera controls
         if (mode === "object") {
           const cameraPos = new Vector3();
           controls.getPosition(cameraPos); // current camera world position
@@ -310,26 +456,29 @@ export const useViewStore = create<ViewStore>()(
           controls.getTarget(target);
           controls.setTarget(target.x, target.y, target.z, true);
 
-          // if (get().isImageFocused) {
-          //   controls.minDistance = 2;
-          // } else if (get().currentView === "portfolio")
-          //   controls.minDistance = 62;
-          // else controls.minDistance = 4;
-
-          controls.mouseButtons.left = get().focusedImageTitle
+          controls.mouseButtons.left = focusedImageTitle
             ? CameraControlsImpl.ACTION.TRUCK
             : CameraControlsImpl.ACTION.ROTATE;
+          controls.mouseButtons.middle = CameraControlsImpl.ACTION.DOLLY;
+          controls.mouseButtons.right = CameraControlsImpl.ACTION.TRUCK;
+          controls.touches.one = focusedImageTitle
+            ? CameraControlsImpl.ACTION.TOUCH_TRUCK
+            : CameraControlsImpl.ACTION.TOUCH_ROTATE;
+          controls.touches.two = CameraControlsImpl.ACTION.TOUCH_DOLLY_TRUCK;
         } else {
           controls.mouseButtons.left = CameraControlsImpl.ACTION.NONE;
           controls.mouseButtons.middle = CameraControlsImpl.ACTION.NONE;
           controls.mouseButtons.right = CameraControlsImpl.ACTION.NONE;
           controls.touches.one = CameraControlsImpl.ACTION.NONE;
           controls.touches.two = CameraControlsImpl.ACTION.NONE;
-          controls.minPolarAngle = 0.2;
-          controls.maxPolarAngle = 2;
-          controls.minDistance = 1;
-          controls.maxDistance = 7;
         }
+
+        controls.minPolarAngle = orbitSettings.minPolarAngle;
+        controls.maxPolarAngle = orbitSettings.maxPolarAngle;
+        controls.minAzimuthAngle = orbitSettings.minAzimuthAngle;
+        controls.maxAzimuthAngle = orbitSettings.maxAzimuthAngle;
+        controls.minDistance = orbitSettings.minDistance;
+        controls.maxDistance = orbitSettings.maxDistance;
       },
 
       setDefaultViewMode: (mode: ViewMode) =>
@@ -363,14 +512,19 @@ export const useViewStore = create<ViewStore>()(
         const { currentView, viewMode, cameraControlsRef, isTransitioning } =
           get();
 
-        if (currentView === viewId && viewMode === desiredMode && !isTransitioning) {
+        if (
+          currentView === viewId &&
+          viewMode === desiredMode &&
+          !isTransitioning
+        ) {
           get().applyViewModeToControls(desiredMode);
 
-          if (viewConfig.position && viewConfig.target && cameraControlsRef?.current) {
+          const resolvedPose = resolveViewPose(viewConfig);
+          if (resolvedPose && cameraControlsRef?.current) {
             cameraControlsRef.current.setLookAt(
-              ...viewConfig.position,
-              ...viewConfig.target,
-              true,
+              ...resolvedPose.position,
+              ...resolvedPose.target,
+              false,
             );
           }
           return;
@@ -434,13 +588,16 @@ export const useViewStore = create<ViewStore>()(
 
         try {
           const controls = cameraControlsRef.current;
+          const resolvedPose = resolveViewPose(viewConfig);
 
-          if (viewConfig.position && viewConfig.target) {
+          if (resolvedPose) {
             controls.setLookAt(
-              ...viewConfig.position,
-              ...viewConfig.target,
+              ...resolvedPose.position,
+              ...resolvedPose.target,
               true,
             );
+            setTimeout(() => finishTransition(), 0);
+          } else {
             setTimeout(() => finishTransition(), 0);
           }
         } catch (error) {
@@ -459,9 +616,9 @@ export const useViewStore = create<ViewStore>()(
       resetToDefaultView: async () => {
         const {
           isTransitioning,
-          currentView,
           cameraControlsRef,
           lastFocusPosition,
+          isImageFocused,
         } = get();
 
         if (isTransitioning || !cameraControlsRef?.current) {
@@ -494,63 +651,30 @@ export const useViewStore = create<ViewStore>()(
 
         try {
           const controls = cameraControlsRef.current;
-
-          // currently only two different defaults (creative -> "orbit view" & rest -> "fixed view")
-          const viewConfig = CAMERA_VIEWS[targetView];
+          const resolvedPose = resolveViewPose(viewConfig);
 
           if (!viewConfig) {
-            console.warn(`"${currentView}" view config missing`);
+            console.warn(`"${targetView}" view config missing`);
             return;
           }
 
-          if (viewConfig.defaultViewMode === "object") {
-            controls.mouseButtons.left = CameraControlsImpl.ACTION.ROTATE;
-            controls.touches.one = CameraControlsImpl.ACTION.TOUCH_ROTATE;
-          } else {
-            controls.mouseButtons.left = CameraControlsImpl.ACTION.NONE;
-            controls.mouseButtons.middle = CameraControlsImpl.ACTION.NONE;
-            controls.mouseButtons.right = CameraControlsImpl.ACTION.NONE;
-            controls.touches.one = CameraControlsImpl.ACTION.NONE;
-            controls.touches.two = CameraControlsImpl.ACTION.NONE;
-          }
-
-          // set polar small angles for portfolio vs bigger for rest
-          if (currentRoute === ROUTE_PATHS.PORTFOLIO) {
-            controls.minPolarAngle = 1.55;
-            controls.maxPolarAngle = 1.6;
-            controls.minDistance = 2.5;
-            controls.maxDistance = 72.5;
-          } else {
-            controls.maxPolarAngle = 2;
-            controls.minPolarAngle = 0.2;
-            controls.minDistance = 1;
-            controls.maxDistance = 7;
-          }
-
-          if (
-            currentRoute === ROUTE_PATHS.PORTFOLIO &&
-            lastFocusPosition &&
-            viewConfig.target
-            // &&
-            // !get().isNavigationView()
-          ) {
-            const target = new Vector3(0, 0, 0);
-            controls.getTarget(target); // keep current target, or optionally restore previous target if you store it
-
+          if (isImageFocused && lastFocusPosition && resolvedPose?.target) {
             controls.setLookAt(
               lastFocusPosition.x,
               lastFocusPosition.y,
               lastFocusPosition.z,
-              ...viewConfig.target,
+              ...resolvedPose.target,
               true,
             );
             setTimeout(() => set({ isTransitioning: false }), 0);
-          } else if (viewConfig.position && viewConfig.target) {
+          } else if (resolvedPose) {
             controls.setLookAt(
-              ...viewConfig.position,
-              ...viewConfig.target,
+              ...resolvedPose.position,
+              ...resolvedPose.target,
               true,
             );
+            setTimeout(() => set({ isTransitioning: false }), 0);
+          } else {
             setTimeout(() => set({ isTransitioning: false }), 0);
           }
         } catch (error) {

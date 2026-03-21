@@ -10,13 +10,15 @@ import {
 import type { MiniGameType } from "@/store/minigames";
 import { GradientTexture, Grid } from "@react-three/drei";
 import { CuboidCollider } from "@react-three/rapier";
-import { type ComponentType, type ReactNode, useEffect } from "react";
+import { type ComponentType, type ReactNode, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { BackSide } from "three";
 
 import { PingPongPaddle } from "@/3d-objects/models/pingPongPaddle";
 import { TapEffects } from "@/3d-objects/ParticleEffects";
 import { PointsCounter } from "@/molecules/PointsCounter";
+import { DEFAULT_WORLD_MUSIC } from "@/utils/sound/defaults";
+import { playWorldSound, stopAllWorldSounds, stopSoundsById } from "@/utils/soundSystem";
 import { FlappyBirdArcade, FlappyBirdGame } from "./games/FlappyBirdGame";
 import {
   MiniGameItem,
@@ -25,7 +27,8 @@ import {
 import { PingPongGame } from "./games/PingPongGame";
 import { SlotMachineArcade, SlotMachineGame } from "./games/SlotMachineGame";
 
-const DEFAULT_MINIGAMES_VIEW = "minigames";
+const MINIGAME_BACKGROUND_TRACK_ID = DEFAULT_WORLD_MUSIC.id;
+const DEFAULT_MINIGAMES_VIEW = "default";
 
 // TODO: refactor minigames view to be included as static view configs like slotmachine
 type MiniGamesView = typeof DEFAULT_MINIGAMES_VIEW | "minigames:slot_machine";
@@ -208,6 +211,11 @@ export function MiniGamesScene() {
 
   const isAllowedToAccess = checkUnlockedRoutes(ROUTE_PATHS.MINIGAMES);
   const activeDefinition = getMiniGameDefinition(activeGame);
+  const handleExit = useCallback(() => {
+    stopSoundsById(MINIGAME_BACKGROUND_TRACK_ID);
+    stopAllWorldSounds();
+    finishGame();
+  }, [finishGame]);
 
   useEffect(() => {
     if (!isAllowedToAccess) {
@@ -223,6 +231,25 @@ export function MiniGamesScene() {
   }, [activeGame, setHoveredObject]);
 
   useEffect(() => {
+    if (!activeDefinition?.shouldPlayMusic) {
+      stopSoundsById(MINIGAME_BACKGROUND_TRACK_ID);
+      return;
+    }
+
+    playWorldSound(MINIGAME_BACKGROUND_TRACK_ID, { loop: true });
+
+    return () => {
+      stopSoundsById(MINIGAME_BACKGROUND_TRACK_ID);
+    };
+  }, [activeDefinition]);
+
+  useEffect(() => {
+    return () => {
+      stopSoundsById(MINIGAME_BACKGROUND_TRACK_ID);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!cameraControlsRef?.current) return;
 
     transitionToView(activeDefinition?.cameraView ?? DEFAULT_MINIGAMES_VIEW);
@@ -233,10 +260,10 @@ export function MiniGamesScene() {
       <MiniGamesContent
         activeGame={activeGame}
         onSelect={setActiveGame}
-        onExit={finishGame}
+        onExit={handleExit}
       />
 
-      <TapEffects id="tap_effect_confetti" />
+      <TapEffects id="tap_effect_laser" />
 
       {activeGame === "LOBBY" ? (
         <MiniGamesBackdrop />

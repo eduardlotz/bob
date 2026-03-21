@@ -4,13 +4,11 @@ import styled, { keyframes } from "styled-components";
 import {
   AnimatePresence,
   motion,
-  LayoutGroup,
   useAnimationFrame,
 } from "motion/react";
 import {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -50,41 +48,70 @@ function ViewfinderOverlay({
   onFinderRect,
 }: OverlayProps) {
   const [finder, setFinder] = useState<FinderRect | null>(null);
+  const lastRectRef = useRef<FinderRect | null>(null);
+
+  const computeFinderRect = useCallback(() => {
+    const body = phoneBodyRef.current;
+    if (!body) {
+      if (lastRectRef.current) {
+        lastRectRef.current = null;
+        setFinder(null);
+        onFinderRect(null);
+      }
+      return;
+    }
+
+    const bodyRect = body.getBoundingClientRect();
+    const width = bodyRect.width;
+    const height = width * FINDER_ASPECT;
+
+    const nextRect: FinderRect = {
+      left: bodyRect.left,
+      top: bodyRect.top - FINDER_GAP - height,
+      right: bodyRect.right,
+      bottom: bodyRect.top - FINDER_GAP,
+      width,
+      height,
+    };
+
+    const previousRect = lastRectRef.current;
+    const EPSILON = 0.35;
+    const isUnchanged =
+      previousRect &&
+      Math.abs(previousRect.left - nextRect.left) < EPSILON &&
+      Math.abs(previousRect.top - nextRect.top) < EPSILON &&
+      Math.abs(previousRect.width - nextRect.width) < EPSILON &&
+      Math.abs(previousRect.height - nextRect.height) < EPSILON;
+
+    if (isUnchanged) return;
+
+    lastRectRef.current = nextRect;
+    setFinder(nextRect);
+    onFinderRect(nextRect);
+  }, [onFinderRect, phoneBodyRef]);
+
+  useEffect(() => {
+    const body = phoneBodyRef.current;
+    const resizeObserver =
+      typeof ResizeObserver !== "undefined" && body
+        ? new ResizeObserver(computeFinderRect)
+        : null;
+
+    computeFinderRect();
+    window.addEventListener("resize", computeFinderRect);
+    resizeObserver?.observe(body);
+
+    return () => {
+      window.removeEventListener("resize", computeFinderRect);
+      resizeObserver?.disconnect();
+      lastRectRef.current = null;
+      setFinder(null);
+      onFinderRect(null);
+    };
+  }, [computeFinderRect, onFinderRect, phoneBodyRef]);
 
   useAnimationFrame(() => {
-    const compute = () => {
-      const body = phoneBodyRef.current;
-      if (!body) {
-        onFinderRect(null);
-        return;
-      }
-      const br = body.getBoundingClientRect();
-
-      const width = br.width;
-      const height = width * FINDER_ASPECT;
-
-      const rect: FinderRect = {
-        left: br.left,
-        top: br.top - FINDER_GAP - height,
-        right: br.right,
-        bottom: br.top - FINDER_GAP,
-        width,
-        height,
-      };
-      setFinder(rect);
-      onFinderRect(rect);
-    };
-
-    compute();
-    window.addEventListener("resize", compute);
-    // Poll briefly after mount for layout settling
-    const iv = setInterval(compute, 60);
-    const t = setTimeout(() => clearInterval(iv), 600);
-    return () => {
-      window.removeEventListener("resize", compute);
-      clearInterval(iv);
-      clearTimeout(t);
-    };
+    computeFinderRect();
   });
 
   if (!finder) return null;
@@ -176,7 +203,7 @@ const APP_ID: CameraViewId = "phone:camera";
 
 export const CameraApp = () => {
   const gl = useGLBridge((s) => s.gl);
-  const { transitionToView } = useViewStore();
+  const { currentView, transitionToView } = useViewStore();
   const { addPhoto, photos, deletePhoto } = useCameraStore();
 
   const phoneBodyRef = useRef<HTMLDivElement>(null);
@@ -185,6 +212,7 @@ export const CameraApp = () => {
   const [flash, setFlash] = useState(false);
   const [view, setView] = useState<AppView>("camera");
   const [lightboxId, setLightboxId] = useState<string | null>(null);
+  const isViewActive = currentView === APP_ID;
 
   useEffect(() => {
     transitionToView(APP_ID);
@@ -251,7 +279,7 @@ export const CameraApp = () => {
   return (
     <>
       {/* Viewfinder overlay — only shown in camera mode */}
-      {view === "camera" && (
+      {isViewActive && view === "camera" && (
         <ViewfinderOverlay
           phoneBodyRef={phoneBodyRef}
           flash={flash}

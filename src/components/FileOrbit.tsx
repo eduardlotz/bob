@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { useMemo, useRef, useEffect } from "react";
+import { useMemo, useRef, useEffect, useState } from "react";
 import { Billboard, Html } from "@react-three/drei";
 import { useFloatingBar } from "@/layout/FloatingBar";
 import { useCursorStore } from "@/store/core/cursor";
@@ -471,7 +471,7 @@ const ITEMS: PortfolioItem[] = [
       {
         type: "text",
         label: "Cover Design",
-        value: "Figma iphone 12 kamera",
+        value: "Figma\niphone 12",
       },
     ],
     links: [
@@ -491,7 +491,7 @@ const ITEMS: PortfolioItem[] = [
       {
         type: "text",
         label: "Cover Design",
-        value: "iphone 12 kamera Photoshop",
+        value: "iphone 12\nPhotoshop",
       },
     ],
     links: [
@@ -511,7 +511,7 @@ const ITEMS: PortfolioItem[] = [
       {
         type: "text",
         label: "Cover Design",
-        value: "Blender Figma iphone 12 kamera",
+        value: "Blender\nFigma\niphone 12",
       },
     ],
     links: [
@@ -601,54 +601,70 @@ function getMediaScale(width: number, height: number): [number, number] {
   return [width * factor, height * factor];
 }
 
+const DEFAULT_MEDIA_SCALE: [number, number] = [8, 8];
+const PORTFOLIO_OVERLAY_SIDE_GAP = 2;
+const PORTFOLIO_OVERLAY_DESKTOP_TOP_INSET = 2;
+const PORTFOLIO_OVERLAY_MOBILE_GAP = 1.5;
+const PORTFOLIO_OVERLAY_DEPTH_TEST_OFFSET = -3.2;
+
 const PortfolioMetaOverlay = ({
   item,
   isActive,
+  mediaScale,
+  depthOffset,
+  distanceFactor,
 }: {
   item: PortfolioItem;
   isActive: boolean;
+  mediaScale: [number, number];
+  depthOffset: number;
+  distanceFactor: number;
 }) => {
   const { isMobile } = useAppStore();
-  const overlayTransform = isMobile ? "-50%, 40vh" : "50%, 0";
+  const overlayOffsetX = isMobile
+    ? 0
+    : mediaScale[0] / 2 + PORTFOLIO_OVERLAY_SIDE_GAP;
+  const overlayOffsetY = isMobile
+    ? -(mediaScale[1] / 2 + PORTFOLIO_OVERLAY_MOBILE_GAP)
+    : mediaScale[1] / 2 - PORTFOLIO_OVERLAY_DESKTOP_TOP_INSET;
   return (
-    <group position={[0, 15, 0]}>
-      <Html
-        style={{
-          width: "29.5rem",
-          maxWidth: "92vw",
-          pointerEvents: "none",
-          transform: `translate3d(${overlayTransform}, 0)`,
-        }}
-        zIndexRange={[20, 0]}
-        distanceFactor={isMobile ? 60 : undefined}
-      >
-        <AnimatePresence mode="popLayout">
-          {isActive && (
-            <MetaWrapper
-              initial={"initial"}
-              animate={"animate"}
-              exit={"exit"}
-              variants={MotionVariants.OptionButton}
-              key={item.title}
-            >
-              {item.meta?.map((m, i) => (
-                <MetaRow key={i}>
-                  {"label" in m && <MetaLeft>{m.label}</MetaLeft>}
-                  {"value" in m && <MetaRight>{m.value}</MetaRight>}
-                </MetaRow>
-              ))}
+    <Html
+      transform
+      position={[overlayOffsetX, overlayOffsetY, depthOffset]}
+      style={{
+        width: isMobile ? "18rem" : "20rem",
+        maxWidth: "92vw",
+        pointerEvents: isActive ? "auto" : "none",
+      }}
+      zIndexRange={[20, 0]}
+      distanceFactor={distanceFactor}
+    >
+      <AnimatePresence mode="popLayout">
+        {isActive && (
+          <MetaWrapper
+            initial={"initial"}
+            animate={"animate"}
+            exit={"exit"}
+            variants={MotionVariants.OptionButton}
+            key={item.title}
+          >
+            {item.meta?.map((m, i) => (
+              <MetaRow key={i}>
+                {"label" in m && <MetaLeft>{m.label}</MetaLeft>}
+                {"value" in m && <MetaRight>{m.value}</MetaRight>}
+              </MetaRow>
+            ))}
 
-              {item.links?.map((link, i) => (
-                <PillLink key={i} href={link.href} target="_blank">
-                  {link.label}
-                  <ExternalLinkIcon />
-                </PillLink>
-              ))}
-            </MetaWrapper>
-          )}
-        </AnimatePresence>
-      </Html>
-    </group>
+            {item.links?.map((link, i) => (
+              <PillLink key={i} href={link.href} target="_blank">
+                {link.label}
+                <ExternalLinkIcon />
+              </PillLink>
+            ))}
+          </MetaWrapper>
+        )}
+      </AnimatePresence>
+    </Html>
   );
 };
 
@@ -657,11 +673,13 @@ function VideoPlane({
   distanceRef,
   cull,
   onClick,
+  onScaleChange,
 }: {
   url: string;
   distanceRef: React.MutableRefObject<number>;
   cull: CullConfig;
   onClick: (e: ThreeEvent<MouseEvent>) => void;
+  onScaleChange: (scale: [number, number]) => void;
 }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const matRef = useRef<THREE.MeshBasicMaterial>(null);
@@ -670,7 +688,7 @@ function VideoPlane({
   const videoTex = useRef<THREE.VideoTexture | null>(null);
   const posterTex = useRef<THREE.Texture | null>(null);
 
-  const scaleRef = useRef<[number, number]>([8, 8]);
+  const scaleRef = useRef<[number, number]>(DEFAULT_MEDIA_SCALE);
   const readyRef = useRef(false);
 
   useEffect(() => {
@@ -686,7 +704,9 @@ function VideoPlane({
     const onCanPlay = () => {
       const w = video.videoWidth || 16;
       const h = video.videoHeight || 9;
-      scaleRef.current = getMediaScale(w, h);
+      const scale = getMediaScale(w, h);
+      scaleRef.current = scale;
+      onScaleChange(scale);
 
       const vTex = new THREE.VideoTexture(video);
       vTex.colorSpace = THREE.SRGBColorSpace;
@@ -716,7 +736,7 @@ function VideoPlane({
       videoTex.current?.dispose();
       posterTex.current?.dispose();
     };
-  }, [url]);
+  }, [onScaleChange, url]);
 
   useFrame((state, delta) => {
     if (!meshRef.current || !matRef.current) return;
@@ -782,16 +802,18 @@ function ImagePlane({
   distanceRef,
   cull,
   onClick,
+  onScaleChange,
 }: {
   url: string;
   distanceRef: React.MutableRefObject<number>;
   cull: CullConfig;
   onClick: (e: ThreeEvent<MouseEvent>) => void;
+  onScaleChange: (scale: [number, number]) => void;
 }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const matRef = useRef<THREE.MeshBasicMaterial>(null);
   const texRef = useRef<THREE.Texture | null>(null);
-  const scaleRef = useRef<[number, number]>([8, 8]);
+  const scaleRef = useRef<[number, number]>(DEFAULT_MEDIA_SCALE);
   const { isMobile } = useAppStore();
   const renderConfig = isMobile ? CONFIG.low : CONFIG.high;
 
@@ -799,7 +821,9 @@ function ImagePlane({
     if (textureCache.has(url)) {
       const t = textureCache.get(url)!;
       texRef.current = t;
-      scaleRef.current = getMediaScale(t.image.width, t.image.height);
+      const scale = getMediaScale(t.image.width, t.image.height);
+      scaleRef.current = scale;
+      onScaleChange(scale);
       return;
     }
 
@@ -809,9 +833,11 @@ function ImagePlane({
       t.needsUpdate = true;
       textureCache.set(url, t);
       texRef.current = t;
-      scaleRef.current = getMediaScale(t.image.width, t.image.height);
+      const scale = getMediaScale(t.image.width, t.image.height);
+      scaleRef.current = scale;
+      onScaleChange(scale);
     });
-  }, [url]);
+  }, [onScaleChange, renderConfig.maxTextureSize, url]);
 
   useFrame((state, delta) => {
     if (!meshRef.current || !matRef.current) return;
@@ -878,6 +904,12 @@ function MediaItem({
 
   const isVideo =
     type === "video" || url.endsWith(".mp4") || url.endsWith(".webm");
+  const [overlayDepthOffset, setOverlayDepthOffset] = useState(-0.5);
+  const [overlayDistanceFactor, setOverlayDistanceFactor] = useState(
+    isMobile ? 10 : 8,
+  );
+  const overlayDepthRef = useRef(overlayDepthOffset);
+  const overlayDistanceFactorRef = useRef(overlayDistanceFactor);
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
@@ -892,9 +924,36 @@ function MediaItem({
   };
 
   const distanceRef = useRef(Infinity);
+  const [mediaScale, setMediaScale] =
+    useState<[number, number]>(DEFAULT_MEDIA_SCALE);
 
   useFrame(() => {
-    distanceRef.current = camera.position.distanceTo(position);
+    const liveDistance = camera.position.distanceTo(position);
+    distanceRef.current = liveDistance;
+
+    if (!isFocused) return;
+
+    const nextDepthOffset = -Math.min(
+      8.5,
+      Math.max(
+        mediaScale[0] * 0.45,
+        liveDistance * 0.25 + Math.abs(PORTFOLIO_OVERLAY_DEPTH_TEST_OFFSET),
+      ),
+    );
+    const nextDistanceFactor = Math.max(
+      isMobile ? 6.5 : 5.5,
+      liveDistance * 0.55,
+    );
+
+    if (Math.abs(nextDepthOffset - overlayDepthRef.current) > 0.05) {
+      overlayDepthRef.current = nextDepthOffset;
+      setOverlayDepthOffset(nextDepthOffset);
+    }
+
+    if (Math.abs(nextDistanceFactor - overlayDistanceFactorRef.current) > 0.1) {
+      overlayDistanceFactorRef.current = nextDistanceFactor;
+      setOverlayDistanceFactor(nextDistanceFactor);
+    }
   });
 
   const cull = resolveCullConfig({
@@ -904,45 +963,51 @@ function MediaItem({
   });
 
   return (
-    <>
-      <PortfolioMetaOverlay isActive={isFocused} item={item} />
+    <Billboard
+      position={position}
+      onPointerEnter={(e) => {
+        if (distanceRef.current > cull.cullingDistance) return;
 
-      <Billboard
-        position={position}
-        onPointerEnter={(e) => {
-          if (distanceRef.current > cull.cullingDistance) return;
+        e.stopPropagation();
+        setHoveredObject({ title });
+        if (!isFocused) setHovering(true);
+      }}
+      onPointerLeave={() => {
+        setHoveredObject(null);
+        setHovering(false);
+        setPointerDown(false);
+      }}
+      onPointerDown={(e) => {
+        setPointerDown(true);
+      }}
+      onPointerUp={() => setPointerDown(false)}
+    >
+      {isVideo ? (
+        <VideoPlane
+          url={url}
+          onClick={handleClick}
+          distanceRef={distanceRef}
+          cull={cull}
+          onScaleChange={setMediaScale}
+        />
+      ) : (
+        <ImagePlane
+          url={url}
+          onClick={handleClick}
+          distanceRef={distanceRef}
+          cull={cull}
+          onScaleChange={setMediaScale}
+        />
+      )}
 
-          e.stopPropagation();
-          setHoveredObject({ title });
-          if (!isFocused) setHovering(true);
-        }}
-        onPointerLeave={() => {
-          setHoveredObject(null);
-          setHovering(false);
-          setPointerDown(false);
-        }}
-        onPointerDown={(e) => {
-          setPointerDown(true);
-        }}
-        onPointerUp={() => setPointerDown(false)}
-      >
-        {isVideo ? (
-          <VideoPlane
-            url={url}
-            onClick={handleClick}
-            distanceRef={distanceRef}
-            cull={cull}
-          />
-        ) : (
-          <ImagePlane
-            url={url}
-            onClick={handleClick}
-            distanceRef={distanceRef}
-            cull={cull}
-          />
-        )}
-      </Billboard>
-    </>
+      <PortfolioMetaOverlay
+        isActive={isFocused}
+        item={item}
+        mediaScale={mediaScale}
+        depthOffset={overlayDepthOffset}
+        distanceFactor={overlayDistanceFactor}
+      />
+    </Billboard>
   );
 }
 
@@ -1052,7 +1117,8 @@ export function FileOrbit({ radius = 60 }: { radius?: number }) {
 export const MetaWrapper = styled(motion.div)`
   display: flex;
   flex-direction: column;
-  gap: 3rem;
+  gap: 2rem;
+  align-items: flex-start;
   pointer-events: auto;
   background-color: rgba(14, 14, 14, 0.8);
   backdrop-filter: blur(16px);
@@ -1061,19 +1127,21 @@ export const MetaWrapper = styled(motion.div)`
 
   padding: 1.5rem 2rem;
   border-radius: 2.5rem;
+  width: 100%;
   max-width: 22.5rem;
 `;
 
 export const MetaRow = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  align-items: flex-start;
-  width: 18.75rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  align-items: start;
+  width: 100%;
   font-size: 0.75rem;
   letter-spacing: 0.1em;
   font-weight: 500;
   text-transform: uppercase;
+
   > * {
     margin: 0;
   }
@@ -1082,11 +1150,13 @@ export const MetaRow = styled.div`
 export const MetaLeft = styled.p`
   text-align: left;
   line-height: 1.25;
+  white-space: pre-wrap;
 `;
 
 export const MetaRight = styled(MetaLeft)`
-  text-align: left;
-  margin-left: max(2.5rem, 80%);
+  text-align: right;
+  justify-self: end;
+  margin-left: 0;
 `;
 
 export const PillLink = styled.a`
@@ -1096,7 +1166,8 @@ export const PillLink = styled.a`
   justify-content: center;
 
   padding: 12px 32px;
-  min-width: 200px;
+  width: 100%;
+  min-width: 0;
 
   border-radius: 9999px;
 
@@ -1106,6 +1177,7 @@ export const PillLink = styled.a`
   color: #ffffff;
   text-decoration: none;
   text-align: center;
+  white-space: nowrap;
 
   background: linear-gradient(180deg, #f87903 0%, #c56308 100%);
 

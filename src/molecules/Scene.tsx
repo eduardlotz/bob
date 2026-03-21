@@ -4,7 +4,6 @@ import {
   Fisheye,
   Environment,
   PerspectiveCamera,
-  Grid,
   PerformanceMonitor,
 } from "@react-three/drei";
 
@@ -14,7 +13,12 @@ import { Physics } from "@react-three/rapier";
 import { Perf } from "r3f-perf";
 import { Suspense, useRef, useState, useEffect, useMemo } from "react";
 
-import { useAppStore, useCoreStore, useMiniGameStore } from "../store";
+import {
+  DEFAULT_WORLD_LIGHTING,
+  useAppStore,
+  useCoreStore,
+  useMiniGameStore,
+} from "../store";
 import { useViewStore } from "../store/viewStore";
 import { ROUTE_IDS, ROUTE_PATHS } from "../store/config/routes";
 import { FISHEYE_CONFIG } from "../store/config/themes";
@@ -35,7 +39,8 @@ import { BackgroundPlanet } from "../3d-objects/BackgroundPlanet";
 import { TapEffects } from "../3d-objects/ParticleEffects";
 import { SceneDecorations } from "@/3d-objects/Decorations";
 import { MiniGamesScene } from "@/routes/MiniGamesScene";
-import { DEFAULT_PINK_NOISE, DEFAULT_WORLD_MUSIC } from "@/utils/sound/defaults";
+import { DEFAULT_PINK_NOISE } from "@/utils/sound/defaults";
+import { Color } from "three";
 
 import { useNavigate } from "react-router-dom";
 import { sileo } from "sileo";
@@ -50,20 +55,70 @@ const Debug = () => {
 // TODO: make proper constant file
 export const FLOOR_Y_POSITION = -1.5;
 const TRUCK_SPEED = 5;
+const WHITE_LIGHT = new Color("#ffffff");
+
+const getSceneLightColors = (
+  sceneWorld: ReturnType<typeof useCoreStore.getState>["worlds"][number] | null,
+) => {
+  if (!sceneWorld?.scene.starfield) {
+    return {
+      ambientColor: WHITE_LIGHT,
+      directionalColor: WHITE_LIGHT,
+    };
+  }
+
+  const gradientMid = new Color(
+    sceneWorld.scene.gradientColors?.[1] ??
+      sceneWorld.scene.skyColors?.[0] ??
+      "#ffffff",
+  );
+  const gradientFar = new Color(
+    sceneWorld.scene.gradientColors?.[2] ??
+      sceneWorld.scene.skyColors?.[1] ??
+      sceneWorld.scene.skyColors?.[0] ??
+      "#ffffff",
+  );
+  const factor = sceneWorld?.scene.lighting?.moonGlowIntensity ? 1.5 : 0;
+  const lightBase = gradientMid.clone().lerp(gradientFar, 0.72 + factor);
+
+  return {
+    ambientColor: lightBase.clone().lerp(WHITE_LIGHT, 0.22),
+    directionalColor: lightBase.clone().lerp(WHITE_LIGHT, 0.34),
+  };
+};
 
 const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
   const cameraControlsRef = useRef<CameraControls>(null!);
   const { setCameraControlsRef } = useViewStore();
-  const { statisticsVisible, physicsDebugEnabled, isReady } = useCoreStore();
+  const { statisticsVisible, physicsDebugEnabled, worlds, previewMode } =
+    useCoreStore();
   const { activeGame } = useMiniGameStore();
 
   const { currentRoute } = useAppStore();
 
   // shop items are only visible on home route
   const isHome = currentRoute === ROUTE_PATHS.HOME;
-  // TODO: add grid options to UI
-  const showGrid = isHome;
-  const showBackground = isHome || currentRoute === ROUTE_PATHS.ABOUT;
+  const showBackground = currentRoute === ROUTE_PATHS.ABOUT;
+  const sceneWorld = useMemo(() => {
+    if (!isHome) return null;
+
+    if (previewMode === "world") {
+      return (
+        worlds.find((world) => world.preview) ??
+        worlds.find((world) => world.enabled) ??
+        null
+      );
+    }
+
+    return worlds.find((world) => world.enabled) ?? null;
+  }, [isHome, previewMode, worlds]);
+  const worldLighting = sceneWorld?.scene.lighting ?? DEFAULT_WORLD_LIGHTING;
+  const worldLightColors = useMemo(
+    () => getSceneLightColors(sceneWorld),
+    [sceneWorld],
+  );
+  const showHomeShadow =
+    sceneWorld?.id !== "world_weltall" && sceneWorld?.id !== "world_moon";
 
   useEffect(() => {
     setCameraControlsRef(cameraControlsRef);
@@ -80,35 +135,31 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
 
   const worldMusicId = useMemo(() => {
     switch (currentRoute) {
+      // case ROUTE_PATHS.HOME: {
+      //   return DEFAULT_WORLD_MUSIC.id;
+      // }
+
       case ROUTE_PATHS.PORTFOLIO: {
         return DEFAULT_PINK_NOISE.id;
-      }
-
-      case ROUTE_PATHS.MINIGAMES: {
-        if (activeGame === "PING_PONG" || activeGame === "FLAPPY_BIRD") {
-          return DEFAULT_WORLD_MUSIC.id;
-        }
-
-        return null;
       }
 
       default: {
         return null;
       }
     }
-  }, [activeGame, currentRoute]);
+  }, [currentRoute]);
 
   useEffect(() => {
     stopAllWorldSounds();
 
-    if (!isReady || !worldMusicId) return;
+    if (!worldMusicId) return;
 
     playWorldSound(worldMusicId, { stopPrevious: true });
 
     return () => {
-      stopSoundsById(worldMusicId);
+      stopAllWorldSounds();
     };
-  }, [isReady, worldMusicId]);
+  }, [worldMusicId]);
 
   return (
     <>
@@ -117,27 +168,21 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
           <AudioListenerBinder />
           <Fisheye zoom={FISHEYE_CONFIG.MIN} renderPriority={2}>
             <CursorFollowCamera />
-            {showGrid && (
-              <Grid
-                args={[8, 8]}
-                sectionThickness={2}
-                sectionColor="#E0DEE6"
-                // sectionColor="#959399"
-                sectionSize={1.2}
-                cellThickness={0}
-                fadeDistance={4}
-                position={[0, FLOOR_Y_POSITION - 0.55, -0.55]}
-              />
-            )}
             <CameraControls
               ref={cameraControlsRef}
               truckSpeed={TRUCK_SPEED}
               azimuthRotateSpeed={0.3}
             />
-            <ambientLight intensity={2} />
+            <ambientLight
+              intensity={worldLighting.ambientIntensity}
+              // color={worldLightColors.ambientColor}
+            />
             <PerspectiveCamera makeDefault position={[0, 0, 3]} />
-            <directionalLight intensity={1.2} position={[2, 4, 5]} />
-            <Environment preset="city" />
+            <directionalLight
+              intensity={worldLighting.directionalIntensity}
+              position={[2, 4, 5]}
+              color={worldLightColors.directionalColor}
+            />
             {showBackground && <BackgroundPlanet />}
             {statisticsVisible && <Debug />}
 
@@ -153,18 +198,25 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
 
               <a.group visible={isHome} scale={spring.scale}>
                 <TapCounter />
-                <SceneDecorations />
                 <TapEffects />
 
                 {/* bottom fake shadow */}
-                <mesh
-                  rotation={[-Math.PI / 2, 0, 0]}
-                  position={[0, FLOOR_Y_POSITION - 0.5, 0]}
-                >
-                  <circleGeometry args={[0.8, 16, 16]} />
-                  <meshToonMaterial color="#111820" transparent opacity={0.5} />
-                </mesh>
+                {showHomeShadow && (
+                  <mesh
+                    rotation={[-Math.PI / 2, 0, 0]}
+                    position={[0, FLOOR_Y_POSITION - 0.5, 0]}
+                  >
+                    <circleGeometry args={[0.8, 16, 16]} />
+                    <meshToonMaterial
+                      color="#111820"
+                      transparent
+                      opacity={0.5}
+                    />
+                  </mesh>
+                )}
               </a.group>
+
+              {isHome && <SceneDecorations />}
 
               <Suspense fallback={null}>
                 {match(currentRoute)

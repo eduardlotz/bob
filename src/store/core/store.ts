@@ -32,7 +32,7 @@ import {
   DEFAULT_UI_VOLUME,
   DEFAULT_WORLD_VOLUME,
 } from "@/utils/sound/defaults";
-import { initialDecorations } from "@/shop-items/decorations";
+import { initialWorlds } from "@/shop-items/worlds";
 import { migrateCoreStore } from "./migrations";
 import { OrbitForm } from "@/components/FileOrbit";
 
@@ -45,7 +45,9 @@ export enum GAME_STORE_VERSION {
   V2 = 1000001, // version 1.00.01
   V3 = 1000002, // version 1.00.02
   V4 = 1000003, // version 1.00.04
-  LATEST = V4,
+
+  V5 = 100100, // version 1.01.100
+  LATEST = V5,
 }
 
 // TODO: plan refactor to include component inside item properties
@@ -63,14 +65,7 @@ interface BaseItem {
 
 export interface WeatherEffect extends BaseItem {}
 
-type BlobFormShopItem = BaseItem & BlobFormConfig;
-
-export type ShopItem =
-  | DecorationItem
-  | TapEffect
-  | BobItem
-  | WeatherEffect
-  | BlobFormShopItem;
+export type ShopItem = WorldItem | TapEffect | BobItem | WeatherEffect;
 
 export interface Upgrade {
   id: string;
@@ -92,14 +87,65 @@ export interface TapEffect extends BaseItem {
   effectId?: number;
 }
 
-// Decoration types
-export interface DecorationItem extends BaseItem {
-  type: "2d" | "3d";
-  position: [number, number, number];
-  scale: number;
-  rotation?: number;
-  color?: string;
+export type WorldModelId =
+  | "default_home"
+  | "forest_grove"
+  | "forest_meadow"
+  | "desert_dunes"
+  | "desert_pyramids"
+  | "winter_pines"
+  | "winter_snowman"
+  | "moon_craters"
+  | "space_planet"
+  | "space_rings";
+
+export type WorldEffectId =
+  | "default_grid"
+  | "forest_clouds"
+  | "forest_fireflies"
+  | "forest_rain"
+  | "desert_sand"
+  | "winter_snow"
+  | "winter_sparkles"
+  | "moon_glow"
+  | "moon_meteors"
+  | "space_stars"
+  | "space_nebula"
+  | "space_dust";
+
+export interface WorldLightingConfig {
+  ambientIntensity: number;
+  directionalIntensity: number;
+  moonGlowIntensity?: number;
+  spaceGlowIntensity?: number;
+}
+
+export const DEFAULT_WORLD_LIGHTING: WorldLightingConfig = {
+  ambientIntensity: 2,
+  directionalIntensity: 1.2,
+};
+
+export const WEAKER_WORLD_LIGHTING: WorldLightingConfig = {
+  ambientIntensity: 1.82,
+  directionalIntensity: 1.08,
+};
+
+export interface WorldSceneConfig {
+  skyColors: [string, string];
+  gradientStops: [number, number, number];
+  gradientColors: [string, string, string];
+  groundColor: string;
+  accentColor: string;
+  models: WorldModelId[];
+  effects: WorldEffectId[];
+  starfield?: boolean;
+  lighting?: WorldLightingConfig;
+}
+
+export interface WorldItem extends BaseItem {
+  type: "world";
   icon?: string;
+  scene: WorldSceneConfig;
 }
 
 // Bob item types (for wearable items like hats)
@@ -113,8 +159,9 @@ export interface BobItem extends BaseItem {
 const ITEM_NAME_MAP = {
   hat: "Kopf",
   accessory: "Gesicht",
-  "3d": "Umgebung",
-  tapEffects: "Tap Effekt",
+  outfit: "Outfit",
+  world: "Welt",
+  tapEffect: "Effekt",
   decoration: "Extra",
 };
 
@@ -172,11 +219,7 @@ export interface SoundSystemState {
   worldEnabled?: boolean;
 }
 
-type PreviewMode =
-  | "theme"
-  | BobItem["type"]
-  | "tapEffect"
-  | DecorationItem["type"];
+type PreviewMode = "theme" | BobItem["type"] | "tapEffect" | "world";
 
 type QualityMode = "auto" | "low" | "high";
 
@@ -188,7 +231,7 @@ interface GameState {
   lastAutoTapTime: number;
 
   upgrades: Upgrade[];
-  decorations: DecorationItem[];
+  worlds: WorldItem[];
   bobItems: BobItem[];
   blobForms: BlobFormConfig[];
   themes: Theme[];
@@ -262,7 +305,7 @@ interface GameStateActions {
   resetBlobFormParameters: (blobFormId: string) => void;
 
   purchaseUpgrade: (upgradeId: string) => void;
-  purchaseDecoration: (decorationId: string) => void;
+  purchaseWorld: (worldId: string) => void;
   purchaseBobItem: (bobItemId: string, forFree?: boolean) => void;
   purchaseRoute: (routeId: string, forFree?: boolean) => void;
   purchaseBlobForm: (blobFormId: string) => void;
@@ -270,7 +313,7 @@ interface GameStateActions {
 
   activateTheme: (themeId: string) => void;
   selectTapEffect: (tapEffectId: string) => void;
-  toggleDecoration: (decorationId: string) => void;
+  selectWorld: (worldId: string) => void;
   toggleWeatherEffect: (effectId: string) => void;
   resetGame: () => void;
 
@@ -319,7 +362,7 @@ interface GameComputedActions {
 
 interface GameFlagsActions {
   previewBobItem: (bobItemId: string) => void;
-  previewDecoration: (decorationId: string) => void;
+  previewWorld: (worldId: string) => void;
   previewTapEffect: (effectId: string) => void;
   previewTheme: (themeId: string) => void;
   resetPreview: () => void;
@@ -455,6 +498,13 @@ const generateUpgradeHash = (upgrades: Upgrade[]): string => {
   return JSON.stringify(upgrades.map((u) => ({ id: u.id, level: u.level })));
 };
 
+const activateWorlds = (worlds: WorldItem[], activeWorldId: string) =>
+  worlds.map((world) => ({
+    ...world,
+    enabled: world.id === activeWorldId,
+    preview: false,
+  }));
+
 export const initialGameState: GameState = {
   version: GAME_STORE_VERSION.LATEST,
 
@@ -463,7 +513,7 @@ export const initialGameState: GameState = {
   lastAutoTapTime: 0,
 
   upgrades: initialTapUpgrades,
-  decorations: initialDecorations,
+  worlds: initialWorlds,
   bobItems: initialBobItems,
   tapEffects: initialTapEffects,
   weatherEffects: initialWeatherEffects,
@@ -524,7 +574,7 @@ const partializePersisted = (state: GameStore): PersistedGameStore => ({
   tapMultiplier: state.tapMultiplier,
   lastAutoTapTime: state.lastAutoTapTime,
   upgrades: state.upgrades,
-  decorations: state.decorations,
+  worlds: state.worlds,
   bobItems: state.bobItems,
   blobForms: state.blobForms,
   themes: state.themes,
@@ -698,49 +748,61 @@ export const useCoreStore = create<GameStore>()(
           });
         },
 
-        purchaseDecoration: (decorationId: string) => {
+        purchaseWorld: (worldId: string) => {
           set((state) => {
-            const decoration = state.decorations.find(
-              (d) => d.id === decorationId,
-            );
-            if (
-              !decoration ||
-              decoration.purchased ||
-              !state.canAfford(decoration.cost)
-            ) {
+            const world = state.worlds.find((entry) => entry.id === worldId);
+            if (!world || world.purchased || !state.canAfford(world.cost)) {
               return state;
             }
 
-            const updatedDecorations = state.decorations.map((d) =>
-              d.id === decorationId
-                ? { ...d, purchased: true, enabled: true }
-                : d,
+            const updatedWorlds = activateWorlds(
+              state.worlds.map((entry) =>
+                entry.id === worldId
+                  ? { ...entry, purchased: true }
+                  : { ...entry, preview: false },
+              ),
+              worldId,
             );
 
             return {
               ...state,
-              taps: state.taps - decoration.cost,
-              decorations: updatedDecorations,
+              taps: state.taps - world.cost,
+              worlds: updatedWorlds,
+              previewMode: null,
             };
           });
         },
-        previewDecoration: (decorationId: string) => {
+        previewWorld: (worldId: string) => {
           set((state) => {
-            const decoration = state.decorations.find(
-              (d) => d.id === decorationId,
-            );
-            if (!decoration) {
+            const world = state.worlds.find((entry) => entry.id === worldId);
+            if (!world) {
               return state;
             }
 
-            const updatedDecorations = state.decorations.map((d) =>
-              d.id === decorationId ? { ...d, preview: true } : d,
-            );
+            const updatedWorlds = state.worlds.map((entry) => ({
+              ...entry,
+              preview: entry.id === worldId,
+            }));
 
             return {
               ...state,
-              decorations: updatedDecorations,
-              previewMode: "decoration",
+              worlds: updatedWorlds,
+              previewMode: "world",
+            };
+          });
+        },
+
+        selectWorld: (worldId: string) => {
+          set((state) => {
+            const world = state.worlds.find((entry) => entry.id === worldId);
+            if (!world || !world.purchased || world.enabled) {
+              return state;
+            }
+
+            return {
+              ...state,
+              worlds: activateWorlds(state.worlds, worldId),
+              previewMode: null,
             };
           });
         },
@@ -1028,8 +1090,8 @@ export const useCoreStore = create<GameStore>()(
               preview: false,
             }));
 
-            const decorations = state.decorations.map((d) => ({
-              ...d,
+            const worlds = state.worlds.map((world) => ({
+              ...world,
               preview: false,
             }));
 
@@ -1038,28 +1100,8 @@ export const useCoreStore = create<GameStore>()(
               themes,
               bobItems,
               tapEffects,
-              decorations,
+              worlds,
               previewMode: null,
-            };
-          });
-        },
-
-        toggleDecoration: (decorationId: string) => {
-          set((state) => {
-            const decoration = state.decorations.find(
-              (d) => d.id === decorationId,
-            );
-            if (!decoration || !decoration.purchased) {
-              return state;
-            }
-
-            const updatedDecorations = state.decorations.map((d) =>
-              d.id === decorationId ? { ...d, enabled: !d.enabled } : d,
-            );
-
-            return {
-              ...state,
-              decorations: updatedDecorations,
             };
           });
         },
@@ -1173,17 +1215,22 @@ export const useCoreStore = create<GameStore>()(
 
         buyAllUpgrades: () => {
           set((state) => {
+            const activeWorldId =
+              state.worlds.find((world) => world.enabled)?.id ??
+              initialWorlds[0]?.id;
+
             const updatedUpgrades = state.upgrades.map((upgrade) => ({
               ...upgrade,
               unlocked: true,
               level: upgrade.maxLevel,
             }));
 
-            const updatedDecorations = state.decorations.map((decoration) => ({
-              ...decoration,
+            const updatedWorlds = state.worlds.map((world) => ({
+              ...world,
               purchased: true,
-              enabled: true,
+              enabled: world.id === activeWorldId,
               unlocked: true,
+              preview: false,
             }));
 
             const updatedRoutes = state.routes.map((route) => ({
@@ -1212,7 +1259,7 @@ export const useCoreStore = create<GameStore>()(
             return {
               ...state,
               upgrades: updatedUpgrades,
-              decorations: updatedDecorations,
+              worlds: updatedWorlds,
               tapEffects: updatedTapEffects,
               routes: updatedRoutes,
               bobItems: updatedBobItems,
