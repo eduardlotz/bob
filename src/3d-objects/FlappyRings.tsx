@@ -8,12 +8,12 @@ import {
 import { useFrame } from "@react-three/fiber";
 import { BallCollider, RapierRigidBody, RigidBody } from "@react-three/rapier";
 
-export const BASE_RING_SPEED = 2.5;
-export const RING_SPEED_SCORE_FACTOR = 0.06;
-const RING_DISTANCE = 7;
-const RING_COUNT = 8;
+export const BASE_RING_SPEED = 4;
+export const RING_SPEED_SCORE_FACTOR = 0.05;
+const RING_DISTANCE = 6;
+const RING_COUNT = 10;
 const RING_START_X = 8;
-const RECYCLE_X = -14;
+const RECYCLE_X = -16;
 const RING_COLLIDER_SEGMENTS = 12;
 const RING_COLLIDER_DEPTH_FACTORS = [-1, 1] as const;
 
@@ -118,7 +118,8 @@ export const FlappyRings = forwardRef<any, Props>(function FlappyRings(
     const birdPos = bird.translation();
 
     const speed =
-      BASE_RING_SPEED + Math.min(scoreRef.current, 80) * RING_SPEED_SCORE_FACTOR;
+      BASE_RING_SPEED +
+      Math.min(scoreRef.current, 80) * RING_SPEED_SCORE_FACTOR;
     let recycleAnchor = Number.NEGATIVE_INFINITY;
 
     cfgRef.current.forEach((cfg) => {
@@ -210,7 +211,10 @@ export const FlappyRings = forwardRef<any, Props>(function FlappyRings(
           {RING_COLLIDER_DEPTH_FACTORS.map((depthFactor, depthIndex) => {
             const colliderRadius = Math.max(0.06, cfg.tube * 0.75);
             const colliderDepth = Math.max(0.03, cfg.tube * 0.6) * depthFactor;
-            const colliderRingRadius = Math.max(0.12, cfg.radius - cfg.tube * 0.15);
+            const colliderRingRadius = Math.max(
+              0.12,
+              cfg.radius - cfg.tube * 0.15,
+            );
 
             return colliderAngles.map(([cosA, sinA], angleIndex) => (
               <BallCollider

@@ -24,7 +24,7 @@ import { playSound } from "@/utils/soundSystem";
 import { BackSide } from "three";
 import { GradientTexture } from "@react-three/drei";
 
-const FLAP_FORCE = 4;
+const FLAP_FORCE = 5;
 const BIRD_START_X = 1;
 const BIRD_START_Y = 1;
 const ARCADE_VISUAL_SCALE = 1.2;
@@ -163,13 +163,10 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
 
       <CharacterBall
         ref={birdApi}
-        // X locked — prevents bird drifting away from the ring centre-line,
-        // which was causing the geometric crossing check to mis-arm and
-        // incorrectly fire a miss on every ring.
         enabledTranslations={[false, true, false]}
-        angularDamping={2.2}
+        angularDamping={1}
         position={[BIRD_START_X, BIRD_START_Y, 0]}
-        scale={0.3}
+        scale={0.4}
       />
 
       <FlappyRings
