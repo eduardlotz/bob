@@ -11,7 +11,7 @@ import {
   useViewStore,
 } from "@/store";
 import { motion } from "motion/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { match } from "ts-pattern";
 import {
@@ -94,24 +94,20 @@ export function ShopApp() {
     [],
   );
   const currentItem = data[0];
+  const isViewActive = currentView === APP_ID;
+  const initialIndexRef = useRef(initialIndex);
 
   useEffect(() => {
     transitionToView(APP_ID);
     setViewMode("object");
 
-    goTo(initialIndex);
+    goTo(initialIndexRef.current);
+    return () => resetPreview();
   }, []);
 
   useEffect(() => {
     handleItemPreview();
-
-    if (currentView !== "phone:shop") {
-      resetPreview();
-      transitionToView(APP_ID);
-    } else {
-      transitionToView("phone:shop");
-    }
-  }, [page, activeTab, currentView]);
+  }, [activeTab, page]);
 
   const handleBobItemClick = () => {
     const bobItem = bobItems.find((b) => b.id === currentItem.id);
@@ -299,7 +295,8 @@ export function ShopApp() {
 
   return (
     <>
-      {createPortal(ShopOverlays, document.getElementById("motion-root")!)}
+      {isViewActive &&
+        createPortal(ShopOverlays, document.getElementById("motion-root")!)}
 
       <TabPanel>
         {tabs.map((tab) => (

@@ -47,7 +47,10 @@ interface AppStore {
 export const useAppStore = create<AppStore>()(
   devtools(
     (set, get) => ({
-      currentRoute: "/home",
+      currentRoute:
+        typeof window !== "undefined"
+          ? window.location.pathname
+          : ROUTE_PATHS.HOME,
       isNavigationOpen: false,
       isOptionsClosing: false,
       showOptions: false,

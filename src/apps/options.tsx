@@ -47,7 +47,7 @@ export function OptionsApp() {
 
   const { themes, activateTheme, previewTheme, resetPreview } = useCoreStore();
 
-  const { transitionToView } = useViewStore();
+  const { currentView, transitionToView } = useViewStore();
 
   const { data, page, pageCount, prev, next, hasNext, hasPrev, goTo } =
     usePagination(themes, 1);
@@ -57,6 +57,7 @@ export function OptionsApp() {
     [activeTab],
   );
   const currentItem = data[0];
+  const isViewActive = currentView === APP_ID;
 
   useEffect(() => {
     transitionToView(APP_ID);
@@ -270,7 +271,7 @@ export function OptionsApp() {
   return (
     <>
       {createPortal(
-        <ThemeOverlays visible={activeTab === "theme"} />,
+        <ThemeOverlays visible={activeTab === "theme" && isViewActive} />,
         document.getElementById("motion-root")!,
       )}
 

@@ -4,8 +4,6 @@ import styled, { keyframes } from "styled-components";
 import {
   AnimatePresence,
   motion,
-  LayoutGroup,
-  useAnimationFrame,
 } from "motion/react";
 import {
   useCallback,
@@ -51,7 +49,7 @@ function ViewfinderOverlay({
 }: OverlayProps) {
   const [finder, setFinder] = useState<FinderRect | null>(null);
 
-  useAnimationFrame(() => {
+  useLayoutEffect(() => {
     const compute = () => {
       const body = phoneBodyRef.current;
       if (!body) {
@@ -85,7 +83,7 @@ function ViewfinderOverlay({
       clearInterval(iv);
       clearTimeout(t);
     };
-  });
+  }, [onFinderRect, phoneBodyRef]);
 
   if (!finder) return null;
 
@@ -176,7 +174,7 @@ const APP_ID: CameraViewId = "phone:camera";
 
 export const CameraApp = () => {
   const gl = useGLBridge((s) => s.gl);
-  const { transitionToView } = useViewStore();
+  const { currentView, transitionToView } = useViewStore();
   const { addPhoto, photos, deletePhoto } = useCameraStore();
 
   const phoneBodyRef = useRef<HTMLDivElement>(null);
@@ -185,6 +183,7 @@ export const CameraApp = () => {
   const [flash, setFlash] = useState(false);
   const [view, setView] = useState<AppView>("camera");
   const [lightboxId, setLightboxId] = useState<string | null>(null);
+  const isViewActive = currentView === APP_ID;
 
   useEffect(() => {
     transitionToView(APP_ID);
@@ -251,7 +250,7 @@ export const CameraApp = () => {
   return (
     <>
       {/* Viewfinder overlay — only shown in camera mode */}
-      {view === "camera" && (
+      {isViewActive && view === "camera" && (
         <ViewfinderOverlay
           phoneBodyRef={phoneBodyRef}
           flash={flash}
