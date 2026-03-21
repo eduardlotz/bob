@@ -11,9 +11,9 @@ export const QuestsIcon = () => (
 
 export const QuestsApp = () => {
   const { quests } = useQuestStore();
-  const { bobItems, tapEffects, decorations } = useCoreStore();
+  const { bobItems, tapEffects, worlds } = useCoreStore();
 
-  const rewardItems = [...bobItems, ...tapEffects, ...decorations];
+  const rewardItems = [...bobItems, ...tapEffects, ...worlds];
 
   return (
     <HugColumn

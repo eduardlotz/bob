@@ -1,6 +1,5 @@
 import { usePagination } from "@/hooks/usePagination";
-import { ArrowLeftIcon, ArrowRightIcon } from "@/icons/arrow";
-import { FillRow, HugColumn, HugRow } from "@/layout";
+import { HugColumn, HugRow } from "@/layout";
 import { MOTION_VARIANTS } from "@/molecules/HeadNavigation";
 import { formatNumber } from "@/molecules/TapCounter";
 import {
@@ -11,7 +10,7 @@ import {
   useViewStore,
 } from "@/store";
 import { motion } from "motion/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { match } from "ts-pattern";
 import {
@@ -31,7 +30,7 @@ export const ShopIcon = () => (
   <img src="/images/app-logos/shop.png" height={80} width={80} />
 );
 
-type ShopTab = "effects" | "decorations" | "bob";
+type ShopTab = "effects" | "worlds" | "bob";
 
 const tabs = [
   {
@@ -43,8 +42,8 @@ const tabs = [
     name: "Effekte",
   },
   {
-    id: "decorations" as ShopTab,
-    name: "Deko",
+    id: "worlds" as ShopTab,
+    name: "Welt",
   },
 ];
 
@@ -61,7 +60,7 @@ export function ShopApp() {
 
   const {
     tapEffects,
-    decorations,
+    worlds,
     bobItems,
     canAfford,
     purchaseTapEffect,
@@ -69,12 +68,12 @@ export function ShopApp() {
     unequipBobItem,
     equipBobItem,
     purchaseBobItem,
-    toggleDecoration,
-    purchaseDecoration,
+    selectWorld,
+    purchaseWorld,
 
     resetPreview,
     previewBobItem,
-    previewDecoration,
+    previewWorld,
     previewTapEffect,
   } = useCoreStore();
 
@@ -83,24 +82,24 @@ export function ShopApp() {
   const shopViewsWithItems: Record<ShopTab, ShopItem[]> = {
     bob: bobItems.filter((b) => b.unlocked !== false),
     effects: tapEffects,
-    decorations: decorations,
+    worlds,
   };
 
   const { data, page, pageCount, prev, next, hasNext, hasPrev, goTo } =
     usePagination(shopViewsWithItems[activeTab], 1);
 
-  const initialIndex = useMemo(
-    () => shopViewsWithItems[activeTab].findIndex((t) => t.enabled),
-    [],
-  );
   const currentItem = data[0];
   const isViewActive = currentView === APP_ID;
-  const initialIndexRef = useRef(initialIndex);
+  const getInitialIndex = (tab: ShopTab) =>
+    Math.max(
+      0,
+      shopViewsWithItems[tab].findIndex((item) => item.enabled),
+    );
 
   useEffect(() => {
     transitionToView(APP_ID);
 
-    goTo(initialIndexRef.current);
+    goTo(getInitialIndex(activeTab));
     return () => resetPreview();
   }, []);
 
@@ -136,20 +135,20 @@ export function ShopApp() {
     }
   };
 
-  const handleDecoItemClick = () => {
-    const deco = decorations.find((e) => e.id === currentItem.id);
-    if (!deco) return;
+  const handleWorldItemClick = () => {
+    const world = worlds.find((entry) => entry.id === currentItem.id);
+    if (!world) return;
 
-    if (deco.purchased) {
-      toggleDecoration(currentItem.id);
-    } else if (canAfford(deco.cost)) {
-      purchaseDecoration(currentItem.id);
+    if (world.purchased) {
+      selectWorld(currentItem.id);
+    } else if (canAfford(world.cost)) {
+      purchaseWorld(currentItem.id);
     }
   };
 
   const handleTabChange = (id: ShopTab) => {
-    goTo(0);
     setActiveTab(id);
+    goTo(getInitialIndex(id));
   };
 
   const handleButton = () => {
@@ -160,14 +159,18 @@ export function ShopApp() {
       case "bob":
         handleBobItemClick();
         break;
-      case "decorations":
-        handleDecoItemClick();
+      case "worlds":
+        handleWorldItemClick();
         break;
     }
   };
 
   const handleItemPreview = () => {
-    if (currentItem.enabled) resetPreview();
+    if (currentItem.enabled) {
+      resetPreview();
+      return;
+    }
+
     switch (activeTab) {
       case "effects":
         previewTapEffect(currentItem.id);
@@ -175,16 +178,27 @@ export function ShopApp() {
       case "bob":
         previewBobItem(currentItem.id);
         break;
-      case "decorations":
-        previewDecoration(currentItem.id);
+      case "worlds":
+        previewWorld(currentItem.id);
         break;
     }
   };
 
-  const buttonLabel = match(currentItem)
-    .with({ enabled: true }, () => "Deaktiveren")
-    .with({ purchased: true }, () => "Aktivieren")
-    .otherwise(() => "Kaufen");
+  const buttonLabel =
+    activeTab === "worlds"
+      ? match(currentItem)
+          .with({ enabled: true }, () => "Ausgewählt")
+          .with({ purchased: true }, () => "Aktivieren")
+          .otherwise(() => "Kaufen")
+      : activeTab === "bob"
+        ? match(currentItem)
+            .with({ enabled: true }, () => "Ablegen")
+            .with({ purchased: true }, () => "Aktivieren")
+            .otherwise(() => "Kaufen")
+      : match(currentItem)
+          .with({ enabled: true }, () => "Deaktiveren")
+          .with({ purchased: true }, () => "Aktivieren")
+          .otherwise(() => "Kaufen");
 
   const handleNext = () => {
     if (hasNext) next();
@@ -247,7 +261,10 @@ export function ShopApp() {
             $canAfford={canAfford(currentItem.cost)}
             onClick={handleButton}
             role="button"
-            disabled={!currentItem.purchased && !canAfford(currentItem.cost)}
+            disabled={
+              (activeTab === "worlds" && currentItem.enabled) ||
+              (!currentItem.purchased && !canAfford(currentItem.cost))
+            }
             layout
           >
             <motion.span

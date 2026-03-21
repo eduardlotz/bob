@@ -116,8 +116,7 @@ const GrassInstancedMaterial = shaderMaterial(
 
     color *= (0.4 + 0.6 * vUv.y);
 
-    float alpha = uPreview ? 0.4 : 1.0;
-    gl_FragColor = vec4(color, alpha);
+    gl_FragColor = vec4(color, 1.0);
   }
   `
 );
@@ -129,9 +128,16 @@ interface Props {
   rotation?: [number, number, number];
   scale?: [number, number, number];
   preview: boolean;
+  densityMultiplier?: number;
 }
 
-export const GrassShader = ({ position, rotation, scale, preview }: Props) => {
+export const GrassShader = ({
+  position,
+  rotation,
+  scale,
+  preview,
+  densityMultiplier = 1,
+}: Props) => {
   const meshRef = useRef<THREE.InstancedMesh>(null!);
   const materialRef = useRef<any>(null);
 
@@ -139,11 +145,13 @@ export const GrassShader = ({ position, rotation, scale, preview }: Props) => {
 
   const allowedBladeCount = useMemo(
     () =>
-      match(graphicPreferences.qualityMode)
-        .with("high", () => BLADE_COUNT_MAX)
-        .with("low", () => BLADE_COUNT_MIN)
-        .otherwise(() => BLADE_COUNT_AVG),
-    [graphicPreferences]
+      Math.round(
+        match(graphicPreferences.qualityMode)
+          .with("high", () => BLADE_COUNT_MAX)
+          .with("low", () => BLADE_COUNT_MIN)
+          .otherwise(() => BLADE_COUNT_AVG) * densityMultiplier,
+      ),
+    [densityMultiplier, graphicPreferences]
   );
 
   const { matrices } = useMemo(() => {
@@ -179,8 +187,7 @@ export const GrassShader = ({ position, rotation, scale, preview }: Props) => {
         <circleGeometry args={[FIELD_SIZE / 2, 64]} />
         <meshBasicMaterial
           color={COLOR_ROOT}
-          opacity={preview ? 0.2 : 1}
-          transparent={preview}
+          opacity={1}
         />
       </mesh>
 
@@ -198,7 +205,6 @@ export const GrassShader = ({ position, rotation, scale, preview }: Props) => {
         <grassInstancedMaterial
           ref={materialRef}
           uPreview={preview}
-          transparent={preview}
           side={THREE.DoubleSide}
         />
       </instancedMesh>
