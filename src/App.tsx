@@ -59,6 +59,11 @@ export default function App() {
     syncViewToRoute(location.pathname);
   }, [location.pathname, syncViewToRoute]);
 
+  useEffect(() => {
+    if (!cameraControlsRef?.current) return;
+    syncViewToRoute(location.pathname);
+  }, [cameraControlsRef, location.pathname, syncViewToRoute]);
+
   // sync router with store
   // stop all previous world sounds onRouteChange
   useEffect(() => {

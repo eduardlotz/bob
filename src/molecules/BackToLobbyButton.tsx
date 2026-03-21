@@ -7,7 +7,7 @@ import { SmallArrowLeftIcon } from "@/icons/arrow";
 
 export const BackToLobbyButton = ({ show }: { show: boolean }) => {
   const { finishGame } = useMiniGameStore();
-  const { setViewMode, transitionToView } = useViewStore();
+  const { setViewMode } = useViewStore();
 
   const onTriggerClick = () => {
     finishGame();

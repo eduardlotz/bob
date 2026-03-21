@@ -151,37 +151,9 @@ export const MessageBubble = memo(function MessageBubble({
   >([]);
   const [isTyping, setIsTyping] = useState(false);
   const dismissTimerRef = useRef<number | null>(null);
+  const lineTimerRef = useRef<number | null>(null);
 
   const queueLength = getQueueLength();
-
-  useEffect(() => {
-    if (previewMode === "theme" && currentView == "phone:options") {
-      showMessage("chat_theme_preview");
-    } else {
-      dismissMessageById("chat_theme_preview");
-    }
-  }, [previewMode, currentView]);
-
-  useEffect(() => {
-    if (!activeMessage || !isReady) {
-      const t = setTimeout(() => setVisibleLines([]), 300);
-      return () => clearTimeout(t);
-    }
-
-    if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
-
-    if (activeMessage.options?.emotion?.state) {
-      requestEmotion(activeMessage.options.emotion.state);
-    }
-
-    const rawText = activeMessage.config.text;
-    const lines = Array.isArray(rawText)
-      ? rawText
-      : String(rawText).split(/\r?\n/);
-
-    setVisibleLines([]);
-    processLinesRecursive(lines, 0, activeMessage.config.id);
-  }, [activeMessage?.config.id, isReady]);
 
   const processLinesRecursive = useCallback(
     (allLines: string[], index: number, messageId: string) => {
@@ -228,12 +200,48 @@ export const MessageBubble = memo(function MessageBubble({
       const typingDuration = currentLineText.length * TYPING_SPEED_MS;
       const nextStepDelay = typingDuration + BASE_LINE_DELAY_MS;
 
-      setTimeout(() => {
+      lineTimerRef.current = window.setTimeout(() => {
         processLinesRecursive(allLines, index + 1, messageId);
       }, nextStepDelay);
     },
     [],
   );
+
+  useEffect(() => {
+    if (previewMode === "theme" && currentView == "phone:options") {
+      showMessage("chat_theme_preview");
+    } else {
+      dismissMessageById("chat_theme_preview", true);
+    }
+  }, [previewMode, currentView]);
+
+  useEffect(() => {
+    if (!activeMessage || !isReady) {
+      if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
+      if (lineTimerRef.current) clearTimeout(lineTimerRef.current);
+      const t = setTimeout(() => setVisibleLines([]), 300);
+      return () => clearTimeout(t);
+    }
+
+    if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
+    if (lineTimerRef.current) clearTimeout(lineTimerRef.current);
+
+    if (activeMessage.options?.emotion?.state) {
+      requestEmotion(activeMessage.options.emotion.state);
+    }
+
+    const rawText = activeMessage.config.text;
+    const lines = Array.isArray(rawText)
+      ? rawText
+      : String(rawText).split(/\r?\n/);
+
+    setVisibleLines([]);
+    processLinesRecursive(lines, 0, activeMessage.config.id);
+    return () => {
+      if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
+      if (lineTimerRef.current) clearTimeout(lineTimerRef.current);
+    };
+  }, [activeMessage?.config.id, isReady, processLinesRecursive, requestEmotion]);
 
   // TODO: reveal full message on click, dismiss if all revealed
   const handleClick = () => {

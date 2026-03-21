@@ -95,13 +95,14 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
   }, [currentRoute]);
 
   useEffect(() => {
+    stopAllWorldSounds();
+
     if (!worldMusicId) return;
 
-    stopAllWorldSounds();
     playWorldSound(worldMusicId, { stopPrevious: true });
 
     return () => {
-      stopSoundsById(worldMusicId);
+      stopAllWorldSounds();
     };
   }, [worldMusicId]);
 

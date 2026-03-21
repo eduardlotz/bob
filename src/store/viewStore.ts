@@ -59,9 +59,23 @@ const resolveRouteViewId = (route: string): CameraViewId => {
   if (route === ROUTE_PATHS.MINIGAMES) {
     const activeGame = useMiniGameStore.getState().activeGame;
     if (activeGame === "SLOT_MACHINE") return "minigames:slot_machine";
-    return "minigames";
+    return "default";
   }
   return "default";
+};
+
+const DEFAULT_CONTROLS = {
+  minPolarAngle: 0.2,
+  maxPolarAngle: 2,
+  minDistance: 1,
+  maxDistance: 7,
+};
+
+const PORTFOLIO_CONTROLS = {
+  minPolarAngle: 1.55,
+  maxPolarAngle: 1.6,
+  minDistance: 2.5,
+  maxDistance: 72.5,
 };
 
 // camera settings for different object views
@@ -159,8 +173,8 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   "phone:camera": {
     id: "phone:camera",
     name: "Camera View",
-    position: [0, CAMERA_HEIGHT, HIDDEN_OPTIONS_CAMERA_ZOOM],
-    target: [0, CAMERA_Y_POSITION - 1, 0],
+    position: [0, CAMERA_HEIGHT - 0.35, HIDDEN_OPTIONS_CAMERA_ZOOM + 0.85],
+    target: [0, CAMERA_Y_POSITION - 0.85, 0],
     transition: {
       duration: 1000,
       easing: "easeInOutCubic",
@@ -273,8 +287,11 @@ export const useViewStore = create<ViewStore>()(
       applyViewModeToControls: (mode: ViewMode) => {
         const controls = get().cameraControlsRef?.current;
         if (!controls) return;
+        const currentView = get().currentView;
+        const focusedImageTitle = get().focusedImageTitle;
+        const isPortfolioView = currentView === "portfolio";
+        const isCameraAppView = currentView === "phone:camera";
 
-        // TODO: apply all view mode rules here like cursor or camera controls
         if (mode === "object") {
           const cameraPos = new Vector3();
           controls.getPosition(cameraPos); // current camera world position
@@ -285,25 +302,35 @@ export const useViewStore = create<ViewStore>()(
           controls.getTarget(target);
           controls.setTarget(target.x, target.y, target.z, true);
 
-          // if (get().isImageFocused) {
-          //   controls.minDistance = 2;
-          // } else if (get().currentView === "portfolio")
-          //   controls.minDistance = 62;
-          // else controls.minDistance = 4;
-
-          controls.mouseButtons.left = get().focusedImageTitle
+          controls.mouseButtons.left =
+            isCameraAppView || focusedImageTitle
             ? CameraControlsImpl.ACTION.TRUCK
             : CameraControlsImpl.ACTION.ROTATE;
+          controls.mouseButtons.middle = CameraControlsImpl.ACTION.DOLLY;
+          controls.mouseButtons.right = CameraControlsImpl.ACTION.TRUCK;
+          controls.touches.one =
+            isCameraAppView || focusedImageTitle
+              ? CameraControlsImpl.ACTION.TOUCH_TRUCK
+              : CameraControlsImpl.ACTION.TOUCH_ROTATE;
+          controls.touches.two = CameraControlsImpl.ACTION.TOUCH_DOLLY_TRUCK;
+
+          const limits = isPortfolioView
+            ? PORTFOLIO_CONTROLS
+            : DEFAULT_CONTROLS;
+          controls.minPolarAngle = limits.minPolarAngle;
+          controls.maxPolarAngle = limits.maxPolarAngle;
+          controls.minDistance = limits.minDistance;
+          controls.maxDistance = limits.maxDistance;
         } else {
           controls.mouseButtons.left = CameraControlsImpl.ACTION.NONE;
           controls.mouseButtons.middle = CameraControlsImpl.ACTION.NONE;
           controls.mouseButtons.right = CameraControlsImpl.ACTION.NONE;
           controls.touches.one = CameraControlsImpl.ACTION.NONE;
           controls.touches.two = CameraControlsImpl.ACTION.NONE;
-          controls.minPolarAngle = 0.2;
-          controls.maxPolarAngle = 2;
-          controls.minDistance = 1;
-          controls.maxDistance = 7;
+          controls.minPolarAngle = DEFAULT_CONTROLS.minPolarAngle;
+          controls.maxPolarAngle = DEFAULT_CONTROLS.maxPolarAngle;
+          controls.minDistance = DEFAULT_CONTROLS.minDistance;
+          controls.maxDistance = DEFAULT_CONTROLS.maxDistance;
         }
       },
 
@@ -476,30 +503,6 @@ export const useViewStore = create<ViewStore>()(
           if (!viewConfig) {
             console.warn(`"${currentView}" view config missing`);
             return;
-          }
-
-          if (viewConfig.defaultViewMode === "object") {
-            controls.mouseButtons.left = CameraControlsImpl.ACTION.ROTATE;
-            controls.touches.one = CameraControlsImpl.ACTION.TOUCH_ROTATE;
-          } else {
-            controls.mouseButtons.left = CameraControlsImpl.ACTION.NONE;
-            controls.mouseButtons.middle = CameraControlsImpl.ACTION.NONE;
-            controls.mouseButtons.right = CameraControlsImpl.ACTION.NONE;
-            controls.touches.one = CameraControlsImpl.ACTION.NONE;
-            controls.touches.two = CameraControlsImpl.ACTION.NONE;
-          }
-
-          // set polar small angles for portfolio vs bigger for rest
-          if (currentRoute === ROUTE_PATHS.PORTFOLIO) {
-            controls.minPolarAngle = 1.55;
-            controls.maxPolarAngle = 1.6;
-            controls.minDistance = 2.5;
-            controls.maxDistance = 72.5;
-          } else {
-            controls.maxPolarAngle = 2;
-            controls.minPolarAngle = 0.2;
-            controls.minDistance = 1;
-            controls.maxDistance = 7;
           }
 
           if (
