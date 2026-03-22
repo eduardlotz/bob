@@ -154,6 +154,10 @@ export const CustomLoader = ({
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.2 }}
+                    whileTap={{
+                      scale: 0.95,
+                      transition: { duration: 0.15, type: "spring" },
+                    }}
                     style={{ borderRadius: "50px", overflow: "hidden" }}
                   >
                     <motion.span>Start</motion.span>

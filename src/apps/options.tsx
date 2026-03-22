@@ -1,8 +1,8 @@
 import { usePagination } from "@/hooks/usePagination";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
-import { ArrowLeftIcon, ArrowRightIcon } from "@/icons/arrow";
+import { SegmentedValueSlider } from "@/components/SegmentedValueSlider";
 import { FillColumn, FillRow, HugRow, ListItemContainer } from "@/layout";
-import { Divider, RowLabel, ValueChip, ValueSlider } from "@/layout/atoms";
+import { Divider, RowLabel } from "@/layout/atoms";
 import { CameraViewId, useCoreStore, useViewStore } from "@/store";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -97,41 +97,23 @@ export function OptionsApp() {
   interface VolumeItemProps {
     label: string;
     value: number; // 0–1
-    onDecrease: () => void;
-    onIncrease: () => void;
+    onChange: (value: number) => void;
   }
 
-  const VolumeItem: React.FC<VolumeItemProps> = ({
-    label,
-    value,
-    onDecrease,
-    onIncrease,
-  }) => {
+  const VolumeItem = ({ label, value, onChange }: VolumeItemProps) => {
     const pct = Math.round(value * 100);
 
     return (
       <VolumeRow>
         <RowLabel>{label}</RowLabel>
-        <VolumeControls>
-          <StepButton
-            style={{ background: "rgba(33,33,33,0.1)", color: "#212121" }}
-            $flex={value}
-            $visible={pct > 0}
-            onClick={onDecrease}
-          >
-            <MinusIcon />
-          </StepButton>
-
-          <ValueChip>{pct}%</ValueChip>
-
-          <StepButton
-            $flex={1 - value}
-            $visible={pct < 100}
-            onClick={onIncrease}
-          >
-            <PlusIcon />
-          </StepButton>
-        </VolumeControls>
+        <SegmentedValueSlider
+          value={value}
+          min={0}
+          max={1}
+          step={0.1}
+          onChange={onChange}
+          formatValue={() => `${pct}%`}
+        />
       </VolumeRow>
     );
   };
@@ -139,39 +121,34 @@ export function OptionsApp() {
   const AudioView = useCallback(() => {
     const sound = useSoundSystem();
 
-    const step = (current: number, dir: 1 | -1) =>
-      Math.min(1, Math.max(0, Math.round((current + dir * 0.1) * 100) / 100));
+    const normalizeVolumeValue = (next: number) =>
+      Math.min(1, Math.max(0, Math.round(next * 100) / 100));
 
     const rows: VolumeItemProps[] = [
       {
         label: "Master",
         value: sound.masterVolume,
-        onDecrease: () => sound.setMasterVolume(step(sound.masterVolume, -1)),
-        onIncrease: () => sound.setMasterVolume(step(sound.masterVolume, +1)),
+        onChange: (value) => sound.setMasterVolume(normalizeVolumeValue(value)),
       },
       {
         label: "Musik",
         value: sound.worldVolume,
-        onDecrease: () => sound.setWorldVolume(step(sound.worldVolume, -1)),
-        onIncrease: () => sound.setWorldVolume(step(sound.worldVolume, +1)),
+        onChange: (value) => sound.setWorldVolume(normalizeVolumeValue(value)),
       },
       {
         label: "Effekte",
         value: sound.tapVolume,
-        onDecrease: () => sound.setTapVolume(step(sound.tapVolume, -1)),
-        onIncrease: () => sound.setTapVolume(step(sound.tapVolume, +1)),
+        onChange: (value) => sound.setTapVolume(normalizeVolumeValue(value)),
       },
       {
         label: "UI",
         value: sound.uiVolume,
-        onDecrease: () => sound.setUIVolume(step(sound.uiVolume, -1)),
-        onIncrease: () => sound.setUIVolume(step(sound.uiVolume, +1)),
+        onChange: (value) => sound.setUIVolume(normalizeVolumeValue(value)),
       },
       {
         label: "Chat",
         value: sound.textVolume,
-        onDecrease: () => sound.setTextVolume(step(sound.textVolume, -1)),
-        onIncrease: () => sound.setTextVolume(step(sound.textVolume, +1)),
+        onChange: (value) => sound.setTextVolume(normalizeVolumeValue(value)),
       },
     ];
 
@@ -348,88 +325,8 @@ export function OptionsApp() {
 const VolumeRow = styled.div`
   display: grid;
   grid-template-columns: 0.25fr 1fr;
-
   align-items: center;
   justify-content: space-between;
   grid-gap: 1rem;
   width: 100%;
 `;
-
-const VolumeControls = styled.div`
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  width: 100%;
-`;
-
-const StepButton = styled.button<{ $flex: number; $visible: boolean }>`
-  flex: ${({ $flex }) => $flex};
-  min-width: 0;
-  height: 2.2rem;
-  border-radius: 999px;
-  border: none;
-  background: #1a1a1a;
-  color: #fff;
-  font-size: 1.1rem;
-  font-weight: 400;
-  cursor: pointer;
-  display: ${({ $visible }) => ($visible ? "flex" : "none")};
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: flex 0.2s ease;
-  overflow: hidden;
-
-  svg {
-    min-width: 1rem;
-    min-height: 1rem;
-  }
-
-  &:active {
-    opacity: 0.7;
-    transform: scale(0.93);
-  }
-`;
-
-const MinusIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 16 16"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M4.00781 7.99512L12.0078 7.99512"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-const PlusIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 16 16"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M8 12V4"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M4.00781 7.99512L12.0078 7.99512"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);

@@ -15,6 +15,7 @@ import { Suspense, useRef, useState, useEffect, useMemo } from "react";
 
 import {
   DEFAULT_WORLD_LIGHTING,
+  DebugLightSettings,
   useAppStore,
   useCoreStore,
   useMiniGameStore,
@@ -40,6 +41,7 @@ import { TapEffects } from "../3d-objects/ParticleEffects";
 import { SceneDecorations } from "@/3d-objects/Decorations";
 import { MiniGamesScene } from "@/routes/MiniGamesScene";
 import { DEFAULT_PINK_NOISE } from "@/utils/sound/defaults";
+import * as THREE from "three";
 import { Color } from "three";
 
 import { useNavigate } from "react-router-dom";
@@ -54,44 +56,111 @@ const Debug = () => {
 
 // TODO: make proper constant file
 export const FLOOR_Y_POSITION = -1.5;
-const TRUCK_SPEED = 5;
 const WHITE_LIGHT = new Color("#ffffff");
+const MOON_WORLD_ID = "world_moon";
+const SPACE_WORLD_ID = "world_weltall";
+
+type HomeSunRig = {
+  radius: number;
+  target: [number, number, number];
+  azimuth: number;
+  elevation: number;
+};
+
+const HOME_SUN_RIGS: Partial<Record<string, Partial<HomeSunRig>>> = {
+  world_default: {},
+  world_forest: {
+    azimuth: 0.52,
+    elevation: 0.7,
+  },
+  world_desert: {
+    azimuth: 0.18,
+    elevation: 0.82,
+  },
+  world_winter: {
+    azimuth: 0.44,
+    elevation: 0.48,
+  },
+  [MOON_WORLD_ID]: {},
+  [SPACE_WORLD_ID]: {},
+};
+
+const getHomeSunRig = (
+  lightSettings: DebugLightSettings,
+  worldId?: string | null,
+): HomeSunRig => ({
+  radius: lightSettings.homeLightRadius,
+  target: [
+    lightSettings.homeLightTargetX,
+    lightSettings.homeLightTargetY,
+    lightSettings.homeLightTargetZ,
+  ],
+  azimuth: lightSettings.homeLightAzimuth,
+  elevation: lightSettings.homeLightElevation,
+  ...(worldId ? HOME_SUN_RIGS[worldId] : {}),
+});
 
 const getSceneLightColors = (
+  _sceneWorld: ReturnType<typeof useCoreStore.getState>["worlds"][number] | null,
+) => ({
+  ambientColor: WHITE_LIGHT,
+  directionalColor: WHITE_LIGHT,
+});
+
+const getEffectiveWorldLighting = (
   sceneWorld: ReturnType<typeof useCoreStore.getState>["worlds"][number] | null,
-) => {
-  if (!sceneWorld?.scene.starfield) {
-    return {
-      ambientColor: WHITE_LIGHT,
-      directionalColor: WHITE_LIGHT,
-    };
-  }
+) => sceneWorld?.scene.lighting ?? DEFAULT_WORLD_LIGHTING;
 
-  const gradientMid = new Color(
-    sceneWorld.scene.gradientColors?.[1] ??
-      sceneWorld.scene.skyColors?.[0] ??
-      "#ffffff",
-  );
-  const gradientFar = new Color(
-    sceneWorld.scene.gradientColors?.[2] ??
-      sceneWorld.scene.skyColors?.[1] ??
-      sceneWorld.scene.skyColors?.[0] ??
-      "#ffffff",
-  );
-  const factor = sceneWorld?.scene.lighting?.moonGlowIntensity ? 1.5 : 0;
-  const lightBase = gradientMid.clone().lerp(gradientFar, 0.72 + factor);
+function HomeDirectionalLight({
+  rig,
+  color,
+  intensity,
+}: {
+  rig: HomeSunRig;
+  color: Color;
+  intensity: number;
+}) {
+  const lightRef = useRef<THREE.DirectionalLight>(null);
+  const targetRef = useRef<THREE.Object3D>(null);
 
-  return {
-    ambientColor: lightBase.clone().lerp(WHITE_LIGHT, 0.22),
-    directionalColor: lightBase.clone().lerp(WHITE_LIGHT, 0.34),
-  };
-};
+  useEffect(() => {
+    if (!lightRef.current || !targetRef.current) return;
+    lightRef.current.target = targetRef.current;
+    const horizontalRadius = Math.cos(rig.elevation) * rig.radius;
+    const [targetX, targetY, targetZ] = rig.target;
+
+    targetRef.current.position.set(targetX, targetY, targetZ);
+    lightRef.current.position.set(
+      targetX + Math.sin(rig.azimuth) * horizontalRadius,
+      targetY + Math.sin(rig.elevation) * rig.radius,
+      targetZ + Math.cos(rig.azimuth) * horizontalRadius,
+    );
+    targetRef.current.updateMatrixWorld();
+  }, [rig]);
+
+  return (
+    <>
+      <object3D ref={targetRef} />
+      <directionalLight
+        ref={lightRef}
+        intensity={intensity}
+        color={color}
+      />
+    </>
+  );
+}
 
 const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
   const cameraControlsRef = useRef<CameraControls>(null!);
   const { setCameraControlsRef } = useViewStore();
-  const { statisticsVisible, physicsDebugEnabled, worlds, previewMode } =
-    useCoreStore();
+  const {
+    statisticsVisible,
+    physicsDebugEnabled,
+    worlds,
+    previewMode,
+    debugCameraSettings,
+    debugLightSettings,
+  } = useCoreStore();
   const { activeGame } = useMiniGameStore();
 
   const { currentRoute } = useAppStore();
@@ -100,8 +169,6 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
   const isHome = currentRoute === ROUTE_PATHS.HOME;
   const showBackground = currentRoute === ROUTE_PATHS.ABOUT;
   const sceneWorld = useMemo(() => {
-    if (!isHome) return null;
-
     if (previewMode === "world") {
       return (
         worlds.find((world) => world.preview) ??
@@ -111,14 +178,27 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
     }
 
     return worlds.find((world) => world.enabled) ?? null;
-  }, [isHome, previewMode, worlds]);
-  const worldLighting = sceneWorld?.scene.lighting ?? DEFAULT_WORLD_LIGHTING;
-  const worldLightColors = useMemo(
-    () => getSceneLightColors(sceneWorld),
-    [sceneWorld],
+  }, [previewMode, worlds]);
+  const activeLightingWorld = isHome ? sceneWorld : null;
+  const worldLighting = useMemo(
+    () => getEffectiveWorldLighting(activeLightingWorld),
+    [activeLightingWorld],
   );
-  const showHomeShadow =
-    sceneWorld?.id !== "world_weltall" && sceneWorld?.id !== "world_moon";
+  const resolvedAmbientIntensity =
+    worldLighting.ambientIntensity *
+    debugLightSettings.ambientIntensityMultiplier;
+  const resolvedDirectionalIntensity =
+    worldLighting.directionalIntensity *
+    debugLightSettings.directionalIntensityMultiplier;
+  const worldLightColors = useMemo(
+    () => getSceneLightColors(activeLightingWorld),
+    [activeLightingWorld],
+  );
+  const homeSunRig = useMemo(
+    () => getHomeSunRig(debugLightSettings, activeLightingWorld?.id),
+    [activeLightingWorld?.id, debugLightSettings],
+  );
+  const showHomeShadow = isHome && sceneWorld?.id !== SPACE_WORLD_ID;
 
   useEffect(() => {
     setCameraControlsRef(cameraControlsRef);
@@ -170,19 +250,34 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
             <CursorFollowCamera />
             <CameraControls
               ref={cameraControlsRef}
-              truckSpeed={TRUCK_SPEED}
-              azimuthRotateSpeed={0.3}
+              truckSpeed={debugCameraSettings.truckSpeed}
+              azimuthRotateSpeed={debugCameraSettings.azimuthRotateSpeed}
             />
             <ambientLight
-              intensity={worldLighting.ambientIntensity}
+              intensity={resolvedAmbientIntensity}
               // color={worldLightColors.ambientColor}
             />
-            <PerspectiveCamera makeDefault position={[0, 0, 3]} />
-            <directionalLight
-              intensity={worldLighting.directionalIntensity}
-              position={[2, 4, 5]}
-              color={worldLightColors.directionalColor}
+            <PerspectiveCamera
+              makeDefault
+              position={[0, 0, debugCameraSettings.perspectiveCameraZ]}
             />
+            {isHome ? (
+              <HomeDirectionalLight
+                rig={homeSunRig}
+                intensity={resolvedDirectionalIntensity}
+                color={worldLightColors.directionalColor}
+              />
+            ) : (
+              <directionalLight
+                intensity={debugLightSettings.routeLightIntensity}
+                position={[
+                  debugLightSettings.routeLightX,
+                  debugLightSettings.routeLightY,
+                  debugLightSettings.routeLightZ,
+                ]}
+              />
+            )}
+            {!isHome && <Environment preset="city" />}
             {showBackground && <BackgroundPlanet />}
             {statisticsVisible && <Debug />}
 
@@ -199,24 +294,26 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
               <a.group visible={isHome} scale={spring.scale}>
                 <TapCounter />
                 <TapEffects />
-
-                {/* bottom fake shadow */}
-                {showHomeShadow && (
-                  <mesh
-                    rotation={[-Math.PI / 2, 0, 0]}
-                    position={[0, FLOOR_Y_POSITION - 0.5, 0]}
-                  >
-                    <circleGeometry args={[0.8, 16, 16]} />
-                    <meshToonMaterial
-                      color="#111820"
-                      transparent
-                      opacity={0.5}
-                    />
-                  </mesh>
-                )}
               </a.group>
 
               {isHome && <SceneDecorations />}
+
+              {/* bottom fake shadow */}
+              {showHomeShadow && (
+                <mesh
+                  renderOrder={6}
+                  rotation={[-Math.PI / 2, 0, 0]}
+                  position={[0, debugLightSettings.fakeShadowY, 0]}
+                >
+                  <circleGeometry args={[0.8, 16, 16]} />
+                  <meshToonMaterial
+                    color="#111820"
+                    transparent
+                    opacity={debugLightSettings.fakeShadowOpacity}
+                    depthWrite={false}
+                  />
+                </mesh>
+              )}
 
               <Suspense fallback={null}>
                 {match(currentRoute)
@@ -283,6 +380,7 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
   const [isMobile, setIsMobile] = useState(false);
   const [dpr, setDpr] = useState(2);
   const navigate = useNavigate();
+  const debugCameraSettings = useCoreStore((state) => state.debugCameraSettings);
 
   const handlePerformanceChange = ({ factor }: { factor: number }) => {
     setDpr(Math.max(Math.floor(0.5 + 1.5 * factor), 1));
@@ -331,7 +429,16 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
         canvas.addEventListener("webglcontextrestored", onRestored, false);
       }}
       color="black"
-      camera={{ position: [0, 0, isMobile ? 1.5 : 2], fov: 50 }}
+      camera={{
+        position: [
+          0,
+          0,
+          isMobile
+            ? debugCameraSettings.canvasMobileCameraZ
+            : debugCameraSettings.canvasDesktopCameraZ,
+        ],
+        fov: debugCameraSettings.cameraFov,
+      }}
       style={{
         width: "100vw",
         height: "100dvh",

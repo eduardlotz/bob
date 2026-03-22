@@ -98,13 +98,41 @@ const SHARED_MATERIALS = {
     opacity: 0.44,
     depthWrite: false,
   }),
-  bubbles: new THREE.MeshPhongMaterial({
-    color: "#e6fbff",
-    specular: new THREE.Color("#ffffff"),
-    shininess: 120,
+  bubbles: new THREE.ShaderMaterial({
     transparent: true,
-    opacity: 0.18,
     depthWrite: false,
+    side: THREE.DoubleSide,
+    vertexShader: `
+      attribute vec3 instanceColor;
+
+      varying float vFresnel;
+      varying vec3 vInstanceColor;
+
+      void main() {
+        vec4 worldPosition = modelMatrix * instanceMatrix * vec4(position, 1.0);
+        vec3 worldNormal = normalize(mat3(modelMatrix * instanceMatrix) * normal);
+        vec3 viewDirection = normalize(cameraPosition - worldPosition.xyz);
+
+        vFresnel = pow(1.0 - max(dot(worldNormal, viewDirection), 0.0), 2.4);
+        vInstanceColor = instanceColor;
+
+        gl_Position = projectionMatrix * viewMatrix * worldPosition;
+      }
+    `,
+    fragmentShader: `
+      varying float vFresnel;
+      varying vec3 vInstanceColor;
+
+      void main() {
+        float rim = smoothstep(0.08, 0.95, vFresnel);
+        float alpha = rim * 0.72;
+        vec3 color = mix(vInstanceColor * 0.45, vec3(1.0), 0.58);
+
+        if (alpha < 0.02) discard;
+
+        gl_FragColor = vec4(color, alpha);
+      }
+    `,
   }),
   rain: new THREE.MeshToonMaterial({
     color: "#87CEEB",

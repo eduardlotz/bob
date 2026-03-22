@@ -1,13 +1,7 @@
-import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { HugColumn, ListItemContainer } from "@/layout";
 import { Divider, DividerWithLabel } from "@/layout/atoms";
 import { formatNumber } from "@/molecules/TapCounter";
-import {
-  CameraViewId,
-  useCameraStore,
-  useCoreStore,
-  useQuestStore,
-} from "@/store";
+import { useCameraStore, useCoreStore, useQuestStore } from "@/store";
 import { useMessageStore } from "@/store/messageStore";
 import { ActionButton, SettingsWrapper, ToggleButton } from "./ui";
 import { sileo } from "sileo";
@@ -16,57 +10,66 @@ export const DebugIcon = () => (
   <img src="/images/app-logos/debug.png" height={80} width={80} />
 );
 
-const APP_ID: CameraViewId = "phone:debug";
-
 export const DebugApp = () => {
-  const { resetQuests } = useQuestSystem();
-  const { clearShownFlags, clearAllMessages, showMessages } = useMessageStore();
+  const clearShownFlags = useMessageStore((state) => state.clearShownFlags);
+  const clearAllMessages = useMessageStore((state) => state.clearAllMessages);
+  const showMessages = useMessageStore((state) => state.showMessages);
 
-  const {
-    viewDebuggerVisible,
-    toggleViewDebugger,
-    statisticsVisible,
-    toggleStatistics,
-    resetGame: resetGameStore,
-    isPaused,
-    pauseGame,
-    resumeGame,
-    addTaps,
-    buyAllUpgrades,
-    version,
-    themes,
-    currentTheme,
-    manualTaps,
-    taps,
-    getAutoTapRate,
-    autoTapRate,
-    getTotalTapMultiplier,
-    getTotalTapsPerSecond,
-    physicsDebugEnabled,
-    togglePhysicsDebug,
-  } = useCoreStore();
+  const viewDebuggerVisible = useCoreStore(
+    (state) => state.viewDebuggerVisible,
+  );
+  const toggleViewDebugger = useCoreStore(
+    (state) => state.toggleViewDebugger,
+  );
+  const statisticsVisible = useCoreStore((state) => state.statisticsVisible);
+  const toggleStatistics = useCoreStore((state) => state.toggleStatistics);
+  const physicsDebugEnabled = useCoreStore(
+    (state) => state.physicsDebugEnabled,
+  );
+  const togglePhysicsDebug = useCoreStore((state) => state.togglePhysicsDebug);
+  const cameraSettingsOverlayVisible = useCoreStore(
+    (state) => state.cameraSettingsOverlayVisible,
+  );
+  const toggleCameraSettingsOverlay = useCoreStore(
+    (state) => state.toggleCameraSettingsOverlay,
+  );
+  const lightSettingsOverlayVisible = useCoreStore(
+    (state) => state.lightSettingsOverlayVisible,
+  );
+  const toggleLightSettingsOverlay = useCoreStore(
+    (state) => state.toggleLightSettingsOverlay,
+  );
+  const resetGameStore = useCoreStore((state) => state.resetGame);
+  const isPaused = useCoreStore((state) => state.isPaused);
+  const pauseGame = useCoreStore((state) => state.pauseGame);
+  const resumeGame = useCoreStore((state) => state.resumeGame);
+  const addTaps = useCoreStore((state) => state.addTaps);
+  const buyAllUpgrades = useCoreStore((state) => state.buyAllUpgrades);
+  const version = useCoreStore((state) => state.version);
+  const themes = useCoreStore((state) => state.themes);
+  const currentTheme = useCoreStore((state) => state.currentTheme);
+  const manualTaps = useCoreStore((state) => state.manualTaps);
+  const taps = useCoreStore((state) => state.taps);
+  const getAutoTapRate = useCoreStore((state) => state.getAutoTapRate);
+  const getTotalTapMultiplier = useCoreStore(
+    (state) => state.getTotalTapMultiplier,
+  );
+  const getTotalTapsPerSecond = useCoreStore(
+    (state) => state.getTotalTapsPerSecond,
+  );
 
-  const {
-    quests,
-    activeQuests,
-    resetAllQuests,
-    version: questsVersion,
-  } = useQuestStore();
+  const quests = useQuestStore((state) => state.quests);
+  const resetAllQuests = useQuestStore((state) => state.resetAllQuests);
+  const questsVersion = useQuestStore((state) => state.version);
 
-  const { clearAll } = useCameraStore();
+  const clearAll = useCameraStore((state) => state.clearAll);
 
   const resetEverything = () => {
-    // reset shop, upgrades, options, routes, debug, sound
     resetGameStore();
-
-    // reset camera
     clearAll();
-
-    // reset chat + flags
     clearShownFlags();
     clearAllMessages();
-
-    resetQuests();
+    resetAllQuests();
   };
 
   const toggleGamePaused = () => {
@@ -79,7 +82,7 @@ export const DebugApp = () => {
       style={{
         width: "25rem",
         maxWidth: "100%",
-        maxHeight: "23rem",
+        maxHeight: "28rem",
         overflowY: "auto",
         borderRadius: "1.25rem",
       }}
@@ -153,6 +156,7 @@ export const DebugApp = () => {
           </ListItemContainer>
         </HugColumn>
       </SettingsWrapper>
+
       <SettingsWrapper>
         <HugColumn>
           <h5>Quests Data</h5>
@@ -176,15 +180,9 @@ export const DebugApp = () => {
             <p>Verfügbar</p>
             <p>
               {quests
-                .map((t) => (t.completed !== true ? t.title : ""))
+                .map((quest) => (quest.completed !== true ? quest.title : ""))
                 .join(" / ")}
             </p>
-            {/* <p>Abgeschlossen</p>
-            <p>
-              {quests
-                .map((t) => (t.completed === true ? t.title : ""))
-                .join(" / ")}
-            </p> */}
           </ListItemContainer>
         </HugColumn>
       </SettingsWrapper>
@@ -280,7 +278,30 @@ export const DebugApp = () => {
         </ToggleButton>
       </SettingsWrapper>
 
+      <SettingsWrapper>
+        <h5>Camera Settings Overlay</h5>
+
+        <ToggleButton
+          $active={cameraSettingsOverlayVisible}
+          onClick={toggleCameraSettingsOverlay}
+        >
+          <span />
+        </ToggleButton>
+      </SettingsWrapper>
+
+      <SettingsWrapper>
+        <h5>Light Settings Overlay</h5>
+
+        <ToggleButton
+          $active={lightSettingsOverlayVisible}
+          onClick={toggleLightSettingsOverlay}
+        >
+          <span />
+        </ToggleButton>
+      </SettingsWrapper>
+
       <DividerWithLabel>Danger zone</DividerWithLabel>
+
       <SettingsWrapper $variant="destructive">
         <h5>Reset Quests</h5>
         <ActionButton

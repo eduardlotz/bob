@@ -17,22 +17,18 @@ import {
   WorldSceneConfig,
 } from "@/store";
 import { GrassShader } from "./GrassShader";
-import {
-  CloudEffect,
-  ForestRainEffect,
-  SnowEffect,
-} from "./ParticleEffects";
+import { CloudEffect, ForestRainEffect, SnowEffect } from "./ParticleEffects";
 
 const TREE_PATH = "gltf/tree.gltf";
 const LARGE_FLOOR_SIZE = 80;
 const FLOOR_Y = -1.36;
 const HOME_HEAD_ANCHOR = new Vector3(0, 0, 0);
 const HOME_COUNTER_ANCHOR = new Vector3(0, -1, -3);
-const MOON_RADIUS = 68;
+const MOON_RADIUS = 16;
 const MOON_SEGMENTS = 56;
 const MOON_CENTER = new Vector3(
   HOME_HEAD_ANCHOR.x,
-  FLOOR_Y - MOON_RADIUS + 0.08,
+  FLOOR_Y - MOON_RADIUS - 0.08,
   THREE.MathUtils.lerp(HOME_HEAD_ANCHOR.z, HOME_COUNTER_ANCHOR.z, 0.24),
 );
 const MOON_SURFACE_ROTATION: [number, number, number] = [0.48, -0.22, 0.84];
@@ -213,27 +209,31 @@ const MoonSurfaceMaterial = shaderMaterial(
       float skyBounce = pow(max(dot(normal, vec3(0.0, 1.0, 0.0)), 0.0), 0.8);
       float limb = pow(1.0 - max(dot(normal, viewDirection), 0.0), 2.4);
       float bottomGlow = smoothstep(-0.92, -0.12, vSphereNormal.y) * uGlowStrength;
-      float craterOcclusion = vCraterMask * 0.18 + microNoise * 0.05;
+      float craterOcclusion = vCraterMask * 0.3 + microNoise * 0.06;
 
       vec3 regolithColor =
         mix(uBaseColor * 0.92, uGlowColor, dust * 0.08 + microNoise * 0.03);
-      vec3 mariaColor = mix(uBaseColor * 0.74, uCraterColor, 0.58);
-      vec3 craterColor = mix(uCraterColor * 0.88, uCraterColor, microNoise * 0.4);
+      vec3 mariaColor = mix(uBaseColor * 0.68, uCraterColor, 0.66);
+      vec3 craterColor = mix(uCraterColor * 0.72, uCraterColor, microNoise * 0.28);
 
       vec3 color = mix(regolithColor, mariaColor, maria * 0.44);
-      color = mix(color, craterColor, clamp(vCraterMask * 0.82 + microNoise * 0.08, 0.0, 1.0));
+      color = mix(
+        color,
+        craterColor,
+        clamp(vCraterMask * 0.94 + microNoise * 0.05, 0.0, 1.0)
+      );
       color = mix(
         color,
         uGlowColor,
-        vCraterRim * 0.16 + bottomGlow * 0.1 + limb * 0.06
+        vCraterRim * 0.2 + bottomGlow * 0.06 + limb * 0.04
       );
 
-      float shading = 0.2 + halfLambert * 0.62 + skyBounce * 0.18;
+      float shading = 0.12 + halfLambert * 0.58 + skyBounce * 0.14;
       shading *= 1.0 - craterOcclusion;
-      shading += vCraterRim * 0.12;
+      shading += vCraterRim * 0.16;
 
       vec3 litColor = color * shading;
-      litColor += uGlowColor * (limb * 0.1 + bottomGlow * 0.12);
+      litColor += uGlowColor * (limb * 0.06 + bottomGlow * 0.08);
 
       gl_FragColor = vec4(litColor, 1.0);
     }

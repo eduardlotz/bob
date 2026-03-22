@@ -15,7 +15,6 @@ import { useNavigate } from "react-router-dom";
 import { BackSide } from "three";
 
 import { PingPongPaddle } from "@/3d-objects/models/pingPongPaddle";
-import { TapEffects } from "@/3d-objects/ParticleEffects";
 import { PointsCounter } from "@/molecules/PointsCounter";
 import { DEFAULT_WORLD_MUSIC } from "@/utils/sound/defaults";
 import { playWorldSound, stopAllWorldSounds, stopSoundsById } from "@/utils/soundSystem";
@@ -262,9 +261,6 @@ export function MiniGamesScene() {
         onSelect={setActiveGame}
         onExit={handleExit}
       />
-
-      <TapEffects id="tap_effect_laser" />
-
       {activeGame === "LOBBY" ? (
         <MiniGamesBackdrop />
       ) : (

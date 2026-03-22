@@ -5,11 +5,6 @@ const DEFAULT_WORLD_LIGHTING = {
   directionalIntensity: 1.2,
 } as const;
 
-const WEAKER_WORLD_LIGHTING = {
-  ambientIntensity: 3,
-  directionalIntensity: 1.08,
-} as const;
-
 export const initialWorlds: WorldItem[] = [
   {
     id: "world_default",
@@ -110,7 +105,7 @@ export const initialWorlds: WorldItem[] = [
       effects: ["moon_glow", "moon_meteors"],
       starfield: true,
       lighting: {
-        ...WEAKER_WORLD_LIGHTING,
+        ...DEFAULT_WORLD_LIGHTING,
         moonGlowIntensity: 2,
       },
     },
@@ -134,7 +129,7 @@ export const initialWorlds: WorldItem[] = [
       models: ["space_planet", "space_rings"],
       effects: ["space_stars", "space_nebula", "space_dust", "moon_meteors"],
       starfield: true,
-      lighting: WEAKER_WORLD_LIGHTING,
+      lighting: DEFAULT_WORLD_LIGHTING,
     },
   },
 ];

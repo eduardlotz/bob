@@ -13,6 +13,7 @@ import {
   useViewStore,
 } from "@/store";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { DebugSceneTuningOverlays } from "@/components/DebugSceneTuningOverlays";
 
 import Home from "./routes/Home";
 import About from "./routes/About";
@@ -39,7 +40,9 @@ export default function App() {
     lastFocusPosition,
     syncViewToRoute,
   } = useViewStore();
-  const { viewDebuggerVisible } = useCoreStore();
+  const viewDebuggerVisible = useCoreStore(
+    (state) => state.viewDebuggerVisible,
+  );
 
   const [mounted, setMounted] = useState(false);
   const [currentRouteInPretty, setCurrentRouteInPretty] = useState("");
@@ -217,6 +220,8 @@ export default function App() {
               </p>
             </ViewDebug>
           )}
+
+          <DebugSceneTuningOverlays />
 
           <MainLayout>
             <ContentWrapper>

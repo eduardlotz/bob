@@ -148,6 +148,58 @@ export interface WorldItem extends BaseItem {
   scene: WorldSceneConfig;
 }
 
+export interface DebugCameraSettings {
+  truckSpeed: number;
+  azimuthRotateSpeed: number;
+  perspectiveCameraZ: number;
+  canvasDesktopCameraZ: number;
+  canvasMobileCameraZ: number;
+  cameraFov: number;
+}
+
+export interface DebugLightSettings {
+  ambientIntensityMultiplier: number;
+  directionalIntensityMultiplier: number;
+  homeLightRadius: number;
+  homeLightAzimuth: number;
+  homeLightElevation: number;
+  homeLightTargetX: number;
+  homeLightTargetY: number;
+  homeLightTargetZ: number;
+  routeLightX: number;
+  routeLightY: number;
+  routeLightZ: number;
+  routeLightIntensity: number;
+  fakeShadowY: number;
+  fakeShadowOpacity: number;
+}
+
+export const DEFAULT_DEBUG_CAMERA_SETTINGS: DebugCameraSettings = {
+  truckSpeed: 5,
+  azimuthRotateSpeed: 0.3,
+  perspectiveCameraZ: 3,
+  canvasDesktopCameraZ: 2,
+  canvasMobileCameraZ: 1.5,
+  cameraFov: 50,
+};
+
+export const DEFAULT_DEBUG_LIGHT_SETTINGS: DebugLightSettings = {
+  ambientIntensityMultiplier: 1,
+  directionalIntensityMultiplier: 1,
+  homeLightRadius: 6.7,
+  homeLightAzimuth: 0.38,
+  homeLightElevation: 0.64,
+  homeLightTargetX: 0,
+  homeLightTargetY: 0.7,
+  homeLightTargetZ: 0,
+  routeLightX: 2,
+  routeLightY: 4,
+  routeLightZ: 5,
+  routeLightIntensity: 1.2,
+  fakeShadowY: -1.32,
+  fakeShadowOpacity: 0.5,
+};
+
 // Bob item types (for wearable items like hats)
 export interface BobItem extends BaseItem {
   type: "hat" | "accessory" | "outfit" | "decoration";
@@ -262,6 +314,8 @@ interface GameState {
   };
 
   selectedOrbitForm: OrbitForm;
+  debugCameraSettings: DebugCameraSettings;
+  debugLightSettings: DebugLightSettings;
 }
 
 interface GameCache {
@@ -285,6 +339,8 @@ interface GameFlags {
   statisticsVisible: boolean;
   physicsDebugEnabled: boolean;
   viewDebuggerVisible: boolean;
+  cameraSettingsOverlayVisible: boolean;
+  lightSettingsOverlayVisible: boolean;
   isPaused: boolean;
   isHydrated: boolean;
   isReady: boolean;
@@ -338,6 +394,12 @@ interface GameStateActions {
   toggleWorldSoundId?: (id: string) => void;
   setTapEffectAudioId?: (id?: string) => void;
   setOrbitForm: (form: OrbitForm) => void;
+  updateDebugCameraSettings: (
+    updates: Partial<DebugCameraSettings>,
+  ) => void;
+  resetDebugCameraSettings: () => void;
+  updateDebugLightSettings: (updates: Partial<DebugLightSettings>) => void;
+  resetDebugLightSettings: () => void;
 }
 
 interface GameCacheActions {
@@ -377,6 +439,8 @@ interface GameFlagsActions {
   toggleStatistics: () => void;
   togglePhysicsDebug: () => void;
   toggleViewDebugger: () => void;
+  toggleCameraSettingsOverlay: () => void;
+  toggleLightSettingsOverlay: () => void;
 }
 
 export type PersistedGameStore = GameState & GameFlags;
@@ -545,6 +609,8 @@ export const initialGameState: GameState = {
     tapEffectAudioId: undefined,
   },
   selectedOrbitForm: "EQUATORIAL_RING",
+  debugCameraSettings: DEFAULT_DEBUG_CAMERA_SETTINGS,
+  debugLightSettings: DEFAULT_DEBUG_LIGHT_SETTINGS,
 };
 
 const initialGameFlags: GameFlags = {
@@ -554,6 +620,8 @@ const initialGameFlags: GameFlags = {
   statisticsVisible: false,
   physicsDebugEnabled: false,
   viewDebuggerVisible: false,
+  cameraSettingsOverlayVisible: false,
+  lightSettingsOverlayVisible: false,
   isPaused: false,
   isHydrated: false,
   isReady: false,
@@ -586,6 +654,8 @@ const partializePersisted = (state: GameStore): PersistedGameStore => ({
   soundSystem: state.soundSystem,
   soundPreferences: state.soundPreferences,
   audioSelections: state.audioSelections,
+  debugCameraSettings: state.debugCameraSettings,
+  debugLightSettings: state.debugLightSettings,
   isPaused: state.isPaused,
   isHydrated: false, // reset on reload
   isReady: false, // reset on reload
@@ -594,6 +664,8 @@ const partializePersisted = (state: GameStore): PersistedGameStore => ({
   statisticsVisible: state.statisticsVisible,
   physicsDebugEnabled: state.physicsDebugEnabled,
   viewDebuggerVisible: state.viewDebuggerVisible,
+  cameraSettingsOverlayVisible: state.cameraSettingsOverlayVisible,
+  lightSettingsOverlayVisible: state.lightSettingsOverlayVisible,
   previewMode: null, // reset on reload
   graphicPreferences: state.graphicPreferences,
   // selectedOrbitForm: state.selectedOrbitForm,
@@ -610,6 +682,32 @@ export const useCoreStore = create<GameStore>()(
         ...initialGameFlags,
         ...initialGameComputedValues,
         setOrbitForm: (form) => set({ selectedOrbitForm: form }),
+        updateDebugCameraSettings: (updates) =>
+          set((state) => ({
+            ...state,
+            debugCameraSettings: {
+              ...state.debugCameraSettings,
+              ...updates,
+            },
+          })),
+        resetDebugCameraSettings: () =>
+          set((state) => ({
+            ...state,
+            debugCameraSettings: DEFAULT_DEBUG_CAMERA_SETTINGS,
+          })),
+        updateDebugLightSettings: (updates) =>
+          set((state) => ({
+            ...state,
+            debugLightSettings: {
+              ...state.debugLightSettings,
+              ...updates,
+            },
+          })),
+        resetDebugLightSettings: () =>
+          set((state) => ({
+            ...state,
+            debugLightSettings: DEFAULT_DEBUG_LIGHT_SETTINGS,
+          })),
 
         setGameReady: (gameReady) => set({ isReady: gameReady }),
 
@@ -1294,6 +1392,18 @@ export const useCoreStore = create<GameStore>()(
           set((state) => ({
             ...state,
             viewDebuggerVisible: !state.viewDebuggerVisible,
+          }));
+        },
+        toggleCameraSettingsOverlay: () => {
+          set((state) => ({
+            ...state,
+            cameraSettingsOverlayVisible: !state.cameraSettingsOverlayVisible,
+          }));
+        },
+        toggleLightSettingsOverlay: () => {
+          set((state) => ({
+            ...state,
+            lightSettingsOverlayVisible: !state.lightSettingsOverlayVisible,
           }));
         },
 
