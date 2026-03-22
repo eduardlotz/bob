@@ -14,7 +14,7 @@ type GLTFResult = GLTF & {
     ["Material.001"]: THREE.MeshBasicMaterial;
   };
 };
-const PATH = "gltf/peace-of-mind-cap.glb";
+const PATH = "/gltf/peace-of-mind-cap.glb";
 
 interface Props {
   position: [number, number, number];

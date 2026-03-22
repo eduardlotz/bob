@@ -1,3 +1,7 @@
+import { getLocale } from "@/i18n";
+import type { Locale } from "@/i18n/types";
+import { routeMessages } from "./routes.messages";
+
 export const ROUTE_PATHS = {
   HOME: "/home",
   ABOUT: "/about",
@@ -7,6 +11,8 @@ export const ROUTE_PATHS = {
   GUESTBOOK: "/guestbook",
   MINIGAMES: "/mini",
 } as const;
+
+type RoutePath = (typeof ROUTE_PATHS)[keyof typeof ROUTE_PATHS];
 
 // TODO: check if paths are enough
 export const ROUTE_IDS = {
@@ -32,58 +38,56 @@ export const ROUTE_DICTIONARY: { [key: string]: string } = {
 export const ROUTE_CONFIG = {
   [ROUTE_PATHS.HOME]: {
     id: ROUTE_IDS.HOME,
-    name: "Home",
-    description:
-      "Hier kannst du Taps sammeln und die Effekte aus dem Shop nutzen.",
+    name: routeMessages.de.byPath[ROUTE_PATHS.HOME].name,
+    description: routeMessages.de.byPath[ROUTE_PATHS.HOME].description,
     cost: 0,
     icon: "🏠",
     isLocked: false,
   },
   [ROUTE_PATHS.ABOUT]: {
     id: ROUTE_IDS.ABOUT,
-    name: "Über mich",
-    description:
-      "Die gute alte 'Über Mich-Seite'. Darf natürlich nicht fehlen.",
+    name: routeMessages.de.byPath[ROUTE_PATHS.ABOUT].name,
+    description: routeMessages.de.byPath[ROUTE_PATHS.ABOUT].description,
     cost: 50,
     icon: "👤",
     isLocked: false,
   },
   [ROUTE_PATHS.PORTFOLIO]: {
     id: ROUTE_IDS.PORTFOLIO,
-    name: "Portfolio",
-    description: "Mein Design Portfolio.",
+    name: routeMessages.de.byPath[ROUTE_PATHS.PORTFOLIO].name,
+    description: routeMessages.de.byPath[ROUTE_PATHS.PORTFOLIO].description,
     cost: 100,
     icon: "🎨",
     isLocked: false,
   },
   [ROUTE_PATHS.TECHNICAL]: {
     id: ROUTE_IDS.TECHNICAL,
-    name: "Technisches",
-    description: "Noch nicht verfügbar.",
+    name: routeMessages.de.byPath[ROUTE_PATHS.TECHNICAL].name,
+    description: routeMessages.de.byPath[ROUTE_PATHS.TECHNICAL].description,
     cost: 0,
     icon: "⚙️",
     isLocked: true,
   },
   [ROUTE_PATHS.CREATIVE]: {
     id: ROUTE_IDS.CREATIVE,
-    name: "Kreatives",
-    description: "Noch nicht verfügbar",
+    name: routeMessages.de.byPath[ROUTE_PATHS.CREATIVE].name,
+    description: routeMessages.de.byPath[ROUTE_PATHS.CREATIVE].description,
     cost: 0,
     icon: "🎨",
     isLocked: true,
   },
   [ROUTE_PATHS.GUESTBOOK]: {
     id: ROUTE_IDS.GUESTBOOK,
-    name: "Gästebuch",
-    description: "Noch nicht verfügbar.",
+    name: routeMessages.de.byPath[ROUTE_PATHS.GUESTBOOK].name,
+    description: routeMessages.de.byPath[ROUTE_PATHS.GUESTBOOK].description,
     cost: 0,
     icon: "📝",
     isLocked: true,
   },
   [ROUTE_PATHS.MINIGAMES]: {
     id: ROUTE_IDS.MINIGAMES,
-    name: "Minispiele",
-    description: "Noch nicht verfügbar.",
+    name: routeMessages.de.byPath[ROUTE_PATHS.MINIGAMES].name,
+    description: routeMessages.de.byPath[ROUTE_PATHS.MINIGAMES].description,
     cost: 200,
     icon: "🎮",
     isLocked: false,
@@ -121,9 +125,24 @@ export const ROUTES = [
   },
 ] as const;
 
-export const getRouteLabelByPath = (path: string): string => {
-  const route = ROUTES.find((r) => r.path === path);
-  return route?.label || "Unknown";
+export const getRouteCopyByPath = (
+  path: string,
+  locale: Locale = getLocale(),
+) => {
+  const routeCopy =
+    routeMessages[locale].byPath[path as RoutePath] ??
+    routeMessages[locale].byPath[ROUTE_PATHS.HOME];
+
+  return routeCopy;
 };
 
-export const getAllRoutes = () => ROUTES;
+export const getRouteLabelByPath = (
+  path: string,
+  locale: Locale = getLocale(),
+): string => getRouteCopyByPath(path, locale)?.name ?? routeMessages[locale].unknown;
+
+export const getAllRoutes = (locale: Locale = getLocale()) =>
+  ROUTES.map((route) => ({
+    ...route,
+    label: getRouteLabelByPath(route.path, locale),
+  }));

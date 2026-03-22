@@ -1,12 +1,15 @@
 import { FillColumn, HugColumn } from "@/layout";
 import { Divider } from "@/layout/atoms";
 import styled from "styled-components";
+import { useI18n } from "@/i18n";
 
 export const CreditsIcon = () => (
   <img src="/images/app-logos/credits.png" height={80} width={80} />
 );
 
 export const CreditsApp = () => {
+  const { messages } = useI18n();
+
   return (
     <HugColumn
       style={{
@@ -20,7 +23,7 @@ export const CreditsApp = () => {
       layoutRoot
     >
       <ListSectionItem>
-        <h5>Inspirations</h5>
+        <h5>{messages.credits.sections.inspirations}</h5>
         <Divider />
         <p>
           Bruno Simon{" "}
@@ -75,7 +78,7 @@ export const CreditsApp = () => {
         </p>
       </ListSectionItem>
       <ListSectionItem>
-        <h5>3D Models</h5>
+        <h5>{messages.credits.sections.models}</h5>
         <Divider />
         <p>
           Tree, Macbook, Table & Bookshelf <b>by pmndrs</b> (market.pmnd.rs/)
@@ -122,7 +125,7 @@ export const CreditsApp = () => {
         </p>
       </ListSectionItem>
       <ListSectionItem>
-        <h5>Sounds & Music</h5>
+        <h5>{messages.credits.sections.sounds}</h5>
         <Divider />
         <p>
           Interface Sounds <b>by Kenney</b> (kenney.nl/assets/interface-sounds)
@@ -138,7 +141,7 @@ export const CreditsApp = () => {
         </p>
       </ListSectionItem>
       <ListSectionItem>
-        <h5>Icons & Fonts</h5>
+        <h5>{messages.credits.sections.icons}</h5>
         <Divider />
         <p>
           Line Icons <b>by Untitled UI</b> (untitledui.com)
@@ -156,7 +159,7 @@ export const CreditsApp = () => {
         </p>
       </ListSectionItem>
       <ListSectionItem>
-        <h5>Tools & Technologies</h5>
+        <h5>{messages.credits.sections.tools}</h5>
         <Divider />
 
         <p>gltf.pmnd.rs</p>

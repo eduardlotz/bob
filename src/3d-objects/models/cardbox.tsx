@@ -1,10 +1,11 @@
 import * as THREE from "three";
-import React, { forwardRef, useEffect, useRef } from "react";
-import { Outlines, useGLTF } from "@react-three/drei";
+import React, { forwardRef, useRef } from "react";
+import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
-import { a, useSpring } from "@react-spring/three";
 import { useViewStore } from "@/store";
 import { useFloatingBar } from "@/layout/FloatingBar";
+import { getLocale } from "@/i18n";
+import { cardboxMessages } from "./cardbox.messages";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -17,7 +18,7 @@ type GLTFResult = GLTF & {
   };
 };
 
-const PATH = "gltf/cardbox.glb";
+const PATH = "/gltf/cardbox.glb";
 
 interface Props {
   position: [number, number, number];
@@ -43,27 +44,16 @@ export const CardboxModel = forwardRef(
       };
     }
 
-    const [spring, api] = useSpring(() => ({
-      scale: [0, 0, 0], // start invisible
-      config: { tension: 200, friction: 15 },
-    }));
-
-    useEffect(() => {
-      api.start({
-        scale: scale,
-        config: { tension: 300, friction: 10 },
-      });
-    }, []);
-
     const { currentView } = useViewStore();
     const { setHoveredObject } = useFloatingBar();
 
     const handlePointerEnter = (e: any) => {
       e.stopPropagation();
+      const locale = getLocale();
 
       if (currentView !== "cardbox")
         setHoveredObject({
-          title: "Interessen & Hobbies",
+          title: cardboxMessages[locale].floatingLabel,
         });
     };
 
@@ -72,9 +62,9 @@ export const CardboxModel = forwardRef(
     };
 
     return (
-      <a.group
+      <group
         ref={group}
-        scale={spring.scale as any}
+        scale={scale}
         castShadow
         receiveShadow
         position={props.position}
@@ -107,7 +97,7 @@ export const CardboxModel = forwardRef(
             receiveShadow
           />
         </group>
-      </a.group>
+      </group>
     );
   },
 );

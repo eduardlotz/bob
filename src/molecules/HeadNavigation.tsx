@@ -17,6 +17,8 @@ import { useMessageStore } from "@/store/messageStore";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { playUISound } from "@/utils/soundSystem";
+import { useI18n } from "@/i18n";
+import { getRouteCopyByPath } from "@/store/config/routes";
 
 //#region constants
 export const CAMERA_Y_POSITION = 1;
@@ -333,6 +335,7 @@ function Option({
 }) {
   const optionRef = useRef<THREE.Group>(null!);
   const navigate = useNavigate();
+  const { locale } = useI18n();
   const { currentRoute } = useAppStore();
   const { triggerQuest } = useQuestSystem();
   const { canAfford, purchaseRoute } = useCoreStore();
@@ -398,7 +401,7 @@ function Option({
               <LockIcon />
             </PriceChip>
           )}
-          <RouteName>{route.name}</RouteName>
+          <RouteName>{getRouteCopyByPath(route.path, locale).name}</RouteName>
           <BackgroundColor $active={isActive} />
         </NavigationBubble>
       </Html>

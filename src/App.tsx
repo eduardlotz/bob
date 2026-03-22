@@ -13,17 +13,18 @@ import {
   useViewStore,
 } from "@/store";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { DebugSceneTuningOverlays } from "@/components/DebugSceneTuningOverlays";
 
 import Home from "./routes/Home";
 import About from "./routes/About";
 import { AnimatePresence, motion } from "motion/react";
 import { useMessageSystem } from "@/hooks/useMessageSystem";
 import { FloatingBarProvider, FloatingBarUI } from "./layout/FloatingBar";
-import { stopAllWorldSounds } from "./utils/soundSystem";
 import { CursorInputBridge } from "./bridges/CursorInputBridge";
 import { ClickableBridge } from "./bridges/ClickableBridge";
 import MiniGames from "./routes/MiniGames";
 import Portfolio from "./routes/Portfolio";
+import { useI18n } from "@/i18n";
 
 export default function App() {
   const location = useLocation();
@@ -40,11 +41,14 @@ export default function App() {
     lastFocusPosition,
     syncViewToRoute,
   } = useViewStore();
-  const { viewDebuggerVisible } = useCoreStore();
+  const viewDebuggerVisible = useCoreStore(
+    (state) => state.viewDebuggerVisible,
+  );
 
   const [mounted, setMounted] = useState(false);
   const [currentRouteInPretty, setCurrentRouteInPretty] = useState("");
   const [showRouteChip, setShowRouteChip] = useState(false);
+  const { locale } = useI18n();
 
   // init message system globally
   // not a real hook (TODO: change name)
@@ -65,13 +69,11 @@ export default function App() {
   }, [cameraControlsRef, location.pathname, syncViewToRoute]);
 
   // sync router with store
-  // stop all previous world sounds onRouteChange
   useEffect(() => {
     if (currentRoute !== location.pathname) {
       if (mounted) {
         setCurrentRoute(location.pathname);
-        stopAllWorldSounds(); // TODO: check why not working, need to call stopSoundsbyId manually
-        const route = getRouteLabelByPath(location.pathname);
+        const route = getRouteLabelByPath(location.pathname, locale);
         setCurrentRouteInPretty(route);
         setShowRouteChip(true);
         setTimeout(() => {
@@ -84,7 +86,11 @@ export default function App() {
         // };
       }
     }
-  }, [location.pathname, currentRoute, setCurrentRoute]);
+  }, [location.pathname, currentRoute, locale, setCurrentRoute]);
+
+  useEffect(() => {
+    setCurrentRouteInPretty(getRouteLabelByPath(location.pathname, locale));
+  }, [location.pathname, locale]);
 
   return (
     <ThemeProvider>
@@ -145,39 +151,83 @@ export default function App() {
             <ViewDebug layout>
               <p>
                 CameraControls:{" "}
-                {cameraControlsRef?.current?.active ? "active" : "-"}
+                <DebugValueChip>
+                  {cameraControlsRef?.current?.active ? "active" : "-"}
+                </DebugValueChip>
               </p>
               <p>
-                LastFocusPoint: x:{lastFocusPosition?.x.toFixed(0)} y:
-                {lastFocusPosition?.y.toFixed(0)} z:
-                {lastFocusPosition?.z.toFixed(0)}
+                LastFocusPoint: x:
+                <DebugValueChip>
+                  {lastFocusPosition?.x.toFixed(0)}
+                </DebugValueChip>{" "}
+                y:
+                <DebugValueChip>
+                  {lastFocusPosition?.y.toFixed(0)}
+                </DebugValueChip>{" "}
+                z:
+                <DebugValueChip>
+                  {lastFocusPosition?.z.toFixed(0)}
+                </DebugValueChip>
               </p>
-              <p>Distance: {cameraControlsRef?.current?.distance.toFixed(2)}</p>
               <p>
-                Polar Angle: {cameraControlsRef?.current?.polarAngle.toFixed(2)}
+                Distance:{" "}
+                <DebugValueChip>
+                  {cameraControlsRef?.current?.distance.toFixed(2)}
+                </DebugValueChip>
+              </p>
+              <p>
+                Polar Angle:{" "}
+                <DebugValueChip>
+                  {cameraControlsRef?.current?.polarAngle.toFixed(2)}
+                </DebugValueChip>
               </p>
               <p>
                 Polar min:{" "}
-                {cameraControlsRef?.current?.minPolarAngle.toFixed(2)}
+                <DebugValueChip>
+                  {cameraControlsRef?.current?.minPolarAngle.toFixed(2)}
+                </DebugValueChip>
               </p>
               <p>
                 Polar max:{" "}
-                {cameraControlsRef?.current?.minPolarAngle.toFixed(2)}
+                <DebugValueChip>
+                  {cameraControlsRef?.current?.minPolarAngle.toFixed(2)}
+                </DebugValueChip>
               </p>
               <p>
                 Azimuth Angle:{" "}
-                {cameraControlsRef?.current?.azimuthAngle.toFixed(2)}
+                <DebugValueChip>
+                  {cameraControlsRef?.current?.azimuthAngle.toFixed(2)}
+                </DebugValueChip>
               </p>
               <hr />
-              <p>transitioning? {isTransitioning ? "yes" : "no"}</p>
-              <p>Current View: {currentView}</p>
-              <p>Previous View: {previousView}</p>
+              <p>
+                transitioning?{" "}
+                <DebugValueChip>
+                  {isTransitioning ? "yes" : "no"}
+                </DebugValueChip>
+              </p>
+              <p>
+                Current View: <DebugValueChip>{currentView}</DebugValueChip>
+              </p>
+              <p>
+                Previous View: <DebugValueChip>{previousView}</DebugValueChip>
+              </p>
               <hr />
-              <p>Default ViewMode: {defaultViewMode}</p>
-              <p>Current ViewMode: {viewMode}</p>
-              <p>Previous ViewMode: {previousViewMode}</p>
+              <p>
+                Default ViewMode:{" "}
+                <DebugValueChip>{defaultViewMode}</DebugValueChip>
+              </p>
+              <p>
+                Current ViewMode: <DebugValueChip>{viewMode}</DebugValueChip>
+              </p>
+              <p>
+                Previous ViewMode:{" "}
+                <DebugValueChip>{previousViewMode}</DebugValueChip>
+              </p>
             </ViewDebug>
           )}
+
+          <DebugSceneTuningOverlays />
 
           <MainLayout>
             <ContentWrapper>
@@ -215,6 +265,10 @@ const ViewDebug = styled(motion.div)`
   width: fit-content;
   max-width: calc(100vw - 32px);
 
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
   color: #ffffff;
   padding: 12px 16px;
   border-radius: 24px;
@@ -228,6 +282,18 @@ const ViewDebug = styled(motion.div)`
   pointer-events: none;
   z-index: 1;
   word-break: break-all;
+
+  hr {
+    width: 100%;
+    opacity: 0.5;
+  }
+`;
+
+const DebugValueChip = styled.span`
+  padding: 0px 8px;
+  background-color: #f1f1f1;
+  color: #212121;
+  border-radius: 12px;
 `;
 
 const ContentWrapper = styled(FillColumn)`

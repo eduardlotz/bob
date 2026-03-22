@@ -4,20 +4,22 @@ import { motion, AnimatePresence } from "motion/react";
 import styled from "styled-components";
 import { SmallArrowLeftIcon } from "@/icons/arrow";
 import { playUISound } from "@/utils/soundSystem";
-import { ROUTE_PATHS, useAppStore, useBooksStore, useMiniGameStore } from "@/store";
+import {
+  ROUTE_PATHS,
+  useAppStore,
+  useBooksStore,
+  useMiniGameStore,
+} from "@/store";
 import { Magnetic } from "@/layout/Magnetic";
-
-const VIEWID_TITLE_MAP = {
-  desk: "Musik & Mixes",
-  bookshelf: "Buchsammlung",
-  computer: "Apps & Seiten",
-  cardbox: "Interessen & Hobbies",
-} satisfies Partial<Record<CameraViewId, string>>;
+import { useSocialsStore } from "@/store/socials";
+import { useI18n } from "@/i18n";
+import { viewControlsMessages } from "./ViewControls.messages";
 
 export function ViewControls() {
   const {
     currentView,
     isDefaultView,
+    isAboutView,
     isCreativeView,
     isPhoneView,
     isImageFocused,
@@ -29,7 +31,11 @@ export function ViewControls() {
 
   const currentRoute = useAppStore((s) => s.currentRoute);
   const { focusedBook } = useBooksStore();
+  const { focusedThrone } = useSocialsStore();
+  const { locale } = useI18n();
+
   const activeGame = useMiniGameStore((s) => s.activeGame);
+  const viewTitles = viewControlsMessages[locale].viewTitles;
 
   const isDefault = isDefaultView();
   const isPhone = isPhoneView();
@@ -39,9 +45,12 @@ export function ViewControls() {
   const isMinigamesRoute = currentRoute === ROUTE_PATHS.MINIGAMES;
 
   const shouldHide =
-    isGameActive || isMinigamesRoute || isTransitioning || focusedBook;
-  const isViewEligible =
-    !isDefault && !isPhone && !isCreative && !isNavigation;
+    isGameActive ||
+    isMinigamesRoute ||
+    isTransitioning ||
+    focusedBook ||
+    focusedThrone;
+  const isViewEligible = !isDefault && !isPhone && !isCreative && !isNavigation;
   const showControls = !shouldHide && (isImageFocused || isViewEligible);
 
   // escape key to return to default view
@@ -66,7 +75,7 @@ export function ViewControls() {
 
   const title = isImageFocused
     ? focusedImageTitle
-    : (VIEWID_TITLE_MAP[currentView as keyof typeof VIEWID_TITLE_MAP] ?? "");
+    : (viewTitles[currentView as keyof typeof viewTitles] ?? "");
 
   return (
     <AnimatePresence>
@@ -107,7 +116,7 @@ export function ViewControls() {
             >
               <SmallArrowLeftIcon />
 
-              <span>Zurück</span>
+              <span>{viewControlsMessages[locale].backLabel}</span>
             </TriggerContainer>
           </Magnetic>
 

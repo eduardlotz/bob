@@ -8,11 +8,17 @@ import { useProgress } from "@react-three/drei";
 import Scene from "@/molecules/Scene";
 import { UILayer } from "@/components/UILayer";
 import { useAppStore, useCoreStore } from "@/store";
-import { initializeSoundSystem } from "@/utils/soundSystem";
+import {
+  initializeSoundSystem,
+  resumeAudioContext,
+  unlockAudioContext,
+} from "@/utils/soundSystem";
 import { Cursor } from "./Cursor";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { SpeakerIcon } from "@/icons/speaker";
 import { StatusPillButton } from "@/apps/ui";
+import { LocaleSegmentedControl } from "@/components/LocaleSegmentedControl";
+import { useI18n } from "@/i18n";
 
 export const SCENE_REVEAL_DURATION = 0.3;
 
@@ -31,6 +37,7 @@ export const CustomLoader = ({
   const [exit, setExit] = useState(false);
   const { setGameReady, setSoundEnabled } = useCoreStore();
   const { toggle, isMuted, isEnabled } = useSoundSystem();
+  const { locale, setLocale, messages } = useI18n();
 
   // Track if this is monitoring initial scene load only
   const initialLoadCompleteRef = useRef(false);
@@ -113,6 +120,12 @@ export const CustomLoader = ({
                   <SpeakerIcon muted={isMuted} />
                 </motion.div>
               </StatusPillButton>
+
+              <LocaleSegmentedControl
+                value={locale}
+                onChange={setLocale}
+                compact
+              />
             </HugColumn>
 
             <AnimatePresence mode="popLayout" initial={false}>
@@ -150,9 +163,13 @@ export const CustomLoader = ({
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.2 }}
+                    whileTap={{
+                      scale: 0.95,
+                      transition: { duration: 0.15, type: "spring" },
+                    }}
                     style={{ borderRadius: "50px", overflow: "hidden" }}
                   >
-                    <motion.span>Start</motion.span>
+                    <motion.span>{messages.loader.start}</motion.span>
                   </StartButton>
                 )}
               </ProgressContainer>
@@ -183,6 +200,8 @@ export const SceneWithLoader = ({
   const handleEnter = async () => {
     try {
       await initializeSoundSystem();
+      await resumeAudioContext();
+      await unlockAudioContext();
     } catch (error) {
       console.error("failed to initialize sound system:", error);
     }

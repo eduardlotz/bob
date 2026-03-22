@@ -12,6 +12,7 @@ export type CursorVariant =
 type CursorSignals = {
   isPointerDown: boolean;
   isHoveringClickable: boolean;
+  isActiveClickablePress: boolean;
 };
 
 type CursorStore = CursorSignals & {
@@ -24,9 +25,10 @@ type CursorStore = CursorSignals & {
 
 function resolveCursorVariant(
   viewMode: ViewMode,
-  { isPointerDown, isHoveringClickable }: CursorSignals,
+  { isPointerDown, isHoveringClickable, isActiveClickablePress }: CursorSignals,
 ): CursorVariant {
-  if (isHoveringClickable) return isPointerDown ? "active" : "hover";
+  if (isActiveClickablePress) return "active";
+  if (isHoveringClickable) return "hover";
   if (viewMode === "object") {
     return isPointerDown ? "grabbing" : "grab";
   }
@@ -38,13 +40,21 @@ export const useCursorStore = create<CursorStore>((set, get) => ({
   variant: "default",
   isPointerDown: false,
   isHoveringClickable: false,
+  isActiveClickablePress: false,
   hide: () => set({ variant: "hidden" }),
   show: () => set({ variant: "default" }),
 
   setPointerDown: (isPointerDown) =>
     set(() => {
       const viewMode = useViewStore.getState().viewMode;
-      const next = { ...get(), isPointerDown };
+      const prev = get();
+      const next = {
+        ...prev,
+        isPointerDown,
+        isActiveClickablePress: isPointerDown
+          ? prev.isActiveClickablePress || prev.isHoveringClickable
+          : false,
+      };
       return {
         ...next,
         variant: resolveCursorVariant(viewMode, next),
@@ -54,7 +64,15 @@ export const useCursorStore = create<CursorStore>((set, get) => ({
   setHoveringClickable: (isHoveringClickable) =>
     set(() => {
       const viewMode = useViewStore.getState().viewMode;
-      const next = { ...get(), isHoveringClickable };
+      const prev = get();
+      const next = {
+        ...prev,
+        isHoveringClickable,
+        isActiveClickablePress:
+          prev.isPointerDown && prev.isActiveClickablePress
+            ? true
+            : prev.isPointerDown && isHoveringClickable,
+      };
       return {
         ...next,
         variant: resolveCursorVariant(viewMode, next),

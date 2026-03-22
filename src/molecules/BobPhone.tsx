@@ -23,6 +23,7 @@ import { StatusPillButton } from "@/apps/ui";
 
 import { CameraApp, CameraIcon } from "@/apps/camera";
 import { usePhoneBodyClip } from "@/hooks/usePhoneClip";
+import { useI18n } from "@/i18n";
 
 import { ChevronLeftIcon } from "@/icons/chevron";
 
@@ -34,16 +35,6 @@ type AppId =
   | "credits"
   | "debug"
   | "camera";
-
-const AppNameMap: Record<AppId, string> = {
-  shop: "Shop",
-  options: "Optionen",
-  chat: "Chat",
-  quests: "Quests",
-  credits: "Credits",
-  debug: "Debug",
-  camera: "Camera",
-};
 
 interface BobAppData {
   id: AppId;
@@ -109,6 +100,8 @@ export const BobPhone = (props: BobPhoneProps) => {
   const [activeApp, setActiveApp] = useState<AppId | undefined>();
 
   const clipStyle = usePhoneBodyClip();
+  const { messages } = useI18n();
+  const appNameMap: Record<AppId, string> = messages.phone.apps;
 
   const openApp = (appName: AppId) => {
     setActiveApp(appName);
@@ -121,7 +114,7 @@ export const BobPhone = (props: BobPhoneProps) => {
   const hideStatusBar = BOB_APPS.find((a) => a.id === activeApp)?.hideStatusBar;
   const activeAppBottomAction = () =>
     BOB_APPS.find((a) => a.id === activeApp)?.bottomAction;
-  const activeAppName = activeApp ? AppNameMap[activeApp] : "";
+  const activeAppName = activeApp ? appNameMap[activeApp] : "";
 
   const handleAudioButtonClick = () => {
     toggle();
@@ -221,7 +214,7 @@ export const BobPhone = (props: BobPhoneProps) => {
             </motion.span>
           )}
         </AnimatePresence>
-        <span>Phone</span>
+        <span>{messages.phone.phoneLabel}</span>
       </NavButton>
 
       <AnimatePresence mode="wait">
@@ -408,7 +401,7 @@ export const BobPhone = (props: BobPhoneProps) => {
                           onClick={() => openApp(app.id)}
                         >
                           {app.icon()}
-                          <AppLabel>{AppNameMap[app.id]}</AppLabel>
+                          <AppLabel>{appNameMap[app.id]}</AppLabel>
                         </AppContainer>
                       ))}
                     </AppGrid>

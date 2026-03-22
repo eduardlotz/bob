@@ -1,9 +1,10 @@
 import { FillRow, HugColumn } from "@/layout";
+import { getMessageById } from "@/messages/config";
 import { useMessageStore } from "@/store/messageStore";
-import { format } from "date-fns/format";
 import { motion } from "motion/react";
 import { useEffect, useRef } from "react";
 import styled from "styled-components";
+import { useI18n } from "@/i18n";
 
 export const ChatIcon = () => (
   <img src={"/images/app-logos/chat.png"} height={80} width={80} />
@@ -12,6 +13,7 @@ export const ChatIcon = () => (
 export const ChatApp = () => {
   const { archive } = useMessageStore();
   const containerRef = useRef<HTMLDivElement>(null);
+  const { locale, messages, formatDate } = useI18n();
 
   useEffect(() => {
     containerRef.current?.scrollTo({
@@ -21,9 +23,10 @@ export const ChatApp = () => {
 
   return (
     <>
-      <FillRow $align="center" $justify="center">
-        <AppInfo>Archiv für alte Nachrichten</AppInfo>
-      </FillRow>
+      <Header $align="center" $justify="center">
+        <AppTitle>{messages.chat.title}</AppTitle>
+        <AppInfo>{messages.chat.archiveLabel}</AppInfo>
+      </Header>
 
       <HugColumn
         style={{
@@ -39,30 +42,55 @@ export const ChatApp = () => {
         ref={containerRef}
         layoutRoot
       >
-        {archive.map((msg, i) => (
-          <MessageContainer
-            key={msg.id}
-            initial={{ opacity: 0, y: 10, filter: "blur(6px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, y: 10, filter: "blur(6px)" }}
-            transition={{
-              type: "spring" as const,
-              bounce: 0.5,
-              delay: 0.03 * i,
-            }}
-          >
-            <Text>{msg.text}</Text>
+        {archive.map((msg, i) => {
+          const localizedMessage = msg.messageId
+            ? getMessageById(msg.messageId, locale)
+            : undefined;
+          const text =
+            localizedMessage &&
+            typeof msg.messageLineIndex === "number" &&
+            localizedMessage.text[msg.messageLineIndex]
+              ? localizedMessage.text[msg.messageLineIndex]
+              : msg.text;
+          const sender = localizedMessage?.label ?? msg.sender;
 
-            <TimeTag>
-              {msg.sender ? `${msg.sender} · ` : ""}
-              {format(msg.time, "dd.MM.yy")}
-            </TimeTag>
-          </MessageContainer>
-        ))}
+          return (
+            <MessageContainer
+              key={msg.id}
+              initial={{ opacity: 0, y: 10, filter: "blur(6px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: 10, filter: "blur(6px)" }}
+              transition={{
+                type: "spring" as const,
+                bounce: 0.5,
+                delay: 0.03 * i,
+              }}
+            >
+              <Text>{text}</Text>
+
+              <TimeTag>
+                {sender ? `${sender} · ` : ""}
+                {formatDate(msg.time)}
+              </TimeTag>
+            </MessageContainer>
+          );
+        })}
       </HugColumn>
     </>
   );
 };
+
+const Header = styled(FillRow)`
+  flex-direction: column;
+  gap: 0.125rem;
+`;
+
+const AppTitle = styled.p`
+  font-size: 1rem;
+  font-weight: 700;
+  color: #212121;
+  margin: 0;
+`;
 
 const AppInfo = styled.p`
   font-size: 0.875rem;

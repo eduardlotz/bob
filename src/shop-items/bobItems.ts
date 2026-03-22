@@ -69,4 +69,15 @@ export const initialBobItems: BobItem[] = [
     icon: "🧢",
     category: "bob",
   },
+  {
+    id: "astronautHelmet",
+    name: "Astrobob",
+    description: "Der Kindheitstraum",
+    cost: 500,
+    purchased: false,
+    enabled: false,
+    type: "hat",
+    icon: "👨‍🚀",
+    category: "bob",
+  },
 ];

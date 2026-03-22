@@ -4,11 +4,13 @@ import { match } from "ts-pattern";
 import { ROUTE_PATHS } from "@/store/config/routes";
 import { useIsHydrated, useMessageStore } from "@/store/messageStore";
 import { useCoreStore } from "@/store/core/store";
+import { useLocaleStore } from "@/i18n";
 
 export function useMessageSystem() {
   const currentRoute = useAppStore((s) => s.currentRoute);
   const isHydrated = useIsHydrated();
   const { showMessage, showMessages, systemPaused } = useMessageStore();
+  const locale = useLocaleStore((state) => state.locale);
   const lastRouteRef = useRef<string | null>(null);
   const { manualTaps } = useCoreStore();
   const prevTapRef = useRef(0);
@@ -104,7 +106,15 @@ export function useMessageSystem() {
         clearTimeout(routeChangeTimeoutRef.current);
       }
     };
-  }, [currentRoute, isHydrated, handleRouteChange]);
+  }, [currentRoute, isHydrated, locale, handleRouteChange]);
+
+  useEffect(() => {
+    if (!isHydrated) return;
+
+    routeShownRef.current = {};
+    lastRouteRef.current = null;
+    useMessageStore.setState({ activeMessage: null, queue: [] });
+  }, [isHydrated, locale]);
 
   const autoTapHintThreshold = 7;
   // tap related messages

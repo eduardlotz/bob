@@ -14,7 +14,7 @@ type GLTFResult = GLTF & {
     ["Material.017"]: THREE.MeshStandardMaterial;
   };
 };
-const PATH = "gltf/builder-helmet.glb";
+const PATH = "/gltf/builder-helmet.glb";
 
 interface Props {
   position: [number, number, number];

@@ -3,6 +3,8 @@ import React, { forwardRef, useRef } from "react";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { useFloatingBar } from "@/layout/FloatingBar";
+import { useI18n } from "@/i18n";
+import { psControllerMessages } from "./ps-controller.messages";
 
 import { Grabbable } from "@/physics/Grabbable";
 import { RapierRigidBody, RigidBody } from "@react-three/rapier";
@@ -39,7 +41,7 @@ type GLTFResult = GLTF & {
   };
 };
 
-const PATH = "gltf/ps-controller.glb";
+const PATH = "/gltf/ps-controller.glb";
 
 interface Props {
   position: [number, number, number];
@@ -53,12 +55,13 @@ export const PSControllerModel = forwardRef(
 
     const { nodes, materials } = useGLTF(PATH) as GLTFResult;
     const { setHoveredObject } = useFloatingBar();
+    const { locale } = useI18n();
 
     const handlePointerEnter = (e: any) => {
       e.stopPropagation();
 
       setHoveredObject({
-        title: "Retro Videospiele",
+        title: psControllerMessages[locale].floatingLabel,
       });
     };
 

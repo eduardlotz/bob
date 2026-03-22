@@ -15,7 +15,7 @@ type GLTFResult = GLTF & {
   };
 };
 
-const PATH = "gltf/dj-controller.glb";
+const PATH = "/gltf/dj-controller.glb";
 
 interface Props {
   position: [number, number, number];

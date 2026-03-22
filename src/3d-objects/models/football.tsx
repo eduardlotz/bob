@@ -15,7 +15,7 @@ type GLTFResult = GLTF & {
   };
 };
 
-const PATH = "gltf/football.glb";
+const PATH = "/gltf/football.glb";
 
 interface Props {
   position: [number, number, number];

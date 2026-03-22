@@ -3,6 +3,8 @@ import React, { forwardRef, useRef } from "react";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { useFloatingBar } from "@/layout/FloatingBar";
+import { useI18n } from "@/i18n";
+import { midiControllerMessages } from "./midi-controller.messages";
 
 import { RapierRigidBody, RigidBody } from "@react-three/rapier";
 import { Grabbable } from "@/physics/Grabbable";
@@ -23,7 +25,7 @@ type GLTFResult = GLTF & {
   };
 };
 
-const PATH = "gltf/midi-controller.glb";
+const PATH = "/gltf/midi-controller.glb";
 
 interface Props {
   position: [number, number, number];
@@ -36,12 +38,13 @@ export const MidiControllerModel = forwardRef(
     const api = useRef<RapierRigidBody>(null);
     const { nodes, materials } = useGLTF(PATH) as GLTFResult;
     const { setHoveredObject } = useFloatingBar();
+    const { locale } = useI18n();
 
     const handlePointerEnter = (e: any) => {
       e.stopPropagation();
 
       setHoveredObject({
-        title: "Elektronische Musik",
+        title: midiControllerMessages[locale].floatingLabel,
       });
     };
 

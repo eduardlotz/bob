@@ -43,47 +43,37 @@ const FONT_PATH = "/fonts/OpenRundeBold.json";
 //   );
 // };
 
+const ENGLISH_NUMBER_FORMATTER = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
+
+const ENGLISH_COMPACT_FORMATTER = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+
+const COMPACT_UNITS = [
+  { threshold: 1_000_000_000, divisor: 1_000_000_000, suffix: "B" },
+  { threshold: 1_000_000, divisor: 1_000_000, suffix: "M" },
+  { threshold: 1_000, divisor: 1_000, suffix: "K" },
+] as const;
+
 export const formatNumber = (num: number): string => {
-  if (num < 10000) {
-    // number below 10k, use German locale formatting (dots for thousands)
-    return num.toLocaleString("de-DE", {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0, // This will floor the decimals
-    });
-  } else if (num < 1000000) {
-    // number 10k to 1M, convert to nearest hundred in K format
-    const flooredToHundreds = Math.floor(num / 100) * 100;
-    const inK = flooredToHundreds / 1000;
+  const absolute = Math.abs(num);
 
-    const formatted = inK.toLocaleString("en-US", {
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
-    });
-
-    return formatted.replace(/,/g, ".") + "K";
-  } else if (num < 1000000000) {
-    // number 1M to 1B, convert to nearest thousand in M format
-    const flooredToThousands = Math.floor(num / 1000) * 1000;
-    const inM = flooredToThousands / 1000000;
-
-    const formatted = inM.toLocaleString("en-US", {
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
-    });
-
-    return formatted.replace(/,/g, ".") + "M";
-  } else {
-    // number 1B and above, convert to nearest million in B format
-    const flooredToMillions = Math.floor(num / 1000000) * 1000000;
-    const inB = flooredToMillions / 1000000000;
-
-    const formatted = inB.toLocaleString("en-US", {
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
-    });
-
-    return formatted.replace(/,/g, ".") + "B";
+  if (absolute < 10_000) {
+    return ENGLISH_NUMBER_FORMATTER.format(Math.floor(num));
   }
+
+  const unit =
+    COMPACT_UNITS.find((entry) => absolute >= entry.threshold) ??
+    COMPACT_UNITS[COMPACT_UNITS.length - 1];
+  const decimals = unit.divisor >= 1_000_000 ? 1_000 : 100;
+  const floored = Math.floor(num / decimals) * decimals;
+  const compactValue = floored / unit.divisor;
+
+  return `${ENGLISH_COMPACT_FORMATTER.format(compactValue)}${unit.suffix}`;
 };
 
 const BASE_INTERVAL = 1; // min: 1 bounce per second

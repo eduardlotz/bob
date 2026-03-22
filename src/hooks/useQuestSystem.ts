@@ -2,17 +2,20 @@ import { useCallback, useMemo } from "react";
 import { useQuestStore } from "@/store/core/quests";
 import { useCoreStore } from "@/store/core/store";
 import { useAppStore } from "@/store";
-import { toast } from "sonner";
 import { ROUTE_DICTIONARY } from "@/store/config/routes";
 import { sileo } from "sileo";
+import { getLocale } from "@/i18n";
+import { getQuestCopy, type QuestMessageId } from "@/store/core/quests.messages";
 
 export const useQuestSystem = () => {
-  const { currentRoute } = useAppStore();
-  const { addTaps, purchaseBobItem } = useCoreStore();
-  const questStore = useQuestStore();
-  const quests = questStore.quests;
-  const updateQuestProgress = questStore.updateQuestProgress;
-  const completeQuest = questStore.completeQuest;
+  const currentRoute = useAppStore((state) => state.currentRoute);
+  const addTaps = useCoreStore((state) => state.addTaps);
+  const purchaseBobItem = useCoreStore((state) => state.purchaseBobItem);
+  const quests = useQuestStore((state) => state.quests);
+  const updateQuestProgress = useQuestStore(
+    (state) => state.updateQuestProgress,
+  );
+  const completeQuest = useQuestStore((state) => state.completeQuest);
 
   const routeId = useMemo(
     () => ROUTE_DICTIONARY[currentRoute] || "route_home",
@@ -75,14 +78,19 @@ export const useQuestSystem = () => {
           //   description: quest.description,
           //   duration: 3000,
           // });
+          const questCopy = getQuestCopy(
+            quest.id as QuestMessageId,
+            getLocale(),
+          );
+
           sileo.success({
-            title: `${quest.title}`,
-            description: quest.description,
+            title: questCopy?.title ?? quest.title,
+            description: questCopy?.description ?? quest.description,
           });
         }
       });
     },
-    [routeId, updateQuestProgress, completeQuest, addTaps],
+    [routeId, updateQuestProgress, completeQuest, addTaps, purchaseBobItem],
   );
 
   const triggerInteraction = useCallback(

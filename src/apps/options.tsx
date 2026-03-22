@@ -1,8 +1,9 @@
 import { usePagination } from "@/hooks/usePagination";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
-import { ArrowLeftIcon, ArrowRightIcon } from "@/icons/arrow";
+import { SegmentedValueSlider } from "@/components/SegmentedValueSlider";
+import { LocaleSegmentedControl } from "@/components/LocaleSegmentedControl";
 import { FillColumn, FillRow, HugRow, ListItemContainer } from "@/layout";
-import { Divider, RowLabel, ValueChip, ValueSlider } from "@/layout/atoms";
+import { Divider, RowLabel } from "@/layout/atoms";
 import { CameraViewId, useCoreStore, useViewStore } from "@/store";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -22,6 +23,8 @@ import {
   TabPanel,
 } from "./ui";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/icons/chevron";
+import { useI18n } from "@/i18n";
+import { getThemeCopy } from "@/store/config/themes";
 
 export const OptionsIcon = () => (
   <img src="/images/app-logos/options.png" height={80} width={80} />
@@ -29,21 +32,11 @@ export const OptionsIcon = () => (
 
 type OptionsTab = "theme" | "audio";
 
-const tabs = [
-  {
-    id: "audio" as OptionsTab,
-    name: "Audio",
-  },
-  {
-    id: "theme" as OptionsTab,
-    name: "Theme",
-  },
-];
-
 const APP_ID: CameraViewId = "phone:options";
 
 export function OptionsApp() {
   const [activeTab, setActiveTab] = useState<OptionsTab>("audio");
+  const { locale, setLocale, messages } = useI18n();
 
   const { themes, activateTheme, previewTheme, resetPreview } = useCoreStore();
 
@@ -81,8 +74,22 @@ export function OptionsApp() {
   };
 
   const buttonLabel = match(currentItem)
-    .with({ active: true }, () => "Aktiv")
-    .otherwise(() => "Auswählen");
+    .with({ active: true }, () => messages.options.theme.active)
+    .otherwise(() => messages.options.theme.select);
+
+  const tabs = useMemo(
+    () => [
+      {
+        id: "audio" as OptionsTab,
+        name: messages.options.tabs.audio,
+      },
+      {
+        id: "theme" as OptionsTab,
+        name: messages.options.tabs.theme,
+      },
+    ],
+    [messages.options.tabs.audio, messages.options.tabs.theme],
+  );
 
   const handleNext = () => {
     if (hasNext) next();
@@ -97,41 +104,23 @@ export function OptionsApp() {
   interface VolumeItemProps {
     label: string;
     value: number; // 0–1
-    onDecrease: () => void;
-    onIncrease: () => void;
+    onChange: (value: number) => void;
   }
 
-  const VolumeItem: React.FC<VolumeItemProps> = ({
-    label,
-    value,
-    onDecrease,
-    onIncrease,
-  }) => {
+  const VolumeItem = ({ label, value, onChange }: VolumeItemProps) => {
     const pct = Math.round(value * 100);
 
     return (
       <VolumeRow>
         <RowLabel>{label}</RowLabel>
-        <VolumeControls>
-          <StepButton
-            style={{ background: "rgba(33,33,33,0.1)", color: "#212121" }}
-            $flex={value}
-            $visible={pct > 0}
-            onClick={onDecrease}
-          >
-            <MinusIcon />
-          </StepButton>
-
-          <ValueChip>{pct}%</ValueChip>
-
-          <StepButton
-            $flex={1 - value}
-            $visible={pct < 100}
-            onClick={onIncrease}
-          >
-            <PlusIcon />
-          </StepButton>
-        </VolumeControls>
+        <SegmentedValueSlider
+          value={value}
+          min={0}
+          max={1}
+          step={0.1}
+          onChange={onChange}
+          formatValue={() => `${pct}%`}
+        />
       </VolumeRow>
     );
   };
@@ -139,49 +128,52 @@ export function OptionsApp() {
   const AudioView = useCallback(() => {
     const sound = useSoundSystem();
 
-    const step = (current: number, dir: 1 | -1) =>
-      Math.min(1, Math.max(0, Math.round((current + dir * 0.1) * 100) / 100));
+    const normalizeVolumeValue = (next: number) =>
+      Math.min(1, Math.max(0, Math.round(next * 100) / 100));
 
     const rows: VolumeItemProps[] = [
       {
-        label: "Master",
+        label: messages.options.audio.master,
         value: sound.masterVolume,
-        onDecrease: () => sound.setMasterVolume(step(sound.masterVolume, -1)),
-        onIncrease: () => sound.setMasterVolume(step(sound.masterVolume, +1)),
+        onChange: (value) => sound.setMasterVolume(normalizeVolumeValue(value)),
       },
       {
-        label: "Musik",
+        label: messages.options.audio.music,
         value: sound.worldVolume,
-        onDecrease: () => sound.setWorldVolume(step(sound.worldVolume, -1)),
-        onIncrease: () => sound.setWorldVolume(step(sound.worldVolume, +1)),
+        onChange: (value) => sound.setWorldVolume(normalizeVolumeValue(value)),
       },
       {
-        label: "Effekte",
+        label: messages.options.audio.effects,
         value: sound.tapVolume,
-        onDecrease: () => sound.setTapVolume(step(sound.tapVolume, -1)),
-        onIncrease: () => sound.setTapVolume(step(sound.tapVolume, +1)),
+        onChange: (value) => sound.setTapVolume(normalizeVolumeValue(value)),
       },
       {
-        label: "UI",
+        label: messages.options.audio.ui,
         value: sound.uiVolume,
-        onDecrease: () => sound.setUIVolume(step(sound.uiVolume, -1)),
-        onIncrease: () => sound.setUIVolume(step(sound.uiVolume, +1)),
+        onChange: (value) => sound.setUIVolume(normalizeVolumeValue(value)),
       },
       {
-        label: "Chat",
+        label: messages.options.audio.chat,
         value: sound.textVolume,
-        onDecrease: () => sound.setTextVolume(step(sound.textVolume, -1)),
-        onIncrease: () => sound.setTextVolume(step(sound.textVolume, +1)),
+        onChange: (value) => sound.setTextVolume(normalizeVolumeValue(value)),
       },
     ];
 
     return (
       <FillColumn $gap="1rem" style={{ height: "fit-content", width: "24rem" }}>
-        <FillRow $align="center" $justify="center" $gap="1rem">
-          <Divider />
-          <AppInfo>Audio Status: {sound.audioStatus}</AppInfo>
-          <Divider />
-        </FillRow>
+          <VolumeRow>
+            <RowLabel>{messages.options.audio.language}</RowLabel>
+            <LocaleSegmentedControl value={locale} onChange={setLocale} />
+          </VolumeRow>
+
+          <FillRow $align="center" $justify="center" $gap="1rem">
+            <Divider />
+            <AppInfo>
+              {messages.options.audio.status}:{" "}
+              {messages.options.audio.states[sound.audioStatus]}
+            </AppInfo>
+            <Divider />
+          </FillRow>
 
         <FillColumn $gap="1.5rem">
           {rows.map((row) => (
@@ -190,7 +182,7 @@ export function OptionsApp() {
         </FillColumn>
       </FillColumn>
     );
-  }, []);
+  }, [locale, messages.options.audio, setLocale]);
 
   // TODO: fix re-render every second
   const ThemeOverlays = useCallback(
@@ -200,7 +192,7 @@ export function OptionsApp() {
           <ShopContainer>
             <ContentControls>
               <ItemStatusChip $variant="dark">
-                <span>{currentItem.name}</span>
+                <span>{getThemeCopy(currentItem.id as any, locale).name}</span>
               </ItemStatusChip>
 
               <ShopItemButton
@@ -259,7 +251,7 @@ export function OptionsApp() {
         )}
       </FixedAnchor>
     ),
-    [currentItem],
+    [buttonLabel, currentItem, locale, page, pageCount],
   );
 
   const OPTIONS = [
@@ -348,88 +340,8 @@ export function OptionsApp() {
 const VolumeRow = styled.div`
   display: grid;
   grid-template-columns: 0.25fr 1fr;
-
   align-items: center;
   justify-content: space-between;
   grid-gap: 1rem;
   width: 100%;
 `;
-
-const VolumeControls = styled.div`
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  width: 100%;
-`;
-
-const StepButton = styled.button<{ $flex: number; $visible: boolean }>`
-  flex: ${({ $flex }) => $flex};
-  min-width: 0;
-  height: 2.2rem;
-  border-radius: 999px;
-  border: none;
-  background: #1a1a1a;
-  color: #fff;
-  font-size: 1.1rem;
-  font-weight: 400;
-  cursor: pointer;
-  display: ${({ $visible }) => ($visible ? "flex" : "none")};
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: flex 0.2s ease;
-  overflow: hidden;
-
-  svg {
-    min-width: 1rem;
-    min-height: 1rem;
-  }
-
-  &:active {
-    opacity: 0.7;
-    transform: scale(0.93);
-  }
-`;
-
-const MinusIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 16 16"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M4.00781 7.99512L12.0078 7.99512"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-const PlusIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 16 16"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M8 12V4"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M4.00781 7.99512L12.0078 7.99512"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);

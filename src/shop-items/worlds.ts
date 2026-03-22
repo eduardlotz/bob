@@ -5,11 +5,6 @@ const DEFAULT_WORLD_LIGHTING = {
   directionalIntensity: 1.2,
 } as const;
 
-const WEAKER_WORLD_LIGHTING = {
-  ambientIntensity: 3,
-  directionalIntensity: 1.08,
-} as const;
-
 export const initialWorlds: WorldItem[] = [
   {
     id: "world_default",
@@ -47,7 +42,7 @@ export const initialWorlds: WorldItem[] = [
       groundColor: "#345d36",
       accentColor: "#86cf72",
       models: ["forest_grove", "forest_meadow"],
-      effects: ["forest_clouds", "forest_fireflies", "forest_rain"],
+      effects: ["forest_fireflies", "forest_rain"],
       lighting: DEFAULT_WORLD_LIGHTING,
     },
   },
@@ -110,13 +105,13 @@ export const initialWorlds: WorldItem[] = [
       effects: ["moon_glow", "moon_meteors"],
       starfield: true,
       lighting: {
-        ...WEAKER_WORLD_LIGHTING,
+        ...DEFAULT_WORLD_LIGHTING,
         moonGlowIntensity: 2,
       },
     },
   },
   {
-    id: "world_weltall",
+    id: "world_space",
     name: "Weltall",
     description:
       "Ein dunkler Sternenhimmel mit weiter Tiefe und schwächerem Licht.",
@@ -134,7 +129,7 @@ export const initialWorlds: WorldItem[] = [
       models: ["space_planet", "space_rings"],
       effects: ["space_stars", "space_nebula", "space_dust", "moon_meteors"],
       starfield: true,
-      lighting: WEAKER_WORLD_LIGHTING,
+      lighting: DEFAULT_WORLD_LIGHTING,
     },
   },
 ];

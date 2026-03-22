@@ -17,7 +17,7 @@ type GLTFResult = GLTF & {
   };
 };
 
-const PATH = "gltf/music_speaker.glb";
+const PATH = "/gltf/music_speaker.glb";
 
 interface Props {
   position: [number, number, number];

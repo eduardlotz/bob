@@ -15,7 +15,6 @@ import { useNavigate } from "react-router-dom";
 import { BackSide } from "three";
 
 import { PingPongPaddle } from "@/3d-objects/models/pingPongPaddle";
-import { TapEffects } from "@/3d-objects/ParticleEffects";
 import { PointsCounter } from "@/molecules/PointsCounter";
 import { DEFAULT_WORLD_MUSIC } from "@/utils/sound/defaults";
 import { playWorldSound, stopAllWorldSounds, stopSoundsById } from "@/utils/soundSystem";
@@ -26,6 +25,8 @@ import {
 } from "./games/withMiniGameItem";
 import { PingPongGame } from "./games/PingPongGame";
 import { SlotMachineArcade, SlotMachineGame } from "./games/SlotMachineGame";
+import { useI18n } from "@/i18n";
+import { miniGamesSceneMessages } from "./MiniGamesScene.messages";
 
 const MINIGAME_BACKGROUND_TRACK_ID = DEFAULT_WORLD_MUSIC.id;
 const DEFAULT_MINIGAMES_VIEW = "default";
@@ -96,6 +97,8 @@ function MiniGamesLobby({
 }: {
   onSelect: (game: SupportedMiniGameType) => void;
 }) {
+  const { locale } = useI18n();
+
   return (
     <group>
       {MINI_GAME_ORDER.map((game) => {
@@ -105,7 +108,7 @@ function MiniGamesLobby({
           <MiniGameItem
             key={game}
             game={game}
-            label={definition.label}
+            label={miniGamesSceneMessages[locale][game].label}
             onSelect={onSelect}
           >
             {definition.renderLobbyItem()}
@@ -262,9 +265,6 @@ export function MiniGamesScene() {
         onSelect={setActiveGame}
         onExit={handleExit}
       />
-
-      <TapEffects id="tap_effect_laser" />
-
       {activeGame === "LOBBY" ? (
         <MiniGamesBackdrop />
       ) : (
