@@ -78,7 +78,7 @@ const SHARED_GEOMETRIES = {
     return new THREE.ShapeGeometry(shape);
   })(),
   sphere: new THREE.SphereGeometry(0.24, 2, 2),
-  bubbleSphere: new THREE.SphereGeometry(1, 6, 5),
+  bubbleSphere: new THREE.SphereGeometry(1, 8, 8),
   plane: new THREE.PlaneGeometry(1, 1),
   cylinder: new THREE.CylinderGeometry(0.02, 0.02, 0.3),
   cloudSphere: new THREE.SphereGeometry(1, 8, 8),
@@ -98,41 +98,33 @@ const SHARED_MATERIALS = {
     opacity: 0.44,
     depthWrite: false,
   }),
-  bubbles: new THREE.ShaderMaterial({
+  bubbles: new THREE.MeshToonMaterial({
+    color: "#deeff9",
     transparent: true,
+    opacity: 0.1,
     depthWrite: false,
-    side: THREE.DoubleSide,
-    vertexShader: `
-      attribute vec3 instanceColor;
-
-      varying float vFresnel;
-      varying vec3 vInstanceColor;
-
-      void main() {
-        vec4 worldPosition = modelMatrix * instanceMatrix * vec4(position, 1.0);
-        vec3 worldNormal = normalize(mat3(modelMatrix * instanceMatrix) * normal);
-        vec3 viewDirection = normalize(cameraPosition - worldPosition.xyz);
-
-        vFresnel = pow(1.0 - max(dot(worldNormal, viewDirection), 0.0), 2.4);
-        vInstanceColor = instanceColor;
-
-        gl_Position = projectionMatrix * viewMatrix * worldPosition;
-      }
-    `,
-    fragmentShader: `
-      varying float vFresnel;
-      varying vec3 vInstanceColor;
-
-      void main() {
-        float rim = smoothstep(0.08, 0.95, vFresnel);
-        float alpha = rim * 0.72;
-        vec3 color = mix(vInstanceColor * 0.45, vec3(1.0), 0.58);
-
-        if (alpha < 0.02) discard;
-
-        gl_FragColor = vec4(color, alpha);
-      }
-    `,
+    side: THREE.FrontSide,
+    vertexColors: true,
+    emissive: "#9fdcff",
+    emissiveIntensity: 0.2,
+  }),
+  bubbleInner: new THREE.MeshToonMaterial({
+    color: "#b0d6ee",
+    transparent: true,
+    opacity: 0.2,
+    depthWrite: false,
+    side: THREE.FrontSide,
+    vertexColors: true,
+    emissive: "#8ecfff",
+    emissiveIntensity: 0.8,
+  }),
+  bubbleHighlight: new THREE.MeshToonMaterial({
+    color: "#b0d6ee",
+    transparent: true,
+    opacity: 0.8,
+    depthWrite: false,
+    emissive: "#d7f2ff",
+    emissiveIntensity: 0.2,
   }),
   rain: new THREE.MeshToonMaterial({
     color: "#87CEEB",
@@ -675,6 +667,14 @@ type BasicParticle = {
   color: Color;
 };
 
+type BubbleParticle = BasicParticle & {
+  wobbleOffset: number;
+  wobbleSpeed: number;
+  driftStrength: number;
+  stretch: number;
+  highlightOffset: [number, number, number];
+};
+
 type BasicConfig = {
   geo: BufferGeometry;
   mat: Material;
@@ -885,6 +885,260 @@ function BasicTapParticles({
       args={[config.geo, config.mat, MAX_COUNT]}
       frustumCulled={false}
     />
+  );
+}
+
+const MAX_BUBBLE_COUNT = 96;
+const BUBBLE_PARTICLE_RATIO = 0.18;
+const MAX_BUBBLES_PER_TAP = 4;
+
+function BubbleTapParticles() {
+  const shellRef = useRef<InstancedMesh>(null);
+  const innerRef = useRef<InstancedMesh>(null);
+  const highlightRef = useRef<InstancedMesh>(null);
+  const dummy = useMemo(() => new Object3D(), []);
+  const emptyMatrix = useMemo(() => createEmptyMatrix(), []);
+
+  const particles = useMemo<BubbleParticle[]>(
+    () =>
+      new Array(MAX_BUBBLE_COUNT).fill(0).map(() => ({
+        life: 0,
+        maxLife: 0,
+        x: 0,
+        y: 0,
+        z: 0,
+        vx: 0,
+        vy: 0,
+        vz: 0,
+        rx: 0,
+        ry: 0,
+        rz: 0,
+        rvx: 0,
+        rvy: 0,
+        rvz: 0,
+        scale: 1,
+        bucket: 0,
+        color: new Color(),
+        wobbleOffset: 0,
+        wobbleSpeed: 0,
+        driftStrength: 0,
+        stretch: 1,
+        highlightOffset: [0, 0, 0],
+      })),
+    [],
+  );
+
+  const configureMeshColors = React.useCallback(
+    (mesh: InstancedMesh | null) => {
+      if (!mesh) return;
+
+      mesh.instanceMatrix.setUsage(DynamicDrawUsage);
+      if (!mesh.instanceColor) {
+        mesh.instanceColor = new THREE.InstancedBufferAttribute(
+          new Float32Array(MAX_BUBBLE_COUNT * 3),
+          3,
+        );
+      }
+    },
+    [],
+  );
+
+  const spawn = React.useCallback(
+    (x: number, y: number, z: number, count: number) => {
+      const shellMesh = shellRef.current;
+      const innerMesh = innerRef.current;
+      if (!shellMesh || !innerMesh) return;
+
+      const spawnTarget = Math.min(
+        MAX_BUBBLES_PER_TAP,
+        Math.max(1, Math.ceil(count * BUBBLE_PARTICLE_RATIO)),
+      );
+
+      let spawned = 0;
+      for (let i = 0; i < MAX_BUBBLE_COUNT; i++) {
+        if (spawned >= spawnTarget) break;
+        if (particles[i].life > 0) continue;
+
+        const p = particles[i];
+        const angle = Math.random() * Math.PI * 2;
+        const lateralForce = 0.14 + Math.random() * 0.18;
+        const shellColor =
+          BUBBLE_COLORS[Math.floor(Math.random() * BUBBLE_COLORS.length)];
+
+        p.life = 2.4 + Math.random() * 1.3;
+        p.maxLife = p.life;
+        p.x = x + (Math.random() - 0.5) * 1.2;
+        p.y = y + PARTICLES_Y_OFFSET - 0.06 + Math.random() * 0.08;
+        p.z = z + (Math.random() - 0.5) * 0.14;
+        p.vx = Math.cos(angle) * lateralForce;
+        p.vy = 0.9 + Math.random() * 0.45;
+        p.vz = Math.sin(angle) * lateralForce;
+        p.rx = Math.random() * Math.PI * 2;
+        p.ry = Math.random() * Math.PI * 2;
+        p.rz = Math.random() * Math.PI * 2;
+        p.rvx = (Math.random() - 0.5) * 0.4;
+        p.rvy = (Math.random() - 0.5) * 0.65;
+        p.rvz = (Math.random() - 0.5) * 0.4;
+        p.scale = 0.24 + Math.random() * 0.22;
+        p.wobbleOffset = Math.random() * Math.PI * 2;
+        p.wobbleSpeed = 1 + Math.random() * 1.2;
+        p.driftStrength = 0.05 + Math.random() * 0.05;
+        p.stretch = 0.92 + Math.random() * 0.18;
+        p.highlightOffset = [
+          -0.28 + Math.random() * 0.05,
+          0.22 + Math.random() * 0.04,
+          0.34 + Math.random() * 0.05,
+        ];
+        p.color.set(shellColor);
+
+        shellMesh.setColorAt(i, p.color);
+        innerMesh.setColorAt(i, p.color);
+        spawned++;
+      }
+
+      if (shellMesh.instanceColor) {
+        shellMesh.instanceColor.needsUpdate = true;
+      }
+      if (innerMesh.instanceColor) {
+        innerMesh.instanceColor.needsUpdate = true;
+      }
+    },
+    [particles],
+  );
+
+  useEffect(() => {
+    (window as any).createTapParticles = spawn;
+    return () => {
+      delete (window as any).createTapParticles;
+    };
+  }, [spawn]);
+
+  useLayoutEffect(() => {
+    configureMeshColors(shellRef.current);
+    configureMeshColors(innerRef.current);
+    if (highlightRef.current) {
+      highlightRef.current.instanceMatrix.setUsage(DynamicDrawUsage);
+    }
+  }, [configureMeshColors]);
+
+  useFrame((state, delta) => {
+    const shellMesh = shellRef.current;
+    const innerMesh = innerRef.current;
+    const highlightMesh = highlightRef.current;
+
+    if (!shellMesh || !innerMesh || !highlightMesh) return;
+
+    const d = Math.min(delta, 0.1);
+    const time = state.clock.getElapsedTime();
+
+    for (let i = 0; i < MAX_BUBBLE_COUNT; i++) {
+      const p = particles[i];
+
+      if (p.life > 0) {
+        p.life -= d;
+
+        const wobble = Math.sin(time * p.wobbleSpeed + p.wobbleOffset);
+        const sway = Math.cos(
+          time * (p.wobbleSpeed * 0.82) + p.wobbleOffset * 0.7,
+        );
+
+        p.vx += wobble * p.driftStrength * d;
+        p.vz += sway * p.driftStrength * d;
+        p.vy = Math.min(p.vy + 0.2 * d, 1.55);
+
+        p.x += p.vx * d;
+        p.y += p.vy * d;
+        p.z += p.vz * d;
+
+        p.vx *= 0.988;
+        p.vy *= 0.999;
+        p.vz *= 0.988;
+
+        p.rx += p.rvx * d;
+        p.ry += p.rvy * d;
+        p.rz += p.rvz * d;
+
+        const lifeRatio = Math.max(0, p.life / Math.max(p.maxLife, 0.001));
+        const age = 1 - lifeRatio;
+        const entrance = Math.min(1, age / 0.16);
+        const fadeOut = lifeRatio < 0.2 ? lifeRatio / 0.2 : 1;
+        const currentScale = p.scale * entrance * fadeOut * (1 + age * 0.08);
+
+        const shellScaleX = currentScale * (1 + wobble * 0.06);
+        const shellScaleY = currentScale * p.stretch * (1 - wobble * 0.035);
+        const shellScaleZ = currentScale * (1 + sway * 0.05);
+
+        dummy.position.set(p.x, p.y, p.z);
+        dummy.rotation.set(p.rx, p.ry, p.rz);
+        dummy.scale.set(shellScaleX, shellScaleY, shellScaleZ);
+        dummy.updateMatrix();
+        shellMesh.setMatrixAt(i, dummy.matrix);
+
+        dummy.position.set(p.x, p.y, p.z);
+        dummy.rotation.set(p.rx, p.ry, p.rz);
+        dummy.scale.set(
+          shellScaleX * 0.88,
+          shellScaleY * 0.88,
+          shellScaleZ * 0.88,
+        );
+        dummy.updateMatrix();
+        innerMesh.setMatrixAt(i, dummy.matrix);
+
+        dummy.position.set(
+          p.x + currentScale * (p.highlightOffset[0] + wobble * 0.04),
+          p.y + currentScale * (p.highlightOffset[1] + Math.abs(sway) * 0.05),
+          p.z + currentScale * p.highlightOffset[2],
+        );
+        dummy.rotation.set(0, 0, 0);
+        dummy.scale.set(
+          currentScale * 0.2,
+          currentScale * 0.28,
+          currentScale * 0.18,
+        );
+        dummy.updateMatrix();
+        highlightMesh.setMatrixAt(i, dummy.matrix);
+      } else {
+        shellMesh.setMatrixAt(i, emptyMatrix);
+        innerMesh.setMatrixAt(i, emptyMatrix);
+        highlightMesh.setMatrixAt(i, emptyMatrix);
+      }
+    }
+
+    shellMesh.instanceMatrix.needsUpdate = true;
+    innerMesh.instanceMatrix.needsUpdate = true;
+    highlightMesh.instanceMatrix.needsUpdate = true;
+  });
+
+  return (
+    <group>
+      <instancedMesh
+        ref={shellRef}
+        args={[
+          SHARED_GEOMETRIES.bubbleSphere,
+          SHARED_MATERIALS.bubbles,
+          MAX_BUBBLE_COUNT,
+        ]}
+        frustumCulled={false}
+      />
+      <instancedMesh
+        ref={innerRef}
+        args={[
+          SHARED_GEOMETRIES.bubbleSphere,
+          SHARED_MATERIALS.bubbleInner,
+          MAX_BUBBLE_COUNT,
+        ]}
+        frustumCulled={false}
+      />
+      <instancedMesh
+        ref={highlightRef}
+        args={[
+          SHARED_GEOMETRIES.bubbleSphere,
+          SHARED_MATERIALS.bubbleHighlight,
+          MAX_BUBBLE_COUNT,
+        ]}
+        frustumCulled={false}
+      />
+    </group>
   );
 }
 
@@ -1160,18 +1414,7 @@ function SmokeTapParticles() {
   );
 }
 
-function BubbleTapParticles() {
-  return (
-    <BasicTapParticles
-      spawnVariant="bubble"
-      config={{
-        geo: SHARED_GEOMETRIES.bubbleSphere,
-        mat: SHARED_MATERIALS.bubbles,
-        colors: ["#f9ffff", "#ddf8ff", "#bfefff", "#e8fbff"],
-      }}
-    />
-  );
-}
+const BUBBLE_COLORS = ["#d8f1ff", "#c7ebff", "#b5e3ff", "#a8dbff"] as const;
 
 export function TapEffects({ id }: { id?: string }) {
   const { tapEffects, previewMode } = useCoreStore();

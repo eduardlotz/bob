@@ -57,7 +57,7 @@ const Debug = () => {
 // TODO: make proper constant file
 export const FLOOR_Y_POSITION = -1.5;
 const MOON_WORLD_ID = "world_moon";
-const SPACE_WORLD_ID = "world_weltall";
+const SPACE_WORLD_ID = "world_space";
 const HOME_LIGHT_RADIUS = 6.7;
 const HOME_LIGHT_TARGET: [number, number, number] = [0, 0.7, 0];
 const HOME_LIGHT_AZIMUTH = 0.38;
