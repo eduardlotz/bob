@@ -43,6 +43,7 @@ import { useAppStore, useMiniGameStore } from "@/store";
 import { playTapSound } from "@/utils/soundSystem";
 import { resolveTapSoundForEffect } from "@/utils/sound/configs";
 import { BallCollider, RigidBody } from "@react-three/rapier";
+import { AstronautHelmet } from "@/3d-objects/models/astronaut";
 
 // TODO: move constants to a shared config file
 const HEAD_POSITION_Y = 0;
@@ -1060,6 +1061,17 @@ export function BlobHead({
             key={item.id}
             position={calculateCostumePosition([0, 0.45, 0], "hat")}
             scale={[2, 2, 2]}
+            outlineColor={outlineColor}
+            rotation={[0, -Math.PI / 2, 0]}
+            preview={!item.enabled && !!item.preview}
+          />
+        );
+      if (item.id === "astronautHelmet")
+        return (
+          <AstronautHelmet
+            key={item.id}
+            position={calculateCostumePosition([0, 0, 0], "hat")}
+            scale={[1.05, 1.05, 1.05]}
             outlineColor={outlineColor}
             rotation={[0, -Math.PI / 2, 0]}
             preview={!item.enabled && !!item.preview}

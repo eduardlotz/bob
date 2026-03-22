@@ -23,9 +23,10 @@ export const ChatApp = () => {
 
   return (
     <>
-      <FillRow $align="center" $justify="center">
+      <Header $align="center" $justify="center">
+        <AppTitle>{messages.chat.title}</AppTitle>
         <AppInfo>{messages.chat.archiveLabel}</AppInfo>
-      </FillRow>
+      </Header>
 
       <HugColumn
         style={{
@@ -78,6 +79,18 @@ export const ChatApp = () => {
     </>
   );
 };
+
+const Header = styled(FillRow)`
+  flex-direction: column;
+  gap: 0.125rem;
+`;
+
+const AppTitle = styled.p`
+  font-size: 1rem;
+  font-weight: 700;
+  color: #212121;
+  margin: 0;
+`;
 
 const AppInfo = styled.p`
   font-size: 0.875rem;

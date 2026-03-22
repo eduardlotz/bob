@@ -28,6 +28,10 @@ export const bobItemMessages = defineMessages({
       name: "Cap",
       description: "Eddies schwarze Kappe",
     },
+    astronautHelmet: {
+      name: "Spacebob",
+      description: "A childhood dream",
+    },
   },
   en: {
     builderHelmet: {
@@ -53,6 +57,10 @@ export const bobItemMessages = defineMessages({
     blackCap: {
       name: "Cap",
       description: "Eddie's black cap",
+    },
+    astronautHelmet: {
+      name: "Spacebob",
+      description: "Der Kindheitstraum",
     },
   },
 });
