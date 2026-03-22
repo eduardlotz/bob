@@ -79,6 +79,7 @@ export function SegmentedValueSlider({
     };
 
     const stopDragging = () => {
+      if (!draggingRef.current) return;
       draggingRef.current = false;
       useCursorStore.setState({
         variant: hoveringHandleRef.current ? "grab" : "default",
