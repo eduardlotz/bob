@@ -132,43 +132,6 @@ const initialQuests: Quest[] = [
       value: 1,
     },
   },
-  // {
-  //   id: "tap_multilier_milestone_1",
-  //   title: "Double it and give it to me",
-  //   description: "Kauf dein erstes Multiplikator Upgrade",
-  //   icon: "🙌",
-  //   progress: 0,
-  //   maxProgress: 1,
-  //   reward: {
-  //     type: "taps_reward",
-  //     amount: 0,
-  //   },
-  //   completed: false,
-  //   routeId: ROUTE_IDS.HOME,
-  //   type: "interaction",
-  //   trigger: {
-  //     action: "tap_multiplier_level",
-  //     value: 1,
-  //   },
-  // },
-  // {
-  //   id: "about_quest_1",
-  //   title: "Kennlernphase",
-  //   description: "Schalte die “Über Mich”-Seite frei",
-  //   icon: "👤",
-  //   progress: 0,
-  //   maxProgress: 1,
-  //   reward: {
-  //     type: "taps_reward",
-  //     amount: 1000,
-  //   },
-  //   completed: false,
-  //   type: "interaction",
-  //   trigger: {
-  //     action: `purchase_route_about`,
-  //     value: 1,
-  //   },
-  // },
   {
     id: "about_quest_2",
     title: "Sul Sul!",

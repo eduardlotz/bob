@@ -83,7 +83,7 @@ export function AboutScene() {
 
       {/* SOCIALS CORNER  */}
 
-      <InteractiveObject
+      {/* <InteractiveObject
         questAction="click_socials"
         questValue={30}
         mode="view"
@@ -95,7 +95,7 @@ export function AboutScene() {
           // rotation={[0, Math.PI * 0.15, 0]}
           scale={[4, 4, 4]}
         />
-      </InteractiveObject>
+      </InteractiveObject> */}
 
       {/* BOOK STACKS + TABLE */}
 
