@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCursorStore } from "@/store/core/cursor";
 import styled from "styled-components";
 
 const EPSILON = 0.000001;
@@ -26,6 +27,7 @@ interface SegmentedValueSliderProps {
   onChange: (value: number) => void;
   formatValue?: (value: number) => string;
   disabled?: boolean;
+  tone?: "light" | "dark";
 }
 
 export function SegmentedValueSlider({
@@ -36,9 +38,11 @@ export function SegmentedValueSlider({
   onChange,
   formatValue = (next) => formatSegmentedSliderValue(next),
   disabled = false,
+  tone = "light",
 }: SegmentedValueSliderProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const draggingRef = useRef(false);
+  const hoveringHandleRef = useRef(false);
 
   const normalizedValue = useMemo(() => {
     if (max <= min) return 0;
@@ -76,6 +80,9 @@ export function SegmentedValueSlider({
 
     const stopDragging = () => {
       draggingRef.current = false;
+      useCursorStore.setState({
+        variant: hoveringHandleRef.current ? "grab" : "default",
+      });
     };
 
     window.addEventListener("pointermove", handlePointerMove);
@@ -96,6 +103,7 @@ export function SegmentedValueSlider({
         $flex={normalizedValue}
         $visible={canDecrease}
         $variant="decrease"
+        $tone={tone}
         disabled={disabled || !canDecrease}
         onClick={() => commitValue(value - step)}
       >
@@ -104,14 +112,27 @@ export function SegmentedValueSlider({
 
       <HandleButton
         type="button"
+        $tone={tone}
         disabled={disabled}
+        onPointerEnter={() => {
+          if (disabled) return;
+          hoveringHandleRef.current = true;
+          useCursorStore.setState({ variant: "grab" });
+        }}
+        onPointerLeave={() => {
+          hoveringHandleRef.current = false;
+          if (!draggingRef.current) {
+            useCursorStore.setState({ variant: "default" });
+          }
+        }}
         onPointerDown={(event) => {
           if (disabled) return;
           draggingRef.current = true;
+          useCursorStore.setState({ variant: "grabbing" });
           commitFromClientX(event.clientX);
         }}
       >
-        <ValuePill>{formatValue(value)}</ValuePill>
+        <ValuePill $tone={tone}>{formatValue(value)}</ValuePill>
       </HandleButton>
 
       <StepButton
@@ -119,6 +140,7 @@ export function SegmentedValueSlider({
         $flex={1 - normalizedValue}
         $visible={canIncrease}
         $variant="increase"
+        $tone={tone}
         disabled={disabled || !canIncrease}
         onClick={() => commitValue(value + step)}
       >
@@ -140,15 +162,27 @@ const StepButton = styled.button<{
   $flex: number;
   $visible: boolean;
   $variant: "decrease" | "increase";
+  $tone: "light" | "dark";
 }>`
   flex: ${({ $flex }) => $flex};
   min-width: 0;
   height: 2.2rem;
   border-radius: 999px;
   border: none;
-  background: ${({ $variant }) =>
-    $variant === "decrease" ? "rgba(33,33,33,0.1)" : "#1a1a1a"};
-  color: ${({ $variant }) => ($variant === "decrease" ? "#212121" : "#ffffff")};
+  background: ${({ $variant, $tone }) =>
+    $tone === "dark"
+      ? $variant === "decrease"
+        ? "rgba(255,255,255,0.14)"
+        : "rgba(255,255,255,0.22)"
+      : $variant === "decrease"
+        ? "rgba(33,33,33,0.1)"
+        : "#1a1a1a"};
+  color: ${({ $variant, $tone }) =>
+    $tone === "dark"
+      ? "#ffffff"
+      : $variant === "decrease"
+        ? "#212121"
+        : "#ffffff"};
   font-size: 1.1rem;
   font-weight: 400;
   cursor: pointer;
@@ -174,7 +208,7 @@ const StepButton = styled.button<{
   }
 `;
 
-const HandleButton = styled.button`
+const HandleButton = styled.button<{ $tone: "light" | "dark" }>`
   flex-shrink: 0;
   padding: 0;
   border: none;
@@ -187,7 +221,7 @@ const HandleButton = styled.button`
   }
 `;
 
-const ValuePill = styled.span`
+const ValuePill = styled.span<{ $tone: "light" | "dark" }>`
   display: flex;
   align-items: center;
   justify-content: center;
@@ -196,8 +230,9 @@ const ValuePill = styled.span`
   border-radius: 0.75rem;
   font-size: 0.75rem;
   font-weight: 700;
-  color: #212121;
-  background-color: rgba(33, 33, 33, 0.05);
+  color: ${({ $tone }) => ($tone === "dark" ? "#ffffff" : "#212121")};
+  background-color: ${({ $tone }) =>
+    $tone === "dark" ? "rgba(255,255,255,0.12)" : "rgba(33, 33, 33, 0.05)"};
 `;
 
 const MinusIcon = () => (

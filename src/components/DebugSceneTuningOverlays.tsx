@@ -1,17 +1,20 @@
-import { ActionButton } from "@/apps/ui";
+import {
+  ActionButton,
+  SegmentedControl,
+  SegmentedOption,
+  SegmentedTrack,
+} from "@/apps/ui";
 import {
   SegmentedValueSlider,
   formatSegmentedSliderValue,
 } from "@/components/SegmentedValueSlider";
 import { ChevronRightIcon } from "@/icons/chevron";
-import { HugColumn } from "@/layout";
-import {
-  DebugCameraSettings,
-  DebugLightSettings,
-  useCoreStore,
-} from "@/store";
+import { FillColumn, HugColumn } from "@/layout";
+import { DebugCameraSettings, DebugLightSettings, useCoreStore } from "@/store";
+import { useCursorStore } from "@/store/core/cursor";
+import { CAMERA_VIEWS, useViewStore } from "@/store/viewStore";
 import { AnimatePresence, motion, useDragControls } from "motion/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 
 type SliderSpec<T extends string> = {
@@ -23,89 +26,44 @@ type SliderSpec<T extends string> = {
   format?: (value: number) => string;
 };
 
-const cameraSliderSpecs: SliderSpec<keyof DebugCameraSettings>[] = [
-  { key: "truckSpeed", label: "Truck", min: 0.5, max: 12, step: 0.1 },
+type CameraSliderKey = keyof DebugCameraSettings;
+type LightSliderKey =
+  | "ambientIntensityMultiplier"
+  | "directionalIntensityMultiplier"
+  | "lightAngle";
+
+const cameraSliderSpecs: SliderSpec<CameraSliderKey>[] = [
+  { key: "truckSpeed", label: "Truck Speed", min: 0.5, max: 12, step: 0.5 },
   {
     key: "azimuthRotateSpeed",
-    label: "Azimuth",
+    label: "Azimuth Speed",
     min: 0,
     max: 2,
-    step: 0.01,
-  },
-  {
-    key: "perspectiveCameraZ",
-    label: "3D Cam Z",
-    min: 1,
-    max: 8,
     step: 0.1,
   },
-  {
-    key: "canvasDesktopCameraZ",
-    label: "Desk Z",
-    min: 1,
-    max: 4,
-    step: 0.1,
-  },
-  {
-    key: "canvasMobileCameraZ",
-    label: "Mobile Z",
-    min: 1,
-    max: 4,
-    step: 0.1,
-  },
-  { key: "cameraFov", label: "FOV", min: 20, max: 100, step: 1 },
 ];
 
-const lightSliderSpecs: SliderSpec<keyof DebugLightSettings>[] = [
+const lightSliderSpecs: SliderSpec<LightSliderKey>[] = [
   {
     key: "ambientIntensityMultiplier",
-    label: "Ambient x",
+    label: "Ambient",
     min: 0,
     max: 3,
-    step: 0.05,
+    step: 0.1,
   },
   {
     key: "directionalIntensityMultiplier",
-    label: "Direct x",
+    label: "Direct",
     min: 0,
     max: 3,
-    step: 0.05,
+    step: 0.1,
   },
-  { key: "homeLightRadius", label: "Radius", min: 1, max: 15, step: 0.1 },
   {
-    key: "homeLightAzimuth",
-    label: "Azimuth",
+    key: "lightAngle",
+    label: "Angle",
     min: -3.14,
     max: 3.14,
-    step: 0.01,
-  },
-  {
-    key: "homeLightElevation",
-    label: "Elevation",
-    min: -1.57,
-    max: 1.57,
-    step: 0.01,
-  },
-  { key: "homeLightTargetX", label: "Target X", min: -10, max: 10, step: 0.1 },
-  { key: "homeLightTargetY", label: "Target Y", min: -10, max: 10, step: 0.1 },
-  { key: "homeLightTargetZ", label: "Target Z", min: -10, max: 10, step: 0.1 },
-  { key: "routeLightX", label: "Route X", min: -10, max: 10, step: 0.1 },
-  { key: "routeLightY", label: "Route Y", min: -10, max: 10, step: 0.1 },
-  { key: "routeLightZ", label: "Route Z", min: -10, max: 10, step: 0.1 },
-  {
-    key: "routeLightIntensity",
-    label: "Route Int",
-    min: 0,
-    max: 4,
-    step: 0.05,
-  },
-  { key: "fakeShadowY", label: "Shadow Y", min: -4, max: 1, step: 0.01 },
-  {
-    key: "fakeShadowOpacity",
-    label: "Shadow Op",
-    min: 0,
-    max: 1,
-    step: 0.01,
+    step: 0.1,
   },
 ];
 
@@ -113,7 +71,9 @@ export const DebugSceneTuningOverlays = () => {
   const cameraVisible = useCoreStore(
     (state) => state.cameraSettingsOverlayVisible,
   );
-  const lightVisible = useCoreStore((state) => state.lightSettingsOverlayVisible);
+  const lightVisible = useCoreStore(
+    (state) => state.lightSettingsOverlayVisible,
+  );
 
   return (
     <>
@@ -127,20 +87,29 @@ const CameraSettingsOverlay = ({ visible }: { visible: boolean }) => {
   const values = useCoreStore((state) => state.debugCameraSettings);
   const updateValues = useCoreStore((state) => state.updateDebugCameraSettings);
   const resetValues = useCoreStore((state) => state.resetDebugCameraSettings);
+  const setRuntimeViewModeOverride = useViewStore(
+    (state) => state.setRuntimeViewModeOverride,
+  );
+  const resetRuntimeOrbitOverrides = useViewStore(
+    (state) => state.resetRuntimeOrbitOverrides,
+  );
 
   return (
     <DebugOverlayPanel
-      title="Camera Settings"
-      description="Live scene camera values from the main canvas."
+      kind="camera"
+      title="Camera Controls"
+      description="Movement speed and runtime orbit controls."
       visible={visible}
       top={84}
       right={16}
       specs={cameraSliderSpecs}
-      values={values as Record<keyof DebugCameraSettings, number>}
-      onUpdate={(updates) =>
-        updateValues(updates as Partial<DebugCameraSettings>)
-      }
-      onReset={resetValues}
+      values={values}
+      onUpdate={updateValues}
+      onReset={() => {
+        resetValues();
+        setRuntimeViewModeOverride(null);
+        resetRuntimeOrbitOverrides();
+      }}
     />
   );
 };
@@ -152,22 +121,28 @@ const LightSettingsOverlay = ({ visible }: { visible: boolean }) => {
 
   return (
     <DebugOverlayPanel
-      title="Light Settings"
-      description="Ambient, directional, fallback route light and fake shadow tuning."
+      kind="light"
+      title="Scene Lighting"
+      description="Ambient, direct light, angle and color."
       visible={visible}
       top={84}
       left={16}
       specs={lightSliderSpecs}
-      values={values as Record<keyof DebugLightSettings, number>}
-      onUpdate={(updates) =>
-        updateValues(updates as Partial<DebugLightSettings>)
-      }
+      values={{
+        ambientIntensityMultiplier: values.ambientIntensityMultiplier,
+        directionalIntensityMultiplier: values.directionalIntensityMultiplier,
+        lightAngle: values.lightAngle,
+      }}
+      lightColor={values.lightColor}
+      onUpdate={updateValues}
+      onLightColorChange={(lightColor) => updateValues({ lightColor })}
       onReset={resetValues}
     />
   );
 };
 
 const DebugOverlayPanel = <T extends string>({
+  kind,
   title,
   description,
   visible,
@@ -176,9 +151,12 @@ const DebugOverlayPanel = <T extends string>({
   right,
   specs,
   values,
+  lightColor,
   onUpdate,
+  onLightColorChange,
   onReset,
 }: {
+  kind: "camera" | "light";
   title: string;
   description: string;
   visible: boolean;
@@ -187,11 +165,15 @@ const DebugOverlayPanel = <T extends string>({
   right?: number;
   specs: SliderSpec<T>[];
   values: Record<T, number>;
+  lightColor?: string;
   onUpdate: (updates: Partial<Record<T, number>>) => void;
+  onLightColorChange?: (lightColor: string) => void;
   onReset: () => void;
 }) => {
   const [isOpen, setIsOpen] = useState(true);
   const dragControls = useDragControls();
+  const hoveringGrabberRef = useRef(false);
+  const draggingGrabberRef = useRef(false);
 
   return (
     <OverlayRoot
@@ -214,8 +196,24 @@ const DebugOverlayPanel = <T extends string>({
       }}
     >
       <OverlayGrabBar
+        onPointerEnter={() => {
+          hoveringGrabberRef.current = true;
+          useCursorStore.setState({ variant: "grab" });
+        }}
+        onPointerLeave={() => {
+          hoveringGrabberRef.current = false;
+          useCursorStore.setState({ variant: "default" });
+        }}
         onPointerDown={(event) => {
+          draggingGrabberRef.current = true;
+          useCursorStore.setState({ variant: "grabbing" });
           dragControls.start(event);
+        }}
+        onPointerUp={() => {
+          draggingGrabberRef.current = false;
+          useCursorStore.setState({
+            variant: hoveringGrabberRef.current ? "grab" : "default",
+          });
         }}
       >
         <OverlayGrabHandle />
@@ -266,6 +264,13 @@ const DebugOverlayPanel = <T extends string>({
               opacity: { duration: 0.18, ease: "easeOut" },
             }}
           >
+            {kind === "camera" && <RuntimeCameraSection />}
+            {kind === "light" && (
+              <LightColorControl
+                value={lightColor ?? "#ffffff"}
+                onChange={(next) => onLightColorChange?.(next)}
+              />
+            )}
             <SliderGroup>
               {renderSliderGroup(specs, values, onUpdate)}
             </SliderGroup>
@@ -291,7 +296,10 @@ const renderSliderGroup = <T extends string>(
           min={spec.min}
           max={spec.max}
           step={spec.step}
-          formatValue={spec.format ?? ((next) => formatSegmentedSliderValue(next))}
+          tone="dark"
+          formatValue={
+            spec.format ?? ((next) => formatSegmentedSliderValue(next))
+          }
           onChange={(next) =>
             onUpdate({
               [spec.key]: next,
@@ -301,6 +309,198 @@ const renderSliderGroup = <T extends string>(
       </SliderRow>
     );
   });
+
+const RuntimeCameraSection = () => {
+  const currentView = useViewStore((state) => state.currentView);
+  const runtimeViewModeOverride = useViewStore(
+    (state) => state.runtimeViewModeOverride,
+  );
+  const setRuntimeViewModeOverride = useViewStore(
+    (state) => state.setRuntimeViewModeOverride,
+  );
+  const runtimeOrbitOverrides = useViewStore(
+    (state) => state.runtimeOrbitOverrides,
+  );
+  const setRuntimeOrbitOverrides = useViewStore(
+    (state) => state.setRuntimeOrbitOverrides,
+  );
+  const currentViewOrbit = CAMERA_VIEWS[currentView]?.orbit;
+
+  const currentMinPolar =
+    runtimeOrbitOverrides.minPolarAngle ??
+    currentViewOrbit?.minPolarAngle ??
+    0.2;
+  const currentMaxPolar =
+    runtimeOrbitOverrides.maxPolarAngle ?? currentViewOrbit?.maxPolarAngle ?? 2;
+  const currentMinAzimuth =
+    runtimeOrbitOverrides.minAzimuthAngle ??
+    currentViewOrbit?.minAzimuthAngle ??
+    -3.14;
+  const currentMaxAzimuth =
+    runtimeOrbitOverrides.maxAzimuthAngle ??
+    currentViewOrbit?.maxAzimuthAngle ??
+    3.14;
+  const currentMinDistance =
+    runtimeOrbitOverrides.minDistance ?? currentViewOrbit?.minDistance ?? 1;
+  const currentMaxDistance =
+    runtimeOrbitOverrides.maxDistance ?? currentViewOrbit?.maxDistance ?? 7;
+
+  return (
+    <RuntimeSection $gap={"0.625rem"}>
+      <ViewModeSegmented
+        value={runtimeViewModeOverride ?? "default"}
+        onChange={(next) => {
+          setRuntimeViewModeOverride(
+            next === "default" ? null : (next as "fixed" | "object"),
+          );
+        }}
+      />
+
+      <RuntimeSliderGroup $gap={"0.5rem"}>
+        <RuntimeSliderRow>
+          <SliderLabel>Polar Min</SliderLabel>
+          <SegmentedValueSlider
+            value={currentMinPolar}
+            min={0}
+            max={3.14}
+            step={0.1}
+            tone="dark"
+            onChange={(next) =>
+              setRuntimeOrbitOverrides({ minPolarAngle: next })
+            }
+          />
+        </RuntimeSliderRow>
+
+        <RuntimeSliderRow>
+          <SliderLabel>Polar Max</SliderLabel>
+          <SegmentedValueSlider
+            value={currentMaxPolar}
+            min={0}
+            max={3.14}
+            step={0.1}
+            tone="dark"
+            onChange={(next) =>
+              setRuntimeOrbitOverrides({ maxPolarAngle: next })
+            }
+          />
+        </RuntimeSliderRow>
+
+        <RuntimeSliderRow>
+          <SliderLabel>Azimuth Min</SliderLabel>
+          <SegmentedValueSlider
+            value={currentMinAzimuth}
+            min={-3.14}
+            max={3.14}
+            step={0.1}
+            tone="dark"
+            onChange={(next) =>
+              setRuntimeOrbitOverrides({ minAzimuthAngle: next })
+            }
+          />
+        </RuntimeSliderRow>
+
+        <RuntimeSliderRow>
+          <SliderLabel>Azimuth Max</SliderLabel>
+          <SegmentedValueSlider
+            value={currentMaxAzimuth}
+            min={-3.14}
+            max={3.14}
+            step={0.1}
+            tone="dark"
+            onChange={(next) =>
+              setRuntimeOrbitOverrides({ maxAzimuthAngle: next })
+            }
+          />
+        </RuntimeSliderRow>
+
+        <RuntimeSliderRow>
+          <SliderLabel>Zoom Min</SliderLabel>
+          <SegmentedValueSlider
+            value={currentMinDistance}
+            min={0.5}
+            max={75}
+            step={0.5}
+            tone="dark"
+            onChange={(next) => setRuntimeOrbitOverrides({ minDistance: next })}
+          />
+        </RuntimeSliderRow>
+
+        <RuntimeSliderRow>
+          <SliderLabel>Zoom Max</SliderLabel>
+          <SegmentedValueSlider
+            value={currentMaxDistance}
+            min={0.5}
+            max={75}
+            step={0.5}
+            tone="dark"
+            onChange={(next) => setRuntimeOrbitOverrides({ maxDistance: next })}
+          />
+        </RuntimeSliderRow>
+      </RuntimeSliderGroup>
+    </RuntimeSection>
+  );
+};
+
+const ViewModeSegmented = ({
+  value,
+  onChange,
+}: {
+  value: "default" | "fixed" | "object";
+  onChange: (value: "default" | "fixed" | "object") => void;
+}) => {
+  const options = ["default", "fixed", "object"] as const;
+
+  return (
+    <DarkSegmentedControl>
+      <SegmentedTrack>
+        {options.map((option) => (
+          <DarkSegmentedOption
+            key={option}
+            type="button"
+            $active={value === option}
+            onClick={() => onChange(option)}
+          >
+            {value === option && (
+              <DarkSegmentedHighlight
+                layoutId="debug-view-mode-highlight"
+                transition={{ type: "spring", bounce: 0.22, duration: 0.45 }}
+                style={{ borderRadius: 9999 }}
+              />
+            )}
+            <DarkSegmentedLabel $hidden={value === option}>
+              {option}
+            </DarkSegmentedLabel>
+            {value === option && (
+              <DarkSegmentedActiveLabel>{option}</DarkSegmentedActiveLabel>
+            )}
+          </DarkSegmentedOption>
+        ))}
+      </SegmentedTrack>
+    </DarkSegmentedControl>
+  );
+};
+
+const LightColorControl = ({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) => (
+  <RuntimeSection>
+    <RuntimeRow>
+      <RuntimeLabel>Color</RuntimeLabel>
+      <ColorControlWrap>
+        <ColorInput
+          type="color"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+        />
+        <RuntimeValue>{value}</RuntimeValue>
+      </ColorControlWrap>
+    </RuntimeRow>
+  </RuntimeSection>
+);
 
 const OverlayRoot = styled(motion.div)`
   position: fixed;
@@ -401,14 +601,140 @@ const OverlayToggleButton = styled(ActionButton)`
   }
 `;
 
-const OverlayBody = styled(motion.div)`
+const OverlayBody = styled(FillColumn)`
   overflow: hidden;
+
+  > * {
+    gap: 0.5rem;
+    width: 100%;
+  }
 `;
 
-const SliderGroup = styled.div`
+const RuntimeSection = styled(FillColumn)`
+  width: 100%;
+  height: auto;
+  max-height: none;
+  align-items: stretch;
+  justify-content: flex-start;
+  margin-bottom: 0.75rem;
+`;
+
+const RuntimeSliderGroup = styled(FillColumn)`
+  width: 100%;
+  height: auto;
+  max-height: none;
+  align-items: stretch;
+  justify-content: flex-start;
+`;
+
+const RuntimeRow = styled.div`
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.525rem 0.5rem 1rem;
+  border-radius: 0.875rem;
+  background: rgba(255, 255, 255, 0.06);
+`;
+
+const RuntimeLabel = styled.label`
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.92);
+`;
+
+const RuntimeValue = styled.span`
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: 0 0.75rem;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #ffffff;
+`;
+
+const RuntimeSliderRow = styled.div`
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  align-items: center;
+  width: 100%;
+  gap: 0.75rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: 0.875rem;
+  background: rgba(255, 255, 255, 0.06);
+`;
+
+const DarkSegmentedControl = styled(SegmentedControl)`
+  background: rgba(255, 255, 255, 0.08);
+`;
+
+const DarkSegmentedHighlight = styled(motion.span)`
+  position: absolute;
+  inset: 0;
+  border-radius: 20rem;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.08);
+  pointer-events: none;
+`;
+
+const DarkSegmentedOption = styled(SegmentedOption)`
+  overflow: hidden;
+  color: ${({ $active }) =>
+    $active ? "#111111" : "rgba(255, 255, 255, 0.74)"};
+  text-transform: lowercase;
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease;
+
+  &:hover {
+    color: ${({ $active }) =>
+      $active ? "#111111" : "rgba(255, 255, 255, 0.92)"};
+  }
+`;
+
+const DarkSegmentedLabel = styled.span<{ $hidden?: boolean }>`
+  position: relative;
+  z-index: 1;
+  opacity: ${({ $hidden }) => ($hidden ? 0 : 1)};
+  transition: opacity 0.18s ease;
+`;
+
+const DarkSegmentedActiveLabel = styled(motion.span)`
+  position: absolute;
+  inset: 0;
+  z-index: 1;
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  color: #111111;
+  text-transform: lowercase;
+  pointer-events: none;
+`;
+
+const ColorControlWrap = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+`;
+
+const ColorInput = styled.input`
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+`;
+
+const SliderGroup = styled(FillColumn)`
+  height: auto;
+  max-height: min(60vh, 540px);
+  align-items: stretch;
+  justify-content: flex-start;
   max-height: min(60vh, 540px);
   padding-right: 0.125rem;
   overflow-y: auto;
@@ -418,8 +744,9 @@ const SliderRow = styled.div`
   display: grid;
   grid-template-columns: 76px 1fr;
   align-items: center;
+  width: 100%;
   gap: 0.75rem;
-  padding: 0.5rem 0.625rem;
+  padding: 0.5rem 0.625rem 0.5rem 1rem;
   border-radius: 0.875rem;
   background: rgba(255, 255, 255, 0.08);
 `;

@@ -139,6 +139,19 @@ const resolveOrbitSettings = (viewConfig?: CameraView) => ({
   ...viewConfig?.orbit,
 });
 
+const applyOrbitSettingsToControls = (
+  controls: CameraControls,
+  viewConfig?: CameraView | null,
+) => {
+  const orbitSettings = resolveOrbitSettings(viewConfig ?? undefined);
+  controls.minPolarAngle = orbitSettings.minPolarAngle;
+  controls.maxPolarAngle = orbitSettings.maxPolarAngle;
+  controls.minAzimuthAngle = orbitSettings.minAzimuthAngle;
+  controls.maxAzimuthAngle = orbitSettings.maxAzimuthAngle;
+  controls.minDistance = orbitSettings.minDistance;
+  controls.maxDistance = orbitSettings.maxDistance;
+};
+
 const resolveViewPose = (viewConfig?: CameraView) => {
   if (!viewConfig?.position || !viewConfig.target) return null;
   if (!viewConfig.orbit) {
@@ -390,6 +403,19 @@ interface ViewStore {
   previousViewMode: ViewMode;
   isTransitioning: boolean;
   pendingView: CameraViewId | null;
+  runtimeViewModeOverride: ViewMode | null;
+  runtimeCursorFollowOverride: boolean | null;
+  runtimeOrbitOverrides: Partial<
+    Pick<
+      CameraOrbitSettings,
+      | "minPolarAngle"
+      | "maxPolarAngle"
+      | "minAzimuthAngle"
+      | "maxAzimuthAngle"
+      | "minDistance"
+      | "maxDistance"
+    >
+  >;
 
   cameraControlsRef: React.RefObject<CameraControls> | null;
 
@@ -397,6 +423,22 @@ interface ViewStore {
 
   setCurrentView: (viewId: CameraViewId) => void;
   setViewMode: (mode: ViewMode) => void;
+  setRuntimeViewModeOverride: (mode: ViewMode | null) => void;
+  setRuntimeCursorFollowOverride: (enabled: boolean | null) => void;
+  setRuntimeOrbitOverrides: (
+    overrides: Partial<
+      Pick<
+        CameraOrbitSettings,
+        | "minPolarAngle"
+        | "maxPolarAngle"
+        | "minAzimuthAngle"
+        | "maxAzimuthAngle"
+        | "minDistance"
+        | "maxDistance"
+      >
+    >,
+  ) => void;
+  resetRuntimeOrbitOverrides: () => void;
   setCameraControlsRef: (ref: React.RefObject<CameraControls>) => void;
   syncViewToRoute: (route: string) => void;
   transitionToView: (viewId: CameraViewId) => Promise<void>;
@@ -435,16 +477,17 @@ export const useViewStore = create<ViewStore>()(
       previousViewMode: "fixed",
       isTransitioning: false,
       pendingView: null,
+      runtimeViewModeOverride: null,
+      runtimeCursorFollowOverride: null,
+      runtimeOrbitOverrides: {},
       cameraControlsRef: null,
       lastFocusPosition: null,
 
       applyViewModeToControls: (mode: ViewMode) => {
         const controls = get().cameraControlsRef?.current;
         if (!controls) return;
-        const currentView = get().currentView;
-        const currentViewConfig = CAMERA_VIEWS[currentView];
+        const currentViewConfig = get().getCurrentViewConfig();
         const focusedImageTitle = get().focusedImageTitle;
-        const orbitSettings = resolveOrbitSettings(currentViewConfig);
 
         if (mode === "object") {
           const cameraPos = new Vector3();
@@ -454,7 +497,7 @@ export const useViewStore = create<ViewStore>()(
           const target = new Vector3();
           // freeze current orbit center as look-at point
           controls.getTarget(target);
-          controls.setTarget(target.x, target.y, target.z, true);
+          controls.setTarget(target.x, target.y, target.z, false);
 
           controls.mouseButtons.left = focusedImageTitle
             ? CameraControlsImpl.ACTION.TRUCK
@@ -473,19 +516,44 @@ export const useViewStore = create<ViewStore>()(
           controls.touches.two = CameraControlsImpl.ACTION.NONE;
         }
 
-        controls.minPolarAngle = orbitSettings.minPolarAngle;
-        controls.maxPolarAngle = orbitSettings.maxPolarAngle;
-        controls.minAzimuthAngle = orbitSettings.minAzimuthAngle;
-        controls.maxAzimuthAngle = orbitSettings.maxAzimuthAngle;
-        controls.minDistance = orbitSettings.minDistance;
-        controls.maxDistance = orbitSettings.maxDistance;
+        applyOrbitSettingsToControls(controls, currentViewConfig);
       },
 
       setDefaultViewMode: (mode: ViewMode) =>
         set({ defaultViewMode: mode, viewMode: mode, previousViewMode: mode }),
 
       setCurrentView: (viewId) => set({ currentView: viewId }),
-      setViewMode: (mode) => set({ viewMode: mode }),
+      setViewMode: (mode) => {
+        set({ viewMode: mode });
+        get().applyViewModeToControls(mode);
+      },
+      setRuntimeViewModeOverride: (mode) => {
+        const resolvedMode = mode ?? get().defaultViewMode;
+        set({
+          runtimeViewModeOverride: mode,
+          viewMode: resolvedMode,
+        });
+        get().applyViewModeToControls(resolvedMode);
+      },
+      setRuntimeCursorFollowOverride: (enabled) =>
+        set({ runtimeCursorFollowOverride: enabled }),
+      setRuntimeOrbitOverrides: (overrides) => {
+        set((state) => ({
+          runtimeOrbitOverrides: {
+            ...state.runtimeOrbitOverrides,
+            ...overrides,
+          },
+        }));
+        const controls = get().cameraControlsRef?.current;
+        if (!controls) return;
+        applyOrbitSettingsToControls(controls, get().getCurrentViewConfig());
+      },
+      resetRuntimeOrbitOverrides: () => {
+        set({ runtimeOrbitOverrides: {} });
+        const controls = get().cameraControlsRef?.current;
+        if (!controls) return;
+        applyOrbitSettingsToControls(controls, get().getCurrentViewConfig());
+      },
       setCameraControlsRef: (ref) => {
         set({ cameraControlsRef: ref });
         if (!ref?.current) return;
@@ -537,6 +605,9 @@ export const useViewStore = create<ViewStore>()(
             defaultViewMode: desiredMode,
             previousViewMode: desiredMode,
             pendingView: viewId,
+            runtimeViewModeOverride: null,
+            runtimeCursorFollowOverride: null,
+            runtimeOrbitOverrides: {},
           });
           return;
         }
@@ -565,6 +636,9 @@ export const useViewStore = create<ViewStore>()(
           previousViewMode: state.viewMode,
           viewMode: viewConfig.defaultViewMode ?? state.viewMode,
           defaultViewMode: viewConfig.defaultViewMode ?? state.defaultViewMode,
+          runtimeViewModeOverride: null,
+          runtimeCursorFollowOverride: null,
+          runtimeOrbitOverrides: {},
           isImageFocused: false,
           focusedImageTitle: null,
           lastFocusPosition: null,
@@ -640,6 +714,9 @@ export const useViewStore = create<ViewStore>()(
         set({
           currentView: targetView,
           viewMode: viewConfig.defaultViewMode ?? "fixed",
+          runtimeViewModeOverride: null,
+          runtimeCursorFollowOverride: null,
+          runtimeOrbitOverrides: {},
           isImageFocused: false,
           focusedImageTitle: null,
           isTransitioning: true,
@@ -699,8 +776,29 @@ export const useViewStore = create<ViewStore>()(
       },
 
       getCurrentViewConfig: () => {
-        const { currentView } = get();
-        return CAMERA_VIEWS[currentView] || null;
+        const {
+          currentView,
+          runtimeCursorFollowOverride,
+          runtimeOrbitOverrides,
+        } = get();
+        const viewConfig = CAMERA_VIEWS[currentView];
+        if (!viewConfig) return null;
+
+        const mergedViewConfig = {
+          ...viewConfig,
+          orbit: {
+            ...viewConfig.orbit,
+            ...runtimeOrbitOverrides,
+          },
+        };
+        if (runtimeCursorFollowOverride === null) return mergedViewConfig;
+
+        return {
+          ...mergedViewConfig,
+          cursorFollow: runtimeCursorFollowOverride
+            ? (viewConfig.cursorFollow ?? {})
+            : undefined,
+        };
       },
 
       isDefaultView: () => {

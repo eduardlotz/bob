@@ -279,7 +279,7 @@ export const DebugApp = () => {
       </SettingsWrapper>
 
       <SettingsWrapper>
-        <h5>Camera Settings Overlay</h5>
+        <h5>Camera Controls Overlay</h5>
 
         <ToggleButton
           $active={cameraSettingsOverlayVisible}
@@ -290,7 +290,7 @@ export const DebugApp = () => {
       </SettingsWrapper>
 
       <SettingsWrapper>
-        <h5>Light Settings Overlay</h5>
+        <h5>Scene Lighting Overlay</h5>
 
         <ToggleButton
           $active={lightSettingsOverlayVisible}

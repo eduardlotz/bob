@@ -151,53 +151,25 @@ export interface WorldItem extends BaseItem {
 export interface DebugCameraSettings {
   truckSpeed: number;
   azimuthRotateSpeed: number;
-  perspectiveCameraZ: number;
-  canvasDesktopCameraZ: number;
-  canvasMobileCameraZ: number;
-  cameraFov: number;
 }
 
 export interface DebugLightSettings {
   ambientIntensityMultiplier: number;
   directionalIntensityMultiplier: number;
-  homeLightRadius: number;
-  homeLightAzimuth: number;
-  homeLightElevation: number;
-  homeLightTargetX: number;
-  homeLightTargetY: number;
-  homeLightTargetZ: number;
-  routeLightX: number;
-  routeLightY: number;
-  routeLightZ: number;
-  routeLightIntensity: number;
-  fakeShadowY: number;
-  fakeShadowOpacity: number;
+  lightAngle: number;
+  lightColor: string;
 }
 
 export const DEFAULT_DEBUG_CAMERA_SETTINGS: DebugCameraSettings = {
   truckSpeed: 5,
   azimuthRotateSpeed: 0.3,
-  perspectiveCameraZ: 3,
-  canvasDesktopCameraZ: 2,
-  canvasMobileCameraZ: 1.5,
-  cameraFov: 50,
 };
 
 export const DEFAULT_DEBUG_LIGHT_SETTINGS: DebugLightSettings = {
   ambientIntensityMultiplier: 1,
   directionalIntensityMultiplier: 1,
-  homeLightRadius: 6.7,
-  homeLightAzimuth: 0.38,
-  homeLightElevation: 0.64,
-  homeLightTargetX: 0,
-  homeLightTargetY: 0.7,
-  homeLightTargetZ: 0,
-  routeLightX: 2,
-  routeLightY: 4,
-  routeLightZ: 5,
-  routeLightIntensity: 1.2,
-  fakeShadowY: -1.32,
-  fakeShadowOpacity: 0.5,
+  lightAngle: 0,
+  lightColor: "#ffffff",
 };
 
 // Bob item types (for wearable items like hats)

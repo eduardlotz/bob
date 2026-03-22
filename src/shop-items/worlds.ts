@@ -42,7 +42,7 @@ export const initialWorlds: WorldItem[] = [
       groundColor: "#345d36",
       accentColor: "#86cf72",
       models: ["forest_grove", "forest_meadow"],
-      effects: ["forest_clouds", "forest_fireflies", "forest_rain"],
+      effects: ["forest_fireflies", "forest_rain"],
       lighting: DEFAULT_WORLD_LIGHTING,
     },
   },
@@ -111,7 +111,7 @@ export const initialWorlds: WorldItem[] = [
     },
   },
   {
-    id: "world_weltall",
+    id: "world_space",
     name: "Weltall",
     description:
       "Ein dunkler Sternenhimmel mit weiter Tiefe und schwächerem Licht.",

@@ -56,9 +56,16 @@ const Debug = () => {
 
 // TODO: make proper constant file
 export const FLOOR_Y_POSITION = -1.5;
-const WHITE_LIGHT = new Color("#ffffff");
 const MOON_WORLD_ID = "world_moon";
 const SPACE_WORLD_ID = "world_weltall";
+const HOME_LIGHT_RADIUS = 6.7;
+const HOME_LIGHT_TARGET: [number, number, number] = [0, 0.7, 0];
+const HOME_LIGHT_AZIMUTH = 0.38;
+const HOME_LIGHT_ELEVATION = 0.64;
+const ROUTE_LIGHT_POSITION = [2, 4, 5] as const;
+const ROUTE_LIGHT_INTENSITY = 1.2;
+const FAKE_SHADOW_Y = -1.32;
+const FAKE_SHADOW_OPACITY = 0.5;
 
 type HomeSunRig = {
   radius: number;
@@ -89,23 +96,29 @@ const getHomeSunRig = (
   lightSettings: DebugLightSettings,
   worldId?: string | null,
 ): HomeSunRig => ({
-  radius: lightSettings.homeLightRadius,
-  target: [
-    lightSettings.homeLightTargetX,
-    lightSettings.homeLightTargetY,
-    lightSettings.homeLightTargetZ,
-  ],
-  azimuth: lightSettings.homeLightAzimuth,
-  elevation: lightSettings.homeLightElevation,
+  radius: HOME_LIGHT_RADIUS,
+  target: HOME_LIGHT_TARGET,
+  azimuth: HOME_LIGHT_AZIMUTH + lightSettings.lightAngle,
+  elevation: HOME_LIGHT_ELEVATION,
   ...(worldId ? HOME_SUN_RIGS[worldId] : {}),
 });
 
 const getSceneLightColors = (
-  _sceneWorld: ReturnType<typeof useCoreStore.getState>["worlds"][number] | null,
+  lightSettings: DebugLightSettings,
 ) => ({
-  ambientColor: WHITE_LIGHT,
-  directionalColor: WHITE_LIGHT,
+  ambientColor: new Color(lightSettings.lightColor),
+  directionalColor: new Color(lightSettings.lightColor),
 });
+
+const rotateLightPosition = (
+  position: readonly [number, number, number],
+  angle: number,
+) => {
+  const [x, y, z] = position;
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  return [x * cos - z * sin, y, x * sin + z * cos] as const;
+};
 
 const getEffectiveWorldLighting = (
   sceneWorld: ReturnType<typeof useCoreStore.getState>["worlds"][number] | null,
@@ -191,8 +204,8 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
     worldLighting.directionalIntensity *
     debugLightSettings.directionalIntensityMultiplier;
   const worldLightColors = useMemo(
-    () => getSceneLightColors(activeLightingWorld),
-    [activeLightingWorld],
+    () => getSceneLightColors(debugLightSettings),
+    [debugLightSettings],
   );
   const homeSunRig = useMemo(
     () => getHomeSunRig(debugLightSettings, activeLightingWorld?.id),
@@ -255,11 +268,11 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
             />
             <ambientLight
               intensity={resolvedAmbientIntensity}
-              // color={worldLightColors.ambientColor}
+              color={worldLightColors.ambientColor}
             />
             <PerspectiveCamera
               makeDefault
-              position={[0, 0, debugCameraSettings.perspectiveCameraZ]}
+              position={[0, 0, 3]}
             />
             {isHome ? (
               <HomeDirectionalLight
@@ -269,12 +282,12 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
               />
             ) : (
               <directionalLight
-                intensity={debugLightSettings.routeLightIntensity}
-                position={[
-                  debugLightSettings.routeLightX,
-                  debugLightSettings.routeLightY,
-                  debugLightSettings.routeLightZ,
-                ]}
+                intensity={ROUTE_LIGHT_INTENSITY}
+                color={worldLightColors.directionalColor}
+                position={rotateLightPosition(
+                  ROUTE_LIGHT_POSITION,
+                  debugLightSettings.lightAngle,
+                )}
               />
             )}
             {!isHome && <Environment preset="city" />}
@@ -303,13 +316,13 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
                 <mesh
                   renderOrder={6}
                   rotation={[-Math.PI / 2, 0, 0]}
-                  position={[0, debugLightSettings.fakeShadowY, 0]}
+                  position={[0, FAKE_SHADOW_Y, 0]}
                 >
                   <circleGeometry args={[0.8, 16, 16]} />
                   <meshToonMaterial
                     color="#111820"
                     transparent
-                    opacity={debugLightSettings.fakeShadowOpacity}
+                    opacity={FAKE_SHADOW_OPACITY}
                     depthWrite={false}
                   />
                 </mesh>
@@ -380,7 +393,6 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
   const [isMobile, setIsMobile] = useState(false);
   const [dpr, setDpr] = useState(2);
   const navigate = useNavigate();
-  const debugCameraSettings = useCoreStore((state) => state.debugCameraSettings);
 
   const handlePerformanceChange = ({ factor }: { factor: number }) => {
     setDpr(Math.max(Math.floor(0.5 + 1.5 * factor), 1));
@@ -433,11 +445,9 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
         position: [
           0,
           0,
-          isMobile
-            ? debugCameraSettings.canvasMobileCameraZ
-            : debugCameraSettings.canvasDesktopCameraZ,
+          isMobile ? 1.5 : 2,
         ],
-        fov: debugCameraSettings.cameraFov,
+        fov: 50,
       }}
       style={{
         width: "100vw",
