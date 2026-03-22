@@ -27,6 +27,7 @@ import { CloseIcon } from "@/icons/close";
 import { HeartIcon } from "@/icons/heart";
 import { FillColumn, HugColumn, HugRow } from "@/layout";
 import styled from "styled-components";
+import { useI18n } from "@/i18n";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Store
@@ -233,6 +234,7 @@ interface StackNavProps {
 const StackNav = memo(
   ({ book, posInStack, stackSize, onPrev, onNext }: StackNavProps) => {
     const sc = STATUS_COLORS[book.status];
+    const { messages } = useI18n();
     // Clamp dot display to max 7 — collapse beyond that
     const MAX_DOTS = 10;
     const showDots = stackSize <= MAX_DOTS;
@@ -242,14 +244,14 @@ const StackNav = memo(
         <NavChevron
           onClick={onPrev}
           // Always enabled — navigation loops infinitely
-          aria-label="Previous book"
+          aria-label={messages.books.overlay.previous}
         >
           <ChevronLeftIcon />
         </NavChevron>
 
         <DotTrack>
           <NavStatusPill $bg={sc.bg} $fg={sc.fg} $bd={sc.bd}>
-            {STATUS_LABELS[book.status]}
+            {messages.books.statuses[book.status]}
           </NavStatusPill>
 
           {showDots ? (
@@ -265,7 +267,7 @@ const StackNav = memo(
           )}
         </DotTrack>
 
-        <NavChevron onClick={onNext} aria-label="Next book">
+        <NavChevron onClick={onNext} aria-label={messages.books.overlay.next}>
           <ChevronRightIcon />
         </NavChevron>
       </NavBar>
@@ -279,6 +281,7 @@ const StackNav = memo(
 
 const BookContent = memo(({ book }: { book: Book }) => {
   const navigateToBookId = useBooksStore((s) => s.navigateToBookId);
+  const { messages } = useI18n();
   const tags: string[] = (book.tags as unknown as string[]) ?? [];
   const sc = STATUS_COLORS[book.status];
 
@@ -316,7 +319,7 @@ const BookContent = memo(({ book }: { book: Book }) => {
                 <HeroAuthor>{book.author}</HeroAuthor>
               </HugColumn>
               {/* <TagPill $bg={sc.bg} $fg={sc.fg} $bd={sc.bd}>
-                {STATUS_LABELS[book.status]}
+                {messages.books.statuses[book.status]}
               </TagPill> */}
             </FillColumn>
           </HeroRow>
@@ -325,7 +328,7 @@ const BookContent = memo(({ book }: { book: Book }) => {
           {tags.length > 0 && (
             <>
               <Rule />
-              <SectionLabel>Tags</SectionLabel>
+              <SectionLabel>{messages.books.overlay.tags}</SectionLabel>
               <TagsWrap>
                 {tags.map((t, i) => {
                   const p = TAG_PAL[i % TAG_PAL.length];
@@ -343,7 +346,7 @@ const BookContent = memo(({ book }: { book: Book }) => {
           {book.review && (
             <>
               <Rule />
-              <SectionLabel>Rezension</SectionLabel>
+              <SectionLabel>{messages.books.overlay.review}</SectionLabel>
               <ReviewText>{book.review}</ReviewText>
             </>
           )}
@@ -352,7 +355,7 @@ const BookContent = memo(({ book }: { book: Book }) => {
           {book.url && (
             <>
               <Rule />
-              <SectionLabel>Mehr Info</SectionLabel>
+              <SectionLabel>{messages.books.overlay.moreInfo}</SectionLabel>
               <a
                 href={book.url}
                 target="_blank"
@@ -382,7 +385,7 @@ const BookContent = memo(({ book }: { book: Book }) => {
           {book.related && book.related.length > 0 && (
             <>
               <Rule />
-              <SectionLabel>Ähnliche Themen</SectionLabel>
+              <SectionLabel>{messages.books.overlay.related}</SectionLabel>
               {book.related.map((rid) => {
                 const rb = BOOK_BY_ID.get(rid);
                 return rb ? (
@@ -416,6 +419,7 @@ const BookContent = memo(({ book }: { book: Book }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const BookPortalOverlay = () => {
+  const { messages } = useI18n();
   const { isMobile } = useAppStore();
   const focusedBook = useBooksStore((s) => s.focusedBook);
   const focusedIdx = useBooksStore((s) => s.focusedIdx);
@@ -494,7 +498,7 @@ export const BookPortalOverlay = () => {
           }
           transition={{ type: "spring", bounce: 0.2, duration: 0.42 }}
         >
-          <CloseBtn onClick={onClose} aria-label="Schließen">
+          <CloseBtn onClick={onClose} aria-label={messages.books.overlay.close}>
             <CloseIcon />
           </CloseBtn>
 

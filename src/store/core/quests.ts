@@ -4,6 +4,8 @@ import { createIndexedDBStorage } from "../indexedDB";
 import { ROUTE_IDS } from "../config/routes";
 import { useCoreStore } from "./store";
 import { sileo } from "sileo";
+import { getLocale } from "@/i18n";
+import { getQuestCopy, type QuestMessageId } from "./quests.messages";
 
 type RewardType = "taps_reward" | "item_reward";
 type RewardId = string;
@@ -262,44 +264,6 @@ const initialQuests: Quest[] = [
       value: 1,
     },
   },
-  {
-    id: "socials_fun_fact_first_unlock",
-    title: "Erste Notiz",
-    description: "Schalte deinen ersten Fun Fact frei",
-    icon: "📚",
-    progress: 0,
-    maxProgress: 1,
-    reward: {
-      type: "taps_reward",
-      amount: 2500,
-    },
-    completed: false,
-    routeId: ROUTE_IDS.ABOUT,
-    type: "interaction",
-    trigger: {
-      action: "socials_fun_fact_first_unlock",
-      value: 1,
-    },
-  },
-  {
-    id: "socials_fun_fact_last_unlock",
-    title: "Faktenbibliothek",
-    description: "Schalte alle Fun Facts frei",
-    icon: "🗂️",
-    progress: 0,
-    maxProgress: 1,
-    reward: {
-      type: "taps_reward",
-      amount: 5000,
-    },
-    completed: false,
-    routeId: ROUTE_IDS.ABOUT,
-    type: "interaction",
-    trigger: {
-      action: "socials_fun_fact_last_unlock",
-      value: 1,
-    },
-  },
 ];
 
 export const useQuestStore = create<QuestStore>()(
@@ -361,9 +325,14 @@ export const useQuestStore = create<QuestStore>()(
               ? addTaps(quest.reward.amount as number)
               : purchaseBobItem(quest.reward.amount as string, true);
 
+            const questCopy = getQuestCopy(
+              quest.id as QuestMessageId,
+              getLocale(),
+            );
+
             sileo.success({
-              title: `${quest.title}`,
-              description: quest.description,
+              title: questCopy?.title ?? `${quest.title}`,
+              description: questCopy?.description ?? quest.description,
             });
           }
         });
@@ -424,3 +393,12 @@ export const useQuestStore = create<QuestStore>()(
     },
   ),
 );
+
+const questMessageMap = {
+  auto_tap_milestone_1: true,
+  about_quest_2: true,
+  portfolio_quest_1: true,
+  minigames_flappy_points_10: true,
+  minigames_slot_spins_15: true,
+  minigames_slot_wins_5: true,
+} as const;

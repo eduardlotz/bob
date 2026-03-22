@@ -1,4 +1,7 @@
+import { getLocale } from "@/i18n";
+import type { Locale } from "@/i18n/types";
 import { Theme } from "../core/store";
+import { themeMessages } from "./themes.messages";
 
 export const FISHEYE_CONFIG = {
   MIN: 0.1,
@@ -18,8 +21,8 @@ export const THEME_IDS = {
 export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
   [THEME_IDS.DEFAULT]: {
     id: THEME_IDS.DEFAULT,
-    name: "Im Hellen",
-    description: "The original theme",
+    name: themeMessages.de.DEFAULT.name,
+    description: themeMessages.de.DEFAULT.description,
     active: true,
     preview: false,
     colors: {
@@ -39,8 +42,8 @@ export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
   },
   [THEME_IDS.DARK]: {
     id: THEME_IDS.DARK,
-    name: "Im Dunklen",
-    description: "A sleek dark theme with inverted colors",
+    name: themeMessages.de.DARK.name,
+    description: themeMessages.de.DARK.description,
     active: false,
     preview: false,
     colors: {
@@ -59,8 +62,8 @@ export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
   },
   [THEME_IDS.PASTEL]: {
     id: THEME_IDS.PASTEL,
-    name: "Im Grünen",
-    description: "A soft pastel theme",
+    name: themeMessages.de.PASTEL.name,
+    description: themeMessages.de.PASTEL.description,
     preview: false,
     active: false,
     colors: {
@@ -79,8 +82,8 @@ export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
   },
   [THEME_IDS.NEON]: {
     id: THEME_IDS.NEON,
-    name: "Im Bunten",
-    description: "A vibrant neon theme",
+    name: themeMessages.de.NEON.name,
+    description: themeMessages.de.NEON.description,
     preview: false,
     active: false,
     colors: {
@@ -119,3 +122,8 @@ export const THEME_CONFIG: Record<keyof typeof THEME_IDS, Theme> = {
 } as const;
 
 export type ThemeId = keyof typeof THEME_CONFIG;
+
+export const getThemeCopy = (
+  themeId: ThemeId,
+  locale: Locale = getLocale(),
+) => themeMessages[locale][themeId];

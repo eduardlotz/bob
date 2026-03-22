@@ -14,7 +14,7 @@ type GLTFResult = GLTF & {
   };
 };
 
-const PATH = "gltf/tree.gltf";
+const PATH = "/gltf/tree.gltf";
 
 interface Props {
   position: [number, number, number];

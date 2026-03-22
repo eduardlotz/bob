@@ -1,7 +1,6 @@
 import type {
   FavoriteEntry,
   FavoriteFallbackGradient,
-  FunFact,
   SocialLink,
   TimelineEntry,
 } from "./types";
@@ -206,46 +205,5 @@ export const FAVORITE_FALLBACK_GRADIENTS: FavoriteFallbackGradient[] = [
   {
     id: "rose-frequency",
     colors: ["#311521", "#cb5d88", "#f6d37a"],
-  },
-];
-
-export const FUN_FACT_REVEAL_COST = 10;
-
-export const FUN_FACTS: FunFact[] = [
-  {
-    id: "FF-01",
-    name: "Design x Code",
-    text: "I like it most when a design idea survives the jump into code without losing its weird little spark.",
-    accentColor: "#87a4ff",
-  },
-  {
-    id: "FF-02",
-    name: "Tiny Worlds",
-    text: "A lot of my favorite interfaces feel less like pages and more like tiny places you can hang out in for a minute.",
-    accentColor: "#7bd2b0",
-  },
-  {
-    id: "FF-03",
-    name: "Music Brain",
-    text: "When something in the UI feels off, I usually notice it like a rhythm problem before I can explain it with words.",
-    accentColor: "#f6a661",
-  },
-  {
-    id: "FF-04",
-    name: "Builder Mode",
-    text: "I almost always prototype motion early, because movement tells me faster than a mockup whether the idea actually has life.",
-    accentColor: "#ee7ca3",
-  },
-  {
-    id: "FF-05",
-    name: "3D Detour",
-    text: "Three-dimensional scenes became my favorite excuse to make portfolios feel playful again instead of perfectly polite.",
-    accentColor: "#8ec6ff",
-  },
-  {
-    id: "FF-06",
-    name: "Favorite Constraint",
-    text: "A clear constraint usually makes me more creative, not less. It turns the whole thing into a puzzle worth solving.",
-    accentColor: "#9fd17c",
   },
 ];

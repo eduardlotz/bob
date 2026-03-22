@@ -3,6 +3,8 @@ import React, { forwardRef, useRef } from "react";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { useFloatingBar } from "@/layout/FloatingBar";
+import { useI18n } from "@/i18n";
+import { xboxControllerMessages } from "./xbox-controller.messages";
 
 import { Grabbable } from "@/physics/Grabbable";
 import { RapierRigidBody, RigidBody } from "@react-three/rapier";
@@ -16,7 +18,7 @@ type GLTFResult = GLTF & {
   };
 };
 
-const PATH = "gltf/xbox-controller.glb";
+const PATH = "/gltf/xbox-controller.glb";
 
 interface Props {
   position: [number, number, number];
@@ -30,12 +32,13 @@ export const XboxControllerModel = forwardRef(
 
     const { nodes, materials } = useGLTF(PATH) as GLTFResult;
     const { setHoveredObject } = useFloatingBar();
+    const { locale } = useI18n();
 
     const handlePointerEnter = (e: any) => {
       e.stopPropagation();
 
       setHoveredObject({
-        title: "Xbox",
+        title: xboxControllerMessages[locale].floatingLabel,
       });
     };
 

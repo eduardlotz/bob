@@ -4,9 +4,12 @@ import { useMiniGameStore } from "@/store";
 import { AnimatePresence, motion } from "motion/react";
 import styled from "styled-components";
 import { SmallArrowLeftIcon } from "@/icons/arrow";
+import { useI18n } from "@/i18n";
+import { backToLobbyButtonMessages } from "./BackToLobbyButton.messages";
 
 export const BackToLobbyButton = ({ show }: { show: boolean }) => {
   const { finishGame } = useMiniGameStore();
+  const { locale } = useI18n();
 
   const onTriggerClick = () => {
     finishGame();
@@ -51,7 +54,7 @@ export const BackToLobbyButton = ({ show }: { show: boolean }) => {
                   bounce: 0.2,
                 }}
               >
-                Spiel beenden
+                {backToLobbyButtonMessages[locale].label}
               </motion.span>
             </TriggerContainer>
           </Magnetic>

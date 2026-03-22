@@ -15,7 +15,7 @@ type GLTFResult = GLTF & {
   };
 };
 
-const PATH = "gltf/bob-boolean.glb";
+const PATH = "/gltf/bob-boolean.glb";
 
 interface Props {
   position: [number, number, number];

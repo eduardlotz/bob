@@ -3,6 +3,8 @@ import React, { forwardRef } from "react";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { useFloatingBar } from "@/layout/FloatingBar";
+import { useI18n } from "@/i18n";
+import { cameraMessages } from "./camera.messages";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -13,7 +15,7 @@ type GLTFResult = GLTF & {
   };
 };
 
-const PATH = "gltf/camera.glb";
+const PATH = "/gltf/camera.glb";
 
 interface Props {
   position: [number, number, number];
@@ -25,12 +27,13 @@ export const CameraModel = forwardRef(
   ({ scale = [1, 1, 1], ...props }: Props, ref: any) => {
     const { nodes, materials } = useGLTF(PATH) as GLTFResult;
     const { setHoveredObject } = useFloatingBar();
+    const { locale } = useI18n();
 
     const handlePointerEnter = (e: any) => {
       e.stopPropagation();
 
       setHoveredObject({
-        title: "Fotografie",
+        title: cameraMessages[locale].floatingLabel,
       });
     };
 

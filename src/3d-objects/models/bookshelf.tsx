@@ -5,6 +5,8 @@ import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
 import { useViewStore } from "@/store";
 import { useFloatingBar } from "@/layout/FloatingBar";
+import { useI18n } from "@/i18n";
+import { bookshelfMessages } from "./bookshelf.messages";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -31,7 +33,7 @@ type GLTFResult = GLTF & {
   };
 };
 
-const PATH = "gltf/bookshelf.gltf";
+const PATH = "/gltf/bookshelf.gltf";
 
 interface Props {
   position: [number, number, number];
@@ -64,11 +66,12 @@ export const BookshelfModel = ({
 
   const { currentView } = useViewStore();
   const { setHoveredObject } = useFloatingBar();
+  const { locale } = useI18n();
 
   const handlePointerEnter = (e: any) => {
     e.stopPropagation();
     if (currentView !== "bookshelf")
-      setHoveredObject({ title: "Buchsammlung" });
+      setHoveredObject({ title: bookshelfMessages[locale].floatingLabel });
   };
 
   const handlePointerLeave = () => setHoveredObject(null);

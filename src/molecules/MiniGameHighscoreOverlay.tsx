@@ -3,8 +3,10 @@ import { AnimatePresence, motion } from "motion/react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 import styled from "styled-components";
+import { useI18n } from "@/i18n";
 
 export function MiniGameHighscoreOverlay() {
+  const { locale, formatNumber } = useI18n();
   const location = useLocation();
   const activeGame = useMiniGameStore((s) => s.activeGame);
   const score = useMiniGameStore((s) => s.session.score);
@@ -25,12 +27,18 @@ export function MiniGameHighscoreOverlay() {
   const displayedHighScore = Math.max(currentGameHighScore, score);
   const isNewHighscore = activeGame !== "LOBBY" && score > currentGameHighScore;
   const label = isNewHighscore
-    ? `New Highscore: ${displayedHighScore.toLocaleString("de-DE", {
-        maximumFractionDigits: 0,
-      })}`
-    : `Highscore: ${displayedHighScore.toLocaleString("de-DE", {
-        maximumFractionDigits: 0,
-      })}`;
+    ? `${locale === "de" ? "Neuer Highscore" : "New Highscore"}: ${formatNumber(
+        displayedHighScore,
+        {
+          maximumFractionDigits: 0,
+        },
+      )}`
+    : `${locale === "de" ? "Highscore" : "Highscore"}: ${formatNumber(
+        displayedHighScore,
+        {
+          maximumFractionDigits: 0,
+        },
+      )}`;
 
   if (typeof document === "undefined") return null;
   const root = document.getElementById("motion-root") ?? document.body;

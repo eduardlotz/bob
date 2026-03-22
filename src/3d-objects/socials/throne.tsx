@@ -1,4 +1,5 @@
 import { useFloatingBar } from "@/layout/FloatingBar";
+import { useI18n } from "@/i18n";
 import { useAppStore } from "@/store";
 import { useCursorStore } from "@/store/core/cursor";
 import { useSocialsStore } from "@/store/socials";
@@ -21,6 +22,7 @@ import type {
   SocialThroneConfig,
   ThroneFocusInteraction,
 } from "./types";
+import { socialsMessages } from "./socials.messages";
 
 const PEDESTAL_H = 0.5;
 const PEDESTAL_W = 0.28;
@@ -385,6 +387,7 @@ export const Throne = memo(
     viewActive: boolean;
   }) => {
     const { setHoveredObject } = useFloatingBar();
+    const { locale } = useI18n();
     const setFocused = useSocialsStore((state) => state.setFocused);
     const clearFocus = useSocialsStore((state) => state.clearFocus);
     const focusedThrone = useSocialsStore((state) => state.focusedThrone);
@@ -413,10 +416,10 @@ export const Throne = memo(
       (event: ThreeEvent<PointerEvent>) => {
         if (!viewActive || focusedThrone) return;
         event.stopPropagation();
-        setHoveredObject({ title: def.meta.label });
+        setHoveredObject({ title: socialsMessages[locale][def.id].label });
         document.body.style.cursor = "pointer";
       },
-      [def.meta.label, focusedThrone, setHoveredObject, viewActive],
+      [def.id, focusedThrone, locale, setHoveredObject, viewActive],
     );
 
     const onOut = useCallback(() => {

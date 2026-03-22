@@ -1,10 +1,9 @@
 import React, { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import type { FunFact, SocialLink, ThroneObjectProps } from "./types";
+import type { SocialLink, ThroneObjectProps } from "./types";
 
 const stickerTextureCache = new Map<string, THREE.CanvasTexture>();
-const cardTextureCache = new Map<string, THREE.CanvasTexture>();
 
 function encodeSvgDataUrl(svg: string) {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
@@ -76,32 +75,6 @@ function drawRoundedRect(
   ctx.lineTo(x, y + radius);
   ctx.quadraticCurveTo(x, y, x + radius, y);
   ctx.closePath();
-}
-
-function wrapCanvasText(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  maxWidth: number,
-) {
-  const words = text.split(" ");
-  const lines: string[] = [];
-  let current = "";
-
-  for (const word of words) {
-    const candidate = current ? `${current} ${word}` : word;
-    if (ctx.measureText(candidate).width > maxWidth && current) {
-      lines.push(current);
-      current = word;
-    } else {
-      current = candidate;
-    }
-  }
-
-  if (current) {
-    lines.push(current);
-  }
-
-  return lines;
 }
 
 export function AnimatedThroneBase({
@@ -214,63 +187,6 @@ export function getStickerTexture(link: SocialLink) {
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.needsUpdate = true;
   stickerTextureCache.set(key, texture);
-
-  return texture;
-}
-
-export function getFunFactCardTexture(fact: FunFact) {
-  if (typeof document === "undefined") return null;
-
-  const cacheKey = `${fact.id}:${fact.name}:${fact.text}:${fact.accentColor}`;
-  const cached = cardTextureCache.get(cacheKey);
-  if (cached) return cached;
-
-  const width = 768;
-  const height = 1024;
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return null;
-
-  ctx.fillStyle = "#fff8ef";
-  ctx.fillRect(0, 0, width, height);
-
-  ctx.fillStyle = "rgba(17,17,17,0.06)";
-  drawRoundedRect(ctx, 40, 40, width - 80, height - 80, 42);
-  ctx.fill();
-
-  ctx.fillStyle = fact.accentColor;
-  drawRoundedRect(ctx, 82, 92, 196, 66, 26);
-  ctx.fill();
-
-  ctx.fillStyle = "#111111";
-  ctx.textAlign = "left";
-  ctx.textBaseline = "middle";
-  ctx.font = "700 34px sans-serif";
-  ctx.fillStyle = "#ffffff";
-  ctx.fillText(fact.id, 114, 126);
-
-  ctx.fillStyle = "#111111";
-  ctx.font = "700 54px sans-serif";
-  ctx.fillText(fact.name, 84, 236);
-
-  ctx.font = "400 40px sans-serif";
-  const lines = wrapCanvasText(ctx, fact.text, width - 168);
-  const lineHeight = 55;
-  lines.slice(0, 10).forEach((line, index) => {
-    ctx.fillText(line, 84, 360 + index * lineHeight);
-  });
-
-  ctx.fillStyle = "rgba(17,17,17,0.34)";
-  ctx.font = "600 28px sans-serif";
-  ctx.fillText("tap to reshuffle from the overlay", 84, height - 128);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.needsUpdate = true;
-  cardTextureCache.set(cacheKey, texture);
 
   return texture;
 }

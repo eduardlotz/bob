@@ -19,7 +19,7 @@ type GLTFResult = GLTF & {
   };
 };
 
-const PATH = "gltf/krusty-krab-hat.gltf";
+const PATH = "/gltf/krusty-krab-hat.gltf";
 
 interface Props {
   position: [number, number, number];

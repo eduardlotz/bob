@@ -4,6 +4,9 @@ import { formatNumber } from "@/molecules/TapCounter";
 import { motion } from "motion/react";
 import styled from "styled-components";
 import { ItemStatusChip } from "./ui";
+import { useI18n } from "@/i18n";
+import { getShopItemCopy } from "@/shop-items/copy";
+import { getQuestCopy, type QuestMessageId } from "@/store/core/quests.messages";
 
 export const QuestsIcon = () => (
   <img src="/images/app-logos/quests.png" height={80} width={80} />
@@ -12,6 +15,7 @@ export const QuestsIcon = () => (
 export const QuestsApp = () => {
   const { quests } = useQuestStore();
   const { bobItems, tapEffects, worlds } = useCoreStore();
+  const { locale, messages } = useI18n();
 
   const rewardItems = [...bobItems, ...tapEffects, ...worlds];
 
@@ -29,17 +33,19 @@ export const QuestsApp = () => {
                   const item = rewardItems.find(
                     (entry) => entry.id === quest.reward.amount,
                   );
-                  if (!item) return "+ 🎁";
+                  if (!item) return messages.quests.fallbackReward;
                   const itemIcon =
                     "icon" in item && item.icon ? item.icon : "🎁";
-                  return `+ ${itemIcon} ${item.name}`;
+                  const itemCopy = getShopItemCopy(item.id, locale);
+                  return `+ ${itemIcon} ${itemCopy?.name ?? item.name}`;
                 })();
+          const questCopy = getQuestCopy(quest.id as QuestMessageId, locale);
 
           return (
             <QuestListItem $completed={quest.completed} key={quest.id}>
               <FillColumn $align="flex-start" $gap={".25rem"}>
-                <QuestName>{quest.title}</QuestName>
-                <QuestInfos>{quest.description}</QuestInfos>
+                <QuestName>{questCopy?.title ?? quest.title}</QuestName>
+                <QuestInfos>{questCopy?.description ?? quest.description}</QuestInfos>
                 {/* {quest.completed && <RewardChip>{reward}</RewardChip>} */}
               </FillColumn>
 

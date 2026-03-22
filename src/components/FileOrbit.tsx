@@ -12,6 +12,7 @@ import { geometry } from "maath";
 import styled from "styled-components";
 import { AnimatePresence, motion } from "motion/react";
 import { MotionVariants } from "@/styles/motion";
+import { useI18n } from "@/i18n";
 
 type ViewCullMode = "default" | "focused";
 
@@ -418,7 +419,6 @@ const ITEMS: PortfolioItem[] = [
       {
         type: "soundcloud",
         href: "https://soundcloud.com/captainlowie/hassliebe",
-        label: "Auf Soundcloud anhören",
       },
     ],
   },
@@ -438,7 +438,6 @@ const ITEMS: PortfolioItem[] = [
       {
         type: "soundcloud",
         href: "https://soundcloud.com/captainlowie/hassliebe-fast-version",
-        label: "Auf Soundcloud anhören",
       },
     ],
   },
@@ -458,7 +457,6 @@ const ITEMS: PortfolioItem[] = [
       {
         type: "soundcloud",
         href: "https://soundcloud.com/captainlowie/hassliebe-slowie-version",
-        label: "Auf Soundcloud anhören",
       },
     ],
   },
@@ -478,7 +476,6 @@ const ITEMS: PortfolioItem[] = [
       {
         type: "soundcloud",
         href: "https://soundcloud.com/captainlowie/sets/mixes-23-24",
-        label: "Auf Soundcloud anhören",
       },
     ],
   },
@@ -498,7 +495,6 @@ const ITEMS: PortfolioItem[] = [
       {
         type: "soundcloud",
         href: "https://soundcloud.com/captainlowie/du-fehlst",
-        label: "Auf Soundcloud anhören",
       },
     ],
   },
@@ -518,7 +514,6 @@ const ITEMS: PortfolioItem[] = [
       {
         type: "soundcloud",
         href: "https://soundcloud.com/captainlowie/sets/soundchecks",
-        label: "Auf Soundcloud anhören",
       },
     ],
   },
@@ -538,7 +533,6 @@ const ITEMS: PortfolioItem[] = [
       {
         type: "soundcloud",
         href: "https://soundcloud.com/captainlowie/warum",
-        label: "Auf Soundcloud anhören",
       },
     ],
   },
@@ -558,7 +552,6 @@ const ITEMS: PortfolioItem[] = [
       {
         type: "soundcloud",
         href: "https://soundcloud.com/captainlowie/warum-edit",
-        label: "Auf Soundcloud anhören",
       },
     ],
   },
@@ -620,6 +613,7 @@ const PortfolioMetaOverlay = ({
   depthOffset: number;
   distanceFactor: number;
 }) => {
+  const { messages } = useI18n();
   const { isMobile } = useAppStore();
   const overlayOffsetX = isMobile
     ? 0
@@ -657,7 +651,7 @@ const PortfolioMetaOverlay = ({
 
             {item.links?.map((link, i) => (
               <PillLink key={i} href={link.href} target="_blank">
-                {link.label}
+                {link.label ?? messages.ui.linkActions[link.type]}
                 <ExternalLinkIcon />
               </PillLink>
             ))}

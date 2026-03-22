@@ -9,6 +9,8 @@ import { Grabbable } from "@/physics/Grabbable";
 import { useCoreStore } from "@/store";
 import { previewMaterialProps } from "@/shop-items/utils";
 import { useFloatingBar } from "@/layout/FloatingBar";
+import { useI18n } from "@/i18n";
+import { greenDiamondMessages } from "./greenDiamond.messages";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -19,7 +21,7 @@ type GLTFResult = GLTF & {
   };
 };
 
-const PATH = "gltf/sims-plumbob.glb";
+const PATH = "/gltf/sims-plumbob.glb";
 
 interface Props {
   position: [number, number, number];
@@ -39,12 +41,13 @@ export const GreenDiamond = ({
   const { previewMode } = useCoreStore();
 
   const { setHoveredObject } = useFloatingBar();
+  const { locale } = useI18n();
 
   const handlePointerEnter = (e: any) => {
     e.stopPropagation();
 
     setHoveredObject({
-      title: "Plumbob",
+      title: greenDiamondMessages[locale].floatingLabel,
     });
   };
 

@@ -8,8 +8,10 @@ import { useSocialsStore } from "@/store/socials";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/icons/chevron";
 import { CloseIcon } from "@/icons/close";
 import { OVERLAY_ROOT_ID } from "@/3d-objects/books/overlay";
+import { useI18n } from "@/i18n";
 
 import { THRONE_BY_ID, THRONE_ORDER, type ThroneId } from "./data";
+import { socialsMessages } from "./socials.messages";
 
 const PANEL_W = "400px";
 const PANEL_MIN_H = "440px";
@@ -281,6 +283,7 @@ const ThroneNav = memo(
     onNext: () => void;
     mobile: boolean;
   }) => {
+    const { locale } = useI18n();
     const currentThrone = THRONE_BY_ID[current];
     const currentIndex = THRONE_ORDER.indexOf(current);
 
@@ -293,7 +296,7 @@ const ThroneNav = memo(
         <DotTrack>
           {!mobile && (
             <NavPill $accent={currentThrone.meta.accentColor}>
-              {currentThrone.meta.label}
+              {socialsMessages[locale][current].label}
             </NavPill>
           )}
           <DotRow $mobile={mobile}>
@@ -317,6 +320,7 @@ const ThroneNav = memo(
 );
 
 export const SocialsPortalOverlay = () => {
+  const { locale } = useI18n();
   const { isMobile } = useAppStore();
   const focusedThrone = useSocialsStore((state) => state.focusedThrone);
   const setFocused = useSocialsStore((state) => state.setFocused);
@@ -489,7 +493,7 @@ export const SocialsPortalOverlay = () => {
                   $mobile={isMobile}
                   $fullScreen={isMobile && mobileSheetMode === "full"}
                   onClick={onClose}
-                  aria-label="Close"
+                  aria-label={locale === "de" ? "Schließen" : "Close"}
                 >
                   <CloseIcon />
                 </CloseBtn>
@@ -503,8 +507,10 @@ export const SocialsPortalOverlay = () => {
                       : undefined
                   }
                 >
-                  <Title>{currentThrone.meta.label}</Title>
-                  <Subtitle>{currentThrone.overlay.subtitle}</Subtitle>
+                  <Title>{socialsMessages[locale][currentThrone.id].label}</Title>
+                  <Subtitle>
+                    {socialsMessages[locale][currentThrone.id].subtitle}
+                  </Subtitle>
                 </Header>
 
                 <AnimatePresence mode="wait" initial={false}>

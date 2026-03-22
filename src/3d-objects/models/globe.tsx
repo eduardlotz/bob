@@ -12,7 +12,7 @@ type GLTFResult = GLTF & {
   };
 };
 
-const PATH = "gltf/globe.glb";
+const PATH = "/gltf/globe.glb";
 
 export function useGlobeModelData() {
   return useGLTF(PATH) as GLTFResult;

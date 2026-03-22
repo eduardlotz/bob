@@ -1,16 +1,15 @@
 import {
   FavoritesOverlayContent,
-  FunFactsOverlayContent,
   SocialsOverlayContent,
   TimelineOverlayContent,
 } from "./content";
 import {
   FavoritesStackObject,
-  FunFactsDeckObject,
   SocialsGlobeObject,
   TimelineCameraObject,
 } from "./sceneObjects";
 import type { SocialThroneConfig } from "./types";
+import { socialsMessages } from "./socials.messages";
 
 const SHARED_FOCUS_INTERACTION = {
   allowDrag: true,
@@ -30,8 +29,8 @@ export const THRONE_CONFIG = [
     baseColor: "#171a22",
     rimColor: "#7c8cff",
     meta: {
-      label: "Timeline",
-      description: "Milestones, turns, and a few good detours.",
+      label: socialsMessages.de.timeline.label,
+      description: socialsMessages.de.timeline.description,
       accentColor: "#7c8cff",
     },
     object: {
@@ -39,7 +38,7 @@ export const THRONE_CONFIG = [
       focusInteraction: SHARED_FOCUS_INTERACTION,
     },
     overlay: {
-      subtitle: "Ereignisse in meinem Leben",
+      subtitle: socialsMessages.de.timeline.subtitle,
       Component: TimelineOverlayContent,
       preferredWidth: "420px",
       minHeight: "440px",
@@ -54,8 +53,8 @@ export const THRONE_CONFIG = [
     baseColor: "#162032",
     rimColor: "#56a7ff",
     meta: {
-      label: "Socials",
-      description: "A tiny internet snow globe with the usual suspects.",
+      label: socialsMessages.de.socials.label,
+      description: socialsMessages.de.socials.description,
       accentColor: "#56a7ff",
     },
     object: {
@@ -63,7 +62,7 @@ export const THRONE_CONFIG = [
       focusInteraction: SHARED_FOCUS_INTERACTION,
     },
     overlay: {
-      subtitle: "Andere Ecken im Internet",
+      subtitle: socialsMessages.de.socials.subtitle,
       Component: SocialsOverlayContent,
       preferredWidth: "520px",
       minHeight: "500px",
@@ -71,39 +70,15 @@ export const THRONE_CONFIG = [
     },
   },
   {
-    id: "funFacts",
-    x: -0.2,
-    z: 0.2,
-    pedestalHeight: 0.31,
-    baseColor: "#231b18",
-    rimColor: "#f0a95f",
-    meta: {
-      label: "Fun Facts",
-      description: "Little cards with more personality than they need.",
-      accentColor: "#f0a95f",
-    },
-    object: {
-      Component: FunFactsDeckObject,
-      focusInteraction: SHARED_FOCUS_INTERACTION,
-    },
-    overlay: {
-      subtitle: "Kleine Karten mit unnuetzem Wissen",
-      Component: FunFactsOverlayContent,
-      preferredWidth: "430px",
-      minHeight: "520px",
-      maxHeight: "820px",
-    },
-  },
-  {
     id: "favorites",
-    x: 0.2,
+    x: -0.2,
     z: 0.2,
     pedestalHeight: 0.46,
     baseColor: "#1d1b23",
     rimColor: "#ef6d86",
     meta: {
-      label: "Favorites",
-      description: "Songs, covers, and things I keep looping back to.",
+      label: socialsMessages.de.favorites.label,
+      description: socialsMessages.de.favorites.description,
       accentColor: "#ef6d86",
     },
     object: {
@@ -111,7 +86,7 @@ export const THRONE_CONFIG = [
       focusInteraction: SHARED_FOCUS_INTERACTION,
     },
     overlay: {
-      subtitle: "Sachen, die ich gerade mag",
+      subtitle: socialsMessages.de.favorites.subtitle,
       Component: FavoritesOverlayContent,
       preferredWidth: "460px",
       minHeight: "460px",

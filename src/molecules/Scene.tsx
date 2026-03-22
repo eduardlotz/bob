@@ -48,6 +48,8 @@ import { useNavigate } from "react-router-dom";
 import { sileo } from "sileo";
 import { CameraGLBridge } from "@/bridges/CameraBridge";
 import { useCursor } from "@/hooks/useCursor";
+import { commonUiMessages } from "@/ui/common.messages";
+import { getLocale } from "@/i18n";
 
 const Debug = () => {
   const { width } = useThree((s) => s.size);
@@ -433,7 +435,8 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
           navigate(ROUTE_PATHS.HOME);
 
           sileo.error({
-            title: "Ein Fehler ist aufgetreten...",
+            title: commonUiMessages[getLocale()].toasts
+              .webglContextRestoredErrorTitle,
           });
         };
 

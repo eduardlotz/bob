@@ -91,10 +91,3 @@ export interface ResolvedFavoriteEntry extends FavoriteEntry {
   textureUrl: string;
   fallbackGradient: FavoriteFallbackGradient;
 }
-
-export interface FunFact {
-  id: string;
-  name: string;
-  text: string;
-  accentColor: string;
-}

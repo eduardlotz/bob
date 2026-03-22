@@ -12,14 +12,8 @@ import {
 } from "@/store";
 import { Magnetic } from "@/layout/Magnetic";
 import { useSocialsStore } from "@/store/socials";
-
-const VIEWID_TITLE_MAP = {
-  desk: "Musik & Mixes",
-  bookshelf: "Buchsammlung",
-  computer: "Apps & Seiten",
-  cardbox: "Interessen & Hobbies",
-  socials: "Eddie's Ecke",
-} satisfies Partial<Record<CameraViewId, string>>;
+import { useI18n } from "@/i18n";
+import { viewControlsMessages } from "./ViewControls.messages";
 
 export function ViewControls() {
   const {
@@ -38,8 +32,10 @@ export function ViewControls() {
   const currentRoute = useAppStore((s) => s.currentRoute);
   const { focusedBook } = useBooksStore();
   const { focusedThrone } = useSocialsStore();
+  const { locale } = useI18n();
 
   const activeGame = useMiniGameStore((s) => s.activeGame);
+  const viewTitles = viewControlsMessages[locale].viewTitles;
 
   const isDefault = isDefaultView();
   const isPhone = isPhoneView();
@@ -79,7 +75,7 @@ export function ViewControls() {
 
   const title = isImageFocused
     ? focusedImageTitle
-    : (VIEWID_TITLE_MAP[currentView as keyof typeof VIEWID_TITLE_MAP] ?? "");
+    : (viewTitles[currentView as keyof typeof viewTitles] ?? "");
 
   return (
     <AnimatePresence>
@@ -120,7 +116,7 @@ export function ViewControls() {
             >
               <SmallArrowLeftIcon />
 
-              <span>Zurück</span>
+              <span>{viewControlsMessages[locale].backLabel}</span>
             </TriggerContainer>
           </Magnetic>
 

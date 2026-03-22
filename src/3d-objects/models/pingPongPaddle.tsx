@@ -18,7 +18,7 @@ type GLTFResult = GLTF & {
   };
 };
 
-const PATH = "gltf/pingpong-paddle.glb";
+const PATH = "/gltf/pingpong-paddle.glb";
 
 interface Props {
   position?: [number, number, number];

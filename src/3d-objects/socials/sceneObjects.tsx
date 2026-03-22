@@ -1,14 +1,13 @@
 import { Decal, RoundedBox, useTexture } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
 import { GlobeModel } from "../models/globe";
-import { FUN_FACTS, SOCIAL_LINKS } from "./contentData";
+import { SOCIAL_LINKS } from "./contentData";
 import {
   AnimatedThroneBase,
   createSocialBallDescriptors,
-  getFunFactCardTexture,
   useSocialLogoTextures,
   useStickerTextures,
 } from "./helper";
@@ -19,20 +18,6 @@ const GLOBE_SCALE_VEC: [number, number, number] = [GLOBE_SCALE, GLOBE_SCALE, GLO
 const STATIC_SOCIAL_BALL_RADIUS = 0.05;
 const TIMELINE_PANEL_SIZE: [number, number, number] = [0.34, 0.42, 0.06];
 const TIMELINE_NODE_POSITIONS = [0.1, 0, -0.1] as const;
-const FUN_FACT_CARD_WIDTH = 0.44;
-const FUN_FACT_CARD_HEIGHT = 0.6;
-const FUN_FACT_CARD_THICKNESS = 0.028;
-const FUN_FACT_STACK_OFFSET_Y = 0.013;
-const FUN_FACT_STACK_OFFSET_Z = 0.024;
-const FUN_FACT_STACK_TILT = 0.06;
-const FUN_FACT_REVEAL_LIFT = 0.19;
-const FUN_FACT_REVEAL_FORWARD = 0.12;
-const FUN_FACT_REVEAL_ROTATION_Z = -0.08;
-const FUN_FACT_REVEAL_PEAK_LIFT = 0.2;
-const FUN_FACT_REVEAL_PEAK_FORWARD = 0.14;
-const FUN_FACT_REVEAL_PEAK_ROTATION_X = Math.PI * 0.96;
-const FUN_FACT_THRONE_ROTATION: [number, number, number] = [-Math.PI / 2, 0, 0.08];
-const FUN_FACT_FOCUS_ROTATION: [number, number, number] = [0.2, 0, 0.05];
 
 export function TimelineCameraObject(props: ThroneObjectProps) {
   const groupRef = useRef<THREE.Group>(null);
@@ -245,205 +230,6 @@ export function FavoritesStackObject(props: ThroneObjectProps) {
             </group>
           );
         })}
-      </group>
-    </AnimatedThroneBase>
-  );
-}
-
-export function FunFactsDeckObject(props: ThroneObjectProps) {
-  const currentIndex = useSocialsStore((state) => state.currentFunFactIndex);
-  const revealToken = useSocialsStore((state) => state.funFactRevealToken);
-  const topCardRef = useRef<THREE.Group>(null);
-  const revealProgress = useRef(1);
-  const lastRevealToken = useRef(revealToken);
-  const isRevealAnimating = useRef(false);
-  const swappedFactDuringAnimation = useRef(false);
-  const [displayedFactIndex, setDisplayedFactIndex] = useState(currentIndex);
-
-  const displayedFact = FUN_FACTS[displayedFactIndex] ?? FUN_FACTS[0];
-  const incomingFact = FUN_FACTS[currentIndex] ?? displayedFact;
-  const baseRotation = props.isFloating ? FUN_FACT_FOCUS_ROTATION : FUN_FACT_THRONE_ROTATION;
-  const stackDepthDirection = props.isFloating ? 1 : -1;
-  const restingTopCardZ = stackDepthDirection * FUN_FACT_STACK_OFFSET_Z * 2;
-  const revealPeakForward = stackDepthDirection * FUN_FACT_REVEAL_PEAK_FORWARD;
-  const frontFactTexture = useMemo(
-    () => getFunFactCardTexture(displayedFact),
-    [displayedFact],
-  );
-  const backFactTexture = useMemo(
-    () => getFunFactCardTexture(incomingFact),
-    [incomingFact],
-  );
-
-  useEffect(() => {
-    const tokenChanged = revealToken !== lastRevealToken.current;
-    lastRevealToken.current = revealToken;
-
-    if (props.isFloating && tokenChanged) {
-      revealProgress.current = 0;
-      isRevealAnimating.current = true;
-      swappedFactDuringAnimation.current = false;
-      return;
-    }
-
-    if (!props.isFloating) {
-      isRevealAnimating.current = false;
-      revealProgress.current = 1;
-      swappedFactDuringAnimation.current = false;
-      setDisplayedFactIndex(currentIndex);
-    }
-  }, [currentIndex, props.isFloating, revealToken]);
-
-  useFrame((_, dt) => {
-    if (!topCardRef.current) return;
-
-    if (!props.isFloating || !isRevealAnimating.current) {
-      topCardRef.current.rotation.set(0, 0, -FUN_FACT_STACK_TILT);
-      topCardRef.current.position.set(
-        0,
-        FUN_FACT_STACK_OFFSET_Y * 2,
-        restingTopCardZ,
-      );
-      return;
-    }
-
-    revealProgress.current = Math.min(1, revealProgress.current + dt * 1.7);
-    const phase = revealProgress.current < 0.5 ? revealProgress.current / 0.5 : (revealProgress.current - 0.5) / 0.5;
-    const eased = 1 - Math.pow(1 - phase, 3);
-
-    if (revealProgress.current < 0.5) {
-      topCardRef.current.rotation.x = THREE.MathUtils.lerp(
-        0,
-        FUN_FACT_REVEAL_PEAK_ROTATION_X,
-        eased,
-      );
-      topCardRef.current.rotation.z = THREE.MathUtils.lerp(
-        -FUN_FACT_STACK_TILT,
-        FUN_FACT_REVEAL_ROTATION_Z,
-        eased,
-      );
-      topCardRef.current.position.y = THREE.MathUtils.lerp(
-        FUN_FACT_STACK_OFFSET_Y * 2,
-        FUN_FACT_REVEAL_PEAK_LIFT,
-        eased,
-      );
-      topCardRef.current.position.z = THREE.MathUtils.lerp(
-        restingTopCardZ,
-        revealPeakForward,
-        eased,
-      );
-    } else {
-      if (!swappedFactDuringAnimation.current) {
-        swappedFactDuringAnimation.current = true;
-        setDisplayedFactIndex(currentIndex);
-      }
-
-      topCardRef.current.rotation.x = THREE.MathUtils.lerp(
-        FUN_FACT_REVEAL_PEAK_ROTATION_X,
-        0,
-        eased,
-      );
-      topCardRef.current.rotation.z = THREE.MathUtils.lerp(
-        FUN_FACT_REVEAL_ROTATION_Z,
-        -FUN_FACT_STACK_TILT,
-        eased,
-      );
-      topCardRef.current.position.y = THREE.MathUtils.lerp(
-        FUN_FACT_REVEAL_PEAK_LIFT,
-        FUN_FACT_STACK_OFFSET_Y * 2,
-        eased,
-      );
-      topCardRef.current.position.z = THREE.MathUtils.lerp(
-        revealPeakForward,
-        restingTopCardZ,
-        eased,
-      );
-    }
-
-    if (revealProgress.current >= 1) {
-      isRevealAnimating.current = false;
-      swappedFactDuringAnimation.current = false;
-      topCardRef.current.rotation.set(0, 0, -FUN_FACT_STACK_TILT);
-      topCardRef.current.position.set(
-        0,
-        FUN_FACT_STACK_OFFSET_Y * 2,
-        restingTopCardZ,
-      );
-    }
-  });
-
-  return (
-    <AnimatedThroneBase
-      {...props}
-      baseHeight={0.092}
-      spinSpeed={0}
-      bobAmplitude={0.012}
-      pulseAmplitude={0.006}
-    >
-      <group position={[0, 0.008, 0]} rotation={baseRotation}>
-        {[0, 1, 2].map((index) => (
-          <group
-            key={`stack-card-${index}`}
-            position={[
-              index * 0.007 - 0.007,
-              index * FUN_FACT_STACK_OFFSET_Y - FUN_FACT_STACK_OFFSET_Y,
-              stackDepthDirection * index * FUN_FACT_STACK_OFFSET_Z,
-            ]}
-            rotation={[0, 0, (index - 1) * FUN_FACT_STACK_TILT]}
-          >
-            <RoundedBox
-              args={[
-                FUN_FACT_CARD_WIDTH,
-                FUN_FACT_CARD_HEIGHT,
-                FUN_FACT_CARD_THICKNESS,
-              ]}
-              radius={0.032}
-              smoothness={4}
-            >
-              <meshStandardMaterial
-                color={index === 1 ? "#ffe8cc" : "#f4ede5"}
-                roughness={0.9}
-              />
-            </RoundedBox>
-          </group>
-        ))}
-
-        <group ref={topCardRef}>
-          <RoundedBox
-            args={[
-              FUN_FACT_CARD_WIDTH + 0.02,
-              FUN_FACT_CARD_HEIGHT + 0.02,
-              FUN_FACT_CARD_THICKNESS + 0.004,
-            ]}
-            radius={0.036}
-            smoothness={4}
-          >
-            <meshStandardMaterial color="#fffaf2" roughness={0.88} />
-          </RoundedBox>
-          <mesh position={[0, 0, (FUN_FACT_CARD_THICKNESS + 0.004) / 2 + 0.001]}>
-            <planeGeometry
-              args={[FUN_FACT_CARD_WIDTH - 0.04, FUN_FACT_CARD_HEIGHT - 0.04]}
-            />
-            <meshBasicMaterial
-              map={frontFactTexture}
-              transparent
-              toneMapped={false}
-            />
-          </mesh>
-          <mesh
-            position={[0, 0, -(FUN_FACT_CARD_THICKNESS + 0.004) / 2 - 0.001]}
-            rotation={[0, Math.PI, 0]}
-          >
-            <planeGeometry
-              args={[FUN_FACT_CARD_WIDTH - 0.04, FUN_FACT_CARD_HEIGHT - 0.04]}
-            />
-            <meshBasicMaterial
-              map={backFactTexture}
-              transparent
-              toneMapped={false}
-            />
-          </mesh>
-        </group>
       </group>
     </AnimatedThroneBase>
   );

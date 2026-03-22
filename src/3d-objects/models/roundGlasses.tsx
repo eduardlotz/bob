@@ -15,7 +15,7 @@ type GLTFResult = GLTF & {
   };
 };
 
-const PATH = "gltf/chicken-little-glasses.glb";
+const PATH = "/gltf/chicken-little-glasses.glb";
 
 interface Props {
   position: [number, number, number];

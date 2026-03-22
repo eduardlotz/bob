@@ -4,7 +4,6 @@ import { MOTION_VARIANTS } from "@/molecules/HeadNavigation";
 import { formatNumber } from "@/molecules/TapCounter";
 import {
   CameraViewId,
-  getShopItemType,
   ShopItem,
   useCoreStore,
   useViewStore,
@@ -25,27 +24,14 @@ import {
   TabButton,
 } from "./ui";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/icons/chevron";
+import { useI18n } from "@/i18n";
+import { getShopItemCopy } from "@/shop-items/copy";
 
 export const ShopIcon = () => (
   <img src="/images/app-logos/shop.png" height={80} width={80} />
 );
 
 type ShopTab = "effects" | "worlds" | "bob";
-
-const tabs = [
-  {
-    id: "bob" as ShopTab,
-    name: "Bob",
-  },
-  {
-    id: "effects" as ShopTab,
-    name: "Effekte",
-  },
-  {
-    id: "worlds" as ShopTab,
-    name: "Welt",
-  },
-];
 
 export const TapCounterChip = () => {
   const { taps } = useCoreStore();
@@ -57,6 +43,7 @@ const APP_ID: CameraViewId = "phone:shop";
 
 export function ShopApp() {
   const [activeTab, setActiveTab] = useState<ShopTab>("bob");
+  const { locale, messages } = useI18n();
 
   const {
     tapEffects,
@@ -89,7 +76,22 @@ export function ShopApp() {
     usePagination(shopViewsWithItems[activeTab], 1);
 
   const currentItem = data[0];
+  const currentItemCopy = currentItem ? getShopItemCopy(currentItem.id, locale) : null;
   const isViewActive = currentView === APP_ID;
+  const tabs = [
+    {
+      id: "bob" as ShopTab,
+      name: messages.shop.tabs.bob,
+    },
+    {
+      id: "effects" as ShopTab,
+      name: messages.shop.tabs.effects,
+    },
+    {
+      id: "worlds" as ShopTab,
+      name: messages.shop.tabs.worlds,
+    },
+  ];
   const getInitialIndex = (tab: ShopTab) =>
     Math.max(
       0,
@@ -187,18 +189,18 @@ export function ShopApp() {
   const buttonLabel =
     activeTab === "worlds"
       ? match(currentItem)
-          .with({ enabled: true }, () => "Ausgewählt")
-          .with({ purchased: true }, () => "Aktivieren")
-          .otherwise(() => "Kaufen")
+          .with({ enabled: true }, () => messages.shop.actions.selected)
+          .with({ purchased: true }, () => messages.shop.actions.activate)
+          .otherwise(() => messages.shop.actions.purchase)
       : activeTab === "bob"
         ? match(currentItem)
-            .with({ enabled: true }, () => "Ablegen")
-            .with({ purchased: true }, () => "Aktivieren")
-            .otherwise(() => "Kaufen")
-      : match(currentItem)
-          .with({ enabled: true }, () => "Deaktiveren")
-          .with({ purchased: true }, () => "Aktivieren")
-          .otherwise(() => "Kaufen");
+            .with({ enabled: true }, () => messages.shop.actions.takeOff)
+            .with({ purchased: true }, () => messages.shop.actions.activate)
+            .otherwise(() => messages.shop.actions.purchase)
+        : match(currentItem)
+          .with({ enabled: true }, () => messages.shop.actions.deactivate)
+          .with({ purchased: true }, () => messages.shop.actions.activate)
+          .otherwise(() => messages.shop.actions.purchase);
 
   const handleNext = () => {
     if (hasNext) next();
@@ -236,7 +238,9 @@ export function ShopApp() {
             >
               {match(currentItem)
                 .with({ enabled: true }, () => (
-                  <ItemStatusChip $variant="accent">Ausgewählt</ItemStatusChip>
+                  <ItemStatusChip $variant="accent">
+                    {messages.shop.actions.selected}
+                  </ItemStatusChip>
                 ))
                 .with({ purchased: false }, () => (
                   <ItemStatusChip $variant="light">
@@ -250,8 +254,14 @@ export function ShopApp() {
           )}
 
           <ItemStatusChip $variant="dark">
-            <span>{currentItem.name}</span>
-            <span>{getShopItemType(currentItem.type as any)}</span>
+            <span>{currentItemCopy?.name ?? currentItem.name}</span>
+            <span>
+              {
+                messages.shop.itemTypes[
+                  currentItem.type as keyof typeof messages.shop.itemTypes
+                ]
+              }
+            </span>
           </ItemStatusChip>
 
           <ShopItemButton

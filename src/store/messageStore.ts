@@ -466,6 +466,8 @@ export const useMessageStore = create<MessageStoreState>()(
                   text: msg,
                   sender,
                   time: new Date(),
+                  messageId: threadId,
+                  messageLineIndex: index,
                 };
 
                 state.addToArchive(archivedMessage);

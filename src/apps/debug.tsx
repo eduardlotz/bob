@@ -5,12 +5,14 @@ import { useCameraStore, useCoreStore, useQuestStore } from "@/store";
 import { useMessageStore } from "@/store/messageStore";
 import { ActionButton, SettingsWrapper, ToggleButton } from "./ui";
 import { sileo } from "sileo";
+import { useI18n } from "@/i18n";
 
 export const DebugIcon = () => (
   <img src="/images/app-logos/debug.png" height={80} width={80} />
 );
 
 export const DebugApp = () => {
+  const { messages } = useI18n();
   const clearShownFlags = useMessageStore((state) => state.clearShownFlags);
   const clearAllMessages = useMessageStore((state) => state.clearAllMessages);
   const showMessages = useMessageStore((state) => state.showMessages);
@@ -198,8 +200,8 @@ export const DebugApp = () => {
         <ActionButton
           onClick={() =>
             sileo.success({
-              title: "Info Toast",
-              description: "Lorem Ipsum dolor sit amet",
+              title: messages.ui.toasts.debugPreviewTitle,
+              description: messages.ui.toasts.debugPreviewDescription,
             })
           }
         >

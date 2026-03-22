@@ -20,8 +20,10 @@ import { BobPhone } from "./BobPhone";
 import { playUISound } from "@/utils/soundSystem";
 import { SCENE_REVEAL_DURATION } from "./SceneWithLoader";
 import { BackToLobbyButton } from "./BackToLobbyButton";
+import { useI18n } from "@/i18n";
 
 export function BottomNavigation() {
+  const { messages } = useI18n();
   const [showPhone, setShowPhone] = useState(false);
   const {
     currentView,
@@ -142,7 +144,7 @@ export function BottomNavigation() {
                   </motion.span>
                 )}
               </AnimatePresence>
-              <span>Menü</span>
+              <span>{messages.navigation.menuLabel}</span>
             </MenuButton>
           )}
 

@@ -3,6 +3,8 @@ import React, { forwardRef, useRef } from "react";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { useFloatingBar } from "@/layout/FloatingBar";
+import { useI18n } from "@/i18n";
+import { skateboardMessages } from "./skateboard.messages";
 
 import { Grabbable } from "@/physics/Grabbable";
 import { RapierRigidBody, RigidBody } from "@react-three/rapier";
@@ -16,7 +18,7 @@ type GLTFResult = GLTF & {
   };
 };
 
-const PATH = "gltf/skateboard.glb";
+const PATH = "/gltf/skateboard.glb";
 
 interface Props {
   position: [number, number, number];
@@ -30,12 +32,13 @@ export const SkateboardModel = forwardRef(
     const api = useRef<RapierRigidBody>(null);
 
     const { setHoveredObject } = useFloatingBar();
+    const { locale } = useI18n();
 
     const handlePointerEnter = (e: any) => {
       e.stopPropagation();
 
       setHoveredObject({
-        title: "Skateboarding",
+        title: skateboardMessages[locale].floatingLabel,
       });
     };
 

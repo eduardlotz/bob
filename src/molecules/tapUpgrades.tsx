@@ -10,9 +10,12 @@ import { formatNumber } from "./TapCounter";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { playUISound } from "@/utils/soundSystem";
+import { useI18n } from "@/i18n";
+import { getUpgradeCopy } from "@/shop-items/upgrades.messages";
 
 export const TapUpgrades = ({ show }: { show: boolean }) => {
   const { upgrades: tapUpgrades, purchaseUpgrade, canAfford } = useCoreStore();
+  const { locale } = useI18n();
 
   const { triggerQuest } = useQuestSystem();
   const containerRef = useRef(null);
@@ -62,6 +65,10 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
             {showUpgrades && (
               <HugRow $gap={"0.25rem"} $align="center">
                 {tapUpgrades.map((upgrade, i) => {
+                  const upgradeCopy = getUpgradeCopy(
+                    upgrade.id as UpgradeMessageId,
+                    locale,
+                  );
                   const isMaxLevel = upgrade.level === upgrade.maxLevel;
 
                   const priceForNextLevel =
@@ -92,7 +99,7 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
                       disabled={!canBuy}
                       whileTap={{ scale: 0.95 }}
                     >
-                      {upgrade.name}
+                      {upgradeCopy.name}
 
                       <HugRow
                         $align="center"
@@ -258,3 +265,5 @@ const UpgradeButton = styled(motion.button)`
     background: rgba(0, 0, 0, 0.5);
   }
 `;
+
+type UpgradeMessageId = "auto_tap" | "tap_multiplier";

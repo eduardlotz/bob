@@ -2,9 +2,10 @@ import { useCallback, useMemo } from "react";
 import { useQuestStore } from "@/store/core/quests";
 import { useCoreStore } from "@/store/core/store";
 import { useAppStore } from "@/store";
-import { toast } from "sonner";
 import { ROUTE_DICTIONARY } from "@/store/config/routes";
 import { sileo } from "sileo";
+import { getLocale } from "@/i18n";
+import { getQuestCopy, type QuestMessageId } from "@/store/core/quests.messages";
 
 export const useQuestSystem = () => {
   const currentRoute = useAppStore((state) => state.currentRoute);
@@ -77,9 +78,14 @@ export const useQuestSystem = () => {
           //   description: quest.description,
           //   duration: 3000,
           // });
+          const questCopy = getQuestCopy(
+            quest.id as QuestMessageId,
+            getLocale(),
+          );
+
           sileo.success({
-            title: `${quest.title}`,
-            description: quest.description,
+            title: questCopy?.title ?? quest.title,
+            description: questCopy?.description ?? quest.description,
           });
         }
       });

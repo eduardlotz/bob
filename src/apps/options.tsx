@@ -1,6 +1,7 @@
 import { usePagination } from "@/hooks/usePagination";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { SegmentedValueSlider } from "@/components/SegmentedValueSlider";
+import { LocaleSegmentedControl } from "@/components/LocaleSegmentedControl";
 import { FillColumn, FillRow, HugRow, ListItemContainer } from "@/layout";
 import { Divider, RowLabel } from "@/layout/atoms";
 import { CameraViewId, useCoreStore, useViewStore } from "@/store";
@@ -22,6 +23,8 @@ import {
   TabPanel,
 } from "./ui";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/icons/chevron";
+import { useI18n } from "@/i18n";
+import { getThemeCopy } from "@/store/config/themes";
 
 export const OptionsIcon = () => (
   <img src="/images/app-logos/options.png" height={80} width={80} />
@@ -29,21 +32,11 @@ export const OptionsIcon = () => (
 
 type OptionsTab = "theme" | "audio";
 
-const tabs = [
-  {
-    id: "audio" as OptionsTab,
-    name: "Audio",
-  },
-  {
-    id: "theme" as OptionsTab,
-    name: "Theme",
-  },
-];
-
 const APP_ID: CameraViewId = "phone:options";
 
 export function OptionsApp() {
   const [activeTab, setActiveTab] = useState<OptionsTab>("audio");
+  const { locale, setLocale, messages } = useI18n();
 
   const { themes, activateTheme, previewTheme, resetPreview } = useCoreStore();
 
@@ -81,8 +74,22 @@ export function OptionsApp() {
   };
 
   const buttonLabel = match(currentItem)
-    .with({ active: true }, () => "Aktiv")
-    .otherwise(() => "Auswählen");
+    .with({ active: true }, () => messages.options.theme.active)
+    .otherwise(() => messages.options.theme.select);
+
+  const tabs = useMemo(
+    () => [
+      {
+        id: "audio" as OptionsTab,
+        name: messages.options.tabs.audio,
+      },
+      {
+        id: "theme" as OptionsTab,
+        name: messages.options.tabs.theme,
+      },
+    ],
+    [messages.options.tabs.audio, messages.options.tabs.theme],
+  );
 
   const handleNext = () => {
     if (hasNext) next();
@@ -126,27 +133,27 @@ export function OptionsApp() {
 
     const rows: VolumeItemProps[] = [
       {
-        label: "Master",
+        label: messages.options.audio.master,
         value: sound.masterVolume,
         onChange: (value) => sound.setMasterVolume(normalizeVolumeValue(value)),
       },
       {
-        label: "Musik",
+        label: messages.options.audio.music,
         value: sound.worldVolume,
         onChange: (value) => sound.setWorldVolume(normalizeVolumeValue(value)),
       },
       {
-        label: "Effekte",
+        label: messages.options.audio.effects,
         value: sound.tapVolume,
         onChange: (value) => sound.setTapVolume(normalizeVolumeValue(value)),
       },
       {
-        label: "UI",
+        label: messages.options.audio.ui,
         value: sound.uiVolume,
         onChange: (value) => sound.setUIVolume(normalizeVolumeValue(value)),
       },
       {
-        label: "Chat",
+        label: messages.options.audio.chat,
         value: sound.textVolume,
         onChange: (value) => sound.setTextVolume(normalizeVolumeValue(value)),
       },
@@ -154,11 +161,19 @@ export function OptionsApp() {
 
     return (
       <FillColumn $gap="1rem" style={{ height: "fit-content", width: "24rem" }}>
-        <FillRow $align="center" $justify="center" $gap="1rem">
-          <Divider />
-          <AppInfo>Audio Status: {sound.audioStatus}</AppInfo>
-          <Divider />
-        </FillRow>
+          <VolumeRow>
+            <RowLabel>{messages.options.audio.language}</RowLabel>
+            <LocaleSegmentedControl value={locale} onChange={setLocale} />
+          </VolumeRow>
+
+          <FillRow $align="center" $justify="center" $gap="1rem">
+            <Divider />
+            <AppInfo>
+              {messages.options.audio.status}:{" "}
+              {messages.options.audio.states[sound.audioStatus]}
+            </AppInfo>
+            <Divider />
+          </FillRow>
 
         <FillColumn $gap="1.5rem">
           {rows.map((row) => (
@@ -167,7 +182,7 @@ export function OptionsApp() {
         </FillColumn>
       </FillColumn>
     );
-  }, []);
+  }, [locale, messages.options.audio, setLocale]);
 
   // TODO: fix re-render every second
   const ThemeOverlays = useCallback(
@@ -177,7 +192,7 @@ export function OptionsApp() {
           <ShopContainer>
             <ContentControls>
               <ItemStatusChip $variant="dark">
-                <span>{currentItem.name}</span>
+                <span>{getThemeCopy(currentItem.id as any, locale).name}</span>
               </ItemStatusChip>
 
               <ShopItemButton
@@ -236,7 +251,7 @@ export function OptionsApp() {
         )}
       </FixedAnchor>
     ),
-    [currentItem],
+    [buttonLabel, currentItem, locale, page, pageCount],
   );
 
   const OPTIONS = [

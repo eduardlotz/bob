@@ -21,7 +21,7 @@ type GLTFResult = GLTF & {
   };
 };
 
-const PATH = "gltf/sims-plumbob.glb";
+const PATH = "/gltf/sims-plumbob.glb";
 
 interface Props {
   position: [number, number, number];

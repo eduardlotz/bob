@@ -19,7 +19,7 @@ import {
 import { GrassShader } from "./GrassShader";
 import { CloudEffect, ForestRainEffect, SnowEffect } from "./ParticleEffects";
 
-const TREE_PATH = "gltf/tree.gltf";
+const TREE_PATH = "/gltf/tree.gltf";
 const LARGE_FLOOR_SIZE = 80;
 const FLOOR_Y = -1.36;
 const HOME_HEAD_ANCHOR = new Vector3(0, 0, 0);

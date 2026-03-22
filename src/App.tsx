@@ -24,6 +24,7 @@ import { CursorInputBridge } from "./bridges/CursorInputBridge";
 import { ClickableBridge } from "./bridges/ClickableBridge";
 import MiniGames from "./routes/MiniGames";
 import Portfolio from "./routes/Portfolio";
+import { useI18n } from "@/i18n";
 
 export default function App() {
   const location = useLocation();
@@ -47,6 +48,7 @@ export default function App() {
   const [mounted, setMounted] = useState(false);
   const [currentRouteInPretty, setCurrentRouteInPretty] = useState("");
   const [showRouteChip, setShowRouteChip] = useState(false);
+  const { locale } = useI18n();
 
   // init message system globally
   // not a real hook (TODO: change name)
@@ -71,7 +73,7 @@ export default function App() {
     if (currentRoute !== location.pathname) {
       if (mounted) {
         setCurrentRoute(location.pathname);
-        const route = getRouteLabelByPath(location.pathname);
+        const route = getRouteLabelByPath(location.pathname, locale);
         setCurrentRouteInPretty(route);
         setShowRouteChip(true);
         setTimeout(() => {
@@ -84,7 +86,11 @@ export default function App() {
         // };
       }
     }
-  }, [location.pathname, currentRoute, setCurrentRoute]);
+  }, [location.pathname, currentRoute, locale, setCurrentRoute]);
+
+  useEffect(() => {
+    setCurrentRouteInPretty(getRouteLabelByPath(location.pathname, locale));
+  }, [location.pathname, locale]);
 
   return (
     <ThemeProvider>
