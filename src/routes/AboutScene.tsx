@@ -1,12 +1,11 @@
 import { useCoreStore } from "@/store/core/store";
-import { ROUTE_IDS, ROUTE_PATHS, useViewStore } from "@/store";
+import { ROUTE_PATHS, useViewStore } from "@/store";
 import { useEffect } from "react";
 import { InteractiveObject } from "../molecules/InteractiveObject";
 import { useNavigate } from "react-router-dom";
 import { useSpring } from "@react-spring/three";
 import { DeskModel } from "@/3d-objects/models/desk";
 import { FLOOR_Y_POSITION } from "../molecules/Scene";
-import { BookshelfModel } from "@/3d-objects/models/bookshelf";
 import { Html } from "@react-three/drei";
 import styled from "styled-components";
 import { motion } from "motion/react";
@@ -23,7 +22,6 @@ import { GreenDiamond } from "@/3d-objects/models/greenDiamond";
 import { MusicOverlay } from "@/layout/game-ui/music";
 import { BookStacks } from "@/3d-objects/books/index";
 import { BookTable } from "@/3d-objects/models/bookTable";
-import { SocialsCorner } from "@/3d-objects/socials";
 import { RigidBodyCameraModel } from "@/3d-objects/models/rigidBodyCamera";
 
 export function AboutScene() {
@@ -83,7 +81,7 @@ export function AboutScene() {
 
       {/* SOCIALS CORNER  */}
 
-      <InteractiveObject
+      {/* <InteractiveObject
         questAction="click_socials"
         questValue={30}
         mode="view"
@@ -95,7 +93,7 @@ export function AboutScene() {
           // rotation={[0, Math.PI * 0.15, 0]}
           scale={[4, 4, 4]}
         />
-      </InteractiveObject>
+      </InteractiveObject> */}
 
       {/* BOOK STACKS + TABLE */}
 
