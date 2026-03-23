@@ -1,21 +1,24 @@
 import * as THREE from "three";
-import React, { useEffect, useMemo, useRef } from "react";
-import { useGLTF, Wireframe } from "@react-three/drei";
+import React, { useEffect, useRef } from "react";
+import { Outlines, useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
-import { useCoreStore } from "@/store";
 import { previewMaterialProps } from "@/shop-items/utils";
 
 type GLTFResult = GLTF & {
   nodes: {
-    Object_3001: THREE.Mesh;
+    BézierCurve: THREE.Mesh;
+    Cube: THREE.Mesh;
+    BézierCurve002: THREE.Mesh;
   };
   materials: {
-    ["Material.002"]: THREE.MeshPhysicalMaterial;
+    hair: THREE.MeshStandardMaterial;
+    rasta_beanie: THREE.MeshBasicMaterial;
+    ["hair.001"]: THREE.MeshStandardMaterial;
   };
 };
 
-const PATH = "/gltf/chicken-little-glasses.glb";
+const PATH = "/gltf/rasta_beanie.glb";
 
 interface Props {
   position: [number, number, number];
@@ -25,19 +28,20 @@ interface Props {
   preview: boolean;
 }
 
-export const RoundGlasses = ({
+export const RastaBeanie = ({
   scale = [1, 1, 1],
   outlineColor = "#000000",
   ...props
 }: Props) => {
   const group = useRef<THREE.Group>(null!);
   const { nodes, materials } = useGLTF(PATH) as GLTFResult;
-  const wireframeGeometry = useMemo(
-    () => nodes.Object_3001.geometry.toNonIndexed(),
-    [nodes],
-  );
 
-  useEffect(() => () => wireframeGeometry.dispose(), [wireframeGeometry]);
+  materials["rasta_beanie"].transparent = props.preview;
+  materials["rasta_beanie"].opacity = props.preview ? 0.25 : 1;
+  materials["hair"].transparent = props.preview;
+  materials["hair"].opacity = props.preview ? 0.25 : 1;
+  materials["hair.001"].transparent = props.preview;
+  materials["hair.001"].opacity = props.preview ? 0.25 : 1;
 
   const [spring, api] = useSpring(() => ({
     scale: [0, 0, 0], // start invisible
@@ -64,16 +68,27 @@ export const RoundGlasses = ({
       <mesh
         castShadow
         receiveShadow
-        geometry={wireframeGeometry}
-        rotation={[-1.65, 0, 0]}
+        geometry={nodes.BézierCurve.geometry}
+        material={materials.hair}
+      />
+      <mesh
+        castShadow
+        receiveShadow
+        geometry={nodes.BézierCurve002.geometry}
+        material={materials["hair.001"]}
+      />
+      <mesh
+        castShadow
+        receiveShadow
+        geometry={nodes.Cube.geometry}
+        material={materials.rasta_beanie}
       >
-        <meshToonMaterial
-          color={"#191919"}
+        <Outlines
+          thickness={0.005}
+          color={outlineColor}
+          screenspace
           {...(props.preview ? previewMaterialProps : {})}
         />
-        {props.preview && (
-          <Wireframe thickness={0.04} backfaceStroke={outlineColor} />
-        )}
       </mesh>
     </a.group>
   );

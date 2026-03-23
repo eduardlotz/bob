@@ -77,8 +77,8 @@ export const DebugSceneTuningOverlays = () => {
 
   return (
     <>
-      <CameraSettingsOverlay visible={cameraVisible} />
-      <LightSettingsOverlay visible={lightVisible} />
+      {cameraVisible && <CameraSettingsOverlay visible={cameraVisible} />}
+      {lightVisible && <LightSettingsOverlay visible={lightVisible} />}
     </>
   );
 };

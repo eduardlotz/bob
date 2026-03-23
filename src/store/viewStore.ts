@@ -382,8 +382,8 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   socials: {
     id: "socials",
     name: "Socials Corner View",
-    position: [-1, 3, -0.5],
-    target: [-3, -1.5, -3.5],
+    position: [-1, 3, -1],
+    target: [-4, -2, -4],
     transition: {
       duration: 580,
       easing: "easeInOutCubic",

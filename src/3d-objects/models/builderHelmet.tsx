@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { Outlines, useGLTF, Wireframe } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
@@ -31,6 +31,12 @@ export const BuilderHelmet = ({
 }: Props) => {
   const group = useRef<THREE.Group>(null!);
   const { nodes, materials } = useGLTF(PATH) as GLTFResult;
+  const wireframeGeometry = useMemo(
+    () => nodes.Object_4001.geometry.toNonIndexed(),
+    [nodes],
+  );
+
+  useEffect(() => () => wireframeGeometry.dispose(), [wireframeGeometry]);
 
   const [spring, api] = useSpring(() => ({
     scale: [0, 0, 0], // start invisible
@@ -55,7 +61,7 @@ export const BuilderHelmet = ({
       <mesh
         castShadow
         receiveShadow
-        geometry={nodes.Object_4001.geometry}
+        geometry={wireframeGeometry}
         position={[0.015, 0.053, 0.171]}
         rotation={[-Math.PI / 2, 0, 0]}
       >

@@ -26,8 +26,7 @@ import { FISHEYE_CONFIG } from "../store/config/themes";
 import {
   attachListenerToCamera,
   playWorldSound,
-  stopAllWorldSounds,
-  stopSoundsById,
+  stopBackgroundMusic,
 } from "@/utils/soundSystem";
 import { PortfolioScene } from "@/routes/PortfolioScene";
 import { AboutScene } from "../routes/AboutScene";
@@ -40,7 +39,7 @@ import { BackgroundPlanet } from "../3d-objects/BackgroundPlanet";
 import { TapEffects } from "../3d-objects/ParticleEffects";
 import { SceneDecorations } from "@/3d-objects/Decorations";
 import { MiniGamesScene } from "@/routes/MiniGamesScene";
-import { DEFAULT_PINK_NOISE } from "@/utils/sound/defaults";
+import { DEFAULT_PINK_NOISE, DEFAULT_WORLD_MUSIC } from "@/utils/sound/defaults";
 import * as THREE from "three";
 import { Color } from "three";
 
@@ -50,6 +49,7 @@ import { CameraGLBridge } from "@/bridges/CameraBridge";
 import { useCursor } from "@/hooks/useCursor";
 import { commonUiMessages } from "@/ui/common.messages";
 import { getLocale } from "@/i18n";
+import { PresetsType } from "@react-three/drei/helpers/environment-assets";
 
 const Debug = () => {
   const { width } = useThree((s) => s.size);
@@ -68,6 +68,8 @@ const ROUTE_LIGHT_POSITION = [2, 4, 5] as const;
 const ROUTE_LIGHT_INTENSITY = 1.2;
 const FAKE_SHADOW_Y = -1.32;
 const FAKE_SHADOW_OPACITY = 0.5;
+
+type EnvironmentPreset = PresetsType | null;
 
 type HomeSunRig = {
   radius: number;
@@ -94,6 +96,25 @@ const HOME_SUN_RIGS: Partial<Record<string, Partial<HomeSunRig>>> = {
   [SPACE_WORLD_ID]: {},
 };
 
+const HOME_WORLD_ENVIRONMENT_PRESETS: Partial<
+  Record<string, EnvironmentPreset>
+> = {
+  world_default: null,
+  world_forest: "forest",
+  world_desert: "sunset",
+  world_winter: "park",
+  [MOON_WORLD_ID]: "night",
+  [SPACE_WORLD_ID]: null,
+};
+
+const ROUTE_ENVIRONMENT_PRESETS: Partial<
+  Record<string, EnvironmentPreset>
+> = {
+  [ROUTE_PATHS.ABOUT]: "city",
+  [ROUTE_PATHS.PORTFOLIO]: null,
+  [ROUTE_PATHS.MINIGAMES]: "sunset",
+};
+
 const getHomeSunRig = (
   lightSettings: DebugLightSettings,
   worldId?: string | null,
@@ -105,9 +126,7 @@ const getHomeSunRig = (
   ...(worldId ? HOME_SUN_RIGS[worldId] : {}),
 });
 
-const getSceneLightColors = (
-  lightSettings: DebugLightSettings,
-) => ({
+const getSceneLightColors = (lightSettings: DebugLightSettings) => ({
   ambientColor: new Color(lightSettings.lightColor),
   directionalColor: new Color(lightSettings.lightColor),
 });
@@ -125,6 +144,23 @@ const rotateLightPosition = (
 const getEffectiveWorldLighting = (
   sceneWorld: ReturnType<typeof useCoreStore.getState>["worlds"][number] | null,
 ) => sceneWorld?.scene.lighting ?? DEFAULT_WORLD_LIGHTING;
+
+const getEnvironmentPreset = ({
+  isHome,
+  worldId,
+  currentRoute,
+}: {
+  isHome: boolean;
+  worldId?: string | null;
+  currentRoute: string;
+}): EnvironmentPreset => {
+  if (isHome) {
+    if (!worldId) return null;
+    return HOME_WORLD_ENVIRONMENT_PRESETS[worldId] ?? null;
+  }
+
+  return ROUTE_ENVIRONMENT_PRESETS[currentRoute] ?? null;
+};
 
 function HomeDirectionalLight({
   rig,
@@ -156,11 +192,7 @@ function HomeDirectionalLight({
   return (
     <>
       <object3D ref={targetRef} />
-      <directionalLight
-        ref={lightRef}
-        intensity={intensity}
-        color={color}
-      />
+      <directionalLight ref={lightRef} intensity={intensity} color={color} />
     </>
   );
 }
@@ -230,31 +262,43 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
 
   const worldMusicId = useMemo(() => {
     switch (currentRoute) {
-      // case ROUTE_PATHS.HOME: {
-      //   return DEFAULT_WORLD_MUSIC.id;
-      // }
-
       case ROUTE_PATHS.PORTFOLIO: {
         return DEFAULT_PINK_NOISE.id;
+      }
+
+      case ROUTE_PATHS.MINIGAMES: {
+        return activeGame === "PING_PONG" || activeGame === "FLAPPY_BIRD"
+          ? DEFAULT_WORLD_MUSIC.id
+          : null;
       }
 
       default: {
         return null;
       }
     }
-  }, [currentRoute]);
+  }, [activeGame, currentRoute]);
 
   useEffect(() => {
-    stopAllWorldSounds();
+    stopBackgroundMusic(0);
 
     if (!worldMusicId) return;
 
-    playWorldSound(worldMusicId, { stopPrevious: true });
+    playWorldSound(worldMusicId);
 
     return () => {
-      stopAllWorldSounds();
+      stopBackgroundMusic(0);
     };
   }, [worldMusicId]);
+
+  const envLightPreset = useMemo(
+    () =>
+      getEnvironmentPreset({
+        isHome,
+        worldId: sceneWorld?.id,
+        currentRoute,
+      }),
+    [currentRoute, isHome, sceneWorld?.id],
+  );
 
   return (
     <>
@@ -272,10 +316,7 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
               intensity={resolvedAmbientIntensity}
               color={worldLightColors.ambientColor}
             />
-            <PerspectiveCamera
-              makeDefault
-              position={[0, 0, 3]}
-            />
+            <PerspectiveCamera makeDefault position={[0, 0, 3]} />
             {isHome ? (
               <HomeDirectionalLight
                 rig={homeSunRig}
@@ -292,7 +333,7 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
                 )}
               />
             )}
-            {!isHome && <Environment preset="city" />}
+            {envLightPreset && <Environment preset={envLightPreset} />}
             {showBackground && <BackgroundPlanet />}
             {statisticsVisible && <Debug />}
 
@@ -435,8 +476,9 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
           navigate(ROUTE_PATHS.HOME);
 
           sileo.error({
-            title: commonUiMessages[getLocale()].toasts
-              .webglContextRestoredErrorTitle,
+            title:
+              commonUiMessages[getLocale()].toasts
+                .webglContextRestoredErrorTitle,
           });
         };
 
@@ -445,11 +487,7 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
       }}
       color="black"
       camera={{
-        position: [
-          0,
-          0,
-          isMobile ? 1.5 : 2,
-        ],
+        position: [0, 0, isMobile ? 1.5 : 2],
         fov: 50,
       }}
       style={{

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import {
   MeshTransmissionMaterial,
   Outlines,
@@ -40,6 +40,12 @@ export const SimsPlumbob = ({
 }: Props) => {
   const group = useRef<THREE.Group>(null!);
   const { nodes } = useGLTF(PATH) as GLTFResult;
+  const wireframeGeometry = useMemo(
+    () => nodes.Plumbob_Material001_0.geometry.toNonIndexed(),
+    [nodes],
+  );
+
+  useEffect(() => () => wireframeGeometry.dispose(), [wireframeGeometry]);
 
   const [spring, api] = useSpring(() => ({
     scale: [0, 0, 0], // start invisible
@@ -68,7 +74,7 @@ export const SimsPlumbob = ({
       rotation={props.rotation}
     >
       <group rotation={[-Math.PI / 2, 0, 0]}>
-        <mesh geometry={nodes.Plumbob_Material001_0.geometry}>
+        <mesh geometry={wireframeGeometry}>
           <meshPhongMaterial
             color={color}
             {...(props.preview ? previewMaterialProps : {})}

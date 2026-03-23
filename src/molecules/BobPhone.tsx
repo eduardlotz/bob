@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import styled from "styled-components";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useIsPresent } from "motion/react";
 import { CloseIcon } from "@/icons/close";
 import { NavButton } from "./BottomNavigation";
 import { FillColumn, FillRow, HugColumn } from "@/layout";
@@ -24,6 +24,7 @@ import { StatusPillButton } from "@/apps/ui";
 import { CameraApp, CameraIcon } from "@/apps/camera";
 import { usePhoneBodyClip } from "@/hooks/usePhoneClip";
 import { useI18n } from "@/i18n";
+import { useAppStore } from "@/store";
 
 import { ChevronLeftIcon } from "@/icons/chevron";
 
@@ -97,6 +98,7 @@ export const BobPhone = (props: BobPhoneProps) => {
   const containerRef = useRef(null);
   const triggerRef = useRef(null);
   const { transitionToView, currentView, resetToDefaultView } = useViewStore();
+  const showOptions = useAppStore((state) => state.showOptions);
   const [activeApp, setActiveApp] = useState<AppId | undefined>();
 
   const clipStyle = usePhoneBodyClip();
@@ -139,6 +141,8 @@ export const BobPhone = (props: BobPhoneProps) => {
 
   const currentHour = format(new Date(), "HH");
   const currentMinutes = format(new Date(), "mm");
+  const triggerSoundId =
+    props.isOpen || showOptions ? "ui-tap-close" : "ui-tap";
 
   useKeyPress("Escape", () => {
     if (props.isOpen) {
@@ -169,6 +173,7 @@ export const BobPhone = (props: BobPhoneProps) => {
       <NavButton
         key="bob-phone-trigger"
         onClick={onTriggerClick}
+        data-ui-sound-id={triggerSoundId}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         $isActive={props.isOpen}
@@ -220,6 +225,16 @@ export const BobPhone = (props: BobPhoneProps) => {
       <AnimatePresence mode="wait">
         {props.isOpen && (
           <BobPhoneBody
+            ref={containerRef}
+            aria-hidden={!props.isOpen}
+            style={{
+              ...clipStyle,
+              borderRadius: "24px",
+              opacity: 0,
+              transformPerspective: 900,
+              transformStyle: "preserve-3d",
+              pointerEvents: props.isOpen ? "auto" : "none",
+            }}
             data-phone-body
             key="bob-phone-body"
             initial={{
@@ -242,19 +257,11 @@ export const BobPhone = (props: BobPhoneProps) => {
               rotateX: -5,
               y: -12,
               filter: "blur(2px)",
-              // transition: {
-              //   ease: "circOut",
-              //   duration: 0.1,
-              // },
             }}
             transition={{
-              // duration: 0.2,
-              // ease: "easeInOut",
               type: "spring" as const,
               bounce: 0.5,
               visualDuration: 0.3,
-              // ease: "circOut",
-              // duration: 0.2,
               layout: {
                 type: "spring",
                 mass: 0.5,
@@ -262,19 +269,10 @@ export const BobPhone = (props: BobPhoneProps) => {
                 bounceDamping: 20,
               },
             }}
-            ref={containerRef}
-            style={{
-              ...clipStyle,
-              borderRadius: "24px",
-              opacity: 0,
-              transformPerspective: 900,
-              transformStyle: "preserve-3d",
-            }}
             layout
           >
             <HugColumn
               $gap={activeApp ? "4px" : "0"}
-              // layout
               layout="position"
               $align="center"
             >
@@ -370,7 +368,7 @@ export const BobPhone = (props: BobPhoneProps) => {
               >
                 <AnimatePresence mode="popLayout">
                   {activeApp ? (
-                    activeAppView()
+                    <AppViewStage>{activeAppView()}</AppViewStage>
                   ) : (
                     <AppGrid
                       key="app-grid"
@@ -416,6 +414,77 @@ export const BobPhone = (props: BobPhoneProps) => {
   );
 };
 
+const PhoneShell = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<typeof BobPhoneBody> & {
+    clipStyle: React.CSSProperties;
+  }
+>(({ clipStyle, style, ...props }, ref) => {
+  const isPresent = useIsPresent();
+
+  return (
+    <BobPhoneBody
+      ref={ref}
+      {...props}
+      aria-hidden={!isPresent}
+      style={{
+        ...clipStyle,
+        ...style,
+        borderRadius: "24px",
+        opacity: 0,
+        transformPerspective: 900,
+        transformStyle: "preserve-3d",
+        pointerEvents: isPresent ? "auto" : "none",
+      }}
+      data-phone-body
+      key="bob-phone-body"
+      initial={{
+        opacity: 0,
+        scaleX: 1.05,
+        rotateX: -15,
+        y: 12,
+        filter: "blur(2px)",
+      }}
+      animate={{
+        opacity: 1,
+        scaleX: 1,
+        rotateX: 0,
+        y: 0,
+        filter: "blur(0px)",
+      }}
+      exit={{
+        opacity: 0,
+        scaleX: 0.95,
+        rotateX: -5,
+        y: -12,
+        filter: "blur(2px)",
+        // transition: {
+        //   ease: "circOut",
+        //   duration: 0.1,
+        // },
+      }}
+      transition={{
+        // duration: 0.2,
+        // ease: "easeInOut",
+        type: "spring" as const,
+        bounce: 0.5,
+        visualDuration: 0.3,
+        // ease: "circOut",
+        // duration: 0.2,
+        layout: {
+          type: "spring",
+          mass: 0.5,
+          damping: 12,
+          bounceDamping: 20,
+        },
+      }}
+      layout
+    />
+  );
+});
+
+PhoneShell.displayName = "PhoneShell";
+
 const AppBottomActions = styled(FillRow)`
   position: relative;
 
@@ -424,6 +493,11 @@ const AppBottomActions = styled(FillRow)`
 
   padding: 4px;
   height: 2.5rem;
+`;
+
+const AppViewStage = styled(motion.div)`
+  width: 100%;
+  max-width: 100%;
 `;
 
 const AppAction = styled.div`
@@ -525,6 +599,7 @@ const AppContainer = styled.button`
     position: relative;
     z-index: 1;
     transition: transform 0.1s ease-out;
+    pointer-events: none;
   }
 
   @media (hover: hover) {

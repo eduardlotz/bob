@@ -80,4 +80,14 @@ export const initialBobItems: BobItem[] = [
     icon: "👨‍🚀",
     category: "bob",
   },
+  {
+    id: "rastaBeanie",
+    name: "Marley",
+    cost: 500,
+    purchased: false,
+    enabled: false,
+    type: "hat",
+    icon: "🇯🇲",
+    category: "bob",
+  },
 ];

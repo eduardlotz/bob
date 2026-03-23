@@ -1,16 +1,15 @@
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useDragControls } from "motion/react";
 import styled, { css } from "styled-components";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useAppStore } from "@/store";
 import { useSocialsStore } from "@/store/socials";
-import { ChevronLeftIcon, ChevronRightIcon } from "@/icons/chevron";
 import { CloseIcon } from "@/icons/close";
 import { OVERLAY_ROOT_ID } from "@/3d-objects/books/overlay";
 import { useI18n } from "@/i18n";
 
-import { THRONE_BY_ID, THRONE_ORDER, type ThroneId } from "./data";
+import { THRONE_BY_ID } from "./data";
 import { socialsMessages } from "./socials.messages";
 
 const PANEL_W = "400px";
@@ -39,7 +38,7 @@ const Panel = styled(motion.aside)<{
   flex-direction: column;
   overflow: hidden;
 
-  ${({ $mobile }) =>
+  ${({ $mobile, $panelWidth, $minHeight, $maxHeight }) =>
     $mobile
       ? css`
           inset: 0;
@@ -52,11 +51,11 @@ const Panel = styled(motion.aside)<{
           right: 4px;
           bottom: 4px;
           margin: auto clamp(4px, 5vw, 6rem);
-          width: ${({ $panelWidth }) => $panelWidth ?? PANEL_W};
+          width: ${$panelWidth ?? PANEL_W};
           max-width: 90vw;
           height: fit-content;
-          min-height: ${({ $minHeight }) => $minHeight ?? PANEL_MIN_H};
-          max-height: ${({ $maxHeight }) => $maxHeight ?? PANEL_MAX_H};
+          min-height: ${$minHeight ?? PANEL_MIN_H};
+          max-height: ${$maxHeight ?? PANEL_MAX_H};
           box-shadow: -10px 0 52px rgba(0, 0, 0, 0.13);
         `}
 `;
@@ -165,105 +164,6 @@ const CloseBtn = styled.button<{ $mobile: boolean; $fullScreen: boolean }>`
   }
 `;
 
-const NavBar = styled.div<{ $mobile: boolean }>`
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  ${({ $mobile }) =>
-    $mobile
-      ? css`
-          position: fixed;
-          left: 50%;
-          bottom: calc(env(safe-area-inset-bottom) + 14px);
-          transform: translateX(-50%);
-          gap: 14px;
-          padding: 8px 10px;
-          border-radius: 999px;
-          background: rgba(255, 255, 255, 0.74);
-          box-shadow:
-            0 12px 28px rgba(0, 0, 0, 0.12),
-            inset 0 1px 0 rgba(255, 255, 255, 0.6);
-          backdrop-filter: blur(18px);
-          -webkit-backdrop-filter: blur(18px);
-          z-index: 44;
-        `
-      : css`
-          gap: 3rem;
-          padding: 10px 16px 14px;
-          border-top: 1px solid rgba(0, 0, 0, 0.07);
-          background: rgba(255, 255, 255, 0.85);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-        `}
-`;
-
-const NavChevron = styled.button<{ $mobile: boolean }>`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: ${({ $mobile }) => ($mobile ? "34px" : "44px")};
-  height: ${({ $mobile }) => ($mobile ? "34px" : "44px")};
-  border-radius: 50%;
-  border: none;
-  background: ${({ $mobile }) =>
-    $mobile ? "rgba(255, 255, 255, 0.46)" : "rgba(0, 0, 0, 0.05)"};
-  color: #111111;
-  cursor: pointer;
-  transition:
-    background 0.15s,
-    color 0.15s;
-  flex-shrink: 0;
-
-  &:hover {
-    background: rgba(0, 0, 0, 0.09);
-  }
-
-  &:active {
-    background: rgba(0, 0, 0, 0.13);
-  }
-`;
-
-const DotTrack = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-`;
-
-const DotRow = styled.div<{ $mobile: boolean }>`
-  display: flex;
-  align-items: center;
-  gap: ${({ $mobile }) => ($mobile ? "6px" : "5px")};
-`;
-
-const Dot = styled.span<{ $active: boolean; $color: string; $mobile: boolean }>`
-  width: ${({ $active, $mobile }) =>
-    $active ? ($mobile ? "16px" : "16px") : $mobile ? "7px" : "6px"};
-  height: ${({ $mobile }) => ($mobile ? "7px" : "6px")};
-  border-radius: 999px;
-  background: ${({ $active, $color }) =>
-    $active ? $color : "rgba(0,0,0,0.18)"};
-  transition:
-    width 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
-    background 0.22s ease;
-`;
-
-const NavPill = styled.span<{ $accent: string }>`
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  border-radius: 20px;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  background: ${({ $accent }) => `${$accent}18`};
-  color: ${({ $accent }) => $accent};
-  border: 1px solid ${({ $accent }) => `${$accent}40`};
-  white-space: nowrap;
-`;
-
 const SLIDE_VARIANTS = {
   initial: { filter: "blur(12px)", opacity: 0, scale: 0.95 },
   animate: { filter: "blur(0px)", opacity: 1, scale: 1 },
@@ -271,59 +171,12 @@ const SLIDE_VARIANTS = {
   transition: { duration: 0.3 },
 };
 
-const ThroneNav = memo(
-  ({
-    current,
-    onPrev,
-    onNext,
-    mobile,
-  }: {
-    current: ThroneId;
-    onPrev: () => void;
-    onNext: () => void;
-    mobile: boolean;
-  }) => {
-    const { locale } = useI18n();
-    const currentThrone = THRONE_BY_ID[current];
-    const currentIndex = THRONE_ORDER.indexOf(current);
-
-    return (
-      <NavBar $mobile={mobile}>
-        <NavChevron $mobile={mobile} onClick={onPrev} aria-label="Previous">
-          <ChevronLeftIcon />
-        </NavChevron>
-
-        <DotTrack>
-          {!mobile && (
-            <NavPill $accent={currentThrone.meta.accentColor}>
-              {socialsMessages[locale][current].label}
-            </NavPill>
-          )}
-          <DotRow $mobile={mobile}>
-            {THRONE_ORDER.map((throneId, index) => (
-              <Dot
-                key={throneId}
-                $active={index === currentIndex}
-                $color={THRONE_BY_ID[throneId].meta.accentColor}
-                $mobile={mobile}
-              />
-            ))}
-          </DotRow>
-        </DotTrack>
-
-        <NavChevron $mobile={mobile} onClick={onNext} aria-label="Next">
-          <ChevronRightIcon />
-        </NavChevron>
-      </NavBar>
-    );
-  },
-);
-
 export const SocialsPortalOverlay = () => {
   const { locale } = useI18n();
+  const localizedMessages =
+    socialsMessages[locale as keyof typeof socialsMessages];
   const { isMobile } = useAppStore();
   const focusedThrone = useSocialsStore((state) => state.focusedThrone);
-  const setFocused = useSocialsStore((state) => state.setFocused);
   const clearFocus = useSocialsStore((state) => state.clearFocus);
   const dragControls = useDragControls();
   const [viewportHeight, setViewportHeight] = useState(0);
@@ -338,23 +191,6 @@ export const SocialsPortalOverlay = () => {
     if (!isMobile) return;
     setMobileSheetMode("full");
   }, [isMobile]);
-
-  const prevThrone = useCallback(() => {
-    if (!focusedThrone) return;
-    const currentIndex = THRONE_ORDER.indexOf(focusedThrone);
-    const nextId =
-      THRONE_ORDER[
-        (currentIndex - 1 + THRONE_ORDER.length) % THRONE_ORDER.length
-      ];
-    setFocused(nextId);
-  }, [focusedThrone, setFocused]);
-
-  const nextThrone = useCallback(() => {
-    if (!focusedThrone) return;
-    const currentIndex = THRONE_ORDER.indexOf(focusedThrone);
-    const nextId = THRONE_ORDER[(currentIndex + 1) % THRONE_ORDER.length];
-    setFocused(nextId);
-  }, [focusedThrone, setFocused]);
 
   useEffect(() => {
     if (!isMobile) return;
@@ -507,9 +343,19 @@ export const SocialsPortalOverlay = () => {
                       : undefined
                   }
                 >
-                  <Title>{socialsMessages[locale][currentThrone.id].label}</Title>
+                  <Title>
+                    {
+                      localizedMessages[
+                        currentThrone.id as keyof typeof localizedMessages
+                      ].label
+                    }
+                  </Title>
                   <Subtitle>
-                    {socialsMessages[locale][currentThrone.id].subtitle}
+                    {
+                      localizedMessages[
+                        currentThrone.id as keyof typeof localizedMessages
+                      ].subtitle
+                    }
                   </Subtitle>
                 </Header>
 
@@ -566,24 +412,7 @@ export const SocialsPortalOverlay = () => {
                   </motion.div>
                 </AnimatePresence>
 
-                {!isMobile && (
-                  <ThroneNav
-                    current={currentThrone.id}
-                    onPrev={prevThrone}
-                    onNext={nextThrone}
-                    mobile={false}
-                  />
-                )}
               </Panel>
-
-              {isMobile && (
-                <ThroneNav
-                  current={currentThrone.id}
-                  onPrev={prevThrone}
-                  onNext={nextThrone}
-                  mobile={true}
-                />
-              )}
             </>
           );
         })()}

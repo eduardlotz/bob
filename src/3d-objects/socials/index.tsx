@@ -27,13 +27,8 @@ export function SocialsCorner({
   const currentView = useViewStore((state) => state.currentView);
   const setCameraEnabled = useViewStore((state) => state.setCameraEnabled);
   const focusedThrone = useSocialsStore((state) => state.focusedThrone);
-  const ensureFavoritesLoaded = useSocialsStore((state) => state.ensureFavoritesLoaded);
   const groupRef = useRef<THREE.Group>(null);
   const viewActive = currentView === viewId;
-
-  useEffect(() => {
-    void ensureFavoritesLoaded();
-  }, [ensureFavoritesLoaded]);
 
   useEffect(() => {
     if (!viewActive) {

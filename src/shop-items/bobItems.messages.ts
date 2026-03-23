@@ -32,6 +32,10 @@ export const bobItemMessages = defineMessages({
       name: "Spacebob",
       description: "A childhood dream",
     },
+    rastaBeanie: {
+      name: "Marley",
+      description: "Rastafari",
+    },
   },
   en: {
     builderHelmet: {
@@ -61,6 +65,10 @@ export const bobItemMessages = defineMessages({
     astronautHelmet: {
       name: "Spacebob",
       description: "Der Kindheitstraum",
+    },
+    rastaBeanie: {
+      name: "Marley",
+      description: "Rastafari",
     },
   },
 });

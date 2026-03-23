@@ -625,8 +625,10 @@ export const setWorldVolume = (volume: number) => {
   setTypeVolume("world", volume);
 };
 
-export const stopBackgroundMusic = (): void => {
-  getInstancesForGroup("world-music").forEach((instance) => stopSoundInternal(instance.id));
+export const stopBackgroundMusic = (fadeOutMs = 0): void => {
+  getInstancesForGroup("world-music").forEach((instance) =>
+    stopSoundInternal(instance.id, fadeOutMs),
+  );
 };
 
 export const mute = (): void => {
@@ -696,12 +698,12 @@ export const setCurrentTapSound = (id: string, filePath?: string): void => {
     type: "tap",
     category: "tap",
     volume: state.tapVolume,
-    pool: 12,
+    pool: 16,
     detune: { enabled: true, minSemitones: -2, maxSemitones: 2 },
     playback: {
       overlap: "layer",
-      maxConcurrent: 6,
-      limitBehavior: "stop-oldest",
+      maxConcurrent: 10,
+      limitBehavior: "skip-new",
     },
   });
 };

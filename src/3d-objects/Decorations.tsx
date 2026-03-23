@@ -11,6 +11,7 @@ import { BackSide, DoubleSide, InstancedMesh, Object3D, Vector3 } from "three";
 import * as THREE from "three";
 import { GLTF } from "three-stdlib";
 import {
+  useAppStore,
   useCoreStore,
   WorldEffectId,
   WorldModelId,
@@ -25,13 +26,16 @@ const FLOOR_Y = -1.36;
 const HOME_HEAD_ANCHOR = new Vector3(0, 0, 0);
 const HOME_COUNTER_ANCHOR = new Vector3(0, -1, -3);
 const MOON_RADIUS = 16;
-const MOON_SEGMENTS = 56;
+const MOON_SEGMENTS_HIGH = 56;
+const MOON_SEGMENTS_LOW = 28;
 const MOON_CENTER = new Vector3(
   HOME_HEAD_ANCHOR.x,
   FLOOR_Y - MOON_RADIUS - 0.08,
   THREE.MathUtils.lerp(HOME_HEAD_ANCHOR.z, HOME_COUNTER_ANCHOR.z, 0.24),
 );
 const MOON_SURFACE_ROTATION: [number, number, number] = [0.48, -0.22, 0.84];
+const MOON_UFO_CYCLE_SECONDS = 30;
+const MOON_UFO_FLIGHT_SECONDS = 7.5;
 const SPACE_WORLD_EFFECT_IDS = new Set([
   "world_space",
   "space_void",
@@ -240,7 +244,94 @@ const MoonSurfaceMaterial = shaderMaterial(
   `,
 );
 
-extend({ MoonSurfaceMaterial });
+const MoonSurfaceLiteMaterial = shaderMaterial(
+  {
+    uBaseColor: new THREE.Color("#f1df9b"),
+    uCraterColor: new THREE.Color("#baa46a"),
+    uGlowColor: new THREE.Color("#fff0ba"),
+    uGlowStrength: 1,
+  },
+  `
+    varying vec3 vSphereNormal;
+    varying vec3 vWorldNormal;
+    varying vec3 vWorldPosition;
+    varying float vCraterMask;
+    varying float vMariaMask;
+
+    float bandNoise(vec3 p) {
+      return sin(p.x) * sin(p.y) * sin(p.z);
+    }
+
+    void main() {
+      vec3 sphereNormal = normalize(position);
+      float craterBands = bandNoise(sphereNormal * vec3(18.0, 14.0, 16.0));
+      float mariaBands = bandNoise(
+        sphereNormal * vec3(5.0, 7.0, 6.0) + vec3(0.8, 1.6, 0.4)
+      );
+      float craterMask = smoothstep(0.36, 0.78, craterBands * 0.5 + 0.5);
+      float mariaMask = smoothstep(0.5, 0.84, mariaBands * 0.5 + 0.5);
+      vec3 displacedPosition = position - sphereNormal * craterMask * 0.22;
+      vec4 worldPosition = modelMatrix * vec4(displacedPosition, 1.0);
+
+      vSphereNormal = sphereNormal;
+      vCraterMask = craterMask;
+      vMariaMask = mariaMask;
+      vWorldNormal = normalize(mat3(modelMatrix) * sphereNormal);
+      vWorldPosition = worldPosition.xyz;
+      gl_Position = projectionMatrix * viewMatrix * worldPosition;
+    }
+  `,
+  `
+    uniform vec3 uBaseColor;
+    uniform vec3 uCraterColor;
+    uniform vec3 uGlowColor;
+    uniform float uGlowStrength;
+
+    varying vec3 vSphereNormal;
+    varying vec3 vWorldNormal;
+    varying vec3 vWorldPosition;
+    varying float vCraterMask;
+    varying float vMariaMask;
+
+    float grain(vec3 p) {
+      return fract(sin(dot(p, vec3(37.2, 17.1, 29.4))) * 43758.5453123);
+    }
+
+    void main() {
+      vec3 normal = normalize(vWorldNormal);
+      vec3 viewDirection = normalize(cameraPosition - vWorldPosition);
+      vec3 lightDirection = normalize(vec3(0.18, 1.0, 0.14));
+
+      float diffuse = max(dot(normal, lightDirection), 0.0);
+      float halfLambert = diffuse * 0.5 + 0.5;
+      float skyBounce = max(dot(normal, vec3(0.0, 1.0, 0.0)), 0.0);
+      float limb = pow(1.0 - max(dot(normal, viewDirection), 0.0), 2.1);
+      float bottomGlow = smoothstep(-0.9, -0.1, vSphereNormal.y) * uGlowStrength;
+      float microNoise = grain(vSphereNormal * 14.0) - 0.5;
+
+      vec3 regolithColor = mix(
+        uBaseColor * 0.9,
+        uGlowColor,
+        max(microNoise, 0.0) * 0.08
+      );
+      vec3 mariaColor = mix(uBaseColor * 0.7, uCraterColor, 0.58);
+      vec3 craterColor = mix(uCraterColor * 0.82, uCraterColor, vCraterMask * 0.24);
+
+      vec3 color = mix(regolithColor, mariaColor, vMariaMask * 0.34);
+      color = mix(color, craterColor, vCraterMask * 0.72);
+
+      float shading = 0.18 + halfLambert * 0.56 + skyBounce * 0.1;
+      shading *= 1.0 - vCraterMask * 0.18;
+
+      vec3 litColor = color * shading;
+      litColor += uGlowColor * (limb * 0.07 + bottomGlow * 0.08);
+
+      gl_FragColor = vec4(litColor, 1.0);
+    }
+  `,
+);
+
+extend({ MoonSurfaceMaterial, MoonSurfaceLiteMaterial });
 
 type TreeGLTFResult = GLTF & {
   nodes: {
@@ -359,20 +450,145 @@ const isSpaceWorldScene = (scene: WorldSceneConfig) =>
 function MoonWorldSphere({
   scene,
   lighting,
+  lowDetail,
 }: {
   scene: WorldSceneConfigEx;
   lighting: ReturnType<typeof getSceneLighting>;
+  lowDetail: boolean;
 }) {
+  const materialProps = useMemo(
+    () => ({
+      uBaseColor: new THREE.Color(scene.groundColor),
+      uCraterColor: new THREE.Color("#bca064"),
+      uGlowColor: new THREE.Color(scene.accentColor),
+      uGlowStrength: lighting.moonGlowIntensity,
+    }),
+    [lighting.moonGlowIntensity, scene.accentColor, scene.groundColor],
+  );
+
   return (
     <group position={MOON_CENTER} rotation={MOON_SURFACE_ROTATION}>
       <mesh renderOrder={-5} frustumCulled={false}>
-        <sphereGeometry args={[MOON_RADIUS, MOON_SEGMENTS, MOON_SEGMENTS]} />
-        {/* @ts-expect-error custom material */}
-        <moonSurfaceMaterial
-          uBaseColor={new THREE.Color(scene.groundColor)}
-          uCraterColor={new THREE.Color("#bca064")}
-          uGlowColor={new THREE.Color(scene.accentColor)}
-          uGlowStrength={lighting.moonGlowIntensity}
+        <sphereGeometry
+          args={[
+            MOON_RADIUS,
+            lowDetail ? MOON_SEGMENTS_LOW : MOON_SEGMENTS_HIGH,
+            lowDetail ? MOON_SEGMENTS_LOW : MOON_SEGMENTS_HIGH,
+          ]}
+        />
+        {lowDetail ? (
+          <>
+            {/* @ts-expect-error custom material */}
+            <moonSurfaceLiteMaterial {...materialProps} />
+          </>
+        ) : (
+          <>
+            {/* @ts-expect-error custom material */}
+            <moonSurfaceMaterial {...materialProps} />
+          </>
+        )}
+      </mesh>
+
+      {lowDetail && (
+        <mesh renderOrder={-6} scale={1.018}>
+          <sphereGeometry args={[MOON_RADIUS, 20, 20]} />
+          <meshBasicMaterial
+            color={scene.accentColor}
+            transparent
+            opacity={0.05 * lighting.moonGlowIntensity}
+            depthWrite={false}
+          />
+        </mesh>
+      )}
+    </group>
+  );
+}
+
+function MoonBackgroundUfo({
+  accentColor,
+}: {
+  accentColor: string;
+}) {
+  const groupRef = useRef<THREE.Group>(null);
+  const beamMaterialRef = useRef<THREE.MeshBasicMaterial>(null);
+
+  useFrame(({ clock }) => {
+    if (!groupRef.current) return;
+
+    const elapsed = clock.getElapsedTime();
+    const phase = elapsed % MOON_UFO_CYCLE_SECONDS;
+    const active = phase < MOON_UFO_FLIGHT_SECONDS;
+
+    groupRef.current.visible = active;
+
+    if (!active) {
+      if (beamMaterialRef.current) {
+        beamMaterialRef.current.opacity = 0;
+      }
+      return;
+    }
+
+    const progress = phase / MOON_UFO_FLIGHT_SECONDS;
+    const x = THREE.MathUtils.lerp(-24, 18, progress);
+    const y = THREE.MathUtils.lerp(10.2, 7.6, progress);
+    const z = THREE.MathUtils.lerp(-30, -18, progress);
+    const wobble = Math.sin(progress * Math.PI * 8) * 0.18;
+    const bank = Math.sin(progress * Math.PI * 2) * 0.08;
+
+    groupRef.current.position.set(x, y + wobble, z);
+    groupRef.current.rotation.set(0.08 + wobble * 0.05, -0.42, bank);
+
+    if (beamMaterialRef.current) {
+      const fadeIn = THREE.MathUtils.smoothstep(progress, 0.02, 0.12);
+      const fadeOut = 1 - THREE.MathUtils.smoothstep(progress, 0.82, 1);
+      beamMaterialRef.current.opacity = 0.14 * fadeIn * fadeOut;
+    }
+  });
+
+  return (
+    <group ref={groupRef} visible={false}>
+      <mesh scale={[1.5, 0.34, 1]}>
+        <sphereGeometry args={[1, 18, 12]} />
+        <meshStandardMaterial
+          color="#9aa7bc"
+          metalness={0.18}
+          roughness={0.42}
+        />
+      </mesh>
+
+      <mesh position={[0, 0.22, 0]} scale={[0.68, 0.26, 0.68]}>
+        <sphereGeometry args={[1, 16, 12]} />
+        <meshStandardMaterial
+          color="#dff4ff"
+          emissive={accentColor}
+          emissiveIntensity={0.42}
+          transparent
+          opacity={0.9}
+        />
+      </mesh>
+
+      <mesh rotation={[Math.PI / 2, 0, 0]} scale={[1.9, 1.9, 0.14]}>
+        <torusGeometry args={[1, 0.14, 10, 40]} />
+        <meshBasicMaterial
+          color={accentColor}
+          transparent
+          opacity={0.24}
+          depthWrite={false}
+        />
+      </mesh>
+
+      <mesh
+        position={[0, -1.55, 0]}
+        scale={[1.6, 1, 1]}
+      >
+        <coneGeometry args={[0.9, 2.8, 18, 1, true]} />
+        <meshBasicMaterial
+          ref={beamMaterialRef}
+          color={accentColor}
+          transparent
+          opacity={0}
+          depthWrite={false}
+          side={DoubleSide}
         />
       </mesh>
     </group>
@@ -431,7 +647,13 @@ function SpaceWorldEffects({
   );
 }
 
-function WorldDome({ scene }: { scene: WorldSceneConfig }) {
+function WorldDome({
+  scene,
+  lowDetail,
+}: {
+  scene: WorldSceneConfig;
+  lowDetail: boolean;
+}) {
   const isMoonWorld = scene.effects.includes("moon_glow");
   return (
     <>
@@ -448,15 +670,17 @@ function WorldDome({ scene }: { scene: WorldSceneConfig }) {
 
       {scene.starfield && (
         <Sparkles
-          count={isMoonWorld ? 220 : 420}
+          count={isMoonWorld ? (lowDetail ? 110 : 180) : lowDetail ? 280 : 420}
           color="#f6fbff"
-          size={isMoonWorld ? 2.2 : 2.8}
+          size={isMoonWorld ? (lowDetail ? 1.7 : 2.2) : 2.8}
           speed={0.08}
-          opacity={isMoonWorld ? 0.75 : 0.9}
+          opacity={isMoonWorld ? (lowDetail ? 0.58 : 0.75) : 0.9}
           scale={[85, 55, 85]}
           position={[0, 6, 0]}
         />
       )}
+
+      {isMoonWorld && <MoonBackgroundUfo accentColor={scene.accentColor} />}
     </>
   );
 }
@@ -745,10 +969,12 @@ function WorldModel({
   modelId,
   scene,
   preview,
+  lowDetailMoon,
 }: {
   modelId: WorldModelId;
   scene: WorldSceneConfig;
   preview: boolean;
+  lowDetailMoon: boolean;
 }) {
   switch (modelId) {
     case "default_home":
@@ -827,6 +1053,7 @@ function WorldModel({
         <MoonWorldSphere
           scene={scene as WorldSceneConfigEx}
           lighting={getSceneLighting(scene as WorldSceneConfigEx)}
+          lowDetail={lowDetailMoon}
         />
       );
 
@@ -998,7 +1225,8 @@ function WorldEffect({ effectId }: { effectId: WorldEffectId }) {
 }
 
 export function SceneDecorations() {
-  const { worlds, previewMode } = useCoreStore();
+  const { worlds, previewMode, graphicPreferences } = useCoreStore();
+  const isMobile = useAppStore((state) => state.isMobile);
   const preview =
     previewMode === "world" && !!worlds.find((world) => world.preview);
   const activeWorld =
@@ -1012,10 +1240,14 @@ export function SceneDecorations() {
   const scene = normalizeWorldScene(activeWorld.scene);
   const lighting = getSceneLighting(scene);
   const isSpaceWorld = isSpaceWorldScene(scene);
+  const isMoonWorld = scene.effects.includes("moon_glow");
+  const lowDetailMoon =
+    isMoonWorld &&
+    (isMobile || graphicPreferences.qualityMode === "low");
 
   return (
     <group>
-      <WorldDome scene={scene} />
+      <WorldDome scene={scene} lowDetail={lowDetailMoon} />
       <WorldFloor scene={scene} />
 
       {scene.models.map((modelId) => (
@@ -1024,6 +1256,7 @@ export function SceneDecorations() {
           modelId={modelId}
           scene={scene}
           preview={preview}
+          lowDetailMoon={lowDetailMoon}
         />
       ))}
 

@@ -43,8 +43,10 @@ export interface ThroneOverlayConfig {
 export interface SocialThroneConfig {
   id: string;
   x: number;
+  y: number;
   z: number;
   pedestalHeight?: number;
+  showPedestal?: boolean;
   baseColor: string;
   rimColor: string;
   meta: ThroneMeta;
@@ -63,31 +65,4 @@ export interface SocialLink {
   color: string;
   sticker: string;
   textColor?: string;
-}
-
-export interface TimelineEntry {
-  id: string;
-  date: string;
-  emoji: string;
-  title: string;
-  description?: string;
-}
-
-export interface FavoriteEntry {
-  id: string;
-  title: string;
-  artist: string;
-  album: string;
-  href: string;
-}
-
-export interface FavoriteFallbackGradient {
-  id: string;
-  colors: [string, string, string];
-}
-
-export interface ResolvedFavoriteEntry extends FavoriteEntry {
-  artworkUrl: string | null;
-  textureUrl: string;
-  fallbackGradient: FavoriteFallbackGradient;
 }

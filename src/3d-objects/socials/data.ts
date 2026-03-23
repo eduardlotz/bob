@@ -1,13 +1,5 @@
-import {
-  FavoritesOverlayContent,
-  SocialsOverlayContent,
-  TimelineOverlayContent,
-} from "./content";
-import {
-  FavoritesStackObject,
-  SocialsGlobeObject,
-  TimelineCameraObject,
-} from "./sceneObjects";
+import { SocialsOverlayContent } from "./content";
+import { SocialsGlobeObject } from "./sceneObjects";
 import type { SocialThroneConfig } from "./types";
 import { socialsMessages } from "./socials.messages";
 
@@ -22,34 +14,12 @@ const SHARED_FOCUS_INTERACTION = {
 
 export const THRONE_CONFIG = [
   {
-    id: "timeline",
-    x: -0.2,
-    z: -0.2,
-    pedestalHeight: 0.38,
-    baseColor: "#171a22",
-    rimColor: "#7c8cff",
-    meta: {
-      label: socialsMessages.de.timeline.label,
-      description: socialsMessages.de.timeline.description,
-      accentColor: "#7c8cff",
-    },
-    object: {
-      Component: TimelineCameraObject,
-      focusInteraction: SHARED_FOCUS_INTERACTION,
-    },
-    overlay: {
-      subtitle: socialsMessages.de.timeline.subtitle,
-      Component: TimelineOverlayContent,
-      preferredWidth: "420px",
-      minHeight: "440px",
-      maxHeight: "760px",
-    },
-  },
-  {
     id: "socials",
-    x: 0.2,
-    z: -0.2,
-    pedestalHeight: 0.58,
+    x: 0,
+    y: 0.5,
+    z: 0,
+    pedestalHeight: 0,
+    showPedestal: false,
     baseColor: "#162032",
     rimColor: "#56a7ff",
     meta: {
@@ -64,33 +34,9 @@ export const THRONE_CONFIG = [
     overlay: {
       subtitle: socialsMessages.de.socials.subtitle,
       Component: SocialsOverlayContent,
-      preferredWidth: "520px",
-      minHeight: "500px",
-      maxHeight: "780px",
-    },
-  },
-  {
-    id: "favorites",
-    x: -0.2,
-    z: 0.2,
-    pedestalHeight: 0.46,
-    baseColor: "#1d1b23",
-    rimColor: "#ef6d86",
-    meta: {
-      label: socialsMessages.de.favorites.label,
-      description: socialsMessages.de.favorites.description,
-      accentColor: "#ef6d86",
-    },
-    object: {
-      Component: FavoritesStackObject,
-      focusInteraction: SHARED_FOCUS_INTERACTION,
-    },
-    overlay: {
-      subtitle: socialsMessages.de.favorites.subtitle,
-      Component: FavoritesOverlayContent,
-      preferredWidth: "460px",
-      minHeight: "460px",
-      maxHeight: "760px",
+      preferredWidth: "320px",
+      minHeight: "520px",
+      maxHeight: "520px",
     },
   },
 ] satisfies readonly SocialThroneConfig[];
