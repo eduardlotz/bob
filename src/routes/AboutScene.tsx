@@ -23,7 +23,7 @@ import { MusicOverlay } from "@/layout/game-ui/music";
 import { BookStacks } from "@/3d-objects/books/index";
 import { BookTable } from "@/3d-objects/models/bookTable";
 import { RigidBodyCameraModel } from "@/3d-objects/models/rigidBodyCamera";
-import { SocialsCorner } from "@/3d-objects/socials";
+import { StandaloneSocialsGlobe } from "@/3d-objects/socials";
 
 export function AboutScene() {
   const { checkUnlockedRoutes } = useCoreStore();
@@ -82,19 +82,12 @@ export function AboutScene() {
 
       {/* SOCIALS CORNER  */}
 
-      <InteractiveObject
+      <StandaloneSocialsGlobe
         questAction="click_socials"
         questValue={30}
-        mode="view"
-        viewId="socials"
-      >
-        <SocialsCorner
-          viewId="socials"
-          position={[-3, FLOOR_Y_POSITION - 0.55, -3.5]}
-          // rotation={[0, Math.PI * 0.15, 0]}
-          scale={[4, 4, 4]}
-        />
-      </InteractiveObject>
+        position={[-3, FLOOR_Y_POSITION + 2, -3.5]}
+        scale={[3.5, 3.5, 3.5]}
+      />
 
       {/* BOOK STACKS + TABLE */}
 

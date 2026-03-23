@@ -66,8 +66,7 @@ export type CameraViewId =
   | "desk"
   | "bookshelf"
   | "computer"
-  | "cardbox"
-  | "socials";
+  | "cardbox";
 
 const resolveRouteViewId = (route: string): CameraViewId => {
   if (route === ROUTE_PATHS.PORTFOLIO) return "portfolio";
@@ -375,17 +374,6 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
     target: [4.5, -1.5, 2],
     transition: {
       duration: 1200,
-      easing: "easeInOutCubic",
-    },
-    defaultViewMode: "object",
-  },
-  socials: {
-    id: "socials",
-    name: "Socials Corner View",
-    position: [-1, 3, -1],
-    target: [-4, -2, -4],
-    transition: {
-      duration: 580,
       easing: "easeInOutCubic",
     },
     defaultViewMode: "object",

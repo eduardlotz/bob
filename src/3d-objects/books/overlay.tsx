@@ -153,7 +153,6 @@ const NavChevron = styled.button<{ disabled?: boolean }>`
   }
 `;
 
-/** iOS-style dot track sitting between the two chevrons */
 const DotTrack = styled.div`
   /* flex: 1; */
   display: flex;
@@ -187,7 +186,6 @@ const NavCounter = styled.span`
   letter-spacing: 0.02em;
 `;
 
-/** Inline status pill shown in the nav — smaller than the hero pill */
 const NavStatusPill = styled.span<{ $bg: string; $fg: string; $bd: string }>`
   display: inline-flex;
   align-items: center;
@@ -203,10 +201,6 @@ const NavStatusPill = styled.span<{ $bg: string; $fg: string; $bd: string }>`
   white-space: nowrap;
 `;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// RatingStars
-// ─────────────────────────────────────────────────────────────────────────────
-
 function RatingStars({ rating }: { rating: 1 | 2 | 3 | 4 | 5 }) {
   return (
     <HeartsContainer>
@@ -217,15 +211,9 @@ function RatingStars({ rating }: { rating: 1 | 2 | 3 | 4 | 5 }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// StackNav — iOS-style nav bar, stack-scoped, always visible
-// ─────────────────────────────────────────────────────────────────────────────
-
 interface StackNavProps {
   book: Book;
-  /** 0-based position within the current stack */
   posInStack: number;
-  /** Total books in the current stack */
   stackSize: number;
   onPrev: () => void;
   onNext: () => void;
@@ -235,7 +223,6 @@ const StackNav = memo(
   ({ book, posInStack, stackSize, onPrev, onNext }: StackNavProps) => {
     const sc = STATUS_COLORS[book.status];
     const { messages } = useI18n();
-    // Clamp dot display to max 7 — collapse beyond that
     const MAX_DOTS = 10;
     const showDots = stackSize <= MAX_DOTS;
 
@@ -243,7 +230,6 @@ const StackNav = memo(
       <NavBar>
         <NavChevron
           onClick={onPrev}
-          // Always enabled — navigation loops infinitely
           aria-label={messages.books.overlay.previous}
         >
           <ChevronLeftIcon />
@@ -275,10 +261,6 @@ const StackNav = memo(
   },
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// BookContent
-// ─────────────────────────────────────────────────────────────────────────────
-
 const BookContent = memo(({ book }: { book: Book }) => {
   const navigateToBookId = useBooksStore((s) => s.navigateToBookId);
   const { messages } = useI18n();
@@ -299,7 +281,6 @@ const BookContent = memo(({ book }: { book: Book }) => {
         }}
       >
         <PanelScroll>
-          {/* Hero */}
           <HeroRow>
             <div
               style={{
@@ -324,7 +305,6 @@ const BookContent = memo(({ book }: { book: Book }) => {
             </FillColumn>
           </HeroRow>
 
-          {/* Tags */}
           {tags.length > 0 && (
             <>
               <Rule />
@@ -342,7 +322,6 @@ const BookContent = memo(({ book }: { book: Book }) => {
             </>
           )}
 
-          {/* Review */}
           {book.review && (
             <>
               <Rule />
@@ -351,7 +330,6 @@ const BookContent = memo(({ book }: { book: Book }) => {
             </>
           )}
 
-          {/* External link */}
           {book.url && (
             <>
               <Rule />
@@ -413,10 +391,6 @@ const BookContent = memo(({ book }: { book: Book }) => {
     </AnimatePresence>
   );
 });
-
-// ─────────────────────────────────────────────────────────────────────────────
-// BookPortalOverlay
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const BookPortalOverlay = () => {
   const { messages } = useI18n();

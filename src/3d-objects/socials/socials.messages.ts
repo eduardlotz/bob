@@ -4,15 +4,13 @@ export const socialsMessages = defineMessages({
   de: {
     socials: {
       label: "Socials",
-      description: "Eine kleine Internet-Schneekugel mit den üblichen Ecken.",
-      subtitle: "Andere Ecken im Internet",
+      overlayHint: "Klick eine Bubble an, um den Link zu öffnen.",
     },
   },
   en: {
     socials: {
       label: "Socials",
-      description: "A tiny internet snow globe with the usual suspects.",
-      subtitle: "Other corners of the internet",
+      overlayHint: "Tap a bubble to open the link.",
     },
   },
 });

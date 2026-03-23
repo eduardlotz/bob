@@ -60,12 +60,13 @@ const _t = {
   pPos: new THREE.Vector3(),
   tQuat: new THREE.Quaternion(),
   baseQuat: new THREE.Quaternion(),
+  yawQuat: new THREE.Quaternion(),
+  pitchQuat: new THREE.Quaternion(),
   toCamera: new THREE.Vector3(),
   camFwd: new THREE.Vector3(),
   camRight: new THREE.Vector3(),
   camUp: new THREE.Vector3(),
   targetW: new THREE.Vector3(),
-  euler: new THREE.Euler(0, 0, 0, "YXZ"),
 };
 
 function resolveFocusInteraction(
@@ -79,8 +80,14 @@ function resolveFocusInteraction(
       config?.dragSensitivity ?? DEFAULT_FOCUS_INTERACTION.dragSensitivity,
     idleSpinSpeed:
       config?.idleSpinSpeed ?? DEFAULT_FOCUS_INTERACTION.idleSpinSpeed,
-    yawLimit: config?.yawLimit ?? DEFAULT_FOCUS_INTERACTION.yawLimit,
-    pitchLimit: config?.pitchLimit ?? DEFAULT_FOCUS_INTERACTION.pitchLimit,
+    yawLimit:
+      config?.yawLimit !== undefined
+        ? config.yawLimit
+        : DEFAULT_FOCUS_INTERACTION.yawLimit,
+    pitchLimit:
+      config?.pitchLimit !== undefined
+        ? config.pitchLimit
+        : DEFAULT_FOCUS_INTERACTION.pitchLimit,
   };
 }
 
@@ -144,9 +151,9 @@ export const FocusedThroneMesh = ({
       }
 
       const interaction = interactionRef.current;
-      const nextYaw = dragYaw.current - dx * interaction.dragSensitivity;
+      const nextYaw = dragYaw.current + dx * interaction.dragSensitivity;
       const nextPitch = dragPitch.current + dy * interaction.dragSensitivity;
-      yawVelocity.current = -dx * interaction.dragSensitivity * 0.12;
+      yawVelocity.current = dx * interaction.dragSensitivity * 0.12;
       pitchVelocity.current = dy * interaction.dragSensitivity * 0.12;
 
       dragYaw.current = interaction.yawLimit
@@ -288,11 +295,11 @@ export const FocusedThroneMesh = ({
           pitchVelocity.current *= 0.7;
         }
       }
-      _t.euler.set(dragPitch.current, spin.current + dragYaw.current, 0, "YXZ");
-
-      _t.tQuat.setFromEuler(_t.euler);
-      _t.baseQuat.copy(camera.quaternion).multiply(_t.tQuat);
-      curWorldQuat.current.slerp(_t.baseQuat, FOCUS_POS_LERP * 1.8);
+      _t.baseQuat.copy(camera.quaternion);
+      _t.yawQuat.setFromAxisAngle(_t.camUp, spin.current + dragYaw.current);
+      _t.pitchQuat.setFromAxisAngle(_t.camRight, dragPitch.current);
+      _t.tQuat.copy(_t.yawQuat).multiply(_t.pitchQuat).multiply(_t.baseQuat);
+      curWorldQuat.current.slerp(_t.tQuat, FOCUS_POS_LERP * 1.8);
     }
 
     groupRef.current.matrixWorld.decompose(_t.pPos, _t.pQuat, _t.pScale);

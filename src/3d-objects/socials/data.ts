@@ -16,7 +16,7 @@ export const THRONE_CONFIG = [
   {
     id: "socials",
     x: 0,
-    y: 0.5,
+    y: 0.75,
     z: 0,
     pedestalHeight: 0,
     showPedestal: false,
@@ -24,7 +24,6 @@ export const THRONE_CONFIG = [
     rimColor: "#56a7ff",
     meta: {
       label: socialsMessages.de.socials.label,
-      description: socialsMessages.de.socials.description,
       accentColor: "#56a7ff",
     },
     object: {
@@ -32,11 +31,10 @@ export const THRONE_CONFIG = [
       focusInteraction: SHARED_FOCUS_INTERACTION,
     },
     overlay: {
-      subtitle: socialsMessages.de.socials.subtitle,
       Component: SocialsOverlayContent,
       preferredWidth: "320px",
-      minHeight: "520px",
-      maxHeight: "520px",
+      minHeight: "420px",
+      maxHeight: "420px",
     },
   },
 ] satisfies readonly SocialThroneConfig[];

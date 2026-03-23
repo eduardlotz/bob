@@ -6,14 +6,18 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import styled from "styled-components";
+import { useI18n } from "@/i18n";
 
 import { SOCIAL_LINKS } from "./contentData";
 import { getSocialLogoDataUrl } from "./helper";
+import { socialsMessages } from "./socials.messages";
+import { AppInfo } from "@/apps/ui";
 
 const SocialsCanvasStage = styled.div`
   position: relative;
   display: flex;
   flex-direction: column;
+  gap: 12px;
 `;
 
 const SocialsCanvasFrame = styled.div`
@@ -23,7 +27,11 @@ const SocialsCanvasFrame = styled.div`
   border-radius: 28px;
   overflow: hidden;
   background:
-    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 36%),
+    radial-gradient(
+      circle at 20% 20%,
+      rgba(255, 255, 255, 0.95),
+      rgba(255, 255, 255, 0) 36%
+    ),
     linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(0, 0, 0, 0.03)),
     rgba(0, 0, 0, 0.035);
   box-shadow:
@@ -51,6 +59,31 @@ const VisuallyHiddenLinks = styled.div`
   border: 0;
 `;
 
+const FrameCaption = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 0 4px;
+`;
+
+const FrameCaptionTitle = styled.span`
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: rgba(18, 18, 18, 0.78);
+`;
+
+const FrameCaptionText = styled(AppInfo)`
+  margin: 0;
+  opacity: 0.7;
+  padding: 0.35rem 0.7rem;
+  white-space: normal;
+  line-height: 1.4;
+  justify-content: flex-start;
+  text-align: center;
+  border-radius: 0.9rem;
+`;
+
 type SocialCanvasBall = {
   id: string;
   href: string;
@@ -68,7 +101,10 @@ function clampValue(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-function createInitialSocialBalls(width: number, height: number): SocialCanvasBall[] {
+function createInitialSocialBalls(
+  width: number,
+  height: number,
+): SocialCanvasBall[] {
   const centerX = width / 2;
   const centerY = height / 2;
   const orbit = Math.min(width, height) * 0.24;
@@ -77,7 +113,11 @@ function createInitialSocialBalls(width: number, height: number): SocialCanvasBa
 
   return SOCIAL_LINKS.map((link, index) => {
     const angle = (index / SOCIAL_LINKS.length) * Math.PI * 2 - Math.PI / 2;
-    const radius = clampValue(baseRadius * sizeFactors[index % sizeFactors.length], 36, 66);
+    const radius = clampValue(
+      baseRadius * sizeFactors[index % sizeFactors.length],
+      36,
+      66,
+    );
 
     return {
       id: link.id,
@@ -95,6 +135,8 @@ function createInitialSocialBalls(width: number, height: number): SocialCanvasBa
 }
 
 export function SocialsOverlayContent() {
+  const { locale } = useI18n();
+  const messages = socialsMessages[locale as keyof typeof socialsMessages];
   const frameRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const ballsRef = useRef<SocialCanvasBall[]>([]);
@@ -298,7 +340,13 @@ export function SocialsOverlayContent() {
 
         if (image?.complete) {
           const iconSize = ball.radius * 1.08;
-          ctx.drawImage(image, -iconSize / 2, -iconSize / 2, iconSize, iconSize);
+          ctx.drawImage(
+            image,
+            -iconSize / 2,
+            -iconSize / 2,
+            iconSize,
+            iconSize,
+          );
         }
 
         ctx.restore();
@@ -316,13 +364,16 @@ export function SocialsOverlayContent() {
     };
   }, []);
 
-  const getLocalPointer = useCallback((event: ReactPointerEvent<HTMLCanvasElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    return {
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top,
-    };
-  }, []);
+  const getLocalPointer = useCallback(
+    (event: ReactPointerEvent<HTMLCanvasElement>) => {
+      const rect = event.currentTarget.getBoundingClientRect();
+      return {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top,
+      };
+    },
+    [],
+  );
 
   const openLink = useCallback((href: string) => {
     playUISound("ui-tap-1");
@@ -338,7 +389,9 @@ export function SocialsOverlayContent() {
             const { x, y } = getLocalPointer(event);
             const hitBall = [...ballsRef.current]
               .reverse()
-              .find((ball) => Math.hypot(ball.x - x, ball.y - y) <= ball.radius);
+              .find(
+                (ball) => Math.hypot(ball.x - x, ball.y - y) <= ball.radius,
+              );
 
             if (!hitBall) return;
 
@@ -366,13 +419,18 @@ export function SocialsOverlayContent() {
             const dy = y - dragRef.current.prevY;
             if (
               !dragRef.current.moved &&
-              Math.hypot(x - dragRef.current.startX, y - dragRef.current.startY) > 8
+              Math.hypot(
+                x - dragRef.current.startX,
+                y - dragRef.current.startY,
+              ) > 8
             ) {
               dragRef.current.moved = true;
             }
 
             const dt = Math.max(8, now - dragRef.current.prevTime);
-            const ball = ballsRef.current.find((entry) => entry.id === dragRef.current.ballId);
+            const ball = ballsRef.current.find(
+              (entry) => entry.id === dragRef.current.ballId,
+            );
             if (ball) {
               ball.vx = (dx / dt) * 13;
               ball.vy = (dy / dt) * 13;
@@ -415,12 +473,20 @@ export function SocialsOverlayContent() {
         />
         <VisuallyHiddenLinks>
           {SOCIAL_LINKS.map((link) => (
-            <a key={link.id} href={link.href} target="_blank" rel="noopener noreferrer">
+            <a
+              key={link.id}
+              href={link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               {link.label}
             </a>
           ))}
         </VisuallyHiddenLinks>
       </SocialsCanvasFrame>
+      <FrameCaption>
+        <FrameCaptionText>{messages.socials.overlayHint}</FrameCaptionText>
+      </FrameCaption>
     </SocialsCanvasStage>
   );
 }

@@ -9,7 +9,7 @@ import { CloseIcon } from "@/icons/close";
 import { OVERLAY_ROOT_ID } from "@/3d-objects/books/overlay";
 import { useI18n } from "@/i18n";
 
-import { THRONE_BY_ID } from "./data";
+import { SocialsOverlayContent } from "./content";
 import { socialsMessages } from "./socials.messages";
 
 const PANEL_W = "400px";
@@ -65,7 +65,6 @@ const Header = styled.div`
   flex-direction: column;
   gap: 2px;
   padding: 14px 18px 12px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.07);
   flex-shrink: 0;
 `;
 
@@ -117,10 +116,7 @@ const PanelScroll = styled.div<{ $mobile: boolean; $fullScreen: boolean }>`
   ${({ $mobile }) =>
     $mobile &&
     css`
-      padding:
-        8px 16px
-        calc(92px + env(safe-area-inset-bottom))
-        16px;
+      padding: 8px 16px calc(92px + env(safe-area-inset-bottom)) 16px;
     `}
 
   &::-webkit-scrollbar {
@@ -180,11 +176,12 @@ export const SocialsPortalOverlay = () => {
   const clearFocus = useSocialsStore((state) => state.clearFocus);
   const dragControls = useDragControls();
   const [viewportHeight, setViewportHeight] = useState(0);
-  const [mobileSheetMode, setMobileSheetMode] = useState<"peek" | "full">("peek");
+  const [mobileSheetMode, setMobileSheetMode] = useState<"peek" | "full">(
+    "peek",
+  );
   const contentTouchStartY = useRef<number | null>(null);
 
-  const isOpen = focusedThrone !== null;
-  const currentThrone = focusedThrone ? THRONE_BY_ID[focusedThrone] : null;
+  const isOpen = focusedThrone === "socials";
 
   const onClose = useCallback(() => clearFocus(), [clearFocus]);
   const expandMobileSheet = useCallback(() => {
@@ -263,159 +260,136 @@ export const SocialsPortalOverlay = () => {
 
   const content = (
     <AnimatePresence>
-      {isOpen && currentThrone &&
-        (() => {
-          const CurrentContent = currentThrone.overlay.Component;
+      {isOpen && (
+        <Panel
+          key="socials-panel"
+          $mobile={isMobile}
+          $panelWidth={"320px"}
+          $minHeight={"520px"}
+          $maxHeight={"520px"}
+          drag={isMobile ? "y" : false}
+          dragListener={isMobile ? false : undefined}
+          dragControls={dragControls}
+          dragMomentum={false}
+          dragConstraints={
+            isMobile ? { top: 0, bottom: mobilePeekY + 96 } : undefined
+          }
+          dragElastic={isMobile ? 0.16 : 0}
+          onDragEnd={
+            isMobile
+              ? (_, info) => {
+                  resolveMobileSheetState(info.offset.y, info.velocity.y);
+                }
+              : undefined
+          }
+          layout={!isMobile}
+          initial={
+            isMobile
+              ? { y: viewportHeight || 900, opacity: 1 }
+              : { x: 80, opacity: 0, filter: "blur(6px)" }
+          }
+          animate={
+            isMobile
+              ? {
+                  y: mobileSheetMode === "full" ? 0 : mobilePeekY,
+                  opacity: 1,
+                  borderTopLeftRadius: mobileSheetMode === "full" ? 0 : 24,
+                  borderTopRightRadius: mobileSheetMode === "full" ? 0 : 24,
+                }
+              : { x: 0, opacity: 1, filter: "blur(0px)" }
+          }
+          exit={
+            isMobile
+              ? { y: viewportHeight || 900, opacity: 1 }
+              : { x: 80, opacity: 0, filter: "blur(6px)" }
+          }
+          transition={{ type: "spring", bounce: 0.2, duration: 0.42 }}
+        >
+          {isMobile && (
+            <MobileDragZone
+              onPointerDown={(event) => {
+                dragControls.start(event);
+              }}
+            >
+              <MobileHandle />
+            </MobileDragZone>
+          )}
 
-          return (
-            <>
-              <Panel
-                key="socials-panel"
-                $mobile={isMobile}
-                $panelWidth={currentThrone.overlay.preferredWidth}
-                $minHeight={currentThrone.overlay.minHeight}
-                $maxHeight={currentThrone.overlay.maxHeight}
-                drag={isMobile ? "y" : false}
-                dragListener={isMobile ? false : undefined}
-                dragControls={dragControls}
-                dragMomentum={false}
-                dragConstraints={
-                  isMobile
-                    ? { top: 0, bottom: mobilePeekY + 96 }
-                    : undefined
-                }
-                dragElastic={isMobile ? 0.16 : 0}
-                onDragEnd={
-                  isMobile
-                    ? (_, info) => {
-                        resolveMobileSheetState(info.offset.y, info.velocity.y);
-                      }
-                    : undefined
-                }
-                layout={!isMobile}
-                initial={
-                  isMobile
-                    ? { y: viewportHeight || 900, opacity: 1 }
-                    : { x: 80, opacity: 0, filter: "blur(6px)" }
-                }
-                animate={
-                  isMobile
-                    ? {
-                        y: mobileSheetMode === "full" ? 0 : mobilePeekY,
-                        opacity: 1,
-                        borderTopLeftRadius: mobileSheetMode === "full" ? 0 : 24,
-                        borderTopRightRadius: mobileSheetMode === "full" ? 0 : 24,
-                      }
-                    : { x: 0, opacity: 1, filter: "blur(0px)" }
-                }
-                exit={
-                  isMobile
-                    ? { y: viewportHeight || 900, opacity: 1 }
-                    : { x: 80, opacity: 0, filter: "blur(6px)" }
-                }
-                transition={{ type: "spring", bounce: 0.2, duration: 0.42 }}
-              >
-                {isMobile && (
-                  <MobileDragZone
-                    onPointerDown={(event) => {
-                      dragControls.start(event);
-                    }}
-                  >
-                    <MobileHandle />
-                  </MobileDragZone>
-                )}
+          <CloseBtn
+            $mobile={isMobile}
+            $fullScreen={isMobile && mobileSheetMode === "full"}
+            onClick={onClose}
+            aria-label={locale === "de" ? "Schließen" : "Close"}
+          >
+            <CloseIcon />
+          </CloseBtn>
 
-                <CloseBtn
-                  $mobile={isMobile}
-                  $fullScreen={isMobile && mobileSheetMode === "full"}
-                  onClick={onClose}
-                  aria-label={locale === "de" ? "Schließen" : "Close"}
-                >
-                  <CloseIcon />
-                </CloseBtn>
-
-                <Header
-                  onPointerDown={
-                    isMobile
-                      ? (event) => {
-                          dragControls.start(event);
-                        }
-                      : undefined
+          <Header
+            onPointerDown={
+              isMobile
+                ? (event) => {
+                    dragControls.start(event);
                   }
-                >
-                  <Title>
-                    {
-                      localizedMessages[
-                        currentThrone.id as keyof typeof localizedMessages
-                      ].label
-                    }
-                  </Title>
-                  <Subtitle>
-                    {
-                      localizedMessages[
-                        currentThrone.id as keyof typeof localizedMessages
-                      ].subtitle
-                    }
-                  </Subtitle>
-                </Header>
+                : undefined
+            }
+          >
+            <Title>{localizedMessages.socials.label}</Title>
+          </Header>
 
-                <AnimatePresence mode="wait" initial={false}>
-                  <motion.div
-                    key={`socials-content-${currentThrone.id}`}
-                    {...SLIDE_VARIANTS}
-                    style={{
-                      flex: 1,
-                      overflow: "hidden",
-                      display: "flex",
-                      flexDirection: "column",
-                      minHeight: 0,
-                      pointerEvents: "auto",
-                    }}
-                  >
-                    <PanelScroll
-                      $mobile={isMobile}
-                      $fullScreen={!isMobile || mobileSheetMode === "full"}
-                      onWheel={
-                        isMobile && mobileSheetMode === "peek"
-                          ? (event) => {
-                              if (event.deltaY > 8) {
-                                expandMobileSheet();
-                              }
-                            }
-                          : undefined
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key="socials-content"
+              {...SLIDE_VARIANTS}
+              style={{
+                flex: 1,
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+                minHeight: 0,
+                pointerEvents: "auto",
+              }}
+            >
+              <PanelScroll
+                $mobile={isMobile}
+                $fullScreen={!isMobile || mobileSheetMode === "full"}
+                onWheel={
+                  isMobile && mobileSheetMode === "peek"
+                    ? (event) => {
+                        if (event.deltaY > 8) {
+                          expandMobileSheet();
+                        }
                       }
-                      onTouchStart={
-                        isMobile && mobileSheetMode === "peek"
-                          ? (event) => {
-                              contentTouchStartY.current =
-                                event.touches[0]?.clientY ?? null;
-                            }
-                          : undefined
+                    : undefined
+                }
+                onTouchStart={
+                  isMobile && mobileSheetMode === "peek"
+                    ? (event) => {
+                        contentTouchStartY.current =
+                          event.touches[0]?.clientY ?? null;
                       }
-                      onTouchMove={
-                        isMobile && mobileSheetMode === "peek"
-                          ? (event) => {
-                              const startY = contentTouchStartY.current;
-                              const currentY = event.touches[0]?.clientY ?? null;
-                              if (startY === null || currentY === null) return;
+                    : undefined
+                }
+                onTouchMove={
+                  isMobile && mobileSheetMode === "peek"
+                    ? (event) => {
+                        const startY = contentTouchStartY.current;
+                        const currentY = event.touches[0]?.clientY ?? null;
+                        if (startY === null || currentY === null) return;
 
-                              if (startY - currentY > 14) {
-                                expandMobileSheet();
-                                contentTouchStartY.current = null;
-                              }
-                            }
-                          : undefined
+                        if (startY - currentY > 14) {
+                          expandMobileSheet();
+                          contentTouchStartY.current = null;
+                        }
                       }
-                    >
-                      <CurrentContent />
-                    </PanelScroll>
-                  </motion.div>
-                </AnimatePresence>
-
-              </Panel>
-            </>
-          );
-        })()}
+                    : undefined
+                }
+              >
+                <SocialsOverlayContent />
+              </PanelScroll>
+            </motion.div>
+          </AnimatePresence>
+        </Panel>
+      )}
     </AnimatePresence>
   );
 

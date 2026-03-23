@@ -27,13 +27,13 @@ export interface ThroneObjectProps {
 }
 
 export interface ThroneMeta {
-  label: string;
-  description: string;
+  label?: string;
+  description?: string;
   accentColor: string;
 }
 
 export interface ThroneOverlayConfig {
-  subtitle: string;
+  subtitle?: string;
   Component: ComponentType;
   preferredWidth?: string;
   minHeight?: string;

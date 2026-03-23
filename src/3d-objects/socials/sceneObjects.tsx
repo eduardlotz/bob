@@ -18,6 +18,12 @@ const GLOBE_SCALE_VEC: [number, number, number] = [
   GLOBE_SCALE,
   GLOBE_SCALE,
 ];
+const FOCUS_GLOBE_SCALE = 1.2;
+const FOCUS_GLOBE_SCALE_VEC: [number, number, number] = [
+  FOCUS_GLOBE_SCALE,
+  FOCUS_GLOBE_SCALE,
+  FOCUS_GLOBE_SCALE,
+];
 const SOCIAL_BALL_RADII = [0.05, 0.064, 0.056, 0.068, 0.052, 0.06] as const;
 
 function SocialBallVisual({
@@ -50,7 +56,13 @@ function SocialBallVisual({
   );
 }
 
-function StaticSocialsGlobeVisual({ idleAnimated }: { idleAnimated: boolean }) {
+function StaticSocialsGlobeVisual({
+  idleAnimated,
+  scale,
+}: {
+  idleAnimated: boolean;
+  scale: [number, number, number];
+}) {
   const orbitRef = useRef<THREE.Group>(null);
   const logoUrls = useSocialLogoTextures(SOCIAL_LINKS);
   const logos = useTexture(logoUrls);
@@ -72,7 +84,8 @@ function StaticSocialsGlobeVisual({ idleAnimated }: { idleAnimated: boolean }) {
 
     const time = state.clock.elapsedTime;
     orbitRef.current.rotation.y += dt * (idleAnimated ? 0.32 : 0.14);
-    orbitRef.current.rotation.x = Math.sin(time * 0.8) * (idleAnimated ? 0.08 : 0.04);
+    orbitRef.current.rotation.x =
+      Math.sin(time * 0.8) * (idleAnimated ? 0.08 : 0.04);
 
     orbitRef.current.children.forEach((child, index) => {
       const descriptor = descriptors[index];
@@ -92,7 +105,7 @@ function StaticSocialsGlobeVisual({ idleAnimated }: { idleAnimated: boolean }) {
   });
 
   return (
-    <GlobeModel scale={GLOBE_SCALE_VEC} color="#7fb5ff">
+    <GlobeModel scale={scale} color="#7fb5ff">
       <group ref={orbitRef}>
         {descriptors.map((descriptor, index) => (
           <group
@@ -121,7 +134,10 @@ export function SocialsGlobeObject(props: ThroneObjectProps) {
       bobAmplitude={0.044}
       pulseAmplitude={0.02}
     >
-      <StaticSocialsGlobeVisual idleAnimated={!props.isFloating} />
+      <StaticSocialsGlobeVisual
+        idleAnimated={!props.isFloating}
+        scale={props.isFloating ? FOCUS_GLOBE_SCALE_VEC : GLOBE_SCALE_VEC}
+      />
     </AnimatedThroneBase>
   );
 }
