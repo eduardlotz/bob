@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { a } from "@react-spring/three";
 
 export function Star3D({
@@ -35,10 +35,13 @@ export function Star3D({
     };
 
     const extrudeGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-    const geo = new THREE.BufferGeometry().copy(extrudeGeo);
+    const geo = extrudeGeo.toNonIndexed();
+    extrudeGeo.dispose();
 
     return { geometry: geo };
   }, []);
+
+  useEffect(() => () => geometry.dispose(), [geometry]);
 
   return (
     <a.mesh

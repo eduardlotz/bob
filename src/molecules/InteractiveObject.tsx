@@ -3,7 +3,6 @@ import { CameraViewId, useViewStore } from "@/store/viewStore";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { match } from "ts-pattern";
 import { useCursorStore } from "@/store/core/cursor";
-import { Vector3 } from "three";
 
 export type InteractionMode = "dialog" | "view";
 
@@ -26,7 +25,6 @@ export function InteractiveObject({
   onDialogOpen,
   viewId,
   position,
-  showOutline = true,
 }: InteractiveObjectProps) {
   const { triggerQuest } = useQuestSystem();
   const { transitionToView, currentView } = useViewStore();

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { useGLTF, Wireframe } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
@@ -36,6 +36,23 @@ export const KrustyKrabHat = ({
 }: Props) => {
   const group = useRef<THREE.Group>(null!);
   const { nodes, materials } = useGLTF(PATH) as GLTFResult;
+  const wireframeGeometries = useMemo(
+    () => ({
+      hat: nodes["Cylinder001_02_-_Default_0"].geometry.toNonIndexed(),
+      brim: nodes["Cylinder001_01_-_Default_0"].geometry.toNonIndexed(),
+      band: nodes["Cylinder001_03_-_Default_0"].geometry.toNonIndexed(),
+    }),
+    [nodes],
+  );
+
+  useEffect(
+    () => () => {
+      wireframeGeometries.hat.dispose();
+      wireframeGeometries.brim.dispose();
+      wireframeGeometries.band.dispose();
+    },
+    [wireframeGeometries],
+  );
 
   const [spring, api] = useSpring(() => ({
     scale: [0, 0, 0], // start invisible
@@ -64,10 +81,10 @@ export const KrustyKrabHat = ({
         rotation={[-Math.PI / 2, 0, 0]}
         scale={[0.823, 0.773, 1]}
       >
-        <mesh
+          <mesh
           castShadow
           receiveShadow
-          geometry={nodes["Cylinder001_02_-_Default_0"].geometry}
+          geometry={wireframeGeometries.hat}
           material={materials["02_-_Default"]}
         >
           <meshToonMaterial
@@ -78,10 +95,10 @@ export const KrustyKrabHat = ({
             <Wireframe thickness={0.04} backfaceStroke={outlineColor} />
           )}
         </mesh>
-        <mesh
+          <mesh
           castShadow
           receiveShadow
-          geometry={nodes["Cylinder001_01_-_Default_0"].geometry}
+          geometry={wireframeGeometries.brim}
           material={materials["01_-_Default"]}
         >
           <meshToonMaterial
@@ -92,10 +109,10 @@ export const KrustyKrabHat = ({
             <Wireframe thickness={0.04} backfaceStroke={outlineColor} />
           )}
         </mesh>
-        <mesh
+          <mesh
           castShadow
           receiveShadow
-          geometry={nodes["Cylinder001_03_-_Default_0"].geometry}
+          geometry={wireframeGeometries.band}
           material={materials["03_-_Default"]}
         >
           <meshToonMaterial

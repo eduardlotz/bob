@@ -17,6 +17,7 @@ import { useGLBridge } from "@/store/core/gl";
 import { createPortal } from "react-dom";
 import { AppInfo, TabButton, TabPanel } from "./ui";
 import { FillColumn, FillRow } from "@/layout";
+import { useI18n } from "@/i18n";
 
 export const CameraIcon = () => (
   <img src={"/images/app-logos/camera.png"} height={80} width={80} />
@@ -202,6 +203,7 @@ function downloadPhoto(photo: CapturedPhoto) {
 const APP_ID: CameraViewId = "phone:camera";
 
 export const CameraApp = () => {
+  const { messages } = useI18n();
   const gl = useGLBridge((s) => s.gl);
   const { currentView, transitionToView } = useViewStore();
   const { addPhoto, photos, deletePhoto } = useCameraStore();
@@ -365,7 +367,7 @@ export const CameraApp = () => {
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                 >
-                  Noch nichts hier..
+                  {messages.camera.gallery.empty}
                 </AppInfo>
               </FillColumn>
             )}

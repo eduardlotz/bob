@@ -17,7 +17,7 @@ export const DEFAULT_SOUND_CONFIGS: SoundConfig[] = [
     type: "tap",
     category: "tap",
     volume: 0.3,
-    pool: 12,
+    pool: 16,
     detune: {
       enabled: true,
       minSemitones: -2,
@@ -25,8 +25,8 @@ export const DEFAULT_SOUND_CONFIGS: SoundConfig[] = [
     },
     playback: {
       overlap: "layer",
-      maxConcurrent: 6,
-      limitBehavior: "stop-oldest",
+      maxConcurrent: 10,
+      limitBehavior: "skip-new",
     },
   }),
   defineSound({

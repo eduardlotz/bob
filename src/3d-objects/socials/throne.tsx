@@ -60,12 +60,13 @@ const _t = {
   pPos: new THREE.Vector3(),
   tQuat: new THREE.Quaternion(),
   baseQuat: new THREE.Quaternion(),
+  yawQuat: new THREE.Quaternion(),
+  pitchQuat: new THREE.Quaternion(),
   toCamera: new THREE.Vector3(),
   camFwd: new THREE.Vector3(),
   camRight: new THREE.Vector3(),
   camUp: new THREE.Vector3(),
   targetW: new THREE.Vector3(),
-  euler: new THREE.Euler(0, 0, 0, "YXZ"),
 };
 
 function resolveFocusInteraction(
@@ -79,8 +80,14 @@ function resolveFocusInteraction(
       config?.dragSensitivity ?? DEFAULT_FOCUS_INTERACTION.dragSensitivity,
     idleSpinSpeed:
       config?.idleSpinSpeed ?? DEFAULT_FOCUS_INTERACTION.idleSpinSpeed,
-    yawLimit: config?.yawLimit ?? DEFAULT_FOCUS_INTERACTION.yawLimit,
-    pitchLimit: config?.pitchLimit ?? DEFAULT_FOCUS_INTERACTION.pitchLimit,
+    yawLimit:
+      config?.yawLimit !== undefined
+        ? config.yawLimit
+        : DEFAULT_FOCUS_INTERACTION.yawLimit,
+    pitchLimit:
+      config?.pitchLimit !== undefined
+        ? config.pitchLimit
+        : DEFAULT_FOCUS_INTERACTION.pitchLimit,
   };
 }
 
@@ -144,9 +151,9 @@ export const FocusedThroneMesh = ({
       }
 
       const interaction = interactionRef.current;
-      const nextYaw = dragYaw.current - dx * interaction.dragSensitivity;
+      const nextYaw = dragYaw.current + dx * interaction.dragSensitivity;
       const nextPitch = dragPitch.current + dy * interaction.dragSensitivity;
-      yawVelocity.current = -dx * interaction.dragSensitivity * 0.12;
+      yawVelocity.current = dx * interaction.dragSensitivity * 0.12;
       pitchVelocity.current = dy * interaction.dragSensitivity * 0.12;
 
       dragYaw.current = interaction.yawLimit
@@ -191,7 +198,9 @@ export const FocusedThroneMesh = ({
       const def = throneDefs.find((throne) => throne.id === focusedThrone);
       if (!def) return;
 
-      interactionRef.current = resolveFocusInteraction(def.object.focusInteraction);
+      interactionRef.current = resolveFocusInteraction(
+        def.object.focusInteraction,
+      );
       const src = throneObjectRefs.get(focusedThrone);
 
       if (src) {
@@ -242,7 +251,9 @@ export const FocusedThroneMesh = ({
     }
 
     const interaction = interactionRef.current;
-    const lerpFactor = isDismissing.current ? FOCUS_DISMISS_LERP : FOCUS_POS_LERP;
+    const lerpFactor = isDismissing.current
+      ? FOCUS_DISMISS_LERP
+      : FOCUS_POS_LERP;
     curScale.current += (targetScale.current - curScale.current) * lerpFactor;
 
     if (!isDismissing.current) {
@@ -284,16 +295,11 @@ export const FocusedThroneMesh = ({
           pitchVelocity.current *= 0.7;
         }
       }
-      _t.euler.set(
-        dragPitch.current,
-        spin.current + dragYaw.current,
-        0,
-        "YXZ",
-      );
-
-      _t.tQuat.setFromEuler(_t.euler);
-      _t.baseQuat.copy(camera.quaternion).multiply(_t.tQuat);
-      curWorldQuat.current.slerp(_t.baseQuat, FOCUS_POS_LERP * 1.8);
+      _t.baseQuat.copy(camera.quaternion);
+      _t.yawQuat.setFromAxisAngle(_t.camUp, spin.current + dragYaw.current);
+      _t.pitchQuat.setFromAxisAngle(_t.camRight, dragPitch.current);
+      _t.tQuat.copy(_t.yawQuat).multiply(_t.pitchQuat).multiply(_t.baseQuat);
+      curWorldQuat.current.slerp(_t.tQuat, FOCUS_POS_LERP * 1.8);
     }
 
     groupRef.current.matrixWorld.decompose(_t.pPos, _t.pQuat, _t.pScale);
@@ -316,7 +322,9 @@ export const FocusedThroneMesh = ({
   if (!currentDef) return null;
 
   const ObjectComponent = currentDef.object.Component;
-  const interaction = resolveFocusInteraction(currentDef.object.focusInteraction);
+  const interaction = resolveFocusInteraction(
+    currentDef.object.focusInteraction,
+  );
 
   return (
     <group
@@ -324,7 +332,9 @@ export const FocusedThroneMesh = ({
       onPointerOver={(event) => {
         event.stopPropagation();
         if (interaction.allowDrag) {
-          useCursorStore.setState({ variant: dragging.current ? "grabbing" : "grab" });
+          useCursorStore.setState({
+            variant: dragging.current ? "grabbing" : "grab",
+          });
         }
       }}
       onPointerOut={() => {
@@ -388,6 +398,8 @@ export const Throne = memo(
   }) => {
     const { setHoveredObject } = useFloatingBar();
     const { locale } = useI18n();
+    const localizedMessages =
+      socialsMessages[locale as keyof typeof socialsMessages];
     const setFocused = useSocialsStore((state) => state.setFocused);
     const clearFocus = useSocialsStore((state) => state.clearFocus);
     const focusedThrone = useSocialsStore((state) => state.focusedThrone);
@@ -408,6 +420,8 @@ export const Throne = memo(
       [def.object.focusInteraction],
     );
     const pedestalHeight = def.pedestalHeight ?? DEFAULT_PEDESTAL_H;
+    const showPedestal = def.showPedestal !== false;
+    const objectY = showPedestal ? pedestalHeight + 0.02 : 0;
 
     const bodyColor = new THREE.Color(BODY_MATERIAL.color);
     const topPlateColor = new THREE.Color(TOP_PLATE_MATERIAL.color);
@@ -416,10 +430,13 @@ export const Throne = memo(
       (event: ThreeEvent<PointerEvent>) => {
         if (!viewActive || focusedThrone) return;
         event.stopPropagation();
-        setHoveredObject({ title: socialsMessages[locale][def.id].label });
+        setHoveredObject({
+          title:
+            localizedMessages[def.id as keyof typeof localizedMessages].label,
+        });
         document.body.style.cursor = "pointer";
       },
-      [def.id, focusedThrone, locale, setHoveredObject, viewActive],
+      [def.id, focusedThrone, localizedMessages, setHoveredObject, viewActive],
     );
 
     const onOut = useCallback(() => {
@@ -444,47 +461,57 @@ export const Throne = memo(
 
     return (
       <group
-        position={[def.x, 0, def.z]}
+        position={[def.x, def.y, def.z]}
         onPointerOver={onOver}
         onPointerOut={onOut}
         onClick={onClick}
       >
-        <mesh position={[0, pedestalHeight / 2, 0]} castShadow receiveShadow>
-          <boxGeometry args={[PEDESTAL_W, pedestalHeight, PEDESTAL_W]} />
-          <meshStandardMaterial
-            color={bodyColor}
-            roughness={BODY_MATERIAL.roughness}
-            metalness={BODY_MATERIAL.metalness}
-          />
-        </mesh>
+        {showPedestal && (
+          <>
+            <mesh
+              position={[0, pedestalHeight / 2, 0]}
+              castShadow
+              receiveShadow
+            >
+              <boxGeometry args={[PEDESTAL_W, pedestalHeight, PEDESTAL_W]} />
+              <meshStandardMaterial
+                color={bodyColor}
+                roughness={BODY_MATERIAL.roughness}
+                metalness={BODY_MATERIAL.metalness}
+              />
+            </mesh>
 
-        <mesh position={[0, 0.025, 0]}>
-          <boxGeometry args={[PEDESTAL_W + 0.004, 0.018, PEDESTAL_W + 0.004]} />
-          <meshStandardMaterial
-            color={bodyColor}
-            roughness={BODY_MATERIAL.roughness}
-            metalness={BODY_MATERIAL.metalness}
-          />
-        </mesh>
+            <mesh position={[0, 0.025, 0]}>
+              <boxGeometry
+                args={[PEDESTAL_W + 0.004, 0.018, PEDESTAL_W + 0.004]}
+              />
+              <meshStandardMaterial
+                color={bodyColor}
+                roughness={BODY_MATERIAL.roughness}
+                metalness={BODY_MATERIAL.metalness}
+              />
+            </mesh>
 
-        <mesh position={[0, pedestalHeight + 0.011, 0]} castShadow>
-          <boxGeometry
-            args={[
-              PEDESTAL_W + PLATFORM_OVERHANG,
-              0.02,
-              PEDESTAL_W + PLATFORM_OVERHANG,
-            ]}
-          />
-          <meshStandardMaterial
-            color={topPlateColor}
-            roughness={TOP_PLATE_MATERIAL.roughness}
-            metalness={TOP_PLATE_MATERIAL.metalness}
-          />
-        </mesh>
+            <mesh position={[0, pedestalHeight + 0.011, 0]} castShadow>
+              <boxGeometry
+                args={[
+                  PEDESTAL_W + PLATFORM_OVERHANG,
+                  0.02,
+                  PEDESTAL_W + PLATFORM_OVERHANG,
+                ]}
+              />
+              <meshStandardMaterial
+                color={topPlateColor}
+                roughness={TOP_PLATE_MATERIAL.roughness}
+                metalness={TOP_PLATE_MATERIAL.metalness}
+              />
+            </mesh>
+          </>
+        )}
 
         <group
           ref={objectGroupRef}
-          position={[0, pedestalHeight + 0.02, 0]}
+          position={[0, objectY, 0]}
           scale={focused ? 0 : THRONE_OBJECT_SCALE}
         >
           <ObjectComponent

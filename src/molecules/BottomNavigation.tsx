@@ -12,7 +12,6 @@ import {
 import { MenuIcon } from "@/icons/menu";
 import { CloseIcon } from "@/icons/close";
 import { useKeyPress } from "@/hooks/useKeyPress";
-import { Magnetic } from "@/layout/Magnetic";
 import { HugColumn, HugRow } from "@/layout";
 import { TapUpgrades } from "./tapUpgrades";
 import { MenuButton } from "@/layout/atoms";
@@ -34,12 +33,7 @@ export function BottomNavigation() {
     isObjectView,
   } = useViewStore();
 
-  const {
-    currentRoute,
-    showOptions,
-    toggleOptions,
-    closeOptionsWithAnimation,
-  } = useAppStore();
+  const { currentRoute, showOptions, toggleOptions } = useAppStore();
 
   const { focusedBook } = useBooksStore();
 
@@ -52,6 +46,8 @@ export function BottomNavigation() {
 
   const isHomeRoute = currentRoute === ROUTE_PATHS.HOME;
   const isPortfolioRoute = currentRoute === ROUTE_PATHS.PORTFOLIO;
+  const menuButtonSoundId =
+    showOptions || showPhone ? "ui-tap-close" : "ui-tap";
 
   const handleMenuButtonClick = () => {
     if (showOptions) {
@@ -68,8 +64,7 @@ export function BottomNavigation() {
   };
 
   const showTapUpgrades = !showOptions && isHomeRoute && !isPhoneView();
-  const showOrbitFormControls =
-    !showOptions && isPortfolioRoute && !isPhoneView() && !isImageFocused;
+
   const showBackToLobby = activeGame !== "LOBBY";
 
   const hideNavigation =
@@ -93,7 +88,6 @@ export function BottomNavigation() {
       transition={{ delay: SCENE_REVEAL_DURATION }}
     >
       <TapUpgrades show={showTapUpgrades} />
-      {/* <OrbitFormControls show={showOrbitFormControls} /> */}
       <BackToLobbyButton show={showBackToLobby} />
       <HugRow $gap={"8px"} style={{ height: showBackToLobby ? 0 : "auto" }}>
         <AnimatePresence mode="popLayout">
@@ -101,6 +95,7 @@ export function BottomNavigation() {
             <MenuButton
               key="menu-button"
               onClick={handleMenuButtonClick}
+              data-ui-sound-id={menuButtonSoundId}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               $isActive={showOptions}
@@ -149,7 +144,9 @@ export function BottomNavigation() {
           )}
 
           {!showBackToLobby && !hideNavigation && (
-            <BobPhone isOpen={showPhone} setIsOpen={handlePhoneClick} />
+            <motion.div key="bob-phone-wrapper">
+              <BobPhone isOpen={showPhone} setIsOpen={handlePhoneClick} />
+            </motion.div>
           )}
         </AnimatePresence>
       </HugRow>

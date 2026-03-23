@@ -122,7 +122,12 @@ export function migrateCoreStore(persisted: any, fromVersion: number) {
   if (fromVersion < GAME_STORE_VERSION.V5) {
     state.worlds = normalizeWorlds(state.worlds);
     state.tapEffects = normalizeTapEffects(state.tapEffects);
+
     delete state.decorations;
+  }
+
+  if (fromVersion < GAME_STORE_VERSION.V6) {
+    state.bobItems = normalizeBobItems(state.bobItems);
   }
 
   return {

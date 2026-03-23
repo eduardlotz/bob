@@ -2,7 +2,7 @@ import { defineMessages } from "@/i18n/defineMessages";
 
 export const viewControlsMessages = defineMessages({
   de: {
-    backLabel: "Zurueck",
+    backLabel: "Zurück",
     viewTitles: {
       desk: "Musik & Mixes",
       bookshelf: "Buchsammlung",

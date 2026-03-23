@@ -1,305 +1,37 @@
-import { AnimatePresence, motion } from "motion/react";
+import { playUISound } from "@/utils/soundSystem";
 import {
   useCallback,
   useEffect,
   useRef,
-  useState,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import styled from "styled-components";
+import { useI18n } from "@/i18n";
 
-import { ItemStatusChip } from "@/apps/ui";
-import { useSocialsStore } from "@/store/socials";
-import { playUISound } from "@/utils/soundSystem";
-
-import { SOCIAL_LINKS, TIMELINE_ENTRIES } from "./contentData";
+import { SOCIAL_LINKS } from "./contentData";
 import { getSocialLogoDataUrl } from "./helper";
-
-const OVERLAY_PANEL_COLOR = "#f2f2f3";
-
-const List = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-`;
-
-const LinkCard = styled.a<{ $raised?: boolean }>`
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 14px 16px;
-  border-radius: 22px;
-  background: ${({ $raised }) => ($raised ? "rgba(0,0,0,0.035)" : "transparent")};
-  text-decoration: none;
-  color: inherit;
-  transition:
-    transform 0.18s ease,
-    background 0.18s ease;
-
-  &:hover {
-    transform: translateX(3px);
-    background: rgba(0, 0, 0, 0.045);
-  }
-`;
-
-const IconBadge = styled.div<{ $color: string; $ink?: string }>`
-  width: 56px;
-  height: 56px;
-  border-radius: 18px;
-  background: ${({ $color }) => $color};
-  color: ${({ $ink }) => $ink ?? "#ffffff"};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.15rem;
-  font-weight: 800;
-  letter-spacing: -0.05em;
-  flex-shrink: 0;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    0 10px 18px rgba(0, 0, 0, 0.07);
-`;
-
-const LinkMeta = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-`;
-
-const LinkTitle = styled.span`
-  font-size: 0.92rem;
-  font-weight: 800;
-  color: rgba(18, 18, 18, 0.92);
-`;
-
-const LinkHandle = styled.span`
-  font-size: 0.76rem;
-  font-weight: 600;
-  color: rgba(18, 18, 18, 0.42);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-`;
-
-const TimelineWrap = styled.div`
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  padding: 20px 18px 12px 0;
-  margin-left: 10px;
-
-  &::before {
-    content: "";
-    position: absolute;
-    left: 27px;
-    top: 20px;
-    bottom: 0;
-    width: 3px;
-    border-radius: 99px;
-    background: rgba(0, 0, 0, 0.08);
-  }
-`;
-
-const TimelineRow = styled.div`
-  display: grid;
-  grid-template-columns: 56px 1fr;
-  gap: 14px;
-  align-items: center;
-  position: relative;
-  z-index: 1;
-`;
-
-const TimelineEmoji = styled.div`
-  justify-self: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  background: ${OVERLAY_PANEL_COLOR};
-  box-shadow:
-    0 0 0 5px ${OVERLAY_PANEL_COLOR},
-    inset 0 0 0 1px rgba(0, 0, 0, 0.05);
-  font-size: 1.3rem;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const TimelineBody = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-`;
-
-const TimelineDate = styled.span`
-  font-size: 0.88rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: rgba(18, 18, 18, 0.45);
-`;
-
-const TimelineTitle = styled.span`
-  font-size: 0.96rem;
-  font-weight: 800;
-  line-height: 1.15;
-  color: rgba(18, 18, 18, 0.94);
-`;
-
-const TimelineDescription = styled.p`
-  margin: 2px 0 0;
-  font-size: 0.84rem;
-  font-weight: 500;
-  line-height: 1.25;
-  color: rgba(18, 18, 18, 0.48);
-`;
-
-const FavoritesGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px 16px;
-`;
-
-const FavoriteCoverStage = styled.div`
-  position: relative;
-  aspect-ratio: 1 / 1;
-  width: 100%;
-  min-width: 0;
-`;
-
-const FavoriteImageFrame = styled.div`
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.72);
-  box-shadow:
-    0 10px 20px rgba(0, 0, 0, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22);
-  transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease;
-`;
-
-const FavoriteImage = styled.img`
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-`;
-
-const FavoriteFallbackSurface = styled.div<{ $gradient: string }>`
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background:
-    radial-gradient(circle at 20% 18%, rgba(255, 255, 255, 0.74), transparent 34%),
-    linear-gradient(180deg, rgba(255, 250, 244, 0.94), rgba(237, 230, 220, 0.94));
-
-  &::after {
-    content: "";
-    position: absolute;
-    inset: 16%;
-    border-radius: 999px;
-    background: ${({ $gradient }) => $gradient};
-    box-shadow:
-      0 18px 36px rgba(0, 0, 0, 0.18),
-      inset 0 1px 0 rgba(255, 255, 255, 0.28);
-  }
-
-  &::before {
-    content: "";
-    position: absolute;
-    width: 34%;
-    aspect-ratio: 1;
-    border-radius: 999px;
-    top: 22%;
-    left: 26%;
-    background: rgba(255, 255, 255, 0.18);
-    filter: blur(2px);
-    z-index: 1;
-  }
-`;
-
-const FavoriteMeta = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  padding: 0 2px;
-`;
-
-const FavoriteSubtitle = styled.span`
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: rgba(18, 18, 18, 0.42);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-`;
-
-const FavoriteTitle = styled.span`
-  font-size: 0.82rem;
-  font-weight: 800;
-  line-height: 1.15;
-  color: rgba(18, 18, 18, 0.92);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-`;
-
-const FavoritePlatformBadge = styled.div<{ $platformColor: string }>`
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 14px;
-  background: ${({ $platformColor }) => $platformColor};
-  color: #ffffff;
-  box-shadow:
-    0 8px 18px rgba(0, 0, 0, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
-  transform: translate(4px, -4px);
-`;
-
-const FavoriteCard = styled.a`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  text-decoration: none;
-  color: inherit;
-  min-width: 0;
-
-  &:hover ${FavoriteImageFrame} {
-    transform: translateY(-4px);
-    box-shadow: 0 18px 28px rgba(0, 0, 0, 0.12);
-  }
-`;
+import { socialsMessages } from "./socials.messages";
+import { AppInfo } from "@/apps/ui";
 
 const SocialsCanvasStage = styled.div`
   position: relative;
   display: flex;
   flex-direction: column;
+  gap: 12px;
 `;
 
 const SocialsCanvasFrame = styled.div`
   position: relative;
   width: 100%;
-  min-height: 340px;
+  min-height: 360px;
   border-radius: 28px;
   overflow: hidden;
   background:
-    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 36%),
+    radial-gradient(
+      circle at 20% 20%,
+      rgba(255, 255, 255, 0.95),
+      rgba(255, 255, 255, 0) 36%
+    ),
     linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(0, 0, 0, 0.03)),
     rgba(0, 0, 0, 0.035);
   box-shadow:
@@ -310,7 +42,7 @@ const SocialsCanvasFrame = styled.div`
 const SocialsCanvasElement = styled.canvas`
   display: block;
   width: 100%;
-  height: 340px;
+  height: 360px;
   cursor: grab;
   touch-action: none;
 `;
@@ -327,91 +59,30 @@ const VisuallyHiddenLinks = styled.div`
   border: 0;
 `;
 
-function getPlatformMeta(href: string) {
-  if (href.includes("spotify")) {
-    return { label: "Spotify", color: "#1db954" };
-  }
+const FrameCaption = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 0 4px;
+`;
 
-  return { label: "SoundCloud", color: "#ff7f1f" };
-}
+const FrameCaptionTitle = styled.span`
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: rgba(18, 18, 18, 0.78);
+`;
 
-function PlatformGlyph({ href }: { href: string }) {
-  if (href.includes("spotify")) {
-    return (
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden>
-        <path
-          d="M6.4 9.3c3.7-1.1 7.9-.7 11 1.1"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-        <path
-          d="M7.4 12.7c2.7-.8 5.7-.5 8 .8"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-        <path
-          d="M8.3 15.9c1.8-.5 3.8-.3 5.3.5"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-      </svg>
-    );
-  }
-
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden>
-      <path d="M9.7 16.9h7.7a3 3 0 0 0 0-6 4.4 4.4 0 0 0-8.1-1.2A2.7 2.7 0 0 0 9.7 16.9Z" />
-      <rect x="4.5" y="11.3" width="1.4" height="5.6" rx="0.7" />
-      <rect x="6.8" y="9.7" width="1.4" height="7.2" rx="0.7" />
-      <rect x="9.1" y="8.4" width="1.4" height="8.5" rx="0.7" />
-    </svg>
-  );
-}
-
-function FavoritePlatformBadgeMark({ href }: { href: string }) {
-  const platform = getPlatformMeta(href);
-
-  return (
-    <FavoritePlatformBadge $platformColor={platform.color} aria-label={platform.label}>
-      <PlatformGlyph href={href} />
-    </FavoritePlatformBadge>
-  );
-}
-
-function FavoriteCover({
-  title,
-  artworkUrl,
-  fallbackColors,
-}: {
-  title: string;
-  artworkUrl: string | null;
-  fallbackColors: [string, string, string];
-}) {
-  const [imageFailed, setImageFailed] = useState(false);
-  const gradient = `linear-gradient(145deg, ${fallbackColors[0]}, ${fallbackColors[1]} 58%, ${fallbackColors[2]})`;
-  const showFallback = !artworkUrl || imageFailed;
-
-  useEffect(() => {
-    setImageFailed(false);
-  }, [artworkUrl]);
-
-  return (
-    <>
-      {showFallback && <FavoriteFallbackSurface $gradient={gradient} aria-hidden />}
-      {artworkUrl && !imageFailed && (
-        <FavoriteImage
-          src={artworkUrl}
-          alt={title}
-          loading="lazy"
-          onError={() => setImageFailed(true)}
-        />
-      )}
-    </>
-  );
-}
+const FrameCaptionText = styled(AppInfo)`
+  margin: 0;
+  opacity: 0.7;
+  padding: 0.35rem 0.7rem;
+  white-space: normal;
+  line-height: 1.4;
+  justify-content: flex-start;
+  text-align: center;
+  border-radius: 0.9rem;
+`;
 
 type SocialCanvasBall = {
   id: string;
@@ -437,18 +108,25 @@ function createInitialSocialBalls(
   const centerX = width / 2;
   const centerY = height / 2;
   const orbit = Math.min(width, height) * 0.24;
-  const radius = clampValue(Math.min(width, height) * 0.12, 42, 58);
+  const baseRadius = clampValue(Math.min(width, height) * 0.12, 38, 54);
+  const sizeFactors = [1.18, 0.9, 1.06, 1.24, 0.94, 1.1] as const;
 
   return SOCIAL_LINKS.map((link, index) => {
     const angle = (index / SOCIAL_LINKS.length) * Math.PI * 2 - Math.PI / 2;
+    const radius = clampValue(
+      baseRadius * sizeFactors[index % sizeFactors.length],
+      36,
+      66,
+    );
+
     return {
       id: link.id,
       href: link.href,
       label: link.label,
       x: centerX + Math.cos(angle) * orbit,
       y: centerY + Math.sin(angle) * orbit,
-      vx: Math.cos(angle + Math.PI / 3) * 0.7,
-      vy: Math.sin(angle + Math.PI / 3) * 0.7,
+      vx: Math.cos(angle + Math.PI / 3) * 1.1,
+      vy: Math.sin(angle + Math.PI / 3) * 1.1,
       radius,
       color: link.color,
       textColor: link.textColor,
@@ -457,6 +135,8 @@ function createInitialSocialBalls(
 }
 
 export function SocialsOverlayContent() {
+  const { locale } = useI18n();
+  const messages = socialsMessages[locale as keyof typeof socialsMessages];
   const frameRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const ballsRef = useRef<SocialCanvasBall[]>([]);
@@ -507,7 +187,7 @@ export function SocialsOverlayContent() {
       imagesRef.current = Object.fromEntries(entries);
     };
 
-    load();
+    void load();
 
     return () => {
       cancelled = true;
@@ -578,26 +258,26 @@ export function SocialsOverlayContent() {
           continue;
         }
 
-        ball.vy += 0.045 * dt;
-        ball.vx *= 0.992;
-        ball.vy *= 0.992;
+        ball.vy += 0.062 * dt;
+        ball.vx *= 0.996;
+        ball.vy *= 0.996;
         ball.x += ball.vx * dt;
         ball.y += ball.vy * dt;
 
         if (ball.x < ball.radius) {
           ball.x = ball.radius;
-          ball.vx *= -0.88;
+          ball.vx *= -0.94;
         } else if (ball.x > width - ball.radius) {
           ball.x = width - ball.radius;
-          ball.vx *= -0.88;
+          ball.vx *= -0.94;
         }
 
         if (ball.y < ball.radius) {
           ball.y = ball.radius;
-          ball.vy *= -0.88;
+          ball.vy *= -0.94;
         } else if (ball.y > height - ball.radius) {
           ball.y = height - ball.radius;
-          ball.vy *= -0.88;
+          ball.vy *= -0.94;
         }
       }
 
@@ -629,7 +309,7 @@ export function SocialsOverlayContent() {
           const relativeVelocity = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
           if (relativeVelocity > 0) continue;
 
-          const impulse = (-(1 + 0.86) * relativeVelocity) / 2;
+          const impulse = (-(1 + 0.94) * relativeVelocity) / 2;
           if (drag.ballId !== a.id) {
             a.vx -= impulse * nx;
             a.vy -= impulse * ny;
@@ -660,7 +340,13 @@ export function SocialsOverlayContent() {
 
         if (image?.complete) {
           const iconSize = ball.radius * 1.08;
-          ctx.drawImage(image, -iconSize / 2, -iconSize / 2, iconSize, iconSize);
+          ctx.drawImage(
+            image,
+            -iconSize / 2,
+            -iconSize / 2,
+            iconSize,
+            iconSize,
+          );
         }
 
         ctx.restore();
@@ -703,7 +389,9 @@ export function SocialsOverlayContent() {
             const { x, y } = getLocalPointer(event);
             const hitBall = [...ballsRef.current]
               .reverse()
-              .find((ball) => Math.hypot(ball.x - x, ball.y - y) <= ball.radius);
+              .find(
+                (ball) => Math.hypot(ball.x - x, ball.y - y) <= ball.radius,
+              );
 
             if (!hitBall) return;
 
@@ -731,7 +419,10 @@ export function SocialsOverlayContent() {
             const dy = y - dragRef.current.prevY;
             if (
               !dragRef.current.moved &&
-              Math.hypot(x - dragRef.current.startX, y - dragRef.current.startY) > 8
+              Math.hypot(
+                x - dragRef.current.startX,
+                y - dragRef.current.startY,
+              ) > 8
             ) {
               dragRef.current.moved = true;
             }
@@ -741,8 +432,8 @@ export function SocialsOverlayContent() {
               (entry) => entry.id === dragRef.current.ballId,
             );
             if (ball) {
-              ball.vx = (dx / dt) * 10;
-              ball.vy = (dy / dt) * 10;
+              ball.vx = (dx / dt) * 13;
+              ball.vy = (dy / dt) * 13;
             }
 
             dragRef.current.x = x;
@@ -782,63 +473,20 @@ export function SocialsOverlayContent() {
         />
         <VisuallyHiddenLinks>
           {SOCIAL_LINKS.map((link) => (
-            <a key={link.id} href={link.href} target="_blank" rel="noopener noreferrer">
+            <a
+              key={link.id}
+              href={link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               {link.label}
             </a>
           ))}
         </VisuallyHiddenLinks>
       </SocialsCanvasFrame>
+      <FrameCaption>
+        <FrameCaptionText>{messages.socials.overlayHint}</FrameCaptionText>
+      </FrameCaption>
     </SocialsCanvasStage>
-  );
-}
-
-export function TimelineOverlayContent() {
-  return (
-    <TimelineWrap>
-      {TIMELINE_ENTRIES.map((entry) => (
-        <TimelineRow key={entry.id}>
-          <TimelineEmoji>{entry.emoji}</TimelineEmoji>
-          <TimelineBody>
-            <TimelineDate>{entry.date}</TimelineDate>
-            <TimelineTitle>{entry.title}</TimelineTitle>
-            {entry.description && (
-              <TimelineDescription>{entry.description}</TimelineDescription>
-            )}
-          </TimelineBody>
-        </TimelineRow>
-      ))}
-    </TimelineWrap>
-  );
-}
-
-export function FavoritesOverlayContent() {
-  const favorites = useSocialsStore((state) => state.resolvedFavorites);
-
-  return (
-    <FavoritesGrid>
-      {favorites.map((favorite) => (
-        <FavoriteCard
-          key={favorite.id}
-          href={favorite.href}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <FavoriteCoverStage>
-            <FavoritePlatformBadgeMark href={favorite.href} />
-            <FavoriteImageFrame>
-              <FavoriteCover
-                title={favorite.title}
-                artworkUrl={favorite.artworkUrl}
-                fallbackColors={favorite.fallbackGradient.colors}
-              />
-            </FavoriteImageFrame>
-          </FavoriteCoverStage>
-          <FavoriteMeta>
-            <FavoriteSubtitle>{favorite.artist}</FavoriteSubtitle>
-            <FavoriteTitle>{favorite.title}</FavoriteTitle>
-          </FavoriteMeta>
-        </FavoriteCard>
-      ))}
-    </FavoritesGrid>
   );
 }

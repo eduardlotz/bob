@@ -47,7 +47,8 @@ export enum GAME_STORE_VERSION {
   V4 = 1000003, // version 1.00.04
 
   V5 = 100100, // version 1.01.100
-  LATEST = V5,
+  V6 = 100101, // version 1.01.101
+  LATEST = V6,
 }
 
 // TODO: plan refactor to include component inside item properties
@@ -366,9 +367,7 @@ interface GameStateActions {
   toggleWorldSoundId?: (id: string) => void;
   setTapEffectAudioId?: (id?: string) => void;
   setOrbitForm: (form: OrbitForm) => void;
-  updateDebugCameraSettings: (
-    updates: Partial<DebugCameraSettings>,
-  ) => void;
+  updateDebugCameraSettings: (updates: Partial<DebugCameraSettings>) => void;
   resetDebugCameraSettings: () => void;
   updateDebugLightSettings: (updates: Partial<DebugLightSettings>) => void;
   resetDebugLightSettings: () => void;

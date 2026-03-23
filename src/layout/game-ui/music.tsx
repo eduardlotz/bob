@@ -14,6 +14,7 @@ import styled from "styled-components";
 import { FillRow, HugRow } from "..";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/icons/chevron";
 import { useCoreStore } from "@/store";
+import { useI18n } from "@/i18n";
 
 const SOUNDCLOUD_URLS = [
   "https://soundcloud.com/captainlowie/ist-das-leben-nicht-schoen",
@@ -47,6 +48,7 @@ export const MusicOverlay = (props: {
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const { cookiesAccepted, acceptCookies } = useCoreStore();
+  const { messages } = useI18n();
 
   const total = SOUNDCLOUD_URLS.length;
 
@@ -79,9 +81,7 @@ export const MusicOverlay = (props: {
                 borderRadius: "2rem",
               }}
             >
-              <p>
-                Es werden Daten an SoundCloud übertragen und Cookies gesetzt.
-              </p>
+              <p>{messages.music.cookieNotice}</p>
 
               <SoundcloudButton
                 onClick={acceptCookies}
@@ -90,7 +90,7 @@ export const MusicOverlay = (props: {
                   cursor: "pointer",
                 }}
               >
-                Player laden
+                {messages.music.loadPlayer}
               </SoundcloudButton>
             </div>
           ) : (
