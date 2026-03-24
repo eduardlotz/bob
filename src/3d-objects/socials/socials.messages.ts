@@ -4,7 +4,7 @@ export const socialsMessages = defineMessages({
   de: {
     socials: {
       label: "Socials",
-      overlayHint: "Klick eine Bubble an, um den Link zu öffnen.",
+      overlayHint: "Klick eine Kugel an, um den Link zu öffnen.",
     },
   },
   en: {

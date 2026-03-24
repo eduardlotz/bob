@@ -22,10 +22,11 @@ export const worldMessages = defineMessages({
     },
     world_moon: {
       name: "Mond",
-      description: "Ein warmer Mondboden mit Kratern und fliegenden Meteoriten.",
+      description:
+        "Ein warmer Mondboden mit Kratern und fliegenden Meteoriten.",
     },
     world_space: {
-      name: "Weltall",
+      name: "Im All",
       description:
         "Ein dunkler Sternenhimmel mit weiter Tiefe und schwächerem Licht.",
     },
@@ -52,7 +53,7 @@ export const worldMessages = defineMessages({
       description: "A warm moon surface with craters and flying meteors.",
     },
     world_space: {
-      name: "Space",
+      name: "In Space",
       description: "A dark starry sky with more depth and softer lighting.",
     },
   },
