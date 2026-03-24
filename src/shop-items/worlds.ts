@@ -88,7 +88,7 @@ export const initialWorlds: WorldItem[] = [
   },
   {
     id: "world_moon",
-    name: "Mond",
+    name: "Auf dem Mond",
     description: "Ein warmer Mondboden mit Kratern und fliegenden Meteoriten.",
     cost: 5000,
     purchased: false,
@@ -112,10 +112,10 @@ export const initialWorlds: WorldItem[] = [
   },
   {
     id: "world_space",
-    name: "Weltall",
+    name: "Im All",
     description:
       "Ein dunkler Sternenhimmel mit weiter Tiefe und schwächerem Licht.",
-    cost: 4000,
+    cost: 10000,
     purchased: false,
     enabled: false,
     type: "world",
