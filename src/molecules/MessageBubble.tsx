@@ -9,15 +9,14 @@ import { useAppStore, useViewStore } from "@/store";
 import { useCoreStore } from "@/store/core/store";
 import { textSynth } from "@/utils/sound/textSynth";
 import { resumeAudioContext, unlockAudioContext } from "@/utils/soundSystem";
-import { DEFAULT_TEXT_VOLUME } from "@/utils/sound/defaults";
 import { format } from "date-fns/format";
 
-const AUDIO_CHAR_DURATION_MS = 30;
-const AUDIO_LEAD_TIME_MS = 20;
-const TYPING_SPEED_MS = 20;
-const BASE_LINE_DELAY_MS = 500;
-const CHAR_READING_MS = 50;
-const MIN_DISMISS_MS = 1800;
+const AUDIO_CHAR_DURATION_MS = 22;
+const AUDIO_LEAD_TIME_MS = 22;
+const TYPING_SPEED_MS = 22;
+const BASE_LINE_DELAY_MS = 1200;
+const CHAR_READING_MS = 55;
+const MIN_DISMISS_MS = 600;
 
 export interface MessageBubbleProps {
   anchor?: [number, number, number];
@@ -241,7 +240,12 @@ export const MessageBubble = memo(function MessageBubble({
       if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
       if (lineTimerRef.current) clearTimeout(lineTimerRef.current);
     };
-  }, [activeMessage?.config.id, isReady, processLinesRecursive, requestEmotion]);
+  }, [
+    activeMessage?.config.id,
+    isReady,
+    processLinesRecursive,
+    requestEmotion,
+  ]);
 
   // TODO: reveal full message on click, dismiss if all revealed
   const handleClick = () => {

@@ -1,38 +1,39 @@
 import { defineMessages } from "@/i18n/defineMessages";
 import type { MessageConfig } from "./config";
 
-export const routeMessageConfigs = defineMessages<Record<string, MessageConfig>>({
+export const routeMessageConfigs = defineMessages<
+  Record<string, MessageConfig>
+>({
   de: {
     about_welcome: {
-      id: "about_welcome",
+      id: "about_welcome_v3",
       text: [
-        "Hier fehlt leider noch einiges",
-        "Sorry 🥀😔",
-        "im Karton kannst du aber schon ein paar von Eddies Interessen finden",
-        "such doch mal nach dem Plumbob 👀",
+        "Hier findest du mehr über Eddie und seine Interessen :)",
+        "Der Raum ist noch nicht ganz fertig, aber es gibt schon einiges zu entdecken",
+        "Tap dich einfach durch und lern ein paar (neue) Dinge über die Person hinter Website ✨",
       ],
       label: "Bob",
       options: {
         typingSpeedMs: 25,
-        baseDismissMs: 2000,
-        contentLengthFactorMs: 50,
+        baseDismissMs: 1900,
+        contentLengthFactorMs: 48,
         tailEnabled: false,
         emotion: { state: "happy", durationMs: 3000 },
       },
       repeatRule: "oncePerPersist",
     },
     portfolio_welcome: {
-      id: "portfolio_welcome",
+      id: "portfolio_welcome_v3",
       text: [
         "Willkommen im Portfolio-Universum",
-        "Hier kannst du dir private Arbeiten von Eddie anschauen",
-        "Tipp ein Bild an, um mehr Infos anzuzeigen. Manche enthalten sogar Links 🔗",
+        "Hier kannst du dir Freizeit-Projekte von Eddie anschauen",
+        "Tap ein Bild an, um mehr Infos anzuzeigen",
       ],
       label: "Bob",
       options: {
         typingSpeedMs: 25,
-        baseDismissMs: 1000,
-        contentLengthFactorMs: 50,
+        baseDismissMs: 1400,
+        contentLengthFactorMs: 48,
         tailEnabled: false,
         emotion: { state: "happy", durationMs: 3000 },
       },
@@ -40,49 +41,53 @@ export const routeMessageConfigs = defineMessages<Record<string, MessageConfig>>
       positionOffset: [0, 5, 0],
     },
     minigames_welcome: {
-      id: "minigames_welcome",
+      id: "minigames_welcome_v3",
       text: [
-        "ja mooooin, bock was zu zocken??",
-        "hier gibt's Ping Pong 🏓, Flappy Bird 🐦 und den Slotautomaten 🎰",
+        "ja halloooo, bock was zu zocken??",
+        "tap einfach einen gegenstand an, um das Spiel dafür auszuprobieren",
+        "ich merk mir sogar deinen highscore 🧠",
       ],
       label: "Bob",
       repeatRule: "oncePerPersist",
       options: {
-        emotion: { state: "happy", durationMs: 4000 },
+        typingSpeedMs: 25,
+        baseDismissMs: 1400,
+        contentLengthFactorMs: 48,
+        tailEnabled: false,
+        emotion: { state: "happy", durationMs: 3500 },
       },
     },
   },
   en: {
     about_welcome: {
-      id: "about_welcome",
+      id: "about_welcome_v3",
       text: [
-        "There's still quite a bit missing here",
-        "Sorry 🥀😔",
-        "but the cardboard box already holds a few of Eddie's interests",
-        "maybe look for the plumbob 👀",
+        "Here you'll find more about Eddie and his interests :)",
+        "The room isn't fully finished yet, but there's already plenty to discover",
+        "Just tap your way through and learn a few (new) things about the person behind this website ✨",
       ],
       label: "Bob",
       options: {
         typingSpeedMs: 25,
-        baseDismissMs: 2000,
-        contentLengthFactorMs: 50,
+        baseDismissMs: 1900,
+        contentLengthFactorMs: 48,
         tailEnabled: false,
         emotion: { state: "happy", durationMs: 3000 },
       },
       repeatRule: "oncePerPersist",
     },
     portfolio_welcome: {
-      id: "portfolio_welcome",
+      id: "portfolio_welcome_v3",
       text: [
         "Welcome to the portfolio universe",
-        "You can browse Eddie's personal projects here",
-        "Tap an image to see more info. Some of them even include links 🔗",
+        "Here you can check out Eddie's free-time projects",
+        "Tap an image to show more info",
       ],
       label: "Bob",
       options: {
         typingSpeedMs: 25,
-        baseDismissMs: 1000,
-        contentLengthFactorMs: 50,
+        baseDismissMs: 1400,
+        contentLengthFactorMs: 48,
         tailEnabled: false,
         emotion: { state: "happy", durationMs: 3000 },
       },
@@ -90,15 +95,20 @@ export const routeMessageConfigs = defineMessages<Record<string, MessageConfig>>
       positionOffset: [0, 5, 0],
     },
     minigames_welcome: {
-      id: "minigames_welcome",
+      id: "minigames_welcome_v3",
       text: [
-        "heyyy, feel like playing something??",
-        "there's Ping Pong 🏓, Flappy Bird 🐦, and the slot machine 🎰",
+        "well helloooo, feel like playing something??",
+        "just tap an object to try the game for it",
+        "I even remember your highscore 🧠",
       ],
       label: "Bob",
       repeatRule: "oncePerPersist",
       options: {
-        emotion: { state: "happy", durationMs: 4000 },
+        typingSpeedMs: 25,
+        baseDismissMs: 1400,
+        contentLengthFactorMs: 48,
+        tailEnabled: false,
+        emotion: { state: "happy", durationMs: 3500 },
       },
     },
   },

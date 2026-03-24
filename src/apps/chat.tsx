@@ -13,7 +13,7 @@ export const ChatIcon = () => (
 export const ChatApp = () => {
   const { archive } = useMessageStore();
   const containerRef = useRef<HTMLDivElement>(null);
-  const { locale, messages, formatDate } = useI18n();
+  const { locale, formatDate } = useI18n();
 
   useEffect(() => {
     containerRef.current?.scrollTo({
@@ -23,11 +23,6 @@ export const ChatApp = () => {
 
   return (
     <>
-      <Header $align="center" $justify="center">
-        <AppTitle>{messages.chat.title}</AppTitle>
-        <AppInfo>{messages.chat.archiveLabel}</AppInfo>
-      </Header>
-
       <HugColumn
         style={{
           width: "360px",
