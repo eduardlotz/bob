@@ -26,7 +26,7 @@ import { FISHEYE_CONFIG } from "../store/config/themes";
 import {
   attachListenerToCamera,
   playWorldSound,
-  stopBackgroundMusic,
+  stopAllWorldSounds,
 } from "@/utils/soundSystem";
 import { PortfolioScene } from "@/routes/PortfolioScene";
 import { AboutScene } from "../routes/AboutScene";
@@ -46,7 +46,7 @@ import {
 import * as THREE from "three";
 import { Color } from "three";
 
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { sileo } from "sileo";
 import { CameraGLBridge } from "@/bridges/CameraBridge";
 import { useCursor } from "@/hooks/useCursor";
@@ -208,8 +208,13 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
     previewMode,
     debugCameraSettings,
     debugLightSettings,
+    soundSystem,
+    isPaused,
   } = useCoreStore();
   const { activeGame } = useMiniGameStore();
+  const activeRouteMusicRef = useRef<string | null>(null);
+  const location = useLocation();
+  const routePath = location.pathname;
 
   const { currentRoute } = useAppStore();
 
@@ -262,7 +267,7 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
   // portfolio: pink noise
 
   const worldMusicId = useMemo(() => {
-    switch (currentRoute) {
+    switch (routePath) {
       case ROUTE_PATHS.PORTFOLIO: {
         return DEFAULT_PINK_NOISE.id;
       }
@@ -277,19 +282,31 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
         return null;
       }
     }
-  }, [activeGame, currentRoute]);
+  }, [activeGame, routePath]);
+
+  const canPlayRouteMusic =
+    soundSystem.enabled &&
+    soundSystem.masterVolume > 0 &&
+    soundSystem.worldEnabled !== false &&
+    !isPaused;
 
   useEffect(() => {
-    stopBackgroundMusic(0);
+    stopAllWorldSounds();
 
-    if (!worldMusicId) return;
+    if (!canPlayRouteMusic || !worldMusicId) {
+      activeRouteMusicRef.current = null;
+      return;
+    }
 
     playWorldSound(worldMusicId);
+    activeRouteMusicRef.current = worldMusicId;
 
     return () => {
-      stopBackgroundMusic(0);
+      if (activeRouteMusicRef.current === worldMusicId)
+        activeRouteMusicRef.current = null;
+      stopAllWorldSounds();
     };
-  }, [worldMusicId]);
+  }, [canPlayRouteMusic, worldMusicId]);
 
   const envLightPreset = useMemo(
     () =>

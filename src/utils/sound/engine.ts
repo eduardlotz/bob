@@ -280,6 +280,11 @@ const getInstancesForGroup = (group: string) =>
     .map((instanceId) => instances.get(instanceId))
     .filter((instance): instance is SoundInstance => !!instance);
 
+const getSoundIdsByType = (type: SoundType): string[] =>
+  Array.from(configs.values())
+    .filter((config) => config.type === type)
+    .map((config) => config.id);
+
 const updateInstanceVolume = (instance: SoundInstance) => {
   const howl = howls.get(instance.soundId);
   if (!howl) return;
@@ -555,7 +560,7 @@ export const enable = (): void => {
 
 export const disable = (): void => {
   state.enabled = false;
-  updateAllVolumes();
+  stopAllSounds();
 };
 
 export const start = enable;
@@ -604,6 +609,17 @@ export const stopAllTapSounds = () => {
 
 export const stopAllWorldSounds = () => {
   stopSoundsByType("world");
+
+  // Fallback: if tracking and Howler internals ever drift, hard-stop any world howl.
+  getSoundIdsByType("world").forEach((soundId) => {
+    try {
+      howls.get(soundId)?.stop();
+    } catch {}
+  });
+
+  Array.from(instances.values())
+    .filter((instance) => instance.config.type === "world")
+    .forEach((instance) => cleanupInstance(instance.id));
 };
 
 export const playUISound = (soundId: string = DEFAULT_UI_SOUND.id) => {
