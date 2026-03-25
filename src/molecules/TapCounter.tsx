@@ -10,7 +10,7 @@ import { format } from "d3-format";
 
 const FONT_PATH = "/fonts/OpenRundeBold.json";
 
-const ENGLISH_NUMBER_FORMATTER = new Intl.NumberFormat("en-US", {
+const GERMAN_FORMATTER = new Intl.NumberFormat("de-DE", {
   minimumFractionDigits: 0,
   maximumFractionDigits: 0,
 });
@@ -36,14 +36,14 @@ export const formatNumber = (num: number): string => {
   const absolute = Math.abs(num);
 
   if (absolute < 10_000) {
-    return ENGLISH_NUMBER_FORMATTER.format(Math.floor(num));
+    return GERMAN_FORMATTER.format(Math.floor(num));
   }
 
   const formatted = d3Formatter(num);
 
   return formatted.replace(/([a-zA-Z]+)/g, (si) => {
     const index = D3_SI_ORDER.indexOf(si[0]);
-    return index >= 0 ? SI_SUFFIXES[index + 1] ?? si : si;
+    return index >= 0 ? (SI_SUFFIXES[index + 1] ?? si) : si;
   });
 };
 
