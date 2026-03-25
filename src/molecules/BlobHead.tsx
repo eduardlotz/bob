@@ -8,7 +8,6 @@ import {
   Group,
   Mesh,
   MathUtils,
-  Vector3,
   Clock,
   Float32BufferAttribute,
   SphereGeometry,
@@ -259,16 +258,16 @@ export function BlobHead({
   const [idleAnimation, setIdleAnimation] = useState<"none" | "spin" | "tilt">(
     "none",
   );
-  const [idleAnimationStart, setIdleAnimationStart] = useState(0);
-  const [lastActivity, setLastActivity] = useState(Date.now());
-  const [lastIdleAnimationTime, setLastIdleAnimationTime] = useState(0);
   const [cameraZoomAnimation, setCameraZoomAnimation] = useState(false);
+  const idleAnimationStartRef = useRef(0);
+  const lastActivityRef = useRef(Date.now());
+  const lastIdleAnimationTimeRef = useRef(0);
+  const idleAnimationRef = useRef<"none" | "spin" | "tilt">("none");
 
   const { orientation, acceleration } = useDeviceOrientation();
 
   const {
     isDefaultView,
-    isAboutView,
     isNavigationView,
     viewMode,
     isTransitioning,
@@ -279,7 +278,6 @@ export function BlobHead({
     viewMode === "fixed" &&
     !isMobile &&
     (isDefaultView() ||
-      // || isAboutView()
       isNavigationView());
 
   const mousePosition = useCursor({
@@ -304,13 +302,20 @@ export function BlobHead({
     return () => clearInterval(blinkInterval);
   }, []);
 
+  useEffect(() => {
+    idleAnimationRef.current = idleAnimation;
+  }, [idleAnimation]);
+
   // inactivity animations (spin & look around)
   // MAYDO: add camera panning in idle mode
   useEffect(() => {
+    let idleAnimationTimeoutId: number | undefined;
+
     const checkIdleAnimation = () => {
       const now = Date.now();
-      const timeSinceActivity = now - lastActivity;
-      const timeSinceLastIdleAnimation = now - lastIdleAnimationTime;
+      const timeSinceActivity = now - lastActivityRef.current;
+      const timeSinceLastIdleAnimation =
+        now - lastIdleAnimationTimeRef.current;
       const idleTimeout = IDLE_TIMEOUT_MIN;
 
       // trigger one of both idle animations if
@@ -319,53 +324,59 @@ export function BlobHead({
       // 15 seconds have passed since the last idle animation
       if (
         timeSinceActivity > idleTimeout &&
-        idleAnimation === "none" &&
+        idleAnimationRef.current === "none" &&
         timeSinceLastIdleAnimation > idleTimeout
       ) {
         const animations: ("spin" | "tilt")[] = ["spin", "tilt"];
         const randomAnimation =
           animations[Math.floor(Math.random() * animations.length)];
 
+        idleAnimationRef.current = randomAnimation;
         setIdleAnimation(randomAnimation);
-        setIdleAnimationStart(now);
-        setLastIdleAnimationTime(now);
+        idleAnimationStartRef.current = now;
+        lastIdleAnimationTimeRef.current = now;
 
         // reset head to center before animating
         if (headRef.current) {
           headRef.current.rotation.set(0, 0, 0);
         }
 
-        setTimeout(() => {
+        idleAnimationTimeoutId = window.setTimeout(() => {
+          idleAnimationRef.current = "none";
           setIdleAnimation("none");
         }, IDLE_ANIMATION_DURATION);
       }
     };
 
-    const idleCheckInterval = setInterval(checkIdleAnimation, 1000);
-    return () => clearInterval(idleCheckInterval);
-  }, [lastActivity, idleAnimation, lastIdleAnimationTime]);
-
-  // reset inactivity timer when user does something again
-  useEffect(() => {
     const handleActivity = () => {
-      setLastActivity(Date.now());
-      if (idleAnimation !== "none") {
+      lastActivityRef.current = Date.now();
+      if (idleAnimationRef.current !== "none") {
+        idleAnimationRef.current = "none";
         setIdleAnimation("none");
+        if (idleAnimationTimeoutId !== undefined) {
+          clearTimeout(idleAnimationTimeoutId);
+          idleAnimationTimeoutId = undefined;
+        }
       }
     };
 
-    window.addEventListener("mousemove", handleActivity);
+    const idleCheckInterval = window.setInterval(checkIdleAnimation, 1000);
+    window.addEventListener("mousemove", handleActivity, { passive: true });
     window.addEventListener("click", handleActivity);
     window.addEventListener("keydown", handleActivity);
     window.addEventListener("touchstart", handleActivity);
 
     return () => {
+      clearInterval(idleCheckInterval);
+      if (idleAnimationTimeoutId !== undefined) {
+        clearTimeout(idleAnimationTimeoutId);
+      }
       window.removeEventListener("mousemove", handleActivity);
       window.removeEventListener("click", handleActivity);
       window.removeEventListener("keydown", handleActivity);
       window.removeEventListener("touchstart", handleActivity);
     };
-  }, [idleAnimation]);
+  }, []);
 
   // dizzy animation rotating stars
   // TODO: move to animation state machine
@@ -480,33 +491,35 @@ export function BlobHead({
         orientBeta,
       );
 
-      const lookDirection = new Vector3(
-        -targetRotX,
-        targetRotY,
-        targetRotZ,
-      ).normalize();
-
       const baseZoom = showOptions
         ? VISIBLE_OPTIONS_CAMERA_ZOOM
         : HIDDEN_OPTIONS_CAMERA_ZOOM;
       const zoomOffset = cameraZoomAnimation
         ? Math.sin(clock.getElapsedTime() * 20) * 0.5
         : 0;
-      const cameraPosition = new Vector3(
-        0,
-        CAMERA_HEIGHT,
-        baseZoom + zoomOffset,
-      );
-      const target = cameraPosition.clone().add(lookDirection);
+      const lookDirX = -targetRotX;
+      const lookDirY = targetRotY;
+      const lookDirZ = targetRotZ;
+      const lookDirLength = Math.hypot(lookDirX, lookDirY, lookDirZ) || 1;
+      const normalizedLookDirX = lookDirX / lookDirLength;
+      const normalizedLookDirY = lookDirY / lookDirLength;
+      const normalizedLookDirZ = lookDirZ / lookDirLength;
+      const cameraX = 0;
+      const cameraY = CAMERA_HEIGHT;
+      const cameraZ = baseZoom + zoomOffset;
+      const targetX = cameraX + normalizedLookDirX;
+      const targetY = cameraY + normalizedLookDirY;
+      const targetZ = cameraZ + normalizedLookDirZ;
 
       if (shouldFollowCursor) {
+        // Keep transition smoothing enabled so cursor-follow matches regular camera motion.
         cameraControlsRef.current?.setLookAt(
-          cameraPosition.x,
-          cameraPosition.y,
-          cameraPosition.z,
-          target.x,
-          target.y,
-          target.z,
+          cameraX,
+          cameraY,
+          cameraZ,
+          targetX,
+          targetY,
+          targetZ,
           true,
         );
       }
@@ -550,19 +563,19 @@ export function BlobHead({
     delta: number,
     showOptions: boolean,
   ) => {
-    const targetRotY = mousePosition.x * MAX_ROTATION_X;
+    const cursorX = mousePosition.current.x;
+    const cursorY = mousePosition.current.y;
+    const targetRotY = cursorX * MAX_ROTATION_X;
     const targetRotX =
-      (-mousePosition.y - (showOptions ? 0 : CAMERA_Y_POSITION)) *
+      (-cursorY - (showOptions ? 0 : CAMERA_Y_POSITION)) *
       MAX_ROTATION_Y;
-    const targetRotZ = -mousePosition.x * MAX_ROTATION_X;
+    const targetRotZ = -cursorX * MAX_ROTATION_X;
 
     applyHeadRotation(targetRotX, targetRotY, targetRotZ, delta);
 
     // floating animation
     const floatY = Math.sin(clock.getElapsedTime() * 0.5) * 0.1;
     headRef.current.position.y = floatY + HEAD_POSITION_Y;
-
-    const cursorPos = new Vector3(mousePosition.x, mousePosition.y * 0.4, 0);
 
     const baseZoom = showOptions
       ? VISIBLE_OPTIONS_CAMERA_ZOOM
@@ -582,9 +595,9 @@ export function BlobHead({
         0,
         CAMERA_HEIGHT,
         baseZoom + zoomOffset,
-        cursorPos.x + handCamSwayX + cameraShakeX,
-        cursorPos.y + CAMERA_Y_POSITION + handCamSwayY + cameraShakeY,
-        cursorPos.z,
+        cursorX + handCamSwayX + cameraShakeX,
+        cursorY * 0.4 + CAMERA_Y_POSITION + handCamSwayY + cameraShakeY,
+        0,
         true,
       );
     }
@@ -641,7 +654,7 @@ export function BlobHead({
 
   const handleIdleAnimation = (clock: Clock, delta: number) => {
     const animationProgress =
-      (Date.now() - idleAnimationStart) / IDLE_ANIMATION_DURATION;
+      (Date.now() - idleAnimationStartRef.current) / IDLE_ANIMATION_DURATION;
     const easedProgress = 1 - Math.pow(1 - animationProgress, 3); // Ease out
 
     if (idleAnimation === "spin") {

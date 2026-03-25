@@ -39,7 +39,10 @@ import { BackgroundPlanet } from "../3d-objects/BackgroundPlanet";
 import { TapEffects } from "../3d-objects/ParticleEffects";
 import { SceneDecorations } from "@/3d-objects/Decorations";
 import { MiniGamesScene } from "@/routes/MiniGamesScene";
-import { DEFAULT_PINK_NOISE, DEFAULT_WORLD_MUSIC } from "@/utils/sound/defaults";
+import {
+  DEFAULT_PINK_NOISE,
+  DEFAULT_WORLD_MUSIC,
+} from "@/utils/sound/defaults";
 import * as THREE from "three";
 import { Color } from "three";
 
@@ -107,9 +110,7 @@ const HOME_WORLD_ENVIRONMENT_PRESETS: Partial<
   [SPACE_WORLD_ID]: null,
 };
 
-const ROUTE_ENVIRONMENT_PRESETS: Partial<
-  Record<string, EnvironmentPreset>
-> = {
+const ROUTE_ENVIRONMENT_PRESETS: Partial<Record<string, EnvironmentPreset>> = {
   [ROUTE_PATHS.ABOUT]: "city",
   [ROUTE_PATHS.PORTFOLIO]: null,
   [ROUTE_PATHS.MINIGAMES]: "sunset",
@@ -417,8 +418,8 @@ const CursorFollowCamera = () => {
 
     controls.setLookAt(
       ...viewConfig.position,
-      viewConfig.target[0] + cursor.x * strength + swayXValue,
-      viewConfig.target[1] + cursor.y * strength * yScale + swayYValue,
+      viewConfig.target[0] + cursor.current.x * strength + swayXValue,
+      viewConfig.target[1] + cursor.current.y * strength * yScale + swayYValue,
       viewConfig.target[2],
       true,
     );
@@ -434,7 +435,11 @@ type FullScreenCanvasProps = {
 const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
   const canvasRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [dpr, setDpr] = useState(2);
+  const [dpr, setDpr] = useState(() =>
+    typeof window !== "undefined"
+      ? Math.min(window.devicePixelRatio || 1, 1.5)
+      : 1.5,
+  );
   const navigate = useNavigate();
 
   const handlePerformanceChange = ({ factor }: { factor: number }) => {

@@ -13,7 +13,7 @@ import {
   CAMERA_Y_POSITION,
   HIDDEN_OPTIONS_CAMERA_ZOOM,
 } from "@/molecules/HeadNavigation";
-import { BackSide, Vector3 } from "three";
+import { BackSide } from "three";
 import { useCursorStore } from "@/store/core/cursor";
 import { playSound } from "@/utils/soundSystem";
 import { DEFAULT_PING_PONG_HIT_SOUND } from "@/utils/sound/defaults";
@@ -59,8 +59,9 @@ export function PingPongGame({ onExit }: { onExit: () => void }) {
 
   // camera follows cursor
   // TODO: export to shared or extend viewstore
-  useFrame(({ clock }, delta) => {
-    const cursorPos = new Vector3(mousePosition.x, mousePosition.y * 0.4, 0);
+  useFrame(({ clock }) => {
+    const cursorX = mousePosition.current.x;
+    const cursorY = mousePosition.current.y * 0.4;
 
     const handCamSwayX = Math.sin(clock.getElapsedTime() * 1) * 0.03;
     const handCamSwayY = Math.sin(clock.getElapsedTime() * 0.5) * 0.02;
@@ -70,9 +71,9 @@ export function PingPongGame({ onExit }: { onExit: () => void }) {
         0,
         CAMERA_HEIGHT,
         HIDDEN_OPTIONS_CAMERA_ZOOM,
-        cursorPos.x + handCamSwayX,
-        cursorPos.y + CAMERA_Y_POSITION + handCamSwayY,
-        cursorPos.z,
+        cursorX + handCamSwayX,
+        cursorY + CAMERA_Y_POSITION + handCamSwayY,
+        0,
         true,
       );
     }

@@ -85,14 +85,22 @@ export const FloatingBarUI: React.FC = () => {
   const smoothY = useSpring(y, { mass: 0.8, damping: 25 });
 
   useEffect(() => {
+    if (
+      !hoveredObject ||
+      isMobile ||
+      focusedImageTitle === hoveredObject.title
+    ) {
+      return;
+    }
+
     const move = (e: MouseEvent) => {
       x.set(e.clientX + 24);
       y.set(e.clientY - 24);
     };
 
-    window.addEventListener("mousemove", move);
+    window.addEventListener("mousemove", move, { passive: true });
     return () => window.removeEventListener("mousemove", move);
-  }, []);
+  }, [focusedImageTitle, hoveredObject, isMobile, x, y]);
 
   return (
     <AnimatePresence mode="popLayout">

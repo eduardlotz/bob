@@ -13,11 +13,9 @@ import {
 import { FLOOR_Y_POSITION } from "@/molecules/Scene";
 import { BasketBox } from "@/physics/BasketBox";
 import { useAppStore, useMiniGameStore, useViewStore } from "@/store";
-import { useMessageStore } from "@/store/messageStore";
 import { useFrame } from "@react-three/fiber";
 import { CuboidCollider, RapierRigidBody } from "@react-three/rapier";
 import { useState, useRef, useCallback } from "react";
-import { Vector3 } from "three";
 
 export const FootballGame = ({ onExit }: { onExit: () => void }) => {
   const { incrementScore } = useMiniGameStore();
@@ -33,7 +31,6 @@ export const FootballGame = ({ onExit }: { onExit: () => void }) => {
     positionFactor: 2.5,
   });
 
-  const { showMessage } = useMessageStore();
   const { cameraControlsRef } = useViewStore();
   const { triggerQuest } = useQuestSystem();
 
@@ -43,8 +40,9 @@ export const FootballGame = ({ onExit }: { onExit: () => void }) => {
     }
   }, []);
 
-  useFrame(({ clock }, delta) => {
-    const cursorPos = new Vector3(mousePosition.x, mousePosition.y * 0.4, 0);
+  useFrame(({ clock }) => {
+    const cursorX = mousePosition.current.x;
+    const cursorY = mousePosition.current.y * 0.4;
 
     const handCamSwayX = Math.sin(clock.getElapsedTime() * 1) * 0.03;
     const handCamSwayY = Math.sin(clock.getElapsedTime() * 0.5) * 0.02;
@@ -54,9 +52,9 @@ export const FootballGame = ({ onExit }: { onExit: () => void }) => {
         0,
         CAMERA_HEIGHT,
         HIDDEN_OPTIONS_CAMERA_ZOOM,
-        cursorPos.x + handCamSwayX,
-        cursorPos.y + CAMERA_Y_POSITION + handCamSwayY,
-        cursorPos.z,
+        cursorX + handCamSwayX,
+        cursorY + CAMERA_Y_POSITION + handCamSwayY,
+        0,
         true,
       );
     }
