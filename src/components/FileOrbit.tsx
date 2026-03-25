@@ -614,7 +614,7 @@ const PortfolioMetaOverlay = ({
   distanceFactor: number;
 }) => {
   const { messages } = useI18n();
-  const { isMobile } = useAppStore();
+  const isMobile = useAppStore((state) => state.isMobile);
   const overlayOffsetX = isMobile
     ? 0
     : mediaScale[0] / 2 + PORTFOLIO_OVERLAY_SIDE_GAP;
@@ -683,10 +683,15 @@ function VideoPlane({
   const posterTex = useRef<THREE.Texture | null>(null);
 
   const scaleRef = useRef<[number, number]>(DEFAULT_MEDIA_SCALE);
+  const initializedRef = useRef(false);
   const readyRef = useRef(false);
+  const isPlayingRef = useRef(false);
+  const activeMapRef = useRef<"video" | "poster" | null>(null);
+  const lastPlayAttemptRef = useRef(0);
 
-  useEffect(() => {
-    if (readyRef.current) return;
+  const initializeVideo = () => {
+    if (initializedRef.current) return;
+    initializedRef.current = true;
 
     const video = document.createElement("video");
     video.src = url;
@@ -694,43 +699,56 @@ function VideoPlane({
     video.loop = true;
     video.playsInline = true;
     video.preload = "auto";
+    videoRef.current = video;
 
-    const onCanPlay = () => {
+    const onLoadedData = () => {
       const w = video.videoWidth || 16;
       const h = video.videoHeight || 9;
       const scale = getMediaScale(w, h);
       scaleRef.current = scale;
       onScaleChange(scale);
-
-      const vTex = new THREE.VideoTexture(video);
-      vTex.colorSpace = THREE.SRGBColorSpace;
-      vTex.minFilter = THREE.LinearFilter;
-      vTex.magFilter = THREE.LinearFilter;
-      videoTex.current = vTex;
+      if (meshRef.current) {
+        meshRef.current.scale.set(scale[0], scale[1], 1);
+      }
 
       const canvas = document.createElement("canvas");
       canvas.width = w;
       canvas.height = h;
-      canvas.getContext("2d")!.drawImage(video, 0, 0);
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(video, 0, 0);
+      }
       const pTex = new THREE.CanvasTexture(canvas);
       pTex.colorSpace = THREE.SRGBColorSpace;
       posterTex.current = pTex;
 
-      videoRef.current = video;
       readyRef.current = true;
     };
 
-    video.addEventListener("canplay", onCanPlay);
+    video.addEventListener("loadeddata", onLoadedData, { once: true });
     video.load();
+  };
+
+  useEffect(() => {
+    initializeVideo();
 
     return () => {
-      video.pause();
-      video.src = "";
-      video.load();
+      if (videoRef.current) {
+        videoRef.current.pause();
+        videoRef.current.removeAttribute("src");
+        videoRef.current.load();
+      }
       videoTex.current?.dispose();
       posterTex.current?.dispose();
+      videoRef.current = null;
+      videoTex.current = null;
+      posterTex.current = null;
+      readyRef.current = false;
+      initializedRef.current = false;
+      isPlayingRef.current = false;
+      activeMapRef.current = null;
     };
-  }, [onScaleChange, url]);
+  }, []);
 
   useFrame((state, delta) => {
     if (!meshRef.current || !matRef.current) return;
@@ -755,22 +773,58 @@ function VideoPlane({
 
     meshRef.current.visible = matRef.current.opacity > 0.01;
 
-    if (!readyRef.current) return;
+    if (!readyRef.current) {
+      meshRef.current.visible = false;
+      return;
+    }
 
-    meshRef.current.scale.set(scaleRef.current[0], scaleRef.current[1], 1);
+    const shouldPlayVideo = d < cull.videoPlayDistance && meshRef.current.visible;
 
-    if (d < cull.videoPlayDistance) {
-      if (matRef.current.map !== videoTex.current) {
-        matRef.current.map = videoTex.current!;
-        matRef.current.needsUpdate = true;
+    if (shouldPlayVideo) {
+      if (!videoTex.current && videoRef.current) {
+        const vTex = new THREE.VideoTexture(videoRef.current);
+        vTex.colorSpace = THREE.SRGBColorSpace;
+        vTex.minFilter = THREE.LinearFilter;
+        vTex.magFilter = THREE.LinearFilter;
+        videoTex.current = vTex;
       }
-      videoRef.current?.play().catch(() => {});
-    } else {
-      if (matRef.current.map !== posterTex.current) {
-        matRef.current.map = posterTex.current!;
+
+      if (activeMapRef.current !== "video" && videoTex.current) {
+        matRef.current.map = videoTex.current;
         matRef.current.needsUpdate = true;
+        activeMapRef.current = "video";
       }
-      videoRef.current?.pause();
+
+      if (!isPlayingRef.current && videoRef.current) {
+        const now = state.clock.elapsedTime;
+        if (now - lastPlayAttemptRef.current > 0.5) {
+          lastPlayAttemptRef.current = now;
+          const playPromise = videoRef.current.play();
+          if (playPromise && typeof playPromise.catch === "function") {
+            playPromise
+              .then(() => {
+                isPlayingRef.current = true;
+              })
+              .catch(() => {
+                isPlayingRef.current = false;
+              });
+          } else {
+            isPlayingRef.current = true;
+          }
+        }
+      }
+      return;
+    }
+
+    if (activeMapRef.current !== "poster" && posterTex.current) {
+      matRef.current.map = posterTex.current;
+      matRef.current.needsUpdate = true;
+      activeMapRef.current = "poster";
+    }
+
+    if (isPlayingRef.current && videoRef.current) {
+      videoRef.current.pause();
+      isPlayingRef.current = false;
     }
   });
 
@@ -808,7 +862,7 @@ function ImagePlane({
   const matRef = useRef<THREE.MeshBasicMaterial>(null);
   const texRef = useRef<THREE.Texture | null>(null);
   const scaleRef = useRef<[number, number]>(DEFAULT_MEDIA_SCALE);
-  const { isMobile } = useAppStore();
+  const isMobile = useAppStore((state) => state.isMobile);
   const renderConfig = isMobile ? CONFIG.low : CONFIG.high;
 
   useEffect(() => {
@@ -887,9 +941,11 @@ function MediaItem({
   const { camera } = useThree();
 
   const { setHoveredObject } = useFloatingBar();
-  const { focusOnTarget, focusOnImage, focusedImageTitle } = useViewStore();
+  const focusOnTarget = useViewStore((state) => state.focusOnTarget);
+  const focusOnImage = useViewStore((state) => state.focusOnImage);
+  const focusedImageTitle = useViewStore((state) => state.focusedImageTitle);
   const { triggerQuest } = useQuestSystem();
-  const { isMobile } = useAppStore();
+  const isMobile = useAppStore((state) => state.isMobile);
 
   const isFocused = focusedImageTitle === item.title;
   const viewMode: ViewCullMode = focusedImageTitle ? "focused" : "default";
@@ -1066,7 +1122,6 @@ export function getSphericalAngles({
 
 export function FileOrbit({ radius = 60 }: { radius?: number }) {
   const { selectedOrbitForm: orbitForm } = useCoreStore();
-  const { isMobile } = useAppStore();
 
   // const effectiveRadius = isMobile ? radius * 0.8 : radius;
   const effectiveRadius = radius;

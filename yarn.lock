@@ -1205,6 +1205,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/d3-format@npm:^3":
+  version: 3.0.4
+  resolution: "@types/d3-format@npm:3.0.4"
+  checksum: 10c0/3ac1600bf9061a59a228998f7cd3f29e85cbf522997671ba18d4d84d10a2a1aff4f95aceb143fa9960501c3ec351e113fc75884e6a504ace44dc1744083035ee
+  languageName: node
+  linkType: hard
+
 "@types/downloadjs@npm:^1.4.6":
   version: 1.4.6
   resolution: "@types/downloadjs@npm:1.4.6"
@@ -1837,6 +1844,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"d3-format@npm:^3.1.2":
+  version: 3.1.2
+  resolution: "d3-format@npm:3.1.2"
+  checksum: 10c0/0de452ae07585238e7f01607a7e0066665c34609652188b6ac7dc9f424f69465a425e07d16d79bd0e5955202ac7f241c66d0c76f68a79fc6f4857c94cf420652
+  languageName: node
+  linkType: hard
+
 "date-fns@npm:^4.1.0":
   version: 4.1.0
   resolution: "date-fns@npm:4.1.0"
@@ -1943,6 +1957,7 @@ __metadata:
     "@react-three/fiber": "npm:^8.15.19"
     "@react-three/postprocessing": "npm:^2.7.1"
     "@react-three/rapier": "npm:^1.4.3"
+    "@types/d3-format": "npm:^3"
     "@types/downloadjs": "npm:^1.4.6"
     "@types/howler": "npm:^2"
     "@types/node": "npm:24.2.1"
@@ -1953,6 +1968,7 @@ __metadata:
     "@vitejs/plugin-react": "npm:^5.0.0"
     "@vitejs/plugin-react-swc": "npm:^3.11.0"
     album-art: "npm:^4.0.0"
+    d3-format: "npm:^3.1.2"
     date-fns: "npm:^4.1.0"
     downloadjs: "npm:^1.4.7"
     eslint: "npm:9.33.0"

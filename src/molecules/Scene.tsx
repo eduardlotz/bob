@@ -26,7 +26,7 @@ import { FISHEYE_CONFIG } from "../store/config/themes";
 import {
   attachListenerToCamera,
   playWorldSound,
-  stopBackgroundMusic,
+  stopAllWorldSounds,
 } from "@/utils/soundSystem";
 import { PortfolioScene } from "@/routes/PortfolioScene";
 import { AboutScene } from "../routes/AboutScene";
@@ -39,11 +39,14 @@ import { BackgroundPlanet } from "../3d-objects/BackgroundPlanet";
 import { TapEffects } from "../3d-objects/ParticleEffects";
 import { SceneDecorations } from "@/3d-objects/Decorations";
 import { MiniGamesScene } from "@/routes/MiniGamesScene";
-import { DEFAULT_PINK_NOISE, DEFAULT_WORLD_MUSIC } from "@/utils/sound/defaults";
+import {
+  DEFAULT_PINK_NOISE,
+  DEFAULT_WORLD_MUSIC,
+} from "@/utils/sound/defaults";
 import * as THREE from "three";
 import { Color } from "three";
 
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { sileo } from "sileo";
 import { CameraGLBridge } from "@/bridges/CameraBridge";
 import { useCursor } from "@/hooks/useCursor";
@@ -107,9 +110,7 @@ const HOME_WORLD_ENVIRONMENT_PRESETS: Partial<
   [SPACE_WORLD_ID]: null,
 };
 
-const ROUTE_ENVIRONMENT_PRESETS: Partial<
-  Record<string, EnvironmentPreset>
-> = {
+const ROUTE_ENVIRONMENT_PRESETS: Partial<Record<string, EnvironmentPreset>> = {
   [ROUTE_PATHS.ABOUT]: "city",
   [ROUTE_PATHS.PORTFOLIO]: null,
   [ROUTE_PATHS.MINIGAMES]: "sunset",
@@ -207,8 +208,13 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
     previewMode,
     debugCameraSettings,
     debugLightSettings,
+    soundSystem,
+    isPaused,
   } = useCoreStore();
   const { activeGame } = useMiniGameStore();
+  const activeRouteMusicRef = useRef<string | null>(null);
+  const location = useLocation();
+  const routePath = location.pathname;
 
   const { currentRoute } = useAppStore();
 
@@ -261,7 +267,7 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
   // portfolio: pink noise
 
   const worldMusicId = useMemo(() => {
-    switch (currentRoute) {
+    switch (routePath) {
       case ROUTE_PATHS.PORTFOLIO: {
         return DEFAULT_PINK_NOISE.id;
       }
@@ -276,19 +282,31 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
         return null;
       }
     }
-  }, [activeGame, currentRoute]);
+  }, [activeGame, routePath]);
+
+  const canPlayRouteMusic =
+    soundSystem.enabled &&
+    soundSystem.masterVolume > 0 &&
+    soundSystem.worldEnabled !== false &&
+    !isPaused;
 
   useEffect(() => {
-    stopBackgroundMusic(0);
+    stopAllWorldSounds();
 
-    if (!worldMusicId) return;
+    if (!canPlayRouteMusic || !worldMusicId) {
+      activeRouteMusicRef.current = null;
+      return;
+    }
 
     playWorldSound(worldMusicId);
+    activeRouteMusicRef.current = worldMusicId;
 
     return () => {
-      stopBackgroundMusic(0);
+      if (activeRouteMusicRef.current === worldMusicId)
+        activeRouteMusicRef.current = null;
+      stopAllWorldSounds();
     };
-  }, [worldMusicId]);
+  }, [canPlayRouteMusic, worldMusicId]);
 
   const envLightPreset = useMemo(
     () =>
@@ -417,8 +435,8 @@ const CursorFollowCamera = () => {
 
     controls.setLookAt(
       ...viewConfig.position,
-      viewConfig.target[0] + cursor.x * strength + swayXValue,
-      viewConfig.target[1] + cursor.y * strength * yScale + swayYValue,
+      viewConfig.target[0] + cursor.current.x * strength + swayXValue,
+      viewConfig.target[1] + cursor.current.y * strength * yScale + swayYValue,
       viewConfig.target[2],
       true,
     );
@@ -434,7 +452,11 @@ type FullScreenCanvasProps = {
 const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
   const canvasRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [dpr, setDpr] = useState(2);
+  const [dpr, setDpr] = useState(() =>
+    typeof window !== "undefined"
+      ? Math.min(window.devicePixelRatio || 1, 1.5)
+      : 1.5,
+  );
   const navigate = useNavigate();
 
   const handlePerformanceChange = ({ factor }: { factor: number }) => {

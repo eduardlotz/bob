@@ -1,5 +1,5 @@
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FullScreen, ContentWidth, FillColumn } from "@/layout";
 import MainLayout from "@/layout/MainLayout";
 import { GlobalStyle } from "@/styles/global";
@@ -28,7 +28,7 @@ import { useI18n } from "@/i18n";
 
 export default function App() {
   const location = useLocation();
-  const { setCurrentRoute, currentRoute } = useAppStore();
+  const { setCurrentRoute } = useAppStore();
   const {
     currentView,
     isImageFocused,
@@ -45,9 +45,10 @@ export default function App() {
     (state) => state.viewDebuggerVisible,
   );
 
-  const [mounted, setMounted] = useState(false);
   const [currentRouteInPretty, setCurrentRouteInPretty] = useState("");
   const [showRouteChip, setShowRouteChip] = useState(false);
+  const previousPathRef = useRef<string | null>(null);
+  const routeChipTimeoutRef = useRef<number | null>(null);
   const { locale } = useI18n();
 
   // init message system globally
@@ -55,42 +56,40 @@ export default function App() {
   useMessageSystem();
 
   useEffect(() => {
-    setCurrentRoute(location.pathname);
-    setMounted(true);
-  }, []);
+    const nextPath = location.pathname;
+    const previousPath = previousPathRef.current;
 
-  useEffect(() => {
-    syncViewToRoute(location.pathname);
-  }, [location.pathname, syncViewToRoute]);
+    setCurrentRoute(nextPath);
+    syncViewToRoute(nextPath);
 
-  useEffect(() => {
-    if (!cameraControlsRef?.current) return;
-    syncViewToRoute(location.pathname);
-  }, [cameraControlsRef, location.pathname, syncViewToRoute]);
+    if (previousPath && previousPath !== nextPath) {
+      setShowRouteChip(true);
 
-  // sync router with store
-  useEffect(() => {
-    if (currentRoute !== location.pathname) {
-      if (mounted) {
-        setCurrentRoute(location.pathname);
-        const route = getRouteLabelByPath(location.pathname, locale);
-        setCurrentRouteInPretty(route);
-        setShowRouteChip(true);
-        setTimeout(() => {
-          setShowRouteChip(false);
-        }, 1800);
-
-        // return () => {
-        //   clearTimeout(routeChipTimer);
-        //   clearTimeout(defaultViewTimer);
-        // };
+      if (routeChipTimeoutRef.current !== null) {
+        clearTimeout(routeChipTimeoutRef.current);
       }
+
+      routeChipTimeoutRef.current = window.setTimeout(() => {
+        setShowRouteChip(false);
+        routeChipTimeoutRef.current = null;
+      }, 1800);
     }
-  }, [location.pathname, currentRoute, locale, setCurrentRoute]);
+
+    previousPathRef.current = nextPath;
+  }, [location.pathname, setCurrentRoute, syncViewToRoute]);
 
   useEffect(() => {
     setCurrentRouteInPretty(getRouteLabelByPath(location.pathname, locale));
   }, [location.pathname, locale]);
+
+  useEffect(
+    () => () => {
+      if (routeChipTimeoutRef.current !== null) {
+        clearTimeout(routeChipTimeoutRef.current);
+      }
+    },
+    [],
+  );
 
   return (
     <ThemeProvider>

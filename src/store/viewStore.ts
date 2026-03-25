@@ -264,11 +264,11 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
     position: [5, CAMERA_HEIGHT - 0.5, 73],
     target: [0, CAMERA_Y_POSITION - 0.5, 0],
     orbit: {
-      minPolarAngle: 1.55,
-      maxPolarAngle: 1.6,
-      minDistance: 2.5,
-      maxDistance: 72.5,
-      defaultDistance: 72.5,
+      minPolarAngle: 1.57,
+      maxPolarAngle: 1.58,
+      minDistance: 3,
+      maxDistance: 67,
+      defaultDistance: 67,
     },
     transition: {
       duration: 1000,

@@ -22,8 +22,11 @@ import {
 } from "../utils/soundSystem";
 import { tryGetWorldSoundById } from "@/utils/sound/configs";
 import { useCoreStore } from "../store/core/store";
+import { ROUTE_PATHS, useAppStore } from "@/store";
 
 let initPerformed = false;
+let syncedWorldIdsGlobal: string[] = [];
+let worldPlaybackWasBlockedGlobal = false;
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
@@ -63,13 +66,12 @@ export function useSoundSystem(): SoundSystemHook {
     (state) => state.audioSelections?.worldSoundIds ?? [],
   );
   const isPaused = useCoreStore((state) => state.isPaused);
+  const currentRoute = useAppStore((state) => state.currentRoute);
+  const isHomeRoute = currentRoute === ROUTE_PATHS.HOME;
 
   const lastNonZeroRef = useRef(
     soundSystem.masterVolume > 0 ? soundSystem.masterVolume : 1,
   );
-  const syncedWorldIdsRef = useRef<string[]>([]);
-  const worldPlaybackWasBlockedRef = useRef(false);
-
   const stopTrackedWorldLayers = useCallback((ids: string[]) => {
     ids.forEach((id) => {
       try {
@@ -111,17 +113,18 @@ export function useSoundSystem(): SoundSystemHook {
       const nextIds = Array.from(
         new Set(state.audioSelections?.worldSoundIds ?? []),
       );
-      const previousIds = syncedWorldIdsRef.current;
+      const previousIds = syncedWorldIdsGlobal;
       const canPlayWorldLayers =
         state.soundSystem.enabled &&
         state.soundSystem.masterVolume > 0 &&
         state.soundSystem.worldEnabled !== false &&
-        !state.isPaused;
+        !state.isPaused &&
+        isHomeRoute;
 
       if (!canPlayWorldLayers) {
         stopTrackedWorldLayers(previousIds);
-        syncedWorldIdsRef.current = nextIds;
-        worldPlaybackWasBlockedRef.current = true;
+        syncedWorldIdsGlobal = nextIds;
+        worldPlaybackWasBlockedGlobal = true;
         return;
       }
 
@@ -143,8 +146,8 @@ export function useSoundSystem(): SoundSystemHook {
         }
       });
 
-      syncedWorldIdsRef.current = nextIds;
-      worldPlaybackWasBlockedRef.current = false;
+      syncedWorldIdsGlobal = nextIds;
+      worldPlaybackWasBlockedGlobal = false;
 
       try {
         updateWorldSoundVolumes(false);
@@ -152,7 +155,7 @@ export function useSoundSystem(): SoundSystemHook {
         console.warn("Failed to update world sound volumes", error);
       }
     },
-    [ensureWorldSoundConfig, stopTrackedWorldLayers],
+    [ensureWorldSoundConfig, isHomeRoute, stopTrackedWorldLayers],
   );
 
   const setTypeVolume = useCallback(
@@ -202,9 +205,10 @@ export function useSoundSystem(): SoundSystemHook {
   }, [soundSystem.tapEnabled]);
 
   useEffect(() => {
-    const forceRestart = worldPlaybackWasBlockedRef.current;
+    const forceRestart = worldPlaybackWasBlockedGlobal;
     syncSelectedWorldLayers(forceRestart);
   }, [
+    isHomeRoute,
     isPaused,
     soundSystem.enabled,
     soundSystem.masterVolume,

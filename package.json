@@ -19,6 +19,7 @@
     "@types/react-dom": "^18.3.1",
     "@types/react-router-dom": "^5.3.3",
     "album-art": "^4.0.0",
+    "d3-format": "^3.1.2",
     "date-fns": "^4.1.0",
     "downloadjs": "^1.4.7",
     "eslint": "9.33.0",
@@ -42,6 +43,7 @@
     "zustand": "^5.0.7"
   },
   "devDependencies": {
+    "@types/d3-format": "^3",
     "@types/downloadjs": "^1.4.6",
     "@types/howler": "^2",
     "@types/three": "^0.170.0",

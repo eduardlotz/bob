@@ -1,6 +1,7 @@
 import { EmotionState } from "@/hooks/useBlobEmotions";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
+import { ROUTE_PATHS } from "./config/routes";
 
 export {
   ROUTE_PATHS,
@@ -58,7 +59,10 @@ export const useAppStore = create<AppStore>()(
       isMobile: false,
       emotionData: null,
 
-      setCurrentRoute: (route) => set({ currentRoute: route }),
+      setCurrentRoute: (route) =>
+        set((state) =>
+          state.currentRoute === route ? state : { currentRoute: route },
+        ),
       setNavigationOpen: (open) => set({ isNavigationOpen: open }),
       setShowOptions: (show) => set({ showOptions: show }),
       openOptions: () => set({ showOptions: true, isOptionsClosing: false }),

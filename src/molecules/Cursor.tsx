@@ -1,10 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import {
-  motion,
-  useMotionValue,
-  useSpring,
-  AnimatePresence,
-} from "motion/react";
+import { motion, useMotionValue, AnimatePresence } from "motion/react";
 import { CursorIcon } from "@/icons/cursor";
 import { useCursorStore } from "@/store/core/cursor";
 import { CursorHoverIcon } from "@/icons/cursor-hover";
@@ -31,60 +26,33 @@ export function Cursor({ attachToParent }: CursorProps) {
   }, []);
 
   useEffect(() => {
-    if (!attachToParent) {
-      document.body.style.cursor = "none";
-    } else {
-      document.body.style.cursor = "auto";
-    }
-
     const updatePosition = (e: MouseEvent) => {
       cursorX.set(e.clientX);
       cursorY.set(e.clientY);
     };
 
-    document.addEventListener("mousemove", updatePosition);
+    document.addEventListener("mousemove", updatePosition, { passive: true });
+    document.body.style.cursor = attachToParent ? "auto" : "none";
 
     return () => {
       document.removeEventListener("mousemove", updatePosition);
+      document.body.style.cursor = "auto";
     };
-  }, [cursorX, cursorY]);
-
-  const cursorXSpring = useSpring(cursorX, { duration: 0 });
-  const cursorYSpring = useSpring(cursorY, { duration: 0 });
+  }, [attachToParent, cursorX, cursorY]);
 
   useEffect(() => {
-    const handleVisibilityChange = (visible: boolean) => {
-      setIsVisible(visible);
-    };
+    const showCursor = () => setIsVisible(true);
+    const hideCursor = () => setIsVisible(false);
 
-    if (attachToParent && cursorRef.current) {
-      const parent = window.document;
-      if (parent) {
-        parent.addEventListener("mouseenter", () => {
-          parent.body.style.cursor = "none";
-          handleVisibilityChange(true);
-        });
-        parent.addEventListener("mouseleave", () => {
-          parent.body.style.cursor = "auto";
-          handleVisibilityChange(false);
-        });
-      }
-    }
+    if (!attachToParent) return;
+
+    window.addEventListener("blur", hideCursor);
+    window.addEventListener("focus", showCursor);
 
     return () => {
-      if (attachToParent && cursorRef.current) {
-        const parent = window.document;
-        if (parent) {
-          parent.removeEventListener("mouseenter", () => {
-            parent.body.style.cursor = "none";
-            handleVisibilityChange(true);
-          });
-          parent.removeEventListener("mouseleave", () => {
-            parent.body.style.cursor = "auto";
-            handleVisibilityChange(false);
-          });
-        }
-      }
+      window.removeEventListener("blur", hideCursor);
+      window.removeEventListener("focus", showCursor);
+      setIsVisible(true);
     };
   }, [attachToParent]);
 
@@ -98,8 +66,8 @@ export function Cursor({ attachToParent }: CursorProps) {
         pointerEvents: "none",
         zIndex: 99999,
 
-        x: cursorXSpring,
-        y: cursorYSpring,
+        x: cursorX,
+        y: cursorY,
         translateX: "-6px", // little offset because of icons
         translateY: "-4px", // little offset because of icons
       }}
