@@ -19,6 +19,11 @@ import { THEME_IDS, THEME_CONFIG } from "../config/themes";
 import { initialTapUpgrades } from "@/shop-items/upgrades";
 import { initialTapEffects } from "@/shop-items/tapEffects";
 import {
+  calculateAutoTapRate,
+  calculateTapMultiplier,
+  calculateUpgradeCost,
+} from "@/shop-items/upgradeMath";
+import {
   BlobFormConfig,
   INITIAL_BLOB_FORMS,
   DEFAULT_FORM_PARAMETERS,
@@ -48,7 +53,8 @@ export enum GAME_STORE_VERSION {
 
   V5 = 100100, // version 1.01.100
   V6 = 100101, // version 1.01.101
-  LATEST = V6,
+  V7 = 100102, // version 1.01.102
+  LATEST = V7,
 }
 
 // TODO: plan refactor to include component inside item properties
@@ -734,20 +740,15 @@ export const useCoreStore = create<GameStore>()(
         purchaseUpgrade: (upgradeId: string) => {
           set((state) => {
             const upgrade = state.upgrades.find((u) => u.id === upgradeId);
+            const cost = upgrade ? calculateUpgradeCost(upgrade) : 0;
+
             if (
               !upgrade ||
               upgrade.level >= upgrade.maxLevel ||
-              !state.canAfford(
-                upgrade.baseCost *
-                  Math.pow(upgrade.costMultiplier, upgrade.level),
-              )
+              !state.canAfford(cost)
             ) {
               return state;
             }
-
-            const cost =
-              upgrade.baseCost *
-              Math.pow(upgrade.costMultiplier, upgrade.level);
 
             let updatedUpgrades = state.upgrades.map((u) =>
               u.id === upgradeId ? { ...u, level: u.level + 1 } : u,
@@ -1542,11 +1543,7 @@ export const useCoreStore = create<GameStore>()(
             return state._cachedTapsPerSecond;
           }
 
-          const result = state.upgrades
-            .filter((u) => u.effect.type === "autoTap")
-            .reduce((total, upgrade) => {
-              return total + upgrade.effect.value * upgrade.level;
-            }, 0);
+          const result = calculateAutoTapRate(state.upgrades);
 
           set((s) => ({
             ...s,
@@ -1568,23 +1565,7 @@ export const useCoreStore = create<GameStore>()(
             return state._cachedTapMultiplier;
           }
 
-          const multiplierUpgrades = state.upgrades.filter(
-            (u) => u.effect.type === "tapMultiplier",
-          );
-
-          if (multiplierUpgrades.length === 0) {
-            const result = 1;
-            set((s) => ({
-              ...s,
-              _cachedTapMultiplier: result,
-              _lastUpgradeHash: upgradeHash,
-            }));
-            return result;
-          }
-
-          const result = multiplierUpgrades.reduce((total, upgrade) => {
-            return total * Math.pow(upgrade.effect.value, upgrade.level);
-          }, 1);
+          const result = calculateTapMultiplier(state.upgrades);
 
           set((s) => ({
             ...s,
@@ -1597,36 +1578,18 @@ export const useCoreStore = create<GameStore>()(
 
         getAutoTapRate: () => {
           const state = get();
-          return state.upgrades
-            .filter((u) => u.effect.type === "autoTap")
-            .reduce((total, upgrade) => {
-              return total + upgrade.effect.value * upgrade.level;
-            }, 0);
+          return calculateAutoTapRate(state.upgrades);
         },
 
         // TODO: check where the diff between cached and uncached is -> delete
         getAutoTapRateUncached: () => {
           const state = get();
-          return state.upgrades
-            .filter((u) => u.effect.type === "autoTap")
-            .reduce((total, upgrade) => {
-              return total + upgrade.effect.value * upgrade.level;
-            }, 0);
+          return calculateAutoTapRate(state.upgrades);
         },
 
         getTotalTapMultiplierUncached: () => {
           const state = get();
-          const multiplierUpgrades = state.upgrades.filter(
-            (u) => u.effect.type === "tapMultiplier",
-          );
-
-          if (multiplierUpgrades.length === 0) {
-            return 1;
-          }
-
-          return multiplierUpgrades.reduce((total, upgrade) => {
-            return total * Math.pow(upgrade.effect.value, upgrade.level);
-          }, 1);
+          return calculateTapMultiplier(state.upgrades);
         },
 
         updateComputedValueCache: () => {
@@ -1637,17 +1600,8 @@ export const useCoreStore = create<GameStore>()(
             return;
           }
 
-          const tapsPerSecond = state.upgrades
-            .filter((u) => u.effect.type === "autoTap")
-            .reduce((total, upgrade) => {
-              return total + upgrade.effect.value * upgrade.level;
-            }, 0);
-
-          const tapMultiplier = state.upgrades
-            .filter((u) => u.effect.type === "tapMultiplier")
-            .reduce((total, upgrade) => {
-              return total * Math.pow(upgrade.effect.value, upgrade.level);
-            }, 1);
+          const tapsPerSecond = calculateAutoTapRate(state.upgrades);
+          const tapMultiplier = calculateTapMultiplier(state.upgrades);
 
           set((s) => ({
             ...s,
