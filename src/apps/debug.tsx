@@ -6,6 +6,7 @@ import { useMessageStore } from "@/store/messageStore";
 import { ActionButton, SettingsWrapper, ToggleButton } from "./ui";
 import { sileo } from "sileo";
 import { useI18n } from "@/i18n";
+import { createQuestToastIcon } from "@/components/QuestTrophyIcon";
 
 export const DebugIcon = () => (
   <img src="/images/app-logos/debug.png" height={80} width={80} />
@@ -51,6 +52,7 @@ export const DebugApp = () => {
   const themes = useCoreStore((state) => state.themes);
   const currentTheme = useCoreStore((state) => state.currentTheme);
   const manualTaps = useCoreStore((state) => state.manualTaps);
+  const lifetimeTotalTaps = useCoreStore((state) => state.lifetimeTotalTaps);
   const taps = useCoreStore((state) => state.taps);
   const getAutoTapRate = useCoreStore((state) => state.getAutoTapRate);
   const getTotalTapMultiplier = useCoreStore(
@@ -66,12 +68,16 @@ export const DebugApp = () => {
 
   const clearAll = useCameraStore((state) => state.clearAll);
 
+  const resetQuestState = () => {
+    resetAllQuests();
+  };
+
   const resetEverything = () => {
     resetGameStore();
     clearAll();
     clearShownFlags();
     clearAllMessages();
-    resetAllQuests();
+    resetQuestState();
   };
 
   const toggleGamePaused = () => {
@@ -141,6 +147,7 @@ export const DebugApp = () => {
           >
             <p>Taps</p> <p></p>
             <p>Ingesamt:</p> <p>{formatNumber(taps)}</p>
+            <p>Lifetime:</p> <p>{formatNumber(lifetimeTotalTaps)}</p>
             <p>Manuell:</p> <p>{formatNumber(manualTaps)}</p>
             <p>Automatisch:</p> <p>{formatNumber(taps - manualTaps)}</p>
           </ListItemContainer>
@@ -202,6 +209,13 @@ export const DebugApp = () => {
             sileo.success({
               title: messages.ui.toasts.debugPreviewTitle,
               description: messages.ui.toasts.debugPreviewDescription,
+              icon: createQuestToastIcon("debug_preview", "#8A4CAB"),
+              fill: "#111324",
+              styles: {
+                badge: "toast-badge",
+                title: "quest-toast-title",
+                description: "quest-toast-desc",
+              },
             })
           }
         >
@@ -311,7 +325,7 @@ export const DebugApp = () => {
           onClick={() =>
             confirm(
               "Die Quests App wird zurückgesetzt und geupdated.\nBist du sicher?",
-            ) && resetAllQuests()
+            ) && resetQuestState()
           }
         >
           Reset

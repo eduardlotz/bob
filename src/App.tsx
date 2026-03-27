@@ -1,5 +1,5 @@
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
-import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { FullScreen, ContentWidth, FillColumn } from "@/layout";
 import MainLayout from "@/layout/MainLayout";
 import { GlobalStyle } from "@/styles/global";
@@ -19,6 +19,7 @@ import Home from "./routes/Home";
 import About from "./routes/About";
 import { AnimatePresence, motion } from "motion/react";
 import { useMessageSystem } from "@/hooks/useMessageSystem";
+import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { FloatingBarProvider, FloatingBarUI } from "./layout/FloatingBar";
 import { CursorInputBridge } from "./bridges/CursorInputBridge";
 import { ClickableBridge } from "./bridges/ClickableBridge";
@@ -70,6 +71,7 @@ export default function App() {
   // init message system globally
   // not a real hook (TODO: change name)
   useMessageSystem();
+  useQuestSystem();
 
   useEffect(() => {
     const nextPath = location.pathname;
@@ -118,7 +120,7 @@ export default function App() {
           children={<ToastTopLights />}
           options={{
             duration: SILEO_TOAST_DURATION_MS,
-            // fill: "#F7E5F6",
+            fill: "#d9c8de",
             roundness: 24,
             styles: {
               badge: "toast-badge",

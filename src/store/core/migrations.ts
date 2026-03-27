@@ -130,6 +130,8 @@ export function migrateCoreStore(persisted: any, fromVersion: number) {
     state.bobItems = normalizeBobItems(state.bobItems);
   }
 
+  state.lifetimeTotalTaps = state.lifetimeTotalTaps ?? state.taps ?? 0;
+
   return {
     ...state,
     version: GAME_STORE_VERSION.LATEST,

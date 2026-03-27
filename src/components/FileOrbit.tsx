@@ -6,7 +6,7 @@ import { useCursorStore } from "@/store/core/cursor";
 import { useAppStore, useCoreStore, useViewStore } from "@/store";
 import { playUISound } from "@/utils/soundSystem";
 import { SoundConfig } from "@/utils/sound/types";
-import { useQuestSystem } from "@/hooks/useQuestSystem";
+import { useQuestActions } from "@/hooks/useQuestSystem";
 import { extend, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { geometry } from "maath";
 import styled from "styled-components";
@@ -944,7 +944,7 @@ function MediaItem({
   const focusOnTarget = useViewStore((state) => state.focusOnTarget);
   const focusOnImage = useViewStore((state) => state.focusOnImage);
   const focusedImageTitle = useViewStore((state) => state.focusedImageTitle);
-  const { triggerQuest } = useQuestSystem();
+  const { triggerQuest } = useQuestActions();
   const isMobile = useAppStore((state) => state.isMobile);
 
   const isFocused = focusedImageTitle === item.title;

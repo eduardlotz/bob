@@ -1,12 +1,76 @@
 import { FillColumn, FillRow, HugColumn, ScrollArea } from "@/layout";
-import { useCoreStore, useQuestStore } from "@/store";
 import { formatNumber } from "@/molecules/TapCounter";
 import { motion } from "motion/react";
+import { useMemo } from "react";
 import styled from "styled-components";
-import { ItemStatusChip } from "./ui";
 import { useI18n } from "@/i18n";
 import { getShopItemCopy } from "@/shop-items/copy";
-import { getQuestCopy, type QuestMessageId } from "@/store/core/quests.messages";
+import {
+  getQuestCopy,
+  getQuestStackCopy,
+  type QuestMessageId,
+  type QuestStackMessageId,
+} from "@/store/core/quests.messages";
+import { useCoreStore } from "@/store";
+import { useQuestStore, type Quest } from "@/store/core/quests";
+import { QuestTrophyIcon } from "@/components/QuestTrophyIcon";
+
+const withAlpha = (hexColor: string, alpha: number): string => {
+  const hex = hexColor.replace("#", "");
+  const value =
+    hex.length === 3
+      ? hex
+          .split("")
+          .map((char) => char + char)
+          .join("")
+      : hex;
+
+  if (value.length !== 6) {
+    return hexColor;
+  }
+
+  const r = Number.parseInt(value.slice(0, 2), 16);
+  const g = Number.parseInt(value.slice(2, 4), 16);
+  const b = Number.parseInt(value.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+type QuestStack = {
+  id: string;
+  title: string;
+  description?: string;
+  color: string;
+  quests: Quest[];
+};
+
+type RewardKind = "taps" | "item";
+
+type RewardMeta = {
+  kind: RewardKind;
+  label: string;
+};
+
+const resolveQuestReward = (
+  quest: Quest,
+  rewardItems: Array<{ id: string; name: string }>,
+  locale: ReturnType<typeof useI18n>["locale"],
+): RewardMeta => {
+  if (quest.reward.type === "taps_reward") {
+    return {
+      kind: "taps",
+      label: `+${formatNumber(Number(quest.reward.amount) || 0)}`,
+    };
+  }
+
+  const itemId = String(quest.reward.amount);
+  const item = rewardItems.find((entry) => entry.id === itemId);
+  const itemCopy = item ? getShopItemCopy(item.id, locale) : null;
+
+  return {
+    kind: "item",
+    label: itemCopy?.name ?? item?.name ?? itemId,
+  };
+};
 
 export const QuestsIcon = () => (
   <img src="/images/app-logos/quests.png" height={80} width={80} />
@@ -15,46 +79,250 @@ export const QuestsIcon = () => (
 export const QuestsApp = () => {
   const { quests } = useQuestStore();
   const { bobItems, tapEffects, worlds } = useCoreStore();
-  const { locale, messages } = useI18n();
+  const { locale } = useI18n();
 
-  const rewardItems = [...bobItems, ...tapEffects, ...worlds];
+  const rewardItems = useMemo(
+    () => [...bobItems, ...tapEffects, ...worlds],
+    [bobItems, tapEffects, worlds],
+  );
+
+  const visibleQuests = useMemo(
+    () => quests.filter((quest) => !quest.hiddenUntilCompleted || quest.completed),
+    [quests],
+  );
+
+  const { stacks, singleQuests } = useMemo(() => {
+    const stackMap = new Map<string, Quest[]>();
+    const singleItems: Quest[] = [];
+
+    for (const quest of visibleQuests) {
+      if (quest.stackId) {
+        const group = stackMap.get(quest.stackId) ?? [];
+        group.push(quest);
+        stackMap.set(quest.stackId, group);
+      } else {
+        singleItems.push(quest);
+      }
+    }
+
+    const groupedStacks: QuestStack[] = [...stackMap.entries()]
+      .map(([id, items]) => {
+        const sorted = [...items].sort(
+          (a, b) =>
+            (a.stackOrder ?? Number.MAX_SAFE_INTEGER) -
+            (b.stackOrder ?? Number.MAX_SAFE_INTEGER),
+        );
+        const base = sorted[0];
+        const stackCopy = getQuestStackCopy(id as QuestStackMessageId, locale);
+
+        return {
+          id,
+          title: stackCopy?.title ?? base.stackTitle ?? base.title,
+          description: stackCopy?.description ?? base.stackDescription,
+          color: base.color,
+          quests: sorted,
+        };
+      })
+      .sort(
+        (a, b) =>
+          Number(a.quests.every((q) => q.completed)) -
+          Number(b.quests.every((q) => q.completed)),
+      );
+
+    const sortedSingles = [...singleItems].sort(
+      (a, b) => Number(a.completed) - Number(b.completed),
+    );
+
+    return {
+      stacks: groupedStacks,
+      singleQuests: sortedSingles,
+    };
+  }, [visibleQuests, locale]);
 
   return (
     <HugColumn
-      style={{ width: "320px", maxWidth: "100%", maxHeight: "360px" }}
+      style={{ width: "100%", maxWidth: "100%", maxHeight: "360px" }}
       $gap={"0.25rem"}
     >
       <ScrollArea $direction="vertical">
-        {quests.map((quest, index) => {
-          const reward =
-            quest.reward.type === "taps_reward"
-              ? `+${formatNumber(Number(quest.reward.amount) || 0)} 🫵`
-              : (() => {
-                  const item = rewardItems.find(
-                    (entry) => entry.id === quest.reward.amount,
-                  );
-                  if (!item) return messages.quests.fallbackReward;
-                  const itemIcon =
-                    "icon" in item && item.icon ? item.icon : "🎁";
-                  const itemCopy = getShopItemCopy(item.id, locale);
-                  return `+ ${itemIcon} ${itemCopy?.name ?? item.name}`;
-                })();
-          const questCopy = getQuestCopy(quest.id as QuestMessageId, locale);
+        {stacks.map((stack) => {
+          const completedCount = stack.quests.filter((quest) => quest.completed).length;
+          const activeQuest =
+            stack.quests.find((quest) => !quest.completed) ??
+            stack.quests[stack.quests.length - 1];
+          const activeQuestCopy = getQuestCopy(
+            activeQuest.id as QuestMessageId,
+            locale,
+          );
+          const activeReward = resolveQuestReward(activeQuest, rewardItems, locale);
+          const progressText = activeQuest.showProgress
+            ? `${Math.min(activeQuest.progress, activeQuest.maxProgress)} / ${activeQuest.maxProgress}`
+            : undefined;
+          const stackCompleted = completedCount === stack.quests.length;
+          const completionRatio =
+            stack.quests.length > 0 ? completedCount / stack.quests.length : 0;
 
           return (
-            <QuestListItem $completed={quest.completed} key={quest.id}>
+            <QuestStackCard
+              key={stack.id}
+              style={
+                stackCompleted
+                  ? {
+                      borderColor: stack.color,
+                      background: withAlpha(stack.color, 0.16),
+                    }
+                  : {
+                      borderColor: "rgba(33, 33, 33, 0.09)",
+                      background: "rgba(33, 33, 33, 0.05)",
+                    }
+              }
+            >
+              <StackHead>
+                <StackTitle style={stackCompleted ? { color: stack.color } : undefined}>
+                  {stack.title}
+                </StackTitle>
+                <StackCounter>
+                  {completedCount}/{stack.quests.length}
+                </StackCounter>
+              </StackHead>
+
+              <StackTimeline>
+                <StackTimelineTrack>
+                  <StackTimelineFill
+                    style={{
+                      width: `${Math.max(0, Math.min(1, completionRatio)) * 100}%`,
+                      background: withAlpha(stack.color, 0.9),
+                    }}
+                  />
+
+                  {stack.quests.map((quest, index) => {
+                    const isDone = quest.completed;
+                    const isActive = !isDone && quest.id === activeQuest.id;
+                    const left =
+                      stack.quests.length <= 1
+                        ? 0
+                        : (index / (stack.quests.length - 1)) * 100;
+
+                    return (
+                      <StackTimelineNode
+                        key={quest.id}
+                        style={{
+                          left: `calc(${left}% - 0.34rem)`,
+                          borderColor: isDone
+                            ? quest.color
+                            : isActive
+                              ? withAlpha(quest.color, 0.65)
+                              : "rgba(33, 33, 33, 0.2)",
+                          background: isDone
+                            ? quest.color
+                            : isActive
+                              ? withAlpha(quest.color, 0.2)
+                              : "rgba(33, 33, 33, 0.08)",
+                        }}
+                      />
+                    );
+                  })}
+                </StackTimelineTrack>
+
+                <StackMilestoneMetaRow
+                  style={{
+                    gridTemplateColumns: `repeat(${stack.quests.length}, minmax(0, 1fr))`,
+                  }}
+                >
+                  {stack.quests.map((quest) => {
+                    const reward = resolveQuestReward(quest, rewardItems, locale);
+                    const isDone = quest.completed;
+                    const isActive = !isDone && quest.id === activeQuest.id;
+
+                    return (
+                      <StackMilestoneMeta key={quest.id} $active={isActive}>
+                        <StackMilestoneGoal
+                          style={isDone ? { color: quest.color } : undefined}
+                        >
+                          {formatNumber(quest.maxProgress)}
+                        </StackMilestoneGoal>
+
+                        <QuestRewardChip
+                          $kind={reward.kind}
+                          $compact
+                          style={
+                            isDone
+                              ? {
+                                  borderColor: withAlpha(quest.color, 0.5),
+                                  background: withAlpha(quest.color, 0.16),
+                                }
+                              : undefined
+                          }
+                        >
+                          <span>{reward.kind === "taps" ? "🫵" : "🎁"}</span>
+                          <span>{reward.label}</span>
+                        </QuestRewardChip>
+                      </StackMilestoneMeta>
+                    );
+                  })}
+                </StackMilestoneMetaRow>
+              </StackTimeline>
+
+              {!stackCompleted && (
+                <StackHintWrap>
+                  <StackHint>
+                    {activeQuestCopy?.description ?? activeQuest.description}
+                    {progressText && (
+                      <StackProgressChip>{progressText}</StackProgressChip>
+                    )}
+                  </StackHint>
+
+                  <QuestRewardChip $kind={activeReward.kind}>
+                    <span>{activeReward.kind === "taps" ? "🫵" : "🎁"}</span>
+                    <span>{activeReward.label}</span>
+                  </QuestRewardChip>
+                </StackHintWrap>
+              )}
+            </QuestStackCard>
+          );
+        })}
+
+        {singleQuests.map((quest, index) => {
+          const questCopy = getQuestCopy(quest.id as QuestMessageId, locale);
+          const reward = resolveQuestReward(quest, rewardItems, locale);
+          const completedItemStyle = quest.completed
+            ? {
+                border: `1.5px solid ${quest.color}`,
+                background: withAlpha(quest.color, 0.16),
+              }
+            : undefined;
+
+          return (
+            <QuestListItem
+              $completed={quest.completed}
+              key={quest.id}
+              style={completedItemStyle}
+            >
               <FillColumn $align="flex-start" $gap={".25rem"}>
-                <QuestName>{questCopy?.title ?? quest.title}</QuestName>
+                <QuestName style={quest.completed ? { color: quest.color } : undefined}>
+                  {questCopy?.title ?? quest.title}
+                </QuestName>
                 <QuestInfos>{questCopy?.description ?? quest.description}</QuestInfos>
-                {/* {quest.completed && <RewardChip>{reward}</RewardChip>} */}
+                <QuestRewardChip $kind={reward.kind}>
+                  <span>{reward.kind === "taps" ? "🫵" : "🎁"}</span>
+                  <span>{reward.label}</span>
+                </QuestRewardChip>
+                {quest.showProgress && (
+                  <QuestProgressChip>
+                    {Math.min(quest.progress, quest.maxProgress)} /{" "}
+                    {quest.maxProgress}
+                  </QuestProgressChip>
+                )}
               </FillColumn>
 
               <QuestIcon
                 animate={{ scale: 1, filter: "blur(0px)", opacity: 1 }}
                 initial={{ scale: 0, filter: "blur(4px)", opacity: 0 }}
-                transition={{ delay: 0.5 + index * 0.2 }}
+                transition={{ delay: 0.2 + index * 0.06 }}
               >
-                {quest.completed ? <QuestCheckmarkIcon /> : ""}
+                {quest.completed && (
+                  <QuestTrophyIcon questId={quest.id} color={quest.color} size={24} />
+                )}
               </QuestIcon>
             </QuestListItem>
           );
@@ -64,34 +332,143 @@ export const QuestsApp = () => {
   );
 };
 
-const QuestCheckmarkIcon = () => (
-  <svg
-    width={32}
-    height={32}
-    viewBox="0 0 14 14"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M6.35465 1.08218C6.721 0.767629 7.26188 0.768405 7.62808 1.08316C7.88705 1.30575 8.14151 1.52854 8.39176 1.7521C8.72463 1.68263 9.06083 1.61586 9.40055 1.55191C9.87506 1.46274 10.3433 1.73298 10.5031 2.18863C10.6161 2.51105 10.7243 2.83165 10.8293 3.15054C11.1523 3.2568 11.4767 3.36712 11.8029 3.4816C12.2586 3.64153 12.5291 4.10955 12.4396 4.58414C12.3752 4.9255 12.3082 5.26278 12.2384 5.59683C12.466 5.85142 12.6925 6.11056 12.9191 6.37418C13.2339 6.74045 13.2338 7.28127 12.9191 7.64762C12.6939 7.90978 12.468 8.16758 12.2414 8.42105C12.31 8.74964 12.3763 9.08147 12.4396 9.41715C12.529 9.89166 12.2585 10.3598 11.8029 10.5197C11.4767 10.6342 11.1523 10.7445 10.8293 10.8507C10.7243 11.1695 10.6151 11.4903 10.5021 11.8127C10.3422 12.2679 9.87485 12.5384 9.40055 12.4494C9.06661 12.3865 8.73566 12.3203 8.40836 12.2521C8.15912 12.4747 7.90623 12.6968 7.64859 12.9181C7.28223 13.2328 6.74142 13.2329 6.37515 12.9181C6.11615 12.6955 5.86176 12.4727 5.61148 12.2492C5.27857 12.3187 4.94246 12.3854 4.60269 12.4494C4.12819 12.5387 3.66007 12.2681 3.50015 11.8127C3.38712 11.4903 3.27798 11.1695 3.173 10.8507C2.84998 10.7445 2.52556 10.6342 2.19937 10.5197C1.74381 10.3597 1.47421 9.89163 1.56363 9.41715C1.62804 9.07555 1.69498 8.73776 1.7648 8.40348C1.53738 8.14908 1.31054 7.89053 1.08413 7.62711C0.769382 7.2609 0.768605 6.72003 1.08316 6.35367C1.3084 6.09145 1.53429 5.83378 1.76089 5.58023C1.69238 5.25162 1.62693 4.91982 1.56363 4.58414C1.47416 4.10967 1.74387 3.64164 2.19937 3.4816C2.5255 3.36714 2.85003 3.2568 3.173 3.15054C3.27798 2.83165 3.38711 2.51105 3.50015 2.18863C3.66 1.73298 4.12813 1.46257 4.60269 1.55191C4.93652 1.61476 5.2667 1.68002 5.5939 1.7482C5.84329 1.52546 6.09686 1.30361 6.35465 1.08218ZM9.37223 4.66421C9.1867 4.45969 8.86972 4.44451 8.66519 4.63004C7.93943 5.28843 7.39601 5.8785 6.93765 6.5939C6.5928 7.13218 6.30363 7.72953 6.01871 8.46109L4.98062 7.3898C4.78844 7.19161 4.47184 7.18698 4.27359 7.37906C4.07539 7.57125 4.06978 7.88784 4.26187 8.08609L5.85562 9.72867C5.97638 9.85282 6.15327 9.9057 6.32242 9.86832C6.49143 9.83072 6.62968 9.7086 6.68668 9.54508C7.05531 8.48614 7.38313 7.75266 7.77945 7.13394C8.17394 6.51821 8.65028 5.99416 9.33805 5.37027C9.54207 5.18482 9.55724 4.86863 9.37223 4.66421Z"
-      fill="currentColor"
-    />
-  </svg>
-);
+const QuestStackCard = styled.div`
+  border: 1.5px solid transparent;
+  border-radius: 1rem;
+  padding: 0.7rem 0.75rem 0.68rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
+
+const StackHead = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+`;
+
+const StackTitle = styled.h5`
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.15;
+  color: #212121;
+`;
+
+const StackCounter = styled.span`
+  font-size: 0.72rem;
+  font-weight: 700;
+  opacity: 0.65;
+  color: #4a4a4a;
+`;
+
+const StackTimeline = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+`;
+
+const StackTimelineTrack = styled.div`
+  height: 0.62rem;
+  border-radius: 999px;
+  background: rgba(33, 33, 33, 0.12);
+  position: relative;
+  overflow: hidden;
+`;
+
+const StackTimelineFill = styled.div`
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  border-radius: 999px;
+`;
+
+const StackTimelineNode = styled.span`
+  position: absolute;
+  top: calc(50% - 0.34rem);
+  width: 0.68rem;
+  height: 0.68rem;
+  border-radius: 999px;
+  border: 2px solid transparent;
+`;
+
+const StackMilestoneMetaRow = styled.div`
+  display: grid;
+  gap: 0.3rem;
+`;
+
+const StackMilestoneMeta = styled.div<{ $active?: boolean }>`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.14rem;
+  opacity: ${(p) => (p.$active ? 1 : 0.88)};
+`;
+
+const StackMilestoneGoal = styled.span`
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #212121;
+`;
+
+const StackHintWrap = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+`;
+
+const StackHint = styled.p`
+  font-size: 0.7rem;
+  line-height: 1.2;
+  opacity: 0.72;
+  color: #2f2f2f;
+  text-wrap: balance;
+`;
+
+const StackProgressChip = styled.span`
+  margin-left: 0.45rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  opacity: 0.92;
+  color: #343434;
+  border: 1px solid rgba(33, 33, 33, 0.16);
+  background: rgba(33, 33, 33, 0.06);
+  border-radius: 999px;
+  padding: 0.12rem 0.42rem;
+  white-space: nowrap;
+`;
+
+const QuestRewardChip = styled.span<{ $kind: RewardKind; $compact?: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.26rem;
+  border-radius: 999px;
+  padding: ${(p) => (p.$compact ? "0.1rem 0.36rem" : "0.14rem 0.46rem")};
+  font-size: ${(p) => (p.$compact ? "0.58rem" : "0.66rem")};
+  font-weight: 700;
+  line-height: 1;
+  border: 1px solid
+    ${(p) =>
+      p.$kind === "taps" ? "rgba(143, 110, 38, 0.22)" : "rgba(52, 77, 112, 0.2)"};
+  color: ${(p) => (p.$kind === "taps" ? "#6f5220" : "#3f4f68")};
+  background: ${(p) =>
+    p.$kind === "taps" ? "rgba(143, 110, 38, 0.08)" : "rgba(52, 77, 112, 0.08)"};
+  white-space: nowrap;
+`;
 
 const QuestIcon = styled(motion.div)`
   position: absolute;
   right: 0.5rem;
-  bottom: 0.5rem;
-
-  color: #4178f7;
-`;
-
-const RewardChip = styled(ItemStatusChip)`
-  position: absolute;
-  left: 1em;
-  bottom: 1em;
-  box-shadow: none;
+  top: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 const QuestListItem = styled(FillRow)<{
@@ -104,6 +481,7 @@ const QuestListItem = styled(FillRow)<{
   position: relative;
 
   padding: 1rem;
+  width: 100%;
   pointer-events: auto;
   border-radius: 1.25rem;
   background: rgba(33, 33, 33, 0.05);
@@ -112,14 +490,6 @@ const QuestListItem = styled(FillRow)<{
   ${(p) =>
     p.$completed &&
     `
-    background: rgba(65, 120, 247, 0.1);
-    
-    border: 1.5px solid #4178f7;
-
-    h5 {
-      color: #4178f7;
-    }
-
     p {
       text-decoration: line-through;
     }
@@ -136,6 +506,7 @@ const QuestListItem = styled(FillRow)<{
     opacity: 0.6;
   }
 `;
+
 const QuestName = styled.h5`
   text-wrap: balance;
   line-height: 1.15;
@@ -144,4 +515,21 @@ const QuestName = styled.h5`
 const QuestInfos = styled.p`
   text-wrap: balance;
   line-height: 1.25;
+`;
+
+const QuestProgressChip = styled.p`
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  opacity: 0.92;
+  color: #343434;
+  border: 1px solid rgba(33, 33, 33, 0.16);
+  background: rgba(33, 33, 33, 0.06);
+  border-radius: 999px;
+  padding: 0.16rem 0.46rem;
 `;

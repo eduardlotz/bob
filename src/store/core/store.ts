@@ -252,6 +252,7 @@ interface GameState {
   version: number;
 
   taps: number;
+  lifetimeTotalTaps: number;
   tapMultiplier: number;
   lastAutoTapTime: number;
 
@@ -544,6 +545,7 @@ export const initialGameState: GameState = {
   version: GAME_STORE_VERSION.LATEST,
 
   taps: 0,
+  lifetimeTotalTaps: 0,
   tapMultiplier: 1,
   lastAutoTapTime: 0,
 
@@ -610,6 +612,7 @@ const initialGameComputedValues: GameComputed = {
 const partializePersisted = (state: GameStore): PersistedGameStore => ({
   version: state.version,
   taps: state.taps,
+  lifetimeTotalTaps: state.lifetimeTotalTaps,
   tapMultiplier: state.tapMultiplier,
   lastAutoTapTime: state.lastAutoTapTime,
   upgrades: state.upgrades,
@@ -685,13 +688,14 @@ export const useCoreStore = create<GameStore>()(
         addTaps: (amount: number) => {
           set((state) => ({
             taps: state.taps + amount,
-            manualTaps: state.manualTaps + amount,
           }));
         },
 
         addAutoTaps: (amount: number) => {
           set((state) => ({
             taps: state.taps + amount * state.getTotalTapMultiplier(),
+            lifetimeTotalTaps:
+              state.lifetimeTotalTaps + amount * state.getTotalTapMultiplier(),
             lastAutoTapTime: Date.now(),
           }));
         },
@@ -699,6 +703,8 @@ export const useCoreStore = create<GameStore>()(
           set((state) => ({
             taps: state.taps + 1 * state.getTotalTapMultiplier(),
             manualTaps: state.manualTaps + 1,
+            lifetimeTotalTaps:
+              state.lifetimeTotalTaps + 1 * state.getTotalTapMultiplier(),
           }));
         },
 
@@ -1231,6 +1237,10 @@ export const useCoreStore = create<GameStore>()(
           set({
             ...initialGameState,
             ...initialGameFlags,
+            ...initialGameComputedValues,
+            _cachedTapsPerSecond: undefined,
+            _cachedTapMultiplier: undefined,
+            _lastUpgradeHash: undefined,
           });
         },
 
@@ -1692,6 +1702,7 @@ export const useCoreStore = create<GameStore>()(
           state._cachedTapsPerSecond = state._cachedTapsPerSecond;
           state._cachedTapMultiplier = state._cachedTapMultiplier;
           state._lastUpgradeHash = state._lastUpgradeHash;
+          state.lifetimeTotalTaps = state.lifetimeTotalTaps ?? state.taps ?? 0;
 
           state.manualTaps = state.manualTaps;
           state.manualTapsPerSecond = 0;

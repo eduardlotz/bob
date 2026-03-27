@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { useEffect, useRef } from "react";
-import { useQuestSystem } from "@/hooks/useQuestSystem";
+import { useQuestActions } from "@/hooks/useQuestSystem";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { useFloatingBar } from "@/layout/FloatingBar";
 import { useI18n } from "@/i18n";
@@ -97,7 +97,7 @@ export function StandaloneSocialsGlobe({
   const { locale } = useI18n();
   const localizedMessages =
     socialsMessages[locale as keyof typeof socialsMessages];
-  const { triggerQuest } = useQuestSystem();
+  const { triggerQuest } = useQuestActions();
   const { playUISound } = useSoundSystem();
   const { setHoveredObject } = useFloatingBar();
   const setHoveringClickable = useCursorStore((state) => state.setHoveringClickable);

@@ -71,19 +71,49 @@ export const GlobalStyle = createGlobalStyle`
     [data-sileo-viewport] {
         z-index: 9999;
     }
+
+    .toast-badge {
+      width: 1.35rem !important;
+      height: 1.35rem !important;
+      padding: 0 !important;
+      margin-left: 0.2rem !important;
+      margin-right: 0.05rem !important;
+      border-radius: 0.45rem !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+
+    .toast-badge svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
     
     .toast-title {
-      /* color: radial-gradient(#98308A,#F286ED); */
-      /* color: radial-gradient(circle at 50% 50%, #98308A 0%, #F286ED 70%); */
       color: #5e425b;
       font-weight: 700;
-      font-size: 0.875rem;
+      font-size: 0.9rem;
     }
 
     .toast-desc {
-      color: #cbb3d0;
+      color: #7f667d;
+      opacity: 0.85;
       font-weight: 500;
-      font-size: 0.75rem;
+      font-size: 0.76rem;
+      text-align: inherit;
+    }
+
+    .quest-toast-title {
+      color: #d6dcff;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .quest-toast-desc {
+      color: #b8c0ea;
+      opacity: 0.88;
+      font-weight: 500;
+      font-size: 0.76rem;
       text-align: inherit;
     }
 

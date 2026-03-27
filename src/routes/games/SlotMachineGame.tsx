@@ -3,7 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
 import { useMiniGameStore } from "@/store";
-import { useQuestSystem } from "@/hooks/useQuestSystem";
+import { useQuestActions } from "@/hooks/useQuestSystem";
 import { playUISound } from "@/utils/soundSystem";
 import { GradientTexture } from "@react-three/drei";
 
@@ -369,7 +369,7 @@ const SlotMachineBody = ({
 
 export function SlotMachineGame({ onExit }: { onExit: () => void }) {
   const { incrementScore } = useMiniGameStore();
-  const { triggerQuest } = useQuestSystem();
+  const { triggerQuest } = useQuestActions();
 
   const reelsRef = useRef<ReelRuntime[]>(
     (() => {

@@ -14,7 +14,7 @@ import { useAppStore } from "@/store";
 import { useViewStore } from "@/store/viewStore";
 import { Magnetic } from "@/layout/Magnetic";
 import { useMessageStore } from "@/store/messageStore";
-import { useQuestSystem } from "@/hooks/useQuestSystem";
+import { useQuestActions } from "@/hooks/useQuestSystem";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { playUISound } from "@/utils/soundSystem";
 import { useI18n } from "@/i18n";
@@ -337,7 +337,7 @@ function Option({
   const navigate = useNavigate();
   const { locale } = useI18n();
   const { currentRoute } = useAppStore();
-  const { triggerQuest } = useQuestSystem();
+  const { triggerQuest } = useQuestActions();
   const { canAfford, purchaseRoute } = useCoreStore();
   const { showMessage } = useMessageStore();
 

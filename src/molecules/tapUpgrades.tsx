@@ -8,7 +8,7 @@ import { useRef, useState } from "react";
 import styled from "styled-components";
 import { formatNumber } from "./TapCounter";
 import { useKeyPress } from "@/hooks/useKeyPress";
-import { useQuestSystem } from "@/hooks/useQuestSystem";
+import { useQuestActions } from "@/hooks/useQuestSystem";
 import { playUISound } from "@/utils/soundSystem";
 import { useI18n } from "@/i18n";
 import { getUpgradeCopy } from "@/shop-items/upgrades.messages";
@@ -17,7 +17,7 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
   const { upgrades: tapUpgrades, purchaseUpgrade, canAfford } = useCoreStore();
   const { locale } = useI18n();
 
-  const { triggerQuest } = useQuestSystem();
+  const { triggerQuest } = useQuestActions();
   const containerRef = useRef(null);
   const triggerRef = useRef(null);
   const [showUpgrades, setShowUpgrades] = useState(false);

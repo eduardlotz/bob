@@ -4,7 +4,7 @@ import { GoalPost } from "@/3d-objects/models/goalPost";
 import { CloudEffect } from "@/3d-objects/ParticleEffects";
 import { CharacterBall } from "@/components/CharacterBall";
 import { useCursor } from "@/hooks/useCursor";
-import { useQuestSystem } from "@/hooks/useQuestSystem";
+import { useQuestActions } from "@/hooks/useQuestSystem";
 import {
   CAMERA_HEIGHT,
   HIDDEN_OPTIONS_CAMERA_ZOOM,
@@ -32,7 +32,7 @@ export const FootballGame = ({ onExit }: { onExit: () => void }) => {
   });
 
   const { cameraControlsRef } = useViewStore();
-  const { triggerQuest } = useQuestSystem();
+  const { triggerQuest } = useQuestActions();
 
   const createParticles = useCallback((x = 0, y = 2, z = 0, count = 50) => {
     if ((window as any).createTapParticles) {
