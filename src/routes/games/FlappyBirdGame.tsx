@@ -20,6 +20,7 @@ import {
 } from "@/3d-objects/FlappyRings";
 import { FlappyClouds } from "@/3d-objects/FlappyClouds";
 import { CharacterBall } from "@/components/CharacterBall";
+import { useQuestActions } from "@/hooks/useQuestSystem";
 import { playSound } from "@/utils/soundSystem";
 import { BackSide } from "three";
 import { GradientTexture } from "@react-three/drei";
@@ -39,6 +40,7 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
   const resetScore = useMiniGameStore((s) => s.resetScore);
   const score = useMiniGameStore((s) => s.session.score);
   const isMobile = useAppStore((s) => s.isMobile);
+  const { triggerQuest } = useQuestActions();
 
   const obstacles = useRef<{ reset: () => void } | null>(null);
   const { gl } = useThree();
@@ -82,6 +84,11 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
 
     obstacles.current?.reset();
   }, [resetScore]);
+
+  const handleScore = useCallback(() => {
+    incrementScore();
+    triggerQuest("minigames_flappy_score", 1);
+  }, [incrementScore, triggerQuest]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -174,7 +181,7 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
         birdBody={birdApi}
         birdRadius={0.3}
         score={score}
-        onScore={incrementScore}
+        onScore={handleScore}
         onMiss={reset}
       />
     </group>

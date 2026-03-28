@@ -4,8 +4,13 @@ import { createIndexedDBStorage } from "../indexedDB";
 import { ROUTE_IDS } from "../config/routes";
 import { useCoreStore } from "./store";
 import { sileo } from "sileo";
-import { getLocale } from "@/i18n";
-import { getQuestCopy, type QuestMessageId } from "./quests.messages";
+import { getLocale, type Locale } from "@/i18n";
+import {
+  getQuestCopy,
+  getQuestStackCopy,
+  type QuestMessageId,
+  type QuestStackMessageId,
+} from "./quests.messages";
 import { createQuestToastIcon } from "@/components/QuestTrophyIcon";
 
 type RewardType = "taps_reward" | "item_reward";
@@ -17,6 +22,14 @@ interface QuestReward {
   type: RewardType;
   amount: RewardId | number;
 }
+
+export type QuestCompletionToastMeta = {
+  toastKey: string;
+  title: string;
+  description: string;
+  color: string;
+  icon: string;
+};
 
 export interface Quest {
   id: string;
@@ -99,6 +112,45 @@ export const shouldShowQuestCompletionToast = (
   return (
     stackQuests.length > 0 && stackQuests.every((entry) => entry.completed)
   );
+};
+
+export const getQuestCompletionToastMeta = (
+  quest: Pick<
+    Quest,
+    "id" | "title" | "description" | "color" | "icon" | "stackId"
+  >,
+  quests: Array<Pick<Quest, "stackId" | "completed">>,
+  locale: Locale = getLocale(),
+): QuestCompletionToastMeta | null => {
+  if (!shouldShowQuestCompletionToast(quest, quests)) {
+    return null;
+  }
+
+  if (quest.stackId === SHOP_ITEMS_QUEST_STACK_ID) {
+    const stackCopy = getQuestStackCopy(
+      SHOP_ITEMS_QUEST_STACK_ID as QuestStackMessageId,
+      locale,
+    );
+
+    return {
+      toastKey: SHOP_ITEMS_QUEST_STACK_ID,
+      title: stackCopy?.title ?? "Shop Collector",
+      description:
+        stackCopy?.description ?? "Buy one item from each shop category.",
+      color: "#6B8BFF",
+      icon: "🛍️",
+    };
+  }
+
+  const questCopy = getQuestCopy(quest.id as QuestMessageId, locale);
+
+  return {
+    toastKey: quest.id,
+    title: questCopy?.title ?? quest.title,
+    description: questCopy?.description ?? quest.description,
+    color: quest.color,
+    icon: quest.icon,
+  };
 };
 
 const applyQuestReward = (
@@ -726,19 +778,23 @@ export const useQuestStore = create<QuestStore>()(
             });
 
             const latestQuests = get().quests;
-            if (!shouldShowQuestCompletionToast(quest, latestQuests)) {
+            const toastMeta = getQuestCompletionToastMeta(
+              quest,
+              latestQuests,
+              getLocale(),
+            );
+            if (!toastMeta) {
               return;
             }
 
-            const questCopy = getQuestCopy(
-              quest.id as QuestMessageId,
-              getLocale(),
-            );
-
             sileo.success({
-              title: questCopy?.title ?? `${quest.title}`,
-              description: questCopy?.description ?? quest.description,
-              icon: createQuestToastIcon(quest.id, quest.color, quest.icon),
+              title: toastMeta.title,
+              description: toastMeta.description,
+              icon: createQuestToastIcon(
+                toastMeta.toastKey,
+                toastMeta.color,
+                toastMeta.icon,
+              ),
               fill: "#111324",
               styles: {
                 badge: "toast-badge",
@@ -804,19 +860,23 @@ export const useQuestStore = create<QuestStore>()(
             });
 
             const latestQuests = get().quests;
-            if (!shouldShowQuestCompletionToast(quest, latestQuests)) {
+            const toastMeta = getQuestCompletionToastMeta(
+              quest,
+              latestQuests,
+              getLocale(),
+            );
+            if (!toastMeta) {
               return;
             }
 
-            const questCopy = getQuestCopy(
-              quest.id as QuestMessageId,
-              getLocale(),
-            );
-
             sileo.success({
-              title: questCopy?.title ?? `${quest.title}`,
-              description: questCopy?.description ?? quest.description,
-              icon: createQuestToastIcon(quest.id, quest.color, quest.icon),
+              title: toastMeta.title,
+              description: toastMeta.description,
+              icon: createQuestToastIcon(
+                toastMeta.toastKey,
+                toastMeta.color,
+                toastMeta.icon,
+              ),
               fill: "#111324",
               styles: {
                 badge: "toast-badge",

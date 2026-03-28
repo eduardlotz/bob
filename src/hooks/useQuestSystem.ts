@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo } from "react";
 import {
+  getQuestCompletionToastMeta,
   hasQuestReward,
-  shouldShowQuestCompletionToast,
   useQuestStore,
 } from "@/store/core/quests";
 import { useCoreStore } from "@/store/core/store";
@@ -9,7 +9,6 @@ import { useAppStore } from "@/store";
 import { ROUTE_DICTIONARY } from "@/store/config/routes";
 import { sileo } from "sileo";
 import { getLocale } from "@/i18n";
-import { getQuestCopy, type QuestMessageId } from "@/store/core/quests.messages";
 import { createQuestToastIcon } from "@/components/QuestTrophyIcon";
 
 type TriggerQuestArgs = {
@@ -74,19 +73,23 @@ const runQuestTrigger = ({
       }
 
       const latestQuests = useQuestStore.getState().quests;
-      if (!shouldShowQuestCompletionToast(quest, latestQuests)) {
+      const toastMeta = getQuestCompletionToastMeta(
+        quest,
+        latestQuests,
+        getLocale(),
+      );
+      if (!toastMeta) {
         return;
       }
 
-      const questCopy = getQuestCopy(
-        quest.id as QuestMessageId,
-        getLocale(),
-      );
-
       sileo.success({
-        title: questCopy?.title ?? quest.title,
-        description: questCopy?.description ?? quest.description,
-        icon: createQuestToastIcon(quest.id, quest.color, quest.icon),
+        title: toastMeta.title,
+        description: toastMeta.description,
+        icon: createQuestToastIcon(
+          toastMeta.toastKey,
+          toastMeta.color,
+          toastMeta.icon,
+        ),
         fill: "#111324",
         styles: {
           badge: "toast-badge",
