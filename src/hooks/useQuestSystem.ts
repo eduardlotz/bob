@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo } from "react";
-import { useQuestStore } from "@/store/core/quests";
+import {
+  hasQuestReward,
+  shouldShowQuestCompletionToast,
+  useQuestStore,
+} from "@/store/core/quests";
 import { useCoreStore } from "@/store/core/store";
 import { useAppStore } from "@/store";
 import { ROUTE_DICTIONARY } from "@/store/config/routes";
@@ -55,9 +59,24 @@ const runQuestTrigger = ({
     if (newProgress >= quest.maxProgress && !currentQuestState?.completed) {
       completeQuest(quest.id);
 
-      quest.reward.type === "taps_reward"
-        ? addTaps(quest.reward.amount as number)
-        : purchaseBobItem(quest.reward.amount as string, true);
+      if (hasQuestReward(quest) && quest.reward) {
+        if (quest.reward.type === "taps_reward") {
+          const amount = Number(quest.reward.amount) || 0;
+          if (amount > 0) {
+            addTaps(amount);
+          }
+        } else {
+          const itemId = String(quest.reward.amount || "");
+          if (itemId) {
+            purchaseBobItem(itemId, true);
+          }
+        }
+      }
+
+      const latestQuests = useQuestStore.getState().quests;
+      if (!shouldShowQuestCompletionToast(quest, latestQuests)) {
+        return;
+      }
 
       const questCopy = getQuestCopy(
         quest.id as QuestMessageId,
@@ -67,7 +86,7 @@ const runQuestTrigger = ({
       sileo.success({
         title: questCopy?.title ?? quest.title,
         description: questCopy?.description ?? quest.description,
-        icon: createQuestToastIcon(quest.id, quest.color),
+        icon: createQuestToastIcon(quest.id, quest.color, quest.icon),
         fill: "#111324",
         styles: {
           badge: "toast-badge",
@@ -160,8 +179,10 @@ export const useQuestSystem = () => {
       currentQuests.reduce(
         (sum: number, q: any) =>
           sum +
-          (q.completed && q.reward?.type === "taps_reward"
-            ? Number(q.reward.amount) || 0
+          (q.completed &&
+          hasQuestReward(q) &&
+          q.reward?.type === "taps_reward"
+            ? Math.max(0, Number(q.reward.amount) || 0)
             : 0),
         0,
       ),
@@ -169,17 +190,17 @@ export const useQuestSystem = () => {
   );
 
   const purchasedBobItems = useMemo(
-    () => bobItems.filter((item) => item.purchased).length,
+    () => bobItems.filter((item) => item.purchased && item.cost > 0).length,
     [bobItems],
   );
 
   const purchasedTapEffects = useMemo(
-    () => tapEffects.filter((item) => item.purchased).length,
+    () => tapEffects.filter((item) => item.purchased && item.cost > 0).length,
     [tapEffects],
   );
 
   const purchasedWorlds = useMemo(
-    () => worlds.filter((item) => item.purchased).length,
+    () => worlds.filter((item) => item.purchased && item.cost > 0).length,
     [worlds],
   );
 

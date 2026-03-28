@@ -37,12 +37,20 @@ export const questMessages = defineMessages({
       description: "Erreiche insgesamt 1.000 Taps",
     },
     total_taps_10000: {
-      title: "Fünfstellig",
-      description: "Erreiche insgesamt 10.000 Taps",
-    },
-    total_taps_1000000: {
       title: "Millionär",
       description: "Erreiche insgesamt 1.000.000 Taps",
+    },
+    total_taps_1000000: {
+      title: "Milliardär",
+      description: "Erreiche insgesamt 1.000.000.000 Taps",
+    },
+    total_taps_1000000000000: {
+      title: "Trillion Club",
+      description: "Erreiche insgesamt 1.000.000.000.000 Taps",
+    },
+    total_taps_1000000000000000: {
+      title: "Jenseits der Unendlichkeit",
+      description: "Erreiche insgesamt 1.000.000.000.000.000 Taps",
     },
     shop_buy_bob_item_1: {
       title: "Neuer Fit",
@@ -111,12 +119,20 @@ export const questMessages = defineMessages({
       description: "Reach 1,000 total taps",
     },
     total_taps_10000: {
-      title: "Five Digits",
-      description: "Reach 10,000 total taps",
-    },
-    total_taps_1000000: {
       title: "Millionaire",
       description: "Reach 1,000,000 total taps",
+    },
+    total_taps_1000000: {
+      title: "Billionaire",
+      description: "Reach 1,000,000,000 total taps",
+    },
+    total_taps_1000000000000: {
+      title: "Trillion Club",
+      description: "Reach 1,000,000,000,000 total taps",
+    },
+    total_taps_1000000000000000: {
+      title: "Beyond Infinity",
+      description: "Reach 1,000,000,000,000,000 total taps",
     },
     shop_buy_bob_item_1: {
       title: "Fresh Fit",
@@ -174,6 +190,10 @@ export const questStackMessages = defineMessages({
       title: "Spielzeit-Meilensteine",
       description: "Bleib im Spiel und sammle Ausdauer-Belohnungen.",
     },
+    shop_item_categories: {
+      title: "Shop-Sammler",
+      description: "Kaufe je ein Item aus Bob, Effekte und Welten.",
+    },
   },
   en: {
     manual_taps: {
@@ -187,6 +207,10 @@ export const questStackMessages = defineMessages({
     playtime: {
       title: "Playtime Milestones",
       description: "Stay in the game to unlock endurance rewards.",
+    },
+    shop_item_categories: {
+      title: "Shop Collector",
+      description: "Buy one item from Bob, Effects, and Worlds.",
     },
   },
 });

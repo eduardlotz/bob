@@ -1,155 +1,76 @@
-import { createElement, useId, type ReactNode } from "react";
+import { createElement, type ReactNode } from "react";
 
 type QuestTrophyIconProps = {
-  questId: string;
+  emoji?: string;
   color?: string;
   size?: number;
-  compact?: boolean;
   muted?: boolean;
 };
 
-type QuestIconPalette = {
-  background: string;
-  foreground: string;
-};
-
-const hashQuestId = (questId: string): number => {
-  let hash = 0;
-
-  for (let index = 0; index < questId.length; index += 1) {
-    hash = (hash << 5) - hash + questId.charCodeAt(index);
-    hash |= 0;
-  }
-
-  return Math.abs(hash);
-};
-
-const QUEST_ICON_PALETTES: QuestIconPalette[] = [
-  {
-    background: "#E8D8F1",
-    foreground: "#8A4CAB",
-  },
-  {
-    background: "#E4F0DA",
-    foreground: "#3D8A58",
-  },
-  {
-    background: "#DCE7F7",
-    foreground: "#3D66A8",
-  },
-  {
-    background: "#F4E4D5",
-    foreground: "#B7773B",
-  },
-];
-
-const pickQuestPalette = (questId: string): QuestIconPalette => {
-  const hash = hashQuestId(questId);
-  return QUEST_ICON_PALETTES[hash % QUEST_ICON_PALETTES.length];
-};
-
-const pickQuestShape = (questId: string): "circle" | "square" | "triangle" => {
-  const hash = hashQuestId(questId);
-  const shapeIndex = hash % 3;
-  if (shapeIndex === 0) return "circle";
-  if (shapeIndex === 1) return "square";
-  return "triangle";
-};
-
-const withAlpha = (hexColor: string, alpha: number): string => {
-  const hex = hexColor.replace("#", "");
-  const value = hex.length === 3
-    ? hex
-        .split("")
-        .map((char) => char + char)
-        .join("")
-    : hex;
-
-  if (value.length !== 6) {
-    return hexColor;
-  }
-
-  const r = Number.parseInt(value.slice(0, 2), 16);
-  const g = Number.parseInt(value.slice(2, 4), 16);
-  const b = Number.parseInt(value.slice(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
-
 export const QuestTrophyIcon = ({
-  questId,
-  color,
-  size = 30,
-  compact = false,
+  emoji = "🏆",
+  color = "#8A4CAB",
+  size = 24,
   muted = false,
 }: QuestTrophyIconProps) => {
-  const palette = pickQuestPalette(questId);
-  const foreground = color ?? palette.foreground;
-  const background = color ? withAlpha(color, compact ? 0.28 : 0.22) : palette.background;
-  const shape = pickQuestShape(questId);
-  const uid = useId().replaceAll(":", "");
-  const squircleId = `${uid}-squircle`;
-
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 32 32"
-      fill="none"
+    <div
       aria-hidden="true"
       style={{
-        display: "block",
-        opacity: muted ? 0.58 : 1,
+        width: size,
+        height: size,
+        position: "relative",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        opacity: muted ? 0.66 : 1,
       }}
-      xmlns="http://www.w3.org/2000/svg"
     >
-      <defs>
-        <linearGradient id={squircleId} x1="5" y1="5" x2="27" y2="27">
-          <stop offset="0" stopColor={background} stopOpacity="0.98" />
-          <stop offset="1" stopColor={background} stopOpacity="0.84" />
-        </linearGradient>
-      </defs>
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 41 42"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <g style={{ filter: "drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.15))" }}>
+          <path
+            d="M16.1882 4.85904C15.1653 5.73077 13.8934 6.25759 12.5537 6.3645C9.4273 6.61399 6.94471 9.09658 6.69522 12.223C6.58831 13.5627 6.06149 14.8345 5.18976 15.8575C3.1555 18.2446 3.1555 21.7555 5.18976 24.1426C6.06149 25.1655 6.58831 26.4373 6.69522 27.7771C6.94471 30.9034 9.4273 33.386 12.5537 33.6355C13.8934 33.7424 15.1653 34.2692 16.1882 35.141C18.5753 37.1752 22.0862 37.1752 24.4733 35.141C25.4962 34.2692 26.7681 33.7424 28.1078 33.6355C31.2342 33.386 33.7168 30.9034 33.9662 27.7771C34.0731 26.4373 34.6 25.1655 35.4717 24.1426C37.506 21.7555 37.506 18.2446 35.4717 15.8575C34.6 14.8345 34.0731 13.5627 33.9662 12.223C33.7168 9.09658 31.2342 6.61399 28.1078 6.3645C26.7681 6.25759 25.4962 5.73077 24.4733 4.85904C22.0862 2.82478 18.5753 2.82478 16.1882 4.85904Z"
+            fill={color}
+            stroke="white"
+            strokeWidth="3.33333"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </g>
+      </svg>
 
-      <rect
-        x={3}
-        y={3}
-        width={26}
-        height={26}
-        rx={compact ? 8 : 9}
-        fill={`url(#${squircleId})`}
-      />
-
-      {shape === "circle" && <circle cx={16} cy={16} r={compact ? 4.2 : 4.8} fill={foreground} />}
-      {shape === "square" && (
-        <rect
-          x={compact ? 11.7 : 11.1}
-          y={compact ? 11.7 : 11.1}
-          width={compact ? 8.6 : 9.8}
-          height={compact ? 8.6 : 9.8}
-          rx={1.7}
-          fill={foreground}
-        />
-      )}
-      {shape === "triangle" && (
-        <path
-          d={
-            compact
-              ? "M16 10.7L21.5 20.5H10.5L16 10.7Z"
-              : "M16 10.1L22.3 21.3H9.7L16 10.1Z"
-          }
-          fill={foreground}
-        />
-      )}
-    </svg>
+      <span
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          transform: "translateY(-1px)",
+          fontSize: Math.max(8, size * 0.4),
+          lineHeight: 1,
+          color: "#212121",
+        }}
+      >
+        {emoji}
+      </span>
+    </div>
   );
 };
 
 export const createQuestToastIcon = (
   questId: string,
   color?: string,
+  emoji?: string,
 ): ReactNode =>
   createElement(QuestTrophyIcon, {
-    questId,
+    emoji,
     color,
-    size: 15,
-    compact: true,
+    size: 18,
   });

@@ -10,6 +10,8 @@ import { createQuestToastIcon } from "@/components/QuestTrophyIcon";
 
 type RewardType = "taps_reward" | "item_reward";
 type RewardId = string;
+export type QuestProgressionKind = "milestone" | "goal" | "trigger";
+export const SHOP_ITEMS_QUEST_STACK_ID = "shop_item_categories";
 
 interface QuestReward {
   type: RewardType;
@@ -24,10 +26,11 @@ export interface Quest {
   color: string;
   progress: number;
   maxProgress: number;
-  reward: QuestReward;
+  reward?: QuestReward;
   completed: boolean;
   routeId?: string;
   type: "interaction" | "tap" | "time" | "custom"; // TODO: expand store with hooks for diff types
+  progressionKind?: QuestProgressionKind;
   trigger?: {
     action: string;
     value?: any;
@@ -65,8 +68,63 @@ export enum QUESTS_STORE_VERSION {
   V5 = 1000004, // socials fun facts unlock quests
   V6 = 1000005, // expanded progression quests
   V7 = 1000006, // quest stacks + colorized cards
-  LATEST = V7,
+  V8 = 1000007, // badge/progression schema refresh
+  LATEST = V8,
 }
+
+export const hasQuestReward = (quest: Pick<Quest, "reward">): boolean => {
+  if (!quest.reward) {
+    return false;
+  }
+
+  if (quest.reward.type === "taps_reward") {
+    return (Number(quest.reward.amount) || 0) > 0;
+  }
+
+  return String(quest.reward.amount || "").trim().length > 0;
+};
+
+export const shouldShowQuestCompletionToast = (
+  quest: Pick<Quest, "stackId">,
+  quests: Array<Pick<Quest, "stackId" | "completed">>,
+): boolean => {
+  if (quest.stackId !== SHOP_ITEMS_QUEST_STACK_ID) {
+    return true;
+  }
+
+  const stackQuests = quests.filter(
+    (entry) => entry.stackId === SHOP_ITEMS_QUEST_STACK_ID,
+  );
+
+  return (
+    stackQuests.length > 0 && stackQuests.every((entry) => entry.completed)
+  );
+};
+
+const applyQuestReward = (
+  quest: Pick<Quest, "reward">,
+  coreStore: Pick<
+    ReturnType<typeof useCoreStore.getState>,
+    "addTaps" | "purchaseBobItem"
+  >,
+) => {
+  if (!hasQuestReward(quest) || !quest.reward) {
+    return;
+  }
+
+  if (quest.reward.type === "taps_reward") {
+    const amount = Number(quest.reward.amount) || 0;
+    if (amount > 0) {
+      coreStore.addTaps(amount);
+    }
+    return;
+  }
+
+  const itemId = String(quest.reward.amount || "");
+  if (itemId) {
+    coreStore.purchaseBobItem(itemId, true);
+  }
+};
 
 const mergeQuestLists = (currentQuests: Quest[], defaultQuests: Quest[]) => {
   const defaultQuestById = new Map(
@@ -125,7 +183,7 @@ function migrateStore(oldState: any, fromVersion: number): any {
     ? { quests: migratedState, activeQuests: [] }
     : { ...migratedState };
 
-  if (fromVersion < QUESTS_STORE_VERSION.V7) {
+  if (fromVersion < QUESTS_STORE_VERSION.V8) {
     normalizedState.quests = mergeQuestLists(
       normalizedState.quests ?? [],
       initialQuests,
@@ -145,13 +203,10 @@ const initialQuests: Quest[] = [
     color: "#7B5CFF",
     progress: 0,
     maxProgress: 2,
-    reward: {
-      type: "taps_reward",
-      amount: 0,
-    },
     completed: false,
     routeId: ROUTE_IDS.HOME,
     type: "interaction",
+    progressionKind: "trigger",
     trigger: {
       action: "auto_tap_level",
       value: 1,
@@ -172,6 +227,7 @@ const initialQuests: Quest[] = [
     completed: false,
     routeId: ROUTE_IDS.ABOUT,
     type: "interaction",
+    progressionKind: "trigger",
     trigger: {
       action: "click_plumbob",
       value: 1,
@@ -192,6 +248,7 @@ const initialQuests: Quest[] = [
     completed: false,
     routeId: ROUTE_IDS.PORTFOLIO,
     type: "interaction",
+    progressionKind: "goal",
     trigger: {
       action: "click_portfolio_item",
       value: 1,
@@ -212,6 +269,7 @@ const initialQuests: Quest[] = [
     completed: false,
     routeId: ROUTE_IDS.ABOUT,
     type: "interaction",
+    progressionKind: "goal",
     trigger: {
       action: "click_books",
       value: 1,
@@ -233,6 +291,7 @@ const initialQuests: Quest[] = [
     completed: false,
     routeId: ROUTE_IDS.HOME,
     type: "tap",
+    progressionKind: "milestone",
     trigger: {
       action: "manual_taps_total",
       value: 1,
@@ -258,6 +317,7 @@ const initialQuests: Quest[] = [
     completed: false,
     routeId: ROUTE_IDS.HOME,
     type: "tap",
+    progressionKind: "milestone",
     trigger: {
       action: "manual_taps_total",
       value: 1,
@@ -283,6 +343,7 @@ const initialQuests: Quest[] = [
     completed: false,
     routeId: ROUTE_IDS.HOME,
     type: "tap",
+    progressionKind: "milestone",
     trigger: {
       action: "manual_taps_total",
       value: 1,
@@ -308,6 +369,7 @@ const initialQuests: Quest[] = [
     },
     completed: false,
     type: "tap",
+    progressionKind: "milestone",
     trigger: {
       action: "taps_total",
       value: 1,
@@ -320,18 +382,19 @@ const initialQuests: Quest[] = [
   },
   {
     id: "total_taps_10000",
-    title: "Fünfstellig",
-    description: "Erreiche insgesamt 10.000 Taps",
+    title: "Millionär",
+    description: "Erreiche insgesamt 1.000.000 Taps",
     icon: "💯",
     color: "#5660D0",
     progress: 0,
-    maxProgress: 10000,
+    maxProgress: 1000000,
     reward: {
       type: "taps_reward",
-      amount: 20000,
+      amount: 200000,
     },
     completed: false,
     type: "tap",
+    progressionKind: "milestone",
     trigger: {
       action: "taps_total",
       value: 1,
@@ -344,18 +407,19 @@ const initialQuests: Quest[] = [
   },
   {
     id: "total_taps_1000000",
-    title: "Millionär",
-    description: "Erreiche insgesamt 1.000.000 Taps",
+    title: "Milliardär",
+    description: "Erreiche insgesamt 1.000.000.000 Taps",
     icon: "🪙",
     color: "#A85BD2",
     progress: 0,
-    maxProgress: 1000000,
+    maxProgress: 1000000000,
     reward: {
       type: "taps_reward",
-      amount: 250000,
+      amount: 5000000,
     },
     completed: false,
     type: "tap",
+    progressionKind: "milestone",
     trigger: {
       action: "taps_total",
       value: 1,
@@ -364,6 +428,52 @@ const initialQuests: Quest[] = [
     hiddenUntilCompleted: true,
     stackId: "total_taps",
     stackOrder: 3,
+    stackTitle: "Total Tap Milestones",
+    stackDescription: "Reach long-term lifetime tap goals.",
+  },
+  {
+    id: "total_taps_1000000000000",
+    title: "Trillion Club",
+    description: "Reach 1,000,000,000,000 total taps",
+    icon: "🚀",
+    color: "#7D6BFF",
+    progress: 0,
+    maxProgress: 1000000000000,
+    // Optional reward on purpose for late milestone balancing.
+    completed: false,
+    type: "tap",
+    progressionKind: "milestone",
+    trigger: {
+      action: "taps_total",
+      value: 1,
+    },
+    showProgress: true,
+    hiddenUntilCompleted: true,
+    stackId: "total_taps",
+    stackOrder: 4,
+    stackTitle: "Total Tap Milestones",
+    stackDescription: "Reach long-term lifetime tap goals.",
+  },
+  {
+    id: "total_taps_1000000000000000",
+    title: "Beyond Infinity",
+    description: "Reach 1,000,000,000,000,000 total taps",
+    icon: "🌌",
+    color: "#5E8BFF",
+    progress: 0,
+    maxProgress: 1000000000000000,
+    // Optional reward on purpose for late milestone balancing.
+    completed: false,
+    type: "tap",
+    progressionKind: "milestone",
+    trigger: {
+      action: "taps_total",
+      value: 1,
+    },
+    showProgress: true,
+    hiddenUntilCompleted: true,
+    stackId: "total_taps",
+    stackOrder: 5,
     stackTitle: "Total Tap Milestones",
     stackDescription: "Reach long-term lifetime tap goals.",
   },
@@ -381,10 +491,15 @@ const initialQuests: Quest[] = [
     },
     completed: false,
     type: "custom",
+    progressionKind: "trigger",
     trigger: {
       action: "shop_buy_bob_item",
       value: 1,
     },
+    stackId: SHOP_ITEMS_QUEST_STACK_ID,
+    stackOrder: 1,
+    stackTitle: "Shop Collector",
+    stackDescription: "Buy one item from each shop category.",
   },
   {
     id: "shop_buy_tap_effect_1",
@@ -392,18 +507,23 @@ const initialQuests: Quest[] = [
     description: "Kauf einen Tap-Effekt im Shop",
     icon: "✨",
     color: "#44A69A",
-    progress: 1,
-    maxProgress: 2,
+    progress: 0,
+    maxProgress: 1,
     reward: {
       type: "taps_reward",
       amount: 5000,
     },
     completed: false,
     type: "custom",
+    progressionKind: "trigger",
     trigger: {
       action: "shop_buy_tap_effect",
       value: 1,
     },
+    stackId: SHOP_ITEMS_QUEST_STACK_ID,
+    stackOrder: 2,
+    stackTitle: "Shop Collector",
+    stackDescription: "Buy one item from each shop category.",
   },
   {
     id: "shop_buy_world_1",
@@ -411,19 +531,23 @@ const initialQuests: Quest[] = [
     description: "Kaufe eine Welt im Shop",
     icon: "🌍",
     color: "#4A8E6A",
-    progress: 1,
-    maxProgress: 2,
+    progress: 0,
+    maxProgress: 1,
     reward: {
       type: "taps_reward",
       amount: 12000,
     },
     completed: false,
     type: "custom",
+    progressionKind: "trigger",
     trigger: {
       action: "shop_buy_world",
       value: 1,
     },
-    hiddenUntilCompleted: true,
+    stackId: SHOP_ITEMS_QUEST_STACK_ID,
+    stackOrder: 3,
+    stackTitle: "Shop Collector",
+    stackDescription: "Buy one item from each shop category.",
   },
   {
     id: "playtime_60s",
@@ -439,6 +563,7 @@ const initialQuests: Quest[] = [
     },
     completed: false,
     type: "time",
+    progressionKind: "milestone",
     trigger: {
       action: "playtime_seconds",
       value: 1,
@@ -463,6 +588,7 @@ const initialQuests: Quest[] = [
     },
     completed: false,
     type: "time",
+    progressionKind: "milestone",
     trigger: {
       action: "playtime_seconds",
       value: 1,
@@ -489,6 +615,7 @@ const initialQuests: Quest[] = [
     completed: false,
     // routeId: ROUTE_IDS.MINIGAMES, // FIX: not working with route
     type: "interaction",
+    progressionKind: "goal",
     trigger: {
       action: "minigames_flappy_score",
       value: 1,
@@ -509,6 +636,7 @@ const initialQuests: Quest[] = [
     completed: false,
     // routeId: ROUTE_IDS.MINIGAMES, // FIX: not working with route
     type: "interaction",
+    progressionKind: "goal",
     trigger: {
       action: "minigames_slot_spin",
       value: 1,
@@ -529,6 +657,7 @@ const initialQuests: Quest[] = [
     completed: false,
     // routeId: ROUTE_IDS.MINIGAMES, // FIX: not working with route
     type: "interaction",
+    progressionKind: "trigger",
     trigger: {
       action: "minigames_slot_win",
       value: 1,
@@ -591,9 +720,15 @@ export const useQuestStore = create<QuestStore>()(
           }));
 
           if (isCompleted) {
-            quest.reward.type === "taps_reward"
-              ? addTaps(quest.reward.amount as number)
-              : purchaseBobItem(quest.reward.amount as string, true);
+            applyQuestReward(quest, {
+              addTaps,
+              purchaseBobItem,
+            });
+
+            const latestQuests = get().quests;
+            if (!shouldShowQuestCompletionToast(quest, latestQuests)) {
+              return;
+            }
 
             const questCopy = getQuestCopy(
               quest.id as QuestMessageId,
@@ -603,7 +738,7 @@ export const useQuestStore = create<QuestStore>()(
             sileo.success({
               title: questCopy?.title ?? `${quest.title}`,
               description: questCopy?.description ?? quest.description,
-              icon: createQuestToastIcon(quest.id, quest.color),
+              icon: createQuestToastIcon(quest.id, quest.color, quest.icon),
               fill: "#111324",
               styles: {
                 badge: "toast-badge",
@@ -629,7 +764,12 @@ export const useQuestStore = create<QuestStore>()(
           const nextProgress = Math.min(safeValue, quest.maxProgress);
           const nextCompleted = nextProgress >= quest.maxProgress;
 
-          if (!quest.completed && nextCompleted) {
+          // Avoid replaying completion toasts for already-maxed persisted progress.
+          if (
+            !quest.completed &&
+            nextCompleted &&
+            quest.progress < quest.maxProgress
+          ) {
             justCompletedQuests.push(quest);
           }
 
@@ -658,9 +798,15 @@ export const useQuestStore = create<QuestStore>()(
           const { addTaps, purchaseBobItem } = useCoreStore.getState();
 
           justCompletedQuests.forEach((quest) => {
-            quest.reward.type === "taps_reward"
-              ? addTaps(quest.reward.amount as number)
-              : purchaseBobItem(quest.reward.amount as string, true);
+            applyQuestReward(quest, {
+              addTaps,
+              purchaseBobItem,
+            });
+
+            const latestQuests = get().quests;
+            if (!shouldShowQuestCompletionToast(quest, latestQuests)) {
+              return;
+            }
 
             const questCopy = getQuestCopy(
               quest.id as QuestMessageId,
@@ -670,7 +816,7 @@ export const useQuestStore = create<QuestStore>()(
             sileo.success({
               title: questCopy?.title ?? `${quest.title}`,
               description: questCopy?.description ?? quest.description,
-              icon: createQuestToastIcon(quest.id, quest.color),
+              icon: createQuestToastIcon(quest.id, quest.color, quest.icon),
               fill: "#111324",
               styles: {
                 badge: "toast-badge",

@@ -209,7 +209,7 @@ export const DebugApp = () => {
             sileo.success({
               title: messages.ui.toasts.debugPreviewTitle,
               description: messages.ui.toasts.debugPreviewDescription,
-              icon: createQuestToastIcon("debug_preview", "#8A4CAB"),
+              icon: createQuestToastIcon("debug_preview", "#8A4CAB", "🏆"),
               fill: "#111324",
               styles: {
                 badge: "toast-badge",
