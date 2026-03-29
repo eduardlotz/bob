@@ -1,5 +1,7 @@
 import { useClickOutside } from "@/hooks/useClickOutside";
+import { usePagination } from "@/hooks/usePagination";
 import { CloseIcon } from "@/icons/close";
+import { ChevronLeftIcon, ChevronRightIcon } from "@/icons/chevron";
 import { HugColumn, HugRow } from "@/layout";
 import { Magnetic } from "@/layout/Magnetic";
 import { useCoreStore } from "@/store";
@@ -12,10 +14,45 @@ import { useQuestActions } from "@/hooks/useQuestSystem";
 import { playUISound } from "@/utils/soundSystem";
 import { useI18n } from "@/i18n";
 import { getUpgradeCopy } from "@/shop-items/upgrades.messages";
+import { calculateUpgradeCost } from "@/shop-items/upgradeMath";
+import { PaginationButton, PaginationDots } from "@/apps/ui";
+
+const UPGRADE_PAGE_SIZE = 3;
+
+const formatMultiplier = (value: number): string => {
+  if (value >= 1_000) return formatNumber(value);
+  if (value >= 10) return value.toFixed(1).replace(/\.0$/, "");
+  return value.toFixed(2).replace(/\.?0+$/, "");
+};
+
+const getUpgradeEffectLabel = (upgrade: {
+  effect: { type: "autoTap" | "tapMultiplier"; value: number };
+}) => {
+  if (upgrade.effect.type === "autoTap") {
+    return `+${formatNumber(upgrade.effect.value)}/s each level`;
+  }
+
+  return `x${formatMultiplier(upgrade.effect.value)} tap power per level`;
+};
+
+const getUpgradeCurrentEffectLabel = (upgrade: {
+  level: number;
+  effect: { type: "autoTap" | "tapMultiplier"; value: number };
+}) => {
+  if (upgrade.effect.type === "autoTap") {
+    const current = upgrade.effect.value * upgrade.level;
+    return `Current: +${formatNumber(current)}/s`;
+  }
+
+  const currentMultiplier = Math.pow(upgrade.effect.value, upgrade.level);
+  return `Current: x${formatMultiplier(currentMultiplier)}`;
+};
 
 export const TapUpgrades = ({ show }: { show: boolean }) => {
   const { upgrades: tapUpgrades, purchaseUpgrade, canAfford } = useCoreStore();
   const { locale } = useI18n();
+  const { data, page, pageCount, prev, next, hasNext, hasPrev, goTo } =
+    usePagination(tapUpgrades, UPGRADE_PAGE_SIZE);
 
   const { triggerQuest } = useQuestActions();
   const containerRef = useRef(null);
@@ -33,14 +70,26 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
     playUISound();
   };
 
+  const handleNextPage = () => {
+    if (hasNext) next();
+    else goTo(0);
+    playUISound("ui-tap");
+  };
+
+  const handlePrevPage = () => {
+    if (hasPrev) prev();
+    else goTo(pageCount - 1);
+    playUISound("ui-tap");
+  };
+
   const handleUpgradePurchase = (upgradeId: string) => {
     purchaseUpgrade(upgradeId);
 
     triggerQuest(`${upgradeId}_level`);
   };
 
-  const canAffordUpgrade = tapUpgrades.some((t) =>
-    canAfford(t.baseCost * Math.pow(t.costMultiplier, t.level)),
+  const canAffordUpgrade = tapUpgrades.some(
+    (t) => t.level < t.maxLevel && canAfford(calculateUpgradeCost(t)),
   );
 
   return (
@@ -63,69 +112,87 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
         >
           <AnimatePresence>
             {showUpgrades && (
-              <HugRow $gap={"0.25rem"} $align="center">
-                {tapUpgrades.map((upgrade, i) => {
-                  const upgradeCopy = getUpgradeCopy(
-                    upgrade.id as UpgradeMessageId,
-                    locale,
-                  );
-                  const isMaxLevel = upgrade.level === upgrade.maxLevel;
+              <HugColumn $align="center" $gap={"0.5rem"}>
+                <HugRow $gap={"0.25rem"} $align="center">
+                  {data.map((upgrade, i) => {
+                    const upgradeCopy = getUpgradeCopy(upgrade.id, locale);
+                    const isMaxLevel = upgrade.level === upgrade.maxLevel;
+                    const priceForNextLevel = calculateUpgradeCost(upgrade);
+                    const canAffordNextUpgrade = canAfford(priceForNextLevel);
+                    const canBuy = !isMaxLevel && canAffordNextUpgrade;
+                    const effectLabel = getUpgradeEffectLabel(upgrade);
+                    const currentEffectLabel =
+                      getUpgradeCurrentEffectLabel(upgrade);
 
-                  const priceForNextLevel =
-                    upgrade.baseCost *
-                    Math.pow(upgrade.costMultiplier, upgrade.level);
-
-                  const canAffordNextUpgrade = canAfford(priceForNextLevel);
-
-                  const canBuy = !isMaxLevel && canAffordNextUpgrade;
-
-                  return (
-                    <UpgradeButton
-                      key={upgrade.id}
-                      initial={{ filter: "blur(6px)", opacity: 0 }}
-                      animate={{
-                        filter: "blur(0px)",
-                        opacity: 1,
-                        transition: {
-                          delay: i * 0.05 + 0.02,
-                        },
-                      }}
-                      exit={{ filter: "blur(6px)", opacity: 0 }}
-                      transition={{
-                        type: "spring" as const,
-                        bounce: 0.2,
-                      }}
-                      onClick={() => handleUpgradePurchase(upgrade.id)}
-                      disabled={!canBuy}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      {upgradeCopy.name}
-
-                      <HugRow
-                        $align="center"
-                        $justify="center"
-                        $gap={"0.325rem"}
-                        style={{
-                          position: "absolute",
-                          bottom: "calc(100% + 4px)",
-                          margin: "0 auto",
-                          left: 0,
-                          right: 0,
+                    return (
+                      <UpgradeButton
+                        key={upgrade.id}
+                        initial={{ filter: "blur(6px)", opacity: 0 }}
+                        animate={{
+                          filter: "blur(0px)",
+                          opacity: 1,
+                          transition: {
+                            delay: i * 0.05 + 0.02,
+                          },
                         }}
+                        exit={{ filter: "blur(6px)", opacity: 0 }}
+                        transition={{
+                          type: "spring" as const,
+                          bounce: 0.2,
+                        }}
+                        onClick={() => handleUpgradePurchase(upgrade.id)}
+                        disabled={!canBuy}
+                        whileTap={{ scale: 0.97 }}
+                        title={`${upgradeCopy.description}\n${effectLabel}\n${currentEffectLabel}`}
                       >
-                        {upgrade.level > 0 && (
+                        <UpgradeName>{upgradeCopy.name}</UpgradeName>
+                        <UpgradeEffect>{effectLabel}</UpgradeEffect>
+                        <UpgradeSubEffect>{currentEffectLabel}</UpgradeSubEffect>
+
+                        <HugRow
+                          $align="center"
+                          $justify="space-between"
+                          style={{ width: "100%" }}
+                        >
                           <LevelContainer>Lvl {upgrade.level}</LevelContainer>
-                        )}
-                        {!isMaxLevel && (
-                          <TapCosts>
-                            {formatNumber(priceForNextLevel)} 🫵
-                          </TapCosts>
-                        )}
-                      </HugRow>
-                    </UpgradeButton>
-                  );
-                })}
-              </HugRow>
+
+                          {isMaxLevel ? (
+                            <MaxLevelBadge>MAX</MaxLevelBadge>
+                          ) : (
+                            <TapCosts>{formatNumber(priceForNextLevel)} 🫵</TapCosts>
+                          )}
+                        </HugRow>
+                      </UpgradeButton>
+                    );
+                  })}
+                </HugRow>
+
+                {pageCount > 1 && (
+                  <PaginationDots $contrastMode>
+                    <PaginationButton onClick={handlePrevPage}>
+                      <ChevronLeftIcon />
+                    </PaginationButton>
+
+                    <HugRow $gap={"4px"}>
+                      {Array(pageCount)
+                        .fill(null)
+                        .map((_, i) => (
+                          <motion.div
+                            key={`tap-upgrades-pagination-dot-${i}`}
+                            animate={{
+                              width: page === i ? "20px" : "8px",
+                              opacity: page === i ? 1 : 0.35,
+                            }}
+                          />
+                        ))}
+                    </HugRow>
+
+                    <PaginationButton onClick={handleNextPage}>
+                      <ChevronRightIcon />
+                    </PaginationButton>
+                  </PaginationDots>
+                )}
+              </HugColumn>
             )}
           </AnimatePresence>
 
@@ -194,30 +261,66 @@ const UpgradeIndicator = styled(motion.span)`
 const LevelContainer = styled.div`
   display: flex;
   align-items: center;
+  justify-content: center;
 
   border-radius: 0.625rem;
-  padding: 0.25rem 0.4rem;
+  padding: 0.2rem 0.45rem;
 
   background-color: #010101;
   color: #fff;
 
   font-weight: 600;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
 `;
 
 const TapCosts = styled.div`
   display: flex;
   align-items: center;
+  justify-content: center;
 
   border-radius: 0.625rem;
-  padding: 0.25rem 0.4rem;
+  padding: 0.2rem 0.45rem;
 
   background-color: #ffff54;
   color: #010101;
 
   font-weight: 900;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   word-break: none;
+`;
+
+const MaxLevelBadge = styled(TapCosts)`
+  background-color: #7af9a5;
+`;
+
+const UpgradeName = styled.span`
+  display: block;
+  width: 100%;
+  text-align: left;
+  line-height: 1.2;
+  font-size: 0.9rem;
+  font-weight: 700;
+`;
+
+const UpgradeEffect = styled.span`
+  display: block;
+  width: 100%;
+  text-align: left;
+  line-height: 1.2;
+  font-size: 0.72rem;
+  font-weight: 700;
+  opacity: 0.9;
+`;
+
+const UpgradeSubEffect = styled.span`
+  display: block;
+  width: 100%;
+  text-align: left;
+  line-height: 1.2;
+  font-size: 0.7rem;
+  font-weight: 500;
+  opacity: 0.75;
+  margin-bottom: 0.15rem;
 `;
 
 const TriggerContainer = styled(motion.button)`
@@ -246,14 +349,19 @@ const TriggerContainer = styled(motion.button)`
 
 const UpgradeButton = styled(motion.button)`
   display: flex;
-  padding: 0.5rem 0.75rem;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.25rem;
+
+  width: 162px;
+  min-height: 106px;
+  padding: 0.5rem;
   background-color: rgba(0, 0, 0, 0.25);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
   border-radius: 0.875rem;
 
-  font-size: 1rem;
-  font-weight: 600;
   color: #fff;
 
   &:disabled {
@@ -265,5 +373,3 @@ const UpgradeButton = styled(motion.button)`
     background: rgba(0, 0, 0, 0.5);
   }
 `;
-
-type UpgradeMessageId = "auto_tap" | "tap_multiplier";
