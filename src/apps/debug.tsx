@@ -64,12 +64,18 @@ export const DebugApp = () => {
 
   const quests = useQuestStore((state) => state.quests);
   const resetAllQuests = useQuestStore((state) => state.resetAllQuests);
+  const unlockAllQuests = useQuestStore((state) => state.unlockAllQuests);
   const questsVersion = useQuestStore((state) => state.version);
 
   const clearAll = useCameraStore((state) => state.clearAll);
 
   const resetQuestState = () => {
     resetAllQuests();
+  };
+
+  const unlockEverything = () => {
+    buyAllUpgrades();
+    unlockAllQuests();
   };
 
   const resetEverything = () => {
@@ -248,10 +254,10 @@ export const DebugApp = () => {
       <SettingsWrapper>
         <HugColumn $gap={"0.5rem"}>
           <h5>Unlock Everything</h5>
-          <p>[Shop items, routes & upgrades]</p>
+          <p>[Shop items, routes, upgrades & quests]</p>
         </HugColumn>
 
-        <ActionButton onClick={buyAllUpgrades}>Unlock 💯</ActionButton>
+        <ActionButton onClick={unlockEverything}>Unlock 💯</ActionButton>
       </SettingsWrapper>
 
       <DividerWithLabel>Toggles</DividerWithLabel>

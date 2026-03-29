@@ -1,5 +1,8 @@
+import {
+  formatCompactNumber,
+  formatLocalizedNumber,
+} from "@/i18n/formatters";
 import type { Locale } from "@/i18n/types";
-import { formatNumber } from "@/molecules/TapCounter";
 import {
   getQuestCopy,
   getQuestStackCopy,
@@ -7,6 +10,7 @@ import {
   type QuestStackMessageId,
 } from "@/store/core/quests.messages";
 import type { Quest } from "@/store/core/quests";
+import type { QuestsAppMessages } from "./quests.messages";
 import type {
   QuestBadgeContentValue,
   QuestGroup,
@@ -33,14 +37,6 @@ export const withAlpha = (hexColor: string, alpha: number): string => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
-const compactBadgeNumberFormatter = new Intl.NumberFormat("en-US", {
-  notation: "compact",
-  maximumFractionDigits: 1,
-});
-
-export const localeIsGerman = (locale: string) =>
-  locale.toLowerCase().startsWith("de");
-
 export const formatDuration = (seconds: number) => {
   const safe = Math.max(0, Math.floor(seconds));
   const hours = Math.floor(safe / 3600);
@@ -57,6 +53,18 @@ export const formatDuration = (seconds: number) => {
 
   return `${secs}s`;
 };
+
+const BADGE_COMPACT_UNITS = [
+  {
+    threshold: 1_000_000_000_000_000,
+    divisor: 1_000_000_000_000_000,
+    suffix: "Q",
+  },
+  { threshold: 1_000_000_000_000, divisor: 1_000_000_000_000, suffix: "T" },
+  { threshold: 1_000_000_000, divisor: 1_000_000_000, suffix: "B" },
+  { threshold: 1_000_000, divisor: 1_000_000, suffix: "M" },
+  { threshold: 1_000, divisor: 1_000, suffix: "K" },
+] as const;
 
 const formatBadgeDurationParts = (
   seconds: number,
@@ -86,6 +94,39 @@ const formatBadgeDurationParts = (
   };
 };
 
+const formatBadgeNumberParts = (
+  value: number,
+  locale: Locale,
+): { value: string; metric: string } => {
+  const safe = Math.max(0, Math.floor(value));
+  const compactUnit = BADGE_COMPACT_UNITS.find(
+    (entry) => safe >= entry.threshold,
+  );
+
+  if (!compactUnit) {
+    return {
+      value: formatLocalizedNumber(safe, locale, {
+        maximumFractionDigits: 0,
+      }),
+      metric: "",
+    };
+  }
+
+  const compactValue = safe / compactUnit.divisor;
+  const roundedValue =
+    compactValue >= 10
+      ? Math.floor(compactValue)
+      : Math.floor(compactValue * 10) / 10;
+
+  return {
+    value: formatLocalizedNumber(roundedValue, locale, {
+      minimumFractionDigits: Number.isInteger(roundedValue) ? 0 : 1,
+      maximumFractionDigits: 1,
+    }),
+    metric: compactUnit.suffix,
+  };
+};
+
 export const hasRenderableReward = (quest: Quest) => {
   if (!quest.reward) {
     return false;
@@ -98,7 +139,10 @@ export const hasRenderableReward = (quest: Quest) => {
   return String(quest.reward.amount || "").trim().length > 0;
 };
 
-export const resolveQuestReward = (quest: Quest): RewardMeta | null => {
+export const resolveQuestReward = (
+  quest: Quest,
+  locale: Locale,
+): RewardMeta | null => {
   if (!hasRenderableReward(quest) || !quest.reward) {
     return null;
   }
@@ -106,7 +150,7 @@ export const resolveQuestReward = (quest: Quest): RewardMeta | null => {
   if (quest.reward.type === "taps_reward") {
     return {
       kind: "taps",
-      label: formatNumber(Number(quest.reward.amount) || 0),
+      label: formatCompactNumber(Number(quest.reward.amount) || 0, locale),
     };
   }
 
@@ -116,16 +160,26 @@ export const resolveQuestReward = (quest: Quest): RewardMeta | null => {
   };
 };
 
-export const formatProgressValue = (quest: Quest) => {
+export const formatProgressValue = (quest: Quest, locale: Locale) => {
   const currentValue = Math.min(quest.progress, quest.maxProgress);
   return quest.type === "time"
     ? formatDuration(currentValue)
-    : formatNumber(Math.floor(currentValue));
+    : formatLocalizedNumber(Math.floor(currentValue), locale, {
+        maximumFractionDigits: 0,
+      });
 };
 
 export const resolveQuestBadgeContent = (
   quest: Quest,
+  locale: Locale,
 ): QuestBadgeContentValue => {
+  if (quest.progressionKind !== "milestone") {
+    return {
+      isText: false,
+      value: quest.icon,
+    };
+  }
+
   if (quest.maxProgress > 1) {
     if (quest.type === "time") {
       const durationParts = formatBadgeDurationParts(quest.maxProgress);
@@ -136,13 +190,20 @@ export const resolveQuestBadgeContent = (
       };
     }
 
+    const numberParts = formatBadgeNumberParts(quest.maxProgress, locale);
+
+    if (quest.type === "tap") {
+      return {
+        isText: true,
+        value: `${numberParts.value}${numberParts.metric.toLowerCase()}`,
+        metric: "🫵",
+      };
+    }
+
     return {
       isText: true,
-      value: compactBadgeNumberFormatter
-        .format(Math.max(0, Math.floor(quest.maxProgress)))
-        .replace(/\s+/g, "")
-        .toUpperCase(),
-      metric: quest.type === "tap" ? "👊" : "",
+      value: numberParts.value,
+      metric: numberParts.metric,
     };
   }
 
@@ -152,17 +213,22 @@ export const resolveQuestBadgeContent = (
   };
 };
 
-export const getRewardChipLabel = (reward: RewardMeta, locale: Locale) => {
+export const getRewardChipLabel = (
+  reward: RewardMeta,
+  messages: QuestsAppMessages,
+) => {
   if (reward.kind === "item") {
-    return localeIsGerman(locale) ? "Item-Belohnung" : "Item reward";
+    return messages.rewardItemReceived;
   }
 
-  return localeIsGerman(locale)
-    ? `${reward.label} Taps erhalten`
-    : `Get ${reward.label} taps`;
+  return messages.rewardTapsPattern.replace("{value}", reward.label);
 };
 
-export const toQuestGroups = (quests: Quest[], locale: Locale): QuestGroup[] => {
+export const toQuestGroups = (
+  quests: Quest[],
+  locale: Locale,
+  messages: QuestsAppMessages,
+): QuestGroup[] => {
   const stackMap = new Map<string, Quest[]>();
   const singleMap = new Map<string, Quest>();
   const groupOrder: string[] = [];
@@ -193,29 +259,67 @@ export const toQuestGroups = (quests: Quest[], locale: Locale): QuestGroup[] => 
         (a, b) => (a.stackOrder ?? 0) - (b.stackOrder ?? 0),
       );
       const lead = sorted[0];
-      const stackCopy = getQuestStackCopy(stackId as QuestStackMessageId, locale);
+      const activeQuest =
+        sorted.find((quest) => !quest.completed) ?? sorted[sorted.length - 1];
+      const activeIndex = sorted.findIndex(
+        (quest) => quest.id === activeQuest.id,
+      );
+      const nextQuest = sorted[activeIndex + 1] ?? null;
+      const isMilestoneStack = sorted.every(
+        (quest) => quest.progressionKind === "milestone",
+      );
+      const activeCopy = getQuestCopy(activeQuest.id as QuestMessageId, locale);
+      const nextCopy = nextQuest
+        ? getQuestCopy(nextQuest.id as QuestMessageId, locale)
+        : null;
+      const stackCopy = getQuestStackCopy(
+        stackId as QuestStackMessageId,
+        locale,
+      );
 
       return {
         id: groupKey,
-        title: stackCopy?.title ?? lead.stackTitle ?? lead.title,
-        description:
-          stackCopy?.description ?? lead.stackDescription ?? lead.description,
+        title: isMilestoneStack
+          ? activeCopy?.title ?? activeQuest.title
+          : stackCopy?.title ?? lead.stackTitle ?? lead.title,
+        description: isMilestoneStack
+          ? activeCopy?.description ?? activeQuest.description
+          : stackCopy?.description ?? lead.stackDescription ?? lead.description,
+        secondaryDescription: isMilestoneStack
+          ? nextCopy
+            ? `${messages.nextMilestone}: ${nextCopy.title}`
+            : messages.allMilestonesCompleted
+          : undefined,
         color: lead.color,
         quests: sorted,
         isStack: true,
+        isHidden: false,
+        isMilestoneStack,
+        activeQuest,
+        nextQuest,
       };
     }
 
     const quest = singleMap.get(groupKey)!;
     const questCopy = getQuestCopy(quest.id as QuestMessageId, locale);
+    const isHidden = Boolean(quest.hiddenUntilCompleted && !quest.completed);
 
     return {
       id: groupKey,
-      title: questCopy?.title ?? quest.title,
-      description: questCopy?.description ?? quest.description,
+      title: isHidden
+        ? messages.hiddenQuestTitle
+        : questCopy?.title ?? quest.title,
+      description: isHidden
+        ? messages.hiddenQuestDescription
+        : questCopy?.description ?? quest.description,
+      secondaryDescription: undefined,
       color: quest.color,
       quests: [quest],
       isStack: false,
+      isHidden,
+      isMilestoneStack: false,
+      activeQuest: quest,
+      nextQuest: null,
     };
   });
 };

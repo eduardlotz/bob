@@ -70,6 +70,7 @@ export interface QuestStore {
   clearActiveQuests: () => void;
   resetQuests: () => void;
   resetAllQuests: () => void;
+  unlockAllQuests: () => void;
 }
 
 export enum QUESTS_STORE_VERSION {
@@ -82,7 +83,8 @@ export enum QUESTS_STORE_VERSION {
   V6 = 1000005, // expanded progression quests
   V7 = 1000006, // quest stacks + colorized cards
   V8 = 1000007, // badge/progression schema refresh
-  LATEST = V8,
+  V9 = 1000008, // unhide milestone stacks + quest presentation refresh
+  LATEST = V9,
 }
 
 export const hasQuestReward = (quest: Pick<Quest, "reward">): boolean => {
@@ -240,6 +242,17 @@ function migrateStore(oldState: any, fromVersion: number): any {
       normalizedState.quests ?? [],
       initialQuests,
     );
+  }
+
+  if (fromVersion < QUESTS_STORE_VERSION.V9) {
+    normalizedState.quests = mergeQuestLists(
+      normalizedState.quests ?? [],
+      initialQuests,
+    ).map((quest) => ({
+      ...quest,
+      hiddenUntilCompleted:
+        quest.progressionKind === "milestone" ? false : quest.hiddenUntilCompleted,
+    }));
   }
 
   normalizedState.version = QUESTS_STORE_VERSION.LATEST;
@@ -401,7 +414,6 @@ const initialQuests: Quest[] = [
       value: 1,
     },
     showProgress: true,
-    hiddenUntilCompleted: true,
     stackId: "manual_taps",
     stackOrder: 3,
     stackTitle: "Manual Tap Milestones",
@@ -477,7 +489,6 @@ const initialQuests: Quest[] = [
       value: 1,
     },
     showProgress: true,
-    hiddenUntilCompleted: true,
     stackId: "total_taps",
     stackOrder: 3,
     stackTitle: "Total Tap Milestones",
@@ -500,7 +511,6 @@ const initialQuests: Quest[] = [
       value: 1,
     },
     showProgress: true,
-    hiddenUntilCompleted: true,
     stackId: "total_taps",
     stackOrder: 4,
     stackTitle: "Total Tap Milestones",
@@ -523,7 +533,6 @@ const initialQuests: Quest[] = [
       value: 1,
     },
     showProgress: true,
-    hiddenUntilCompleted: true,
     stackId: "total_taps",
     stackOrder: 5,
     stackTitle: "Total Tap Milestones",
@@ -646,7 +655,6 @@ const initialQuests: Quest[] = [
       value: 1,
     },
     showProgress: true,
-    hiddenUntilCompleted: true,
     stackId: "playtime",
     stackOrder: 2,
     stackTitle: "Playtime Milestones",
@@ -921,6 +929,16 @@ export const useQuestStore = create<QuestStore>()(
           quests: initialQuests.map((quest) => ({ ...quest })),
           activeQuests: [],
         })),
+
+      unlockAllQuests: () =>
+        set((state) => ({
+          quests: state.quests.map((quest) => ({
+            ...quest,
+            progress: quest.maxProgress,
+            completed: true,
+            hiddenUntilCompleted: false,
+          })),
+        })),
     }),
     {
       name: "quest-store",
@@ -932,7 +950,13 @@ export const useQuestStore = create<QuestStore>()(
           activeQuests: state.activeQuests,
         }) as QuestStore,
       migrate: (persisted: any, fromVersion: number) => {
-        if (!persisted) return initialQuests;
+        if (!persisted) {
+          return {
+            version: QUESTS_STORE_VERSION.LATEST,
+            quests: initialQuests,
+            activeQuests: [],
+          };
+        }
 
         return migrateStore(persisted, fromVersion || 0);
       },

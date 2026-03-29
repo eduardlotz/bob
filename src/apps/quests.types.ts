@@ -22,7 +22,12 @@ export type QuestGroup = {
   id: string;
   title: string;
   description: string;
+  secondaryDescription?: string;
   color: string;
   quests: Quest[];
   isStack: boolean;
+  isHidden: boolean;
+  isMilestoneStack: boolean;
+  activeQuest: Quest;
+  nextQuest: Quest | null;
 };
