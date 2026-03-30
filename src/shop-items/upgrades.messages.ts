@@ -5,86 +5,110 @@ import type { Locale } from "@/i18n/types";
 export const upgradeMessages = defineMessages({
   de: {
     auto_tap: {
-      name: "Auto Tapper",
-      description: "Lass Bob 1 Mal pro Sekunde für dich tippen",
+      name: "Tapper",
+      description: "Sorgt fur einen konstanten passiven Tap-Strom",
     },
     bob_assistant: {
-      name: "Bob-Assistent",
-      description: "Ein fleissiger Assistent tippt fuer dich",
+      name: "Super-Tapper",
+      description: "Ein starker Helfer fur schnellere passive Taps",
     },
     garden_gnome: {
-      name: "Gartenwichtel",
-      description: "Wichtel sammeln Taps aus deinem Garten",
+      name: "Mega-Tapper",
+      description: "Grober passiver Schub fur die Mid-Game Okonomie",
     },
     greenhouse: {
-      name: "Gewaechshaus",
-      description: "Automatisierte Pflanzen produzieren Taps",
+      name: "Ultra-Tapper",
+      description: "Industrielles Wachstum mit stabiler Preissteigerung",
     },
     factory_line: {
-      name: "Fertigungsstrasse",
-      description: "Eine Fabriklinie pumpt konstant Taps",
+      name: "Hyper-Tapper",
+      description: "Schwere Automatisierung fur das Late Game",
     },
     logistics_hub: {
-      name: "Logistikzentrum",
-      description: "Verteilt Tap-Produktion ueberall hin",
+      name: "Giga-Tapper",
+      description: "Skaliertes passives Produktionsnetz",
     },
     quantum_lab: {
-      name: "Quantenlabor",
-      description: "Instabile Experimente erzeugen viele Taps",
+      name: "Quantum-Tapper",
+      description: "Spater Sprung bei passiver Produktion",
     },
     temporal_engine: {
-      name: "Temporalmaschine",
-      description: "Leiht sich Taps aus naher Zukunft",
+      name: "Temporal-Tapper",
+      description: "Endgame-Maschine fur passives Einkommen",
     },
     finger_training: {
-      name: "Fingertraining",
-      description: "Verbessert die Staerke deiner manuellen Taps",
+      name: "Finger Training",
+      description: "Verbessert deine manuelle Tap-Starke",
+    },
+    rhythm_drills: {
+      name: "Rhythm Drills",
+      description: "Baut einen schnelleren und saubereren Tap-Rhythmus auf",
     },
     precision_gloves: {
-      name: "Praezisionshandschuhe",
-      description: "Jeder Tap sitzt genauer und staerker",
+      name: "Precision Gloves",
+      description: "Boostet manuelle Taps durch bessere Kontrolle",
+    },
+    kinetic_wrists: {
+      name: "Kinetic Wrists",
+      description: "Speichert Bewegung und entlaedt kraftigere Taps",
+    },
+    neural_exosuit: {
+      name: "Neural Exosuit",
+      description: "Late-Game Schub fur starke manuelle Tap-Spitzen",
     },
   },
   en: {
     auto_tap: {
-      name: "Auto Tapper",
-      description: "Let Bob tap for you once per second",
+      name: "Tapper",
+      description: "Steady passive tap generation",
     },
     bob_assistant: {
-      name: "Bob Assistant",
-      description: "A diligent assistant taps on your behalf",
+      name: "Super-Tapper",
+      description: "A stronger helper for faster passive gain",
     },
     garden_gnome: {
-      name: "Garden Gnome",
-      description: "Tiny gnomes gather taps from your garden",
+      name: "Mega-Tapper",
+      description: "Large passive output for mid-game scaling",
     },
     greenhouse: {
-      name: "Greenhouse",
-      description: "Automated plants keep producing taps",
+      name: "Ultra-Tapper",
+      description: "Industrial passive growth with stable pricing",
     },
     factory_line: {
-      name: "Factory Line",
-      description: "A full production line churns out taps",
+      name: "Hyper-Tapper",
+      description: "Heavy automation for late-game income",
     },
     logistics_hub: {
-      name: "Logistics Hub",
-      description: "Distributes tap production everywhere",
+      name: "Giga-Tapper",
+      description: "Large-scale passive network",
     },
     quantum_lab: {
-      name: "Quantum Lab",
-      description: "Unstable experiments generate huge taps",
+      name: "Quantum-Tapper",
+      description: "Late-game spike in passive production",
     },
     temporal_engine: {
-      name: "Temporal Engine",
-      description: "Borrows taps from the near future",
+      name: "Temporal-Tapper",
+      description: "Endgame passive engine",
     },
     finger_training: {
       name: "Finger Training",
       description: "Improves your manual tap strength",
     },
+    rhythm_drills: {
+      name: "Rhythm Drills",
+      description: "Builds a faster, cleaner tapping cadence",
+    },
     precision_gloves: {
       name: "Precision Gloves",
-      description: "Every click lands stronger and cleaner",
+      description: "Boosts manual taps with better control",
+    },
+    kinetic_wrists: {
+      name: "Kinetic Wrists",
+      description: "Stores motion energy and releases stronger taps",
+    },
+    neural_exosuit: {
+      name: "Neural Exosuit",
+      description: "Late-game manual boost for big tap spikes",
     },
   },
 });

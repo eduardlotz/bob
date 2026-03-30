@@ -1,114 +1,189 @@
 import { Upgrade } from "@/store";
 
-export const initialTapUpgrades: Upgrade[] = [
-  {
+type AutoTapUpgradeConfig = {
+  id: string;
+  name: string;
+  description: string;
+  baseCost: number;
+  costMultiplier: number;
+  maxLevel: number;
+  tapsPerLevel: number;
+};
+
+type TapPowerUpgradeConfig = {
+  id: string;
+  name: string;
+  description: string;
+  baseCost: number;
+  costMultiplier: number;
+  maxLevel: number;
+  multiplierPerLevel: number;
+};
+
+const createAutoTapUpgrade = ({
+  id,
+  name,
+  description,
+  baseCost,
+  costMultiplier,
+  maxLevel,
+  tapsPerLevel,
+}: AutoTapUpgradeConfig): Upgrade => ({
+  id,
+  name,
+  description,
+  baseCost,
+  costMultiplier,
+  level: 0,
+  maxLevel,
+  effect: { type: "autoTap", value: tapsPerLevel },
+  unlocked: true,
+});
+
+const createTapPowerUpgrade = ({
+  id,
+  name,
+  description,
+  baseCost,
+  costMultiplier,
+  maxLevel,
+  multiplierPerLevel,
+}: TapPowerUpgradeConfig): Upgrade => ({
+  id,
+  name,
+  description,
+  baseCost,
+  costMultiplier,
+  level: 0,
+  maxLevel,
+  effect: { type: "tapMultiplier", value: multiplierPerLevel },
+  unlocked: true,
+});
+
+const autoTapUpgrades: Upgrade[] = [
+  createAutoTapUpgrade({
     id: "auto_tap",
-    name: "Auto Tapper",
-    description: "Lass Bob 1 Mal pro Sekunde für dich tippen",
-    baseCost: 15,
+    name: "Tapper",
+    description: "Generates a steady passive trickle of taps",
+    baseCost: 30,
     costMultiplier: 1.13,
-    level: 0,
     maxLevel: 100,
-    effect: { type: "autoTap", value: 1 },
-    unlocked: true,
-  },
-  {
+    tapsPerLevel: 1,
+  }),
+  createAutoTapUpgrade({
     id: "bob_assistant",
-    name: "Bob-Assistent",
-    description: "Ein fleissiger Assistent tippt fuer dich",
+    name: "Super-Tapper",
+    description: "A stronger helper for faster passive gain",
+    baseCost: 1_500,
+    costMultiplier: 1.135,
+    maxLevel: 100,
+    tapsPerLevel: 2,
+  }),
+  createAutoTapUpgrade({
+    id: "garden_gnome",
+    name: "Mega-Tapper",
+    description: "Major passive output for mid-game scaling",
+    baseCost: 102_000,
+    costMultiplier: 1.14,
+    maxLevel: 100,
+    tapsPerLevel: 20,
+  }),
+  createAutoTapUpgrade({
+    id: "greenhouse",
+    name: "Ultra-Tapper",
+    description: "Industrial passive growth with stable pricing",
+    baseCost: 850_000,
+    costMultiplier: 1.145,
+    maxLevel: 80,
+    tapsPerLevel: 75,
+  }),
+  createAutoTapUpgrade({
+    id: "factory_line",
+    name: "Hyper-Tapper",
+    description: "Heavy automation for late-game income",
+    baseCost: 6_800_000,
+    costMultiplier: 1.15,
+    maxLevel: 80,
+    tapsPerLevel: 300,
+  }),
+  createAutoTapUpgrade({
+    id: "logistics_hub",
+    name: "Giga-Tapper",
+    description: "Large-scale passive network",
+    baseCost: 55_000_000,
+    costMultiplier: 1.155,
+    maxLevel: 60,
+    tapsPerLevel: 1_200,
+  }),
+  createAutoTapUpgrade({
+    id: "quantum_lab",
+    name: "Quantum-Tapper",
+    description: "Late-game spike in passive production",
+    baseCost: 420_000_000,
+    costMultiplier: 1.16,
+    maxLevel: 40,
+    tapsPerLevel: 4_800,
+  }),
+  createAutoTapUpgrade({
+    id: "temporal_engine",
+    name: "Temporal-Tapper",
+    description: "Endgame passive engine",
+    baseCost: 3_200_000_000,
+    costMultiplier: 1.165,
+    maxLevel: 30,
+    tapsPerLevel: 19_000,
+  }),
+];
+
+const tapPowerUpgrades: Upgrade[] = [
+  createTapPowerUpgrade({
+    id: "finger_training",
+    name: "Finger Training",
+    description: "Improves manual tap strength",
     baseCost: 120,
     costMultiplier: 1.14,
-    level: 0,
-    maxLevel: 75,
-    effect: { type: "autoTap", value: 8 },
-    unlocked: true,
-  },
-  {
-    id: "garden_gnome",
-    name: "Gartenwichtel",
-    description: "Wichtel sammeln Taps aus deinem Garten",
-    baseCost: 900,
-    costMultiplier: 1.145,
-    level: 0,
-    maxLevel: 70,
-    effect: { type: "autoTap", value: 45 },
-    unlocked: true,
-  },
-  {
-    id: "greenhouse",
-    name: "Gewaechshaus",
-    description: "Automatisierte Pflanzen produzieren Taps",
-    baseCost: 6_500,
-    costMultiplier: 1.15,
-    level: 0,
-    maxLevel: 60,
-    effect: { type: "autoTap", value: 260 },
-    unlocked: true,
-  },
-  {
-    id: "factory_line",
-    name: "Fertigungsstrasse",
-    description: "Eine Fabriklinie pumpt konstant Taps",
-    baseCost: 45_000,
-    costMultiplier: 1.155,
-    level: 0,
     maxLevel: 50,
-    effect: { type: "autoTap", value: 1_400 },
-    unlocked: true,
-  },
-  {
-    id: "logistics_hub",
-    name: "Logistikzentrum",
-    description: "Verteilt Tap-Produktion ueberall hin",
-    baseCost: 300_000,
-    costMultiplier: 1.16,
-    level: 0,
-    maxLevel: 40,
-    effect: { type: "autoTap", value: 8_000 },
-    unlocked: true,
-  },
-  {
-    id: "quantum_lab",
-    name: "Quantenlabor",
-    description: "Instabile Experimente erzeugen viele Taps",
-    baseCost: 2_500_000,
-    costMultiplier: 1.165,
-    level: 0,
-    maxLevel: 30,
-    effect: { type: "autoTap", value: 47_000 },
-    unlocked: true,
-  },
-  {
-    id: "temporal_engine",
-    name: "Temporalmaschine",
-    description: "Leiht sich Taps aus naher Zukunft",
-    baseCost: 22_000_000,
-    costMultiplier: 1.17,
-    level: 0,
-    maxLevel: 20,
-    effect: { type: "autoTap", value: 280_000 },
-    unlocked: true,
-  },
-  {
-    id: "finger_training",
-    name: "Fingertraining",
-    description: "Verbessert die Staerke deiner manuellen Taps",
-    baseCost: 40,
-    costMultiplier: 1.15,
-    level: 0,
-    maxLevel: 25,
-    effect: { type: "tapMultiplier", value: 1.08 },
-    unlocked: true,
-  },
-  {
+    multiplierPerLevel: 1.05,
+  }),
+  createTapPowerUpgrade({
+    id: "rhythm_drills",
+    name: "Rhythm Drills",
+    description: "Builds a faster, cleaner tapping cadence",
+    baseCost: 2_400,
+    costMultiplier: 1.145,
+    maxLevel: 50,
+    multiplierPerLevel: 1.07,
+  }),
+  createTapPowerUpgrade({
     id: "precision_gloves",
-    name: "Praezisionshandschuhe",
-    description: "Jeder Tap sitzt genauer und staerker",
-    baseCost: 4_000,
-    costMultiplier: 1.18,
-    level: 0,
-    maxLevel: 20,
-    effect: { type: "tapMultiplier", value: 1.12 },
-    unlocked: true,
-  },
+    name: "Precision Gloves",
+    description: "Boosts manual taps with better control",
+    baseCost: 7_500,
+    costMultiplier: 1.16,
+    maxLevel: 40,
+    multiplierPerLevel: 1.09,
+  }),
+  createTapPowerUpgrade({
+    id: "kinetic_wrists",
+    name: "Kinetic Wrists",
+    description: "Stores motion energy and releases stronger taps",
+    baseCost: 180_000,
+    costMultiplier: 1.165,
+    maxLevel: 40,
+    multiplierPerLevel: 1.11,
+  }),
+  createTapPowerUpgrade({
+    id: "neural_exosuit",
+    name: "Neural Exosuit",
+    description: "Late-game manual boost for big tap spikes",
+    baseCost: 9_500_000,
+    costMultiplier: 1.17,
+    maxLevel: 30,
+    multiplierPerLevel: 1.13,
+  }),
 ];
+
+export const initialTapUpgrades: Upgrade[] = [
+  ...autoTapUpgrades,
+  ...tapPowerUpgrades,
+].sort((a, b) => a.baseCost - b.baseCost);
