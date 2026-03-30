@@ -8,6 +8,18 @@ export const questMessages = defineMessages({
       title: "Passives Einkommen",
       description: "Kauf deine ersten Auto-Tap-Upgrades",
     },
+    auto_tap_level_10: {
+      title: "Werkbank warmgelaufen",
+      description: "Bringe den Auto Tapper auf Level 10",
+    },
+    auto_tap_level_50: {
+      title: "Fliessbandfieber",
+      description: "Bringe den Auto Tapper auf Level 50",
+    },
+    auto_tap_level_100: {
+      title: "Komplett automatisiert",
+      description: "Maxe den Auto Tapper aus",
+    },
     about_quest_2: {
       title: "Sul Sul!",
       description: "Finde den Plumbob 🕵",
@@ -72,6 +84,54 @@ export const questMessages = defineMessages({
       title: "Langstrecke",
       description: "Spiele insgesamt 10 Minuten",
     },
+    playtime_1800s: {
+      title: "Gartenrunde",
+      description: "Spiele insgesamt 30 Minuten",
+    },
+    playtime_3600s: {
+      title: "Marathonsession",
+      description: "Spiele insgesamt 1 Stunde",
+    },
+    playtime_7200s: {
+      title: "Schichtbetrieb",
+      description: "Spiele insgesamt 2 Stunden",
+    },
+    upgrade_levels_25: {
+      title: "Werkzeugkiste",
+      description: "Erreiche insgesamt 25 Upgrade-Level",
+    },
+    upgrade_levels_100: {
+      title: "Maschinenraum",
+      description: "Erreiche insgesamt 100 Upgrade-Level",
+    },
+    upgrade_levels_200: {
+      title: "Patchday",
+      description: "Erreiche insgesamt 200 Upgrade-Level",
+    },
+    auto_tap_rate_100: {
+      title: "Produktionslinie",
+      description: "Erreiche 100 Auto-Taps pro Sekunde",
+    },
+    auto_tap_rate_1000: {
+      title: "Surrende Maschinen",
+      description: "Erreiche 1.000 Auto-Taps pro Sekunde",
+    },
+    auto_tap_rate_10000: {
+      title: "Volldampf",
+      description: "Erreiche 10.000 Auto-Taps pro Sekunde",
+    },
+    tap_multiplier_5: {
+      title: "Fingerfertig",
+      description: "Erreiche 5x Tap-Power",
+    },
+    tap_multiplier_20: {
+      title: "Muskelgedächtnis",
+      description: "Erreiche 20x Tap-Power",
+    },
+    tap_multiplier_50: {
+      title: "Presslufthand",
+      description: "Erreiche 50x Tap-Power",
+    },
     minigames_flappy_points_10: {
       title: "Flappy Bobbie",
       description: "Erziele 10 Punkte im Flappy-Bird-Minigame",
@@ -89,6 +149,18 @@ export const questMessages = defineMessages({
     auto_tap_milestone_1: {
       title: "Passive Income",
       description: "Buy your first auto-tap upgrades",
+    },
+    auto_tap_level_10: {
+      title: "Workshop Warmup",
+      description: "Reach level 10 on the Auto Tapper",
+    },
+    auto_tap_level_50: {
+      title: "Assembly Fever",
+      description: "Reach level 50 on the Auto Tapper",
+    },
+    auto_tap_level_100: {
+      title: "Fully Automated",
+      description: "Max out the Auto Tapper",
     },
     about_quest_2: {
       title: "Sul Sul!",
@@ -154,6 +226,54 @@ export const questMessages = defineMessages({
       title: "Long Haul",
       description: "Play for a total of 10 minutes",
     },
+    playtime_1800s: {
+      title: "Garden Shift",
+      description: "Play for a total of 30 minutes",
+    },
+    playtime_3600s: {
+      title: "Marathon Session",
+      description: "Play for a total of 1 hour",
+    },
+    playtime_7200s: {
+      title: "Double Shift",
+      description: "Play for a total of 2 hours",
+    },
+    upgrade_levels_25: {
+      title: "Toolbox",
+      description: "Reach 25 total upgrade levels",
+    },
+    upgrade_levels_100: {
+      title: "Machine Room",
+      description: "Reach 100 total upgrade levels",
+    },
+    upgrade_levels_200: {
+      title: "Patch Day",
+      description: "Reach 200 total upgrade levels",
+    },
+    auto_tap_rate_100: {
+      title: "Production Line",
+      description: "Reach 100 auto taps per second",
+    },
+    auto_tap_rate_1000: {
+      title: "Machines Humming",
+      description: "Reach 1,000 auto taps per second",
+    },
+    auto_tap_rate_10000: {
+      title: "Full Steam",
+      description: "Reach 10,000 auto taps per second",
+    },
+    tap_multiplier_5: {
+      title: "Fast Fingers",
+      description: "Reach 5x tap power",
+    },
+    tap_multiplier_20: {
+      title: "Muscle Memory",
+      description: "Reach 20x tap power",
+    },
+    tap_multiplier_50: {
+      title: "Jackhammer Hand",
+      description: "Reach 50x tap power",
+    },
     minigames_flappy_points_10: {
       title: "Flappy Bobbie",
       description: "Score 10 points in the Flappy Bird minigame",
@@ -190,6 +310,22 @@ export const questStackMessages = defineMessages({
       title: "Spielzeit-Meilensteine",
       description: "Bleib im Spiel und sammle Ausdauer-Belohnungen.",
     },
+    automation_mastery: {
+      title: "Automations-Meisterschaft",
+      description: "Baue deinen Kern-Auto-Tapper bis zum Maximum aus.",
+    },
+    upgrade_levels: {
+      title: "Upgrade-Meisterschaft",
+      description: "Investiere breit in deinen gesamten Upgrade-Baum.",
+    },
+    auto_tap_rate: {
+      title: "Auto-Tap-Ausstoß",
+      description: "Steigere deine passive Produktion immer weiter.",
+    },
+    tap_multiplier: {
+      title: "Tap-Power",
+      description: "Verstärke jeden einzelnen manuellen Tap.",
+    },
     shop_item_categories: {
       title: "Shop-Sammler",
       description: "Kaufe je ein Item aus Bob, Effekte und Welten.",
@@ -207,6 +343,22 @@ export const questStackMessages = defineMessages({
     playtime: {
       title: "Playtime Milestones",
       description: "Stay in the game to unlock endurance rewards.",
+    },
+    automation_mastery: {
+      title: "Automation Mastery",
+      description: "Push your core Auto Tapper all the way to max.",
+    },
+    upgrade_levels: {
+      title: "Upgrade Mastery",
+      description: "Invest broadly across your full upgrade tree.",
+    },
+    auto_tap_rate: {
+      title: "Automation Output",
+      description: "Keep raising your passive tap production.",
+    },
+    tap_multiplier: {
+      title: "Tap Power",
+      description: "Keep making every manual tap hit harder.",
     },
     shop_item_categories: {
       title: "Shop Collector",

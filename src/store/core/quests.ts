@@ -60,10 +60,12 @@ export interface QuestStore {
   version: number;
   quests: Quest[];
   activeQuests: string[];
+  isHydrated: boolean;
+  notifiedCompletionKeys: string[];
   addQuest: (quest: Quest) => void;
   updateQuestProgress: (questId: string, progress: number) => void;
   completeQuest: (questId: string) => void;
-  triggerQuestAction: (action: string, value?: number) => void;
+  triggerQuestAction: (action: string, value?: number, routeId?: string) => void;
   syncQuestProgressFromMetric: (action: string, absoluteValue: number) => void;
   getQuestsByRoute: (routeId: string) => Quest[];
   setActiveQuests: (routeId: string) => void;
@@ -84,7 +86,10 @@ export enum QUESTS_STORE_VERSION {
   V7 = 1000006, // quest stacks + colorized cards
   V8 = 1000007, // badge/progression schema refresh
   V9 = 1000008, // unhide milestone stacks + quest presentation refresh
-  LATEST = V9,
+  V10 = 1000009, // upgrade quest refresh + hydration guards
+  V11 = 1000010, // completion toast dedupe + expanded quests
+  V12 = 1000011, // hydrated quest sync + persisted completion dedupe
+  LATEST = V12,
 }
 
 export const hasQuestReward = (quest: Pick<Quest, "reward">): boolean => {
@@ -180,6 +185,84 @@ const applyQuestReward = (
   }
 };
 
+const sendQuestCompletionToast = (toastMeta: QuestCompletionToastMeta) => {
+  sileo.success({
+    title: toastMeta.title,
+    description: toastMeta.description,
+    icon: createQuestToastIcon(
+      toastMeta.toastKey,
+      toastMeta.color,
+      toastMeta.icon,
+    ),
+    fill: "#111324",
+    styles: {
+      badge: "toast-badge",
+      title: "quest-toast-title",
+      description: "quest-toast-desc",
+    },
+  });
+};
+
+const emitQuestCompletionToastOnce = (
+  quest: Pick<
+    Quest,
+    "id" | "title" | "description" | "color" | "icon" | "stackId"
+  >,
+  getQuestState: () => Pick<QuestStore, "quests" | "notifiedCompletionKeys">,
+  setQuestState: (
+    updater: (
+      state: QuestStore,
+    ) => Partial<Pick<QuestStore, "notifiedCompletionKeys">>,
+  ) => void,
+) => {
+  const latestState = getQuestState();
+  const toastMeta = getQuestCompletionToastMeta(
+    quest,
+    latestState.quests,
+    getLocale(),
+  );
+
+  if (
+    !toastMeta ||
+    latestState.notifiedCompletionKeys.includes(toastMeta.toastKey)
+  ) {
+    return;
+  }
+
+  sendQuestCompletionToast(toastMeta);
+
+  setQuestState((state) => ({
+    notifiedCompletionKeys: [...state.notifiedCompletionKeys, toastMeta.toastKey],
+  }));
+};
+
+const getPersistedCompletionToastKeys = (
+  quests: Array<Pick<Quest, "id" | "stackId" | "completed">>,
+) => {
+  const keys = new Set<string>();
+
+  quests.forEach((quest) => {
+    if (!quest.completed || quest.stackId === SHOP_ITEMS_QUEST_STACK_ID) {
+      return;
+    }
+
+    keys.add(quest.id);
+  });
+
+  const shopStackQuests = quests.filter(
+    (quest) => quest.stackId === SHOP_ITEMS_QUEST_STACK_ID,
+  );
+
+  if (
+    shopStackQuests.length > 0 &&
+    shopStackQuests.every((quest) => quest.completed)
+  ) {
+    keys.add(SHOP_ITEMS_QUEST_STACK_ID);
+  }
+
+  return Array.from(keys);
+};
+
 const mergeQuestLists = (currentQuests: Quest[], defaultQuests: Quest[]) => {
   const defaultQuestById = new Map(
     defaultQuests.map((quest) => [quest.id, quest]),
@@ -255,7 +338,47 @@ function migrateStore(oldState: any, fromVersion: number): any {
     }));
   }
 
+  if (fromVersion < QUESTS_STORE_VERSION.V10) {
+    normalizedState.quests = mergeQuestLists(
+      normalizedState.quests ?? [],
+      initialQuests,
+    );
+  }
+
+  if (fromVersion < QUESTS_STORE_VERSION.V11) {
+    normalizedState.quests = mergeQuestLists(
+      normalizedState.quests ?? [],
+      initialQuests,
+    );
+  }
+
+  if (fromVersion < QUESTS_STORE_VERSION.V12) {
+    normalizedState.quests = mergeQuestLists(
+      normalizedState.quests ?? [],
+      initialQuests,
+    ).map((quest) => {
+      const progress = Math.min(
+        Math.max(0, Number(quest.progress) || 0),
+        quest.maxProgress,
+      );
+      const completed = quest.completed || progress >= quest.maxProgress;
+
+      return {
+        ...quest,
+        progress,
+        completed,
+      };
+    });
+  }
+
   normalizedState.version = QUESTS_STORE_VERSION.LATEST;
+  normalizedState.isHydrated = true;
+  normalizedState.notifiedCompletionKeys = Array.from(
+    new Set([
+      ...(normalizedState.notifiedCompletionKeys ?? []),
+      ...getPersistedCompletionToastKeys(normalizedState.quests ?? []),
+    ]),
+  );
   return normalizedState;
 }
 
@@ -276,6 +399,84 @@ const initialQuests: Quest[] = [
       action: "auto_tap_level",
       value: 1,
     },
+  },
+  {
+    id: "auto_tap_level_10",
+    title: "Werkbank warmgelaufen",
+    description: "Bringe den Auto Tapper auf Level 10",
+    icon: "⚙️",
+    color: "#6B84FF",
+    progress: 0,
+    maxProgress: 10,
+    reward: {
+      type: "taps_reward",
+      amount: 2000,
+    },
+    completed: false,
+    routeId: ROUTE_IDS.HOME,
+    type: "custom",
+    progressionKind: "milestone",
+    trigger: {
+      action: "auto_tap_level",
+      value: 1,
+    },
+    showProgress: true,
+    stackId: "automation_mastery",
+    stackOrder: 1,
+    stackTitle: "Automation Mastery",
+    stackDescription: "Level up your core automation line.",
+  },
+  {
+    id: "auto_tap_level_50",
+    title: "Fliessbandfieber",
+    description: "Bringe den Auto Tapper auf Level 50",
+    icon: "🏭",
+    color: "#5D72F4",
+    progress: 0,
+    maxProgress: 50,
+    reward: {
+      type: "taps_reward",
+      amount: 20000,
+    },
+    completed: false,
+    routeId: ROUTE_IDS.HOME,
+    type: "custom",
+    progressionKind: "milestone",
+    trigger: {
+      action: "auto_tap_level",
+      value: 1,
+    },
+    showProgress: true,
+    stackId: "automation_mastery",
+    stackOrder: 2,
+    stackTitle: "Automation Mastery",
+    stackDescription: "Level up your core automation line.",
+  },
+  {
+    id: "auto_tap_level_100",
+    title: "Komplett automatisiert",
+    description: "Maxe den Auto Tapper aus",
+    icon: "🤖",
+    color: "#5263D7",
+    progress: 0,
+    maxProgress: 100,
+    reward: {
+      type: "taps_reward",
+      amount: 150000,
+    },
+    completed: false,
+    routeId: ROUTE_IDS.HOME,
+    type: "custom",
+    progressionKind: "milestone",
+    trigger: {
+      action: "auto_tap_level",
+      value: 1,
+    },
+    showProgress: true,
+    stackId: "automation_mastery",
+    stackOrder: 3,
+    stackTitle: "Automation Mastery",
+    stackDescription: "Level up your core automation line.",
   },
   {
     id: "about_quest_2",
@@ -661,6 +862,315 @@ const initialQuests: Quest[] = [
     stackDescription: "Stay in the game to unlock endurance rewards.",
   },
   {
+    id: "playtime_1800s",
+    title: "Gartenrunde",
+    description: "Spiele insgesamt 30 Minuten",
+    icon: "🪴",
+    color: "#C36C2F",
+    progress: 0,
+    maxProgress: 1800,
+    reward: {
+      type: "taps_reward",
+      amount: 45000,
+    },
+    completed: false,
+    type: "time",
+    progressionKind: "milestone",
+    trigger: {
+      action: "playtime_seconds",
+      value: 1,
+    },
+    showProgress: true,
+    stackId: "playtime",
+    stackOrder: 3,
+    stackTitle: "Playtime Milestones",
+    stackDescription: "Stay in the game to unlock endurance rewards.",
+  },
+  {
+    id: "playtime_3600s",
+    title: "Marathonsession",
+    description: "Spiele insgesamt 1 Stunde",
+    icon: "🌙",
+    color: "#B85D2A",
+    progress: 0,
+    maxProgress: 3600,
+    reward: {
+      type: "taps_reward",
+      amount: 125000,
+    },
+    completed: false,
+    type: "time",
+    progressionKind: "milestone",
+    trigger: {
+      action: "playtime_seconds",
+      value: 1,
+    },
+    showProgress: true,
+    stackId: "playtime",
+    stackOrder: 4,
+    stackTitle: "Playtime Milestones",
+    stackDescription: "Stay in the game to unlock endurance rewards.",
+  },
+  {
+    id: "playtime_7200s",
+    title: "Schichtbetrieb",
+    description: "Spiele insgesamt 2 Stunden",
+    icon: "🌅",
+    color: "#A85129",
+    progress: 0,
+    maxProgress: 7200,
+    reward: {
+      type: "taps_reward",
+      amount: 350000,
+    },
+    completed: false,
+    type: "time",
+    progressionKind: "milestone",
+    trigger: {
+      action: "playtime_seconds",
+      value: 1,
+    },
+    showProgress: true,
+    stackId: "playtime",
+    stackOrder: 5,
+    stackTitle: "Playtime Milestones",
+    stackDescription: "Stay in the game to unlock endurance rewards.",
+  },
+  {
+    id: "upgrade_levels_25",
+    title: "Werkzeugkiste",
+    description: "Erreiche insgesamt 25 Upgrade-Level",
+    icon: "🧰",
+    color: "#4F95C8",
+    progress: 0,
+    maxProgress: 25,
+    reward: {
+      type: "taps_reward",
+      amount: 5000,
+    },
+    completed: false,
+    routeId: ROUTE_IDS.HOME,
+    type: "custom",
+    progressionKind: "milestone",
+    trigger: {
+      action: "upgrade_levels_total",
+      value: 1,
+    },
+    showProgress: true,
+    stackId: "upgrade_levels",
+    stackOrder: 1,
+    stackTitle: "Upgrade Mastery",
+    stackDescription: "Keep investing across the whole upgrade tree.",
+  },
+  {
+    id: "upgrade_levels_100",
+    title: "Maschinenraum",
+    description: "Erreiche insgesamt 100 Upgrade-Level",
+    icon: "🔩",
+    color: "#437FB3",
+    progress: 0,
+    maxProgress: 100,
+    reward: {
+      type: "taps_reward",
+      amount: 40000,
+    },
+    completed: false,
+    routeId: ROUTE_IDS.HOME,
+    type: "custom",
+    progressionKind: "milestone",
+    trigger: {
+      action: "upgrade_levels_total",
+      value: 1,
+    },
+    showProgress: true,
+    stackId: "upgrade_levels",
+    stackOrder: 2,
+    stackTitle: "Upgrade Mastery",
+    stackDescription: "Keep investing across the whole upgrade tree.",
+  },
+  {
+    id: "upgrade_levels_200",
+    title: "Patchday",
+    description: "Erreiche insgesamt 200 Upgrade-Level",
+    icon: "🛠️",
+    color: "#356A98",
+    progress: 0,
+    maxProgress: 200,
+    reward: {
+      type: "taps_reward",
+      amount: 200000,
+    },
+    completed: false,
+    routeId: ROUTE_IDS.HOME,
+    type: "custom",
+    progressionKind: "milestone",
+    trigger: {
+      action: "upgrade_levels_total",
+      value: 1,
+    },
+    showProgress: true,
+    stackId: "upgrade_levels",
+    stackOrder: 3,
+    stackTitle: "Upgrade Mastery",
+    stackDescription: "Keep investing across the whole upgrade tree.",
+  },
+  {
+    id: "auto_tap_rate_100",
+    title: "Produktionslinie",
+    description: "Erreiche 100 Auto-Taps pro Sekunde",
+    icon: "📈",
+    color: "#3DAA8D",
+    progress: 0,
+    maxProgress: 100,
+    reward: {
+      type: "taps_reward",
+      amount: 6000,
+    },
+    completed: false,
+    routeId: ROUTE_IDS.HOME,
+    type: "custom",
+    progressionKind: "milestone",
+    trigger: {
+      action: "auto_tap_rate",
+      value: 1,
+    },
+    showProgress: true,
+    stackId: "auto_tap_rate",
+    stackOrder: 1,
+    stackTitle: "Automation Output",
+    stackDescription: "Push your passive tap production higher.",
+  },
+  {
+    id: "auto_tap_rate_1000",
+    title: "Surrende Maschinen",
+    description: "Erreiche 1.000 Auto-Taps pro Sekunde",
+    icon: "⚡",
+    color: "#349A80",
+    progress: 0,
+    maxProgress: 1000,
+    reward: {
+      type: "taps_reward",
+      amount: 30000,
+    },
+    completed: false,
+    routeId: ROUTE_IDS.HOME,
+    type: "custom",
+    progressionKind: "milestone",
+    trigger: {
+      action: "auto_tap_rate",
+      value: 1,
+    },
+    showProgress: true,
+    stackId: "auto_tap_rate",
+    stackOrder: 2,
+    stackTitle: "Automation Output",
+    stackDescription: "Push your passive tap production higher.",
+  },
+  {
+    id: "auto_tap_rate_10000",
+    title: "Volldampf",
+    description: "Erreiche 10.000 Auto-Taps pro Sekunde",
+    icon: "🚂",
+    color: "#2A836D",
+    progress: 0,
+    maxProgress: 10000,
+    reward: {
+      type: "taps_reward",
+      amount: 175000,
+    },
+    completed: false,
+    routeId: ROUTE_IDS.HOME,
+    type: "custom",
+    progressionKind: "milestone",
+    trigger: {
+      action: "auto_tap_rate",
+      value: 1,
+    },
+    showProgress: true,
+    stackId: "auto_tap_rate",
+    stackOrder: 3,
+    stackTitle: "Automation Output",
+    stackDescription: "Push your passive tap production higher.",
+  },
+  {
+    id: "tap_multiplier_5",
+    title: "Fingerfertig",
+    description: "Erreiche 5x Tap-Power",
+    icon: "🫵",
+    color: "#D76F4C",
+    progress: 0,
+    maxProgress: 5,
+    reward: {
+      type: "taps_reward",
+      amount: 8000,
+    },
+    completed: false,
+    routeId: ROUTE_IDS.HOME,
+    type: "custom",
+    progressionKind: "milestone",
+    trigger: {
+      action: "tap_multiplier",
+      value: 1,
+    },
+    showProgress: true,
+    stackId: "tap_multiplier",
+    stackOrder: 1,
+    stackTitle: "Tap Power",
+    stackDescription: "Keep making every manual tap hit harder.",
+  },
+  {
+    id: "tap_multiplier_20",
+    title: "Muskelgedächtnis",
+    description: "Erreiche 20x Tap-Power",
+    icon: "💥",
+    color: "#CC6242",
+    progress: 0,
+    maxProgress: 20,
+    reward: {
+      type: "taps_reward",
+      amount: 40000,
+    },
+    completed: false,
+    routeId: ROUTE_IDS.HOME,
+    type: "custom",
+    progressionKind: "milestone",
+    trigger: {
+      action: "tap_multiplier",
+      value: 1,
+    },
+    showProgress: true,
+    stackId: "tap_multiplier",
+    stackOrder: 2,
+    stackTitle: "Tap Power",
+    stackDescription: "Keep making every manual tap hit harder.",
+  },
+  {
+    id: "tap_multiplier_50",
+    title: "Presslufthand",
+    description: "Erreiche 50x Tap-Power",
+    icon: "🚨",
+    color: "#BF5538",
+    progress: 0,
+    maxProgress: 50,
+    reward: {
+      type: "taps_reward",
+      amount: 175000,
+    },
+    completed: false,
+    routeId: ROUTE_IDS.HOME,
+    type: "custom",
+    progressionKind: "milestone",
+    trigger: {
+      action: "tap_multiplier",
+      value: 1,
+    },
+    showProgress: true,
+    stackId: "tap_multiplier",
+    stackOrder: 3,
+    stackTitle: "Tap Power",
+    stackDescription: "Keep making every manual tap hit harder.",
+  },
+  {
     id: "minigames_flappy_points_10",
     title: "Flappy Bobbie",
     description: "Erziele 10 Punkte im Flappy Bird Minigame",
@@ -731,6 +1241,8 @@ export const useQuestStore = create<QuestStore>()(
       version: QUESTS_STORE_VERSION.LATEST,
       quests: initialQuests,
       activeQuests: [],
+      isHydrated: false,
+      notifiedCompletionKeys: [],
 
       addQuest: (quest) =>
         set((state) => ({
@@ -753,10 +1265,17 @@ export const useQuestStore = create<QuestStore>()(
           ),
         })),
 
-      triggerQuestAction: (action, value = 1) => {
+      triggerQuestAction: (action, value = 1, routeId) => {
         const { addTaps, purchaseBobItem } = useCoreStore.getState();
         const relevantQuests = get().quests.filter(
-          (quest) => !quest.completed && quest.trigger?.action === action,
+          (quest) =>
+            !quest.completed &&
+            quest.trigger?.action === action &&
+            (routeId
+              ? quest.routeId
+                ? quest.routeId === routeId
+                : true
+              : true),
         );
 
         relevantQuests.forEach((quest) => {
@@ -784,32 +1303,7 @@ export const useQuestStore = create<QuestStore>()(
               addTaps,
               purchaseBobItem,
             });
-
-            const latestQuests = get().quests;
-            const toastMeta = getQuestCompletionToastMeta(
-              quest,
-              latestQuests,
-              getLocale(),
-            );
-            if (!toastMeta) {
-              return;
-            }
-
-            sileo.success({
-              title: toastMeta.title,
-              description: toastMeta.description,
-              icon: createQuestToastIcon(
-                toastMeta.toastKey,
-                toastMeta.color,
-                toastMeta.icon,
-              ),
-              fill: "#111324",
-              styles: {
-                badge: "toast-badge",
-                title: "quest-toast-title",
-                description: "quest-toast-desc",
-              },
-            });
+            emitQuestCompletionToastOnce(quest, () => get(), set);
           }
         });
       },
@@ -866,32 +1360,7 @@ export const useQuestStore = create<QuestStore>()(
               addTaps,
               purchaseBobItem,
             });
-
-            const latestQuests = get().quests;
-            const toastMeta = getQuestCompletionToastMeta(
-              quest,
-              latestQuests,
-              getLocale(),
-            );
-            if (!toastMeta) {
-              return;
-            }
-
-            sileo.success({
-              title: toastMeta.title,
-              description: toastMeta.description,
-              icon: createQuestToastIcon(
-                toastMeta.toastKey,
-                toastMeta.color,
-                toastMeta.icon,
-              ),
-              fill: "#111324",
-              styles: {
-                badge: "toast-badge",
-                title: "quest-toast-title",
-                description: "quest-toast-desc",
-              },
-            });
+            emitQuestCompletionToastOnce(quest, () => get(), set);
           });
         }
       },
@@ -922,23 +1391,30 @@ export const useQuestStore = create<QuestStore>()(
         set(() => ({
           quests: initialQuests.map((quest) => ({ ...quest })),
           activeQuests: [],
+          notifiedCompletionKeys: [],
         })),
 
       resetAllQuests: () =>
         set(() => ({
           quests: initialQuests.map((quest) => ({ ...quest })),
           activeQuests: [],
+          notifiedCompletionKeys: [],
         })),
 
       unlockAllQuests: () =>
-        set((state) => ({
-          quests: state.quests.map((quest) => ({
+        set((state) => {
+          const quests = state.quests.map((quest) => ({
             ...quest,
             progress: quest.maxProgress,
             completed: true,
             hiddenUntilCompleted: false,
-          })),
-        })),
+          }));
+
+          return {
+            quests,
+            notifiedCompletionKeys: getPersistedCompletionToastKeys(quests),
+          };
+        }),
     }),
     {
       name: "quest-store",
@@ -948,6 +1424,7 @@ export const useQuestStore = create<QuestStore>()(
         ({
           quests: state.quests,
           activeQuests: state.activeQuests,
+          notifiedCompletionKeys: state.notifiedCompletionKeys,
         }) as QuestStore,
       migrate: (persisted: any, fromVersion: number) => {
         if (!persisted) {
@@ -955,10 +1432,16 @@ export const useQuestStore = create<QuestStore>()(
             version: QUESTS_STORE_VERSION.LATEST,
             quests: initialQuests,
             activeQuests: [],
+            isHydrated: true,
+            notifiedCompletionKeys: [],
           };
         }
 
         return migrateStore(persisted, fromVersion || 0);
+      },
+      onRehydrateStorage: () => (state?: QuestStore) => {
+        if (!state) return;
+        state.isHydrated = true;
       },
     },
   ),

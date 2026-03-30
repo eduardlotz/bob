@@ -694,14 +694,15 @@ export const useCoreStore = create<GameStore>()(
         addTaps: (amount: number) => {
           set((state) => ({
             taps: state.taps + amount,
+            lifetimeTotalTaps: state.lifetimeTotalTaps + amount,
           }));
         },
 
         addAutoTaps: (amount: number) => {
           set((state) => ({
-            taps: state.taps + amount * state.getTotalTapMultiplier(),
+            taps: state.taps + amount,
             lifetimeTotalTaps:
-              state.lifetimeTotalTaps + amount * state.getTotalTapMultiplier(),
+              state.lifetimeTotalTaps + amount,
             lastAutoTapTime: Date.now(),
           }));
         },

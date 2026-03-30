@@ -1,115 +1,14 @@
 import { useCallback, useEffect, useMemo } from "react";
-import {
-  getQuestCompletionToastMeta,
-  hasQuestReward,
-  useQuestStore,
-} from "@/store/core/quests";
+import { hasQuestReward, useQuestStore } from "@/store/core/quests";
 import { useCoreStore } from "@/store/core/store";
 import { useAppStore } from "@/store";
 import { ROUTE_DICTIONARY } from "@/store/config/routes";
-import { sileo } from "sileo";
-import { getLocale } from "@/i18n";
-import { createQuestToastIcon } from "@/components/QuestTrophyIcon";
-
-type TriggerQuestArgs = {
-  action: string;
-  value?: number;
-  routeId: string;
-  addTaps: ReturnType<typeof useCoreStore.getState>["addTaps"];
-  purchaseBobItem: ReturnType<typeof useCoreStore.getState>["purchaseBobItem"];
-  updateQuestProgress: ReturnType<typeof useQuestStore.getState>["updateQuestProgress"];
-  completeQuest: ReturnType<typeof useQuestStore.getState>["completeQuest"];
-};
-
-const runQuestTrigger = ({
-  action,
-  value,
-  routeId,
-  addTaps,
-  purchaseBobItem,
-  updateQuestProgress,
-  completeQuest,
-}: TriggerQuestArgs) => {
-  const freshQuests = useQuestStore.getState().quests;
-  const relevantQuests = freshQuests.filter(
-    (quest) =>
-      (quest.routeId ? quest.routeId === routeId : true) &&
-      !quest.completed &&
-      quest.trigger?.action === action,
-  );
-
-  relevantQuests.forEach((quest) => {
-    const currentQuestState = useQuestStore
-      .getState()
-      .quests.find((q) => q.id === quest.id);
-    if (currentQuestState?.completed) {
-      return;
-    }
-
-    const progressIncrement = value || quest.trigger?.value || 1;
-    const currentProgress = currentQuestState?.progress ?? quest.progress;
-    const newProgress = Math.min(
-      currentProgress + progressIncrement,
-      quest.maxProgress,
-    );
-
-    updateQuestProgress(quest.id, newProgress);
-
-    if (newProgress >= quest.maxProgress && !currentQuestState?.completed) {
-      completeQuest(quest.id);
-
-      if (hasQuestReward(quest) && quest.reward) {
-        if (quest.reward.type === "taps_reward") {
-          const amount = Number(quest.reward.amount) || 0;
-          if (amount > 0) {
-            addTaps(amount);
-          }
-        } else {
-          const itemId = String(quest.reward.amount || "");
-          if (itemId) {
-            purchaseBobItem(itemId, true);
-          }
-        }
-      }
-
-      const latestQuests = useQuestStore.getState().quests;
-      const toastMeta = getQuestCompletionToastMeta(
-        quest,
-        latestQuests,
-        getLocale(),
-      );
-      if (!toastMeta) {
-        return;
-      }
-
-      sileo.success({
-        title: toastMeta.title,
-        description: toastMeta.description,
-        icon: createQuestToastIcon(
-          toastMeta.toastKey,
-          toastMeta.color,
-          toastMeta.icon,
-        ),
-        fill: "#111324",
-        styles: {
-          badge: "toast-badge",
-          title: "quest-toast-title",
-          description: "quest-toast-desc",
-        },
-      });
-    }
-  });
-};
+import { calculateAutoTapRate } from "@/shop-items/upgradeMath";
 
 export const useQuestActions = () => {
   const currentRoute = useAppStore((state) => state.currentRoute);
-  const addTaps = useCoreStore((state) => state.addTaps);
-  const purchaseBobItem = useCoreStore((state) => state.purchaseBobItem);
-  const updateQuestProgress = useQuestStore(
-    (state) => state.updateQuestProgress,
-  );
-  const completeQuest = useQuestStore((state) => state.completeQuest);
-
+  const questStoreHydrated = useQuestStore((state) => state.isHydrated);
+  const triggerQuestAction = useQuestStore((state) => state.triggerQuestAction);
   const routeId = useMemo(
     () => ROUTE_DICTIONARY[currentRoute] || "route_home",
     [currentRoute],
@@ -117,23 +16,13 @@ export const useQuestActions = () => {
 
   const triggerQuest = useCallback(
     (action: string, value?: number) => {
-      runQuestTrigger({
-        action,
-        value,
-        routeId,
-        addTaps,
-        purchaseBobItem,
-        updateQuestProgress,
-        completeQuest,
-      });
+      if (!questStoreHydrated) {
+        return;
+      }
+
+      triggerQuestAction(action, value, routeId);
     },
-    [
-      routeId,
-      addTaps,
-      purchaseBobItem,
-      updateQuestProgress,
-      completeQuest,
-    ],
+    [questStoreHydrated, routeId, triggerQuestAction],
   );
 
   const triggerInteraction = useCallback(
@@ -151,12 +40,18 @@ export const useQuestActions = () => {
 
 export const useQuestSystem = () => {
   const currentRoute = useAppStore((state) => state.currentRoute);
+  const upgrades = useCoreStore((state) => state.upgrades);
   const lifetimeTotalTaps = useCoreStore((state) => state.lifetimeTotalTaps);
   const manualTaps = useCoreStore((state) => state.manualTaps);
+  const gameStoreHydrated = useCoreStore((state) => state.isHydrated);
+  const getTotalTapMultiplier = useCoreStore(
+    (state) => state.getTotalTapMultiplier,
+  );
   const bobItems = useCoreStore((state) => state.bobItems);
   const tapEffects = useCoreStore((state) => state.tapEffects);
   const worlds = useCoreStore((state) => state.worlds);
   const quests = useQuestStore((state) => state.quests);
+  const questStoreHydrated = useQuestStore((state) => state.isHydrated);
   const syncQuestProgressFromMetric = useQuestStore(
     (state) => state.syncQuestProgressFromMetric,
   );
@@ -207,27 +102,112 @@ export const useQuestSystem = () => {
     [worlds],
   );
 
+  const totalUpgradeLevels = useMemo(
+    () => upgrades.reduce((sum, upgrade) => sum + upgrade.level, 0),
+    [upgrades],
+  );
+
+  const autoTapRate = useMemo(() => calculateAutoTapRate(upgrades), [upgrades]);
+  const tapMultiplier = useMemo(
+    () => Math.floor(getTotalTapMultiplier()),
+    [getTotalTapMultiplier, upgrades],
+  );
+
   useEffect(() => {
+    if (!gameStoreHydrated || !questStoreHydrated) return;
     syncQuestProgressFromMetric("taps_total", lifetimeTotalTaps);
-  }, [lifetimeTotalTaps, syncQuestProgressFromMetric]);
+  }, [
+    gameStoreHydrated,
+    lifetimeTotalTaps,
+    questStoreHydrated,
+    syncQuestProgressFromMetric,
+  ]);
 
   useEffect(() => {
+    if (!gameStoreHydrated || !questStoreHydrated) return;
     syncQuestProgressFromMetric("manual_taps_total", manualTaps);
-  }, [manualTaps, syncQuestProgressFromMetric]);
+  }, [
+    gameStoreHydrated,
+    manualTaps,
+    questStoreHydrated,
+    syncQuestProgressFromMetric,
+  ]);
 
   useEffect(() => {
+    if (!gameStoreHydrated || !questStoreHydrated) return;
     syncQuestProgressFromMetric("shop_buy_bob_item", purchasedBobItems);
-  }, [purchasedBobItems, syncQuestProgressFromMetric]);
+  }, [
+    gameStoreHydrated,
+    purchasedBobItems,
+    questStoreHydrated,
+    syncQuestProgressFromMetric,
+  ]);
 
   useEffect(() => {
+    if (!gameStoreHydrated || !questStoreHydrated) return;
     syncQuestProgressFromMetric("shop_buy_tap_effect", purchasedTapEffects);
-  }, [purchasedTapEffects, syncQuestProgressFromMetric]);
+  }, [
+    gameStoreHydrated,
+    purchasedTapEffects,
+    questStoreHydrated,
+    syncQuestProgressFromMetric,
+  ]);
 
   useEffect(() => {
+    if (!gameStoreHydrated || !questStoreHydrated) return;
     syncQuestProgressFromMetric("shop_buy_world", purchasedWorlds);
-  }, [purchasedWorlds, syncQuestProgressFromMetric]);
+  }, [
+    gameStoreHydrated,
+    purchasedWorlds,
+    questStoreHydrated,
+    syncQuestProgressFromMetric,
+  ]);
 
   useEffect(() => {
+    if (!gameStoreHydrated || !questStoreHydrated) return;
+    syncQuestProgressFromMetric("upgrade_levels_total", totalUpgradeLevels);
+  }, [
+    gameStoreHydrated,
+    questStoreHydrated,
+    syncQuestProgressFromMetric,
+    totalUpgradeLevels,
+  ]);
+
+  useEffect(() => {
+    if (!gameStoreHydrated || !questStoreHydrated) return;
+    syncQuestProgressFromMetric("auto_tap_rate", autoTapRate);
+  }, [
+    autoTapRate,
+    gameStoreHydrated,
+    questStoreHydrated,
+    syncQuestProgressFromMetric,
+  ]);
+
+  useEffect(() => {
+    if (!gameStoreHydrated || !questStoreHydrated) return;
+    syncQuestProgressFromMetric("tap_multiplier", tapMultiplier);
+  }, [
+    gameStoreHydrated,
+    questStoreHydrated,
+    syncQuestProgressFromMetric,
+    tapMultiplier,
+  ]);
+
+  useEffect(() => {
+    if (!gameStoreHydrated || !questStoreHydrated) return;
+
+    upgrades.forEach((upgrade) => {
+      syncQuestProgressFromMetric(`${upgrade.id}_level`, upgrade.level);
+    });
+  }, [
+    gameStoreHydrated,
+    questStoreHydrated,
+    syncQuestProgressFromMetric,
+    upgrades,
+  ]);
+
+  useEffect(() => {
+    if (!gameStoreHydrated || !questStoreHydrated) return;
     const timer = window.setInterval(() => {
       triggerQuest("playtime_seconds", 1);
     }, 1000);
@@ -235,7 +215,7 @@ export const useQuestSystem = () => {
     return () => {
       window.clearInterval(timer);
     };
-  }, [triggerQuest]);
+  }, [gameStoreHydrated, questStoreHydrated, triggerQuest]);
 
   return {
     currentQuests,
