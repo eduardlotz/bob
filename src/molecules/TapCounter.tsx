@@ -15,8 +15,15 @@ const FLOAT_EPSILON = 1e-9;
 
 // TODO: move tap interval to debug / add method to let user choose
 export const TapCounter = () => {
-  const { taps, themes, previewMode, getAutoTapRate, addAutoTaps, isPaused } =
-    useCoreStore();
+  const {
+    taps,
+    themes,
+    previewMode,
+    getAutoTapRate,
+    addAutoTaps,
+    isPaused,
+    graphicPreferences,
+  } = useCoreStore();
 
   const { currentRoute } = useAppStore();
 
@@ -28,7 +35,9 @@ export const TapCounter = () => {
     [previewMode, themes],
   );
 
-  const showAutoTapParticles = currentRoute === ROUTE_PATHS.HOME;
+  const showAutoTapParticles =
+    currentRoute === ROUTE_PATHS.HOME && graphicPreferences.effectsEnabled;
+  const reducedTapMotion = graphicPreferences.reducedTapMotion;
 
   const themeConfig = useMemo(() => {
     if (!activeTheme) {
@@ -101,6 +110,14 @@ export const TapCounter = () => {
   }));
 
   useEffect(() => {
+    if (reducedTapMotion) {
+      api.start({
+        scale: [1, 1, 1],
+        immediate: true,
+      });
+      return;
+    }
+
     if (taps === 0) return;
 
     // maybe toggle in options for more sound while autoplaying
@@ -112,7 +129,7 @@ export const TapCounter = () => {
       to: { scale: [1, 1, 1] },
       immediate: false,
     });
-  }, [taps, api]);
+  }, [taps, api, reducedTapMotion]);
 
   return (
     <a.group ref={groupRef} scale={spring.scale as any}>

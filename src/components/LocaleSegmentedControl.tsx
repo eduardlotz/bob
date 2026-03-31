@@ -1,58 +1,53 @@
 import { useMemo } from "react";
-import { motion } from "motion/react";
-import {
-  SegmentedControl,
-  SegmentedOption,
-  SegmentedThumb,
-  SegmentedTrack,
-} from "@/apps/ui";
 import { LOCALE_LABELS, SUPPORTED_LOCALES, type Locale } from "@/i18n";
+import {
+  AnimatedSegmentedControl,
+  type AnimatedSegmentedOption,
+} from "@/components/AnimatedSegmentedControl";
 
 interface LocaleSegmentedControlProps {
   value: Locale;
   onChange: (locale: Locale) => void;
   compact?: boolean;
+  layoutId?: string;
+  theme?: "light" | "dark";
+  labelForm?: "short" | "long";
 }
 
 export function LocaleSegmentedControl({
   value,
   onChange,
   compact = false,
+  layoutId,
+  theme = "light",
+  labelForm = "long",
 }: LocaleSegmentedControlProps) {
-  const activeIndex = useMemo(
-    () => Math.max(0, SUPPORTED_LOCALES.indexOf(value)),
-    [value],
+  const options = useMemo<AnimatedSegmentedOption<Locale>[]>(
+    () =>
+      SUPPORTED_LOCALES.map((locale) => ({
+        value: locale,
+        label: LOCALE_LABELS[locale][labelForm],
+      })),
+    [labelForm],
   );
 
   return (
-    <SegmentedControl
+    <AnimatedSegmentedControl
+      options={options}
+      value={value}
+      onChange={onChange}
+      size={compact ? "sm" : "md"}
+      fullWidth={!compact}
+      layoutId={layoutId}
       style={{
-        width: compact ? "6rem" : "100%",
-        minWidth: compact ? "6rem" : undefined,
+        width: compact ? (labelForm === "short" ? "6rem" : "10.75rem") : "100%",
+        minWidth: compact
+          ? labelForm === "short"
+            ? "6rem"
+            : "10.75rem"
+          : undefined,
       }}
-    >
-      <SegmentedTrack>
-        <SegmentedThumb
-          animate={{ x: `${activeIndex * 100}%` }}
-          transition={{ type: "spring", bounce: 0.2, duration: 0.35 }}
-          style={{ width: `${100 / SUPPORTED_LOCALES.length}%` }}
-        />
-
-        {SUPPORTED_LOCALES.map((locale) => (
-          <SegmentedOption
-            key={locale}
-            type="button"
-            $active={value === locale}
-            onClick={() => onChange(locale)}
-            style={{
-              fontSize: compact ? "0.875rem" : undefined,
-              padding: compact ? "0.45rem 0" : undefined,
-            }}
-          >
-            {LOCALE_LABELS[locale]}
-          </SegmentedOption>
-        ))}
-      </SegmentedTrack>
-    </SegmentedControl>
+      theme={theme}
+    />
   );
 }

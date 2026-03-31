@@ -133,6 +133,7 @@ export function migrateCoreStore(persisted: any, fromVersion: number) {
     state.graphicPreferences = {
       qualityMode: "auto",
       effectsEnabled: true,
+      reducedTapMotion: false,
     };
   }
 
@@ -159,6 +160,23 @@ export function migrateCoreStore(persisted: any, fromVersion: number) {
   }
 
   if (fromVersion < GAME_STORE_VERSION.V7) {
+    state.upgrades = normalizeUpgrades(state.upgrades);
+  }
+
+  if (fromVersion < GAME_STORE_VERSION.V8) {
+    state.themes = initialThemes;
+    state.currentTheme = initialThemes[0];
+  }
+
+  if (fromVersion < GAME_STORE_VERSION.V9) {
+    state.graphicPreferences = {
+      qualityMode: state.graphicPreferences?.qualityMode ?? "auto",
+      effectsEnabled: state.graphicPreferences?.effectsEnabled ?? true,
+      reducedTapMotion: state.graphicPreferences?.reducedTapMotion ?? false,
+    };
+  }
+
+  if (fromVersion < GAME_STORE_VERSION.V10) {
     state.upgrades = normalizeUpgrades(state.upgrades);
   }
 

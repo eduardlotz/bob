@@ -54,7 +54,10 @@ export enum GAME_STORE_VERSION {
   V5 = 100100, // version 1.01.100
   V6 = 100101, // version 1.01.101
   V7 = 100102, // version 1.01.102
-  LATEST = V7,
+  V8 = 100103, // version 1.01.103 (light-only theme mode)
+  V9 = 100104, // version 1.01.104 (motion + tap particle prefs)
+  V10 = 100105, // version 1.01.105 (upgrade schema normalization)
+  LATEST = V10,
 }
 
 // TODO: plan refactor to include component inside item properties
@@ -284,6 +287,7 @@ interface GameState {
   graphicPreferences: {
     qualityMode: QualityMode; // TODO: seperate selected, suggested
     effectsEnabled: boolean;
+    reducedTapMotion: boolean;
   };
 
   audioSelections: {
@@ -364,6 +368,7 @@ interface GameStateActions {
 
   setGraphicsMode: (mode: QualityMode) => void;
   toggleParticleEffects: () => void;
+  toggleReducedTapMotion: () => void;
   acceptCookies: () => void;
 
   setWorldMusicId: (id: string) => void;
@@ -431,23 +436,13 @@ export type GameStore = PersistedGameStore &
   RuntimeGameStore &
   RuntimeGameStoreActions;
 
-export const initialThemes: Theme[] = Object.values(THEME_CONFIG).map(
-  (themeConfig) => ({
-    id: themeConfig.id,
-    name: themeConfig.name,
-    description: themeConfig.description,
-    cost: themeConfig.id === THEME_IDS.DEFAULT ? 0 : 50,
-    active: themeConfig.id === THEME_IDS.DEFAULT,
-    preview: themeConfig.preview,
-    colors: themeConfig.colors,
-    planetColors: themeConfig.planetColors,
-    counterColor: themeConfig.counterColor,
-    blobColor: themeConfig.blobColor,
-    outlineColor: themeConfig.outlineColor,
-    eyeColor: themeConfig.eyeColor,
-    chatColor: themeConfig.chatColor,
-  }),
-);
+export const initialThemes: Theme[] = [
+  {
+    ...THEME_CONFIG[THEME_IDS.DEFAULT],
+    active: true,
+    preview: false,
+  },
+];
 
 export const initialRoutes: Route[] = [
   {
@@ -580,6 +575,7 @@ export const initialGameState: GameState = {
   graphicPreferences: {
     qualityMode: "auto",
     effectsEnabled: true,
+    reducedTapMotion: false,
   },
   audioSelections: {
     worldMusicId: "world-jazz",
@@ -1273,6 +1269,15 @@ export const useCoreStore = create<GameStore>()(
             graphicPreferences: {
               ...state.graphicPreferences,
               effectsEnabled: !state.graphicPreferences.effectsEnabled,
+            },
+          }));
+        },
+        toggleReducedTapMotion: () => {
+          set((state) => ({
+            ...state,
+            graphicPreferences: {
+              ...state.graphicPreferences,
+              reducedTapMotion: !state.graphicPreferences.reducedTapMotion,
             },
           }));
         },

@@ -212,10 +212,13 @@ export function BlobHead({
     audioSelections,
     tapMultiplier,
     getTotalTapMultiplier,
+    graphicPreferences,
   } = useCoreStore();
   const { currentRoute } = useAppStore();
 
-  const showAutoTapParticles = currentRoute === ROUTE_PATHS.HOME;
+  const showAutoTapParticles =
+    currentRoute === ROUTE_PATHS.HOME && graphicPreferences.effectsEnabled;
+  const reducedTapMotion = graphicPreferences.reducedTapMotion;
 
   const activeTheme =
     previewMode === "theme" ? themes.find((t) => t.preview) : currentTheme;
@@ -494,7 +497,7 @@ export function BlobHead({
       const baseZoom = showOptions
         ? VISIBLE_OPTIONS_CAMERA_ZOOM
         : HIDDEN_OPTIONS_CAMERA_ZOOM;
-      const zoomOffset = cameraZoomAnimation
+      const zoomOffset = !reducedTapMotion && cameraZoomAnimation
         ? Math.sin(clock.getElapsedTime() * 20) * 0.5
         : 0;
       const lookDirX = -targetRotX;
@@ -534,15 +537,18 @@ export function BlobHead({
       const baseZoom = showOptions
         ? VISIBLE_OPTIONS_CAMERA_ZOOM
         : HIDDEN_OPTIONS_CAMERA_ZOOM;
-      const zoomOffset = cameraZoomAnimation ? CAMERA_ZOOM_ON_TAP : 0;
+      const zoomOffset =
+        !reducedTapMotion && cameraZoomAnimation ? CAMERA_ZOOM_ON_TAP : 0;
       const handCamSwayX = Math.sin(clock.getElapsedTime() * 1) * 0.03;
       const handCamSwayY = Math.sin(clock.getElapsedTime() * 0.5) * 0.02;
       const cameraShakeStrength =
         Math.sin(clock.getElapsedTime() * 50) *
         Math.min(1, 0.01 * getTotalTapMultiplier());
 
-      const cameraShakeX = cameraZoomAnimation ? cameraShakeStrength : 0;
-      const cameraShakeY = cameraZoomAnimation ? cameraShakeStrength : 0;
+      const cameraShakeX =
+        !reducedTapMotion && cameraZoomAnimation ? cameraShakeStrength : 0;
+      const cameraShakeY =
+        !reducedTapMotion && cameraZoomAnimation ? cameraShakeStrength : 0;
 
       if (!isTransitioning && !isObjectView()) {
         cameraControlsRef.current?.setLookAt(
@@ -580,15 +586,18 @@ export function BlobHead({
     const baseZoom = showOptions
       ? VISIBLE_OPTIONS_CAMERA_ZOOM
       : HIDDEN_OPTIONS_CAMERA_ZOOM;
-    const zoomOffset = cameraZoomAnimation ? CAMERA_ZOOM_ON_TAP : 0;
+    const zoomOffset =
+      !reducedTapMotion && cameraZoomAnimation ? CAMERA_ZOOM_ON_TAP : 0;
     const handCamSwayX = Math.sin(clock.getElapsedTime() * 1) * 0.03;
     const handCamSwayY = Math.sin(clock.getElapsedTime() * 0.5) * 0.02;
     const cameraShakeStrength =
       Math.sin(clock.getElapsedTime() * 50) *
       Math.min(1, 0.01 * getTotalTapMultiplier());
 
-    const cameraShakeX = cameraZoomAnimation ? cameraShakeStrength : 0;
-    const cameraShakeY = cameraZoomAnimation ? cameraShakeStrength : 0;
+    const cameraShakeX =
+      !reducedTapMotion && cameraZoomAnimation ? cameraShakeStrength : 0;
+    const cameraShakeY =
+      !reducedTapMotion && cameraZoomAnimation ? cameraShakeStrength : 0;
 
     if (shouldFollowCursor && !isTransitioning && !isObjectView()) {
       cameraControlsRef.current?.setLookAt(
@@ -852,26 +861,28 @@ export function BlobHead({
       createParticles(COUNTER_POS[0], COUNTER_POS[1], COUNTER_POS[2]);
     }
 
-    // trigger bob bounce
-    api.start({
-      scale: [1.35, 1.15, 1.35],
-      config: { tension: 420, friction: 10 },
-    });
+    if (!reducedTapMotion) {
+      // trigger bob bounce
+      api.start({
+        scale: [1.35, 1.15, 1.35],
+        config: { tension: 420, friction: 10 },
+      });
 
-    api.start({
-      scale: [1.2, 1.2, 1.2],
-      config: { tension: 300, friction: 12 },
-      delay: 140,
-      reset: true,
-    });
+      api.start({
+        scale: [1.2, 1.2, 1.2],
+        config: { tension: 300, friction: 12 },
+        delay: 140,
+        reset: true,
+      });
 
-    // trigger camera zoom
-    setCameraZoomAnimation(true);
-    onCameraZoomAnimation?.(true);
-    setTimeout(() => {
-      setCameraZoomAnimation(false);
-      onCameraZoomAnimation?.(false);
-    }, 100);
+      // trigger camera zoom
+      setCameraZoomAnimation(true);
+      onCameraZoomAnimation?.(true);
+      setTimeout(() => {
+        setCameraZoomAnimation(false);
+        onCameraZoomAnimation?.(false);
+      }, 100);
+    }
 
     // trigger emotions
     onHeadClick();

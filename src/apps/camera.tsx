@@ -1,6 +1,6 @@
 import { CameraViewId, CapturedPhoto, useViewStore } from "@/store";
 
-import styled, { keyframes } from "styled-components";
+import styled from "styled-components";
 import {
   AnimatePresence,
   motion,
@@ -15,9 +15,10 @@ import {
 import { useCameraStore } from "@/store";
 import { useGLBridge } from "@/store/core/gl";
 import { createPortal } from "react-dom";
-import { AppInfo, TabButton, TabPanel } from "./ui";
+import { AppInfo } from "./ui";
 import { FillColumn, FillRow } from "@/layout";
 import { useI18n } from "@/i18n";
+import { AnimatedSegmentedControl } from "@/components/AnimatedSegmentedControl";
 
 export const CameraIcon = () => (
   <img src={"/images/app-logos/camera.png"} height={80} width={80} />
@@ -439,20 +440,16 @@ export const CameraApp = () => {
           </FillColumn>
         )}
 
-        <TabPanel>
-          <TabButton
-            $active={view === "camera"}
-            onClick={() => setView("camera")}
-          >
-            Kamera
-          </TabButton>
-          <TabButton
-            $active={view === "gallery"}
-            onClick={() => setView("gallery")}
-          >
-            Fotos
-          </TabButton>
-        </TabPanel>
+        <AnimatedSegmentedControl
+          options={[
+            { value: "camera" as AppView, label: "Kamera" },
+            { value: "gallery" as AppView, label: "Fotos" },
+          ]}
+          value={view}
+          onChange={setView}
+          layoutId="camera-view-segmented"
+          fullWidth
+        />
       </CameraRoot>
     </>
   );

@@ -1,308 +1,178 @@
+import { initialQuests } from "@/store/config/quests";
 import { getLocale } from "@/i18n";
 import { defineMessages } from "@/i18n/defineMessages";
 import type { Locale } from "@/i18n/types";
 
+type QuestCopy = {
+  title: string;
+  description: string;
+};
+
+const deQuestMessagesFromConfig: Record<string, QuestCopy> = Object.fromEntries(
+  initialQuests.map((quest) => [
+    quest.id,
+    {
+      title: quest.title,
+      description: quest.description,
+    },
+  ]),
+);
+
+const enQuestMessageOverrides: Record<string, QuestCopy> = {
+  auto_tap_level_10: {
+    title: "Workshop Warmup",
+    description: "Reach level 10 on the Auto Tapper",
+  },
+  auto_tap_level_50: {
+    title: "Assembly Fever",
+    description: "Reach level 50 on the Auto Tapper",
+  },
+  auto_tap_level_100: {
+    title: "Fully Automated",
+    description: "Max out the Auto Tapper",
+  },
+  about_quest_2: {
+    title: "Sul Sul!",
+    description: "Find the plumbob 🕵",
+  },
+  portfolio_quest_1: {
+    title: "Space Walk",
+    description: "Take a look at a few of my creative projects",
+  },
+  about_books_shelf_3: {
+    title: "Bookworm",
+    description: "Inspect several books in the collection",
+  },
+  about_socials_1: {
+    title: "Social Butterfly",
+    description: "Open the socials globe in the About area",
+  },
+  about_desk_1: {
+    title: "Desk Check",
+    description: "Interact with the desk in the About area",
+  },
+  about_box_1: {
+    title: "Box Hunter",
+    description: "Interact with the box in the About area",
+  },
+  manual_taps_50: {
+    title: "Warmup Fingers",
+    description: "Tap manually 50 times",
+  },
+  manual_taps_100: {
+    title: "Click Machine",
+    description: "Tap manually 100 times",
+  },
+  manual_taps_1000: {
+    title: "1,000 Club",
+    description: "Tap manually 1,000 times",
+  },
+  total_taps_1000: {
+    title: "Four Digits",
+    description: "Reach 1,000 total taps",
+  },
+  total_taps_10000: {
+    title: "Five Digits",
+    description: "Reach 10,000 total taps",
+  },
+  total_taps_1000000: {
+    title: "Millionaire",
+    description: "Reach 1,000,000 total taps",
+  },
+  total_taps_1000000000000: {
+    title: "Eight Digits",
+    description: "Reach 100,000,000 total taps",
+  },
+  total_taps_1000000000000000: {
+    title: "Beyond Infinity",
+    description: "Reach 1,000,000,000,000 total taps",
+  },
+  shop_buy_bob_item_1: {
+    title: "Fresh Fit",
+    description: "Buy one Bob item in the shop",
+  },
+  shop_buy_tap_effect_1: {
+    title: "Special Effects",
+    description: "Buy one tap effect in the shop",
+  },
+  shop_buy_world_1: {
+    title: "World Explorer",
+    description: "Buy one world in the shop",
+  },
+  playtime_60s: {
+    title: "Short Session",
+    description: "Play for a total of 2 minutes",
+  },
+  playtime_600s: {
+    title: "Nice Session",
+    description: "Play for a total of 5 minutes",
+  },
+  playtime_1800s: {
+    title: "Long Haul",
+    description: "Play for a total of 10 minutes",
+  },
+  upgrade_levels_25: {
+    title: "Toolbox",
+    description: "Reach 25 total upgrade levels",
+  },
+  upgrade_levels_100: {
+    title: "Machine Room",
+    description: "Reach 100 total upgrade levels",
+  },
+  upgrade_levels_200: {
+    title: "Patch Day",
+    description: "Reach 200 total upgrade levels",
+  },
+  auto_tap_rate_100: {
+    title: "Production Line",
+    description: "Reach 100 auto taps per second",
+  },
+  auto_tap_rate_1000: {
+    title: "Machines Humming",
+    description: "Reach 1,000 auto taps per second",
+  },
+  auto_tap_rate_10000: {
+    title: "Full Steam",
+    description: "Reach 10,000 auto taps per second",
+  },
+  tap_multiplier_5: {
+    title: "Fast Fingers",
+    description: "Reach 5x tap power",
+  },
+  tap_multiplier_20: {
+    title: "Muscle Memory",
+    description: "Reach 20x tap power",
+  },
+  tap_multiplier_50: {
+    title: "Jackhammer Hand",
+    description: "Reach 50x tap power",
+  },
+  minigames_flappy_points_10: {
+    title: "Flappy Bobbie",
+    description: "Score 10 points in the Flappy Bird minigame",
+  },
+  minigames_slot_wins_5: {
+    title: "Won It Back",
+    description: "Win on the slot machine",
+  },
+  routes_purchased_1: {
+    title: "First Journey",
+    description: "Unlock your first additional route",
+  },
+  routes_purchased_3: {
+    title: "Map Master",
+    description: "Unlock three additional routes",
+  },
+};
+
+const enQuestMessages: Record<string, QuestCopy> = {
+  ...deQuestMessagesFromConfig,
+  ...enQuestMessageOverrides,
+};
+
 export const questMessages = defineMessages({
-  de: {
-    auto_tap_milestone_1: {
-      title: "Passives Einkommen",
-      description: "Kauf deine ersten Auto-Tap-Upgrades",
-    },
-    auto_tap_level_10: {
-      title: "Werkbank warmgelaufen",
-      description: "Bringe den Auto Tapper auf Level 10",
-    },
-    auto_tap_level_50: {
-      title: "Fliessbandfieber",
-      description: "Bringe den Auto Tapper auf Level 50",
-    },
-    auto_tap_level_100: {
-      title: "Komplett automatisiert",
-      description: "Maxe den Auto Tapper aus",
-    },
-    about_quest_2: {
-      title: "Sul Sul!",
-      description: "Finde den Plumbob 🕵",
-    },
-    portfolio_quest_1: {
-      title: "Weltraumspaziergang",
-      description: "Schau dir ein paar meiner kreativen Arbeiten an",
-    },
-    about_books_shelf_3: {
-      title: "Bücherwurm",
-      description: "Schau dir mehrere Bücher in der Sammlung an",
-    },
-    about_socials_1: {
-      title: "Kontaktfreudig",
-      description: "Öffne die Socials-Kugel im About-Bereich",
-    },
-    about_desk_1: {
-      title: "Desk-Check",
-      description: "Interagiere mit dem Schreibtisch im About-Bereich",
-    },
-    about_box_1: {
-      title: "Kistenfuchs",
-      description: "Interagiere mit der Kiste im About-Bereich",
-    },
-    manual_taps_50: {
-      title: "Finger warmtippen",
-      description: "Tippe 50 Mal selbst",
-    },
-    manual_taps_100: {
-      title: "Klickmaschine",
-      description: "Tippe 100 Mal selbst",
-    },
-    manual_taps_1000: {
-      title: "1000er Club",
-      description: "Tippe 1000 Mal selbst",
-    },
-    total_taps_1000: {
-      title: "Vierstellig",
-      description: "Erreiche insgesamt 1.000 Taps",
-    },
-    total_taps_10000: {
-      title: "Fünfstellig",
-      description: "Erreiche insgesamt 10.000 Taps",
-    },
-    total_taps_1000000: {
-      title: "Millionär",
-      description: "Erreiche insgesamt 1.000.000 Taps",
-    },
-    total_taps_1000000000000: {
-      title: "Achtstellig",
-      description: "Erreiche insgesamt 100.000.000 Taps",
-    },
-    total_taps_1000000000000000: {
-      title: "Jenseits der Unendlichkeit",
-      description: "Erreiche insgesamt 1.000.000.000 Taps",
-    },
-    shop_buy_bob_item_1: {
-      title: "Neuer Fit",
-      description: "Kaufe ein Bob-Item im Shop",
-    },
-    shop_buy_tap_effect_1: {
-      title: "Effektvoll",
-      description: "Kaufe einen Tap-Effekt im Shop",
-    },
-    shop_buy_world_1: {
-      title: "Weltentdecker",
-      description: "Kaufe eine Welt im Shop",
-    },
-    playtime_60s: {
-      title: "Kurze Session",
-      description: "Spiele insgesamt 1 Minute",
-    },
-    playtime_600s: {
-      title: "Runde gedreht",
-      description: "Spiele insgesamt 5 Minuten",
-    },
-    playtime_1800s: {
-      title: "Langstrecke",
-      description: "Spiele insgesamt 10 Minuten",
-    },
-    upgrade_levels_25: {
-      title: "Werkzeugkiste",
-      description: "Erreiche insgesamt 25 Upgrade-Level",
-    },
-    upgrade_levels_100: {
-      title: "Maschinenraum",
-      description: "Erreiche insgesamt 100 Upgrade-Level",
-    },
-    upgrade_levels_200: {
-      title: "Patchday",
-      description: "Erreiche insgesamt 200 Upgrade-Level",
-    },
-    auto_tap_rate_100: {
-      title: "Produktionslinie",
-      description: "Erreiche 100 Auto-Taps pro Sekunde",
-    },
-    auto_tap_rate_1000: {
-      title: "Surrende Maschinen",
-      description: "Erreiche 1.000 Auto-Taps pro Sekunde",
-    },
-    auto_tap_rate_10000: {
-      title: "Volldampf",
-      description: "Erreiche 10.000 Auto-Taps pro Sekunde",
-    },
-    tap_multiplier_5: {
-      title: "Fingerfertig",
-      description: "Erreiche 5x Tap-Power",
-    },
-    tap_multiplier_20: {
-      title: "Muskelgedächtnis",
-      description: "Erreiche 20x Tap-Power",
-    },
-    tap_multiplier_50: {
-      title: "Presslufthand",
-      description: "Erreiche 50x Tap-Power",
-    },
-    minigames_flappy_points_10: {
-      title: "Flappy Bobbie",
-      description: "Erziele 10 Punkte im Flappy-Bird-Minigame",
-    },
-    minigames_slot_wins_5: {
-      title: "Alles wieder reingeholt",
-      description: "Gewinne am Slotautomaten",
-    },
-    routes_purchased_1: {
-      title: "Aufbruch",
-      description: "Schalte deine erste zusätzliche Route frei",
-    },
-    routes_purchased_3: {
-      title: "Stadtplan im Kopf",
-      description: "Schalte drei zusätzliche Routen frei",
-    },
-  },
-  en: {
-    auto_tap_milestone_1: {
-      title: "Passive Income",
-      description: "Buy your first auto-tap upgrades",
-    },
-    auto_tap_level_10: {
-      title: "Workshop Warmup",
-      description: "Reach level 10 on the Auto Tapper",
-    },
-    auto_tap_level_50: {
-      title: "Assembly Fever",
-      description: "Reach level 50 on the Auto Tapper",
-    },
-    auto_tap_level_100: {
-      title: "Fully Automated",
-      description: "Max out the Auto Tapper",
-    },
-    about_quest_2: {
-      title: "Sul Sul!",
-      description: "Find the plumbob 🕵",
-    },
-    portfolio_quest_1: {
-      title: "Space Walk",
-      description: "Take a look at a few of my creative projects",
-    },
-    about_books_shelf_3: {
-      title: "Bookworm",
-      description: "Inspect several books in the collection",
-    },
-    about_socials_1: {
-      title: "Social Butterfly",
-      description: "Open the socials globe in the About area",
-    },
-    about_desk_1: {
-      title: "Desk Check",
-      description: "Interact with the desk in the About area",
-    },
-    about_box_1: {
-      title: "Box Hunter",
-      description: "Interact with the box in the About area",
-    },
-    manual_taps_50: {
-      title: "Warmup Fingers",
-      description: "Tap manually 50 times",
-    },
-    manual_taps_100: {
-      title: "Click Machine",
-      description: "Tap manually 100 times",
-    },
-    manual_taps_1000: {
-      title: "1,000 Club",
-      description: "Tap manually 1,000 times",
-    },
-    total_taps_1000: {
-      title: "Four Digits",
-      description: "Reach 1,000 total taps",
-    },
-    total_taps_10000: {
-      title: "Five Digits",
-      description: "Reach 10,000 total taps",
-    },
-    total_taps_1000000: {
-      title: "Millionaire",
-      description: "Reach 1,000,000 total taps",
-    },
-    total_taps_1000000000000: {
-      title: "Eight Digits",
-      description: "Reach 100,000,000 total taps",
-    },
-    total_taps_1000000000000000: {
-      title: "Beyond Infinity",
-      description: "Reach 1,000,000,000 total taps",
-    },
-    shop_buy_bob_item_1: {
-      title: "Fresh Fit",
-      description: "Buy one Bob item in the shop",
-    },
-    shop_buy_tap_effect_1: {
-      title: "Special Effects",
-      description: "Buy one tap effect in the shop",
-    },
-    shop_buy_world_1: {
-      title: "World Explorer",
-      description: "Buy one world in the shop",
-    },
-    playtime_60s: {
-      title: "Short Session",
-      description: "Play for a total of 1 minute",
-    },
-    playtime_600s: {
-      title: "Nice Session",
-      description: "Play for a total of 5 minutes",
-    },
-    playtime_1800s: {
-      title: "Long Haul",
-      description: "Play for a total of 10 minutes",
-    },
-    upgrade_levels_25: {
-      title: "Toolbox",
-      description: "Reach 25 total upgrade levels",
-    },
-    upgrade_levels_100: {
-      title: "Machine Room",
-      description: "Reach 100 total upgrade levels",
-    },
-    upgrade_levels_200: {
-      title: "Patch Day",
-      description: "Reach 200 total upgrade levels",
-    },
-    auto_tap_rate_100: {
-      title: "Production Line",
-      description: "Reach 100 auto taps per second",
-    },
-    auto_tap_rate_1000: {
-      title: "Machines Humming",
-      description: "Reach 1,000 auto taps per second",
-    },
-    auto_tap_rate_10000: {
-      title: "Full Steam",
-      description: "Reach 10,000 auto taps per second",
-    },
-    tap_multiplier_5: {
-      title: "Fast Fingers",
-      description: "Reach 5x tap power",
-    },
-    tap_multiplier_20: {
-      title: "Muscle Memory",
-      description: "Reach 20x tap power",
-    },
-    tap_multiplier_50: {
-      title: "Jackhammer Hand",
-      description: "Reach 50x tap power",
-    },
-    minigames_flappy_points_10: {
-      title: "Flappy Bobbie",
-      description: "Score 10 points in the Flappy Bird minigame",
-    },
-    minigames_slot_wins_5: {
-      title: "Won It Back",
-      description: "Win on the slot machine",
-    },
-    routes_purchased_1: {
-      title: "First Journey",
-      description: "Unlock your first additional route",
-    },
-    routes_purchased_3: {
-      title: "Map Master",
-      description: "Unlock three additional routes",
-    },
-  },
+  de: deQuestMessagesFromConfig,
+  en: enQuestMessages,
 });
 
 export type QuestMessageId = keyof (typeof questMessages)["de"];
@@ -312,91 +182,135 @@ export const getQuestCopy = (
   locale: Locale = getLocale(),
 ) => questMessages[locale][questId];
 
+const deStackMessagesFromConfig = initialQuests.reduce<
+  Record<string, QuestCopy & { _order: number }>
+>((acc, quest) => {
+  if (!quest.stackId) {
+    return acc;
+  }
+
+  const nextOrder = quest.stackOrder ?? Number.MAX_SAFE_INTEGER;
+  const existing = acc[quest.stackId];
+  if (existing && existing._order <= nextOrder) {
+    return acc;
+  }
+
+  acc[quest.stackId] = {
+    title: quest.stackTitle ?? quest.title,
+    description: quest.stackDescription ?? quest.description,
+    _order: nextOrder,
+  };
+
+  return acc;
+}, {});
+
+const deStackMessageOverrides: Record<string, QuestCopy> = {
+  manual_taps: {
+    title: "Manuelle Tap-Meilensteine",
+    description: "Baue deine eigene Klick-Ausdauer auf.",
+  },
+  total_taps: {
+    title: "Gesamt-Tap-Meilensteine",
+    description: "Erreiche langfristige Lifetime-Tap-Ziele.",
+  },
+  playtime: {
+    title: "Spielzeit-Meilensteine",
+    description: "Bleib im Spiel und sammle Ausdauer-Belohnungen.",
+  },
+  automation_mastery: {
+    title: "Automations-Meisterschaft",
+    description: "Baue deinen Kern-Auto-Tapper bis zum Maximum aus.",
+  },
+  upgrade_levels: {
+    title: "Upgrade-Meisterschaft",
+    description: "Investiere breit in deinen gesamten Upgrade-Baum.",
+  },
+  auto_tap_rate: {
+    title: "Auto-Tap-Ausstoß",
+    description: "Steigere deine passive Produktion immer weiter.",
+  },
+  tap_multiplier: {
+    title: "Tap-Power",
+    description: "Verstärke jeden einzelnen manuellen Tap.",
+  },
+  about_tour: {
+    title: "About-Tour",
+    description: "Erkunde die interaktiven Objekte im About-Raum.",
+  },
+  route_unlocks: {
+    title: "Routen-Explorer",
+    description: "Schalte neue Routen frei und erweitere deine Welt.",
+  },
+  shop_item_categories: {
+    title: "Shop-Sammler",
+    description: "Kaufe je ein Item aus Bob, Effekte und Welten.",
+  },
+};
+
+const deQuestStackMessages: Record<string, QuestCopy> = {
+  ...deStackMessageOverrides,
+  ...Object.fromEntries(
+    Object.entries(deStackMessagesFromConfig).map(([stackId, copy]) => [
+      stackId,
+      {
+        title: copy.title,
+        description: copy.description,
+      },
+    ]),
+  ),
+};
+
+const enQuestStackOverrides: Record<string, QuestCopy> = {
+  manual_taps: {
+    title: "Manual Tap Milestones",
+    description: "Build up your own tapping stamina.",
+  },
+  total_taps: {
+    title: "Total Tap Milestones",
+    description: "Reach long-term lifetime tap goals.",
+  },
+  playtime: {
+    title: "Playtime Milestones",
+    description: "Stay in the game to unlock endurance rewards.",
+  },
+  automation_mastery: {
+    title: "Automation Mastery",
+    description: "Push your core Auto Tapper all the way to max.",
+  },
+  upgrade_levels: {
+    title: "Upgrade Mastery",
+    description: "Invest broadly across your full upgrade tree.",
+  },
+  auto_tap_rate: {
+    title: "Automation Output",
+    description: "Keep raising your passive tap production.",
+  },
+  tap_multiplier: {
+    title: "Tap Power",
+    description: "Keep making every manual tap hit harder.",
+  },
+  about_tour: {
+    title: "About Tour",
+    description: "Explore the interactive objects in the About room.",
+  },
+  route_unlocks: {
+    title: "Route Explorer",
+    description: "Unlock new routes to expand your world.",
+  },
+  shop_item_categories: {
+    title: "Shop Collector",
+    description: "Buy one item from Bob, Effects, and Worlds.",
+  },
+};
+
+const enQuestStackMessages: Record<string, QuestCopy> = {
+  ...deQuestStackMessages,
+  ...enQuestStackOverrides,
+};
+
 export const questStackMessages = defineMessages({
-  de: {
-    manual_taps: {
-      title: "Manuelle Tap-Meilensteine",
-      description: "Baue deine eigene Klick-Ausdauer auf.",
-    },
-    total_taps: {
-      title: "Gesamt-Tap-Meilensteine",
-      description: "Erreiche langfristige Lifetime-Tap-Ziele.",
-    },
-    playtime: {
-      title: "Spielzeit-Meilensteine",
-      description: "Bleib im Spiel und sammle Ausdauer-Belohnungen.",
-    },
-    automation_mastery: {
-      title: "Automations-Meisterschaft",
-      description: "Baue deinen Kern-Auto-Tapper bis zum Maximum aus.",
-    },
-    upgrade_levels: {
-      title: "Upgrade-Meisterschaft",
-      description: "Investiere breit in deinen gesamten Upgrade-Baum.",
-    },
-    auto_tap_rate: {
-      title: "Auto-Tap-Ausstoß",
-      description: "Steigere deine passive Produktion immer weiter.",
-    },
-    tap_multiplier: {
-      title: "Tap-Power",
-      description: "Verstärke jeden einzelnen manuellen Tap.",
-    },
-    about_tour: {
-      title: "About-Tour",
-      description: "Erkunde die interaktiven Objekte im About-Raum.",
-    },
-    route_unlocks: {
-      title: "Routen-Explorer",
-      description: "Schalte neue Routen frei und erweitere deine Welt.",
-    },
-    shop_item_categories: {
-      title: "Shop-Sammler",
-      description: "Kaufe je ein Item aus Bob, Effekte und Welten.",
-    },
-  },
-  en: {
-    manual_taps: {
-      title: "Manual Tap Milestones",
-      description: "Build up your own tapping stamina.",
-    },
-    total_taps: {
-      title: "Total Tap Milestones",
-      description: "Reach long-term lifetime tap goals.",
-    },
-    playtime: {
-      title: "Playtime Milestones",
-      description: "Stay in the game to unlock endurance rewards.",
-    },
-    automation_mastery: {
-      title: "Automation Mastery",
-      description: "Push your core Auto Tapper all the way to max.",
-    },
-    upgrade_levels: {
-      title: "Upgrade Mastery",
-      description: "Invest broadly across your full upgrade tree.",
-    },
-    auto_tap_rate: {
-      title: "Automation Output",
-      description: "Keep raising your passive tap production.",
-    },
-    tap_multiplier: {
-      title: "Tap Power",
-      description: "Keep making every manual tap hit harder.",
-    },
-    about_tour: {
-      title: "About Tour",
-      description: "Explore the interactive objects in the About room.",
-    },
-    route_unlocks: {
-      title: "Route Explorer",
-      description: "Unlock new routes to expand your world.",
-    },
-    shop_item_categories: {
-      title: "Shop Collector",
-      description: "Buy one item from Bob, Effects, and Worlds.",
-    },
-  },
+  de: deQuestStackMessages,
+  en: enQuestStackMessages,
 });
 
 export type QuestStackMessageId = keyof (typeof questStackMessages)["de"];

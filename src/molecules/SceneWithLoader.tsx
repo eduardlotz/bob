@@ -125,6 +125,8 @@ export const CustomLoader = ({
                 value={locale}
                 onChange={setLocale}
                 compact
+                labelForm="short"
+                theme="dark"
               />
             </HugColumn>
 

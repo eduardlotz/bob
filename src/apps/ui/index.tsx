@@ -174,9 +174,11 @@ export const ToggleButton = styled(motion.button)<{
   outline: none;
   width: ${(p) => (p.$fillRow ? "100%" : "52px")};
 
-  background: ${(p) => (p.$active ? "#007AFF" : "rgba(33,33,33,0.1)")};
+  background: ${(p) => (p.$active ? "#212121" : "rgba(33,33,33,0.1)")};
 
-  transition: background 0.25s ease;
+  transition:
+    background-color 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 
   span {
     position: absolute;
@@ -190,17 +192,19 @@ export const ToggleButton = styled(motion.button)<{
 
     transform: ${(p) => (p.$active ? "translateX(20px)" : "translateX(0)")};
 
-    transition: 0.15s ease-out;
-    transition-property: transform width;
+    transition:
+      transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+      width 0.2s cubic-bezier(0.22, 1, 0.36, 1);
     transform-origin: ${(p) => (p.$active ? "right" : "left")};
   }
 
-  &:active span {
+  &:hover span {
     width: 28px;
+    transform: ${(p) => (p.$active ? "translateX(18px)" : "translateX(0)")};
   }
 
   &:focus-visible {
-    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.4);
+    box-shadow: 0 0 0 3px rgba(33, 33, 33, 0.28);
   }
 `;
 
@@ -290,7 +294,7 @@ export const ContentControls = styled.div`
   justify-content: space-between;
   gap: 0.5rem;
 
-  margin: 0 auto;
+  margin: 0 auto 16px auto;
 `;
 
 export const PaginationDots = styled.div<{
@@ -301,21 +305,11 @@ export const PaginationDots = styled.div<{
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  padding: 4px;
-  border-radius: 50px;
-  background: rgba(33, 33, 33, 0.5);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-
-  ${({ $contrastMode }) => {
-    return $contrastMode
-      ? css`
-          backdrop-filter: none;
-          background: #212121;
-          border: 1.5px solid #ffffff58;
-        `
-      : "";
-  }}
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 
   ${({ $mobileBottomAnchor }) => {
     return $mobileBottomAnchor
@@ -334,49 +328,60 @@ export const PaginationDots = styled.div<{
       : "";
   }}
 
-   
+  > div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 999px;
+    background: rgba(33, 33, 33, 0.2);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 
-  > div > div {
-    height: 8px;
-    width: 8px;
-    background: #fff;
-    opacity: 0.25;
-    border-radius: 50px;
+    > div {
+      height: 0.55rem;
+      width: 0.55rem;
+      background: #ffffff;
+      opacity: 1;
+      border-radius: 999px;
+    }
   }
 `;
 
-export const PaginationButton = styled.button`
+export const PaginationButton = styled(motion.button)`
   display: flex;
   align-items: center;
   justify-content: center;
 
-  height: 2.5rem;
-  width: 2.5rem;
+  width: 44px;
+  height: 36px;
+  padding: 0;
 
-  border-radius: 20rem;
-  /* background: var(--blob-color); */
-  background: transparent;
-  color: white;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #212121;
+  border: 1px solid rgba(33, 33, 33, 0.14);
   transition: 0.1s ease-out;
   transition-property: background-color, transform;
   z-index: 0;
 
   svg {
-    height: 1.5rem;
-    width: 1.5rem;
+    width: 1.4rem;
+    height: 1.4rem;
   }
 
   &:hover {
-    background-color: rgba(33, 33, 33, 0.1);
-    transform: scale(1.05);
+    background-color: #f6f6f6;
+    transform: scale(1.03);
   }
 
   &:active {
-    transform: scale(0.95);
+    transform: scale(0.97);
   }
 
   &:disabled {
-    opacity: 0.25;
+    opacity: 0.45;
   }
 `;
 

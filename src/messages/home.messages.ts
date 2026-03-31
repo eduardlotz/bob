@@ -131,7 +131,7 @@ export const homeMessageConfigs = defineMessages<Record<string, MessageConfig>>(
         id: "first_tap_hint",
         text: [
           "Übrigenski: Solange du hier auf der Homepage bist, kannst du unten immer ein paar Tap Upgrades kaufen",
-          "Der Auto-Tapper kostet zum Beispiel nur 15 taps! da muss man doch zuschlagen 🤪",
+          "Der erste Tapper bleibt bezahlbar, aber die grossen Stufen ziehen spaeter richtig an 🤪",
         ],
         label: "Bob",
         options: {
@@ -271,7 +271,7 @@ export const homeMessageConfigs = defineMessages<Record<string, MessageConfig>>(
         id: "first_tap_hint",
         text: [
           "By the way: as long as you're on the homepage, you can always buy a few tap upgrades down below",
-          "The auto tapper costs only 15 taps, for example. hard to pass that up 🤪",
+          "The first tapper is still cheap, and the bigger tiers ramp up hard once your run gets going 🤪",
         ],
         label: "Bob",
         options: {
