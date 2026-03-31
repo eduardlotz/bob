@@ -83,7 +83,7 @@ export function SocialsCorner({
 
 export function StandaloneSocialsGlobe({
   questAction = "click_socials",
-  questValue = 30,
+  questValue = 1,
   position = [0, 0, 0],
   rotation = [0, 0, 0],
   scale = [1, 1, 1],

@@ -1,7 +1,7 @@
 import { usePagination } from "@/hooks/usePagination";
 import { HugColumn, HugRow } from "@/layout";
 import { MOTION_VARIANTS } from "@/molecules/HeadNavigation";
-import { formatNumber } from "@/molecules/TapCounter";
+import { formatNumber } from "@/utils/formatNumber";
 import {
   CameraViewId,
   ShopItem,

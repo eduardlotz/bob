@@ -8,7 +8,7 @@ import { useCoreStore, type Upgrade } from "@/store";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
-import { formatNumber } from "./TapCounter";
+import { formatNumber } from "@/utils/formatNumber";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { playUISound } from "@/utils/soundSystem";
 import { useI18n } from "@/i18n";
@@ -65,31 +65,27 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
   });
 
   const onTriggerClick = () => {
-    const willOpen = !showUpgrades;
-    setShowUpgrades(willOpen);
-    playUISound(willOpen ? "ui-tap" : "ui-tap-close");
+    setShowUpgrades((open) => !open);
   };
 
   const handleNextPage = () => {
     if (hasNext) next();
     else goTo(0);
-    playUISound("ui-tap");
   };
 
   const handlePrevPage = () => {
     if (hasPrev) prev();
     else goTo(pageCount - 1);
-    playUISound("ui-tap");
   };
 
   const handleUpgradePurchase = (upgradeId: string) => {
     purchaseUpgrade(upgradeId);
-    playUISound("ui-tap");
   };
 
   const canAffordUpgrade = unlockedUpgrades.some(
     (upgrade) =>
-      upgrade.level < upgrade.maxLevel && canAfford(calculateUpgradeCost(upgrade)),
+      upgrade.level < upgrade.maxLevel &&
+      canAfford(calculateUpgradeCost(upgrade)),
   );
 
   return (
@@ -129,7 +125,8 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
                         const upgradeCopy = getUpgradeCopy(upgrade.id, locale);
                         const isMaxLevel = upgrade.level >= upgrade.maxLevel;
                         const priceForNextLevel = calculateUpgradeCost(upgrade);
-                        const canAffordNextUpgrade = canAfford(priceForNextLevel);
+                        const canAffordNextUpgrade =
+                          canAfford(priceForNextLevel);
                         const canBuy = !isMaxLevel && canAffordNextUpgrade;
                         const levelLabel = `${upgrade.level} / ${upgrade.maxLevel}`;
                         const maxLevelLabel = "Max Level";
@@ -145,11 +142,14 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
                             disabled={!canBuy}
                             whileTap={canBuy ? { scale: 0.98 } : undefined}
                             title={upgradeCopy.name}
+                            data-ui-sound-id="ui-tap"
                           >
                             <UpgradeCardHead>
                               <UpgradeTitleGroup>
                                 <UpgradeName>{upgradeCopy.name}</UpgradeName>
-                                <UpgradePerLevel>{upgradeSubtitle}</UpgradePerLevel>
+                                <UpgradePerLevel>
+                                  {upgradeSubtitle}
+                                </UpgradePerLevel>
                               </UpgradeTitleGroup>
 
                               <UpgradeLevelGroup>
@@ -160,7 +160,10 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
                               </UpgradeLevelGroup>
                             </UpgradeCardHead>
 
-                            <UpgradePriceBar $disabled={!canBuy} $max={isMaxLevel}>
+                            <UpgradePriceBar
+                              $disabled={!canBuy}
+                              $max={isMaxLevel}
+                            >
                               {isMaxLevel
                                 ? maxLevelLabel
                                 : `${formatNumber(priceForNextLevel)} 🫵`}
@@ -188,10 +191,10 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
                             type="button"
                             onClick={() => {
                               goTo(index);
-                              playUISound("ui-tap");
                             }}
                             $active={page === index}
                             aria-label={`Go to upgrades page ${index + 1}`}
+                            data-ui-sound-id="ui-tap"
                           >
                             <motion.span
                               animate={{
@@ -209,7 +212,7 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
             )}
           </AnimatePresence>
 
-          <UpgradeControlsDock ref={triggerRef}>
+          <UpgradeControlsDock>
             <UpgradeNavRow>
               {showUpgrades && pageCount > 1 && (
                 <UpgradeNavButton
@@ -217,6 +220,10 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
                   onClick={handlePrevPage}
                   whileTap={{ scale: 0.94 }}
                   aria-label="Previous upgrades page"
+                  data-ui-sound-id="ui-tap"
+                  initial={{ opacity: 0, x: -18, filter: "blur(4px)" }}
+                  animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+                  transition={{ duration: 0.16, ease: "easeOut" }}
                 >
                   <ChevronLeftIcon />
                 </UpgradeNavButton>
@@ -226,13 +233,17 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
                 <Magnetic>
                   <TriggerContainer
                     key="tap-upgrades-container"
+                    $open={showUpgrades}
                     onClick={onTriggerClick}
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.96 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    // layout
                     style={{ borderRadius: "50px" }}
+                    ref={triggerRef}
+                    data-ui-sound-id={showUpgrades ? "ui-tap-close" : "ui-tap"}
                   >
                     <TriggerLabelWrap>
-                      <AnimatePresence initial={false} mode="wait">
+                      <AnimatePresence initial={false} mode="popLayout">
                         {showUpgrades ? (
                           <TriggerMotionLabel
                             key="hide-upgrades-icon"
@@ -246,7 +257,11 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
                         ) : (
                           <TriggerMotionLabel
                             key="show-upgrades-icon"
-                            initial={{ filter: "blur(6px)", opacity: 0, y: -20 }}
+                            initial={{
+                              filter: "blur(6px)",
+                              opacity: 0,
+                              y: -20,
+                            }}
                             animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
                             exit={{ filter: "blur(6px)", opacity: 0, y: 20 }}
                             transition={{ type: "spring", bounce: 0.2 }}
@@ -261,10 +276,9 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
 
                 {!showUpgrades && canAffordUpgrade && (
                   <UpgradeIndicator
-                    initial={{ opacity: 0, scale: 0.6 }}
+                    initial={{ opacity: 0, scale: 0.5 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.12, ease: "easeOut" }}
+                    exit={{ opacity: 0, scale: 0.95 }}
                   />
                 )}
               </TriggerShell>
@@ -275,6 +289,10 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
                   onClick={handleNextPage}
                   whileTap={{ scale: 0.94 }}
                   aria-label="Next upgrades page"
+                  data-ui-sound-id="ui-tap"
+                  initial={{ opacity: 0, x: 18, filter: "blur(4px)" }}
+                  animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+                  transition={{ duration: 0.16, ease: "easeOut" }}
                 >
                   <ChevronRightIcon />
                 </UpgradeNavButton>
@@ -293,7 +311,7 @@ const UpgradeIndicator = styled(motion.span)`
   right: -2px;
   height: 12px;
   width: 12px;
-  background: #ff3b30;
+  background: red;
   border-radius: 50%;
 `;
 
@@ -331,7 +349,7 @@ const UpgradeCardButton = styled(motion.button)`
   gap: 0.32rem;
   width: 100%;
   min-height: 7.5rem;
-  padding: 0.72rem 0.68rem 0.34rem;
+  padding: 0.72rem 0.25rem 0.25rem;
 
   border-radius: 1.3rem;
   border: none;
@@ -354,6 +372,7 @@ const UpgradeCardHead = styled.div`
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.42rem;
+  padding: 0 0.43rem;
 `;
 
 const UpgradeTitleGroup = styled.div`
@@ -437,7 +456,8 @@ const UpgradePriceBar = styled.span<{ $disabled: boolean; $max: boolean }>`
     return "#1d1f24";
   }};
 
-  color: ${({ $max, $disabled }) => ($max || $disabled ? "rgba(33, 33, 33, 0.48)" : "#fff")};
+  color: ${({ $max, $disabled }) =>
+    $max || $disabled ? "rgba(33, 33, 33, 0.48)" : "#fff"};
   font-size: 1.04rem;
   line-height: 1;
   font-weight: 900;
@@ -483,33 +503,36 @@ const UpgradeNavButton = styled(motion.button)`
   }
 `;
 
-const TriggerContainer = styled(motion.button)`
+const TriggerContainer = styled(motion.button)<{ $open: boolean }>`
   display: inline-flex;
-  width: 7.35rem;
-  min-width: 7.35rem;
+  width: ${({ $open }) => ($open ? "2.8rem" : "6.35rem")};
   white-space: nowrap;
   align-items: center;
   justify-content: center;
-  max-height: 2.25rem;
+  height: 2.25rem;
 
-  padding: 0.5rem 0.9rem;
+  padding: 0.5rem 0.4rem;
   border-radius: 50px;
   background-color: #fff;
   opacity: 1;
-  border: 1px solid rgba(33, 33, 33, 0.12);
+  transition: width 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 
   font-size: 1rem;
   font-weight: 700;
   color: #212121;
   margin: 0 auto;
   overflow: clip;
+
+  span {
+    max-height: 1.5rem;
+  }
 `;
 
 const TriggerLabelWrap = styled.span`
   position: relative;
+  display: inline-flex;
   width: 100%;
   min-height: 1.5rem;
-  display: inline-flex;
   align-items: center;
   justify-content: center;
 `;
@@ -517,10 +540,17 @@ const TriggerLabelWrap = styled.span`
 const TriggerMotionLabel = styled(motion.span)`
   position: absolute;
   inset: 0;
-  max-height: 1.5rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  max-height: 1.5rem;
+  width: 100%;
+  line-height: 1;
+  text-align: center;
+
+  svg {
+    display: block;
+  }
 `;
 
 const UpgradeStepperWrap = styled(motion.div)`
@@ -550,6 +580,7 @@ const UpgradeStepperDot = styled.button<{ $active: boolean }>`
     display: block;
     height: 6px;
     border-radius: 999px;
-    background: ${({ $active }) => ($active ? "#ffffff" : "rgba(255, 255, 255, 0.6)")};
+    background: ${({ $active }) =>
+      $active ? "#ffffff" : "rgba(255, 255, 255, 0.6)"};
   }
 `;

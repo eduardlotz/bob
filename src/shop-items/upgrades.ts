@@ -65,9 +65,9 @@ const autoTapUpgrades: Upgrade[] = [
     id: "auto_tap",
     name: "Tapper",
     description: "Generates a steady passive trickle of taps",
-    baseCost: 30,
+    baseCost: 15,
     costMultiplier: 1.13,
-    maxLevel: 100,
+    maxLevel: 300,
     tapsPerLevel: 1,
   }),
   createAutoTapUpgrade({
@@ -76,7 +76,7 @@ const autoTapUpgrades: Upgrade[] = [
     description: "A stronger helper for faster passive gain",
     baseCost: 1_500,
     costMultiplier: 1.135,
-    maxLevel: 100,
+    maxLevel: 250,
     tapsPerLevel: 2,
   }),
   createAutoTapUpgrade({
@@ -85,7 +85,7 @@ const autoTapUpgrades: Upgrade[] = [
     description: "Major passive output for mid-game scaling",
     baseCost: 102_000,
     costMultiplier: 1.14,
-    maxLevel: 100,
+    maxLevel: 200,
     tapsPerLevel: 20,
   }),
   createAutoTapUpgrade({
@@ -94,7 +94,7 @@ const autoTapUpgrades: Upgrade[] = [
     description: "Industrial passive growth with stable pricing",
     baseCost: 850_000,
     costMultiplier: 1.145,
-    maxLevel: 80,
+    maxLevel: 150,
     tapsPerLevel: 75,
   }),
   createAutoTapUpgrade({
@@ -103,7 +103,7 @@ const autoTapUpgrades: Upgrade[] = [
     description: "Heavy automation for late-game income",
     baseCost: 6_800_000,
     costMultiplier: 1.15,
-    maxLevel: 80,
+    maxLevel: 100,
     tapsPerLevel: 300,
   }),
   createAutoTapUpgrade({
@@ -112,7 +112,7 @@ const autoTapUpgrades: Upgrade[] = [
     description: "Large-scale passive network",
     baseCost: 55_000_000,
     costMultiplier: 1.155,
-    maxLevel: 60,
+    maxLevel: 67,
     tapsPerLevel: 1_200,
   }),
   createAutoTapUpgrade({
@@ -121,7 +121,7 @@ const autoTapUpgrades: Upgrade[] = [
     description: "Late-game spike in passive production",
     baseCost: 420_000_000,
     costMultiplier: 1.16,
-    maxLevel: 40,
+    maxLevel: 50,
     tapsPerLevel: 4_800,
   }),
   createAutoTapUpgrade({
@@ -130,7 +130,7 @@ const autoTapUpgrades: Upgrade[] = [
     description: "Endgame passive engine",
     baseCost: 3_200_000_000,
     costMultiplier: 1.165,
-    maxLevel: 30,
+    maxLevel: 40,
     tapsPerLevel: 19_000,
   }),
 ];
@@ -142,7 +142,7 @@ const tapPowerUpgrades: Upgrade[] = [
     description: "Improves manual tap strength",
     baseCost: 120,
     costMultiplier: 1.14,
-    maxLevel: 50,
+    maxLevel: 200,
     multiplierPerLevel: 1.05,
   }),
   createTapPowerUpgrade({
@@ -151,7 +151,7 @@ const tapPowerUpgrades: Upgrade[] = [
     description: "Builds a faster, cleaner tapping cadence",
     baseCost: 2_400,
     costMultiplier: 1.145,
-    maxLevel: 50,
+    maxLevel: 150,
     multiplierPerLevel: 1.07,
   }),
   createTapPowerUpgrade({
@@ -160,7 +160,7 @@ const tapPowerUpgrades: Upgrade[] = [
     description: "Boosts manual taps with better control",
     baseCost: 7_500,
     costMultiplier: 1.16,
-    maxLevel: 40,
+    maxLevel: 100,
     multiplierPerLevel: 1.09,
   }),
   createTapPowerUpgrade({
@@ -169,7 +169,7 @@ const tapPowerUpgrades: Upgrade[] = [
     description: "Stores motion energy and releases stronger taps",
     baseCost: 180_000,
     costMultiplier: 1.165,
-    maxLevel: 40,
+    maxLevel: 80,
     multiplierPerLevel: 1.11,
   }),
   createTapPowerUpgrade({
@@ -178,7 +178,7 @@ const tapPowerUpgrades: Upgrade[] = [
     description: "Late-game manual boost for big tap spikes",
     baseCost: 9_500_000,
     costMultiplier: 1.17,
-    maxLevel: 30,
+    maxLevel: 50,
     multiplierPerLevel: 1.13,
   }),
 ];

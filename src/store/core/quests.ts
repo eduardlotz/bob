@@ -17,6 +17,11 @@ type RewardType = "taps_reward" | "item_reward";
 type RewardId = string;
 export type QuestProgressionKind = "milestone" | "goal" | "trigger";
 export const SHOP_ITEMS_QUEST_STACK_ID = "shop_item_categories";
+export const ABOUT_TOUR_STACK_ID = "about_tour";
+const STACK_COMPLETION_TOAST_IDS = new Set([
+  SHOP_ITEMS_QUEST_STACK_ID,
+  ABOUT_TOUR_STACK_ID,
+]);
 
 interface QuestReward {
   type: RewardType;
@@ -89,7 +94,9 @@ export enum QUESTS_STORE_VERSION {
   V10 = 1000009, // upgrade quest refresh + hydration guards
   V11 = 1000010, // completion toast dedupe + expanded quests
   V12 = 1000011, // hydrated quest sync + persisted completion dedupe
-  LATEST = V12,
+  V13 = 1000012, // route-aware minigame fixes + quest rebalance refresh
+  V14 = 1000013, // quest toast stack rules + quest cadence rebalance
+  LATEST = V14,
 }
 
 export const hasQuestReward = (quest: Pick<Quest, "reward">): boolean => {
@@ -108,17 +115,42 @@ export const shouldShowQuestCompletionToast = (
   quest: Pick<Quest, "stackId">,
   quests: Array<Pick<Quest, "stackId" | "completed">>,
 ): boolean => {
-  if (quest.stackId !== SHOP_ITEMS_QUEST_STACK_ID) {
+  if (!quest.stackId || !STACK_COMPLETION_TOAST_IDS.has(quest.stackId)) {
     return true;
   }
 
-  const stackQuests = quests.filter(
-    (entry) => entry.stackId === SHOP_ITEMS_QUEST_STACK_ID,
-  );
+  const stackQuests = quests.filter((entry) => entry.stackId === quest.stackId);
 
   return (
     stackQuests.length > 0 && stackQuests.every((entry) => entry.completed)
   );
+};
+
+const getStackToastPresentation = (stackId: string) => {
+  if (stackId === SHOP_ITEMS_QUEST_STACK_ID) {
+    return {
+      color: "#6B8BFF",
+      icon: "🛍️",
+      fallbackTitle: "Shop Collector",
+      fallbackDescription: "Buy one item from each shop category.",
+    };
+  }
+
+  if (stackId === ABOUT_TOUR_STACK_ID) {
+    return {
+      color: "#4A8CCF",
+      icon: "🧭",
+      fallbackTitle: "About Tour",
+      fallbackDescription: "Explore the interactive objects in the About room.",
+    };
+  }
+
+  return {
+    color: "#6B8BFF",
+    icon: "🏆",
+    fallbackTitle: "Quest Completed",
+    fallbackDescription: "You completed a quest stack.",
+  };
 };
 
 export const getQuestCompletionToastMeta = (
@@ -133,19 +165,20 @@ export const getQuestCompletionToastMeta = (
     return null;
   }
 
-  if (quest.stackId === SHOP_ITEMS_QUEST_STACK_ID) {
+  if (quest.stackId && STACK_COMPLETION_TOAST_IDS.has(quest.stackId)) {
+    const toastPresentation = getStackToastPresentation(quest.stackId);
     const stackCopy = getQuestStackCopy(
-      SHOP_ITEMS_QUEST_STACK_ID as QuestStackMessageId,
+      quest.stackId as QuestStackMessageId,
       locale,
     );
 
     return {
-      toastKey: SHOP_ITEMS_QUEST_STACK_ID,
-      title: stackCopy?.title ?? "Shop Collector",
+      toastKey: quest.stackId,
+      title: stackCopy?.title ?? toastPresentation.fallbackTitle,
       description:
-        stackCopy?.description ?? "Buy one item from each shop category.",
-      color: "#6B8BFF",
-      icon: "🛍️",
+        stackCopy?.description ?? toastPresentation.fallbackDescription,
+      color: toastPresentation.color,
+      icon: toastPresentation.icon,
     };
   }
 
@@ -242,23 +275,22 @@ const getPersistedCompletionToastKeys = (
   const keys = new Set<string>();
 
   quests.forEach((quest) => {
-    if (!quest.completed || quest.stackId === SHOP_ITEMS_QUEST_STACK_ID) {
+    if (
+      !quest.completed ||
+      (quest.stackId && STACK_COMPLETION_TOAST_IDS.has(quest.stackId))
+    ) {
       return;
     }
 
     keys.add(quest.id);
   });
 
-  const shopStackQuests = quests.filter(
-    (quest) => quest.stackId === SHOP_ITEMS_QUEST_STACK_ID,
-  );
-
-  if (
-    shopStackQuests.length > 0 &&
-    shopStackQuests.every((quest) => quest.completed)
-  ) {
-    keys.add(SHOP_ITEMS_QUEST_STACK_ID);
-  }
+  STACK_COMPLETION_TOAST_IDS.forEach((stackId) => {
+    const stackQuests = quests.filter((quest) => quest.stackId === stackId);
+    if (stackQuests.length > 0 && stackQuests.every((quest) => quest.completed)) {
+      keys.add(stackId);
+    }
+  });
 
   return Array.from(keys);
 };
@@ -287,6 +319,34 @@ const mergeQuestLists = (currentQuests: Quest[], defaultQuests: Quest[]) => {
   });
 
   return mergedQuests;
+};
+
+const reconcileQuestDefinitions = (
+  currentQuests: Quest[],
+  defaultQuests: Quest[],
+): Quest[] => {
+  const currentQuestById = new Map(currentQuests.map((quest) => [quest.id, quest]));
+
+  return defaultQuests.map((defaultQuest) => {
+    const currentQuest = currentQuestById.get(defaultQuest.id);
+    if (!currentQuest) {
+      return defaultQuest;
+    }
+
+    const progress = Math.min(
+      Math.max(0, Number(currentQuest.progress) || 0),
+      defaultQuest.maxProgress,
+    );
+    const completed = currentQuest.completed || progress >= defaultQuest.maxProgress;
+
+    return {
+      ...defaultQuest,
+      progress,
+      completed,
+      hiddenUntilCompleted:
+        currentQuest.hiddenUntilCompleted ?? defaultQuest.hiddenUntilCompleted,
+    };
+  });
 };
 
 function migrateStore(oldState: any, fromVersion: number): any {
@@ -369,6 +429,20 @@ function migrateStore(oldState: any, fromVersion: number): any {
         completed,
       };
     });
+  }
+
+  if (fromVersion < QUESTS_STORE_VERSION.V13) {
+    normalizedState.quests = reconcileQuestDefinitions(
+      normalizedState.quests ?? [],
+      initialQuests,
+    );
+  }
+
+  if (fromVersion < QUESTS_STORE_VERSION.V14) {
+    normalizedState.quests = reconcileQuestDefinitions(
+      normalizedState.quests ?? [],
+      initialQuests,
+    );
   }
 
   normalizedState.version = QUESTS_STORE_VERSION.LATEST;
@@ -541,6 +615,85 @@ const initialQuests: Quest[] = [
       value: 1,
     },
     showProgress: true,
+    stackId: "about_tour",
+    stackOrder: 3,
+    stackTitle: "About Tour",
+    stackDescription: "Explore the interactive objects in the About room.",
+  },
+  {
+    id: "about_socials_1",
+    title: "Kontaktfreudig",
+    description: "Öffne die Socials-Kugel im About-Bereich",
+    icon: "🌐",
+    color: "#4A8CCF",
+    progress: 0,
+    maxProgress: 1,
+    reward: {
+      type: "taps_reward",
+      amount: 2500,
+    },
+    completed: false,
+    routeId: ROUTE_IDS.ABOUT,
+    type: "interaction",
+    progressionKind: "trigger",
+    trigger: {
+      action: "click_socials",
+      value: 1,
+    },
+    stackId: "about_tour",
+    stackOrder: 2,
+    stackTitle: "About Tour",
+    stackDescription: "Explore the interactive objects in the About room.",
+  },
+  {
+    id: "about_desk_1",
+    title: "Desk-Check",
+    description: "Interagiere mit dem Schreibtisch im About-Bereich",
+    icon: "🖥️",
+    color: "#5E86D9",
+    progress: 0,
+    maxProgress: 1,
+    reward: {
+      type: "taps_reward",
+      amount: 2000,
+    },
+    completed: false,
+    routeId: ROUTE_IDS.ABOUT,
+    type: "interaction",
+    progressionKind: "trigger",
+    trigger: {
+      action: "click_desk",
+      value: 1,
+    },
+    stackId: "about_tour",
+    stackOrder: 1,
+    stackTitle: "About Tour",
+    stackDescription: "Explore the interactive objects in the About room.",
+  },
+  {
+    id: "about_box_1",
+    title: "Kistenfuchs",
+    description: "Interagiere mit der Kiste im About-Bereich",
+    icon: "📦",
+    color: "#7A9E52",
+    progress: 0,
+    maxProgress: 1,
+    reward: {
+      type: "taps_reward",
+      amount: 2000,
+    },
+    completed: false,
+    routeId: ROUTE_IDS.ABOUT,
+    type: "interaction",
+    progressionKind: "trigger",
+    trigger: {
+      action: "click_box",
+      value: 1,
+    },
+    stackId: "about_tour",
+    stackOrder: 4,
+    stackTitle: "About Tour",
+    stackDescription: "Explore the interactive objects in the About room.",
   },
   {
     id: "manual_taps_50",
@@ -647,15 +800,15 @@ const initialQuests: Quest[] = [
   },
   {
     id: "total_taps_10000",
-    title: "Millionär",
-    description: "Erreiche insgesamt 1.000.000 Taps",
+    title: "Fünfstellig",
+    description: "Erreiche insgesamt 10.000 Taps",
     icon: "💯",
     color: "#5660D0",
     progress: 0,
-    maxProgress: 1000000,
+    maxProgress: 10000,
     reward: {
       type: "taps_reward",
-      amount: 200000,
+      amount: 12000,
     },
     completed: false,
     type: "tap",
@@ -672,15 +825,15 @@ const initialQuests: Quest[] = [
   },
   {
     id: "total_taps_1000000",
-    title: "Milliardär",
-    description: "Erreiche insgesamt 1.000.000.000 Taps",
+    title: "Millionär",
+    description: "Erreiche insgesamt 1.000.000 Taps",
     icon: "🪙",
     color: "#A85BD2",
     progress: 0,
-    maxProgress: 1000000000,
+    maxProgress: 1000000,
     reward: {
       type: "taps_reward",
-      amount: 5000000,
+      amount: 220000,
     },
     completed: false,
     type: "tap",
@@ -697,13 +850,16 @@ const initialQuests: Quest[] = [
   },
   {
     id: "total_taps_1000000000000",
-    title: "Trillion Club",
-    description: "Reach 1,000,000,000,000 total taps",
+    title: "Achtstellig",
+    description: "Erreiche insgesamt 100.000.000 Taps",
     icon: "🚀",
     color: "#7D6BFF",
     progress: 0,
-    maxProgress: 1000000000000,
-    // Optional reward on purpose for late milestone balancing.
+    maxProgress: 100000000,
+    reward: {
+      type: "taps_reward",
+      amount: 1500000,
+    },
     completed: false,
     type: "tap",
     progressionKind: "milestone",
@@ -719,13 +875,16 @@ const initialQuests: Quest[] = [
   },
   {
     id: "total_taps_1000000000000000",
-    title: "Beyond Infinity",
-    description: "Reach 1,000,000,000,000,000 total taps",
+    title: "Jenseits der Unendlichkeit",
+    description: "Erreiche insgesamt 1.000.000.000 Taps",
     icon: "🌌",
     color: "#5E8BFF",
     progress: 0,
-    maxProgress: 1000000000000000,
-    // Optional reward on purpose for late milestone balancing.
+    maxProgress: 1000000000,
+    reward: {
+      type: "taps_reward",
+      amount: 5000000,
+    },
     completed: false,
     type: "tap",
     progressionKind: "milestone",
@@ -812,6 +971,58 @@ const initialQuests: Quest[] = [
     stackDescription: "Buy one item from each shop category.",
   },
   {
+    id: "routes_purchased_1",
+    title: "Aufbruch",
+    description: "Schalte deine erste zusätzliche Route frei",
+    icon: "🧭",
+    color: "#4D7EDB",
+    progress: 0,
+    maxProgress: 1,
+    reward: {
+      type: "taps_reward",
+      amount: 5000,
+    },
+    completed: false,
+    routeId: ROUTE_IDS.HOME,
+    type: "custom",
+    progressionKind: "milestone",
+    trigger: {
+      action: "routes_purchased_total",
+      value: 1,
+    },
+    showProgress: true,
+    stackId: "route_unlocks",
+    stackOrder: 1,
+    stackTitle: "Route Explorer",
+    stackDescription: "Unlock new routes to expand your world.",
+  },
+  {
+    id: "routes_purchased_3",
+    title: "Stadtplan im Kopf",
+    description: "Schalte drei zusätzliche Routen frei",
+    icon: "🗺️",
+    color: "#3C67BF",
+    progress: 0,
+    maxProgress: 3,
+    reward: {
+      type: "taps_reward",
+      amount: 20000,
+    },
+    completed: false,
+    routeId: ROUTE_IDS.HOME,
+    type: "custom",
+    progressionKind: "milestone",
+    trigger: {
+      action: "routes_purchased_total",
+      value: 1,
+    },
+    showProgress: true,
+    stackId: "route_unlocks",
+    stackOrder: 2,
+    stackTitle: "Route Explorer",
+    stackDescription: "Unlock new routes to expand your world.",
+  },
+  {
     id: "playtime_60s",
     title: "Kurze Session",
     description: "Spiele insgesamt 1 Minute",
@@ -838,15 +1049,15 @@ const initialQuests: Quest[] = [
   },
   {
     id: "playtime_600s",
-    title: "Langstrecke",
-    description: "Spiele insgesamt 10 Minuten",
+    title: "Runde gedreht",
+    description: "Spiele insgesamt 5 Minuten",
     icon: "⌛",
     color: "#CC7A35",
     progress: 0,
-    maxProgress: 600,
+    maxProgress: 300,
     reward: {
       type: "taps_reward",
-      amount: 15000,
+      amount: 8000,
     },
     completed: false,
     type: "time",
@@ -863,15 +1074,15 @@ const initialQuests: Quest[] = [
   },
   {
     id: "playtime_1800s",
-    title: "Gartenrunde",
-    description: "Spiele insgesamt 30 Minuten",
+    title: "Langstrecke",
+    description: "Spiele insgesamt 10 Minuten",
     icon: "🪴",
     color: "#C36C2F",
     progress: 0,
-    maxProgress: 1800,
+    maxProgress: 600,
     reward: {
       type: "taps_reward",
-      amount: 45000,
+      amount: 15000,
     },
     completed: false,
     type: "time",
@@ -883,56 +1094,6 @@ const initialQuests: Quest[] = [
     showProgress: true,
     stackId: "playtime",
     stackOrder: 3,
-    stackTitle: "Playtime Milestones",
-    stackDescription: "Stay in the game to unlock endurance rewards.",
-  },
-  {
-    id: "playtime_3600s",
-    title: "Marathonsession",
-    description: "Spiele insgesamt 1 Stunde",
-    icon: "🌙",
-    color: "#B85D2A",
-    progress: 0,
-    maxProgress: 3600,
-    reward: {
-      type: "taps_reward",
-      amount: 125000,
-    },
-    completed: false,
-    type: "time",
-    progressionKind: "milestone",
-    trigger: {
-      action: "playtime_seconds",
-      value: 1,
-    },
-    showProgress: true,
-    stackId: "playtime",
-    stackOrder: 4,
-    stackTitle: "Playtime Milestones",
-    stackDescription: "Stay in the game to unlock endurance rewards.",
-  },
-  {
-    id: "playtime_7200s",
-    title: "Schichtbetrieb",
-    description: "Spiele insgesamt 2 Stunden",
-    icon: "🌅",
-    color: "#A85129",
-    progress: 0,
-    maxProgress: 7200,
-    reward: {
-      type: "taps_reward",
-      amount: 350000,
-    },
-    completed: false,
-    type: "time",
-    progressionKind: "milestone",
-    trigger: {
-      action: "playtime_seconds",
-      value: 1,
-    },
-    showProgress: true,
-    stackId: "playtime",
-    stackOrder: 5,
     stackTitle: "Playtime Milestones",
     stackDescription: "Stay in the game to unlock endurance rewards.",
   },
@@ -1183,34 +1344,14 @@ const initialQuests: Quest[] = [
       amount: 10000,
     },
     completed: false,
-    // routeId: ROUTE_IDS.MINIGAMES, // FIX: not working with route
+    routeId: ROUTE_IDS.MINIGAMES,
     type: "interaction",
     progressionKind: "goal",
     trigger: {
       action: "minigames_flappy_score",
       value: 1,
     },
-  },
-  {
-    id: "minigames_slot_spins_15",
-    title: "Spielsüchtig",
-    description: "Benutze den Slotautomaten 15 Mal",
-    icon: "🎰",
-    color: "#C86BCE",
-    progress: 0,
-    maxProgress: 15,
-    reward: {
-      type: "taps_reward",
-      amount: 10000,
-    },
-    completed: false,
-    // routeId: ROUTE_IDS.MINIGAMES, // FIX: not working with route
-    type: "interaction",
-    progressionKind: "goal",
-    trigger: {
-      action: "minigames_slot_spin",
-      value: 1,
-    },
+    showProgress: true,
   },
   {
     id: "minigames_slot_wins_5",
@@ -1225,7 +1366,7 @@ const initialQuests: Quest[] = [
       amount: 10000,
     },
     completed: false,
-    // routeId: ROUTE_IDS.MINIGAMES, // FIX: not working with route
+    routeId: ROUTE_IDS.MINIGAMES,
     type: "interaction",
     progressionKind: "trigger",
     trigger: {
@@ -1279,7 +1420,7 @@ export const useQuestStore = create<QuestStore>()(
         );
 
         relevantQuests.forEach((quest) => {
-          const progressIncrement = value || quest.trigger?.value || 1;
+          const progressIncrement = value ?? quest.trigger?.value ?? 1;
           const newProgress = Math.min(
             quest.progress + progressIncrement,
             quest.maxProgress,
@@ -1452,6 +1593,5 @@ const questMessageMap = {
   about_quest_2: true,
   portfolio_quest_1: true,
   minigames_flappy_points_10: true,
-  minigames_slot_spins_15: true,
   minigames_slot_wins_5: true,
 } as const;

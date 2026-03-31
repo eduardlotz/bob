@@ -1,6 +1,6 @@
 import { FillColumn, HugColumn, ScrollArea } from "@/layout";
 import { useMemo } from "react";
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 import { useI18n } from "@/i18n";
 import { useQuestStore } from "@/store/core/quests";
 import { ItemStatusChip } from "./ui";
@@ -177,7 +177,7 @@ export const QuestsApp = () => {
     >
       <ScrollArea $direction="vertical">
         <QuestList>
-          {questGroups.map((group) => {
+          {questGroups.map((group, groupIndex) => {
             const completedCount = group.quests.filter(
               (quest) => quest.completed,
             ).length;
@@ -244,7 +244,11 @@ export const QuestsApp = () => {
 
                   <QuestBadgeStack>
                     {[...badges].reverse().map((quest, index) => (
-                      <QuestBadgeLayer key={quest.id} $index={index}>
+                      <QuestBadgeLayer
+                        key={quest.id}
+                        $index={index}
+                        $staggerIndex={groupIndex * 4 + index}
+                      >
                         {quest.completed ? (
                           <CompletedQuestBadge
                             content={resolveQuestBadgeContent(quest, locale)}
@@ -327,9 +331,29 @@ const QuestBadgeStack = styled.div`
   padding-left: 0.65rem;
 `;
 
-const QuestBadgeLayer = styled.div<{ $index: number }>`
+const badgeScaleUp = keyframes`
+  0% {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+
+  65% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+`;
+
+const QuestBadgeLayer = styled.div<{ $index: number; $staggerIndex: number }>`
   margin-left: ${(p) => (p.$index === 0 ? "0" : "-1.03rem")};
   display: inline-flex;
+  transform-origin: center;
+  animation: ${badgeScaleUp} 320ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+  animation-delay: ${(p) => `${80 + p.$staggerIndex * 48}ms`};
 `;
 
 const CompletedQuestBadgeFrame = styled.div`

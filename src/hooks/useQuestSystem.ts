@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo } from "react";
 import { hasQuestReward, useQuestStore } from "@/store/core/quests";
 import { useCoreStore } from "@/store/core/store";
 import { useAppStore } from "@/store";
-import { ROUTE_DICTIONARY } from "@/store/config/routes";
+import { getRouteIdByPath } from "@/store/config/routes";
 import { calculateAutoTapRate } from "@/shop-items/upgradeMath";
 
 export const useQuestActions = () => {
@@ -10,7 +10,11 @@ export const useQuestActions = () => {
   const questStoreHydrated = useQuestStore((state) => state.isHydrated);
   const triggerQuestAction = useQuestStore((state) => state.triggerQuestAction);
   const routeId = useMemo(
-    () => ROUTE_DICTIONARY[currentRoute] || "route_home",
+    () =>
+      getRouteIdByPath(
+        currentRoute ||
+          (typeof window !== "undefined" ? window.location.pathname : "/home"),
+      ),
     [currentRoute],
   );
 
@@ -50,6 +54,7 @@ export const useQuestSystem = () => {
   const bobItems = useCoreStore((state) => state.bobItems);
   const tapEffects = useCoreStore((state) => state.tapEffects);
   const worlds = useCoreStore((state) => state.worlds);
+  const routes = useCoreStore((state) => state.routes);
   const quests = useQuestStore((state) => state.quests);
   const questStoreHydrated = useQuestStore((state) => state.isHydrated);
   const syncQuestProgressFromMetric = useQuestStore(
@@ -58,7 +63,11 @@ export const useQuestSystem = () => {
   const { triggerQuest, triggerInteraction } = useQuestActions();
 
   const routeId = useMemo(
-    () => ROUTE_DICTIONARY[currentRoute] || "route_home",
+    () =>
+      getRouteIdByPath(
+        currentRoute ||
+          (typeof window !== "undefined" ? window.location.pathname : "/home"),
+      ),
     [currentRoute],
   );
 
@@ -100,6 +109,15 @@ export const useQuestSystem = () => {
   const purchasedWorlds = useMemo(
     () => worlds.filter((item) => item.purchased && item.cost > 0).length,
     [worlds],
+  );
+
+  const purchasedUnlockableRoutes = useMemo(
+    () =>
+      routes.filter(
+        (route) =>
+          route.id !== "route_home" && route.purchased && !route.isLocked,
+      ).length,
+    [routes],
   );
 
   const totalUpgradeLevels = useMemo(
@@ -159,6 +177,19 @@ export const useQuestSystem = () => {
   }, [
     gameStoreHydrated,
     purchasedWorlds,
+    questStoreHydrated,
+    syncQuestProgressFromMetric,
+  ]);
+
+  useEffect(() => {
+    if (!gameStoreHydrated || !questStoreHydrated) return;
+    syncQuestProgressFromMetric(
+      "routes_purchased_total",
+      purchasedUnlockableRoutes,
+    );
+  }, [
+    gameStoreHydrated,
+    purchasedUnlockableRoutes,
     questStoreHydrated,
     syncQuestProgressFromMetric,
   ]);

@@ -1,6 +1,6 @@
 import { HugColumn, ListItemContainer } from "@/layout";
 import { Divider, DividerWithLabel } from "@/layout/atoms";
-import { formatNumber } from "@/molecules/TapCounter";
+import { formatNumber } from "@/utils/formatNumber";
 import { useCameraStore, useCoreStore, useQuestStore } from "@/store";
 import { useMessageStore } from "@/store/messageStore";
 import { ActionButton, SettingsWrapper, ToggleButton } from "./ui";

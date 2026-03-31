@@ -19,7 +19,7 @@ interface InteractiveObjectProps {
 
 export function InteractiveObject({
   questAction,
-  questValue = 25,
+  questValue = 1,
   children,
   mode,
   onDialogOpen,

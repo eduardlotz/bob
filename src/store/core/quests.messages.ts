@@ -32,6 +32,18 @@ export const questMessages = defineMessages({
       title: "Bücherwurm",
       description: "Schau dir mehrere Bücher in der Sammlung an",
     },
+    about_socials_1: {
+      title: "Kontaktfreudig",
+      description: "Öffne die Socials-Kugel im About-Bereich",
+    },
+    about_desk_1: {
+      title: "Desk-Check",
+      description: "Interagiere mit dem Schreibtisch im About-Bereich",
+    },
+    about_box_1: {
+      title: "Kistenfuchs",
+      description: "Interagiere mit der Kiste im About-Bereich",
+    },
     manual_taps_50: {
       title: "Finger warmtippen",
       description: "Tippe 50 Mal selbst",
@@ -49,20 +61,20 @@ export const questMessages = defineMessages({
       description: "Erreiche insgesamt 1.000 Taps",
     },
     total_taps_10000: {
+      title: "Fünfstellig",
+      description: "Erreiche insgesamt 10.000 Taps",
+    },
+    total_taps_1000000: {
       title: "Millionär",
       description: "Erreiche insgesamt 1.000.000 Taps",
     },
-    total_taps_1000000: {
-      title: "Milliardär",
-      description: "Erreiche insgesamt 1.000.000.000 Taps",
-    },
     total_taps_1000000000000: {
-      title: "Trillion Club",
-      description: "Erreiche insgesamt 1.000.000.000.000 Taps",
+      title: "Achtstellig",
+      description: "Erreiche insgesamt 100.000.000 Taps",
     },
     total_taps_1000000000000000: {
       title: "Jenseits der Unendlichkeit",
-      description: "Erreiche insgesamt 1.000.000.000.000.000 Taps",
+      description: "Erreiche insgesamt 1.000.000.000 Taps",
     },
     shop_buy_bob_item_1: {
       title: "Neuer Fit",
@@ -81,20 +93,12 @@ export const questMessages = defineMessages({
       description: "Spiele insgesamt 1 Minute",
     },
     playtime_600s: {
-      title: "Langstrecke",
-      description: "Spiele insgesamt 10 Minuten",
+      title: "Runde gedreht",
+      description: "Spiele insgesamt 5 Minuten",
     },
     playtime_1800s: {
-      title: "Gartenrunde",
-      description: "Spiele insgesamt 30 Minuten",
-    },
-    playtime_3600s: {
-      title: "Marathonsession",
-      description: "Spiele insgesamt 1 Stunde",
-    },
-    playtime_7200s: {
-      title: "Schichtbetrieb",
-      description: "Spiele insgesamt 2 Stunden",
+      title: "Langstrecke",
+      description: "Spiele insgesamt 10 Minuten",
     },
     upgrade_levels_25: {
       title: "Werkzeugkiste",
@@ -136,13 +140,17 @@ export const questMessages = defineMessages({
       title: "Flappy Bobbie",
       description: "Erziele 10 Punkte im Flappy-Bird-Minigame",
     },
-    minigames_slot_spins_15: {
-      title: "Spielsüchtig",
-      description: "Benutze den Slotautomaten 15 Mal",
-    },
     minigames_slot_wins_5: {
       title: "Alles wieder reingeholt",
       description: "Gewinne am Slotautomaten",
+    },
+    routes_purchased_1: {
+      title: "Aufbruch",
+      description: "Schalte deine erste zusätzliche Route frei",
+    },
+    routes_purchased_3: {
+      title: "Stadtplan im Kopf",
+      description: "Schalte drei zusätzliche Routen frei",
     },
   },
   en: {
@@ -174,6 +182,18 @@ export const questMessages = defineMessages({
       title: "Bookworm",
       description: "Inspect several books in the collection",
     },
+    about_socials_1: {
+      title: "Social Butterfly",
+      description: "Open the socials globe in the About area",
+    },
+    about_desk_1: {
+      title: "Desk Check",
+      description: "Interact with the desk in the About area",
+    },
+    about_box_1: {
+      title: "Box Hunter",
+      description: "Interact with the box in the About area",
+    },
     manual_taps_50: {
       title: "Warmup Fingers",
       description: "Tap manually 50 times",
@@ -191,20 +211,20 @@ export const questMessages = defineMessages({
       description: "Reach 1,000 total taps",
     },
     total_taps_10000: {
+      title: "Five Digits",
+      description: "Reach 10,000 total taps",
+    },
+    total_taps_1000000: {
       title: "Millionaire",
       description: "Reach 1,000,000 total taps",
     },
-    total_taps_1000000: {
-      title: "Billionaire",
-      description: "Reach 1,000,000,000 total taps",
-    },
     total_taps_1000000000000: {
-      title: "Trillion Club",
-      description: "Reach 1,000,000,000,000 total taps",
+      title: "Eight Digits",
+      description: "Reach 100,000,000 total taps",
     },
     total_taps_1000000000000000: {
       title: "Beyond Infinity",
-      description: "Reach 1,000,000,000,000,000 total taps",
+      description: "Reach 1,000,000,000 total taps",
     },
     shop_buy_bob_item_1: {
       title: "Fresh Fit",
@@ -223,20 +243,12 @@ export const questMessages = defineMessages({
       description: "Play for a total of 1 minute",
     },
     playtime_600s: {
-      title: "Long Haul",
-      description: "Play for a total of 10 minutes",
+      title: "Nice Session",
+      description: "Play for a total of 5 minutes",
     },
     playtime_1800s: {
-      title: "Garden Shift",
-      description: "Play for a total of 30 minutes",
-    },
-    playtime_3600s: {
-      title: "Marathon Session",
-      description: "Play for a total of 1 hour",
-    },
-    playtime_7200s: {
-      title: "Double Shift",
-      description: "Play for a total of 2 hours",
+      title: "Long Haul",
+      description: "Play for a total of 10 minutes",
     },
     upgrade_levels_25: {
       title: "Toolbox",
@@ -278,13 +290,17 @@ export const questMessages = defineMessages({
       title: "Flappy Bobbie",
       description: "Score 10 points in the Flappy Bird minigame",
     },
-    minigames_slot_spins_15: {
-      title: "Hooked",
-      description: "Use the slot machine 15 times",
-    },
     minigames_slot_wins_5: {
       title: "Won It Back",
       description: "Win on the slot machine",
+    },
+    routes_purchased_1: {
+      title: "First Journey",
+      description: "Unlock your first additional route",
+    },
+    routes_purchased_3: {
+      title: "Map Master",
+      description: "Unlock three additional routes",
     },
   },
 });
@@ -326,6 +342,14 @@ export const questStackMessages = defineMessages({
       title: "Tap-Power",
       description: "Verstärke jeden einzelnen manuellen Tap.",
     },
+    about_tour: {
+      title: "About-Tour",
+      description: "Erkunde die interaktiven Objekte im About-Raum.",
+    },
+    route_unlocks: {
+      title: "Routen-Explorer",
+      description: "Schalte neue Routen frei und erweitere deine Welt.",
+    },
     shop_item_categories: {
       title: "Shop-Sammler",
       description: "Kaufe je ein Item aus Bob, Effekte und Welten.",
@@ -359,6 +383,14 @@ export const questStackMessages = defineMessages({
     tap_multiplier: {
       title: "Tap Power",
       description: "Keep making every manual tap hit harder.",
+    },
+    about_tour: {
+      title: "About Tour",
+      description: "Explore the interactive objects in the About room.",
+    },
+    route_unlocks: {
+      title: "Route Explorer",
+      description: "Unlock new routes to expand your world.",
     },
     shop_item_categories: {
       title: "Shop Collector",

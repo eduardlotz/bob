@@ -1,7 +1,5 @@
-import {
-  formatCompactNumber,
-  formatLocalizedNumber,
-} from "@/i18n/formatters";
+import { formatLocalizedNumber } from "@/i18n/formatters";
+import { formatNumber } from "@/utils/formatNumber";
 import type { Locale } from "@/i18n/types";
 import {
   getQuestCopy,
@@ -141,7 +139,7 @@ export const hasRenderableReward = (quest: Quest) => {
 
 export const resolveQuestReward = (
   quest: Quest,
-  locale: Locale,
+  _locale: Locale,
 ): RewardMeta | null => {
   if (!hasRenderableReward(quest) || !quest.reward) {
     return null;
@@ -150,7 +148,7 @@ export const resolveQuestReward = (
   if (quest.reward.type === "taps_reward") {
     return {
       kind: "taps",
-      label: formatCompactNumber(Number(quest.reward.amount) || 0, locale),
+      label: formatNumber(Number(quest.reward.amount) || 0),
     };
   }
 
