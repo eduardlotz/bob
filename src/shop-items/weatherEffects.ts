@@ -5,7 +5,7 @@ export const initialWeatherEffects: WeatherEffect[] = [
     id: "environment_rain",
     name: "Regen",
     description: "",
-    cost: 100,
+    cost: 4_000,
 
     purchased: false,
     type: "environment",
@@ -15,7 +15,7 @@ export const initialWeatherEffects: WeatherEffect[] = [
     id: "environment_clouds",
     name: "Wolken/Nebel",
     description: "Noch nicht so ganz fertig",
-    cost: 100,
+    cost: 10_000,
 
     purchased: false,
     type: "environment",
@@ -25,7 +25,7 @@ export const initialWeatherEffects: WeatherEffect[] = [
     id: "environment_stars",
     name: "Sterne",
     description: "",
-    cost: 100,
+    cost: 22_000,
 
     purchased: false,
     type: "environment",

@@ -11,12 +11,12 @@ import { textSynth } from "@/utils/sound/textSynth";
 import { resumeAudioContext, unlockAudioContext } from "@/utils/soundSystem";
 import { format } from "date-fns/format";
 
-const AUDIO_CHAR_DURATION_MS = 22;
-const AUDIO_LEAD_TIME_MS = 22;
-const TYPING_SPEED_MS = 22;
-const BASE_LINE_DELAY_MS = 1200;
-const CHAR_READING_MS = 55;
-const MIN_DISMISS_MS = 600;
+const AUDIO_CHAR_DURATION_MS = 20;
+const AUDIO_LEAD_TIME_MS = 20;
+const TYPING_SPEED_MS = 20;
+const BASE_LINE_DELAY_MS = 800;
+const CHAR_READING_MS = 52;
+const MIN_DISMISS_MS = 500;
 
 export interface MessageBubbleProps {
   anchor?: [number, number, number];

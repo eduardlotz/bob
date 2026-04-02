@@ -125,6 +125,8 @@ export const CustomLoader = ({
                 value={locale}
                 onChange={setLocale}
                 compact
+                labelForm="short"
+                theme="dark"
               />
             </HugColumn>
 
@@ -282,6 +284,10 @@ const LoadingWrapper = styled(motion.div)`
 
   svg {
     color: #ffffff !important;
+  }
+
+  ${StatusPillButton} {
+    background-color: rgba(255, 255, 255, 0.07);
   }
 `;
 

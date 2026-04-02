@@ -6,6 +6,7 @@ import {
 } from "..";
 import { initialBobItems } from "@/shop-items/bobItems";
 import { initialTapEffects } from "@/shop-items/tapEffects";
+import { initialTapUpgrades } from "@/shop-items/upgrades";
 import { initialWorlds } from "@/shop-items/worlds";
 import { THEME_IDS } from "../config/themes";
 
@@ -81,6 +82,33 @@ const normalizeBobItems = (bobItems: any[] = []) => {
   });
 };
 
+const normalizeUpgrades = (upgrades: any[] = []) => {
+  const previousUpgrades = new Map(
+    upgrades.map((item: any) => [item.id, item]),
+  );
+  const legacyTapMultiplierLevel =
+    previousUpgrades.get("tap_multiplier")?.level ?? 0;
+
+  return initialTapUpgrades.map((upgrade) => {
+    const previousUpgrade = previousUpgrades.get(upgrade.id);
+    const fallbackLevel =
+      upgrade.id === "finger_training" ? legacyTapMultiplierLevel : 0;
+    const level = Math.max(
+      0,
+      Math.min(
+        upgrade.maxLevel,
+        Number(previousUpgrade?.level ?? fallbackLevel) || 0,
+      ),
+    );
+
+    return {
+      ...upgrade,
+      level,
+      unlocked: previousUpgrade?.unlocked ?? upgrade.unlocked,
+    };
+  });
+};
+
 export function migrateCoreStore(persisted: any, fromVersion: number) {
   if (!persisted || typeof persisted !== "object") {
     return initialGameState;
@@ -105,6 +133,7 @@ export function migrateCoreStore(persisted: any, fromVersion: number) {
     state.graphicPreferences = {
       qualityMode: "auto",
       effectsEnabled: true,
+      reducedTapMotion: false,
     };
   }
 
@@ -128,6 +157,27 @@ export function migrateCoreStore(persisted: any, fromVersion: number) {
 
   if (fromVersion < GAME_STORE_VERSION.V6) {
     state.bobItems = normalizeBobItems(state.bobItems);
+  }
+
+  if (fromVersion < GAME_STORE_VERSION.V7) {
+    state.upgrades = normalizeUpgrades(state.upgrades);
+  }
+
+  if (fromVersion < GAME_STORE_VERSION.V8) {
+    state.themes = initialThemes;
+    state.currentTheme = initialThemes[0];
+  }
+
+  if (fromVersion < GAME_STORE_VERSION.V9) {
+    state.graphicPreferences = {
+      qualityMode: state.graphicPreferences?.qualityMode ?? "auto",
+      effectsEnabled: state.graphicPreferences?.effectsEnabled ?? true,
+      reducedTapMotion: state.graphicPreferences?.reducedTapMotion ?? false,
+    };
+  }
+
+  if (fromVersion < GAME_STORE_VERSION.V10) {
+    state.upgrades = normalizeUpgrades(state.upgrades);
   }
 
   return {

@@ -11,7 +11,19 @@ export const INTL_LOCALE_BY_ID: Record<Locale, string> = {
   en: "en-US",
 };
 
-export const LOCALE_LABELS: Record<Locale, string> = {
-  de: "DE",
-  en: "EN",
+export const LOCALE_LABELS: Record<
+  Locale,
+  {
+    short: string;
+    long: string;
+  }
+> = {
+  de: {
+    short: "DE",
+    long: "Deutsch",
+  },
+  en: {
+    short: "EN",
+    long: "English",
+  },
 };

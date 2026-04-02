@@ -33,6 +33,12 @@ export function ClickableBridge() {
     };
 
     const click = (e: MouseEvent) => {
+      const taggedEvent = e as MouseEvent & {
+        __uiSoundHandled?: boolean;
+      };
+      if (taggedEvent.__uiSoundHandled) return;
+      taggedEvent.__uiSoundHandled = true;
+
       const target = (e.target as Element | null)?.closest(CLICKABLE_SELECTOR);
       if (!target) return;
 

@@ -1,4 +1,4 @@
-import { useQuestSystem } from "@/hooks/useQuestSystem";
+import { useQuestActions } from "@/hooks/useQuestSystem";
 import { CameraViewId, useViewStore } from "@/store/viewStore";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { match } from "ts-pattern";
@@ -19,14 +19,14 @@ interface InteractiveObjectProps {
 
 export function InteractiveObject({
   questAction,
-  questValue = 25,
+  questValue = 1,
   children,
   mode,
   onDialogOpen,
   viewId,
   position,
 }: InteractiveObjectProps) {
-  const { triggerQuest } = useQuestSystem();
+  const { triggerQuest } = useQuestActions();
   const { transitionToView, currentView } = useViewStore();
   const { playUISound } = useSoundSystem();
   const cursor = useCursorStore();

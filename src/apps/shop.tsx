@@ -1,7 +1,8 @@
 import { usePagination } from "@/hooks/usePagination";
+import { AnimatedSegmentedControl } from "@/components/AnimatedSegmentedControl";
 import { HugColumn, HugRow } from "@/layout";
 import { MOTION_VARIANTS } from "@/molecules/HeadNavigation";
-import { formatNumber } from "@/molecules/TapCounter";
+import { formatNumber } from "@/utils/formatNumber";
 import {
   CameraViewId,
   ShopItem,
@@ -20,8 +21,6 @@ import {
   PaginationButton,
   ShopItemButton,
   PaginationDots,
-  TabPanel,
-  TabButton,
 } from "./ui";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/icons/chevron";
 import { useI18n } from "@/i18n";
@@ -324,17 +323,13 @@ export function ShopApp() {
       {isViewActive &&
         createPortal(ShopOverlays, document.getElementById("motion-root")!)}
 
-      <TabPanel>
-        {tabs.map((tab) => (
-          <TabButton
-            key={tab.id + "_shop_tab"}
-            $active={activeTab === tab.id}
-            onClick={() => handleTabChange(tab.id)}
-          >
-            {tab.name}
-          </TabButton>
-        ))}
-      </TabPanel>
+      <AnimatedSegmentedControl
+        options={tabs.map((tab) => ({ value: tab.id, label: tab.name }))}
+        value={activeTab}
+        onChange={handleTabChange}
+        layoutId="shop-tab-segmented"
+        fullWidth
+      />
     </>
   );
 }

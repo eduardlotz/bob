@@ -6,7 +6,7 @@ import { useCursorStore } from "@/store/core/cursor";
 import { useAppStore, useCoreStore, useViewStore } from "@/store";
 import { playUISound } from "@/utils/soundSystem";
 import { SoundConfig } from "@/utils/sound/types";
-import { useQuestSystem } from "@/hooks/useQuestSystem";
+import { useQuestActions } from "@/hooks/useQuestSystem";
 import { extend, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { geometry } from "maath";
 import styled from "styled-components";
@@ -595,8 +595,8 @@ function getMediaScale(width: number, height: number): [number, number] {
 }
 
 const DEFAULT_MEDIA_SCALE: [number, number] = [8, 8];
-const PORTFOLIO_OVERLAY_SIDE_GAP = 2;
-const PORTFOLIO_OVERLAY_DESKTOP_TOP_INSET = 2;
+const PORTFOLIO_OVERLAY_SIDE_GAP = Math.PI / 2;
+const PORTFOLIO_OVERLAY_DESKTOP_TOP_INSET = Math.PI;
 const PORTFOLIO_OVERLAY_MOBILE_GAP = 1.5;
 const PORTFOLIO_OVERLAY_DEPTH_TEST_OFFSET = -3.2;
 
@@ -628,6 +628,7 @@ const PortfolioMetaOverlay = ({
       style={{
         width: isMobile ? "18rem" : "20rem",
         maxWidth: "92vw",
+        minHeight: "25dvh",
         pointerEvents: isActive ? "auto" : "none",
       }}
       zIndexRange={[20, 0]}
@@ -639,7 +640,7 @@ const PortfolioMetaOverlay = ({
             initial={"initial"}
             animate={"animate"}
             exit={"exit"}
-            variants={MotionVariants.OptionButton}
+            variants={MotionVariants.PopIn}
             key={item.title}
           >
             {item.meta?.map((m, i) => (
@@ -778,7 +779,8 @@ function VideoPlane({
       return;
     }
 
-    const shouldPlayVideo = d < cull.videoPlayDistance && meshRef.current.visible;
+    const shouldPlayVideo =
+      d < cull.videoPlayDistance && meshRef.current.visible;
 
     if (shouldPlayVideo) {
       if (!videoTex.current && videoRef.current) {
@@ -944,7 +946,7 @@ function MediaItem({
   const focusOnTarget = useViewStore((state) => state.focusOnTarget);
   const focusOnImage = useViewStore((state) => state.focusOnImage);
   const focusedImageTitle = useViewStore((state) => state.focusedImageTitle);
-  const { triggerQuest } = useQuestSystem();
+  const { triggerQuest } = useQuestActions();
   const isMobile = useAppStore((state) => state.isMobile);
 
   const isFocused = focusedImageTitle === item.title;
@@ -1169,21 +1171,19 @@ export const MetaWrapper = styled(motion.div)`
   gap: 2rem;
   align-items: flex-start;
   pointer-events: auto;
-  background-color: rgba(14, 14, 14, 0.8);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  /* background-color: rgba(14, 14, 14, 1); */
   color: white;
+  /* text-shadow: 0 0.5px 1px rgba(33, 33, 33, 0.7) inset; */
 
   padding: 1.5rem 2rem;
   border-radius: 2.5rem;
-  width: 100%;
-  max-width: 22.5rem;
+  width: 25rem;
 `;
 
 export const MetaRow = styled.div`
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.5rem;
+  grid-template-columns: 1fr 1fr;
+  gap: 5rem;
   align-items: start;
   width: 100%;
   font-size: 0.75rem;
@@ -1200,12 +1200,15 @@ export const MetaLeft = styled.p`
   text-align: left;
   line-height: 1.25;
   white-space: pre-wrap;
+  width: 100%;
+
+  /* text-shadow: 0 4px 0px rgba(255, 255, 255, 0.15); */
 `;
 
 export const MetaRight = styled(MetaLeft)`
-  text-align: right;
+  text-align: left;
   justify-self: end;
-  margin-left: 0;
+  margin-top: 3ch;
 `;
 
 export const PillLink = styled.a`

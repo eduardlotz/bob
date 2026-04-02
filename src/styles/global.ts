@@ -72,12 +72,183 @@ export const GlobalStyle = createGlobalStyle`
         z-index: 9999;
     }
 
+    .toast-badge {
+      width: 1.35rem !important;
+      height: 1.35rem !important;
+      padding: 0 !important;
+      margin-left: 0.2rem !important;
+      margin-right: 0.05rem !important;
+      border-radius: 0.45rem !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+
+    .toast-badge svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    
     .toast-title {
-      color: #eaeaea;
+      color: #5e425b;
+      font-weight: 700;
+      font-size: 0.9rem;
     }
 
     .toast-desc {
-      color: #afafaf;
-      text-align: center;
+      color: #7f667d;
+      opacity: 0.85;
+      font-weight: 500;
+      font-size: 0.76rem;
+      text-align: inherit;
+    }
+
+    .quest-toast-title {
+      color: #d6dcff;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .quest-toast-desc {
+      color: #b8c0ea;
+      opacity: 0.88;
+      font-weight: 500;
+      font-size: 0.76rem;
+      text-align: inherit;
+    }
+
+    .sileo-top-lights {
+      --vorgarten-toast-duration: 6000ms;
+      position: fixed;
+      left: 50%;
+      top: 0;
+      width: min(54rem, calc(100vw + 10rem));
+      height: 36rem;
+      transform: translateX(-50%);
+      pointer-events: none;
+      z-index: 9998;
+      opacity: 0;
+      transition: opacity calc(var(--sileo-duration, 680ms) * 0.66) ease;
+    }
+
+    body:has([data-sileo-viewport][data-position="top-center"]) .sileo-top-lights {
+      opacity: 1;
+    }
+
+    .sileo-top-light {
+      position: absolute;
+      top: -2.85rem;
+      left: 50%;
+      width: var(--beam-width, 5rem);
+      height: 31.5rem;
+      border-radius: 999px;
+      pointer-events: none;
+      transform-origin: 50% 0%;
+      background: linear-gradient(
+        180deg,
+        var(--beam-color, rgba(210, 144, 236, 0.68)) 0%,
+        rgba(255, 255, 255, 0) 83%
+      );
+      filter: blur(56px) saturate(132%);
+      opacity: 0.52;
+      transform:
+        translateX(calc(-50% + var(--beam-offset, 0px)))
+        rotate(var(--beam-angle, 0deg))
+        scale(0.98);
+      animation:
+        sileo-toast-light-drift calc(var(--vorgarten-toast-duration) * 1.08) ease-in-out infinite alternate,
+        sileo-toast-light-breathe calc(var(--vorgarten-toast-duration) * 0.82) ease-in-out infinite;
+      animation-delay: var(--beam-delay, 0ms);
+    }
+
+    .sileo-top-light--left-45 {
+      --beam-angle: -45deg;
+      --beam-offset: -32px;
+      --beam-width: 5.7rem;
+      --beam-color: rgba(134, 183, 255, 0.62);
+      --beam-drift: -10px;
+      --beam-wobble: -2.5deg;
+      --beam-delay: 140ms;
+    }
+
+    .sileo-top-light--left-25 {
+      --beam-angle: -25deg;
+      --beam-offset: -17px;
+      --beam-width: 5.1rem;
+      --beam-color: rgba(122, 224, 255, 0.58);
+      --beam-drift: -8px;
+      --beam-wobble: -1.5deg;
+      --beam-delay: 220ms;
+    }
+
+    .sileo-top-light--vertical {
+      --beam-angle: 0deg;
+      --beam-offset: 0px;
+      --beam-width: 5rem;
+      --beam-color: rgba(182, 255, 214, 0.6);
+      --beam-drift: 0px;
+      --beam-wobble: 0.6deg;
+      --beam-delay: 0ms;
+    }
+
+    .sileo-top-light--right-25 {
+      --beam-angle: 25deg;
+      --beam-offset: 17px;
+      --beam-width: 5.1rem;
+      --beam-color: rgba(247, 172, 255, 0.58);
+      --beam-drift: 8px;
+      --beam-wobble: 1.5deg;
+      --beam-delay: 260ms;
+    }
+
+    .sileo-top-light--right-45 {
+      --beam-angle: 45deg;
+      --beam-offset: 32px;
+      --beam-width: 5.7rem;
+      --beam-color: rgba(222, 142, 255, 0.6);
+      --beam-drift: 10px;
+      --beam-wobble: 2.4deg;
+      --beam-delay: 80ms;
+    }
+
+    @keyframes sileo-toast-light-drift {
+      from {
+        transform:
+          translateX(calc(-50% + var(--beam-offset, 0px)))
+          rotate(var(--beam-angle, 0deg))
+          scale(0.94, 0.98);
+      }
+
+      to {
+        transform:
+          translateX(calc(-50% + var(--beam-offset, 0px) + var(--beam-drift, 0px)))
+          rotate(calc(var(--beam-angle, 0deg) + var(--beam-wobble, 0deg)))
+          scale(1.04, 1.08);
+      }
+    }
+
+    @keyframes sileo-toast-light-breathe {
+      0%,
+      100% {
+        opacity: 0.36;
+      }
+
+      40% {
+        opacity: 0.62;
+      }
+
+      70% {
+        opacity: 0.48;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .sileo-top-lights {
+        transition: none;
+      }
+
+      .sileo-top-light {
+        animation: none;
+      }
     }
 `;

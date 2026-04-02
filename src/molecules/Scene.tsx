@@ -210,6 +210,7 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
     debugLightSettings,
     soundSystem,
     isPaused,
+    graphicPreferences,
   } = useCoreStore();
   const { activeGame } = useMiniGameStore();
   const activeRouteMusicRef = useRef<string | null>(null);
@@ -367,7 +368,7 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
 
               <a.group visible={isHome} scale={spring.scale}>
                 <TapCounter />
-                <TapEffects />
+                {graphicPreferences.effectsEnabled && <TapEffects />}
               </a.group>
 
               {isHome && <SceneDecorations />}

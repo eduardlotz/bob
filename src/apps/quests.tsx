@@ -1,147 +1,544 @@
-import { FillColumn, FillRow, HugColumn, ScrollArea } from "@/layout";
-import { useCoreStore, useQuestStore } from "@/store";
-import { formatNumber } from "@/molecules/TapCounter";
-import { motion } from "motion/react";
-import styled from "styled-components";
-import { ItemStatusChip } from "./ui";
+import { FillColumn, HugColumn, ScrollArea } from "@/layout";
+import { useMemo } from "react";
+import styled, { keyframes } from "styled-components";
 import { useI18n } from "@/i18n";
-import { getShopItemCopy } from "@/shop-items/copy";
-import { getQuestCopy, type QuestMessageId } from "@/store/core/quests.messages";
+import { useQuestStore } from "@/store/core/quests";
+import { ItemStatusChip } from "./ui";
+import {
+  formatProgressValue,
+  getRewardChipLabel,
+  resolveQuestBadgeContent,
+  resolveQuestReward,
+  toQuestGroups,
+  withAlpha,
+} from "./quests.helpers";
+import type { QuestBadgeContentValue } from "./quests.types";
 
 export const QuestsIcon = () => (
   <img src="/images/app-logos/quests.png" height={80} width={80} />
 );
 
-export const QuestsApp = () => {
-  const { quests } = useQuestStore();
-  const { bobItems, tapEffects, worlds } = useCoreStore();
+export const QuestsCompletionChip = () => {
+  const quests = useQuestStore((state) => state.quests);
   const { locale, messages } = useI18n();
 
-  const rewardItems = [...bobItems, ...tapEffects, ...worlds];
+  const { completedCount, totalCount } = useMemo(() => {
+    const groups = toQuestGroups(quests, locale, messages.quests);
+    const total = groups.length;
+    const completed = groups.filter((group) =>
+      group.quests.every((quest) => quest.completed),
+    ).length;
+
+    return {
+      completedCount: completed,
+      totalCount: total,
+    };
+  }, [locale, messages.quests, quests]);
+
+  return (
+    <ItemStatusChip>
+      {completedCount}/{totalCount}
+    </ItemStatusChip>
+  );
+};
+
+const CompletedQuestBadge = ({
+  content,
+  color,
+}: {
+  content: QuestBadgeContentValue;
+  color: string;
+}) => (
+  <CompletedQuestBadgeFrame>
+    <svg
+      width="100%"
+      height="100%"
+      viewBox="0 0 42 42"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <g style={{ filter: "drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.15))" }}>
+        <path
+          d="M16.1882 4.85904C15.1653 5.73077 13.8934 6.25759 12.5537 6.3645C9.4273 6.61399 6.94471 9.09658 6.69522 12.223C6.58831 13.5627 6.06149 14.8345 5.18976 15.8575C3.1555 18.2446 3.1555 21.7555 5.18976 24.1426C6.06149 25.1655 6.58831 26.4373 6.69522 27.7771C6.94471 30.9034 9.4273 33.386 12.5537 33.6355C13.8934 33.7424 15.1653 34.2692 16.1882 35.141C18.5753 37.1752 22.0862 37.1752 24.4733 35.141C25.4962 34.2692 26.7681 33.7424 28.1078 33.6355C31.2342 33.386 33.7168 30.9034 33.9662 27.7771C34.0731 26.4373 34.6 25.1655 35.4717 24.1426C37.506 21.7555 37.506 18.2446 35.4717 15.8575C34.6 14.8345 34.0731 13.5627 33.9662 12.223C33.7168 9.09658 31.2342 6.61399 28.1078 6.3645C26.7681 6.25759 25.4962 5.73077 24.4733 4.85904C22.0862 2.82478 18.5753 2.82478 16.1882 4.85904Z"
+          fill={color}
+          stroke="white"
+          strokeWidth="3.33333"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </g>
+    </svg>
+
+    {content.isText ? (
+      <QuestBadgeTextContent>
+        <QuestBadgeTextInner>
+          <QuestBadgeValueText $hasMetric={Boolean(content.metric)}>
+            {content.value}
+          </QuestBadgeValueText>
+          {content.metric && (
+            <QuestBadgeMetricText>{content.metric}</QuestBadgeMetricText>
+          )}
+        </QuestBadgeTextInner>
+      </QuestBadgeTextContent>
+    ) : (
+      <QuestBadgeEmojiContent>{content.value}</QuestBadgeEmojiContent>
+    )}
+  </CompletedQuestBadgeFrame>
+);
+
+const QuestPlaceholderBadge = () => (
+  <CompletedQuestBadgeFrame aria-hidden="true">
+    <svg
+      width="100%"
+      height="100%"
+      viewBox="0 0 42 42"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M16.1882 4.85904C15.1653 5.73077 13.8934 6.25759 12.5537 6.3645C9.4273 6.61399 6.94471 9.09658 6.69522 12.223C6.58831 13.5627 6.06149 14.8345 5.18976 15.8575C3.1555 18.2446 3.1555 21.7555 5.18976 24.1426C6.06149 25.1655 6.58831 26.4373 6.69522 27.7771C6.94471 30.9034 9.4273 33.386 12.5537 33.6355C13.8934 33.7424 15.1653 34.2692 16.1882 35.141C18.5753 37.1752 22.0862 37.1752 24.4733 35.141C25.4962 34.2692 26.7681 33.7424 28.1078 33.6355C31.2342 33.386 33.7168 30.9034 33.9662 27.7771C34.0731 26.4373 34.6 25.1655 35.4717 24.1426C37.506 21.7555 37.506 18.2446 35.4717 15.8575C34.6 14.8345 34.0731 13.5627 33.9662 12.223C33.7168 9.09658 31.2342 6.61399 28.1078 6.3645C26.7681 6.25759 25.4962 5.73077 24.4733 4.85904C22.0862 2.82478 18.5753 2.82478 16.1882 4.85904Z"
+        fill="#C6C6C7"
+        stroke="#C6C6C7"
+        strokeWidth="3.33333"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+
+    {/* <QuestPlaceholderMark>?</QuestPlaceholderMark> */}
+  </CompletedQuestBadgeFrame>
+);
+
+const ItemRewardSmileyIcon = () => (
+  <svg
+    width="1.35rem"
+    height="1.35rem"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <g clipPath="url(#quest-item-smile-clip)">
+      <path
+        d="M11.9989 20.9278C17.7132 20.9278 20.9275 17.7135 20.9275 11.9992C20.9275 6.2849 17.7132 3.07062 11.9989 3.07062C6.2846 3.07062 3.07031 6.2849 3.07031 11.9992C3.07031 17.7135 6.2846 20.9278 11.9989 20.9278Z"
+        fill="#F8DB59"
+      />
+      <path
+        d="M7.46875 13.3734C8.15556 15.8459 10.9028 17.3569 13.3753 16.67C14.8863 16.1206 16.1226 14.8843 16.5347 13.3734"
+        stroke="#212121"
+        strokeWidth="1.71"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M8.35156 9.28644V10.2864"
+        stroke="#212121"
+        strokeWidth="1.71"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M15.6406 9.28644V10.2864"
+        stroke="#212121"
+        strokeWidth="1.71"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M11.9989 20.9278C17.7132 20.9278 20.9275 17.7135 20.9275 11.9992C20.9275 6.2849 17.7132 3.07062 11.9989 3.07062C6.2846 3.07062 3.07031 6.2849 3.07031 11.9992C3.07031 17.7135 6.2846 20.9278 11.9989 20.9278Z"
+        stroke="#212121"
+        strokeWidth="1.71"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </g>
+    <defs>
+      <clipPath id="quest-item-smile-clip">
+        <rect width="20" height="20" fill="white" transform="translate(2 2)" />
+      </clipPath>
+    </defs>
+  </svg>
+);
+
+export const QuestsApp = () => {
+  const { quests } = useQuestStore();
+  const { locale, messages } = useI18n();
+
+  const questGroups = useMemo(
+    () => toQuestGroups(quests, locale, messages.quests),
+    [locale, messages.quests, quests],
+  );
 
   return (
     <HugColumn
-      style={{ width: "320px", maxWidth: "100%", maxHeight: "360px" }}
+      style={{
+        width: "100%",
+        maxWidth: "26.25rem",
+        maxHeight: "26.25rem",
+        borderRadius: "1.75rem",
+      }}
       $gap={"0.25rem"}
     >
       <ScrollArea $direction="vertical">
-        {quests.map((quest, index) => {
-          const reward =
-            quest.reward.type === "taps_reward"
-              ? `+${formatNumber(Number(quest.reward.amount) || 0)} 🫵`
-              : (() => {
-                  const item = rewardItems.find(
-                    (entry) => entry.id === quest.reward.amount,
-                  );
-                  if (!item) return messages.quests.fallbackReward;
-                  const itemIcon =
-                    "icon" in item && item.icon ? item.icon : "🎁";
-                  const itemCopy = getShopItemCopy(item.id, locale);
-                  return `+ ${itemIcon} ${itemCopy?.name ?? item.name}`;
-                })();
-          const questCopy = getQuestCopy(quest.id as QuestMessageId, locale);
+        <QuestList>
+          {questGroups.map((group, groupIndex) => {
+            const completedCount = group.quests.filter(
+              (quest) => quest.completed,
+            ).length;
+            const isCompleted = completedCount === group.quests.length;
+            const displayQuest = group.displayQuest;
+            const progressQuest = group.progressQuest;
 
-          return (
-            <QuestListItem $completed={quest.completed} key={quest.id}>
-              <FillColumn $align="flex-start" $gap={".25rem"}>
-                <QuestName>{questCopy?.title ?? quest.title}</QuestName>
-                <QuestInfos>{questCopy?.description ?? quest.description}</QuestInfos>
-                {/* {quest.completed && <RewardChip>{reward}</RewardChip>} */}
-              </FillColumn>
+            const reward = resolveQuestReward(displayQuest, locale);
+            const showProgress =
+              !group.isHidden &&
+              !isCompleted &&
+              progressQuest !== null &&
+              (group.isStack ||
+                progressQuest.showProgress ||
+                progressQuest.maxProgress > 1);
+            const rawProgressRatio =
+              progressQuest && progressQuest.maxProgress > 0
+                ? Math.min(progressQuest.progress, progressQuest.maxProgress) /
+                  progressQuest.maxProgress
+                : 0;
+            const progressRatio = Math.max(0, Math.min(1, rawProgressRatio));
+            const progressLabel = progressQuest
+              ? formatProgressValue(progressQuest, locale)
+              : "";
+            const showRewardChip =
+              !group.isHidden && isCompleted && reward !== null;
+            const strikeTitle =
+              !group.isMilestoneStack &&
+              isCompleted &&
+              displayQuest.progressionKind !== "milestone";
+            const strikeDescription = !group.isMilestoneStack && isCompleted;
+            const badges =
+              group.isMilestoneStack && group.isStack
+                ? completedCount > 0
+                  ? group.quests.filter((quest) => quest.completed)
+                  : group.progressQuest
+                    ? [group.progressQuest]
+                    : [displayQuest]
+                : group.isStack
+                  ? group.quests
+                  : [displayQuest];
 
-              <QuestIcon
-                animate={{ scale: 1, filter: "blur(0px)", opacity: 1 }}
-                initial={{ scale: 0, filter: "blur(4px)", opacity: 0 }}
-                transition={{ delay: 0.5 + index * 0.2 }}
+            return (
+              <QuestListItem
+                $withProgress={showProgress}
+                $completed={isCompleted}
+                key={group.id}
               >
-                {quest.completed ? <QuestCheckmarkIcon /> : ""}
-              </QuestIcon>
-            </QuestListItem>
-          );
-        })}
+                <QuestHeader>
+                  <QuestTextGroup>
+                    <QuestName $struck={strikeTitle}>{group.title}</QuestName>
+
+                    <QuestInfos $struck={strikeDescription}>
+                      {group.description}
+                    </QuestInfos>
+
+                    {group.secondaryDescription && (
+                      <QuestSecondaryInfo>
+                        {group.secondaryDescription}
+                      </QuestSecondaryInfo>
+                    )}
+
+                    {showRewardChip && reward && (
+                      <QuestRewardChip>
+                        {reward.kind === "item" ? (
+                          <ItemRewardSmileyIcon />
+                        ) : (
+                          <RewardTapIcon aria-hidden="true">👊</RewardTapIcon>
+                        )}
+                        <QuestRewardLabel>
+                          {getRewardChipLabel(reward, messages.quests)}
+                        </QuestRewardLabel>
+                      </QuestRewardChip>
+                    )}
+                  </QuestTextGroup>
+
+                  <QuestBadgeStack>
+                    {[...badges].reverse().map((quest, index) => (
+                      <QuestBadgeLayer
+                        key={quest.id}
+                        $index={index}
+                        $staggerIndex={groupIndex * 4 + index}
+                      >
+                        {quest.completed ? (
+                          <CompletedQuestBadge
+                            content={resolveQuestBadgeContent(quest, locale)}
+                            color={quest.color}
+                          />
+                        ) : (
+                          <QuestPlaceholderBadge />
+                        )}
+                      </QuestBadgeLayer>
+                    ))}
+                  </QuestBadgeStack>
+                </QuestHeader>
+
+                {showProgress && (
+                  <QuestProgressTrack>
+                    <QuestProgressInner>
+                      <QuestProgressFill
+                        style={{
+                          width: `${progressRatio * 100}%`,
+                          background: withAlpha(
+                            "#a7a7a7",
+                            isCompleted ? 0.38 : 0.25,
+                          ),
+                        }}
+                      />
+
+                      <QuestProgressLabel>{progressLabel}</QuestProgressLabel>
+                    </QuestProgressInner>
+                  </QuestProgressTrack>
+                )}
+              </QuestListItem>
+            );
+          })}
+        </QuestList>
       </ScrollArea>
     </HugColumn>
   );
 };
 
-const QuestCheckmarkIcon = () => (
-  <svg
-    width={32}
-    height={32}
-    viewBox="0 0 14 14"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M6.35465 1.08218C6.721 0.767629 7.26188 0.768405 7.62808 1.08316C7.88705 1.30575 8.14151 1.52854 8.39176 1.7521C8.72463 1.68263 9.06083 1.61586 9.40055 1.55191C9.87506 1.46274 10.3433 1.73298 10.5031 2.18863C10.6161 2.51105 10.7243 2.83165 10.8293 3.15054C11.1523 3.2568 11.4767 3.36712 11.8029 3.4816C12.2586 3.64153 12.5291 4.10955 12.4396 4.58414C12.3752 4.9255 12.3082 5.26278 12.2384 5.59683C12.466 5.85142 12.6925 6.11056 12.9191 6.37418C13.2339 6.74045 13.2338 7.28127 12.9191 7.64762C12.6939 7.90978 12.468 8.16758 12.2414 8.42105C12.31 8.74964 12.3763 9.08147 12.4396 9.41715C12.529 9.89166 12.2585 10.3598 11.8029 10.5197C11.4767 10.6342 11.1523 10.7445 10.8293 10.8507C10.7243 11.1695 10.6151 11.4903 10.5021 11.8127C10.3422 12.2679 9.87485 12.5384 9.40055 12.4494C9.06661 12.3865 8.73566 12.3203 8.40836 12.2521C8.15912 12.4747 7.90623 12.6968 7.64859 12.9181C7.28223 13.2328 6.74142 13.2329 6.37515 12.9181C6.11615 12.6955 5.86176 12.4727 5.61148 12.2492C5.27857 12.3187 4.94246 12.3854 4.60269 12.4494C4.12819 12.5387 3.66007 12.2681 3.50015 11.8127C3.38712 11.4903 3.27798 11.1695 3.173 10.8507C2.84998 10.7445 2.52556 10.6342 2.19937 10.5197C1.74381 10.3597 1.47421 9.89163 1.56363 9.41715C1.62804 9.07555 1.69498 8.73776 1.7648 8.40348C1.53738 8.14908 1.31054 7.89053 1.08413 7.62711C0.769382 7.2609 0.768605 6.72003 1.08316 6.35367C1.3084 6.09145 1.53429 5.83378 1.76089 5.58023C1.69238 5.25162 1.62693 4.91982 1.56363 4.58414C1.47416 4.10967 1.74387 3.64164 2.19937 3.4816C2.5255 3.36714 2.85003 3.2568 3.173 3.15054C3.27798 2.83165 3.38711 2.51105 3.50015 2.18863C3.66 1.73298 4.12813 1.46257 4.60269 1.55191C4.93652 1.61476 5.2667 1.68002 5.5939 1.7482C5.84329 1.52546 6.09686 1.30361 6.35465 1.08218ZM9.37223 4.66421C9.1867 4.45969 8.86972 4.44451 8.66519 4.63004C7.93943 5.28843 7.39601 5.8785 6.93765 6.5939C6.5928 7.13218 6.30363 7.72953 6.01871 8.46109L4.98062 7.3898C4.78844 7.19161 4.47184 7.18698 4.27359 7.37906C4.07539 7.57125 4.06978 7.88784 4.26187 8.08609L5.85562 9.72867C5.97638 9.85282 6.15327 9.9057 6.32242 9.86832C6.49143 9.83072 6.62968 9.7086 6.68668 9.54508C7.05531 8.48614 7.38313 7.75266 7.77945 7.13394C8.17394 6.51821 8.65028 5.99416 9.33805 5.37027C9.54207 5.18482 9.55724 4.86863 9.37223 4.66421Z"
-      fill="currentColor"
-    />
-  </svg>
-);
-
-const QuestIcon = styled(motion.div)`
-  position: absolute;
-  right: 0.5rem;
-  bottom: 0.5rem;
-
-  color: #4178f7;
+const QuestList = styled.div`
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.05rem 0.05rem 0.15rem;
 `;
 
-const RewardChip = styled(ItemStatusChip)`
-  position: absolute;
-  left: 1em;
-  bottom: 1em;
-  box-shadow: none;
-`;
-
-const QuestListItem = styled(FillRow)<{
-  $completed?: boolean;
+const QuestListItem = styled(FillColumn)<{
+  $withProgress: boolean;
+  $completed: boolean;
 }>`
+  width: 100%;
+  border-radius: 1.35rem;
+  /* border: ${(p) => (p.$completed ? "1.5px solid #212121" : "0")}; */
+  background: rgba(33, 33, 33, 0.05);
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0.52rem;
+  padding: 0.78rem 0.76rem 0.74rem;
+`;
+
+const QuestHeader = styled.div`
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.52rem;
+  padding: 0.5rem 0.5rem;
+`;
+
+const QuestTextGroup = styled.div`
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.2rem;
+`;
+
+const QuestBadgeStack = styled.div`
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  /* min-height: 3.5tm; */
+  padding-left: 0.65rem;
+`;
+
+const badgeScaleUp = keyframes`
+  0% {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+
+  65% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+`;
+
+const QuestBadgeLayer = styled.div<{ $index: number; $staggerIndex: number }>`
+  margin-left: ${(p) => (p.$index === 0 ? "0" : "-1.03rem")};
+  display: inline-flex;
+  transform-origin: center;
+  animation: ${badgeScaleUp} 320ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+  animation-delay: ${(p) => `${80 + p.$staggerIndex * 48}ms`};
+`;
+
+const CompletedQuestBadgeFrame = styled.div`
+  width: 3.5rem;
+  height: 3.5rem;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const QuestBadgeEmojiContent = styled.span`
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-0.13rem);
+  font-size: 1rem;
+  line-height: 1;
+  font-weight: 700;
+  color: #212121;
+`;
+
+const QuestBadgeTextContent = styled.span`
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+  justify-content: center;
+  transform: translateY(-0.02rem);
+  color: #ffffff;
+  filter: drop-shadow(0px 1px 1px rgba(0, 0, 0, 0.25));
+  text-align: center;
+`;
+
+const QuestBadgeTextInner = styled.span`
+  width: min(2.55rem, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 0.08rem;
+`;
+
+const QuestBadgeValueText = styled.span<{ $hasMetric?: boolean }>`
+  display: block;
+  width: 100%;
+  font-size: ${(p) =>
+    p.$hasMetric
+      ? "clamp(1.05rem, 0.82rem + 0.9vw, 1.42rem)"
+      : "clamp(0.82rem, 0.64rem + 0.85vw, 1.18rem)"};
+  font-weight: 900;
+  line-height: 0.95;
+  text-align: center;
+  white-space: nowrap;
+`;
+
+const QuestBadgeMetricText = styled.span`
+  max-width: 100%;
+  margin-top: -0.3rem;
+  font-size: clamp(0.72rem, 0.6rem + 0.45vw, 0.88rem);
+  font-weight: 800;
+  line-height: 0.95;
+  text-align: center;
+  text-transform: lowercase;
+  letter-spacing: 0.03em;
+`;
+
+const QuestPlaceholderMark = styled.span`
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1;
+  filter: drop-shadow(0px 1px 1px rgba(0, 0, 0, 0.18));
+`;
+
+const QuestProgressTrack = styled.div`
   position: relative;
-
-  padding: 1rem;
-  pointer-events: auto;
-  border-radius: 1.25rem;
-  background: rgba(33, 33, 33, 0.05);
-  color: #212121;
-
-  ${(p) =>
-    p.$completed &&
-    `
-    background: rgba(65, 120, 247, 0.1);
-    
-    border: 1.5px solid #4178f7;
-
-    h5 {
-      color: #4178f7;
-    }
-
-    p {
-      text-decoration: line-through;
-    }
-  `}
-
-  h5 {
-    font-size: 1rem;
-    font-weight: 600;
-  }
-
-  p {
-    font-size: 0.875rem;
-    font-weight: 400;
-    opacity: 0.6;
-  }
-`;
-const QuestName = styled.h5`
-  text-wrap: balance;
-  line-height: 1.15;
+  width: 100%;
+  height: 2.1rem;
+  border-radius: 1.1rem;
+  padding: 4px;
+  background: rgba(245, 245, 245, 0.8);
+  border: 1px solid rgba(33, 33, 33, 0.08);
 `;
 
-const QuestInfos = styled.p`
-  text-wrap: balance;
-  line-height: 1.25;
+const QuestProgressInner = styled.div`
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: calc(1.1rem - 4px);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(238, 238, 238, 0.9);
+`;
+
+const QuestProgressFill = styled.div`
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  transition: width 0.2s ease-out;
+`;
+
+const QuestProgressLabel = styled.span`
+  position: relative;
+  z-index: 1;
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: #4d4d4d;
+  line-height: 1;
+`;
+
+const QuestName = styled.h5<{ $struck?: boolean }>`
+  text-wrap: pretty;
+  line-height: 1.1;
+  font-size: 1.06rem;
+  font-weight: 700;
+  color: #1f1f1f;
+  text-decoration: ${(p) => (p.$struck ? "line-through" : "none")};
+  opacity: ${(p) => (p.$struck ? 0.3 : 1)};
+`;
+
+const QuestInfos = styled.p<{ $struck?: boolean }>`
+  text-wrap: pretty;
+  line-height: 1.16;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #6a6a6a;
+  text-decoration: ${(p) => (p.$struck ? "line-through" : "none")};
+  opacity: ${(p) => (p.$struck ? 0.3 : 1)};
+`;
+
+const QuestSecondaryInfo = styled.p`
+  margin-top: 0.12rem;
+  text-wrap: pretty;
+  line-height: 1.2;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #4d4d4d;
+`;
+
+const QuestRewardChip = styled.span`
+  margin-top: 0.38rem;
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  border-radius: 999px;
+  padding: 0.18rem 0.52rem 0.18rem 0.34rem;
+  background: rgba(33, 33, 33, 0.08);
+`;
+
+const RewardTapIcon = styled.span`
+  font-size: 1.05rem;
+  line-height: 1;
+`;
+
+const QuestRewardLabel = styled.span`
+  font-size: 0.72rem;
+  line-height: 1;
+  font-weight: 900;
+  color: #1f1f1f;
 `;

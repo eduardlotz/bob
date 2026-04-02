@@ -1,5 +1,5 @@
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { FullScreen, ContentWidth, FillColumn } from "@/layout";
 import MainLayout from "@/layout/MainLayout";
 import { GlobalStyle } from "@/styles/global";
@@ -19,12 +19,29 @@ import Home from "./routes/Home";
 import About from "./routes/About";
 import { AnimatePresence, motion } from "motion/react";
 import { useMessageSystem } from "@/hooks/useMessageSystem";
+import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { FloatingBarProvider, FloatingBarUI } from "./layout/FloatingBar";
 import { CursorInputBridge } from "./bridges/CursorInputBridge";
 import { ClickableBridge } from "./bridges/ClickableBridge";
 import MiniGames from "./routes/MiniGames";
 import Portfolio from "./routes/Portfolio";
 import { useI18n } from "@/i18n";
+
+const SILEO_TOAST_DURATION_MS = 6000;
+
+const toastLightStyle = {
+  "--vorgarten-toast-duration": `${SILEO_TOAST_DURATION_MS}ms`,
+} as CSSProperties;
+
+const ToastTopLights = () => (
+  <div className="sileo-top-lights" style={toastLightStyle} aria-hidden="true">
+    <span className="sileo-top-light sileo-top-light--left-45" />
+    <span className="sileo-top-light sileo-top-light--left-25" />
+    <span className="sileo-top-light sileo-top-light--vertical" />
+    <span className="sileo-top-light sileo-top-light--right-25" />
+    <span className="sileo-top-light sileo-top-light--right-45" />
+  </div>
+);
 
 export default function App() {
   const location = useLocation();
@@ -54,6 +71,7 @@ export default function App() {
   // init message system globally
   // not a real hook (TODO: change name)
   useMessageSystem();
+  useQuestSystem();
 
   useEffect(() => {
     const nextPath = location.pathname;
@@ -99,33 +117,13 @@ export default function App() {
         <Toaster
           position="top-center"
           offset={"1.25rem"}
+          children={<ToastTopLights />}
           options={{
-            icon: (
-              <svg
-                width={20}
-                height={20}
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M19.0678 4.9491C23.0378 8.9191 22.9678 15.3991 18.8678 19.2891C15.0778 22.8791 8.92777 22.8791 5.12777 19.2891C1.01777 15.3991 0.947753 8.9191 4.92775 4.9491C8.82775 1.0391 15.1678 1.0391 19.0678 4.9491Z"
-                  stroke="white"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M16.4941 13.0908C16.4941 15.5761 14.4794 17.5908 11.9941 17.5908C9.50886 17.5908 7.49414 15.5761 7.49414 13.0908"
-                  stroke="white"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            ),
-            fill: "#212121",
+            duration: SILEO_TOAST_DURATION_MS,
+            fill: "#d9c8de",
+            roundness: 24,
             styles: {
+              badge: "toast-badge",
               title: "toast-title",
               description: "toast-desc",
             },

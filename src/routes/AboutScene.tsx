@@ -54,7 +54,7 @@ export function AboutScene() {
     <>
       <InteractiveObject
         questAction="click_desk"
-        questValue={30}
+        questValue={1}
         mode="view"
         viewId="desk"
         position={[0, 0, 1.5]}
@@ -84,7 +84,7 @@ export function AboutScene() {
 
       <StandaloneSocialsGlobe
         questAction="click_socials"
-        questValue={30}
+        questValue={1}
         position={[-3, FLOOR_Y_POSITION + 2, -3.5]}
         scale={[3.5, 3.5, 3.5]}
       />
@@ -93,7 +93,7 @@ export function AboutScene() {
 
       <InteractiveObject
         questAction="click_books"
-        questValue={30}
+        questValue={1}
         mode="view"
         viewId="bookshelf"
       >
@@ -149,7 +149,7 @@ export function AboutScene() {
 
       <InteractiveObject
         questAction="click_box"
-        questValue={30}
+        questValue={1}
         mode="view"
         viewId="cardbox"
       >

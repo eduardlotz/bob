@@ -14,7 +14,7 @@ import { ShopApp, ShopIcon, TapCounterChip } from "@/apps/shop";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { DebugApp, DebugIcon } from "@/apps/debug";
 import { useClickOutside } from "@/hooks/useClickOutside";
-import { QuestsApp, QuestsIcon } from "@/apps/quests";
+import { QuestsApp, QuestsCompletionChip, QuestsIcon } from "@/apps/quests";
 import { OptionsApp, OptionsIcon } from "@/apps/options";
 import { playUISound } from "@/utils/soundSystem";
 import { ChatApp, ChatIcon } from "@/apps/chat";
@@ -79,6 +79,7 @@ const BOB_APPS: Array<BobAppData> = [
     id: "quests",
     icon: QuestsIcon,
     view: <QuestsApp />,
+    bottomAction: <QuestsCompletionChip />,
   },
   {
     id: "camera",

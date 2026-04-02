@@ -33,6 +33,21 @@ export const ROUTE_DICTIONARY: { [key: string]: string } = {
   "/creative": "route_creative",
   "/technical": "route_technical",
   "/guestbook": "route_guestbook",
+  "/mini": "route_minigames",
+};
+
+const normalizeRoutePath = (path: string): string => {
+  if (!path) return ROUTE_PATHS.HOME;
+  if (path === "/") return ROUTE_PATHS.HOME;
+
+  const withoutTrailingSlash =
+    path.length > 1 && path.endsWith("/") ? path.slice(0, -1) : path;
+  return withoutTrailingSlash || ROUTE_PATHS.HOME;
+};
+
+export const getRouteIdByPath = (path: string): string => {
+  const normalizedPath = normalizeRoutePath(path);
+  return ROUTE_DICTIONARY[normalizedPath] ?? ROUTE_IDS.HOME;
 };
 
 export const ROUTE_CONFIG = {

@@ -19,6 +19,11 @@ import { THEME_IDS, THEME_CONFIG } from "../config/themes";
 import { initialTapUpgrades } from "@/shop-items/upgrades";
 import { initialTapEffects } from "@/shop-items/tapEffects";
 import {
+  calculateAutoTapRate,
+  calculateTapMultiplier,
+  calculateUpgradeCost,
+} from "@/shop-items/upgradeMath";
+import {
   BlobFormConfig,
   INITIAL_BLOB_FORMS,
   DEFAULT_FORM_PARAMETERS,
@@ -48,7 +53,11 @@ export enum GAME_STORE_VERSION {
 
   V5 = 100100, // version 1.01.100
   V6 = 100101, // version 1.01.101
-  LATEST = V6,
+  V7 = 100102, // version 1.01.102
+  V8 = 100103, // version 1.01.103 (light-only theme mode)
+  V9 = 100104, // version 1.01.104 (motion + tap particle prefs)
+  V10 = 100105, // version 1.01.105 (upgrade schema normalization)
+  LATEST = V10,
 }
 
 // TODO: plan refactor to include component inside item properties
@@ -252,8 +261,10 @@ interface GameState {
   version: number;
 
   taps: number;
+  lifetimeTotalTaps: number;
   tapMultiplier: number;
   lastAutoTapTime: number;
+  manualTaps: number;
 
   upgrades: Upgrade[];
   worlds: WorldItem[];
@@ -277,6 +288,7 @@ interface GameState {
   graphicPreferences: {
     qualityMode: QualityMode; // TODO: seperate selected, suggested
     effectsEnabled: boolean;
+    reducedTapMotion: boolean;
   };
 
   audioSelections: {
@@ -298,7 +310,6 @@ interface GameCache {
 }
 
 interface GameComputed {
-  manualTaps: number;
   manualTapsPerSecond: number;
   tapsPerSecond: number;
   autoTapRate: number;
@@ -357,6 +368,7 @@ interface GameStateActions {
 
   setGraphicsMode: (mode: QualityMode) => void;
   toggleParticleEffects: () => void;
+  toggleReducedTapMotion: () => void;
   acceptCookies: () => void;
 
   setWorldMusicId: (id: string) => void;
@@ -424,23 +436,13 @@ export type GameStore = PersistedGameStore &
   RuntimeGameStore &
   RuntimeGameStoreActions;
 
-export const initialThemes: Theme[] = Object.values(THEME_CONFIG).map(
-  (themeConfig) => ({
-    id: themeConfig.id,
-    name: themeConfig.name,
-    description: themeConfig.description,
-    cost: themeConfig.id === THEME_IDS.DEFAULT ? 0 : 50,
-    active: themeConfig.id === THEME_IDS.DEFAULT,
-    preview: themeConfig.preview,
-    colors: themeConfig.colors,
-    planetColors: themeConfig.planetColors,
-    counterColor: themeConfig.counterColor,
-    blobColor: themeConfig.blobColor,
-    outlineColor: themeConfig.outlineColor,
-    eyeColor: themeConfig.eyeColor,
-    chatColor: themeConfig.chatColor,
-  }),
-);
+export const initialThemes: Theme[] = [
+  {
+    ...THEME_CONFIG[THEME_IDS.DEFAULT],
+    active: true,
+    preview: false,
+  },
+];
 
 export const initialRoutes: Route[] = [
   {
@@ -544,8 +546,10 @@ export const initialGameState: GameState = {
   version: GAME_STORE_VERSION.LATEST,
 
   taps: 0,
+  lifetimeTotalTaps: 0,
   tapMultiplier: 1,
   lastAutoTapTime: 0,
+  manualTaps: 0,
 
   upgrades: initialTapUpgrades,
   worlds: initialWorlds,
@@ -572,6 +576,7 @@ export const initialGameState: GameState = {
   graphicPreferences: {
     qualityMode: "auto",
     effectsEnabled: true,
+    reducedTapMotion: false,
   },
   audioSelections: {
     worldMusicId: "world-jazz",
@@ -600,7 +605,6 @@ const initialGameFlags: GameFlags = {
 };
 
 const initialGameComputedValues: GameComputed = {
-  manualTaps: 0,
   manualTapsPerSecond: 0,
   tapsPerSecond: 0,
   autoTapRate: 0,
@@ -610,7 +614,9 @@ const initialGameComputedValues: GameComputed = {
 const partializePersisted = (state: GameStore): PersistedGameStore => ({
   version: state.version,
   taps: state.taps,
+  lifetimeTotalTaps: state.lifetimeTotalTaps,
   tapMultiplier: state.tapMultiplier,
+  manualTaps: state.manualTaps,
   lastAutoTapTime: state.lastAutoTapTime,
   upgrades: state.upgrades,
   worlds: state.worlds,
@@ -685,13 +691,14 @@ export const useCoreStore = create<GameStore>()(
         addTaps: (amount: number) => {
           set((state) => ({
             taps: state.taps + amount,
-            manualTaps: state.manualTaps + amount,
+            lifetimeTotalTaps: state.lifetimeTotalTaps + amount,
           }));
         },
 
         addAutoTaps: (amount: number) => {
           set((state) => ({
-            taps: state.taps + amount * state.getTotalTapMultiplier(),
+            taps: state.taps + amount,
+            lifetimeTotalTaps: state.lifetimeTotalTaps + amount,
             lastAutoTapTime: Date.now(),
           }));
         },
@@ -699,6 +706,8 @@ export const useCoreStore = create<GameStore>()(
           set((state) => ({
             taps: state.taps + 1 * state.getTotalTapMultiplier(),
             manualTaps: state.manualTaps + 1,
+            lifetimeTotalTaps:
+              state.lifetimeTotalTaps + 1 * state.getTotalTapMultiplier(),
           }));
         },
 
@@ -734,20 +743,15 @@ export const useCoreStore = create<GameStore>()(
         purchaseUpgrade: (upgradeId: string) => {
           set((state) => {
             const upgrade = state.upgrades.find((u) => u.id === upgradeId);
+            const cost = upgrade ? calculateUpgradeCost(upgrade) : 0;
+
             if (
               !upgrade ||
               upgrade.level >= upgrade.maxLevel ||
-              !state.canAfford(
-                upgrade.baseCost *
-                  Math.pow(upgrade.costMultiplier, upgrade.level),
-              )
+              !state.canAfford(cost)
             ) {
               return state;
             }
-
-            const cost =
-              upgrade.baseCost *
-              Math.pow(upgrade.costMultiplier, upgrade.level);
 
             let updatedUpgrades = state.upgrades.map((u) =>
               u.id === upgradeId ? { ...u, level: u.level + 1 } : u,
@@ -1231,6 +1235,10 @@ export const useCoreStore = create<GameStore>()(
           set({
             ...initialGameState,
             ...initialGameFlags,
+            ...initialGameComputedValues,
+            _cachedTapsPerSecond: undefined,
+            _cachedTapMultiplier: undefined,
+            _lastUpgradeHash: undefined,
           });
         },
 
@@ -1261,6 +1269,15 @@ export const useCoreStore = create<GameStore>()(
             graphicPreferences: {
               ...state.graphicPreferences,
               effectsEnabled: !state.graphicPreferences.effectsEnabled,
+            },
+          }));
+        },
+        toggleReducedTapMotion: () => {
+          set((state) => ({
+            ...state,
+            graphicPreferences: {
+              ...state.graphicPreferences,
+              reducedTapMotion: !state.graphicPreferences.reducedTapMotion,
             },
           }));
         },
@@ -1542,11 +1559,7 @@ export const useCoreStore = create<GameStore>()(
             return state._cachedTapsPerSecond;
           }
 
-          const result = state.upgrades
-            .filter((u) => u.effect.type === "autoTap")
-            .reduce((total, upgrade) => {
-              return total + upgrade.effect.value * upgrade.level;
-            }, 0);
+          const result = calculateAutoTapRate(state.upgrades);
 
           set((s) => ({
             ...s,
@@ -1568,23 +1581,7 @@ export const useCoreStore = create<GameStore>()(
             return state._cachedTapMultiplier;
           }
 
-          const multiplierUpgrades = state.upgrades.filter(
-            (u) => u.effect.type === "tapMultiplier",
-          );
-
-          if (multiplierUpgrades.length === 0) {
-            const result = 1;
-            set((s) => ({
-              ...s,
-              _cachedTapMultiplier: result,
-              _lastUpgradeHash: upgradeHash,
-            }));
-            return result;
-          }
-
-          const result = multiplierUpgrades.reduce((total, upgrade) => {
-            return total * Math.pow(upgrade.effect.value, upgrade.level);
-          }, 1);
+          const result = calculateTapMultiplier(state.upgrades);
 
           set((s) => ({
             ...s,
@@ -1597,36 +1594,18 @@ export const useCoreStore = create<GameStore>()(
 
         getAutoTapRate: () => {
           const state = get();
-          return state.upgrades
-            .filter((u) => u.effect.type === "autoTap")
-            .reduce((total, upgrade) => {
-              return total + upgrade.effect.value * upgrade.level;
-            }, 0);
+          return calculateAutoTapRate(state.upgrades);
         },
 
         // TODO: check where the diff between cached and uncached is -> delete
         getAutoTapRateUncached: () => {
           const state = get();
-          return state.upgrades
-            .filter((u) => u.effect.type === "autoTap")
-            .reduce((total, upgrade) => {
-              return total + upgrade.effect.value * upgrade.level;
-            }, 0);
+          return calculateAutoTapRate(state.upgrades);
         },
 
         getTotalTapMultiplierUncached: () => {
           const state = get();
-          const multiplierUpgrades = state.upgrades.filter(
-            (u) => u.effect.type === "tapMultiplier",
-          );
-
-          if (multiplierUpgrades.length === 0) {
-            return 1;
-          }
-
-          return multiplierUpgrades.reduce((total, upgrade) => {
-            return total * Math.pow(upgrade.effect.value, upgrade.level);
-          }, 1);
+          return calculateTapMultiplier(state.upgrades);
         },
 
         updateComputedValueCache: () => {
@@ -1637,17 +1616,8 @@ export const useCoreStore = create<GameStore>()(
             return;
           }
 
-          const tapsPerSecond = state.upgrades
-            .filter((u) => u.effect.type === "autoTap")
-            .reduce((total, upgrade) => {
-              return total + upgrade.effect.value * upgrade.level;
-            }, 0);
-
-          const tapMultiplier = state.upgrades
-            .filter((u) => u.effect.type === "tapMultiplier")
-            .reduce((total, upgrade) => {
-              return total * Math.pow(upgrade.effect.value, upgrade.level);
-            }, 1);
+          const tapsPerSecond = calculateAutoTapRate(state.upgrades);
+          const tapMultiplier = calculateTapMultiplier(state.upgrades);
 
           set((s) => ({
             ...s,
@@ -1686,21 +1656,20 @@ export const useCoreStore = create<GameStore>()(
         onRehydrateStorage: () => (state?: GameStore) => {
           if (!state) return;
 
-          state.isHydrated = true;
-          state.isReady = false;
+          useCoreStore.setState((current) => ({
+            ...current,
+            isHydrated: true,
+            isReady: false,
+            lifetimeTotalTaps: current.lifetimeTotalTaps ?? current.taps ?? 0,
+            manualTaps: current.manualTaps ?? 0,
+            manualTapsPerSecond: 0,
+            tapsPerSecond: current.getTotalTapsPerSecond(),
+            autoTapRate: current.getAutoTapRate(),
+            tapMultiplier: current.getTotalTapMultiplier(),
+            recentManualTaps: [],
+          }));
 
-          state._cachedTapsPerSecond = state._cachedTapsPerSecond;
-          state._cachedTapMultiplier = state._cachedTapMultiplier;
-          state._lastUpgradeHash = state._lastUpgradeHash;
-
-          state.manualTaps = state.manualTaps;
-          state.manualTapsPerSecond = 0;
-          state.tapsPerSecond = state.getTotalTapsPerSecond();
-          state.autoTapRate = state.getAutoTapRate();
-          state.tapMultiplier = state.getTotalTapMultiplier();
-          state.recentManualTaps = [];
-
-          state.updateComputedValueCache?.();
+          useCoreStore.getState().updateComputedValueCache?.();
 
           const sys = state.soundSystem;
 
