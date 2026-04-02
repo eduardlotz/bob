@@ -37,7 +37,9 @@ export const shouldShowQuestCompletionToast = (
 
   const stackQuests = quests.filter((entry) => entry.stackId === quest.stackId);
 
-  return stackQuests.length > 0 && stackQuests.every((entry) => entry.completed);
+  return (
+    stackQuests.length > 0 && stackQuests.every((entry) => entry.completed)
+  );
 };
 
 const getStackToastPresentation = (stackId: string) => {
@@ -54,7 +56,7 @@ const getStackToastPresentation = (stackId: string) => {
     return {
       color: "#4A8CCF",
       icon: "🧭",
-      fallbackTitle: "About Tour",
+      fallbackTitle: "Talking Stage",
       fallbackDescription: "Explore the interactive objects in the About room.",
     };
   }

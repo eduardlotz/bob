@@ -91,7 +91,7 @@ const SegmentedRoot = styled.div<{
   padding: 4px;
   border-radius: 9999px;
   background: ${({ $theme }) =>
-    $theme === "dark" ? "rgba(255, 255, 255, 0.2)" : "rgba(33, 33, 33, 0.05)"};
+    $theme === "dark" ? "rgba(255, 255, 255, 0.07)" : "rgba(33, 33, 33, 0.07)"};
   position: relative;
 `;
 
@@ -131,9 +131,8 @@ const SegmentedButton = styled.button<{
     $active
       ? "#212121"
       : $theme === "dark"
-        ? "rgba(255, 255, 255, 0.95)"
-        : "rgba(33, 33, 33, 0.72)"};
-  transition: color 0.2s ease;
+        ? "rgba(255, 255, 255, 0.9)"
+        : "rgba(33, 33, 33, 1)"};
 
   ${({ $size }) =>
     $size === "sm"

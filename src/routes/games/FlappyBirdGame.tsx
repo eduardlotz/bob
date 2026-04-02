@@ -20,7 +20,7 @@ import {
 } from "@/3d-objects/FlappyRings";
 import { FlappyClouds } from "@/3d-objects/FlappyClouds";
 import { CharacterBall } from "@/components/CharacterBall";
-import { useQuestActions } from "@/hooks/useQuestSystem";
+import { useQuestStore } from "@/store/core/quests";
 import { playSound } from "@/utils/soundSystem";
 import { BackSide } from "three";
 import { GradientTexture } from "@react-three/drei";
@@ -40,7 +40,10 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
   const resetScore = useMiniGameStore((s) => s.resetScore);
   const score = useMiniGameStore((s) => s.session.score);
   const isMobile = useAppStore((s) => s.isMobile);
-  const { triggerQuest } = useQuestActions();
+  const questStoreHydrated = useQuestStore((state) => state.isHydrated);
+  const syncQuestProgressFromMetric = useQuestStore(
+    (state) => state.syncQuestProgressFromMetric,
+  );
 
   const obstacles = useRef<{ reset: () => void } | null>(null);
   const { gl } = useThree();
@@ -87,8 +90,12 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
 
   const handleScore = useCallback(() => {
     incrementScore();
-    triggerQuest("minigames_flappy_score", 1);
-  }, [incrementScore, triggerQuest]);
+  }, [incrementScore]);
+
+  useEffect(() => {
+    if (!questStoreHydrated) return;
+    syncQuestProgressFromMetric("minigames_flappy_score", score);
+  }, [questStoreHydrated, score, syncQuestProgressFromMetric]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {

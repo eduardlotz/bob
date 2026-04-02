@@ -172,6 +172,32 @@ export namespace MotionVariants {
       },
     }),
   } as const;
+  export const PopIn = {
+    initial: {
+      scale: 0.8,
+      opacity: 0,
+      filter: "blur(4px)",
+      transition: { type: "spring" as const, duration: 0.6, bounce: 0.4 },
+    },
+    exit: {
+      scale: 0.8,
+      opacity: 0,
+      filter: "blur(4px)",
+      transition: {
+        duration: 0.2,
+      },
+    },
+    animate: {
+      scale: 1,
+      opacity: 1,
+      filter: "blur(0px)",
+      transition: {
+        type: "spring" as const,
+        duration: 0.6,
+        bounce: 0.6,
+      },
+    },
+  } as const;
 }
 export namespace Transitions {
   export const quick = {

@@ -285,6 +285,10 @@ const LoadingWrapper = styled(motion.div)`
   svg {
     color: #ffffff !important;
   }
+
+  ${StatusPillButton} {
+    background-color: rgba(255, 255, 255, 0.07);
+  }
 `;
 
 const ProgressContainer = styled.div`

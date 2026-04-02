@@ -1,4 +1,5 @@
 import { initialQuests } from "@/store/config/quests";
+import { questStackDefinitions } from "@/store/config/questStacks";
 import { getLocale } from "@/i18n";
 import { defineMessages } from "@/i18n/defineMessages";
 import type { Locale } from "@/i18n/types";
@@ -182,27 +183,15 @@ export const getQuestCopy = (
   locale: Locale = getLocale(),
 ) => questMessages[locale][questId];
 
-const deStackMessagesFromConfig = initialQuests.reduce<
-  Record<string, QuestCopy & { _order: number }>
->((acc, quest) => {
-  if (!quest.stackId) {
-    return acc;
-  }
-
-  const nextOrder = quest.stackOrder ?? Number.MAX_SAFE_INTEGER;
-  const existing = acc[quest.stackId];
-  if (existing && existing._order <= nextOrder) {
-    return acc;
-  }
-
-  acc[quest.stackId] = {
-    title: quest.stackTitle ?? quest.title,
-    description: quest.stackDescription ?? quest.description,
-    _order: nextOrder,
-  };
-
-  return acc;
-}, {});
+const defaultQuestStackMessages: Record<string, QuestCopy> = Object.fromEntries(
+  Object.entries(questStackDefinitions).map(([stackId, copy]) => [
+    stackId,
+    {
+      title: copy.title,
+      description: copy.description,
+    },
+  ]),
+);
 
 const deStackMessageOverrides: Record<string, QuestCopy> = {
   manual_taps: {
@@ -234,8 +223,8 @@ const deStackMessageOverrides: Record<string, QuestCopy> = {
     description: "Verstärke jeden einzelnen manuellen Tap.",
   },
   about_tour: {
-    title: "About-Tour",
-    description: "Erkunde die interaktiven Objekte im About-Raum.",
+    title: "Kennlernphase",
+    description: "Erkunde die interaktiven Objekte im Über Mich-Raum.",
   },
   route_unlocks: {
     title: "Routen-Explorer",
@@ -248,64 +237,12 @@ const deStackMessageOverrides: Record<string, QuestCopy> = {
 };
 
 const deQuestStackMessages: Record<string, QuestCopy> = {
+  ...defaultQuestStackMessages,
   ...deStackMessageOverrides,
-  ...Object.fromEntries(
-    Object.entries(deStackMessagesFromConfig).map(([stackId, copy]) => [
-      stackId,
-      {
-        title: copy.title,
-        description: copy.description,
-      },
-    ]),
-  ),
-};
-
-const enQuestStackOverrides: Record<string, QuestCopy> = {
-  manual_taps: {
-    title: "Manual Tap Milestones",
-    description: "Build up your own tapping stamina.",
-  },
-  total_taps: {
-    title: "Total Tap Milestones",
-    description: "Reach long-term lifetime tap goals.",
-  },
-  playtime: {
-    title: "Playtime Milestones",
-    description: "Stay in the game to unlock endurance rewards.",
-  },
-  automation_mastery: {
-    title: "Automation Mastery",
-    description: "Push your core Auto Tapper all the way to max.",
-  },
-  upgrade_levels: {
-    title: "Upgrade Mastery",
-    description: "Invest broadly across your full upgrade tree.",
-  },
-  auto_tap_rate: {
-    title: "Automation Output",
-    description: "Keep raising your passive tap production.",
-  },
-  tap_multiplier: {
-    title: "Tap Power",
-    description: "Keep making every manual tap hit harder.",
-  },
-  about_tour: {
-    title: "About Tour",
-    description: "Explore the interactive objects in the About room.",
-  },
-  route_unlocks: {
-    title: "Route Explorer",
-    description: "Unlock new routes to expand your world.",
-  },
-  shop_item_categories: {
-    title: "Shop Collector",
-    description: "Buy one item from Bob, Effects, and Worlds.",
-  },
 };
 
 const enQuestStackMessages: Record<string, QuestCopy> = {
-  ...deQuestStackMessages,
-  ...enQuestStackOverrides,
+  ...defaultQuestStackMessages,
 };
 
 export const questStackMessages = defineMessages({

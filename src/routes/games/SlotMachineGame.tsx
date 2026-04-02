@@ -2,10 +2,11 @@ import { useCallback, useMemo, useRef, type Ref } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
-import { useMiniGameStore } from "@/store";
+import { useCoreStore, useMiniGameStore } from "@/store";
 import { useQuestActions } from "@/hooks/useQuestSystem";
 import { playUISound } from "@/utils/soundSystem";
 import { GradientTexture } from "@react-three/drei";
+import { TapEffects } from "@/3d-objects/ParticleEffects";
 
 const SYMBOLS = [
   "🍒",
@@ -39,6 +40,7 @@ const REEL_PANEL_Z = MACHINE_DEPTH * 0.49;
 const HIGHLIGHT_WIDTH = REEL_SPACING * 2 + 0.9;
 const HIGHLIGHT_HEIGHT = 1.75;
 const HIGHLIGHT_Z = MACHINE_DEPTH * 0.515;
+const SLOT_WIN_TAPS_REWARD = 1_000_000;
 
 type ReelRuntime = {
   rows: number[][];
@@ -369,6 +371,10 @@ const SlotMachineBody = ({
 
 export function SlotMachineGame({ onExit }: { onExit: () => void }) {
   const { incrementScore } = useMiniGameStore();
+  const addTaps = useCoreStore((state) => state.addTaps);
+  const effectsEnabled = useCoreStore(
+    (state) => state.graphicPreferences.effectsEnabled,
+  );
   const { triggerQuest } = useQuestActions();
 
   const reelsRef = useRef<ReelRuntime[]>(
@@ -511,6 +517,7 @@ export function SlotMachineGame({ onExit }: { onExit: () => void }) {
         );
 
         for (let i = 0; i < totalPoints; i += 1) incrementScore();
+        addTaps(SLOT_WIN_TAPS_REWARD);
         triggerQuest("minigames_slot_win", wins.length);
 
         wins.forEach((win) => {
@@ -543,6 +550,7 @@ export function SlotMachineGame({ onExit }: { onExit: () => void }) {
 
   return (
     <group>
+      {effectsEnabled && <TapEffects id="tap_effect_confetti" />}
       <SlotMachineBody
         reels={initialReels}
         onTrigger={triggerSpin}

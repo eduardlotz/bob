@@ -25,6 +25,8 @@ export type QuestGroup = {
   secondaryDescription?: string;
   color: string;
   quests: Quest[];
+  displayQuest: Quest;
+  progressQuest: Quest | null;
   isStack: boolean;
   isHidden: boolean;
   isMilestoneStack: boolean;

@@ -37,8 +37,6 @@ export interface Quest {
   hiddenUntilCompleted?: boolean;
   stackId?: string;
   stackOrder?: number;
-  stackTitle?: string;
-  stackDescription?: string;
 }
 
 export interface QuestStore {

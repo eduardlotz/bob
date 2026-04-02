@@ -264,6 +264,7 @@ interface GameState {
   lifetimeTotalTaps: number;
   tapMultiplier: number;
   lastAutoTapTime: number;
+  manualTaps: number;
 
   upgrades: Upgrade[];
   worlds: WorldItem[];
@@ -309,7 +310,6 @@ interface GameCache {
 }
 
 interface GameComputed {
-  manualTaps: number;
   manualTapsPerSecond: number;
   tapsPerSecond: number;
   autoTapRate: number;
@@ -549,6 +549,7 @@ export const initialGameState: GameState = {
   lifetimeTotalTaps: 0,
   tapMultiplier: 1,
   lastAutoTapTime: 0,
+  manualTaps: 0,
 
   upgrades: initialTapUpgrades,
   worlds: initialWorlds,
@@ -604,7 +605,6 @@ const initialGameFlags: GameFlags = {
 };
 
 const initialGameComputedValues: GameComputed = {
-  manualTaps: 0,
   manualTapsPerSecond: 0,
   tapsPerSecond: 0,
   autoTapRate: 0,
@@ -616,6 +616,7 @@ const partializePersisted = (state: GameStore): PersistedGameStore => ({
   taps: state.taps,
   lifetimeTotalTaps: state.lifetimeTotalTaps,
   tapMultiplier: state.tapMultiplier,
+  manualTaps: state.manualTaps,
   lastAutoTapTime: state.lastAutoTapTime,
   upgrades: state.upgrades,
   worlds: state.worlds,
@@ -697,8 +698,7 @@ export const useCoreStore = create<GameStore>()(
         addAutoTaps: (amount: number) => {
           set((state) => ({
             taps: state.taps + amount,
-            lifetimeTotalTaps:
-              state.lifetimeTotalTaps + amount,
+            lifetimeTotalTaps: state.lifetimeTotalTaps + amount,
             lastAutoTapTime: Date.now(),
           }));
         },
@@ -1656,22 +1656,20 @@ export const useCoreStore = create<GameStore>()(
         onRehydrateStorage: () => (state?: GameStore) => {
           if (!state) return;
 
-          state.isHydrated = true;
-          state.isReady = false;
+          useCoreStore.setState((current) => ({
+            ...current,
+            isHydrated: true,
+            isReady: false,
+            lifetimeTotalTaps: current.lifetimeTotalTaps ?? current.taps ?? 0,
+            manualTaps: current.manualTaps ?? 0,
+            manualTapsPerSecond: 0,
+            tapsPerSecond: current.getTotalTapsPerSecond(),
+            autoTapRate: current.getAutoTapRate(),
+            tapMultiplier: current.getTotalTapMultiplier(),
+            recentManualTaps: [],
+          }));
 
-          state._cachedTapsPerSecond = state._cachedTapsPerSecond;
-          state._cachedTapMultiplier = state._cachedTapMultiplier;
-          state._lastUpgradeHash = state._lastUpgradeHash;
-          state.lifetimeTotalTaps = state.lifetimeTotalTaps ?? state.taps ?? 0;
-
-          state.manualTaps = state.manualTaps;
-          state.manualTapsPerSecond = 0;
-          state.tapsPerSecond = state.getTotalTapsPerSecond();
-          state.autoTapRate = state.getAutoTapRate();
-          state.tapMultiplier = state.getTotalTapMultiplier();
-          state.recentManualTaps = [];
-
-          state.updateComputedValueCache?.();
+          useCoreStore.getState().updateComputedValueCache?.();
 
           const sys = state.soundSystem;
 

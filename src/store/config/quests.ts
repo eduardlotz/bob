@@ -26,8 +26,6 @@ export const initialQuests: Quest[] = [
     showProgress: true,
     stackId: "automation_mastery",
     stackOrder: 1,
-    stackTitle: "Passive Income",
-    stackDescription: "Level up your core automation line.",
   },
   {
     id: "auto_tap_level_50",
@@ -39,7 +37,7 @@ export const initialQuests: Quest[] = [
     maxProgress: 50,
     reward: {
       type: "taps_reward",
-      amount: 20000,
+      amount: 50000,
     },
     completed: false,
     routeId: ROUTE_IDS.HOME,
@@ -52,8 +50,6 @@ export const initialQuests: Quest[] = [
     showProgress: true,
     stackId: "automation_mastery",
     stackOrder: 2,
-    stackTitle: "Automation Mastery",
-    stackDescription: "Level up your core automation line.",
   },
   {
     id: "auto_tap_level_100",
@@ -78,8 +74,6 @@ export const initialQuests: Quest[] = [
     showProgress: true,
     stackId: "automation_mastery",
     stackOrder: 3,
-    stackTitle: "Automation Mastery",
-    stackDescription: "Level up your core automation line.",
   },
   {
     id: "about_quest_2",
@@ -146,8 +140,6 @@ export const initialQuests: Quest[] = [
     showProgress: true,
     stackId: "about_tour",
     stackOrder: 3,
-    stackTitle: "Kennlernphase",
-    stackDescription: "Explore the interactive objects in the About room.",
   },
   {
     id: "about_socials_1",
@@ -171,8 +163,6 @@ export const initialQuests: Quest[] = [
     },
     stackId: "about_tour",
     stackOrder: 2,
-    stackTitle: "About Tour",
-    stackDescription: "Explore the interactive objects in the About room.",
   },
   {
     id: "about_desk_1",
@@ -196,8 +186,6 @@ export const initialQuests: Quest[] = [
     },
     stackId: "about_tour",
     stackOrder: 1,
-    stackTitle: "About Tour",
-    stackDescription: "Explore the interactive objects in the About room.",
   },
   {
     id: "about_box_1",
@@ -221,8 +209,6 @@ export const initialQuests: Quest[] = [
     },
     stackId: "about_tour",
     stackOrder: 4,
-    stackTitle: "About Tour",
-    stackDescription: "Explore the interactive objects in the About room.",
   },
   {
     id: "manual_taps_50",
@@ -243,8 +229,6 @@ export const initialQuests: Quest[] = [
     showProgress: true,
     stackId: "manual_taps",
     stackOrder: 1,
-    stackTitle: "Manual Tap Milestones",
-    stackDescription: "Build up your own tapping stamina.",
   },
   {
     id: "manual_taps_100",
@@ -265,8 +249,6 @@ export const initialQuests: Quest[] = [
     showProgress: true,
     stackId: "manual_taps",
     stackOrder: 2,
-    stackTitle: "Manual Tap Milestones",
-    stackDescription: "Build up your own tapping stamina.",
   },
   {
     id: "manual_taps_1000",
@@ -287,8 +269,6 @@ export const initialQuests: Quest[] = [
     showProgress: true,
     stackId: "manual_taps",
     stackOrder: 3,
-    stackTitle: "Manual Tap Milestones",
-    stackDescription: "Build up your own tapping stamina.",
   },
   {
     id: "total_taps_1000",
@@ -308,8 +288,6 @@ export const initialQuests: Quest[] = [
     showProgress: true,
     stackId: "total_taps",
     stackOrder: 1,
-    stackTitle: "Total Tap Milestones",
-    stackDescription: "Reach long-term lifetime tap goals.",
   },
   {
     id: "total_taps_10000",
@@ -329,8 +307,6 @@ export const initialQuests: Quest[] = [
     showProgress: true,
     stackId: "total_taps",
     stackOrder: 2,
-    stackTitle: "Total Tap Milestones",
-    stackDescription: "Reach long-term lifetime tap goals.",
   },
   {
     id: "total_taps_1000000",
@@ -350,8 +326,6 @@ export const initialQuests: Quest[] = [
     showProgress: true,
     stackId: "total_taps",
     stackOrder: 3,
-    stackTitle: "Total Tap Milestones",
-    stackDescription: "Reach long-term lifetime tap goals.",
   },
   {
     id: "total_taps_1000000000000",
@@ -371,8 +345,6 @@ export const initialQuests: Quest[] = [
     showProgress: true,
     stackId: "total_taps",
     stackOrder: 4,
-    stackTitle: "Total Tap Milestones",
-    stackDescription: "Reach long-term lifetime tap goals.",
   },
   {
     id: "total_taps_1000000000000000",
@@ -392,8 +364,6 @@ export const initialQuests: Quest[] = [
     showProgress: true,
     stackId: "total_taps",
     stackOrder: 5,
-    stackTitle: "Total Tap Milestones",
-    stackDescription: "Reach long-term lifetime tap goals.",
   },
   {
     id: "shop_buy_bob_item_1",
@@ -416,8 +386,6 @@ export const initialQuests: Quest[] = [
     },
     stackId: SHOP_ITEMS_QUEST_STACK_ID,
     stackOrder: 1,
-    stackTitle: "Shop Collector",
-    stackDescription: "Buy one item from each shop category.",
   },
   {
     id: "shop_buy_tap_effect_1",
@@ -440,8 +408,6 @@ export const initialQuests: Quest[] = [
     },
     stackId: SHOP_ITEMS_QUEST_STACK_ID,
     stackOrder: 2,
-    stackTitle: "Shop Collector",
-    stackDescription: "Buy one item from each shop category.",
   },
   {
     id: "shop_buy_world_1",
@@ -464,8 +430,6 @@ export const initialQuests: Quest[] = [
     },
     stackId: SHOP_ITEMS_QUEST_STACK_ID,
     stackOrder: 3,
-    stackTitle: "Shop Collector",
-    stackDescription: "Buy one item from each shop category.",
   },
   {
     id: "routes_purchased_1",
@@ -490,8 +454,6 @@ export const initialQuests: Quest[] = [
     showProgress: true,
     stackId: "route_unlocks",
     stackOrder: 1,
-    stackTitle: "Route Explorer",
-    stackDescription: "Unlock new routes to expand your world.",
   },
   {
     id: "routes_purchased_3",
@@ -516,8 +478,6 @@ export const initialQuests: Quest[] = [
     showProgress: true,
     stackId: "route_unlocks",
     stackOrder: 2,
-    stackTitle: "Route Explorer",
-    stackDescription: "Unlock new routes to expand your world.",
   },
   {
     id: "playtime_60s",
@@ -541,8 +501,6 @@ export const initialQuests: Quest[] = [
     showProgress: true,
     stackId: "playtime",
     stackOrder: 1,
-    stackTitle: "Playtime Milestones",
-    stackDescription: "Stay in the game to unlock endurance rewards.",
   },
   {
     id: "playtime_600s",
@@ -566,8 +524,6 @@ export const initialQuests: Quest[] = [
     showProgress: true,
     stackId: "playtime",
     stackOrder: 2,
-    stackTitle: "Playtime Milestones",
-    stackDescription: "Stay in the game to unlock endurance rewards.",
   },
   {
     id: "playtime_1800s",
@@ -591,8 +547,6 @@ export const initialQuests: Quest[] = [
     showProgress: true,
     stackId: "playtime",
     stackOrder: 3,
-    stackTitle: "Playtime Milestones",
-    stackDescription: "Stay in the game to unlock endurance rewards.",
   },
   {
     id: "upgrade_levels_25",
@@ -617,8 +571,6 @@ export const initialQuests: Quest[] = [
     showProgress: true,
     stackId: "upgrade_levels",
     stackOrder: 1,
-    stackTitle: "Upgrade Mastery",
-    stackDescription: "Keep investing across the whole upgrade tree.",
   },
   {
     id: "upgrade_levels_100",
@@ -643,8 +595,6 @@ export const initialQuests: Quest[] = [
     showProgress: true,
     stackId: "upgrade_levels",
     stackOrder: 2,
-    stackTitle: "Upgrade Mastery",
-    stackDescription: "Keep investing across the whole upgrade tree.",
   },
   {
     id: "upgrade_levels_200",
@@ -669,8 +619,6 @@ export const initialQuests: Quest[] = [
     showProgress: true,
     stackId: "upgrade_levels",
     stackOrder: 3,
-    stackTitle: "Upgrade Mastery",
-    stackDescription: "Keep investing across the whole upgrade tree.",
   },
   {
     id: "auto_tap_rate_100",
@@ -695,8 +643,6 @@ export const initialQuests: Quest[] = [
     showProgress: true,
     stackId: "auto_tap_rate",
     stackOrder: 1,
-    stackTitle: "Automation Output",
-    stackDescription: "Push your passive tap production higher.",
   },
   {
     id: "auto_tap_rate_1000",
@@ -721,8 +667,6 @@ export const initialQuests: Quest[] = [
     showProgress: true,
     stackId: "auto_tap_rate",
     stackOrder: 2,
-    stackTitle: "Automation Output",
-    stackDescription: "Push your passive tap production higher.",
   },
   {
     id: "auto_tap_rate_10000",
@@ -747,8 +691,6 @@ export const initialQuests: Quest[] = [
     showProgress: true,
     stackId: "auto_tap_rate",
     stackOrder: 3,
-    stackTitle: "Automation Output",
-    stackDescription: "Push your passive tap production higher.",
   },
   {
     id: "tap_multiplier_5",
@@ -773,12 +715,10 @@ export const initialQuests: Quest[] = [
     showProgress: true,
     stackId: "tap_multiplier",
     stackOrder: 1,
-    stackTitle: "Tap Power",
-    stackDescription: "Keep making every manual tap hit harder.",
   },
   {
     id: "tap_multiplier_20",
-    title: "Zwanni Tap",
+    title: "Taps mal 20",
     description: "Erreiche 20x Tap-Power",
     icon: "💥",
     color: "#CC6242",
@@ -799,12 +739,10 @@ export const initialQuests: Quest[] = [
     showProgress: true,
     stackId: "tap_multiplier",
     stackOrder: 2,
-    stackTitle: "Tap Power",
-    stackDescription: "Keep making every manual tap hit harder.",
   },
   {
     id: "tap_multiplier_50",
-    title: "Fuffi Tap",
+    title: "50er Zone",
     description: "Erreiche 50x Tap-Power",
     icon: "🚨",
     color: "#BF5538",
@@ -825,8 +763,6 @@ export const initialQuests: Quest[] = [
     showProgress: true,
     stackId: "tap_multiplier",
     stackOrder: 3,
-    stackTitle: "Tap Power",
-    stackDescription: "Keep making every manual tap hit harder.",
   },
   {
     id: "minigames_flappy_points_10",
@@ -860,7 +796,7 @@ export const initialQuests: Quest[] = [
     maxProgress: 1,
     reward: {
       type: "taps_reward",
-      amount: 1000000,
+      amount: 0,
     },
     completed: false,
     routeId: ROUTE_IDS.MINIGAMES,

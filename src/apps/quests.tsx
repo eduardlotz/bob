@@ -172,7 +172,12 @@ export const QuestsApp = () => {
 
   return (
     <HugColumn
-      style={{ width: "100%", maxWidth: "26.25rem", maxHeight: "26.25rem" }}
+      style={{
+        width: "100%",
+        maxWidth: "26.25rem",
+        maxHeight: "26.25rem",
+        borderRadius: "1.75rem",
+      }}
       $gap={"0.25rem"}
     >
       <ScrollArea $direction="vertical">
@@ -182,31 +187,43 @@ export const QuestsApp = () => {
               (quest) => quest.completed,
             ).length;
             const isCompleted = completedCount === group.quests.length;
-            const activeQuest = group.activeQuest;
+            const displayQuest = group.displayQuest;
+            const progressQuest = group.progressQuest;
 
-            const reward = resolveQuestReward(activeQuest, locale);
+            const reward = resolveQuestReward(displayQuest, locale);
             const showProgress =
               !group.isHidden &&
               !isCompleted &&
+              progressQuest !== null &&
               (group.isStack ||
-                activeQuest.showProgress ||
-                activeQuest.maxProgress > 1);
+                progressQuest.showProgress ||
+                progressQuest.maxProgress > 1);
             const rawProgressRatio =
-              activeQuest.maxProgress > 0
-                ? Math.min(activeQuest.progress, activeQuest.maxProgress) /
-                  activeQuest.maxProgress
+              progressQuest && progressQuest.maxProgress > 0
+                ? Math.min(progressQuest.progress, progressQuest.maxProgress) /
+                  progressQuest.maxProgress
                 : 0;
             const progressRatio = Math.max(0, Math.min(1, rawProgressRatio));
-            const progressLabel = formatProgressValue(activeQuest, locale);
+            const progressLabel = progressQuest
+              ? formatProgressValue(progressQuest, locale)
+              : "";
             const showRewardChip =
               !group.isHidden && isCompleted && reward !== null;
             const strikeTitle =
               !group.isMilestoneStack &&
               isCompleted &&
-              activeQuest.progressionKind !== "milestone";
+              displayQuest.progressionKind !== "milestone";
             const strikeDescription = !group.isMilestoneStack && isCompleted;
-
-            const badges = group.isStack ? group.quests : [activeQuest];
+            const badges =
+              group.isMilestoneStack && group.isStack
+                ? completedCount > 0
+                  ? group.quests.filter((quest) => quest.completed)
+                  : group.progressQuest
+                    ? [group.progressQuest]
+                    : [displayQuest]
+                : group.isStack
+                  ? group.quests
+                  : [displayQuest];
 
             return (
               <QuestListItem

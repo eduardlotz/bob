@@ -2,9 +2,9 @@ import { useClickOutside } from "@/hooks/useClickOutside";
 import { usePagination } from "@/hooks/usePagination";
 import { CloseIcon } from "@/icons/close";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/icons/chevron";
-import { HugColumn } from "@/layout";
+import { HugColumn, HugRow } from "@/layout";
 import { Magnetic } from "@/layout/Magnetic";
-import { PaginationButton } from "@/apps/ui";
+import { PaginationButton, PaginationDots } from "@/apps/ui";
 import { useCoreStore, type Upgrade } from "@/store";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -22,12 +22,6 @@ const UPGRADE_LAYOUT_TRANSITION = {
   stiffness: 420,
   damping: 34,
   mass: 0.55,
-};
-
-const formatUpgradeMultiplier = (value: number) => {
-  if (value >= 100) return formatNumber(value);
-  if (value >= 10) return value.toFixed(1);
-  return value.toFixed(2);
 };
 
 const getSafeUpgradeCost = (upgrade: Upgrade) => {
@@ -51,17 +45,6 @@ const getUpgradePerLevelLabel = (upgrade: Upgrade, locale: string) => {
     : `+${roundedPercent}% tap power per level`;
 };
 
-const getUpgradeCurrentPowerLabel = (upgrade: Upgrade, locale: string) => {
-  if (upgrade.effect.type === "autoTap") {
-    return `+${formatNumber(upgrade.effect.value * upgrade.level)}/s`;
-  }
-
-  const currentMultiplier = Math.pow(upgrade.effect.value, upgrade.level);
-  return locale === "de"
-    ? `x${formatUpgradeMultiplier(currentMultiplier)} Tap`
-    : `x${formatUpgradeMultiplier(currentMultiplier)} tap`;
-};
-
 export const TapUpgrades = ({ show }: { show: boolean }) => {
   const {
     upgrades: tapUpgrades,
@@ -70,6 +53,7 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
     taps,
   } = useCoreStore();
   const { locale } = useI18n();
+  const visibleUpgrades = tapUpgrades;
   const purchasableUpgrades = useMemo(
     () => tapUpgrades.filter((upgrade) => upgrade.level < upgrade.maxLevel),
     [tapUpgrades],
@@ -81,9 +65,7 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
       ),
     [canAfford, purchasableUpgrades, taps],
   );
-  const visibleUpgrades = affordableUpgrades;
   const hasAffordableUpgrades = affordableUpgrades.length > 0;
-  const hasAnyPurchasableUpgrades = purchasableUpgrades.length > 0;
   const hasVisiblePagination = visibleUpgrades.length > UPGRADE_PAGE_SIZE;
   const { data, page, pageCount, prev, next, hasNext, hasPrev, goTo } =
     usePagination(visibleUpgrades, UPGRADE_PAGE_SIZE);
@@ -155,7 +137,10 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
                 transition={{ duration: 0.14, ease: "easeOut" }}
               >
                 <UpgradePanel>
-                  <UpgradeContentArea layout transition={UPGRADE_LAYOUT_TRANSITION}>
+                  <UpgradeContentArea
+                    layout
+                    transition={UPGRADE_LAYOUT_TRANSITION}
+                  >
                     <AnimatePresence mode="wait" initial={false}>
                       {data.length > 0 ? (
                         <UpgradeCardGrid
@@ -168,18 +153,28 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
                           transition={UPGRADE_LAYOUT_TRANSITION}
                         >
                           {data.map((upgrade) => {
-                            const upgradeCopy = getUpgradeCopy(upgrade.id, locale);
-                            const priceForNextLevel = getSafeUpgradeCost(upgrade);
-                            const canBuy = canAfford(priceForNextLevel);
-                            const levelLabel = `LVL ${upgrade.level} / ${upgrade.maxLevel}`;
+                            const upgradeCopy = getUpgradeCopy(
+                              upgrade.id,
+                              locale,
+                            );
+                            const priceForNextLevel =
+                              getSafeUpgradeCost(upgrade);
+                            const isMaxed = upgrade.level >= upgrade.maxLevel;
+                            const canBuy =
+                              !isMaxed && canAfford(priceForNextLevel);
+                            const isDisabled = !canBuy;
+                            const levelLabel = isMaxed
+                              ? "MAX"
+                              : `${upgrade.level} / ${upgrade.maxLevel}`;
                             const upgradeSubtitle = getUpgradePerLevelLabel(
                               upgrade,
                               locale,
                             );
-                            const upgradePower = getUpgradeCurrentPowerLabel(
-                              upgrade,
-                              locale,
-                            );
+                            const ctaLabel = isMaxed
+                              ? locale === "de"
+                                ? "Max. Level"
+                                : "Max Level"
+                              : `${formatNumber(priceForNextLevel)} 🫵`;
 
                             return (
                               <UpgradeCardButton
@@ -189,29 +184,43 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
                                 initial={{ opacity: 0, scale: 0.98, y: 6 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.96, y: 6 }}
-                                onClick={() => handleUpgradePurchase(upgrade.id)}
-                                disabled={!canBuy}
+                                onClick={() =>
+                                  handleUpgradePurchase(upgrade.id)
+                                }
+                                disabled={isDisabled}
                                 whileTap={canBuy ? { scale: 0.98 } : undefined}
                                 title={upgradeCopy.name}
                                 data-ui-sound-id="ui-tap"
                               >
                                 <UpgradeCardHead>
                                   <UpgradeTitleGroup>
-                                    <UpgradeName>{upgradeCopy.name}</UpgradeName>
+                                    <UpgradeName>
+                                      {upgradeCopy.name}
+                                    </UpgradeName>
                                     <UpgradePerLevel>
                                       {upgradeSubtitle}
                                     </UpgradePerLevel>
                                   </UpgradeTitleGroup>
 
-                                  <UpgradePowerChip>{upgradePower}</UpgradePowerChip>
+                                  <UpgradeLevelCluster>
+                                    <UpgradeLevelLabel>LVL</UpgradeLevelLabel>
+                                    <UpgradeLevelValue $maxed={isMaxed}>
+                                      {levelLabel}
+                                    </UpgradeLevelValue>
+                                  </UpgradeLevelCluster>
                                 </UpgradeCardHead>
 
-                                <UpgradeCardMeta>
-                                  <UpgradeLevelValue>{levelLabel}</UpgradeLevelValue>
-                                  <UpgradePriceChip $disabled={!canBuy}>
-                                    {formatNumber(priceForNextLevel)} 🫵
-                                  </UpgradePriceChip>
-                                </UpgradeCardMeta>
+                                <UpgradePriceBar
+                                  $state={
+                                    isMaxed
+                                      ? "maxed"
+                                      : canBuy
+                                        ? "enabled"
+                                        : "disabled"
+                                  }
+                                >
+                                  {ctaLabel}
+                                </UpgradePriceBar>
                               </UpgradeCardButton>
                             );
                           })}
@@ -225,13 +234,9 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
                           exit={{ opacity: 0 }}
                           transition={{ duration: 0.16, ease: "easeOut" }}
                         >
-                          {!hasAnyPurchasableUpgrades
-                            ? locale === "de"
-                              ? "Alle Upgrades sind aktuell ausgereizt."
-                              : "All upgrades are currently maxed out."
-                            : locale === "de"
-                              ? "Du kannst dir noch kein Upgrade leisten."
-                              : "You can't afford an upgrade yet."}
+                          {locale === "de"
+                            ? "Keine Upgrades verfuegbar."
+                            : "No upgrades available."}
                         </EmptyUpgradeState>
                       )}
                     </AnimatePresence>
@@ -239,37 +244,21 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
                 </UpgradePanel>
 
                 {hasVisiblePagination && (
-                  <UpgradeStepperWrap
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 6 }}
-                    transition={{ duration: 0.12, ease: "easeOut" }}
-                  >
-                    <UpgradeStepper>
+                  <PaginationDots $contrastMode>
+                    <HugRow $gap={"4px"}>
                       {Array(pageCount)
                         .fill(null)
-                        .map((_, index) => (
-                          <UpgradeStepperDot
-                            key={`tap-upgrades-pagination-dot-${index}`}
-                            type="button"
-                            onClick={() => {
-                              goTo(index);
+                        .map((_, i) => (
+                          <motion.div
+                            key={`tapupgrades_pagination_dot_${i}`}
+                            animate={{
+                              width: page === i ? "20px" : "8px",
+                              opacity: page === i ? 1 : 0.3,
                             }}
-                            $active={page === index}
-                            aria-label={`Go to upgrades page ${index + 1}`}
-                            data-ui-sound-id="ui-tap"
-                          >
-                            <motion.span
-                              animate={{
-                                width: page === index ? "16px" : "6px",
-                                opacity: page === index ? 1 : 0.35,
-                              }}
-                              transition={{ duration: 0.12, ease: "easeOut" }}
-                            />
-                          </UpgradeStepperDot>
+                          />
                         ))}
-                    </UpgradeStepper>
-                  </UpgradeStepperWrap>
+                    </HugRow>
+                  </PaginationDots>
                 )}
               </UpgradeOpenState>
             )}
@@ -418,7 +407,10 @@ const EmptyUpgradeState = styled(motion.div)`
 const UpgradeCardGrid = styled(motion.div)<{ $count: number }>`
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(${({ $count }) => Math.min($count, 3)}, minmax(0, 1fr));
+  grid-template-columns: repeat(
+    ${({ $count }) => Math.min($count, 3)},
+    minmax(0, 1fr)
+  );
   gap: 0.6rem;
   justify-content: center;
   margin: 0 auto;
@@ -426,13 +418,16 @@ const UpgradeCardGrid = styled(motion.div)<{ $count: number }>`
     $count <= 1 ? "18.8rem" : $count === 2 ? "38.2rem" : "100%"};
 
   @media (width <= 860px) {
-    grid-template-columns: repeat(${({ $count }) => Math.min($count, 2)}, minmax(0, 1fr));
+    grid-template-columns: repeat(
+      ${({ $count }) => Math.min($count, 2)},
+      minmax(0, 1fr)
+    );
     max-width: ${({ $count }) => ($count <= 1 ? "18.8rem" : "100%")};
   }
 
   @media (width <= 580px) {
     grid-template-columns: minmax(0, 1fr);
-    max-width: 100%;
+    max-width: calc(100% - 40px);
   }
 `;
 
@@ -440,27 +435,28 @@ const UpgradeCardButton = styled(motion.button)`
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 0.58rem;
+  gap: 0.82rem;
   width: 100%;
-  min-height: 6.05rem;
-  padding: 0.74rem 0.84rem;
+  min-height: 8.35rem;
+  padding: 1rem 0.72rem 0.64rem;
 
-  border-radius: 1.02rem;
+  border-radius: 1.95rem;
   border: none;
-  background: rgba(255, 255, 255, 0.9);
+  background: #f3f2f2;
   box-shadow:
-    0 7px 24px rgba(0, 0, 0, 0.08),
-    0 1px 2px rgba(0, 0, 0, 0.04);
+    0 8px 22px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.48);
 
   color: #212121;
   cursor: pointer;
+  text-align: left;
 
   &:hover:not(:disabled) {
     transform: translateY(-1px);
   }
 
   &:disabled {
-    cursor: not-allowed;
+    cursor: default;
   }
 `;
 
@@ -468,7 +464,7 @@ const UpgradeCardHead = styled.div`
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 0.7rem;
+  gap: 0.9rem;
 `;
 
 const UpgradeTitleGroup = styled.div`
@@ -477,10 +473,11 @@ const UpgradeTitleGroup = styled.div`
   align-items: flex-start;
   gap: 0.12rem;
   min-width: 0;
+  padding: 0.5rem 0 0 1rem;
 `;
 
 const UpgradeName = styled.span`
-  font-size: 1.06rem;
+  font-size: 1.22rem;
   font-weight: 800;
   line-height: 1.12;
   color: #212121;
@@ -490,50 +487,39 @@ const UpgradeName = styled.span`
 const UpgradePerLevel = styled.span`
   display: block;
   width: 100%;
-  font-size: 0.76rem;
+  font-size: 0.8rem;
   line-height: 1.2;
   font-weight: 700;
   color: rgba(33, 33, 33, 0.6);
   text-align: left;
 `;
 
-const UpgradePowerChip = styled.span`
+const UpgradeLevelCluster = styled.div`
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  min-width: 4.25rem;
-  min-height: 1.8rem;
-  padding: 0.3rem 0.68rem;
-  border-radius: 999px;
-  background: #4178f7;
-  color: #ffffff;
-  font-size: 0.84rem;
-  line-height: 1;
-  font-weight: 900;
+  gap: 0.38rem;
   flex-shrink: 0;
 `;
 
-const UpgradeCardMeta = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-top: auto;
+const UpgradeLevelLabel = styled.span`
+  font-size: 0.95rem;
+  line-height: 1;
+  font-weight: 900;
+  color: #212121;
 `;
 
-const UpgradeLevelValue = styled.span`
+const UpgradeLevelValue = styled.span<{ $maxed: boolean }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: 0;
-  max-width: 100%;
-  flex: 1;
-  min-height: 1.74rem;
-  padding: 0.27rem 0.72rem;
+  min-height: 2.05rem;
+  padding: 0.32rem 0.88rem;
   border-radius: 999px;
-  background: rgba(33, 33, 33, 0.08);
+  background: ${({ $maxed }) => ($maxed ? "#68eb9a" : "rgba(0, 0, 0, 0.06)")};
   color: #212121;
-  font-size: 0.8rem;
+  font-size: 0.84rem;
   line-height: 1;
   font-weight: 900;
   white-space: nowrap;
@@ -541,17 +527,22 @@ const UpgradeLevelValue = styled.span`
   text-overflow: ellipsis;
 `;
 
-const UpgradePriceChip = styled.span<{ $disabled: boolean }>`
+const UpgradePriceBar = styled.span<{
+  $state: "enabled" | "disabled" | "maxed";
+}>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 1.74rem;
-  padding: 0.27rem 0.72rem;
-  border-radius: 999px;
-  background: ${({ $disabled }) =>
-    $disabled ? "rgba(33, 33, 33, 0.12)" : "#1d1f24"};
-  color: ${({ $disabled }) => ($disabled ? "rgba(33, 33, 33, 0.5)" : "#fff")};
-  font-size: 0.81rem;
+  width: 100%;
+  min-height: 3.25rem;
+  margin-top: auto;
+  padding: 0.42rem 0.9rem;
+  border-radius: 1.2rem;
+  background: ${({ $state }) =>
+    $state === "enabled" ? "#212121" : "rgba(0, 0, 0, 0.08)"};
+  color: ${({ $state }) =>
+    $state === "enabled" ? "#ffffff" : "rgba(33, 33, 33, 0.48)"};
+  font-size: 0.92rem;
   line-height: 1;
   font-weight: 900;
   white-space: nowrap;

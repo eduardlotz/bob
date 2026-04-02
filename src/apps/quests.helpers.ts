@@ -1,3 +1,4 @@
+import { getQuestStackDefinition } from "@/store/config/questStacks";
 import { formatLocalizedNumber } from "@/i18n/formatters";
 import { formatNumber } from "@/utils/formatNumber";
 import type { Locale } from "@/i18n/types";
@@ -253,20 +254,34 @@ export const toQuestGroups = (
     if (groupKey.startsWith("stack:")) {
       const stackId = groupKey.replace("stack:", "");
       const stackQuests = stackMap.get(stackId) ?? [];
+      const stackDefinition = getQuestStackDefinition(stackId);
       const sorted = [...stackQuests].sort(
         (a, b) => (a.stackOrder ?? 0) - (b.stackOrder ?? 0),
       );
       const lead = sorted[0];
-      const activeQuest =
-        sorted.find((quest) => !quest.completed) ?? sorted[sorted.length - 1];
-      const activeIndex = sorted.findIndex(
-        (quest) => quest.id === activeQuest.id,
-      );
-      const nextQuest = sorted[activeIndex + 1] ?? null;
+      const completedQuests = sorted.filter((quest) => quest.completed);
       const isMilestoneStack = sorted.every(
         (quest) => quest.progressionKind === "milestone",
       );
-      const activeCopy = getQuestCopy(activeQuest.id as QuestMessageId, locale);
+      const upcomingQuest = sorted.find((quest) => !quest.completed) ?? null;
+      const activeQuest = upcomingQuest ?? sorted[sorted.length - 1];
+      const displayQuest =
+        isMilestoneStack && completedQuests.length > 0
+          ? completedQuests[completedQuests.length - 1]
+          : activeQuest;
+      const nextQuest =
+        isMilestoneStack && completedQuests.length > 0
+          ? upcomingQuest
+          : (() => {
+              const activeIndex = sorted.findIndex(
+                (quest) => quest.id === activeQuest.id,
+              );
+              return sorted[activeIndex + 1] ?? null;
+            })();
+      const displayCopy = getQuestCopy(
+        displayQuest.id as QuestMessageId,
+        locale,
+      );
       const nextCopy = nextQuest
         ? getQuestCopy(nextQuest.id as QuestMessageId, locale)
         : null;
@@ -278,11 +293,13 @@ export const toQuestGroups = (
       return {
         id: groupKey,
         title: isMilestoneStack
-          ? activeCopy?.title ?? activeQuest.title
-          : stackCopy?.title ?? lead.stackTitle ?? lead.title,
+          ? displayCopy?.title ?? displayQuest.title
+          : stackCopy?.title ?? stackDefinition?.title ?? lead.title,
         description: isMilestoneStack
-          ? activeCopy?.description ?? activeQuest.description
-          : stackCopy?.description ?? lead.stackDescription ?? lead.description,
+          ? displayCopy?.description ?? displayQuest.description
+          : stackCopy?.description ??
+            stackDefinition?.description ??
+            lead.description,
         secondaryDescription: isMilestoneStack
           ? nextCopy
             ? `${messages.nextMilestone}: ${nextCopy.title}`
@@ -290,6 +307,8 @@ export const toQuestGroups = (
           : undefined,
         color: lead.color,
         quests: sorted,
+        displayQuest,
+        progressQuest: upcomingQuest,
         isStack: true,
         isHidden: false,
         isMilestoneStack,
@@ -313,6 +332,8 @@ export const toQuestGroups = (
       secondaryDescription: undefined,
       color: quest.color,
       quests: [quest],
+      displayQuest: quest,
+      progressQuest: quest.completed ? null : quest,
       isStack: false,
       isHidden,
       isMilestoneStack: false,

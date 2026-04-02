@@ -14,7 +14,7 @@ export function PortfolioScene() {
   const currentView = useViewStore((state) => state.currentView);
 
   const isAllowedToAcces = checkUnlockedRoutes(ROUTE_PATHS.PORTFOLIO);
-  const showHeavyPortfolioLayer = !showOptions && currentView === "portfolio";
+  const showFileOrbit = !showOptions && currentView === "portfolio";
 
   useEffect(() => {
     if (!isAllowedToAcces) {
@@ -25,8 +25,8 @@ export function PortfolioScene() {
 
   return (
     <>
-      <Stars radius={70} depth={100} count={1000} factor={3} speed={0.5} fade />
-      {showHeavyPortfolioLayer && <FileOrbit />}
+      <Stars radius={70} depth={100} count={1000} factor={1} speed={0.5} fade />
+      {showFileOrbit && <FileOrbit />}
       <color attach="background" args={["#0e0e0e"]} />
     </>
   );

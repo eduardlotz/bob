@@ -105,8 +105,10 @@ export const useQuestStore = create<QuestStore>()(
             return quest;
           }
 
-          const nextProgress = Math.min(safeValue, quest.maxProgress);
-          const nextCompleted = nextProgress >= quest.maxProgress;
+          const nextProgress = quest.completed
+            ? quest.maxProgress
+            : Math.min(safeValue, quest.maxProgress);
+          const nextCompleted = quest.completed || nextProgress >= quest.maxProgress;
 
           if (
             !quest.completed &&
@@ -211,7 +213,7 @@ export const useQuestStore = create<QuestStore>()(
         migrateQuestStore(persisted, fromVersion || 0),
       onRehydrateStorage: () => (state?: QuestStore) => {
         if (!state) return;
-        state.isHydrated = true;
+        useQuestStore.setState({ isHydrated: true });
       },
     },
   ),
