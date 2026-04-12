@@ -147,6 +147,7 @@ const SCENE_MESSAGE_STEPS: Partial<Record<string, ScheduledStep[]>> = {
 export function useMessageSystem() {
   const currentRoute = useAppStore((s) => s.currentRoute);
   const isHydrated = useIsHydrated();
+  const isReady = useCoreStore((state) => state.isReady);
   const showMessage = useMessageStore((state) => state.showMessage);
   const locale = useLocaleStore((state) => state.locale);
   const previousLocaleRef = useRef(locale);
@@ -267,11 +268,11 @@ export function useMessageSystem() {
   );
 
   useEffect(() => {
-    if (!currentRoute || !isHydrated) return;
+    if (!currentRoute || !isHydrated || !isReady) return;
     if (currentRoute === lastRouteRef.current) return;
     lastRouteRef.current = currentRoute;
     handleRouteChange(currentRoute);
-  }, [currentRoute, handleRouteChange, isHydrated]);
+  }, [currentRoute, handleRouteChange, isHydrated, isReady]);
 
   useEffect(() => {
     return () => {
@@ -298,7 +299,7 @@ export function useMessageSystem() {
     clearScheduledTimeouts();
     useMessageStore.setState({ activeMessage: null, queue: [] });
 
-    if (!currentRoute) return;
+    if (!currentRoute || !isReady) return;
 
     lastRouteRef.current = currentRoute;
     handleRouteChange(currentRoute);
@@ -307,6 +308,7 @@ export function useMessageSystem() {
     currentRoute,
     handleRouteChange,
     isHydrated,
+    isReady,
     locale,
   ]);
 }
