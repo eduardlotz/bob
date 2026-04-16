@@ -17,13 +17,18 @@ import { useCoreStore } from "@/store";
 import { useI18n } from "@/i18n";
 
 const SOUNDCLOUD_URLS = [
+  "https://soundcloud.com/captainlowie/du-fehlst-immer-noch-slowie-version",
+  "https://soundcloud.com/captainlowie/hassliebe",
+  "https://soundcloud.com/captainlowie/endgegner-phase-1",
   "https://soundcloud.com/captainlowie/ist-das-leben-nicht-schoen",
-  "https://soundcloud.com/captainlowie/hassliebe-fast-version",
+  "https://soundcloud.com/captainlowie/nicht-mehr-und-nicht-weniger",
   "https://soundcloud.com/captainlowie/warum-edit",
   "https://soundcloud.com/captainlowie/du-fehlst-fast-version",
-  "https://soundcloud.com/captainlowie/soundcheck-1",
-  "https://soundcloud.com/captainlowie/milch",
+  "https://soundcloud.com/captainlowie/soundcheck-5",
   "https://soundcloud.com/captainlowie/frechdachs",
+  "https://soundcloud.com/captainlowie/soundcheck-1",
+  "https://soundcloud.com/captainlowie/du-und-ich",
+  "https://soundcloud.com/captainlowie/soundcheck-2",
 ];
 
 const toEmbedUrl = (shareUrl: string) => {
