@@ -3,7 +3,13 @@ import { devtools } from "zustand/middleware";
 import { persist } from "zustand/middleware";
 import { createIndexedDBStorage } from "../indexedDB";
 import { match } from "ts-pattern";
-import { ROUTE_PATHS, ROUTE_IDS, ROUTE_CONFIG } from "../config/routes";
+import {
+  ROUTE_PATHS,
+  ROUTE_IDS,
+  ROUTE_CONFIG,
+  getRouteIdByPath,
+  shouldUnlockRouteFromSearch,
+} from "../config/routes";
 
 import {
   setCurrentTapSound as engineSetCurrentTapSound,
@@ -348,6 +354,7 @@ interface GameStateActions {
   purchaseWorld: (worldId: string) => void;
   purchaseBobItem: (bobItemId: string, forFree?: boolean) => void;
   purchaseRoute: (routeId: string, forFree?: boolean) => void;
+  unlockRouteFromUrl: (routePath: string, search?: string) => void;
   purchaseBlobForm: (blobFormId: string) => void;
   purchaseTapEffect: (effectId: string) => void;
 
@@ -1097,13 +1104,40 @@ export const useCoreStore = create<GameStore>()(
           });
         },
 
+        unlockRouteFromUrl: (routePath: string, search?: string) => {
+          if (!shouldUnlockRouteFromSearch(routePath, search)) return;
+
+          set((state) => {
+            const routeId = getRouteIdByPath(routePath);
+            const route = state.routes.find((r) => r.id === routeId);
+
+            if (
+              !route ||
+              route.isLocked ||
+              (route.purchased && route.unlocked)
+            ) {
+              return state;
+            }
+
+            const updatedRoutes = state.routes.map((r) =>
+              r.id === route.id ? { ...r, purchased: true, unlocked: true } : r,
+            );
+
+            return {
+              ...state,
+              routes: updatedRoutes,
+            };
+          });
+        },
+
         checkUnlockedRoutes: (routePath: string) => {
+          const routeUnlockedFromSearch = shouldUnlockRouteFromSearch(routePath);
           const routes = get().routes;
           return routes.some(
             (route) =>
               route.path === routePath &&
-              route.unlocked &&
-              route.purchased &&
+              (route.unlocked || routeUnlockedFromSearch) &&
+              (route.purchased || routeUnlockedFromSearch) &&
               !route.isLocked,
           );
         },

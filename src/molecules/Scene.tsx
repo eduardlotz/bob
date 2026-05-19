@@ -11,7 +11,14 @@ import { match } from "ts-pattern";
 import { a, useSpring } from "@react-spring/three";
 import { Physics } from "@react-three/rapier";
 import { Perf } from "r3f-perf";
-import { Suspense, useRef, useState, useEffect, useMemo } from "react";
+import {
+  Suspense,
+  useRef,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
 
 import {
   DEFAULT_WORLD_LIGHTING,
@@ -254,9 +261,14 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
   );
   const showHomeShadow = isHome && sceneWorld?.id !== SPACE_WORLD_ID;
 
-  useEffect(() => {
-    setCameraControlsRef(cameraControlsRef);
-  }, []);
+  const handleCameraControlsRef = useCallback(
+    (controls: CameraControls | null) => {
+      if (!controls) return;
+      cameraControlsRef.current = controls;
+      setCameraControlsRef(cameraControlsRef);
+    },
+    [setCameraControlsRef],
+  );
 
   const [spring, api] = useSpring(() => ({
     scale: 1,
@@ -327,7 +339,7 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
           <Fisheye zoom={FISHEYE_CONFIG.MIN} renderPriority={2}>
             <CursorFollowCamera />
             <CameraControls
-              ref={cameraControlsRef}
+              ref={handleCameraControlsRef}
               truckSpeed={debugCameraSettings.truckSpeed}
               azimuthRotateSpeed={debugCameraSettings.azimuthRotateSpeed}
             />

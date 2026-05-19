@@ -46,6 +46,7 @@ const ToastTopLights = () => (
 export default function App() {
   const location = useLocation();
   const { setCurrentRoute } = useAppStore();
+  const unlockRouteFromUrl = useCoreStore((state) => state.unlockRouteFromUrl);
   const {
     currentView,
     isImageFocused,
@@ -77,6 +78,7 @@ export default function App() {
     const nextPath = location.pathname;
     const previousPath = previousPathRef.current;
 
+    unlockRouteFromUrl(nextPath, location.search);
     setCurrentRoute(nextPath);
     syncViewToRoute(nextPath);
 
@@ -94,7 +96,13 @@ export default function App() {
     }
 
     previousPathRef.current = nextPath;
-  }, [location.pathname, setCurrentRoute, syncViewToRoute]);
+  }, [
+    location.pathname,
+    location.search,
+    setCurrentRoute,
+    syncViewToRoute,
+    unlockRouteFromUrl,
+  ]);
 
   useEffect(() => {
     setCurrentRouteInPretty(getRouteLabelByPath(location.pathname, locale));

@@ -39,12 +39,18 @@ export interface Quest {
   stackOrder?: number;
 }
 
-export interface QuestStore {
+export interface QuestState {
   version: number;
   quests: Quest[];
   activeQuests: string[];
-  isHydrated: boolean;
   notifiedCompletionKeys: string[];
+}
+
+export interface QuestFlags {
+  isHydrated: boolean;
+}
+
+export interface QuestStoreActions {
   addQuest: (quest: Quest) => void;
   updateQuestProgress: (questId: string, progress: number) => void;
   completeQuest: (questId: string) => void;
@@ -61,3 +67,5 @@ export interface QuestStore {
   resetAllQuests: () => void;
   unlockAllQuests: () => void;
 }
+
+export type QuestStore = QuestState & QuestFlags & QuestStoreActions;

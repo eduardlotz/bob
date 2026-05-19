@@ -105,8 +105,9 @@ export function ShopApp() {
   }, []);
 
   useEffect(() => {
+    if (!currentItem) return;
     handleItemPreview();
-  }, [activeTab, page]);
+  }, [activeTab, currentItem?.enabled, currentItem?.id, page]);
 
   const handleBobItemClick = () => {
     const bobItem = bobItems.find((b) => b.id === currentItem.id);
@@ -167,6 +168,8 @@ export function ShopApp() {
   };
 
   const handleItemPreview = () => {
+    if (!currentItem) return;
+
     if (currentItem.enabled) {
       resetPreview();
       return;

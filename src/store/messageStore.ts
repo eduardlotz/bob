@@ -90,6 +90,11 @@ export interface MessageStoreState {
   clearError: () => void;
 }
 
+type PersistedMessageState = Pick<
+  MessageStoreState,
+  "repeatFlags" | "preferences" | "archive"
+>;
+
 const DEFAULT_OPTIONS: Required<MessageOptions> = {
   typingSpeedMs: 50,
   baseDismissMs: 1400,
@@ -198,6 +203,27 @@ const initialMessageState = {
   messageHistory: [],
   lastError: null,
   isHydrated: false,
+};
+
+const restorePersistedMessageState = (
+  persistedState: unknown,
+): PersistedMessageState => {
+  const persisted =
+    persistedState && typeof persistedState === "object"
+      ? (persistedState as Partial<MessageStoreState>)
+      : {};
+
+  return {
+    repeatFlags:
+      persisted.repeatFlags && typeof persisted.repeatFlags === "object"
+        ? persisted.repeatFlags
+        : {},
+    preferences:
+      persisted.preferences && typeof persisted.preferences === "object"
+        ? persisted.preferences
+        : {},
+    archive: Array.isArray(persisted.archive) ? persisted.archive : [],
+  };
 };
 
 export const useMessageStore = create<MessageStoreState>()(
@@ -578,25 +604,19 @@ export const useMessageStore = create<MessageStoreState>()(
       {
         name: "message-store",
         version: 0,
-        storage: createIndexedDBStorage<MessageStoreState>(),
-        migrate: (persistedState: any, version: number) => {
-          if (!persistedState) return initialMessageState;
-
-          return {
-            ...persistedState,
-            ...initialMessageState,
-            version: 0,
-          };
-        },
+        storage: createIndexedDBStorage<PersistedMessageState>(),
+        migrate: (persistedState: unknown) =>
+          restorePersistedMessageState(persistedState),
+        merge: (persistedState, currentState) => ({
+          ...currentState,
+          ...restorePersistedMessageState(persistedState),
+        }),
         partialize: (state) =>
           ({
             repeatFlags: state.repeatFlags,
             preferences: state.preferences,
             archive: state.archive,
-          }) as Pick<
-            MessageStoreState,
-            "repeatFlags" | "preferences" | "archive"
-          > as unknown as MessageStoreState,
+          }) satisfies PersistedMessageState,
         onRehydrateStorage: () => (state) => {
           if (state) {
             useMessageStore.setState({ isHydrated: true });

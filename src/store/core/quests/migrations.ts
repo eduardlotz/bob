@@ -20,19 +20,18 @@ const cloneInitialQuests = () => initialQuests.map((quest) => ({ ...quest }));
 
 export const createDefaultQuestState = (): Pick<
   QuestStore,
-  "version" | "quests" | "activeQuests" | "isHydrated" | "notifiedCompletionKeys"
+  "version" | "quests" | "activeQuests" | "notifiedCompletionKeys"
 > => ({
   version: QUESTS_STORE_VERSION.LATEST,
   quests: cloneInitialQuests(),
   activeQuests: [],
-  isHydrated: true,
   notifiedCompletionKeys: [],
 });
 
 const normalizePersistedState = (
-  persisted: any,
+  persisted: unknown,
 ): Pick<QuestStore, "quests" | "activeQuests" | "notifiedCompletionKeys"> => {
-  if (!persisted) {
+  if (!persisted || typeof persisted !== "object") {
     return {
       quests: cloneInitialQuests(),
       activeQuests: [],
@@ -48,25 +47,27 @@ const normalizePersistedState = (
     };
   }
 
+  const state = persisted as Partial<QuestStore>;
+
   return {
-    quests: Array.isArray(persisted.quests)
-      ? (persisted.quests as Quest[])
+    quests: Array.isArray(state.quests)
+      ? (state.quests as Quest[])
       : cloneInitialQuests(),
-    activeQuests: Array.isArray(persisted.activeQuests)
-      ? persisted.activeQuests
+    activeQuests: Array.isArray(state.activeQuests)
+      ? state.activeQuests
       : [],
-    notifiedCompletionKeys: Array.isArray(persisted.notifiedCompletionKeys)
-      ? persisted.notifiedCompletionKeys
+    notifiedCompletionKeys: Array.isArray(state.notifiedCompletionKeys)
+      ? state.notifiedCompletionKeys
       : [],
   };
 };
 
 export const migrateQuestStore = (
-  persisted: any,
+  persisted: unknown,
   fromVersion: number,
 ): Pick<
   QuestStore,
-  "version" | "quests" | "activeQuests" | "isHydrated" | "notifiedCompletionKeys"
+  "version" | "quests" | "activeQuests" | "notifiedCompletionKeys"
 > => {
   const normalizedState = normalizePersistedState(persisted);
 
@@ -88,7 +89,6 @@ export const migrateQuestStore = (
     version: QUESTS_STORE_VERSION.LATEST,
     quests: normalizedState.quests,
     activeQuests,
-    isHydrated: true,
     notifiedCompletionKeys: Array.from(
       new Set([
         ...(normalizedState.notifiedCompletionKeys ?? []),

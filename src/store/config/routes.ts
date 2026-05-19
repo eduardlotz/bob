@@ -14,6 +14,9 @@ export const ROUTE_PATHS = {
 
 type RoutePath = (typeof ROUTE_PATHS)[keyof typeof ROUTE_PATHS];
 
+export const ROUTE_PURCHASE_SEARCH_PARAM = "purchased";
+export const ROUTE_PURCHASE_SEARCH_PARAM_VALUE = "true";
+
 // TODO: check if paths are enough
 export const ROUTE_IDS = {
   HOME: "route_home",
@@ -43,6 +46,29 @@ const normalizeRoutePath = (path: string): string => {
   const withoutTrailingSlash =
     path.length > 1 && path.endsWith("/") ? path.slice(0, -1) : path;
   return withoutTrailingSlash || ROUTE_PATHS.HOME;
+};
+
+export const shouldUnlockRouteFromSearch = (
+  routePath: string,
+  search?: string,
+): boolean => {
+  if (typeof window === "undefined" && search === undefined) return false;
+
+  const currentPath =
+    typeof window === "undefined" ? routePath : window.location.pathname;
+  const normalizedRoutePath = normalizeRoutePath(routePath);
+  const normalizedCurrentPath = normalizeRoutePath(currentPath);
+
+  if (normalizedRoutePath !== normalizedCurrentPath) return false;
+
+  const routeSearch =
+    search ?? (typeof window === "undefined" ? "" : window.location.search);
+  const searchParams = new URLSearchParams(routeSearch);
+
+  return (
+    searchParams.get(ROUTE_PURCHASE_SEARCH_PARAM) ===
+    ROUTE_PURCHASE_SEARCH_PARAM_VALUE
+  );
 };
 
 export const getRouteIdByPath = (path: string): string => {

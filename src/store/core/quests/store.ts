@@ -8,7 +8,7 @@ import {
   createDefaultQuestState,
   migrateQuestStore,
 } from "./migrations";
-import type { Quest, QuestStore } from "./types";
+import type { Quest, QuestState, QuestStore } from "./types";
 import {
   applyQuestReward,
   emitQuestCompletionToastOnce,
@@ -21,6 +21,13 @@ const getResetQuestState = () => ({
   quests: cloneInitialQuests(),
   activeQuests: [],
   notifiedCompletionKeys: [],
+});
+
+const partializeQuestState = (state: QuestStore): QuestState => ({
+  version: QUESTS_STORE_VERSION.LATEST,
+  quests: state.quests,
+  activeQuests: state.activeQuests,
+  notifiedCompletionKeys: state.notifiedCompletionKeys,
 });
 
 export const useQuestStore = create<QuestStore>()(
@@ -202,14 +209,9 @@ export const useQuestStore = create<QuestStore>()(
     {
       name: "quest-store",
       version: QUESTS_STORE_VERSION.LATEST,
-      storage: createIndexedDBStorage<QuestStore>(),
-      partialize: (state) =>
-        ({
-          quests: state.quests,
-          activeQuests: state.activeQuests,
-          notifiedCompletionKeys: state.notifiedCompletionKeys,
-        }) as QuestStore,
-      migrate: (persisted: any, fromVersion: number) =>
+      storage: createIndexedDBStorage<QuestState>(),
+      partialize: partializeQuestState,
+      migrate: (persisted: unknown, fromVersion: number) =>
         migrateQuestStore(persisted, fromVersion || 0),
       onRehydrateStorage: () => (state?: QuestStore) => {
         if (!state) return;

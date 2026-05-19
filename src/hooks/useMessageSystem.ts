@@ -112,7 +112,7 @@ const SCENE_MESSAGE_STEPS: Partial<Record<string, ScheduledStep[]>> = {
       delayMs: 1000,
       visitPolicy: "firstVisitInSession",
       getMessageId: () => "first_tap_hint",
-      requirement: () => useCoreStore.getState().manualTaps >= 5,
+      requirement: () => useCoreStore.getState().manualTaps >= 10,
       requirementTimeoutMs: 1000 * 30,
       requirementCheckIntervalMs: 1200,
       subscribeToRequirement: (onChange) =>

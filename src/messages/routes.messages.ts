@@ -9,7 +9,6 @@ export const routeMessageConfigs = defineMessages<
       id: "about_welcome_v3",
       text: [
         "Hier findest du mehr über Eddie und seine Interessen :)",
-        "Der Raum ist noch nicht ganz fertig, aber es gibt schon einiges zu entdecken",
         "Tap dich einfach durch und lern ein paar (neue) Dinge über die Person hinter Website ✨",
       ],
       label: "Bob",
@@ -26,7 +25,6 @@ export const routeMessageConfigs = defineMessages<
       id: "portfolio_welcome_v3",
       text: [
         "Willkommen im Portfolio-Universum",
-        "Hier kannst du dir Freizeit-Projekte von Eddie anschauen",
         "Tap ein Bild an, um mehr Infos anzuzeigen",
       ],
       label: "Bob",
@@ -43,9 +41,8 @@ export const routeMessageConfigs = defineMessages<
     minigames_welcome: {
       id: "minigames_welcome_v3",
       text: [
-        "ja halloooo, bock was zu zocken??",
+        "Mooooooin, bock was zu zocken??",
         "tap einfach einen gegenstand an, um das Spiel dafür auszuprobieren",
-        "ich merk mir sogar deinen highscore 🧠",
       ],
       label: "Bob",
       repeatRule: "oncePerPersist",
@@ -99,7 +96,6 @@ export const routeMessageConfigs = defineMessages<
       text: [
         "well helloooo, feel like playing something??",
         "just tap an object to try the game for it",
-        "I even remember your highscore 🧠",
       ],
       label: "Bob",
       repeatRule: "oncePerPersist",

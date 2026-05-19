@@ -130,8 +130,8 @@ export const homeMessageConfigs = defineMessages<Record<string, MessageConfig>>(
       first_tap_hint: {
         id: "first_tap_hint",
         text: [
-          "Übrigenski: Solange du hier auf der Homepage bist, kannst du unten immer ein paar Tap Upgrades kaufen",
-          "Der erste Tapper bleibt bezahlbar, aber die grossen Stufen ziehen spaeter richtig an 🤪",
+          "Übrigenski: Auf der der Homepage kannst du unten immer ein paar Tap Upgrades kaufen",
+          "Das erste Upgrade ist sogar fast geschenkt 🤪",
         ],
         label: "Bob",
         options: {
@@ -150,7 +150,7 @@ export const homeMessageConfigs = defineMessages<Record<string, MessageConfig>>(
           "Hey hey, I'm Bob 😗✌️",
           "Welcome to Eddie's personal website!",
           "Things are a bit different here than what you're probably used to, but I'll do my best to keep you informed 🤞",
-          "For starters, tap me a bit 🫵 it's fun, trust me!",
+          "For starters, just tap me 🫵 it's fun, trust me!",
         ],
         label: "Bob",
         options: {
@@ -270,8 +270,8 @@ export const homeMessageConfigs = defineMessages<Record<string, MessageConfig>>(
       first_tap_hint: {
         id: "first_tap_hint",
         text: [
-          "By the way: as long as you're on the homepage, you can always buy a few tap upgrades down below",
-          "The first tapper is still cheap, and the bigger tiers ramp up hard once your run gets going 🤪",
+          "By the wayski: on the homepage you can always buy a few tap upgrades down below",
+          "The first upgrade is almost for free 🤪",
         ],
         label: "Bob",
         options: {

@@ -492,6 +492,7 @@ export const useViewStore = create<ViewStore>()(
             : CameraControlsImpl.ACTION.ROTATE;
           controls.mouseButtons.middle = CameraControlsImpl.ACTION.DOLLY;
           controls.mouseButtons.right = CameraControlsImpl.ACTION.TRUCK;
+          controls.mouseButtons.wheel = CameraControlsImpl.ACTION.DOLLY;
           controls.touches.one = focusedImageTitle
             ? CameraControlsImpl.ACTION.TOUCH_TRUCK
             : CameraControlsImpl.ACTION.TOUCH_ROTATE;
@@ -500,6 +501,7 @@ export const useViewStore = create<ViewStore>()(
           controls.mouseButtons.left = CameraControlsImpl.ACTION.NONE;
           controls.mouseButtons.middle = CameraControlsImpl.ACTION.NONE;
           controls.mouseButtons.right = CameraControlsImpl.ACTION.NONE;
+          controls.mouseButtons.wheel = CameraControlsImpl.ACTION.NONE;
           controls.touches.one = CameraControlsImpl.ACTION.NONE;
           controls.touches.two = CameraControlsImpl.ACTION.NONE;
         }
@@ -546,17 +548,11 @@ export const useViewStore = create<ViewStore>()(
         set({ cameraControlsRef: ref });
         if (!ref?.current) return;
 
-        const pendingView = get().pendingView;
-        if (pendingView) {
-          get().transitionToView(pendingView);
-          set({ pendingView: null });
-          return;
-        }
-
         const route =
           useAppStore.getState().currentRoute || window.location.pathname;
         if (route) {
           get().syncViewToRoute(route);
+          set({ pendingView: null });
         }
       },
       syncViewToRoute: (route) => {
@@ -657,6 +653,10 @@ export const useViewStore = create<ViewStore>()(
               ...resolvedPose.position,
               ...resolvedPose.target,
               true,
+            );
+            applyOrbitSettingsToControls(
+              controls,
+              get().getCurrentViewConfig(),
             );
             setTimeout(() => finishTransition(), 0);
           } else {
