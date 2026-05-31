@@ -160,7 +160,7 @@ export const BobPhone = (props: BobPhoneProps) => {
   });
 
   useEffect(() => {
-    if (currentView.startsWith("phone:")) {
+    if (currentView.startsWith("phone:") && currentView !== "phone:shop") {
       // setIsOpen(true);
       resetPreview();
     }

@@ -334,84 +334,86 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
   return (
     <>
       <FullScreenCanvas>
-        <Suspense fallback={null}>
-          <AudioListenerBinder />
-          <Fisheye zoom={FISHEYE_CONFIG.MIN} renderPriority={2}>
-            <CursorFollowCamera />
-            <CameraControls
-              ref={handleCameraControlsRef}
-              truckSpeed={debugCameraSettings.truckSpeed}
-              azimuthRotateSpeed={debugCameraSettings.azimuthRotateSpeed}
+        <AudioListenerBinder />
+        <Fisheye zoom={FISHEYE_CONFIG.MIN} renderPriority={2}>
+          <CursorFollowCamera />
+          <CameraControls
+            ref={handleCameraControlsRef}
+            truckSpeed={debugCameraSettings.truckSpeed}
+            azimuthRotateSpeed={debugCameraSettings.azimuthRotateSpeed}
+          />
+          <ambientLight
+            intensity={resolvedAmbientIntensity}
+            color={worldLightColors.ambientColor}
+          />
+          <PerspectiveCamera makeDefault position={[0, 0, 3]} />
+          {isHome ? (
+            <HomeDirectionalLight
+              rig={homeSunRig}
+              intensity={resolvedDirectionalIntensity}
+              color={worldLightColors.directionalColor}
             />
-            <ambientLight
-              intensity={resolvedAmbientIntensity}
-              color={worldLightColors.ambientColor}
+          ) : (
+            <directionalLight
+              intensity={ROUTE_LIGHT_INTENSITY}
+              color={worldLightColors.directionalColor}
+              position={rotateLightPosition(
+                ROUTE_LIGHT_POSITION,
+                debugLightSettings.lightAngle,
+              )}
             />
-            <PerspectiveCamera makeDefault position={[0, 0, 3]} />
-            {isHome ? (
-              <HomeDirectionalLight
-                rig={homeSunRig}
-                intensity={resolvedDirectionalIntensity}
-                color={worldLightColors.directionalColor}
-              />
-            ) : (
-              <directionalLight
-                intensity={ROUTE_LIGHT_INTENSITY}
-                color={worldLightColors.directionalColor}
-                position={rotateLightPosition(
-                  ROUTE_LIGHT_POSITION,
-                  debugLightSettings.lightAngle,
-                )}
+          )}
+          <Suspense fallback={null}>
+            {envLightPreset && <Environment preset={envLightPreset} />}
+          </Suspense>
+          {showBackground && <BackgroundPlanet />}
+          {statisticsVisible && <Debug />}
+
+          <Physics gravity={[0, -9.81, 0]} debug={physicsDebugEnabled}>
+            {activeGame === "LOBBY" && (
+              <HeadNavigation
+                cameraControlsRef={cameraControlsRef}
+                permissionGranted={permissionGranted}
               />
             )}
-            {envLightPreset && <Environment preset={envLightPreset} />}
-            {showBackground && <BackgroundPlanet />}
-            {statisticsVisible && <Debug />}
 
-            <Physics gravity={[0, -9.81, 0]} debug={physicsDebugEnabled}>
-              {activeGame === "LOBBY" && (
-                <HeadNavigation
-                  cameraControlsRef={cameraControlsRef}
-                  permissionGranted={permissionGranted}
-                />
-              )}
+            <MessageBubble anchor={[0, 2.4, 0]} />
 
-              <MessageBubble anchor={[0, 2.4, 0]} />
+            <a.group visible={isHome} scale={spring.scale}>
+              <TapCounter />
+              {graphicPreferences.effectsEnabled && <TapEffects />}
+            </a.group>
 
-              <a.group visible={isHome} scale={spring.scale}>
-                <TapCounter />
-                {graphicPreferences.effectsEnabled && <TapEffects />}
-              </a.group>
-
+            <Suspense fallback={null}>
               {isHome && <SceneDecorations />}
+            </Suspense>
 
-              {/* bottom fake shadow */}
-              {showHomeShadow && (
-                <mesh
-                  renderOrder={6}
-                  rotation={[-Math.PI / 2, 0, 0]}
-                  position={[0, FAKE_SHADOW_Y, 0]}
-                >
-                  <circleGeometry args={[0.8, 16, 16]} />
-                  <meshToonMaterial
-                    color="#111820"
-                    transparent
-                    opacity={FAKE_SHADOW_OPACITY}
-                    depthWrite={false}
-                  />
-                </mesh>
-              )}
+            {/* bottom fake shadow */}
+            {showHomeShadow && (
+              <mesh
+                renderOrder={6}
+                rotation={[-Math.PI / 2, 0, 0]}
+                position={[0, FAKE_SHADOW_Y, 0]}
+              >
+                <circleGeometry args={[0.8, 16, 16]} />
+                <meshToonMaterial
+                  color="#111820"
+                  transparent
+                  opacity={FAKE_SHADOW_OPACITY}
+                  depthWrite={false}
+                />
+              </mesh>
+            )}
 
-              <Suspense fallback={null}>
-                {match(currentRoute)
-                  .with(ROUTE_PATHS.ABOUT, () => <AboutScene />)
-                  .with(ROUTE_PATHS.PORTFOLIO, () => <PortfolioScene />)
-                  .with(ROUTE_PATHS.MINIGAMES, () => <MiniGamesScene />)
-                  .otherwise(() => null)}
-              </Suspense>
-            </Physics>
-          </Fisheye>
-        </Suspense>
+            <Suspense fallback={null}>
+              {match(currentRoute)
+                .with(ROUTE_PATHS.ABOUT, () => <AboutScene />)
+                .with(ROUTE_PATHS.PORTFOLIO, () => <PortfolioScene />)
+                .with(ROUTE_PATHS.MINIGAMES, () => <MiniGamesScene />)
+                .otherwise(() => null)}
+            </Suspense>
+          </Physics>
+        </Fisheye>
       </FullScreenCanvas>
     </>
   );

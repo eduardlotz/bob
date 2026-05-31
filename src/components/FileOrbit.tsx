@@ -600,6 +600,53 @@ const PORTFOLIO_OVERLAY_DESKTOP_TOP_INSET = Math.PI;
 const PORTFOLIO_OVERLAY_MOBILE_GAP = 1.5;
 const PORTFOLIO_OVERLAY_DEPTH_TEST_OFFSET = -3.2;
 
+function PortfolioMediaLoader({ visible }: { visible: boolean }) {
+  const groupRef = useRef<THREE.Group>(null);
+
+  useFrame((_, delta) => {
+    if (!groupRef.current) return;
+    groupRef.current.rotation.z += delta * 2.6;
+  });
+
+  if (!visible) return null;
+
+  return (
+    <group ref={groupRef} renderOrder={2}>
+      <mesh scale={[1.6, 1.6, 1]}>
+        {/* @ts-ignore */}
+        <roundedPlaneGeometry args={[1, 1, 0.08, 8]} />
+        <meshBasicMaterial
+          color="#0e0e0e"
+          transparent
+          opacity={0.28}
+          depthWrite={false}
+          toneMapped={false}
+        />
+      </mesh>
+      <mesh>
+        <torusGeometry args={[0.36, 0.035, 8, 48]} />
+        <meshBasicMaterial
+          color="#ffffff"
+          transparent
+          opacity={0.72}
+          depthWrite={false}
+          toneMapped={false}
+        />
+      </mesh>
+      <mesh rotation={[0, 0, Math.PI * 0.22]}>
+        <torusGeometry args={[0.36, 0.038, 8, 12, Math.PI * 1.25]} />
+        <meshBasicMaterial
+          color="#9ad8ff"
+          transparent
+          opacity={0.95}
+          depthWrite={false}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  );
+}
+
 const PortfolioMetaOverlay = ({
   item,
   isActive,
@@ -686,6 +733,7 @@ function VideoPlane({
   const scaleRef = useRef<[number, number]>(DEFAULT_MEDIA_SCALE);
   const initializedRef = useRef(false);
   const readyRef = useRef(false);
+  const [isReady, setIsReady] = useState(false);
   const isPlayingRef = useRef(false);
   const activeMapRef = useRef<"video" | "poster" | null>(null);
   const lastPlayAttemptRef = useRef(0);
@@ -724,6 +772,7 @@ function VideoPlane({
       posterTex.current = pTex;
 
       readyRef.current = true;
+      setIsReady(true);
     };
 
     video.addEventListener("loadeddata", onLoadedData, { once: true });
@@ -745,6 +794,7 @@ function VideoPlane({
       videoTex.current = null;
       posterTex.current = null;
       readyRef.current = false;
+      setIsReady(false);
       initializedRef.current = false;
       isPlayingRef.current = false;
       activeMapRef.current = null;
@@ -831,17 +881,20 @@ function VideoPlane({
   });
 
   return (
-    <mesh ref={meshRef} onClick={onClick}>
-      {/* @ts-ignore */}
-      <roundedPlaneGeometry args={[1, 1, 0.05, 6]} />
-      <meshBasicMaterial
-        ref={matRef}
-        color="#ffffff"
-        transparent
-        opacity={0}
-        toneMapped={false}
-      />
-    </mesh>
+    <>
+      <PortfolioMediaLoader visible={!isReady} />
+      <mesh ref={meshRef} onClick={onClick}>
+        {/* @ts-ignore */}
+        <roundedPlaneGeometry args={[1, 1, 0.05, 6]} />
+        <meshBasicMaterial
+          ref={matRef}
+          color="#ffffff"
+          transparent
+          opacity={0}
+          toneMapped={false}
+        />
+      </mesh>
+    </>
   );
 }
 
@@ -864,20 +917,29 @@ function ImagePlane({
   const matRef = useRef<THREE.MeshBasicMaterial>(null);
   const texRef = useRef<THREE.Texture | null>(null);
   const scaleRef = useRef<[number, number]>(DEFAULT_MEDIA_SCALE);
+  const [isReady, setIsReady] = useState(false);
   const isMobile = useAppStore((state) => state.isMobile);
   const renderConfig = isMobile ? CONFIG.low : CONFIG.high;
 
   useEffect(() => {
+    let disposed = false;
+    setIsReady(false);
+
     if (textureCache.has(url)) {
       const t = textureCache.get(url)!;
       texRef.current = t;
       const scale = getMediaScale(t.image.width, t.image.height);
       scaleRef.current = scale;
       onScaleChange(scale);
+      setIsReady(true);
       return;
     }
 
     new THREE.TextureLoader().load(url, (t) => {
+      if (disposed) {
+        t.dispose();
+        return;
+      }
       compressTexture(t, renderConfig.maxTextureSize);
       t.colorSpace = THREE.SRGBColorSpace;
       t.needsUpdate = true;
@@ -886,7 +948,12 @@ function ImagePlane({
       const scale = getMediaScale(t.image.width, t.image.height);
       scaleRef.current = scale;
       onScaleChange(scale);
+      setIsReady(true);
     });
+
+    return () => {
+      disposed = true;
+    };
   }, [onScaleChange, renderConfig.maxTextureSize, url]);
 
   useFrame((state, delta) => {
@@ -907,7 +974,7 @@ function ImagePlane({
       delta * 20,
     );
 
-    meshRef.current.visible = matRef.current.opacity > 0.01;
+    meshRef.current.visible = !!texRef.current && matRef.current.opacity > 0.01;
 
     if (texRef.current && matRef.current.map !== texRef.current) {
       matRef.current.map = texRef.current;
@@ -917,17 +984,20 @@ function ImagePlane({
   });
 
   return (
-    <mesh ref={meshRef} onClick={onClick}>
-      {/* @ts-ignore */}
-      <roundedPlaneGeometry args={[1, 1, 0.05, 6]} />
-      <meshBasicMaterial
-        ref={matRef}
-        color="#ffffff"
-        transparent
-        opacity={0} // Start at 0, fade in
-        toneMapped={false}
-      />
-    </mesh>
+    <>
+      <PortfolioMediaLoader visible={!isReady} />
+      <mesh ref={meshRef} onClick={onClick}>
+        {/* @ts-ignore */}
+        <roundedPlaneGeometry args={[1, 1, 0.05, 6]} />
+        <meshBasicMaterial
+          ref={matRef}
+          color="#ffffff"
+          transparent
+          opacity={0} // Start at 0, fade in
+          toneMapped={false}
+        />
+      </mesh>
+    </>
   );
 }
 

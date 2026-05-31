@@ -163,21 +163,24 @@ export const MessageBubble = memo(function MessageBubble({
         setIsTyping(false);
         markFullyRevealed();
 
-        const totalChars = allLines
-          .slice(allLines.length - 3, 3)
-          .join("").length;
+        const totalChars = allLines.slice(-3).join("").length;
 
         const readingTime = Math.max(
           MIN_DISMISS_MS,
           totalChars * CHAR_READING_MS,
         );
+        const activeMessage = useMessageStore.getState().activeMessage;
+        const earliestDismissDelay = activeMessage
+          ? Math.max(0, activeMessage.minimumDisplayUntil + 1000 - Date.now())
+          : 0;
+        const dismissDelay = Math.max(readingTime, earliestDismissDelay);
 
         // TODO: don't dismiss if user is hovering
         // don't dismiss if theme preview
         if (messageId !== "chat_theme_preview") {
           dismissTimerRef.current = window.setTimeout(() => {
             dismissMessage();
-          }, readingTime);
+          }, dismissDelay);
         }
         return;
       }

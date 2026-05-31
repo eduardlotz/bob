@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useThree, useFrame, ThreeEvent } from "@react-three/fiber";
 import { RapierRigidBody } from "@react-three/rapier";
 import { Vector3, Vector2, Plane } from "three";
@@ -52,12 +52,10 @@ export const Grabbable = ({
   onDragEnd,
 }: GrabbableProps) => {
   const { camera, size } = useThree();
-  const { cameraControlsRef } = useViewStore();
   const { physicsDebugEnabled: debug } = useCoreStore();
 
-  const controls = cameraControlsRef?.current;
-
   const [isDragging, setIsDragging] = useState(false);
+  const isDraggingRef = useRef(false);
 
   const mouseUV = useRef(new Vector2());
   const prevMouseUV = useRef(new Vector2());
@@ -72,6 +70,21 @@ export const Grabbable = ({
   const debugEnd = useRef(new Vector3());
 
   const dragPlane = useRef(new Plane());
+
+  const restoreCameraControls = () => {
+    const controls = useViewStore.getState().cameraControlsRef?.current;
+    if (controls) controls.enabled = true;
+  };
+
+  useEffect(() => {
+    isDraggingRef.current = isDragging;
+  }, [isDragging]);
+
+  useEffect(() => {
+    return () => {
+      if (isDraggingRef.current) restoreCameraControls();
+    };
+  }, []);
 
   const updateMouseUV = (e: PointerEvent | ThreeEvent<PointerEvent>) => {
     mouseUV.current.set(
@@ -99,6 +112,7 @@ export const Grabbable = ({
     const body = rigidBodyRef.current;
     if (!body) return;
 
+    const controls = useViewStore.getState().cameraControlsRef?.current;
     if (controls) controls.enabled = false;
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
 
@@ -124,6 +138,7 @@ export const Grabbable = ({
     if (mode === "kinematic") body.setBodyType(2, true);
     if (freezeRotation) body.setAngvel({ x: 0, y: 0, z: 0 }, true);
 
+    isDraggingRef.current = true;
     setIsDragging(true);
     onDragStart?.();
   };
@@ -135,11 +150,16 @@ export const Grabbable = ({
   };
 
   const handlePointerUp = (e: ThreeEvent<PointerEvent>) => {
-    if (!isDragging) return;
-    const body = rigidBodyRef.current;
-    if (!body) return;
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    restoreCameraControls();
 
-    if (controls) controls.enabled = true;
+    const body = rigidBodyRef.current;
+    if (!body) {
+      setIsDragging(false);
+      onDragEnd?.();
+      return;
+    }
 
     let throwVel = new Vector3();
 
@@ -172,7 +192,9 @@ export const Grabbable = ({
       true,
     );
 
-    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    try {
+      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {}
     setIsDragging(false);
     onDragEnd?.();
   };
@@ -240,6 +262,9 @@ export const Grabbable = ({
         onPointerDown: handlePointerDown,
         onPointerMove: handlePointerMove,
         onPointerUp: handlePointerUp,
+        onPointerCancel: handlePointerUp,
+        onLostPointerCapture: handlePointerUp,
+        onClick: (e: ThreeEvent<MouseEvent>) => e.stopPropagation(),
       })}
     </>
   );
