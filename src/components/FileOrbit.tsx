@@ -26,10 +26,12 @@ function resolveCullConfig({
   isMobile,
   viewMode,
   isFocusedItem,
+  isSuspended,
 }: {
   isMobile: boolean;
   viewMode: ViewCullMode;
   isFocusedItem: boolean;
+  isSuspended: boolean;
 }): CullConfig {
   const base = isMobile ? CONFIG.low : CONFIG.high;
 
@@ -38,6 +40,14 @@ function resolveCullConfig({
       cullingDistance: base.cullingDistance,
       fadeStart: base.cullingDistance,
       videoPlayDistance: base.videoPlayDistance * 100,
+    };
+  }
+
+  if (isSuspended) {
+    return {
+      cullingDistance: base.cullingDistance * 2,
+      fadeStart: base.cullingDistance,
+      videoPlayDistance: 0,
     };
   }
 
@@ -595,10 +605,35 @@ function getMediaScale(width: number, height: number): [number, number] {
 }
 
 const DEFAULT_MEDIA_SCALE: [number, number] = [8, 8];
+const BACKGROUND_ORBIT_OPACITY = 0.18;
+const ACTIVE_ORBIT_FADE_SPEED = 20;
+const BACKGROUND_ORBIT_FADE_SPEED = 5;
 const PORTFOLIO_OVERLAY_SIDE_GAP = Math.PI / 2;
 const PORTFOLIO_OVERLAY_DESKTOP_TOP_INSET = Math.PI;
 const PORTFOLIO_OVERLAY_MOBILE_GAP = 1.5;
 const PORTFOLIO_OVERLAY_DEPTH_TEST_OFFSET = -3.2;
+
+function getMediaOpacity({
+  distance,
+  cull,
+  isSuspended,
+}: {
+  distance: number;
+  cull: CullConfig;
+  isSuspended: boolean;
+}) {
+  let opacity = 1;
+
+  if (distance > cull.cullingDistance) {
+    opacity = 0;
+  } else if (distance > cull.fadeStart) {
+    const fadeRange = Math.max(0.001, cull.cullingDistance - cull.fadeStart);
+    opacity = 1 - (distance - cull.fadeStart) / fadeRange;
+  }
+
+  opacity = Math.max(0, Math.min(1, opacity));
+  return isSuspended ? opacity * BACKGROUND_ORBIT_OPACITY : opacity;
+}
 
 function PortfolioMediaLoader({ visible }: { visible: boolean }) {
   const groupRef = useRef<THREE.Group>(null);
@@ -714,12 +749,14 @@ function VideoPlane({
   url,
   distanceRef,
   cull,
+  isSuspended,
   onClick,
   onScaleChange,
 }: {
   url: string;
   distanceRef: React.MutableRefObject<number>;
   cull: CullConfig;
+  isSuspended: boolean;
   onClick: (e: ThreeEvent<MouseEvent>) => void;
   onScaleChange: (scale: [number, number]) => void;
 }) {
@@ -734,6 +771,7 @@ function VideoPlane({
   const initializedRef = useRef(false);
   const readyRef = useRef(false);
   const [isReady, setIsReady] = useState(false);
+  const [hasStartedLoading, setHasStartedLoading] = useState(false);
   const isPlayingRef = useRef(false);
   const activeMapRef = useRef<"video" | "poster" | null>(null);
   const lastPlayAttemptRef = useRef(0);
@@ -741,6 +779,7 @@ function VideoPlane({
   const initializeVideo = () => {
     if (initializedRef.current) return;
     initializedRef.current = true;
+    setHasStartedLoading(true);
 
     const video = document.createElement("video");
     video.src = url;
@@ -780,8 +819,6 @@ function VideoPlane({
   };
 
   useEffect(() => {
-    initializeVideo();
-
     return () => {
       if (videoRef.current) {
         videoRef.current.pause();
@@ -795,6 +832,7 @@ function VideoPlane({
       posterTex.current = null;
       readyRef.current = false;
       setIsReady(false);
+      setHasStartedLoading(false);
       initializedRef.current = false;
       isPlayingRef.current = false;
       activeMapRef.current = null;
@@ -806,20 +844,21 @@ function VideoPlane({
 
     const d = distanceRef.current;
 
-    let targetOpacity = 1;
-    if (d > cull.cullingDistance) {
-      targetOpacity = 0;
-    } else if (d > cull.fadeStart) {
-      targetOpacity =
-        1 - (d - cull.fadeStart) / (cull.cullingDistance - cull.fadeStart);
+    if (!initializedRef.current && !isSuspended && d < cull.cullingDistance) {
+      initializeVideo();
     }
 
-    targetOpacity = Math.max(0, Math.min(1, targetOpacity));
+    const targetOpacity = getMediaOpacity({
+      distance: d,
+      cull,
+      isSuspended,
+    });
 
     matRef.current.opacity = THREE.MathUtils.lerp(
       matRef.current.opacity,
       targetOpacity,
-      delta * 20,
+      delta *
+        (isSuspended ? BACKGROUND_ORBIT_FADE_SPEED : ACTIVE_ORBIT_FADE_SPEED),
     );
 
     meshRef.current.visible = matRef.current.opacity > 0.01;
@@ -830,7 +869,7 @@ function VideoPlane({
     }
 
     const shouldPlayVideo =
-      d < cull.videoPlayDistance && meshRef.current.visible;
+      !isSuspended && d < cull.videoPlayDistance && meshRef.current.visible;
 
     if (shouldPlayVideo) {
       if (!videoTex.current && videoRef.current) {
@@ -882,7 +921,9 @@ function VideoPlane({
 
   return (
     <>
-      <PortfolioMediaLoader visible={!isReady} />
+      <PortfolioMediaLoader
+        visible={hasStartedLoading && !isReady && !isSuspended}
+      />
       <mesh ref={meshRef} onClick={onClick}>
         {/* @ts-ignore */}
         <roundedPlaneGeometry args={[1, 1, 0.05, 6]} />
@@ -904,12 +945,14 @@ function ImagePlane({
   url,
   distanceRef,
   cull,
+  isSuspended,
   onClick,
   onScaleChange,
 }: {
   url: string;
   distanceRef: React.MutableRefObject<number>;
   cull: CullConfig;
+  isSuspended: boolean;
   onClick: (e: ThreeEvent<MouseEvent>) => void;
   onScaleChange: (scale: [number, number]) => void;
 }) {
@@ -961,17 +1004,17 @@ function ImagePlane({
 
     const d = distanceRef.current;
 
-    let targetOpacity = 1;
-    if (d > cull.fadeStart) {
-      targetOpacity =
-        1 - (d - cull.fadeStart) / (cull.cullingDistance - cull.fadeStart);
-    }
-    targetOpacity = Math.max(0, Math.min(1, targetOpacity));
+    const targetOpacity = getMediaOpacity({
+      distance: d,
+      cull,
+      isSuspended,
+    });
 
     matRef.current.opacity = THREE.MathUtils.lerp(
       matRef.current.opacity,
       targetOpacity,
-      delta * 20,
+      delta *
+        (isSuspended ? BACKGROUND_ORBIT_FADE_SPEED : ACTIVE_ORBIT_FADE_SPEED),
     );
 
     meshRef.current.visible = !!texRef.current && matRef.current.opacity > 0.01;
@@ -985,7 +1028,7 @@ function ImagePlane({
 
   return (
     <>
-      <PortfolioMediaLoader visible={!isReady} />
+      <PortfolioMediaLoader visible={!isReady && !isSuspended} />
       <mesh ref={meshRef} onClick={onClick}>
         {/* @ts-ignore */}
         <roundedPlaneGeometry args={[1, 1, 0.05, 6]} />
@@ -1004,10 +1047,12 @@ function ImagePlane({
 function MediaItem({
   item,
   position,
+  isSuspended,
 }: {
   item: PortfolioItem;
   position: THREE.Vector3;
   index: number;
+  isSuspended: boolean;
 }) {
   const { url, title, type } = item;
   const { camera } = useThree();
@@ -1035,6 +1080,7 @@ function MediaItem({
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
+    if (isSuspended) return;
     if (distanceRef.current > cull.cullingDistance) return;
 
     if (focusedImageTitle !== title) {
@@ -1082,12 +1128,14 @@ function MediaItem({
     isMobile,
     viewMode,
     isFocusedItem: isFocused,
+    isSuspended,
   });
 
   return (
     <Billboard
       position={position}
       onPointerEnter={(e) => {
+        if (isSuspended) return;
         if (distanceRef.current > cull.cullingDistance) return;
 
         e.stopPropagation();
@@ -1100,6 +1148,7 @@ function MediaItem({
         setPointerDown(false);
       }}
       onPointerDown={(e) => {
+        if (isSuspended) return;
         setPointerDown(true);
       }}
       onPointerUp={() => setPointerDown(false)}
@@ -1110,6 +1159,7 @@ function MediaItem({
           onClick={handleClick}
           distanceRef={distanceRef}
           cull={cull}
+          isSuspended={isSuspended}
           onScaleChange={setMediaScale}
         />
       ) : (
@@ -1118,6 +1168,7 @@ function MediaItem({
           onClick={handleClick}
           distanceRef={distanceRef}
           cull={cull}
+          isSuspended={isSuspended}
           onScaleChange={setMediaScale}
         />
       )}
@@ -1192,7 +1243,13 @@ export function getSphericalAngles({
   }
 }
 
-export function FileOrbit({ radius = 60 }: { radius?: number }) {
+export function FileOrbit({
+  radius = 60,
+  isSuspended = false,
+}: {
+  radius?: number;
+  isSuspended?: boolean;
+}) {
   const { selectedOrbitForm: orbitForm } = useCoreStore();
 
   // const effectiveRadius = isMobile ? radius * 0.8 : radius;
@@ -1229,6 +1286,7 @@ export function FileOrbit({ radius = 60 }: { radius?: number }) {
           position={pos}
           item={ITEMS[i]}
           index={i}
+          isSuspended={isSuspended}
         />
       ))}
     </group>
