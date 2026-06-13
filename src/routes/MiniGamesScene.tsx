@@ -10,14 +10,20 @@ import {
 import type { MiniGameType } from "@/store/minigames";
 import { GradientTexture, Grid } from "@react-three/drei";
 import { CuboidCollider } from "@react-three/rapier";
-import { type ComponentType, type ReactNode, useCallback, useEffect } from "react";
+import {
+  type ComponentType,
+  type ReactNode,
+  useCallback,
+  useEffect,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import { BackSide } from "three";
 
 import { PingPongPaddle } from "@/3d-objects/models/pingPongPaddle";
 import { PointsCounter } from "@/molecules/PointsCounter";
 import { stopAllWorldSounds } from "@/utils/soundSystem";
-import { FlappyBirdArcade, FlappyBirdGame } from "./games/FlappyBirdGame";
+import { FlappyBirdGame, FlappyBirdRingPreview } from "./games/FlappyBirdGame";
+import { MiniGameThrone } from "./games/MiniGameThrone";
 import {
   MiniGameItem,
   type SupportedMiniGameType,
@@ -28,17 +34,19 @@ import { useI18n } from "@/i18n";
 import { miniGamesSceneMessages } from "./MiniGamesScene.messages";
 
 const DEFAULT_MINIGAMES_VIEW = "default";
+const getMiniGameThroneY = () => FLOOR_Y_POSITION + 0.18;
 
 // TODO: refactor minigames view to be included as static view configs like slotmachine
 type MiniGamesView = typeof DEFAULT_MINIGAMES_VIEW | "minigames:slot_machine";
 type MiniGameComponent = ComponentType<{ onExit: () => void }>;
 
 interface MiniGameDefinition {
-  label: string;
   cameraView: MiniGamesView;
-  shouldPlayMusic: boolean;
   GameComponent: MiniGameComponent;
-  renderLobbyItem: () => ReactNode;
+  renderLobbyItem: (
+    label: string,
+    onSelect: (game: SupportedMiniGameType) => void,
+  ) => ReactNode;
 }
 
 const MINI_GAME_ORDER: SupportedMiniGameType[] = [
@@ -50,35 +58,42 @@ const MINI_GAME_ORDER: SupportedMiniGameType[] = [
 const MINI_GAME_DEFINITIONS: Record<SupportedMiniGameType, MiniGameDefinition> =
   {
     SLOT_MACHINE: {
-      label: "Slot Machine",
       cameraView: "minigames:slot_machine",
-      shouldPlayMusic: false,
       GameComponent: SlotMachineGame,
-      renderLobbyItem: () => (
-        <SlotMachineArcade position={[0, 0, -2]} scale={[1, 1, 1]} />
+      renderLobbyItem: (label, onSelect) => (
+        <MiniGameItem game="SLOT_MACHINE" label={label} onSelect={onSelect}>
+          <SlotMachineArcade position={[0, 0, -2]} scale={[1, 1, 1]} />
+        </MiniGameItem>
       ),
     },
     PING_PONG: {
-      label: "Ping Pong",
       cameraView: DEFAULT_MINIGAMES_VIEW,
-      shouldPlayMusic: true,
       GameComponent: PingPongGame,
-      renderLobbyItem: () => (
-        <PingPongPaddle
-          rotation={[0, 0, 0]}
-          position={[-2, 3, 0]}
-          scale={[0.7, 0.7, 0.7]}
-          enablePhysics
-        />
+      renderLobbyItem: (label, onSelect) => (
+        <MiniGameThrone
+          label={label}
+          onClick={() => onSelect("PING_PONG")}
+          position={[-2, getMiniGameThroneY(), 0]}
+          objectOffset={[0, 2.22, 0]}
+          objectScale={0.58}
+        >
+          <PingPongPaddle rotation={[0.4, 0, -0.2]} />
+        </MiniGameThrone>
       ),
     },
     FLAPPY_BIRD: {
-      label: "Flappy Bird",
       cameraView: DEFAULT_MINIGAMES_VIEW,
-      shouldPlayMusic: true,
       GameComponent: FlappyBirdGame,
-      renderLobbyItem: () => (
-        <FlappyBirdArcade position={[1, 3, 0]} scale={[0.5, 0.5, 0.5]} />
+      renderLobbyItem: (label, onSelect) => (
+        <MiniGameThrone
+          label={label}
+          onClick={() => onSelect("FLAPPY_BIRD")}
+          position={[2, getMiniGameThroneY(), 0]}
+          objectOffset={[0, 3, 0]}
+          objectScale={0.46}
+        >
+          <FlappyBirdRingPreview />
+        </MiniGameThrone>
       ),
     },
   };
@@ -103,14 +118,12 @@ function MiniGamesLobby({
         const definition = MINI_GAME_DEFINITIONS[game];
 
         return (
-          <MiniGameItem
-            key={game}
-            game={game}
-            label={miniGamesSceneMessages[locale][game].label}
-            onSelect={onSelect}
-          >
-            {definition.renderLobbyItem()}
-          </MiniGameItem>
+          <group key={game}>
+            {definition.renderLobbyItem(
+              miniGamesSceneMessages[locale][game].label,
+              onSelect,
+            )}
+          </group>
         );
       })}
 

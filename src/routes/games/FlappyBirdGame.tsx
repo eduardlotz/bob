@@ -195,6 +195,30 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
   );
 }
 
+export function FlappyBirdRingPreview(props: JSX.IntrinsicElements["group"]) {
+  const arcadeTube = (RING_TUBE_MIN + RING_TUBE_MAX) * 0.5;
+  const arcadeHole = (RING_HOLE_RADIUS_MIN + RING_HOLE_RADIUS_MAX) * 0.5;
+  const arcadeRadius = arcadeHole + arcadeTube;
+
+  return (
+    <group {...props}>
+      <mesh
+        rotation={[0, Math.PI / 2, 0]}
+        scale={[
+          ARCADE_VISUAL_SCALE,
+          ARCADE_VISUAL_SCALE,
+          ARCADE_VISUAL_SCALE,
+        ]}
+        castShadow
+        receiveShadow
+      >
+        <torusGeometry args={[arcadeRadius, arcadeTube, 10, 32]} />
+        <meshToonMaterial color="#ffcc00" />
+      </mesh>
+    </group>
+  );
+}
+
 export function FlappyBirdArcade({ position = [0, 5, 0], ...props }: any) {
   const arcadeTube = (RING_TUBE_MIN + RING_TUBE_MAX) * 0.5;
   const arcadeHole = (RING_HOLE_RADIUS_MIN + RING_HOLE_RADIUS_MAX) * 0.5;
