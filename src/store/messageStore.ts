@@ -36,6 +36,7 @@ export interface QueueItem {
   readonly priority: number;
   readonly queuedAt: number;
   readonly retryCount?: number;
+  readonly overrides?: Partial<MessageOptions>;
 }
 
 export interface MessageStoreState {
@@ -266,9 +267,10 @@ export const useMessageStore = create<MessageStoreState>()(
             if (current && !current.error) {
               const newItem: QueueItem = {
                 id,
-                priority: cfg.options?.priority || 0,
+                priority: mergedOptions.priority,
                 queuedAt: Date.now(),
                 retryCount: 0,
+                overrides,
               };
 
               set({
@@ -300,9 +302,6 @@ export const useMessageStore = create<MessageStoreState>()(
                 lastError: null,
               });
 
-              if (cfg.repeatRule === "oncePerPersist") {
-                set({ repeatFlags: { ...state.repeatFlags, [cfg.id]: true } });
-              }
             }
 
             return true;
@@ -331,30 +330,35 @@ export const useMessageStore = create<MessageStoreState>()(
               return false;
             }
 
-            const nextItem = state.queue[0];
-            if (!nextItem) {
+            const remainingQueue = [...state.queue];
+            let cfg: MessageConfig | undefined;
+            let queuedOverrides: Partial<MessageOptions> | undefined;
+            while (remainingQueue.length > 0) {
+              const nextItem = remainingQueue.shift()!;
+              const candidate = getMessageById(nextItem.id);
+              if (validateMessageConfig(candidate)) {
+                cfg = candidate;
+                queuedOverrides = nextItem.overrides;
+                break;
+              }
+              console.warn(
+                `[messageStore] Invalid queued message: ${nextItem.id}`,
+              );
+            }
+
+            if (!cfg) {
               set({
                 activeMessage: null,
+                queue: [],
                 lastError: null,
               });
               return true;
             }
 
-            const cfg = getMessageById(nextItem.id);
-            if (!validateMessageConfig(cfg)) {
-              console.warn(
-                `[messageStore] Invalid queued message: ${nextItem.id}`,
-              );
-              set({
-                queue: state.queue.slice(1),
-                lastError: `Invalid queued message: ${nextItem.id}`,
-              });
-              return false;
-            }
-
             const mergedOptions: Required<MessageOptions> = {
               ...DEFAULT_OPTIONS,
               ...(cfg.options || {}),
+              ...(queuedOverrides || {}),
             } as Required<MessageOptions>;
 
             const minimumDisplayUntil =
@@ -373,12 +377,8 @@ export const useMessageStore = create<MessageStoreState>()(
                 userHasInteracted: false,
                 isAnimating: false,
               },
-              queue: state.queue.slice(1),
+              queue: remainingQueue,
               seenThisSession: { ...state.seenThisSession, [cfg.id]: true },
-              repeatFlags:
-                cfg.repeatRule === "oncePerPersist"
-                  ? { ...state.repeatFlags, [cfg.id]: true }
-                  : state.repeatFlags,
               messageHistory: [...state.messageHistory.slice(-49), cfg.id],
               lastError: null,
             });
@@ -479,6 +479,13 @@ export const useMessageStore = create<MessageStoreState>()(
                 ...state.activeMessage,
                 hasBeenFullyRevealed: true,
               },
+              repeatFlags:
+                state.activeMessage.config.repeatRule === "oncePerPersist"
+                  ? {
+                      ...state.repeatFlags,
+                      [state.activeMessage.config.id]: true,
+                    }
+                  : state.repeatFlags,
               lastError: null,
             });
 
@@ -562,12 +569,7 @@ export const useMessageStore = create<MessageStoreState>()(
         ): Promise<boolean[]> => {
           const results: boolean[] = [];
           for (const id of ids) {
-            setTimeout(
-              async () => {
-                results.push(await get().showMessage(id, overrides));
-              },
-              overrides?.baseDismissMs ? overrides?.baseDismissMs : 10,
-            );
+            results.push(await get().showMessage(id, overrides));
           }
           return results;
         },

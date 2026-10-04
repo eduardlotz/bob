@@ -488,42 +488,42 @@ export const initialRoutes: Route[] = [
     isLocked: ROUTE_CONFIG[ROUTE_PATHS.PORTFOLIO].isLocked,
     category: "pages",
   },
-  {
-    id: ROUTE_IDS.TECHNICAL,
-    name: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].name,
-    description: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].description,
-    cost: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].cost,
-    purchased: false,
-    unlocked: false,
-    path: ROUTE_PATHS.TECHNICAL,
-    icon: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].icon,
-    isLocked: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].isLocked,
-    category: "pages",
-  },
-  {
-    id: ROUTE_IDS.CREATIVE,
-    name: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].name,
-    description: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].description,
-    cost: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].cost,
-    purchased: false,
-    unlocked: false,
-    path: ROUTE_PATHS.CREATIVE,
-    icon: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].icon,
-    isLocked: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].isLocked,
-    category: "pages",
-  },
-  {
-    id: ROUTE_IDS.GUESTBOOK,
-    name: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].name,
-    description: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].description,
-    cost: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].cost,
-    purchased: false,
-    unlocked: false,
-    path: ROUTE_PATHS.GUESTBOOK,
-    icon: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].icon,
-    isLocked: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].isLocked,
-    category: "pages",
-  },
+  // {
+  //   id: ROUTE_IDS.TECHNICAL,
+  //   name: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].name,
+  //   description: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].description,
+  //   cost: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].cost,
+  //   purchased: false,
+  //   unlocked: false,
+  //   path: ROUTE_PATHS.TECHNICAL,
+  //   icon: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].icon,
+  //   isLocked: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].isLocked,
+  //   category: "pages",
+  // },
+  // {
+  //   id: ROUTE_IDS.CREATIVE,
+  //   name: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].name,
+  //   description: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].description,
+  //   cost: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].cost,
+  //   purchased: false,
+  //   unlocked: false,
+  //   path: ROUTE_PATHS.CREATIVE,
+  //   icon: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].icon,
+  //   isLocked: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].isLocked,
+  //   category: "pages",
+  // },
+  // {
+  //   id: ROUTE_IDS.GUESTBOOK,
+  //   name: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].name,
+  //   description: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].description,
+  //   cost: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].cost,
+  //   purchased: false,
+  //   unlocked: false,
+  //   path: ROUTE_PATHS.GUESTBOOK,
+  //   icon: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].icon,
+  //   isLocked: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].isLocked,
+  //   category: "pages",
+  // },
   {
     id: ROUTE_IDS.MINIGAMES,
     name: ROUTE_CONFIG[ROUTE_PATHS.MINIGAMES].name,
@@ -1131,7 +1131,8 @@ export const useCoreStore = create<GameStore>()(
         },
 
         checkUnlockedRoutes: (routePath: string) => {
-          const routeUnlockedFromSearch = shouldUnlockRouteFromSearch(routePath);
+          const routeUnlockedFromSearch =
+            shouldUnlockRouteFromSearch(routePath);
           const routes = get().routes;
           return routes.some(
             (route) =>

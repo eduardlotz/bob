@@ -5,15 +5,10 @@ import { useIsHydrated, useMessageStore } from "@/store/messageStore";
 import { useCoreStore } from "@/store/core/store";
 import { useLocaleStore } from "@/i18n";
 
-type SceneVisitPolicy = "always" | "firstVisitInSession" | "returningVisit";
-
 type ScheduledStep = {
   delayMs: number;
-  visitPolicy?: SceneVisitPolicy;
-  getMessageId: (visitCount: number) => string | null;
+  getMessageId: () => string | null;
   requirement?: () => boolean;
-  requirementTimeoutMs?: number;
-  requirementCheckIntervalMs?: number;
   subscribeToRequirement?: (onChange: () => void) => () => void;
 };
 
@@ -34,18 +29,23 @@ const HOME_RETURN_GREETING_IDS = [
   "return_greeting_8",
 ] as const;
 
-const pickRandomHomeGreeting = () =>
-  HOME_RETURN_GREETING_IDS[
-    Math.floor(Math.random() * HOME_RETURN_GREETING_IDS.length)
-  ];
+const pickRandomHomeGreeting = () => {
+  const { seenThisSession } = useMessageStore.getState();
+  const available = HOME_RETURN_GREETING_IDS.filter(
+    (id) => !seenThisSession[id],
+  );
+  return available.length
+    ? available[Math.floor(Math.random() * available.length)]
+    : null;
+};
 
 const hasAffordablePurchaseOption = () => {
   const { taps, bobItems, tapEffects, worlds } = useCoreStore.getState();
 
   const purchasableItems = [
     ...bobItems.filter((item) => item.unlocked !== false),
-    ...tapEffects,
-    ...worlds,
+    ...tapEffects.filter((item) => item.unlocked !== false),
+    ...worlds.filter((item) => item.unlocked !== false),
   ];
 
   return purchasableItems.some((item) => !item.purchased && item.cost <= taps);
@@ -55,23 +55,15 @@ const shouldShowAffordableShopHint = () => {
   const state = useMessageStore.getState();
   const alreadySeenPersisted =
     state.repeatFlags[RETURN_SHOP_AFFORDABLE_MESSAGE_ID] === true;
-  const alreadySeenThisSession =
-    state.seenThisSession[RETURN_SHOP_AFFORDABLE_MESSAGE_ID] === true;
   const currentlyActive =
     state.activeMessage?.config.id === RETURN_SHOP_AFFORDABLE_MESSAGE_ID;
   const alreadyQueued = state.queue.some(
     (item) => item.id === RETURN_SHOP_AFFORDABLE_MESSAGE_ID,
   );
-  const alreadyInHistory = state.messageHistory.includes(
-    RETURN_SHOP_AFFORDABLE_MESSAGE_ID,
-  );
-
   if (
     alreadySeenPersisted ||
-    alreadySeenThisSession ||
     currentlyActive ||
-    alreadyQueued ||
-    alreadyInHistory
+    alreadyQueued
   ) {
     return false;
   }
@@ -79,25 +71,15 @@ const shouldShowAffordableShopHint = () => {
   return hasAffordablePurchaseOption();
 };
 
-const shouldRunStep = (
-  visitPolicy: SceneVisitPolicy | undefined,
-  visitCount: number,
-) => {
-  if (visitPolicy === "returningVisit") return visitCount > 0;
-  if (visitPolicy === "always") return true;
-  return visitCount === 0;
-};
-
 const SCENE_MESSAGE_STEPS: Partial<Record<string, ScheduledStep[]>> = {
   [ROUTE_PATHS.HOME]: [
     {
       delayMs: HOME_ENTRY_DELAY_MS,
-      visitPolicy: "always",
-      getMessageId: (visitCount) => {
+      getMessageId: () => {
         const hasSeenWelcome =
           !!useMessageStore.getState().repeatFlags[HOME_WELCOME_MESSAGE_ID];
 
-        if (visitCount === 0 && !hasSeenWelcome) {
+        if (!hasSeenWelcome) {
           return HOME_WELCOME_MESSAGE_ID;
         }
 
@@ -110,11 +92,20 @@ const SCENE_MESSAGE_STEPS: Partial<Record<string, ScheduledStep[]>> = {
     },
     {
       delayMs: 1000,
-      visitPolicy: "firstVisitInSession",
       getMessageId: () => "first_tap_hint",
       requirement: () => useCoreStore.getState().manualTaps >= 10,
-      requirementTimeoutMs: 1000 * 30,
-      requirementCheckIntervalMs: 1200,
+      subscribeToRequirement: (onChange) =>
+        useCoreStore.subscribe(() => {
+          onChange();
+        }),
+    },
+    {
+      delayMs: HOME_ENTRY_DELAY_MS,
+      getMessageId: () =>
+        shouldShowAffordableShopHint()
+          ? RETURN_SHOP_AFFORDABLE_MESSAGE_ID
+          : null,
+      requirement: hasAffordablePurchaseOption,
       subscribeToRequirement: (onChange) =>
         useCoreStore.subscribe(() => {
           onChange();
@@ -124,21 +115,18 @@ const SCENE_MESSAGE_STEPS: Partial<Record<string, ScheduledStep[]>> = {
   [ROUTE_PATHS.ABOUT]: [
     {
       delayMs: 1800,
-      visitPolicy: "firstVisitInSession",
       getMessageId: () => ABOUT_WELCOME_MESSAGE_ID,
     },
   ],
   [ROUTE_PATHS.PORTFOLIO]: [
     {
       delayMs: 1800,
-      visitPolicy: "firstVisitInSession",
       getMessageId: () => PORTFOLIO_WELCOME_MESSAGE_ID,
     },
   ],
   [ROUTE_PATHS.MINIGAMES]: [
     {
       delayMs: 1800,
-      visitPolicy: "firstVisitInSession",
       getMessageId: () => MINIGAMES_WELCOME_MESSAGE_ID,
     },
   ],
@@ -155,7 +143,6 @@ export function useMessageSystem() {
   const lastRouteRef = useRef<string | null>(null);
   const scheduledTimeoutsRef = useRef<number[]>([]);
   const scheduledCleanupRef = useRef<Array<() => void>>([]);
-  const routeVisitCountRef = useRef<Record<string, number>>({});
 
   const clearScheduledTimeouts = useCallback(() => {
     scheduledTimeoutsRef.current.forEach((timeout) =>
@@ -171,88 +158,52 @@ export function useMessageSystem() {
     (route: string, steps: ScheduledStep[]) => {
       clearScheduledTimeouts();
 
-      const visitCount = routeVisitCountRef.current[route] ?? 0;
-      routeVisitCountRef.current[route] = visitCount + 1;
-
       steps.forEach(
         ({
           delayMs,
-          visitPolicy,
           getMessageId,
           requirement,
-          requirementTimeoutMs,
-          requirementCheckIntervalMs,
           subscribeToRequirement,
         }) => {
-          if (!shouldRunStep(visitPolicy, visitCount)) return;
-
-          const messageId = getMessageId(visitCount);
-          if (!messageId) return;
-
-          const canRun = () => {
-            if (!useMessageStore.getState().isHydrated) return;
-            if (useAppStore.getState().currentRoute !== route) return;
-            if (useMessageStore.getState().systemPaused) return;
-            return true;
-          };
-
           let stopped = false;
           let unsubscribeRequirement: (() => void) | null = null;
+          let retryTimeout: number | null = null;
 
-          const stopRequirementCheck = () => {
+          const stop = () => {
             if (stopped) return;
             stopped = true;
-            if (unsubscribeRequirement) unsubscribeRequirement();
+            if (retryTimeout !== null) window.clearTimeout(retryTimeout);
+            unsubscribeRequirement?.();
           };
 
-          const queueWithRequirement = (
-            deadlineAt: number,
-            checkEveryMs: number,
-          ) => {
+          const tryStep = () => {
             if (stopped) return;
-            if (!canRun()) {
-              stopRequirementCheck();
+            if (useAppStore.getState().currentRoute !== route) {
+              stop();
               return;
             }
-            if (!requirement || requirement()) {
-              stopRequirementCheck();
-              void showMessage(messageId);
+            const messageState = useMessageStore.getState();
+            if (!messageState.isHydrated || messageState.systemPaused) {
+              if (retryTimeout !== null) window.clearTimeout(retryTimeout);
+              retryTimeout = window.setTimeout(tryStep, 500);
               return;
             }
-            if (Date.now() >= deadlineAt) {
-              stopRequirementCheck();
-              return;
-            }
+            if (requirement && !requirement()) return;
 
-            const retryTimeout = window.setTimeout(() => {
-              queueWithRequirement(deadlineAt, checkEveryMs);
-            }, checkEveryMs);
-            scheduledTimeoutsRef.current.push(retryTimeout);
+            const messageId = getMessageId();
+            stop();
+            if (messageId) void showMessage(messageId);
           };
 
           const timeout = window.setTimeout(() => {
-            if (!canRun()) return;
-
-            if (!requirement) {
-              void showMessage(messageId);
-              return;
-            }
-
-            const checkEveryMs = requirementCheckIntervalMs ?? 1500;
-            const maxWaitMs = requirementTimeoutMs ?? 60000;
-            const deadlineAt = Date.now() + maxWaitMs;
-
             if (subscribeToRequirement) {
-              unsubscribeRequirement = subscribeToRequirement(() => {
-                queueWithRequirement(deadlineAt, checkEveryMs);
-              });
-              scheduledCleanupRef.current.push(stopRequirementCheck);
+              unsubscribeRequirement = subscribeToRequirement(tryStep);
             }
-
-            queueWithRequirement(deadlineAt, checkEveryMs);
+            tryStep();
           }, delayMs);
 
           scheduledTimeoutsRef.current.push(timeout);
+          scheduledCleanupRef.current.push(stop);
         },
       );
     },
@@ -295,7 +246,6 @@ export function useMessageSystem() {
 
     previousLocaleRef.current = locale;
     lastRouteRef.current = null;
-    routeVisitCountRef.current = {};
     clearScheduledTimeouts();
     useMessageStore.setState({ activeMessage: null, queue: [] });
 

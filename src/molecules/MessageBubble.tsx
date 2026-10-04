@@ -18,20 +18,20 @@ const BASE_LINE_DELAY_MS = 800;
 const CHAR_READING_MS = 52;
 const MIN_DISMISS_MS = 500;
 
+type VisibleLine = { id: string; text: string; time: Date };
+
 export interface MessageBubbleProps {
   anchor?: [number, number, number];
 }
 
 const useTypewriterAudio = (text: string, isTyping: boolean) => {
   const { soundSystem } = useCoreStore();
-  const audioRef = useRef<{ index: number; timeout: number | null }>({
-    index: 0,
-    timeout: null,
-  });
 
   useEffect(() => {
     if (!isTyping || !text) return;
-    if (audioRef.current.index >= text.length) audioRef.current.index = 0;
+    let index = 0;
+    let timeout: number | null = null;
+    let cancelled = false;
 
     const playNext = async () => {
       try {
@@ -39,8 +39,9 @@ const useTypewriterAudio = (text: string, isTyping: boolean) => {
         await unlockAudioContext();
       } catch (e) {}
 
-      if (audioRef.current.index < text.length) {
-        const char = text[audioRef.current.index];
+      if (cancelled) return;
+      if (index < text.length) {
+        const char = text[index];
         if (
           char !== " " &&
           soundSystem.enabled &&
@@ -50,16 +51,14 @@ const useTypewriterAudio = (text: string, isTyping: boolean) => {
             textSynth.playChar(char, AUDIO_CHAR_DURATION_MS);
           } catch (e) {}
         }
-        audioRef.current.index++;
-        audioRef.current.timeout = window.setTimeout(
-          playNext,
-          AUDIO_LEAD_TIME_MS,
-        );
+        index++;
+        timeout = window.setTimeout(playNext, AUDIO_LEAD_TIME_MS);
       }
     };
-    playNext();
+    void playNext();
     return () => {
-      if (audioRef.current.timeout) clearTimeout(audioRef.current.timeout);
+      cancelled = true;
+      if (timeout !== null) clearTimeout(timeout);
     };
   }, [text, isTyping, soundSystem.enabled, soundSystem.masterVolume]);
 };
@@ -145,69 +144,115 @@ export const MessageBubble = memo(function MessageBubble({
   const { previewMode, isReady } = useCoreStore();
   const { currentView } = useViewStore();
 
-  const [visibleLines, setVisibleLines] = useState<
-    Array<{ id: string; text: string; time: Date }>
-  >([]);
+  const [visibleLines, setVisibleLines] = useState<VisibleLine[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const dismissTimerRef = useRef<number | null>(null);
   const lineTimerRef = useRef<number | null>(null);
+  const shownLinesRef = useRef<VisibleLine[]>([]);
+  const fullyRevealedAtRef = useRef<number | null>(null);
 
   const queueLength = getQueueLength();
 
+  const scheduleDismiss = useCallback(
+    (messageId: string, startedAt: number) => {
+      if (dismissTimerRef.current !== null) {
+        window.clearTimeout(dismissTimerRef.current);
+        dismissTimerRef.current = null;
+      }
+      if (messageId === "chat_theme_preview") return;
+
+      const state = useMessageStore.getState();
+      const current = state.activeMessage;
+      const fullyRevealedAt = fullyRevealedAtRef.current;
+      if (
+        current?.config.id !== messageId ||
+        current.startedAt !== startedAt ||
+        fullyRevealedAt === null
+      ) {
+        return;
+      }
+
+      const shownLines = shownLinesRef.current;
+      // Earlier visible lines have already used part of their reading time.
+      const readingDeadline = state.queue.length && shownLines.length
+        ? Math.max(
+            ...shownLines.map(
+              (line) =>
+                line.time.getTime() +
+                Math.max(MIN_DISMISS_MS, line.text.length * CHAR_READING_MS),
+            ),
+          )
+        : fullyRevealedAt +
+          Math.max(
+            MIN_DISMISS_MS,
+            shownLines.reduce((chars, line) => chars + line.text.length, 0) *
+              CHAR_READING_MS,
+          );
+      const dismissAt = Math.max(
+        readingDeadline,
+        fullyRevealedAt + MIN_DISMISS_MS,
+        current.minimumDisplayUntil + 1000,
+      );
+      dismissTimerRef.current = window.setTimeout(() => {
+        const active = useMessageStore.getState().activeMessage;
+        if (active?.config.id === messageId && active.startedAt === startedAt) {
+          void dismissMessage();
+        }
+      }, Math.max(0, dismissAt - Date.now()));
+    },
+    [dismissMessage],
+  );
+
   const processLinesRecursive = useCallback(
-    (allLines: string[], index: number, messageId: string) => {
-      if (useMessageStore.getState().activeMessage?.config.id !== messageId)
+    (
+      allLines: string[],
+      index: number,
+      messageId: string,
+      startedAt: number,
+    ) => {
+      const current = useMessageStore.getState().activeMessage;
+      if (current?.config.id !== messageId || current.startedAt !== startedAt)
         return;
 
       if (index >= allLines.length) {
         setIsTyping(false);
+        fullyRevealedAtRef.current = Date.now();
         markFullyRevealed();
-
-        const totalChars = allLines.slice(-3).join("").length;
-
-        const readingTime = Math.max(
-          MIN_DISMISS_MS,
-          totalChars * CHAR_READING_MS,
-        );
-        const activeMessage = useMessageStore.getState().activeMessage;
-        const earliestDismissDelay = activeMessage
-          ? Math.max(0, activeMessage.minimumDisplayUntil + 1000 - Date.now())
-          : 0;
-        const dismissDelay = Math.max(readingTime, earliestDismissDelay);
-
-        // TODO: don't dismiss if user is hovering
-        // don't dismiss if theme preview
-        if (messageId !== "chat_theme_preview") {
-          dismissTimerRef.current = window.setTimeout(() => {
-            dismissMessage();
-          }, dismissDelay);
-        }
+        scheduleDismiss(messageId, startedAt);
         return;
       }
 
       setIsTyping(true);
       const currentLineText = allLines[index];
+      const line = {
+        id: `${messageId}-${startedAt}-${index}`,
+        text: currentLineText,
+        time: new Date(),
+      };
+      shownLinesRef.current = [...shownLinesRef.current, line].slice(-3);
 
-      setVisibleLines((prev) => {
-        return [
-          ...prev,
-          {
-            id: `${messageId}-${index}`,
-            text: currentLineText,
-            time: new Date(),
-          },
-        ].slice(-3);
-      });
+      setVisibleLines(shownLinesRef.current);
 
       const typingDuration = currentLineText.length * TYPING_SPEED_MS;
       const nextStepDelay = typingDuration + BASE_LINE_DELAY_MS;
 
       lineTimerRef.current = window.setTimeout(() => {
-        processLinesRecursive(allLines, index + 1, messageId);
+        processLinesRecursive(allLines, index + 1, messageId, startedAt);
       }, nextStepDelay);
     },
-    [],
+    [markFullyRevealed, scheduleDismiss],
   );
+
+  useEffect(() => {
+    if (activeMessage?.hasBeenFullyRevealed) {
+      scheduleDismiss(activeMessage.config.id, activeMessage.startedAt);
+    }
+  }, [
+    activeMessage?.hasBeenFullyRevealed,
+    activeMessage?.startedAt,
+    queueLength,
+    scheduleDismiss,
+  ]);
 
   useEffect(() => {
     if (previewMode === "theme" && currentView == "phone:options") {
@@ -221,6 +266,8 @@ export const MessageBubble = memo(function MessageBubble({
     if (!activeMessage || !isReady) {
       if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
       if (lineTimerRef.current) clearTimeout(lineTimerRef.current);
+      shownLinesRef.current = [];
+      fullyRevealedAtRef.current = null;
       const t = setTimeout(() => setVisibleLines([]), 300);
       return () => clearTimeout(t);
     }
@@ -237,14 +284,22 @@ export const MessageBubble = memo(function MessageBubble({
       ? rawText
       : String(rawText).split(/\r?\n/);
 
+    shownLinesRef.current = [];
+    fullyRevealedAtRef.current = null;
     setVisibleLines([]);
-    processLinesRecursive(lines, 0, activeMessage.config.id);
+    processLinesRecursive(
+      lines,
+      0,
+      activeMessage.config.id,
+      activeMessage.startedAt,
+    );
     return () => {
       if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
       if (lineTimerRef.current) clearTimeout(lineTimerRef.current);
     };
   }, [
     activeMessage?.config.id,
+    activeMessage?.startedAt,
     isReady,
     processLinesRecursive,
     requestEmotion,

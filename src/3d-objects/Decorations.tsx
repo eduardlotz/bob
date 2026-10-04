@@ -658,7 +658,7 @@ function WorldDome({
   return (
     <>
       <mesh renderOrder={-10} frustumCulled={false}>
-        <sphereGeometry args={[100, 32, 32]} />
+        <sphereGeometry args={[100, 24, 22]} />
         <meshBasicMaterial side={BackSide} depthTest={false} depthWrite={false}>
           <GradientTexture
             stops={scene.gradientStops}

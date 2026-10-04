@@ -37,8 +37,8 @@ export const DEFAULT_FORM_PARAMETERS: Record<BlobFormType, BlobFormParameters> =
   {
     sphere: {
       sphereRadius: 1,
-      sphereWidthSegments: 64,
-      sphereHeightSegments: 64,
+      sphereWidthSegments: 24,
+      sphereHeightSegments: 16,
     },
     cube: {
       cubeWidth: 1.75,

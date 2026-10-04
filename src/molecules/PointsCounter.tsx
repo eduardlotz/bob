@@ -87,7 +87,7 @@ export const PointsCounter = ({
           font={FONT_PATH}
           size={3}
           height={0.5}
-          curveSegments={8}
+          curveSegments={6}
           castShadow
           letterSpacing={-0.15}
           bevelEnabled
