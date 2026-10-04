@@ -11,6 +11,7 @@ import { previewMaterialProps } from "@/shop-items/utils";
 import { useFloatingBar } from "@/layout/FloatingBar";
 import { useI18n } from "@/i18n";
 import { greenDiamondMessages } from "./greenDiamond.messages";
+import { useQuestActions } from "@/hooks/useQuestSystem";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -42,6 +43,7 @@ export const GreenDiamond = ({
 
   const { setHoveredObject } = useFloatingBar();
   const { locale } = useI18n();
+  const { triggerQuest } = useQuestActions();
 
   const handlePointerEnter = (e: any) => {
     e.stopPropagation();
@@ -56,7 +58,11 @@ export const GreenDiamond = ({
   };
 
   return (
-    <Grabbable rigidBodyRef={api} mode={"spring"}>
+    <Grabbable
+      rigidBodyRef={api}
+      mode="spring"
+      onClick={() => triggerQuest("click_plumbob", 1)}
+    >
       <RigidBody
         {...props}
         ref={api}

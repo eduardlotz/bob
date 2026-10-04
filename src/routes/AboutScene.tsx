@@ -138,12 +138,10 @@ export function AboutScene() {
         rotation={[1.2, 0, -0.2]}
       />
 
-      <InteractiveObject questAction="click_plumbob" questValue={1}>
-        <GreenDiamond
-          position={[3.5, FLOOR_Y_POSITION + 2, 2]}
-          rotation={[1.2, 0, -0.2]}
-        />
-      </InteractiveObject>
+      <GreenDiamond
+        position={[3.5, FLOOR_Y_POSITION + 2, 2]}
+        rotation={[1.2, 0, -0.2]}
+      />
 
       {/* INTEREST / HOBBY CARDBOX */}
 

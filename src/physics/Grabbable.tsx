@@ -33,6 +33,7 @@ type GrabbableProps = {
   freezeRotation?: boolean;
   onDragStart?: () => void;
   onDragEnd?: () => void;
+  onClick?: () => void;
 };
 
 export const Grabbable = ({
@@ -50,6 +51,7 @@ export const Grabbable = ({
   freezeRotation = false,
   onDragStart,
   onDragEnd,
+  onClick,
 }: GrabbableProps) => {
   const { camera, size } = useThree();
   const { physicsDebugEnabled: debug } = useCoreStore();
@@ -59,6 +61,8 @@ export const Grabbable = ({
 
   const mouseUV = useRef(new Vector2());
   const prevMouseUV = useRef(new Vector2());
+  const pointerStart = useRef(new Vector2());
+  const movedSincePointerDown = useRef(false);
 
   const grabDepth = useRef(0);
   const screenOffset = useRef(new Vector2());
@@ -109,6 +113,8 @@ export const Grabbable = ({
 
   const handlePointerDown = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
+    pointerStart.current.set(e.clientX, e.clientY);
+    movedSincePointerDown.current = false;
     const body = rigidBodyRef.current;
     if (!body) return;
 
@@ -144,7 +150,12 @@ export const Grabbable = ({
   };
 
   const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
-    if (!isDragging) return;
+    if (!isDraggingRef.current) return;
+    const dx = e.clientX - pointerStart.current.x;
+    const dy = e.clientY - pointerStart.current.y;
+    if (dx * dx + dy * dy > 25) {
+      movedSincePointerDown.current = true;
+    }
     prevMouseUV.current.copy(mouseUV.current);
     updateMouseUV(e);
   };
@@ -264,7 +275,10 @@ export const Grabbable = ({
         onPointerUp: handlePointerUp,
         onPointerCancel: handlePointerUp,
         onLostPointerCapture: handlePointerUp,
-        onClick: (e: ThreeEvent<MouseEvent>) => e.stopPropagation(),
+        onClick: (e: ThreeEvent<MouseEvent>) => {
+          e.stopPropagation();
+          if (!movedSincePointerDown.current) onClick?.();
+        },
       })}
     </>
   );
