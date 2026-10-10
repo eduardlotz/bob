@@ -19,6 +19,7 @@ import {
   RingedPlanet,
   MoonTerrain,
 } from "./worlds/WorldModels";
+import { CloudSky, type CloudClimate } from "./worlds/CloudSky";
 import { CityWorld } from "./worlds/CityWorld";
 import { FlyingUfos } from "./worlds/FlyingUfos";
 import { DesertDetails } from "./worlds/DesertDetails";
@@ -105,18 +106,39 @@ function WorldDome({
   lowDetail: boolean;
 }) {
   const isMoonWorld = scene.effects.includes("moon_glow");
+  const climate: CloudClimate | null = scene.models.includes("forest_meadow")
+    ? "forest"
+    : scene.models.includes("city_blocks")
+      ? "city"
+      : scene.effects.includes("desert_sand")
+        ? "desert"
+        : scene.models.includes("winter_pines")
+          ? "winter"
+          : null;
   return (
     <>
-      <mesh renderOrder={-10} frustumCulled={false}>
-        <sphereGeometry args={[100, 24, 22]} />
-        <meshBasicMaterial side={BackSide} depthTest={false} depthWrite={false}>
-          <GradientTexture
-            stops={scene.gradientStops}
-            colors={scene.gradientColors}
-            size={1024}
-          />
-        </meshBasicMaterial>
-      </mesh>
+      {climate ? (
+        <CloudSky
+          climate={climate}
+          colors={scene.gradientColors}
+          stops={scene.gradientStops}
+        />
+      ) : (
+        <mesh renderOrder={-10} frustumCulled={false}>
+          <sphereGeometry args={[100, 24, 22]} />
+          <meshBasicMaterial
+            side={BackSide}
+            depthTest={false}
+            depthWrite={false}
+          >
+            <GradientTexture
+              stops={scene.gradientStops}
+              colors={scene.gradientColors}
+              size={1024}
+            />
+          </meshBasicMaterial>
+        </mesh>
+      )}
 
       {scene.starfield && !isSpaceWorldScene(scene) && (
         <Sparkles
