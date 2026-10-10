@@ -1,8 +1,10 @@
-import { useRef, useMemo, useLayoutEffect } from "react";
+import { useRef, useMemo, useLayoutEffect, useEffect } from "react";
 import { useFrame, extend } from "@react-three/fiber";
 import { shaderMaterial } from "@react-three/drei";
 import * as THREE from "three";
 import { seededRandom, useWorldQuality } from "./worlds/quality";
+
+import { grassPatch, grassGroundTexture } from "./worlds/grassField";
 
 const GrassInstancedMaterial = shaderMaterial(
   {
@@ -17,6 +19,7 @@ const GrassInstancedMaterial = shaderMaterial(
   varying float vHeight;
   varying float vVariation;
   varying float vLight;
+  varying vec3 vTint;
   void main() {
     float h = uv.y;
     vec3 root = instanceMatrix[3].xyz;
@@ -25,7 +28,8 @@ const GrassInstancedMaterial = shaderMaterial(
     p.y += 0.575;
     float edgeFade = 1.0 - smoothstep(uFieldRadius * 0.78, uFieldRadius, length(root.xz));
     p.y *= edgeFade;
-    p.x *= 1.0 - h * 0.94;
+    p.x *= 1.0 - pow(h, 1.35) * 0.96;
+    p.x += (seed - 0.5) * 0.16 * h * h;
     p.z += h * h * (0.12 + seed * 0.28);
     vec4 world = modelMatrix * instanceMatrix * vec4(p, 1.0);
     // Shared world-space gusts keep neighboring blades moving together.
@@ -34,6 +38,7 @@ const GrassInstancedMaterial = shaderMaterial(
     world.x += (0.12 + gust * 0.18 + ripple * 0.035) * h * h;
     world.z += sin(root.z * 0.28 + uTime * 0.85) * 0.09 * h * h;
     vHeight = h;
+    vTint = instanceColor;
     vVariation = seed;
     vLight = 0.88 + 0.12 * abs(sin(seed * 6.283));
     gl_Position = projectionMatrix * viewMatrix * world;
@@ -44,9 +49,10 @@ const GrassInstancedMaterial = shaderMaterial(
   varying float vHeight;
   varying float vVariation;
   varying float vLight;
+  varying vec3 vTint;
   void main() {
     vec3 color = mix(uColorBase, uColorTop, pow(vHeight, 0.8));
-    color *= mix(0.84, 1.12, vVariation) * vLight;
+    color *= mix(0.92, 1.07, vVariation) * vLight * vTint;
     color *= mix(0.65, 1.0, smoothstep(0.0, 0.55, vHeight));
     gl_FragColor = vec4(color, 1.0);
     #include <tonemapping_fragment>
@@ -87,40 +93,64 @@ function BladeBand({
 }) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const materialRef = useRef<THREE.ShaderMaterial & { uTime: number }>(null);
-  const matrices = useMemo(() => {
+  const { matrices, colors } = useMemo(() => {
     const random = seededRandom(seed);
     const dummy = new THREE.Object3D();
     const data = new Float32Array(count * 16);
+    const colors = new Float32Array(count * 3);
+    const tint = new THREE.Color();
+    let cx = 0,
+      cz = 0,
+      clumpYaw = 0;
+    const near = innerRadius === 0;
     for (let i = 0; i < count; i++) {
-      const angle = random() * Math.PI * 2;
-      const radius = Math.sqrt(
-        innerRadius ** 2 + random() * (outerRadius ** 2 - innerRadius ** 2),
-      );
-      const x = Math.cos(angle) * radius;
-      const z = Math.sin(angle) * radius;
-      const patch = 0.5 + 0.5 * Math.sin(x * 0.8) * Math.cos(z * 0.65);
+      // Spend the same blade budget in five-blade tufts, concentrated close to Bob.
+      if (i % 5 === 0) {
+        const angle = random() * Math.PI * 2;
+        const focus = near && random() < 0.55;
+        const inner = focus ? 0 : innerRadius;
+        const outer = focus ? Math.min(5.5, outerRadius) : outerRadius;
+        const radius = Math.sqrt(
+          inner ** 2 + random() * (outer ** 2 - inner ** 2),
+        );
+        cx = Math.cos(angle) * radius;
+        cz = Math.sin(angle) * radius;
+        clumpYaw = random() * Math.PI * 2;
+      }
+      const spread = (0.12 + random() * 0.24) * Math.sqrt(widthScale);
+      const angle = clumpYaw + (i % 5) * 2.4;
+      const x = cx + Math.cos(angle) * spread;
+      const z = cz + Math.sin(angle) * spread;
+      const patch = grassPatch(x, z);
       dummy.position.set(x, rootOffset, z);
-      dummy.rotation.y = random() * Math.PI * 2;
+      dummy.rotation.y = angle + (random() - 0.5) * 0.6;
       dummy.scale.set(
-        (0.65 + random() * 0.7) * widthScale,
-        0.42 + random() * 0.55 + patch * 0.3,
+        (0.8 + random() * 0.65) * widthScale,
+        (0.45 + random() * 0.5) * (0.85 + patch * 0.4),
         1,
       );
+      tint.setRGB(
+        0.91 + patch * 0.16,
+        0.94 + patch * 0.12,
+        0.86 + patch * 0.22,
+      );
+      tint.toArray(colors, i * 3);
       dummy.updateMatrix();
       dummy.matrix.toArray(data, i * 16);
     }
-    return data;
+    return { matrices: data, colors };
   }, [count, innerRadius, outerRadius, widthScale, rootOffset, seed]);
   useLayoutEffect(() => {
     const mesh = meshRef.current;
     if (!mesh) return;
     mesh.instanceMatrix.array.set(matrices);
     mesh.instanceMatrix.needsUpdate = true;
+    mesh.instanceColor = new THREE.InstancedBufferAttribute(colors, 3);
     mesh.boundingSphere = new THREE.Sphere(
       new THREE.Vector3(0, 0.5, 0),
       outerRadius + 2,
     );
-  }, [matrices, outerRadius]);
+  }, [matrices, colors, outerRadius]);
   useFrame((state) => {
     if (materialRef.current)
       materialRef.current.uTime = state.clock.elapsedTime;
@@ -156,14 +186,20 @@ export const GrassShader = ({
     { low: 1800, medium: 4800, high: 7200 }[quality] * densityMultiplier,
   );
   const extended = fieldRadius > 12;
+  const groundRadius = fieldRadius + (extended ? 3 : 0);
+  const groundTexture = useMemo(
+    () => grassGroundTexture(groundRadius),
+    [groundRadius],
+  );
+  useEffect(() => () => groundTexture.dispose(), [groundTexture]);
   return (
     <group position={position} rotation={rotation} scale={scale}>
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
         position={[0, rootOffset - 0.01, 0]}
       >
-        <circleGeometry args={[fieldRadius + (extended ? 3 : 0), 64]} />
-        <meshBasicMaterial color="#3a6121" />
+        <circleGeometry args={[groundRadius, 64]} />
+        <meshBasicMaterial map={groundTexture} />
       </mesh>
       <BladeBand
         count={Math.round(count * (extended ? 0.72 : 1))}
