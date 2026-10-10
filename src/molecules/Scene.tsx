@@ -260,6 +260,8 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
     [activeLightingWorld?.id, debugLightSettings],
   );
   const showHomeShadow = isHome && sceneWorld?.id !== SPACE_WORLD_ID;
+  // City's raised asphalt meets the default shadow plane; keep a small gap.
+  const homeShadowY = sceneWorld?.id === "world_city" ? -1.28 : FAKE_SHADOW_Y;
 
   const handleCameraControlsRef = useCallback(
     (controls: CameraControls | null) => {
@@ -393,7 +395,7 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
               <mesh
                 renderOrder={6}
                 rotation={[-Math.PI / 2, 0, 0]}
-                position={[0, FAKE_SHADOW_Y, 0]}
+                position={[0, homeShadowY, 0]}
               >
                 <circleGeometry args={[0.8, 16, 16]} />
                 <meshToonMaterial
@@ -466,6 +468,9 @@ type FullScreenCanvasProps = {
 
 const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
   const canvasRef = useRef(null);
+  const qualityMode = useCoreStore(
+    (state) => state.graphicPreferences.qualityMode,
+  );
   const [isMobile, setIsMobile] = useState(false);
   const [dpr, setDpr] = useState(() =>
     typeof window !== "undefined"
@@ -475,7 +480,7 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
   const navigate = useNavigate();
 
   const handlePerformanceChange = ({ factor }: { factor: number }) => {
-    setDpr(Math.max(Math.floor(0.5 + 1.5 * factor), 1));
+    setDpr(Math.round((1 + factor * 0.5) * 4) / 4);
   };
 
   useEffect(() => {
@@ -535,7 +540,11 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
         left: 0,
         zIndex: 0,
       }}
-      dpr={dpr}
+      dpr={Math.min(
+        dpr,
+        window.devicePixelRatio || 1,
+        isMobile || qualityMode === "low" ? 1.25 : 1.5,
+      )}
       {...props}
     >
       <>
