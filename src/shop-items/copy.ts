@@ -5,7 +5,10 @@ import { getTapEffectCopy } from "./tapEffects.messages";
 import { getWeatherEffectCopy } from "./weatherEffects.messages";
 import { getWorldCopy } from "./worlds.messages";
 
-export const getShopItemCopy = (itemId: string, locale: Locale = getLocale()) => {
+export const getShopItemCopy = (
+  itemId: string,
+  locale: Locale = getLocale(),
+) => {
   if (itemId in getWorldCopyMap) {
     return getWorldCopy(itemId as keyof typeof getWorldCopyMap, locale);
   }
@@ -57,6 +60,7 @@ const getWeatherEffectCopyMap = {
 const getWorldCopyMap = {
   world_default: true,
   world_forest: true,
+  world_city: true,
   world_desert: true,
   world_winter: true,
   world_moon: true,

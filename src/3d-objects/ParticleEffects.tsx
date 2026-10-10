@@ -1,6 +1,8 @@
 import React, { useRef, useEffect, useMemo, useLayoutEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Sparkles } from "@react-three/drei";
+import { WeatherParticles } from "./worlds/WeatherParticles";
+import { useWorldQuality } from "./worlds/quality";
 import { useCoreStore } from "@/store/core/store";
 import * as THREE from "three";
 import {
@@ -80,7 +82,6 @@ const SHARED_GEOMETRIES = {
   sphere: new THREE.SphereGeometry(0.24, 2, 2),
   bubbleSphere: new THREE.SphereGeometry(1, 8, 8),
   plane: new THREE.PlaneGeometry(1, 1),
-  cylinder: new THREE.CylinderGeometry(0.02, 0.02, 0.3),
   cloudSphere: new THREE.SphereGeometry(1, 8, 8),
 };
 
@@ -126,18 +127,6 @@ const SHARED_MATERIALS = {
     emissive: "#d7f2ff",
     emissiveIntensity: 0.2,
   }),
-  rain: new THREE.MeshToonMaterial({
-    color: "#87CEEB",
-    transparent: true,
-    opacity: 0.95,
-    depthWrite: false,
-  }),
-  snow: new THREE.MeshToonMaterial({
-    color: "#ffffff",
-    transparent: true,
-    opacity: 0.95,
-    depthWrite: false,
-  }),
   cloud: new THREE.MeshToonMaterial({
     color: "#ffffff",
   }),
@@ -146,16 +135,6 @@ const SHARED_MATERIALS = {
     side: THREE.BackSide,
   }),
 };
-
-// #region CONSTANTS
-const MAX_TAP_PARTICLES = 150;
-const TAP_PARTICLE_COUNT = 15;
-const CLOUD_COUNT_MIN = 3;
-const CLOUD_COUNT_MAX = 5;
-const BUBBLES_COUNT_MIN = 6;
-const BUBBLES_COUNT_MAX = 13;
-const DEFAULT_FALLING_PARTICLE_LIMIT = 100;
-// #endregion
 
 // Sparkles from drei
 export function StarsEffect() {
@@ -181,196 +160,12 @@ export function StarsEffect() {
   );
 }
 
-type FallingParticle = {
-  id: number;
-  position: [number, number, number];
-  velocity: [number, number, number];
-  life: number;
-  maxLife: number;
-};
-
-type FallingParticleConfig = {
-  enabled: boolean;
-  material: THREE.MeshToonMaterial;
-  geometry: BufferGeometry;
-  spawnInterval: number;
-  spawnBatchSize: number;
-  maxParticles: number;
-  spawnRadius: number;
-  spawnHeight: number;
-  spawnHeightVariance: number;
-  lifeRange: [number, number];
-  velocityXRange: [number, number];
-  velocityYRange: [number, number];
-  velocityZRange: [number, number];
-  scaleRange: [number, number];
-  scaleMultiplierY: number;
-  groundY: number;
-};
-
-function FallingParticleEffect({
-  enabled,
-  material,
-  geometry,
-  spawnInterval,
-  spawnBatchSize,
-  maxParticles,
-  spawnRadius,
-  spawnHeight,
-  spawnHeightVariance,
-  lifeRange,
-  velocityXRange,
-  velocityYRange,
-  velocityZRange,
-  scaleRange,
-  scaleMultiplierY,
-  groundY,
-}: FallingParticleConfig) {
-  const [particles, setParticles] = React.useState<FallingParticle[]>([]);
-  const dropIdCounter = useRef(0);
-
-  const createParticles = React.useCallback(() => {
-    if (!enabled) return;
-
-    setParticles((prev) => {
-      if (prev.length >= maxParticles) return prev;
-
-      const newParticles = Array.from({ length: spawnBatchSize }, () => {
-        const angle = Math.random() * Math.PI * 2;
-        const distance = Math.random() * spawnRadius;
-        const x = Math.cos(angle) * distance;
-        const z = Math.sin(angle) * distance;
-
-        const vx =
-          velocityXRange[0] +
-          Math.random() * (velocityXRange[1] - velocityXRange[0]);
-        const vy =
-          velocityYRange[0] +
-          Math.random() * (velocityYRange[1] - velocityYRange[0]);
-        const vz =
-          velocityZRange[0] +
-          Math.random() * (velocityZRange[1] - velocityZRange[0]);
-        const maxLife =
-          lifeRange[0] + Math.random() * (lifeRange[1] - lifeRange[0]);
-
-        return {
-          id: dropIdCounter.current++,
-          position: [
-            x,
-            spawnHeight + Math.random() * spawnHeightVariance,
-            z,
-          ] as [number, number, number],
-          velocity: [vx, vy, vz] as [number, number, number],
-          life: maxLife,
-          maxLife,
-        };
-      });
-
-      return [...prev, ...newParticles].slice(-maxParticles);
-    });
-  }, [
-    enabled,
-    lifeRange,
-    maxParticles,
-    spawnBatchSize,
-    spawnHeight,
-    spawnHeightVariance,
-    spawnRadius,
-    velocityXRange,
-    velocityYRange,
-    velocityZRange,
-  ]);
-
-  useFrame((state, delta) => {
-    if (enabled && state.clock.getElapsedTime() % spawnInterval < delta) {
-      createParticles();
-    }
-
-    setParticles((prev) =>
-      prev
-        .map((particle) => ({
-          ...particle,
-          position: [
-            particle.position[0] + particle.velocity[0] * delta * 60,
-            particle.position[1] + particle.velocity[1] * delta * 60,
-            particle.position[2] + particle.velocity[2] * delta * 60,
-          ] as [number, number, number],
-          life: particle.life - delta,
-        }))
-        .filter(
-          (particle) => particle.life > 0 && particle.position[1] > groundY,
-        ),
-    );
-  });
-
-  if (!enabled && particles.length === 0) return null;
-
-  return (
-    <group>
-      {particles.map((particle) => {
-        const lifeRatio = Math.max(0, particle.life / particle.maxLife);
-        const scale =
-          scaleRange[0] + (scaleRange[1] - scaleRange[0]) * lifeRatio;
-
-        return (
-          <mesh
-            key={particle.id}
-            position={particle.position}
-            scale={[scale, scale * scaleMultiplierY, scale]}
-            geometry={geometry}
-            material={material}
-            material-opacity={lifeRatio}
-          />
-        );
-      })}
-    </group>
-  );
-}
-
 export function RainEffect({ enabled = true }: { enabled?: boolean } = {}) {
-  return (
-    <FallingParticleEffect
-      enabled={enabled}
-      material={SHARED_MATERIALS.rain}
-      geometry={SHARED_GEOMETRIES.cylinder}
-      spawnInterval={0.1}
-      spawnBatchSize={5}
-      maxParticles={DEFAULT_FALLING_PARTICLE_LIMIT}
-      spawnRadius={5.5}
-      spawnHeight={15}
-      spawnHeightVariance={0.6}
-      lifeRange={[2.6, 3.4]}
-      velocityXRange={[-0.25, 0.25]}
-      velocityYRange={[-4.2, -2.3]}
-      velocityZRange={[-0.25, 0.25]}
-      scaleRange={[0.1, 0.24]}
-      scaleMultiplierY={3}
-      groundY={-4}
-    />
-  );
+  return <WeatherParticles kind="rain" enabled={enabled} />;
 }
 
 export function SnowEffect({ enabled = true }: { enabled?: boolean } = {}) {
-  return (
-    <FallingParticleEffect
-      enabled={enabled}
-      material={SHARED_MATERIALS.snow}
-      geometry={SHARED_GEOMETRIES.sphere}
-      spawnInterval={0.14}
-      spawnBatchSize={4}
-      maxParticles={120}
-      spawnRadius={6.5}
-      spawnHeight={16}
-      spawnHeightVariance={1.5}
-      lifeRange={[4.8, 6.8]}
-      velocityXRange={[-0.24, 0.24]}
-      velocityYRange={[-1.0, -0.45]}
-      velocityZRange={[-0.24, 0.24]}
-      scaleRange={[0.045, 0.085]}
-      scaleMultiplierY={1.15}
-      groundY={-3.8}
-    />
-  );
+  return <WeatherParticles kind="snow" enabled={enabled} />;
 }
 
 function useLoopingWeatherWindow(activeMs: number, inactiveMs: number) {
@@ -462,7 +257,6 @@ const generateClouds = (count: number): CloudData[] => {
 };
 
 const CONFIG = {
-  CLOUD_COUNT: { MIN: 5, MAX: 10 },
   BUBBLE_COUNT: { MIN: 5, MAX: 12 },
   RADIUS: { MIN: 8, MAX: 16 },
   HEIGHT: { MIN: 2, MAX: 6 },
@@ -481,17 +275,13 @@ type CloudData = {
 };
 
 export const CloudEffect = ({ preview }: { preview: boolean }) => {
+  const groupRef = useRef<THREE.Group>(null);
+  const quality = useWorldQuality();
   const fillRef = useRef<InstancedMesh>(null);
   const outlineRef = useRef<InstancedMesh>(null);
   const clouds = useMemo(() => {
-    const count =
-      CONFIG.CLOUD_COUNT.MIN +
-      Math.floor(
-        Math.random() * (CONFIG.CLOUD_COUNT.MAX - CONFIG.CLOUD_COUNT.MIN + 1),
-      );
-
-    return generateClouds(count);
-  }, []);
+    return generateClouds(quality === "low" ? 4 : 7);
+  }, [quality]);
   const cloudInstances = useMemo(
     () =>
       clouds.flatMap((cloud) =>
@@ -541,8 +331,16 @@ export const CloudEffect = ({ preview }: { preview: boolean }) => {
     };
   }, [cloudMaterial]);
 
+  useFrame(({ clock }) => {
+    if (!groupRef.current) return;
+    const time = clock.elapsedTime;
+    groupRef.current.position.x = Math.sin(time * 0.055) * 1.6;
+    groupRef.current.position.z = Math.cos(time * 0.04) * 0.8;
+    groupRef.current.position.y = Math.sin(time * 0.12) * 0.12;
+  });
+
   return (
-    <group>
+    <group ref={groupRef}>
       <instancedMesh
         ref={outlineRef}
         args={[

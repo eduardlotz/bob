@@ -63,7 +63,8 @@ export enum GAME_STORE_VERSION {
   V8 = 100103, // version 1.01.103 (light-only theme mode)
   V9 = 100104, // version 1.01.104 (motion + tap particle prefs)
   V10 = 100105, // version 1.01.105 (upgrade schema normalization)
-  LATEST = V10,
+  V11 = 100106, // city world catalogue
+  LATEST = V11,
 }
 
 // TODO: plan refactor to include component inside item properties
@@ -105,6 +106,7 @@ export interface TapEffect extends BaseItem {
 
 export type WorldModelId =
   | "default_home"
+  | "city_blocks"
   | "forest_grove"
   | "forest_meadow"
   | "desert_dunes"

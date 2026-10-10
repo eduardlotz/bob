@@ -47,6 +47,27 @@ export const initialWorlds: WorldItem[] = [
     },
   },
   {
+    id: "world_city",
+    name: "Stadt",
+    description:
+      "Eine New Yorker Skyline mit Brownstones, Autos und gelben Taxis.",
+    cost: 100_000,
+    purchased: false,
+    enabled: false,
+    type: "world",
+    icon: "🏙️",
+    scene: {
+      skyColors: ["#c5dced", "#89b3d2"],
+      gradientStops: [0, 0.45, 1],
+      gradientColors: ["#96bbd6", "#dce8ec", "#b9c4c9"],
+      groundColor: "#b5b8b3",
+      accentColor: "#dbd5c4",
+      models: ["city_blocks"],
+      effects: [],
+      lighting: DEFAULT_WORLD_LIGHTING,
+    },
+  },
+  {
     id: "world_desert",
     name: "Wüste",
     description: "Warme Dünen, Kakteen und ein bisschen Staub in der Luft.",

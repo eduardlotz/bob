@@ -116,6 +116,19 @@ export function migrateCoreStore(persisted: any, fromVersion: number) {
 
   let state = { ...persisted };
 
+  // V1-V4 use a different numbering range. A current save must not run those
+  // historical resets again just because the world catalogue gained an item.
+  if (
+    fromVersion === GAME_STORE_VERSION.V10 ||
+    fromVersion === GAME_STORE_VERSION.V11
+  ) {
+    return {
+      ...state,
+      worlds: normalizeWorlds(state.worlds),
+      version: GAME_STORE_VERSION.LATEST,
+    };
+  }
+
   if (fromVersion < GAME_STORE_VERSION.V0) {
     return initialGameState;
   }
@@ -178,6 +191,10 @@ export function migrateCoreStore(persisted: any, fromVersion: number) {
 
   if (fromVersion < GAME_STORE_VERSION.V10) {
     state.upgrades = normalizeUpgrades(state.upgrades);
+  }
+
+  if (fromVersion < GAME_STORE_VERSION.V11) {
+    state.worlds = normalizeWorlds(state.worlds);
   }
 
   return {

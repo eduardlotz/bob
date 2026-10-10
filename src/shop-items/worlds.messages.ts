@@ -12,6 +12,11 @@ export const worldMessages = defineMessages({
       name: "Wald",
       description: "Ein dichter Bob-Wald mit Wolken und Glühpunkten.",
     },
+    world_city: {
+      name: "Stadt",
+      description:
+        "Eine New Yorker Skyline mit Brownstones, Autos und gelben Taxis.",
+    },
     world_desert: {
       name: "Wüste",
       description: "Warme Dünen, Kakteen und ein bisschen Staub in der Luft.",
@@ -39,6 +44,11 @@ export const worldMessages = defineMessages({
     world_forest: {
       name: "Forest",
       description: "A dense Bob forest with clouds and glowing particles.",
+    },
+    world_city: {
+      name: "City",
+      description:
+        "A New York-style skyline with brownstones, cars, and yellow cabs.",
     },
     world_desert: {
       name: "Desert",
