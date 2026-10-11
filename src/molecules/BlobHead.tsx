@@ -49,6 +49,7 @@ import { RastaBeanie } from "@/3d-objects/models/rastaBeanie";
 const HEAD_POSITION_Y = 0;
 const MAX_ROTATION_X = 0.9;
 const MAX_ROTATION_Y = 0.9;
+const MAX_TAP_CAMERA_SHAKE = 0.25;
 
 const IDLE_TIMEOUT_MIN = 15000;
 const IDLE_ANIMATION_DURATION = 3000;
@@ -543,7 +544,7 @@ export function BlobHead({
       const handCamSwayY = Math.sin(clock.getElapsedTime() * 0.5) * 0.02;
       const cameraShakeStrength =
         Math.sin(clock.getElapsedTime() * 50) *
-        Math.min(1, 0.01 * getTotalTapMultiplier());
+        Math.min(MAX_TAP_CAMERA_SHAKE, 0.01 * getTotalTapMultiplier());
 
       const cameraShakeX =
         !reducedTapMotion && cameraZoomAnimation ? cameraShakeStrength : 0;
@@ -592,7 +593,7 @@ export function BlobHead({
     const handCamSwayY = Math.sin(clock.getElapsedTime() * 0.5) * 0.02;
     const cameraShakeStrength =
       Math.sin(clock.getElapsedTime() * 50) *
-      Math.min(1, 0.01 * getTotalTapMultiplier());
+      Math.min(MAX_TAP_CAMERA_SHAKE, 0.01 * getTotalTapMultiplier());
 
     const cameraShakeX =
       !reducedTapMotion && cameraZoomAnimation ? cameraShakeStrength : 0;

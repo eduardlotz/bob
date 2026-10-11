@@ -231,19 +231,23 @@ function OptionsGroup({
   isClosing: boolean;
 }) {
   const routes = useCoreStore((state) => state.routes);
+  const isMobileLayout = windowWidth < 768;
   const count = routes.length;
 
   if (count === 0) {
     return <group />;
   }
 
-  const screenCenter = new THREE.Vector3(-0.5, OPTIONS_Y_OFFSET, 0);
-
   const routePositions = useMemo(() => {
     if (!routes.length || !windowWidth || !windowHeight) {
       return [];
     }
 
+    const screenCenter = new THREE.Vector3(
+      isMobileLayout ? 0 : -0.5,
+      OPTIONS_Y_OFFSET,
+      0,
+    );
     const aspect = windowWidth / windowHeight;
     const fov = 50;
     const distance = 7;
@@ -291,7 +295,7 @@ function OptionsGroup({
 
       return new THREE.Vector3(x, y, 0).add(screenCenter);
     });
-  }, [routes, count, windowWidth, windowHeight]);
+  }, [routes, count, windowWidth, windowHeight, isMobileLayout]);
 
   return (
     <group>
@@ -311,6 +315,7 @@ function OptionsGroup({
             index={index}
             hideOptions={hideOptions}
             isClosing={isClosing}
+            isMobileLayout={isMobileLayout}
           />
           // </Float>
         );
@@ -325,12 +330,14 @@ function Option({
   index,
   hideOptions,
   isClosing,
+  isMobileLayout,
 }: {
   initialPosition: THREE.Vector3;
   route: Route;
   index: number;
   hideOptions: () => void;
   isClosing: boolean;
+  isMobileLayout: boolean;
 }) {
   const optionRef = useRef<THREE.Group>(null!);
   const navigate = useNavigate();
@@ -367,7 +374,8 @@ function Option({
 
   return (
     <group ref={optionRef} position={position}>
-      <Html position={[0, 1.5, 0]}>
+      {/* Keep mobile centering separate from the button's animated transform. */}
+      <Html center={isMobileLayout} position={[0, 1.5, 0]}>
         <NavigationBubble
           key={route.id}
           initial={MotionVariants.OptionButton.initial}

@@ -275,6 +275,8 @@ interface GameState {
   manualTaps: number;
 
   upgrades: Upgrade[];
+  revealedUpgradeGroup: number;
+  upgradeLevelControlsRevealed: boolean;
   worlds: WorldItem[];
   bobItems: BobItem[];
   blobForms: BlobFormConfig[];
@@ -353,6 +355,8 @@ interface GameStateActions {
   resetBlobFormParameters: (blobFormId: string) => void;
 
   purchaseUpgrade: (upgradeId: string) => void;
+  revealUpgradeGroup: (group: number) => void;
+  revealUpgradeLevelControls: () => void;
   purchaseWorld: (worldId: string) => void;
   purchaseBobItem: (bobItemId: string, forFree?: boolean) => void;
   purchaseRoute: (routeId: string, forFree?: boolean) => void;
@@ -561,6 +565,8 @@ export const initialGameState: GameState = {
   manualTaps: 0,
 
   upgrades: initialTapUpgrades,
+  revealedUpgradeGroup: 2,
+  upgradeLevelControlsRevealed: false,
   worlds: initialWorlds,
   bobItems: initialBobItems,
   tapEffects: initialTapEffects,
@@ -628,6 +634,8 @@ const partializePersisted = (state: GameStore): PersistedGameStore => ({
   manualTaps: state.manualTaps,
   lastAutoTapTime: state.lastAutoTapTime,
   upgrades: state.upgrades,
+  revealedUpgradeGroup: state.revealedUpgradeGroup,
+  upgradeLevelControlsRevealed: state.upgradeLevelControlsRevealed,
   worlds: state.worlds,
   bobItems: state.bobItems,
   blobForms: state.blobForms,
@@ -747,6 +755,19 @@ export const useCoreStore = create<GameStore>()(
               recentManualTaps: filteredTaps,
             };
           });
+        },
+
+        revealUpgradeGroup: (group: number) => {
+          const nextGroup = Math.max(2, Math.min(4, group));
+          if (nextGroup > (get().revealedUpgradeGroup ?? 2)) {
+            set({ revealedUpgradeGroup: nextGroup });
+          }
+        },
+
+        revealUpgradeLevelControls: () => {
+          if (!get().upgradeLevelControlsRevealed) {
+            set({ upgradeLevelControlsRevealed: true });
+          }
         },
 
         purchaseUpgrade: (upgradeId: string) => {
