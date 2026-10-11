@@ -17,7 +17,6 @@ import { TapUpgrades } from "./tapUpgrades";
 import { MenuButton } from "@/layout/atoms";
 import { BobPhone } from "./BobPhone";
 import { playUISound } from "@/utils/soundSystem";
-import { SCENE_REVEAL_DURATION } from "./SceneWithLoader";
 import { BackToLobbyButton } from "./BackToLobbyButton";
 import { useI18n } from "@/i18n";
 
@@ -75,7 +74,6 @@ export function BottomNavigation() {
 
   return (
     <HugColumn
-      layout
       $align="center"
       $gap="0.75rem"
       style={{
@@ -85,7 +83,6 @@ export function BottomNavigation() {
         left: 0,
         right: 0,
       }}
-      transition={{ delay: SCENE_REVEAL_DURATION }}
     >
       <TapUpgrades show={showTapUpgrades} />
       <BackToLobbyButton show={showBackToLobby} />

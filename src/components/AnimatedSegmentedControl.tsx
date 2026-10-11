@@ -1,4 +1,5 @@
 import { type CSSProperties, type ReactNode, useMemo } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import styled, { css } from "styled-components";
 
 export interface AnimatedSegmentedOption<T extends string> {
@@ -31,6 +32,8 @@ export function AnimatedSegmentedControl<T extends string>({
   style,
   theme = "light",
 }: AnimatedSegmentedControlProps<T>) {
+  const reducedMotion = useReducedMotion();
+  const transition = reducedMotion ? { duration: 0 } : { type: "spring" as const, stiffness: 420, damping: 34, mass: 0.55 };
   const activeIndex = useMemo(
     () =>
       Math.max(
@@ -52,29 +55,39 @@ export function AnimatedSegmentedControl<T extends string>({
     >
       <SlidingTrack>
         <SlidingBackground
-          style={{
+          initial={false}
+          animate={{
             width: `${100 / optionCount}%`,
-            transform: `translateX(${activeIndex * 100}%)`,
+            x: `${activeIndex * 100}%`,
           }}
+          transition={transition}
         />
       </SlidingTrack>
 
-      {options.map((option) => {
-        const isActive = option.value === value;
+      <AnimatePresence initial={false} mode="popLayout">
+        {options.map((option) => {
+          const isActive = option.value === value;
 
-        return (
-          <SegmentedButton
-            key={option.value}
-            type="button"
-            $size={size}
-            $active={isActive}
-            $theme={theme}
-            onClick={() => onChange(option.value)}
-          >
-            <SegmentedLabel>{option.label}</SegmentedLabel>
-          </SegmentedButton>
-        );
-      })}
+          return (
+            <SegmentedButton
+              key={option.value}
+              layout="position"
+              initial={{ opacity: 0, scale: reducedMotion ? 1 : 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: reducedMotion ? 1 : 0.9 }}
+              transition={transition}
+              type="button"
+              $size={size}
+              $active={isActive}
+              $theme={theme}
+              aria-pressed={isActive}
+              onClick={() => onChange(option.value)}
+            >
+              <SegmentedLabel>{option.label}</SegmentedLabel>
+            </SegmentedButton>
+          );
+        })}
+      </AnimatePresence>
     </SegmentedRoot>
   );
 }
@@ -101,7 +114,7 @@ const SlidingTrack = styled.span`
   pointer-events: none;
 `;
 
-const SlidingBackground = styled.span`
+const SlidingBackground = styled(motion.span)`
   position: absolute;
   inset: 0 auto 0 0;
   border-radius: 9999px;
@@ -110,10 +123,9 @@ const SlidingBackground = styled.span`
     0 1px 2px rgba(0, 0, 0, 0.1),
     0 1px 5px rgba(0, 0, 0, 0.08);
   pointer-events: none;
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 `;
 
-const SegmentedButton = styled.button<{
+const SegmentedButton = styled(motion.button)<{
   $size: SegmentedSize;
   $active: boolean;
   $theme: "dark" | "light";
