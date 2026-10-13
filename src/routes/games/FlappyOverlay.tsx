@@ -1,13 +1,15 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import styled from "styled-components";
 import { PANEL_SPRING } from "@/styles/panelMotion";
+import type { ReactNode } from "react";
 
-export function FlappyOverlay({ phase, score, highScore, instructions, scoreLabel }: {
+export function FlappyOverlay({ phase, score, highScore, instructions, scoreLabel, idleContent }: {
   phase: "idle" | "playing" | "over";
   score: string;
   highScore: string;
   instructions: string;
   scoreLabel: string;
+  idleContent?: ReactNode;
 }) {
   const reducedMotion = useReducedMotion();
   const pop = (rotation: number, delay = 0) => ({
@@ -31,7 +33,7 @@ export function FlappyOverlay({ phase, score, highScore, instructions, scoreLabe
           <strong>{highScore}</strong>
           <Label>Highscore</Label>
         </Score>
-      </Scores> : <Instructions {...pop(0)}>{instructions}</Instructions>}
+      </Scores> : idleContent ?? <Instructions {...pop(0)}>{instructions}</Instructions>}
     </Backdrop>}
   </AnimatePresence>;
 }

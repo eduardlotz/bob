@@ -1,6 +1,7 @@
 import { createQuestToastIcon } from "@/components/QuestTrophyIcon";
 import { getLocale, type Locale } from "@/i18n";
 import { sileo } from "sileo";
+import { playSound } from "@/utils/soundSystem";
 import { useCoreStore } from "../store";
 import {
   getQuestCopy,
@@ -179,6 +180,7 @@ export const emitQuestCompletionToastOnce = (
   }
 
   sendQuestCompletionToast(toastMeta);
+  playSound("quest-complete");
 
   setQuestState((state) => ({
     notifiedCompletionKeys: [

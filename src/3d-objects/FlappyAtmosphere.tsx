@@ -32,6 +32,7 @@ export function FlappyAtmosphere({ score, active }: { score: number; active: Rea
   const light = useRef<THREE.DirectionalLight>(null);
   const altitude = useRef(0);
   const scroll = useRef(0);
+  const audioElapsed = useRef(0);
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const geometry = useMemo(treeGeometry, []);
   const uniforms = useMemo(() => ({
@@ -76,16 +77,21 @@ export function FlappyAtmosphere({ score, active }: { score: number; active: Rea
     altitude.current = THREE.MathUtils.damp(altitude.current, target, 1.8, delta);
     if (Math.abs(altitude.current - target) < 0.001) altitude.current = target;
     const height = altitude.current;
-    // Follow the same ascent as the sky; the overlap spans scores 25–50.
-    const crossfade = THREE.MathUtils.smoothstep(height, 0.5, 1);
-    setSoundMix(DEFAULT_WORLD_MUSIC.id, {
-      gain: crossfade === 1 ? 0 : Math.cos(crossfade * Math.PI / 2),
-      lowpassHz: 20000 * (280 / 20000) ** height,
-    });
-    setSoundMix(DEFAULT_PINK_NOISE.id, { gain: Math.sin(crossfade * Math.PI / 2) });
+    // Audio needs fewer updates than the visuals; the filter already smooths targets.
+    audioElapsed.current += rawDelta;
+    if (audioElapsed.current >= 1 / 20) {
+      audioElapsed.current %= 1 / 20;
+      const crossfade = THREE.MathUtils.smoothstep(height, 0.5, 1);
+      setSoundMix(DEFAULT_WORLD_MUSIC.id, {
+        gain: crossfade === 1 ? 0 : Math.cos(crossfade * Math.PI / 2),
+        lowpassHz: 20000 * (280 / 20000) ** height,
+      });
+      setSoundMix(DEFAULT_PINK_NOISE.id, { gain: Math.sin(crossfade * Math.PI / 2) });
+    }
     if (sky.current) sky.current.uniforms.altitude.value = height;
     if (active.current) scroll.current = (scroll.current + delta * 0.45) % 100;
-    if (forest.current) {
+    if (forest.current) forest.current.visible = height < 0.98;
+    if (forest.current?.visible) {
       trees.forEach((tree, i) => {
         const x = ((tree.x - scroll.current + 150) % 100) - 50;
         // Root the forest on the curved Earth horizon instead of a flat island.
@@ -98,7 +104,6 @@ export function FlappyAtmosphere({ score, active }: { score: number; active: Rea
         forest.current!.setMatrixAt(i, dummy.matrix);
       });
       forest.current.instanceMatrix.needsUpdate = true;
-      forest.current.visible = height < 0.98;
       (forest.current.material as THREE.MeshToonMaterial).color.setRGB(1 - height * 0.65, 1 - height * 0.5, 1);
     }
     if (ground.current) {
@@ -109,7 +114,8 @@ export function FlappyAtmosphere({ score, active }: { score: number; active: Rea
     if (stars.current) {
       const material = stars.current.material as THREE.PointsMaterial;
       material.opacity = THREE.MathUtils.smoothstep(height, 0.18, 0.65) * (0.82 + Math.sin(clock.elapsedTime * 0.6) * 0.08);
-      stars.current.rotation.z = Math.sin(clock.elapsedTime * 0.02) * 0.03;
+      stars.current.visible = material.opacity > 0;
+      if (stars.current.visible) stars.current.rotation.z = Math.sin(clock.elapsedTime * 0.02) * 0.03;
     }
     if (sun.current) sun.current.scale.setScalar(1 - height * 0.3);
     if (light.current) { light.current.intensity = 1.5 - height * 0.9; light.current.color.lerpColors(colors.sunlight, colors.starlight, height); }

@@ -3,7 +3,7 @@ import { RigidBody, BallCollider } from "@react-three/rapier";
 import { BlobForm } from "./BlobForm"; // Adjust path
 import { useCoreStore } from "@/store";
 import React from "react";
-import { SphereGeometry } from "three";
+import { Group, SphereGeometry } from "three";
 
 type Props = Omit<
   React.ComponentProps<typeof RigidBody>,
@@ -13,6 +13,7 @@ type Props = Omit<
   scale: [number, number, number] | number;
   /** Base collider radius before scale is applied. Defaults to `1`. */
   colliderRadius?: number;
+  visualRef?: React.Ref<Group>;
 };
 
 // TODO: add emotions like blink and dizzy on hit
@@ -31,6 +32,7 @@ export const CharacterBall = forwardRef((props: Props, ref: any) => {
   const {
     position,
     scale,
+    visualRef,
     colliderRadius = 1,
     ccd = true,
     angularDamping = 0.5,
@@ -52,7 +54,7 @@ export const CharacterBall = forwardRef((props: Props, ref: any) => {
     >
       <BallCollider args={[colliderRadius]} scale={scale} />
 
-      <group scale={scale}>
+      <group ref={visualRef} scale={scale}>
         <BlobForm
           formType="sphere"
           parameters={{

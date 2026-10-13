@@ -125,6 +125,12 @@ export function FlappyClouds({ score, altitude, active }: { score: number; altit
     const mesh = meshRef.current;
     if (!mesh) return;
 
+    const material = mesh.material as THREE.MeshToonMaterial;
+    material.opacity = 0.65 * (1 - THREE.MathUtils.smoothstep(altitude.current, 0.08, 0.6));
+    mesh.visible = material.opacity > 0.01;
+    if (!mesh.visible) return;
+    material.color.setRGB(1 - altitude.current * 0.5, 1 - altitude.current * 0.35, 1);
+
     const speed =
       (BASE_RING_SPEED + Math.min(score, 80) * RING_SPEED_SCORE_FACTOR) *
       CLOUD_SCROLL_FACTOR;
@@ -147,10 +153,6 @@ export function FlappyClouds({ score, altitude, active }: { score: number; altit
       }
     });
 
-    const material = mesh.material as THREE.MeshToonMaterial;
-    material.opacity = 0.65 * (1 - THREE.MathUtils.smoothstep(altitude.current, 0.08, 0.6));
-    material.color.setRGB(1 - altitude.current * 0.5, 1 - altitude.current * 0.35, 1);
-    mesh.visible = material.opacity > 0.01;
     const elapsed = state.clock.getElapsedTime();
     let index = 0;
 

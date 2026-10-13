@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback, useMemo, useState } from "react";
-import { BallCollider, RapierRigidBody, RigidBody } from "@react-three/rapier";
+import { BallCollider, RapierRigidBody, RigidBody, useAfterPhysicsStep } from "@react-three/rapier";
 import { useFrame, useThree } from "@react-three/fiber";
-import { Quaternion, Vector3 } from "three";
+import { Group } from "three";
 
 import CameraControlsImpl from "camera-controls";
 
@@ -47,8 +47,7 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
   const lostAt = useRef(0);
   const birdApi = useRef<RapierRigidBody>(null!);
   const tilt = useRef({ angle: 0, velocity: 0 });
-  const tiltRotation = useMemo(() => new Quaternion(), []);
-  const tiltAxis = useMemo(() => new Vector3(0, 0, 1), []);
+  const birdVisual = useRef<Group>(null);
 
   const cameraControlsRef = useViewStore((s) => s.cameraControlsRef);
   const incrementScore = useMiniGameStore((s) => s.incrementScore);
@@ -75,6 +74,7 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
       if (isMobile && controls && previousTouchAction !== undefined) {
         controls.touches.one = previousTouchAction;
       }
+      stopSoundsById("flappy-flap");
       stopSoundsById("flappy-point");
       stopSoundsById("flappy-lose");
     };
@@ -83,10 +83,11 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
   const flap = useCallback(() => {
     if (!active.current) {
       if (performance.now() - lostAt.current < 400) return;
+      stopSoundsById("flappy-lose");
       resetScore();
       obstacles.current?.reset();
       birdApi.current?.setTranslation({ x: BIRD_START_X, y: BIRD_START_Y, z: 0 }, true);
-      birdApi.current?.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true);
+      birdApi.current?.setEnabled(true);
       tilt.current = { angle: 0, velocity: 0 };
       birdApi.current?.setGravityScale(1, true);
       active.current = true;
@@ -98,7 +99,7 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
     body.wakeUp();
     body.setLinvel({ x: 0, y: FLAP_FORCE, z: 0 }, true);
 
-    playSound("pop");
+    playSound("flappy-flap");
   }, [resetScore]);
 
   const reset = useCallback(() => {
@@ -114,7 +115,20 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
     body.setGravityScale(0, true);
     body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     body.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    body.setTranslation({ x: BIRD_START_X, y: BIRD_START_Y, z: 0 }, true);
+    body.setEnabled(false);
+    tilt.current = { angle: 0, velocity: 0 };
   }, [resetScore]);
+
+  useEffect(() => {
+    if (!active.current) birdApi.current?.setEnabled(false);
+  }, []);
+
+  useAfterPhysicsStep(() => {
+    if (!active.current || !birdApi.current) return;
+    const y = birdApi.current.translation().y;
+    if (y < -6 || y > 12) reset();
+  });
 
   const handleScore = useCallback(() => {
     incrementScore();
@@ -164,15 +178,9 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
     const pos = body.translation();
     const vel = body.linvel();
 
-    if (active.current && (pos.y < -6 || pos.y > 12)) reset();
-    if (!active.current) {
-      body.setGravityScale(0, true);
-      body.setTranslation({ x: BIRD_START_X, y: BIRD_START_Y + Math.sin(clock.elapsedTime * 2) * 0.15, z: 0 }, true);
-      body.setLinvel({ x: 0, y: 0, z: 0 }, true);
-      body.setAngvel({ x: 0, y: 0, z: 0 }, true);
-      body.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true);
-      tilt.current.angle = 0;
-      tilt.current.velocity = 0;
+    if (birdVisual.current) {
+      birdVisual.current.position.y = active.current ? 0 : Math.sin(clock.elapsedTime * 2) * 0.15;
+      if (!active.current) birdVisual.current.rotation.z = 0;
     }
 
     if (cameraControlsRef?.current) {
@@ -202,7 +210,7 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
       tilt.current.velocity += ((targetAngle - tilt.current.angle) * 100 - tilt.current.velocity * 16) * step;
       tilt.current.angle += tilt.current.velocity * step;
     }
-    body.setRotation(tiltRotation.setFromAxisAngle(tiltAxis, tilt.current.angle), true);
+    if (birdVisual.current) birdVisual.current.rotation.z = tilt.current.angle;
   });
 
   return (
@@ -218,6 +226,7 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
       {phase === "playing" && <PointsCounter number={score} />}
       <CharacterBall
         ref={birdApi}
+        visualRef={birdVisual}
         enabledTranslations={[false, true, false]}
         angularDamping={1}
         enabledRotations={[false, false, false]}

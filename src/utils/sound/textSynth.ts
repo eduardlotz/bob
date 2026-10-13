@@ -1,3 +1,5 @@
+import { getSynthesisTextOutput, resumeSynthesisContext } from "./synthesis";
+
 export interface SynthConfig {
   masterVolume: number; // 0–1
 
@@ -135,7 +137,7 @@ function charToFrequency(
 export class TextSynth {
   private audioCtx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
-  private activeNodeCount = 0;
+  private activeVoices = new Set<() => void>();
 
   private config: SynthConfig;
   private voice: VoiceConfig;
@@ -153,17 +155,19 @@ export class TextSynth {
   }
 
   async resume(): Promise<void> {
+    await resumeSynthesisContext();
     this.ensureContext();
-    if (this.audioCtx?.state === "suspended") {
-      await this.audioCtx.resume().catch(() => {});
-    }
   }
 
   dispose(): void {
-    this.audioCtx?.close().catch(() => {});
+    this.stop();
+    this.masterGain?.disconnect();
     this.audioCtx = null;
     this.masterGain = null;
-    this.activeNodeCount = 0;
+  }
+
+  stop(): void {
+    Array.from(this.activeVoices).forEach((stop) => stop());
   }
 
   setPreset(preset: PresetName | SynthConfig): void {
@@ -193,7 +197,7 @@ export class TextSynth {
     this.ensureContext();
     if (!this.audioCtx || !this.masterGain) return;
     if (this.audioCtx.state !== "running") return;
-    if (this.activeNodeCount >= this.config.maxNodes) return;
+    if (this.activeVoices.size >= this.config.maxNodes) return;
 
     const ctx = this.audioCtx;
     const cfg = this.config;
@@ -218,12 +222,13 @@ export class TextSynth {
     env.connect(this.masterGain);
 
     let lfo: OscillatorNode | null = null;
+    let lfoGain: GainNode | null = null;
     if (cfg.lfoDepth > 0) {
       lfo = ctx.createOscillator();
       lfo.type = "sine";
       lfo.frequency.value = cfg.lfoFrequency;
 
-      const lfoGain = ctx.createGain();
+      lfoGain = ctx.createGain();
       lfoGain.gain.value = cfg.lfoDepth;
 
       lfo.connect(lfoGain);
@@ -262,27 +267,32 @@ export class TextSynth {
     osc.stop(stopAt);
     lfo?.stop(stopAt);
 
-    this.activeNodeCount++;
-    osc.onended = () => {
-      this.activeNodeCount = Math.max(0, this.activeNodeCount - 1);
+    const cleanup = () => {
+      this.activeVoices.delete(stop);
       osc.disconnect();
       filter.disconnect();
       env.disconnect();
       lfo?.disconnect();
+      lfoGain?.disconnect();
     };
+    const stop = () => {
+      osc.stop();
+      lfo?.stop();
+      cleanup();
+    };
+    this.activeVoices.add(stop);
+    osc.onended = cleanup;
   }
 
   private ensureContext(): void {
-    if (this.audioCtx) return;
     try {
-      const AudioCtx =
-        window.AudioContext ??
-        (window as unknown as Record<string, unknown>).webkitAudioContext;
-      if (!AudioCtx) return;
-      this.audioCtx = new (AudioCtx as typeof AudioContext)();
+      const output = getSynthesisTextOutput();
+      if (this.audioCtx === output.context && this.masterGain) return;
+      this.dispose();
+      this.audioCtx = output.context as AudioContext;
       this.masterGain = this.audioCtx.createGain();
       this.masterGain.gain.value = this.config.masterVolume;
-      this.masterGain.connect(this.audioCtx.destination);
+      this.masterGain.connect(output);
     } catch {}
   }
 

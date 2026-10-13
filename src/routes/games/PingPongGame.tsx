@@ -23,6 +23,8 @@ import { FlappyOverlay } from "./FlappyOverlay";
 import styled from "styled-components";
 import { usePaddleTilt } from "@/hooks/usePaddleTilt";
 import { useI18n } from "@/i18n";
+import { PointsCounter } from "@/molecules/PointsCounter";
+import { PingPongInstructions } from "./PingPongInstructions";
 
 const MIN_HIT_FORCE = 10;
 const SCORE_FORCE_THRESHOLD = 50;
@@ -52,6 +54,7 @@ export function PingPongGame({ onExit: _onExit }: { onExit: () => void }) {
 
   const { incrementScore, resetScore } = useMiniGameStore();
   const highScore = useMiniGameStore((state) => state.highScores.PING_PONG);
+  const score = useMiniGameStore((state) => state.session.score);
   const { cameraControlsRef } = useViewStore();
 
   useEffect(() => {
@@ -184,8 +187,12 @@ export function PingPongGame({ onExit: _onExit }: { onExit: () => void }) {
         score={formatNumber(lastScore.current, { maximumFractionDigits: 0 })}
         highScore={formatNumber(Math.max(highScore, lastScore.current), { maximumFractionDigits: 0 })}
         scoreLabel={locale === "de" ? "Deine Punkte" : "your points"}
-        instructions={locale === "de" ? "Tippen oder Leertaste zum Spielen" : "tap or spacebar to play"}
+        instructions={isMobile
+          ? (locale === "de" ? "Tippen zum Spielen" : "Tap to play")
+          : (locale === "de" ? "Klicken oder Leertaste zum Spielen" : "Click or press space to play")}
+        idleContent={<PingPongInstructions locale={locale} mode={isMobile ? (tilt.enabled ? "tilt" : "touch") : "mouse"} />}
       /></GameOverlay>
+      {phase === "playing" && <PointsCounter number={score} />}
       <CharacterBall ref={ballApi} position={[0, 5, 0]} scale={0.3} gravityScale={0} />
 
       <Paddle ref={paddleApi} onCollide={handleCollision} tiltInput={tilt.enabled ? tilt.input : undefined} />
