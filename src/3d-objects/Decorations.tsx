@@ -23,6 +23,7 @@ import { CloudSky, type CloudClimate } from "./worlds/CloudSky";
 import { CityWorld } from "./worlds/CityWorld";
 import { FlyingUfos } from "./worlds/FlyingUfos";
 import { DesertDetails } from "./worlds/DesertDetails";
+import { WorldToonMaterial } from "./worlds/WorldToonMaterial";
 import { Nebula } from "./worlds/Nebula";
 import { WeatherParticles } from "./worlds/WeatherParticles";
 import { seededRandom, useWorldQuality } from "./worlds/quality";
@@ -196,7 +197,7 @@ function WorldFloor({ scene }: { scene: WorldSceneConfig }) {
     <group position={[0, FLOOR_Y, 0]}>
       <mesh rotation={[-Math.PI / 2, 0, 0]} renderOrder={-5}>
         <circleGeometry args={[LARGE_FLOOR_SIZE * 0.42, 72]} />
-        <meshStandardMaterial color={scene.groundColor} />
+        <WorldToonMaterial color={scene.groundColor} />
       </mesh>
 
       <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -335,7 +336,7 @@ function WorldModel({
           ].map(([x, y, z, scale], index) => (
             <mesh key={index} position={[x, y, z]} scale={scale}>
               <coneGeometry args={[1.2, 1.6, 4]} />
-              <meshStandardMaterial color="#d9b26e" />
+              <WorldToonMaterial color="#d9b26e" />
             </mesh>
           ))}
         </group>
@@ -350,11 +351,11 @@ function WorldModel({
           <SnowmanDetails />
           <mesh position={[0, -0.3, 0]} scale={[0.42, 0.42, 0.42]}>
             <sphereGeometry args={[1, 16, 16]} />
-            <meshStandardMaterial color="#ffffff" />
+            <WorldToonMaterial color="#ffffff" />
           </mesh>
           <mesh position={[0, 0.18, 0]} scale={[0.28, 0.28, 0.28]}>
             <sphereGeometry args={[1, 16, 16]} />
-            <meshStandardMaterial color="#ffffff" />
+            <WorldToonMaterial color="#ffffff" />
           </mesh>
           <mesh
             position={[0.08, 0.16, 0.24]}
@@ -362,7 +363,7 @@ function WorldModel({
             scale={[0.04, 0.12, 0.04]}
           >
             <coneGeometry args={[1, 1, 10]} />
-            <meshStandardMaterial color="#ff9f40" />
+            <WorldToonMaterial color="#ff9f40" />
           </mesh>
         </group>
       );

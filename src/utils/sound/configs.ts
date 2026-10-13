@@ -7,37 +7,48 @@ import {
   DEFAULT_WORLD_MUSIC,
 } from "./defaults";
 import type { SoundConfig } from "./types";
-import { copy, toggleOn, error, success } from "../../../.web-kits/playful";
+import {
+  copy,
+  toggleOn,
+  error,
+  success,
+  pageEnter,
+  pageExit,
+} from "../../../.web-kits/playful";
 
 const defineSound = (config: SoundConfig): SoundConfig => config;
 
 export const DEFAULT_SOUND_CONFIGS: SoundConfig[] = [
-  ...["slot-spin", "slot-stop", "slot-win"].map((id): SoundConfig => ({
-    id,
-    filePath: `/audio/${id}.wav`,
-    type: "ui",
-    category: "effect",
-    volume: id === "slot-spin" ? 0.22 : 0.4,
-    loop: id === "slot-spin",
-    playback: { overlap: "restart", maxConcurrent: 1 },
-  })),
+  ...["slot-spin", "slot-stop", "slot-win"].map(
+    (id): SoundConfig => ({
+      id,
+      filePath: `/audio/${id}.wav`,
+      type: "ui",
+      category: "effect",
+      volume: id === "slot-spin" ? 0.22 : 0.4,
+      loop: id === "slot-spin",
+      playback: { overlap: "restart", maxConcurrent: 1 },
+    }),
+  ),
   ...[
-    { id: "flappy-flap", synthesis: copy },
-    { id: "flappy-point", synthesis: toggleOn },
+    { id: "flappy-flap", synthesis: pageEnter },
+    { id: "flappy-point", synthesis: copy },
     { id: "flappy-lose", synthesis: error },
     { id: "quest-complete", synthesis: success },
-  ].map(({ id, synthesis }): SoundConfig => ({
-    id,
-    synthesis,
-    type: "ui",
-    category: "effect",
-    volume: 1,
-    playback: {
-      group: id.startsWith("flappy-") ? "flappy-effects" : "quest-rewards",
-      overlap: id === "flappy-lose" ? "replace-group" : "restart",
-      maxConcurrent: 1,
-    },
-  })),
+  ].map(
+    ({ id, synthesis }): SoundConfig => ({
+      id,
+      synthesis,
+      type: "ui",
+      category: "effect",
+      volume: 1,
+      playback: {
+        group: id.startsWith("flappy-") ? "flappy-effects" : "quest-rewards",
+        overlap: id === "flappy-lose" ? "replace-group" : "restart",
+        maxConcurrent: 1,
+      },
+    }),
+  ),
   defineSound({
     id: DEFAULT_TAP_SOUND.id,
     filePath: DEFAULT_TAP_SOUND.filePath,

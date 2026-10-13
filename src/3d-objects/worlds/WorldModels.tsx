@@ -8,6 +8,7 @@ import {
   type Placement,
 } from "./InstancedModels";
 import { seededRandom, useWorldQuality } from "./quality";
+import { WorldToonMaterial } from "./WorldToonMaterial";
 
 function ringPlacements(
   count: number,
@@ -136,11 +137,13 @@ export function ForestModels() {
   return (
     <>
       <ModelInstances
+        toon
         name="forest-trees"
         build={treeGeometry}
         placements={trees}
       />
       <ModelInstances
+        toon
         name="forest-rocks"
         build={rockGeometry}
         placements={rocks}
@@ -156,6 +159,7 @@ export function WinterModels() {
   );
   return (
     <ModelInstances
+      toon
       name="winter-pines"
       build={pineGeometry}
       placements={trees}
@@ -170,6 +174,7 @@ export function DesertCacti() {
   );
   return (
     <ModelInstances
+      toon
       name="desert-cacti"
       build={cactusGeometry}
       placements={placements}
@@ -227,7 +232,7 @@ export function Dune({
   useEffect(() => () => geometry.dispose(), [geometry]);
   return (
     <mesh geometry={geometry} position={position} scale={scale}>
-      <meshStandardMaterial color={color} flatShading roughness={1} />
+      <WorldToonMaterial color={color} />
     </mesh>
   );
 }
@@ -238,20 +243,20 @@ export function SnowmanDetails() {
       {[-0.1, 0.1].map((x) => (
         <mesh key={x} position={[x, 0.27, 0.245]}>
           <sphereGeometry args={[0.035, 6, 4]} />
-          <meshStandardMaterial color="#343c43" />
+          <WorldToonMaterial color="#343c43" />
         </mesh>
       ))}
       <mesh position={[0, 0.04, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[0.245, 0.045, 5, 12]} />
-        <meshStandardMaterial color="#bc5b4c" />
+        <WorldToonMaterial color="#bc5b4c" />
       </mesh>
       <mesh position={[0, 0.46, 0]}>
         <cylinderGeometry args={[0.3, 0.3, 0.045, 12]} />
-        <meshStandardMaterial color="#455766" />
+        <WorldToonMaterial color="#455766" />
       </mesh>
       <mesh position={[0, 0.57, 0]}>
         <cylinderGeometry args={[0.17, 0.18, 0.22, 10]} />
-        <meshStandardMaterial color="#455766" />
+        <WorldToonMaterial color="#455766" />
       </mesh>
       {[-1, 1].map((side) => (
         <mesh
@@ -260,7 +265,7 @@ export function SnowmanDetails() {
           rotation={[0, 0, side * -1.0]}
         >
           <cylinderGeometry args={[0.022, 0.035, 0.5, 5]} />
-          <meshStandardMaterial color="#71533d" />
+          <WorldToonMaterial color="#71533d" />
         </mesh>
       ))}
     </group>

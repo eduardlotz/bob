@@ -87,6 +87,7 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
       resetScore();
       obstacles.current?.reset();
       birdApi.current?.setTranslation({ x: BIRD_START_X, y: BIRD_START_Y, z: 0 }, true);
+      birdApi.current?.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true);
       birdApi.current?.setEnabled(true);
       tilt.current = { angle: 0, velocity: 0 };
       birdApi.current?.setGravityScale(1, true);
@@ -98,6 +99,8 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
 
     body.wakeUp();
     body.setLinvel({ x: 0, y: FLAP_FORCE, z: 0 }, true);
+    const currentAng = body.angvel();
+    body.setAngvel({ x: 0, y: 0, z: Math.max(currentAng.z, 2.2) }, true);
 
     playSound("flappy-flap");
   }, [resetScore]);
@@ -115,6 +118,7 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
     body.setGravityScale(0, true);
     body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     body.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    body.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true);
     body.setTranslation({ x: BIRD_START_X, y: BIRD_START_Y, z: 0 }, true);
     body.setEnabled(false);
     tilt.current = { angle: 0, velocity: 0 };
@@ -180,7 +184,7 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
 
     if (birdVisual.current) {
       birdVisual.current.position.y = active.current ? 0 : Math.sin(clock.elapsedTime * 2) * 0.15;
-      if (!active.current) birdVisual.current.rotation.z = 0;
+      if (!active.current) birdVisual.current.quaternion.identity();
     }
 
     if (cameraControlsRef?.current) {
@@ -199,6 +203,14 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
 
     if (!active.current) return;
 
+    // Restore the original physical rotation control so rim contact can redirect Bob.
+    const targetZ = Math.max(-2, Math.min(2, -vel.y * 0.2));
+    const ang = body.angvel();
+    body.setAngvel(
+      { x: 0, y: 0, z: ang.z + (targetZ - ang.z) * Math.min(1, delta * 6) },
+      true,
+    );
+
     // Pitch follows the flight path: upward on a flap, level at the apex,
     // downward while falling. A damped spring carries momentum across taps.
     const forwardSpeed = BASE_RING_SPEED + Math.min(score, 60) * RING_SPEED_SCORE_FACTOR;
@@ -210,7 +222,13 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
       tilt.current.velocity += ((targetAngle - tilt.current.angle) * 100 - tilt.current.velocity * 16) * step;
       tilt.current.angle += tilt.current.velocity * step;
     }
-    if (birdVisual.current) birdVisual.current.rotation.z = tilt.current.angle;
+    if (birdVisual.current) {
+      // Keep the current visual pitch independent of the body's collision rotation.
+      const rotation = birdVisual.current.parent?.quaternion;
+      if (rotation) birdVisual.current.quaternion.copy(rotation).invert();
+      else birdVisual.current.quaternion.identity();
+      birdVisual.current.rotateZ(tilt.current.angle);
+    }
   });
 
   return (
@@ -220,7 +238,9 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
         score={formatNumber(lastScore.current, { maximumFractionDigits: 0 })}
         highScore={formatNumber(Math.max(highScore, lastScore.current), { maximumFractionDigits: 0 })}
         scoreLabel={locale === "de" ? "Deine Punkte" : "your points"}
-        instructions={locale === "de" ? "Tippen oder Leertaste zum Spielen" : "tap or spacebar to play"}
+        instructions={isMobile
+          ? (locale === "de" ? "Tippen zum Spielen" : "Tap to play")
+          : (locale === "de" ? "Klicken oder Leertaste zum Spielen" : "Click or press space to play")}
       /></GameOverlay>
 
       {phase === "playing" && <PointsCounter number={score} />}
@@ -229,7 +249,7 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
         visualRef={birdVisual}
         enabledTranslations={[false, true, false]}
         angularDamping={1}
-        enabledRotations={[false, false, false]}
+        enabledRotations={[true, true, true]}
         position={[BIRD_START_X, BIRD_START_Y, 0]}
         scale={0.4}
       />
@@ -237,7 +257,7 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
       <FlappyRings
         ref={obstacles}
         birdBody={birdApi}
-        birdRadius={0.4}
+        birdRadius={0.3}
         active={active}
         score={score}
         onScore={handleScore}

@@ -8,6 +8,7 @@ import {
   type Placement,
 } from "./InstancedModels";
 import { seededRandom, useWorldQuality } from "./quality";
+import { WorldToonMaterial } from "./WorldToonMaterial";
 
 function sandstoneGeometry() {
   return assemble([
@@ -85,7 +86,7 @@ function Tumbleweeds() {
       frustumCulled={false}
       name="desert-tumbleweeds"
     >
-      <meshStandardMaterial vertexColors roughness={1} />
+      <WorldToonMaterial vertexColors />
     </instancedMesh>
   );
 }
@@ -116,6 +117,7 @@ export function DesertDetails() {
         build={sandstoneGeometry}
         placements={placements}
         name="desert-rocks"
+        toon
       />
       <Tumbleweeds />
     </>
