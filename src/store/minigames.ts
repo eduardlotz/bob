@@ -22,6 +22,7 @@ interface MiniGameState {
   incrementScore: () => void;
   resetScore: () => void;
   finishGame: () => void;
+  resetMiniGames: () => void;
 }
 
 const DEFAULT_HIGH_SCORES: Record<MiniGameType, number> = {
@@ -83,6 +84,14 @@ export const useMiniGameStore = create<MiniGameState>()(
           commitSessionHighScore(state);
           state.session.score = 0;
           state.activeGame = "LOBBY";
+        }),
+
+      // A debug reset discards the current run instead of saving it as a best.
+      resetMiniGames: () =>
+        set((state) => {
+          state.activeGame = "LOBBY";
+          state.session.score = 0;
+          state.highScores = { ...DEFAULT_HIGH_SCORES };
         }),
     })),
     {

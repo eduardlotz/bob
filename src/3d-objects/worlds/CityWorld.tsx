@@ -8,7 +8,7 @@ function box(parts: Part[], color: string, position: Vec3, scale: Vec3) {
   parts.push([new T.BoxGeometry(1, 1, 1), color, position, scale]);
 }
 
-function brownstone(
+export function brownstone(
   parts: Part[],
   x: number,
   z: number,

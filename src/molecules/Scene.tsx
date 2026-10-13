@@ -33,6 +33,7 @@ import { FISHEYE_CONFIG } from "../store/config/themes";
 import {
   attachListenerToCamera,
   playWorldSound,
+  setSoundMix,
   stopAllWorldSounds,
 } from "@/utils/soundSystem";
 import { PortfolioScene } from "@/routes/PortfolioScene";
@@ -277,6 +278,8 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
     config: { tension: 300, friction: 15 },
   }));
 
+  const isFlappyGame = routePath === ROUTE_PATHS.MINIGAMES && activeGame === "FLAPPY_BIRD";
+
   // route based music
   // default: jazz world music
   // portfolio: pink noise
@@ -313,15 +316,31 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
       return;
     }
 
-    playWorldSound(worldMusicId);
+    if (isFlappyGame) {
+      setSoundMix(DEFAULT_WORLD_MUSIC.id, { gain: 1, lowpassHz: 20000 });
+      setSoundMix(DEFAULT_PINK_NOISE.id, { gain: 0 });
+      playWorldSound(worldMusicId, { fadeIn: 0 });
+      // Separate groups allow both loops to overlap during the ascent.
+      playWorldSound(DEFAULT_PINK_NOISE.id, {
+        fadeIn: 0,
+        distanceAttenuation: false,
+        playback: { group: "flappy-ambience", overlap: "restart" },
+      });
+    } else {
+      playWorldSound(worldMusicId);
+    }
     activeRouteMusicRef.current = worldMusicId;
 
     return () => {
       if (activeRouteMusicRef.current === worldMusicId)
         activeRouteMusicRef.current = null;
       stopAllWorldSounds();
+      if (isFlappyGame) {
+        setSoundMix(DEFAULT_WORLD_MUSIC.id);
+        setSoundMix(DEFAULT_PINK_NOISE.id);
+      }
     };
-  }, [canPlayRouteMusic, worldMusicId]);
+  }, [canPlayRouteMusic, worldMusicId, isFlappyGame]);
 
   const envLightPreset = useMemo(
     () =>
@@ -434,6 +453,8 @@ const CursorFollowCamera = () => {
     if (viewMode !== "fixed" || isTransitioning) return;
 
     const viewConfig = getCurrentViewConfig();
+    // The slot game combines this follow behavior with responsive cabinet framing.
+    if (viewConfig?.id === "minigames:slot_machine") return;
     if (!viewConfig?.cursorFollow || !viewConfig.position || !viewConfig.target)
       return;
 

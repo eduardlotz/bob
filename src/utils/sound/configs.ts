@@ -11,6 +11,15 @@ import type { SoundConfig } from "./types";
 const defineSound = (config: SoundConfig): SoundConfig => config;
 
 export const DEFAULT_SOUND_CONFIGS: SoundConfig[] = [
+  ...["slot-spin", "slot-stop", "slot-win", "flappy-point", "flappy-lose"].map((id): SoundConfig => ({
+    id,
+    filePath: `/audio/${id}.wav`,
+    type: "ui",
+    category: "effect",
+    volume: id === "slot-spin" ? 0.22 : 0.4,
+    loop: id === "slot-spin",
+    playback: { overlap: "restart", maxConcurrent: 1 },
+  })),
   defineSound({
     id: DEFAULT_TAP_SOUND.id,
     filePath: DEFAULT_TAP_SOUND.filePath,

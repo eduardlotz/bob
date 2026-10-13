@@ -76,7 +76,9 @@ const normalizeBobItems = (bobItems: any[] = []) => {
       ...item,
       purchased: previousItem.purchased ?? item.purchased,
       enabled: previousItem.enabled ?? item.enabled,
-      unlocked: previousItem.unlocked ?? item.unlocked,
+      unlocked: item.id === "astronautHelmet"
+        ? previousItem.purchased === true
+        : previousItem.unlocked ?? item.unlocked,
       preview: false,
     };
   });
@@ -125,6 +127,7 @@ export function migrateCoreStore(persisted: any, fromVersion: number) {
     return {
       ...state,
       worlds: normalizeWorlds(state.worlds),
+      bobItems: normalizeBobItems(state.bobItems),
       version: GAME_STORE_VERSION.LATEST,
     };
   }
@@ -199,6 +202,7 @@ export function migrateCoreStore(persisted: any, fromVersion: number) {
 
   return {
     ...state,
+    bobItems: normalizeBobItems(state.bobItems),
     version: GAME_STORE_VERSION.LATEST,
   };
 }

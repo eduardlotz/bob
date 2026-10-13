@@ -60,6 +60,41 @@ const instances = new Map<string, SoundInstance>();
 const instancesBySoundId = new Map<string, Set<string>>();
 const instancesByGroup = new Map<string, Set<string>>();
 
+type SoundMix = { gain: number; lowpassHz?: number };
+// Howler exposes no filter API. Keep its pooled gain-node access isolated here.
+type WebAudioHowl = { _webAudio: boolean; _sounds: Array<{ _id: number; _node: GainNode }> };
+const soundMixes = new Map<string, SoundMix>();
+const lowpassNodes = new WeakMap<GainNode, BiquadFilterNode>();
+
+const applyLowpass = (howl: Howl, howlId: number, frequency?: number) => {
+  const webAudio = howl as unknown as WebAudioHowl;
+  if (!webAudio._webAudio || !Howler.ctx || !Howler.masterGain) return;
+  const node = webAudio._sounds.find((sound) => sound._id === howlId)?._node;
+  if (!node) return;
+  let filter = lowpassNodes.get(node);
+  if (frequency === undefined) {
+    if (!filter) return;
+    node.disconnect(filter);
+    filter.disconnect();
+    node.connect(Howler.masterGain);
+    lowpassNodes.delete(node);
+    return;
+  }
+  const cutoff = Math.max(20, Math.min(Howler.ctx.sampleRate / 2 - 1, frequency));
+  if (!filter) {
+    filter = Howler.ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.Q.value = 0.7;
+    filter.frequency.value = cutoff;
+    node.disconnect(Howler.masterGain);
+    node.connect(filter);
+    filter.connect(Howler.masterGain);
+    lowpassNodes.set(node, filter);
+  } else {
+    filter.frequency.setTargetAtTime(cutoff, Howler.ctx.currentTime, 0.08);
+  }
+};
+
 let state: SoundSystemState = {
   enabled: true,
   masterVolume: DEFAULT_MASTER_VOLUME,
@@ -265,6 +300,9 @@ const cleanupInstance = (instanceId: string) => {
   const instance = instances.get(instanceId);
   if (!instance) return;
 
+  const howl = howls.get(instance.soundId);
+  if (howl) applyLowpass(howl, instance.howlId);
+
   instances.delete(instanceId);
   removeFromIndex(instancesBySoundId, instance.soundId, instanceId);
   removeFromIndex(instancesByGroup, instance.config.playback.group, instanceId);
@@ -288,8 +326,22 @@ const getSoundIdsByType = (type: SoundType): string[] =>
 const updateInstanceVolume = (instance: SoundInstance) => {
   const howl = howls.get(instance.soundId);
   if (!howl) return;
-  const volume = calculateFinalVolume(instance.config, instance.attenuation);
+  const volume = calculateFinalVolume(instance.config, instance.attenuation) *
+    (soundMixes.get(instance.soundId)?.gain ?? 1);
   howl.volume(volume, instance.howlId);
+};
+
+/** Independent of user volume/mute preferences; filters affect only this sound. */
+export const setSoundMix = (soundId: string, mix?: SoundMix): void => {
+  const previous = soundMixes.get(soundId);
+  if (mix && previous?.gain === clamp01(mix.gain) && previous.lowpassHz === mix.lowpassHz) return;
+  if (mix) soundMixes.set(soundId, { gain: clamp01(mix.gain), lowpassHz: mix.lowpassHz });
+  else soundMixes.delete(soundId);
+  const howl = howls.get(soundId);
+  getInstancesForSound(soundId).forEach((instance) => {
+    if (howl) applyLowpass(howl, instance.howlId, mix?.lowpassHz);
+    updateInstanceVolume(instance);
+  });
 };
 
 const stopSoundInternal = (instanceId: string, fadeOutMs?: number) => {
@@ -453,7 +505,9 @@ export const playSound = (soundId: string, options?: Partial<SoundConfig>): void
 
   registerInstance(instance);
 
-  const targetVolume = calculateFinalVolume(config, instance.attenuation);
+  const mix = soundMixes.get(soundId);
+  applyLowpass(howl, howlId, mix?.lowpassHz);
+  const targetVolume = calculateFinalVolume(config, instance.attenuation) * (mix?.gain ?? 1);
   if (config.fadeIn > 0) {
     howl.volume(0, howlId);
     howl.fade(0, targetVolume, config.fadeIn, howlId);
@@ -461,7 +515,9 @@ export const playSound = (soundId: string, options?: Partial<SoundConfig>): void
     howl.volume(targetVolume, howlId);
   }
 
-  howl.once("end", () => cleanupInstance(instance.id), howlId);
+  // Howler emits `end` after every loop. Keep loops tracked until stopped,
+  // otherwise a completed reel spin (or scene exit) cannot stop its audio.
+  if (!config.loop) howl.once("end", () => cleanupInstance(instance.id), howlId);
   howl.once("loaderror", () => cleanupInstance(instance.id), howlId);
 };
 

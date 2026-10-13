@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { persist } from "zustand/middleware";
 import { createIndexedDBStorage } from "../indexedDB";
+import { useMiniGameStore } from "../minigames";
 import { match } from "ts-pattern";
 import {
   ROUTE_PATHS,
@@ -64,7 +65,8 @@ export enum GAME_STORE_VERSION {
   V9 = 100104, // version 1.01.104 (motion + tap particle prefs)
   V10 = 100105, // version 1.01.105 (upgrade schema normalization)
   V11 = 100106, // city world catalogue
-  LATEST = V11,
+  V12 = 100107, // astronaut helmet becomes a quest reward
+  LATEST = V12,
 }
 
 // TODO: plan refactor to include component inside item properties
@@ -343,6 +345,7 @@ interface GameFlags {
 
 interface GameStateActions {
   addTaps: (amount: number) => void;
+  spendTaps: (amount: number) => boolean;
 
   equipBobItem: (bobItemId: string) => void;
   unequipBobItem: (bobItemId: string) => void;
@@ -705,6 +708,12 @@ export const useCoreStore = create<GameStore>()(
 
         setGameReady: (gameReady) => set({ isReady: gameReady }),
 
+        spendTaps: (amount: number) => {
+          if (!Number.isFinite(amount) || amount <= 0 || get().taps < amount) return false;
+          set((state) => ({ taps: state.taps - amount }));
+          return true;
+        },
+
         addTaps: (amount: number) => {
           set((state) => ({
             taps: state.taps + amount,
@@ -916,6 +925,7 @@ export const useCoreStore = create<GameStore>()(
             if (
               !bobItem ||
               bobItem.purchased ||
+              (bobItem.unlocked === false && !forFree) ||
               (!state.canAfford(bobItem.cost) && !forFree)
             ) {
               return state;
@@ -1290,6 +1300,8 @@ export const useCoreStore = create<GameStore>()(
         },
 
         resetGame: () => {
+          // Clear score metrics before resetting rewards/quests can re-read them.
+          useMiniGameStore.getState().resetMiniGames();
           set({
             ...initialGameState,
             ...initialGameFlags,

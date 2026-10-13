@@ -27,6 +27,7 @@ import { useI18n } from "@/i18n";
 import { useAppStore } from "@/store";
 
 import { ChevronLeftIcon } from "@/icons/chevron";
+import { PANEL_LAYOUT_SPRING, PANEL_SPRING } from "@/styles/panelMotion";
 
 type AppId =
   | "shop"
@@ -130,11 +131,11 @@ export const BobPhone = (props: BobPhoneProps) => {
   };
 
   const onTriggerClick = () => {
-    setActiveApp(undefined);
     if (props.isOpen) {
       resetToDefaultView();
       props.setIsOpen(false);
     } else {
+      setActiveApp(undefined);
       props.setIsOpen(true);
       transitionToView("phone:home");
     }
@@ -225,56 +226,15 @@ export const BobPhone = (props: BobPhoneProps) => {
 
       <AnimatePresence mode="wait">
         {props.isOpen && (
-          <BobPhoneBody
+          <PhoneShell
             ref={containerRef}
-            aria-hidden={!props.isOpen}
-            style={{
-              ...clipStyle,
-              borderRadius: "24px",
-              opacity: 0,
-              transformPerspective: 900,
-              transformStyle: "preserve-3d",
-              pointerEvents: props.isOpen ? "auto" : "none",
-            }}
-            data-phone-body
+            clipStyle={clipStyle}
             key="bob-phone-body"
-            initial={{
-              opacity: 0,
-              scaleX: 1.05,
-              rotateX: -15,
-              y: 12,
-              filter: "blur(2px)",
-            }}
-            animate={{
-              opacity: 1,
-              scaleX: 1,
-              rotateX: 0,
-              y: 0,
-              filter: "blur(0px)",
-            }}
-            exit={{
-              opacity: 0,
-              scaleX: 0.95,
-              rotateX: -5,
-              y: -12,
-              filter: "blur(2px)",
-            }}
-            transition={{
-              type: "spring" as const,
-              bounce: 0.5,
-              visualDuration: 0.3,
-              layout: {
-                type: "spring",
-                mass: 0.5,
-                damping: 12,
-                bounceDamping: 20,
-              },
-            }}
-            layout
           >
             <HugColumn
               $gap={activeApp ? "4px" : "0"}
               layout="position"
+              transition={{ layout: PANEL_LAYOUT_SPRING }}
               $align="center"
             >
               <AnimatePresence mode="popLayout">
@@ -344,35 +304,27 @@ export const BobPhone = (props: BobPhoneProps) => {
                   </FillRow>
                 )}
               </AnimatePresence>
-              <FillColumn
-                key={activeApp ?? "app-grid-wrapper"}
+              <PhoneContent
                 $gap={activeApp ? "4px" : "0"}
                 $align="center"
                 $justify="center"
-                initial={{
-                  opacity: 0,
-                  scaleY: 1.05,
-                }}
-                animate={{
-                  opacity: 1,
-                  scaleY: 1,
-                }}
-                exit={{
-                  opacity: 0,
-                  scaleY: 1.05,
-                }}
-                transition={{
-                  ease: "circOut",
-                  duration: 0.2,
-                }}
-                layout
+                transition={{ layout: PANEL_LAYOUT_SPRING }}
+                layout="position"
               >
-                <AnimatePresence mode="popLayout">
+                <AnimatePresence mode="popLayout" initial={false}>
                   {activeApp ? (
-                    <AppViewStage>{activeAppView()}</AppViewStage>
+                    <AppViewStage
+                      key={activeApp}
+                      layout="position"
+                      initial={{ opacity: 0, y: 6, filter: "blur(4px)" }}
+                      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                      exit={{ opacity: 0, y: 6, filter: "blur(4px)" }}
+                      transition={{ ...PANEL_SPRING, layout: PANEL_LAYOUT_SPRING }}
+                    >{activeAppView()}</AppViewStage>
                   ) : (
                     <AppGrid
                       key="app-grid"
+                      layout="position"
                       initial={{
                         opacity: 0,
                         scaleX: 1.05,
@@ -388,11 +340,7 @@ export const BobPhone = (props: BobPhoneProps) => {
                         scaleX: 1.05,
                         filter: "blur(4px)",
                       }}
-                      transition={{
-                        type: "spring" as const,
-                        bounce: 0.5,
-                        visualDuration: 0.3,
-                      }}
+                      transition={{ ...PANEL_SPRING, layout: PANEL_LAYOUT_SPRING }}
                     >
                       {BOB_APPS.map((app) => (
                         <AppContainer
@@ -406,9 +354,9 @@ export const BobPhone = (props: BobPhoneProps) => {
                     </AppGrid>
                   )}
                 </AnimatePresence>
-              </FillColumn>
+              </PhoneContent>
             </HugColumn>
-          </BobPhoneBody>
+          </PhoneShell>
         )}
       </AnimatePresence>
     </>
@@ -459,25 +407,10 @@ const PhoneShell = React.forwardRef<
         rotateX: -5,
         y: -12,
         filter: "blur(2px)",
-        // transition: {
-        //   ease: "circOut",
-        //   duration: 0.1,
-        // },
       }}
       transition={{
-        // duration: 0.2,
-        // ease: "easeInOut",
-        type: "spring" as const,
-        bounce: 0.5,
-        visualDuration: 0.3,
-        // ease: "circOut",
-        // duration: 0.2,
-        layout: {
-          type: "spring",
-          mass: 0.5,
-          damping: 12,
-          bounceDamping: 20,
-        },
+        ...PANEL_SPRING,
+        layout: PANEL_LAYOUT_SPRING,
       }}
       layout
     />
@@ -496,9 +429,28 @@ const AppBottomActions = styled(FillRow)`
   height: 2.5rem;
 `;
 
-const AppViewStage = styled(motion.div)`
+const PhoneScreen = React.forwardRef<HTMLDivElement, React.ComponentProps<typeof motion.div>>(
+  function PhoneScreen(props, ref) {
+    const isPresent = useIsPresent();
+    return <motion.div {...props} ref={ref} aria-hidden={!isPresent} />;
+  },
+);
+
+const AppViewStage = styled(PhoneScreen)`
   width: 100%;
   max-width: 100%;
+`;
+
+const PhoneContent = styled(FillColumn)`
+  /* Keep popLayout's outgoing screen anchored to the content, not the shell. */
+  position: relative;
+
+  > [aria-hidden="true"] {
+    pointer-events: none !important;
+  }
+  > [aria-hidden="true"] * {
+    pointer-events: none !important;
+  }
 `;
 
 const AppAction = styled.div`
@@ -556,9 +508,15 @@ const BobPhoneBody = styled(motion.div)`
   border-radius: 24px;
   z-index: 999;
   pointer-events: auto;
+
+  /* Exiting children can otherwise override the shell's pointer-events. */
+  &[aria-hidden="true"],
+  &[aria-hidden="true"] * {
+    pointer-events: none !important;
+  }
 `;
 
-const AppGrid = styled(motion.div)`
+const AppGrid = styled(PhoneScreen)`
   width: 100%;
   display: grid;
   grid-template-columns: repeat(3, 1fr);

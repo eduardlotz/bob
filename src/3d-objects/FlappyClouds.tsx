@@ -17,10 +17,10 @@ const CLOUD_RECYCLE_X = -18;
 const CLOUD_SCROLL_FACTOR = 0.45;
 const CLOUD_BOB_HEIGHT = 0.2;
 
-const CLOUD_Y_MIN = -0.8;
-const CLOUD_Y_MAX = 4.5;
-const CLOUD_Z_MIN = -3.2;
-const CLOUD_Z_MAX = -0.7;
+const CLOUD_Y_MIN = 3;
+const CLOUD_Y_MAX = 10;
+const CLOUD_Z_MIN = -14;
+const CLOUD_Z_MAX = -7;
 
 const CLOUD_SPHERE = new THREE.SphereGeometry(1, 7, 7);
 
@@ -74,7 +74,7 @@ const createCloudClusters = (): CloudCluster[] => {
   });
 };
 
-export function FlappyClouds({ score }: { score: number }) {
+export function FlappyClouds({ score, altitude, active }: { score: number; altitude: React.MutableRefObject<number>; active: React.MutableRefObject<boolean> }) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const initialClouds = useMemo(() => createCloudClusters(), []);
   const cloudsRef = useRef<CloudCluster[]>(initialClouds);
@@ -135,7 +135,7 @@ export function FlappyClouds({ score }: { score: number }) {
     });
 
     cloudsRef.current.forEach((cloud) => {
-      cloud.x -= speed * cloud.speedFactor * delta;
+      if (active.current) cloud.x -= speed * cloud.speedFactor * Math.min(delta, 0.05);
 
       if (cloud.x < CLOUD_RECYCLE_X) {
         cloud.x = furthestX + rand(CLOUD_SPACING_MIN, CLOUD_SPACING_MAX);
@@ -147,6 +147,10 @@ export function FlappyClouds({ score }: { score: number }) {
       }
     });
 
+    const material = mesh.material as THREE.MeshToonMaterial;
+    material.opacity = 0.65 * (1 - THREE.MathUtils.smoothstep(altitude.current, 0.08, 0.6));
+    material.color.setRGB(1 - altitude.current * 0.5, 1 - altitude.current * 0.35, 1);
+    mesh.visible = material.opacity > 0.01;
     const elapsed = state.clock.getElapsedTime();
     let index = 0;
 
@@ -157,7 +161,7 @@ export function FlappyClouds({ score }: { score: number }) {
       cloud.puffs.forEach((puff) => {
         matrixDummy.position.set(
           cloud.x + puff.offset[0],
-          cloud.y + bob + puff.offset[1],
+          cloud.y + bob + puff.offset[1] - altitude.current * 24,
           cloud.z + puff.offset[2],
         );
         matrixDummy.scale.setScalar(puff.scale);
@@ -179,7 +183,7 @@ export function FlappyClouds({ score }: { score: number }) {
       <meshToonMaterial
         color="#f4f7ff"
         transparent
-        opacity={0.34}
+        opacity={0.65}
         depthWrite={false}
       />
     </instancedMesh>

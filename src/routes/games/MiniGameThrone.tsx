@@ -1,9 +1,9 @@
 import { useFloatingBar } from "@/layout/FloatingBar";
 import { useCursorStore } from "@/store/core/cursor";
-import { GradientTexture } from "@react-three/drei";
+import { FakeSpotlight } from "./FakeSpotlight";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { type ReactNode, useCallback, useRef } from "react";
-import { DoubleSide, type MeshBasicMaterial } from "three";
+import { type MeshBasicMaterial } from "three";
 import * as THREE from "three";
 
 type MiniGameThroneProps = {
@@ -20,11 +20,7 @@ type MiniGameThroneProps = {
 const STONE_PRIMARY = "#e4ddcf";
 const STONE_SECONDARY = "#c7bba8";
 const STONE_WARM = "#f1e8d8";
-const SPOTLIGHT_TOP = "#ffffff";
-const SPOTLIGHT_BOTTOM = "#f5df9a";
 const SPOTLIGHT_HEIGHT = 9.5;
-const SPOTLIGHT_TOP_RADIUS = 0.08;
-const SPOTLIGHT_BOTTOM_RADIUS = 1.26;
 const SPOTLIGHT_TARGET_Y = -0.34;
 
 const fade = (current: number, target: number, delta: number) =>
@@ -126,32 +122,9 @@ export function MiniGameThrone({
         {children}
       </group>
 
-      <mesh position={[0, SPOTLIGHT_TARGET_Y + SPOTLIGHT_HEIGHT / 2, 0]}>
-        <cylinderGeometry
-          args={[
-            SPOTLIGHT_TOP_RADIUS,
-            SPOTLIGHT_BOTTOM_RADIUS,
-            SPOTLIGHT_HEIGHT,
-            128,
-            1,
-            true,
-          ]}
-        />
-        <meshBasicMaterial
-          ref={spotlightMaterialRef}
-          transparent
-          opacity={0}
-          depthWrite={false}
-          side={DoubleSide}
-          toneMapped={false}
-        >
-          <GradientTexture
-            stops={[0, 0.42, 1]}
-            colors={[SPOTLIGHT_TOP, SPOTLIGHT_BOTTOM, "#ffffff"]}
-            size={256}
-          />
-        </meshBasicMaterial>
-      </mesh>
+      <group position={[0, SPOTLIGHT_TARGET_Y + SPOTLIGHT_HEIGHT / 2, 0]}>
+        <FakeSpotlight materialRef={spotlightMaterialRef} height={SPOTLIGHT_HEIGHT} />
+      </group>
 
       <mesh>
         <sphereGeometry args={[1.35, 24, 12]} />

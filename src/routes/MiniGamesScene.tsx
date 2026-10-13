@@ -258,9 +258,9 @@ export function MiniGamesScene() {
       />
       {activeGame === "LOBBY" ? (
         <MiniGamesBackdrop />
-      ) : (
+      ) : activeGame !== "FLAPPY_BIRD" && activeGame !== "PING_PONG" ? (
         <PointsCounter number={score} />
-      )}
+      ) : null}
     </>
   );
 }

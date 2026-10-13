@@ -36,7 +36,7 @@ function ringPlacements(
   return result;
 }
 
-function treeGeometry() {
+export function treeGeometry() {
   const parts: Part[] = [
     [new T.CylinderGeometry(0.18, 0.32, 2.9, 7), "#79583d", [0, 1.45, 0]],
   ];
