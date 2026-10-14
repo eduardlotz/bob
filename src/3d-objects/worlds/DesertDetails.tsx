@@ -42,7 +42,7 @@ function tumbleweedGeometry() {
 }
 function Tumbleweeds() {
   const quality = useWorldQuality();
-  const count = quality === "low" ? 4 : 8;
+  const count = quality === "low" ? 1 : 2;
   const geometry = useMemo(tumbleweedGeometry, []);
   const mesh = useRef<T.InstancedMesh>(null);
   const dummy = useMemo(() => new T.Object3D(), []);

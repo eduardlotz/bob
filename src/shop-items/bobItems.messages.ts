@@ -4,6 +4,11 @@ import type { Locale } from "@/i18n/types";
 
 export const bobItemMessages = defineMessages({
   de: {
+    propellerHat: { name: "Propellermütze", description: "Immer eine Drehung voraus." },
+    bobMoustache: { name: "Schnubbi", description: "Ein Schnurrbart wie bei Bob Belcher." },
+    royalCrown: { name: "Krone", description: "Eine Krone für zehn Millionen." },
+    wizardHat: { name: "Zauberer", description: "Ein bisschen Magie für Bob." },
+    flatCap: { name: "Schiebermütze", description: "Ein Klassiker in Braun." },
     builderHelmet: {
       name: "Baumeister",
       description: "Jo wir schaffen das!",
@@ -38,6 +43,11 @@ export const bobItemMessages = defineMessages({
     },
   },
   en: {
+    propellerHat: { name: "Propeller Hat", description: "Always one spin ahead." },
+    bobMoustache: { name: "Moustache", description: "A moustache like Bob Belcher's." },
+    royalCrown: { name: "Crown", description: "A crown worth ten million." },
+    wizardHat: { name: "Wizard", description: "A little magic for Bob." },
+    flatCap: { name: "Flat Cap", description: "A classic in brown." },
     builderHelmet: {
       name: "Builder",
       description: "Yes we can!",

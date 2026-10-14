@@ -24,13 +24,14 @@ import { CityWorld } from "./worlds/CityWorld";
 import { FlyingUfos } from "./worlds/FlyingUfos";
 import { DesertDetails } from "./worlds/DesertDetails";
 import { WorldToonMaterial } from "./worlds/WorldToonMaterial";
+import { SandGround } from "./worlds/SandGround";
+import { WorldFog } from "./worlds/WorldFog";
 import { Nebula } from "./worlds/Nebula";
 import { WeatherParticles } from "./worlds/WeatherParticles";
 import { seededRandom, useWorldQuality } from "./worlds/quality";
 import { GrassShader } from "./GrassShader";
 import { CloudEffect, ForestRainEffect, SnowEffect } from "./ParticleEffects";
 
-const LARGE_FLOOR_SIZE = 80;
 const FLOOR_Y = -1.36;
 const SPACE_WORLD_EFFECT_IDS = new Set([
   "world_space",
@@ -131,6 +132,7 @@ function WorldDome({
             side={BackSide}
             depthTest={false}
             depthWrite={false}
+            fog={false}
           >
             <GradientTexture
               stops={scene.gradientStops}
@@ -193,10 +195,14 @@ function WorldFloor({ scene }: { scene: WorldSceneConfig }) {
     );
   }
 
+  if (scene.models.includes("desert_dunes")) {
+    return <SandGround groundColor={scene.groundColor} accentColor={scene.accentColor} y={FLOOR_Y} />;
+  }
+
   return (
     <group position={[0, FLOOR_Y, 0]}>
       <mesh rotation={[-Math.PI / 2, 0, 0]} renderOrder={-5}>
-        <circleGeometry args={[LARGE_FLOOR_SIZE * 0.42, 72]} />
+        <circleGeometry args={[96, 72]} />
         <WorldToonMaterial color={scene.groundColor} />
       </mesh>
 
@@ -300,6 +306,7 @@ function WorldModel({
           densityMultiplier={1.45}
           rootOffset={0}
           fieldRadius={72}
+          flowers
         />
       );
 
@@ -372,11 +379,8 @@ function WorldModel({
       return (
         <>
           <MoonTerrain
-            groundColor={scene.groundColor}
-            accentColor={scene.accentColor}
-            glowIntensity={
-              (scene as WorldSceneConfigEx).lighting?.moonGlowIntensity ?? 1
-            }
+            groundColor="#f1df9b"
+            accentColor="#ffefb3"
           />
           <MoonRocks />
         </>
@@ -494,6 +498,7 @@ export function SceneDecorations() {
 
   return (
     <group>
+      <WorldFog config={scene} />
       <WorldDome scene={scene} lowDetail={quality === "low"} />
       <WorldFloor scene={scene} />
 

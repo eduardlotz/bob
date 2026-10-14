@@ -666,9 +666,8 @@ function BasicTapParticles({
   );
 }
 
-const MAX_BUBBLE_COUNT = 96;
-const BUBBLE_PARTICLE_RATIO = 0.18;
-const MAX_BUBBLES_PER_TAP = 4;
+const MAX_BUBBLE_COUNT = 200;
+const MAX_BUBBLES_PER_TAP = 24;
 
 function BubbleTapParticles() {
   const shellRef = useRef<InstancedMesh>(null);
@@ -729,7 +728,7 @@ function BubbleTapParticles() {
 
       const spawnTarget = Math.min(
         MAX_BUBBLES_PER_TAP,
-        Math.max(1, Math.ceil(count * BUBBLE_PARTICLE_RATIO)),
+        Math.max(1, Math.ceil(count)),
       );
 
       let spawned = 0;
@@ -739,17 +738,17 @@ function BubbleTapParticles() {
 
         const p = particles[i];
         const angle = Math.random() * Math.PI * 2;
-        const lateralForce = 0.14 + Math.random() * 0.18;
+        const lateralForce = 4 + Math.random() * 6;
         const shellColor =
           BUBBLE_COLORS[Math.floor(Math.random() * BUBBLE_COLORS.length)];
 
         p.life = 2.4 + Math.random() * 1.3;
         p.maxLife = p.life;
-        p.x = x + (Math.random() - 0.5) * 1.2;
+        p.x = x + (Math.random() - 0.5) * 0.12;
         p.y = y + PARTICLES_Y_OFFSET - 0.06 + Math.random() * 0.08;
         p.z = z + (Math.random() - 0.5) * 0.14;
         p.vx = Math.cos(angle) * lateralForce;
-        p.vy = 0.9 + Math.random() * 0.45;
+        p.vy = 5 + Math.random() * 6;
         p.vz = Math.sin(angle) * lateralForce;
         p.rx = Math.random() * Math.PI * 2;
         p.ry = Math.random() * Math.PI * 2;
@@ -822,15 +821,15 @@ function BubbleTapParticles() {
 
         p.vx += wobble * p.driftStrength * d;
         p.vz += sway * p.driftStrength * d;
-        p.vy = Math.min(p.vy + 0.2 * d, 1.55);
+        // Strong initial impulse settles smoothly into buoyant floating.
+        const drag = Math.exp(-3.8 * d);
+        p.vx *= drag;
+        p.vz *= drag;
+        p.vy = 1.1 + (p.vy - 1.1) * drag;
 
         p.x += p.vx * d;
         p.y += p.vy * d;
         p.z += p.vz * d;
-
-        p.vx *= 0.988;
-        p.vy *= 0.999;
-        p.vz *= 0.988;
 
         p.rx += p.rvx * d;
         p.ry += p.rvy * d;
@@ -838,7 +837,7 @@ function BubbleTapParticles() {
 
         const lifeRatio = Math.max(0, p.life / Math.max(p.maxLife, 0.001));
         const age = 1 - lifeRatio;
-        const entrance = Math.min(1, age / 0.16);
+        const entrance = Math.min(1, (p.maxLife - p.life) / 0.06);
         const fadeOut = lifeRatio < 0.2 ? lifeRatio / 0.2 : 1;
         const currentScale = p.scale * entrance * fadeOut * (1 + age * 0.08);
 

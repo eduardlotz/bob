@@ -11,6 +11,7 @@ import {
   Clock,
   Float32BufferAttribute,
   SphereGeometry,
+  Quaternion,
 } from "three";
 import {
   CAMERA_Y_POSITION,
@@ -24,7 +25,7 @@ import { calculateAcceleratedRotation } from "@/utils/math";
 import { a, useSpring } from "@react-spring/three";
 import { Star3D } from "@/3d-objects/Star3D";
 import { EmotionState } from "@/hooks/useBlobEmotions";
-import { useCoreStore } from "@/store/core/store";
+import { getBobItemSlot, useCoreStore } from "@/store/core/store";
 import { useViewStore } from "@/store/viewStore";
 import { KrustyKrabHat } from "@/3d-objects/models/krustyKrabHat";
 import { match } from "ts-pattern";
@@ -34,6 +35,8 @@ import { BuilderHelmet } from "@/3d-objects/models/builderHelmet";
 import { BlobForm } from "@/components/BlobForm";
 import { getSelectedBlobForm, getBlobFormType } from "@/types/blobForms";
 import { SimsPlumbob } from "@/3d-objects/models/simsPlumbob";
+import { ToonHat } from "@/3d-objects/models/toonHats";
+import { BobMoustache } from "@/3d-objects/models/bobMoustache";
 import { BlackCap } from "@/3d-objects/models/blackCap";
 import { useCursor } from "@/hooks/useCursor";
 import { useCursorStore } from "@/store/core/cursor";
@@ -44,15 +47,28 @@ import { resolveTapSoundForEffect } from "@/utils/sound/configs";
 import { BallCollider, RigidBody } from "@react-three/rapier";
 import { AstronautHelmet } from "@/3d-objects/models/astronaut";
 import { RastaBeanie } from "@/3d-objects/models/rastaBeanie";
+import { BobSleepZs } from "./BobSleepZs";
+import { THEME_CONFIG } from "@/store/config/themes";
+import {
+  BobIdleAnimation,
+  BOB_IDLE_DURATIONS,
+  sampleBobIdlePose,
+  smoothIdleStep,
+} from "./bobIdleMotion";
 
 // TODO: move constants to a shared config file
 const HEAD_POSITION_Y = 0;
 const MAX_ROTATION_X = 0.9;
 const MAX_ROTATION_Y = 0.9;
 const MAX_TAP_CAMERA_SHAKE = 0.25;
+const CURSOR_POSITION_FACTOR = 2.5;
+// Match the preferred gaze with the cursor two-thirds down the screen.
+const IDLE_LOOK_DOWN_OFFSET = (2 / 3 - 0.5) * CURSOR_POSITION_FACTOR * MAX_ROTATION_Y;
 
-const IDLE_TIMEOUT_MIN = 15000;
-const IDLE_ANIMATION_DURATION = 3000;
+const IDLE_TIMEOUT_MIN = 10000;
+const IDLE_ANIMATION_GAP = 15000;
+const IDLE_ANIMATIONS: BobIdleAnimation[] = ["spin", "look", "bounce", "sleep"];
+const NEUTRAL_IDLE_ROTATION = new Quaternion();
 
 const ACCESSORY_AXIS_CONFIG: Record<
   string,
@@ -228,6 +244,11 @@ export function BlobHead({
   const outlineColor = activeTheme?.outlineColor;
   const eyeColor = activeTheme?.eyeColor;
   const headRef = useRef<Group>(null!);
+  const idleMotionRef = useRef<Group>(null!);
+  const idlePoseRef = useRef([0, 0, 0, 0, 1]);
+  const idleEyeOffsetRef = useRef(0);
+  const idleBlinkRef = useRef(false);
+  const sleepRef = useRef({ seconds: 0, active: false });
   const leftEyeRef = useRef<Mesh>(null!);
   const rightEyeRef = useRef<Mesh>(null!);
 
@@ -259,24 +280,33 @@ export function BlobHead({
   );
 
   const [blinking, setBlinking] = useState(false);
-  const [idleAnimation, setIdleAnimation] = useState<"none" | "spin" | "tilt">(
+  const [idleAnimation, setIdleAnimation] = useState<BobIdleAnimation | "none">(
     "none",
   );
   const [cameraZoomAnimation, setCameraZoomAnimation] = useState(false);
   const idleAnimationStartRef = useRef(0);
-  const lastActivityRef = useRef(Date.now());
+  const lastBobTapRef = useRef(Date.now());
   const lastIdleAnimationTimeRef = useRef(0);
-  const idleAnimationRef = useRef<"none" | "spin" | "tilt">("none");
+  const firstIdleAfterTapRef = useRef(true);
+  const idleAnimationRef = useRef<BobIdleAnimation | "none">("none");
+  const idleAnimationTimeoutRef = useRef<number | undefined>();
 
   const { orientation, acceleration } = useDeviceOrientation();
 
   const {
+    currentView,
     isDefaultView,
     isNavigationView,
     viewMode,
     isTransitioning,
     isObjectView,
   } = useViewStore();
+
+  const isShopView = currentView === "phone:shop";
+  const restingLookPitch = (isMobile
+    ? -0.5
+    : IDLE_LOOK_DOWN_OFFSET - (showOptions ? 0 : CAMERA_Y_POSITION) * MAX_ROTATION_Y) +
+    (isShopView ? IDLE_LOOK_DOWN_OFFSET : 0);
 
   const shouldFollowCursor =
     viewMode === "fixed" &&
@@ -286,7 +316,7 @@ export function BlobHead({
 
   const mousePosition = useCursor({
     condition: () => shouldFollowCursor,
-    positionFactor: 2.5,
+    positionFactor: CURSOR_POSITION_FACTOR,
   });
 
   // default size a little bigger, MAYDO fix directly inside BobForm.tsx
@@ -310,75 +340,53 @@ export function BlobHead({
     idleAnimationRef.current = idleAnimation;
   }, [idleAnimation]);
 
-  // inactivity animations (spin & look around)
-  // MAYDO: add camera panning in idle mode
-  useEffect(() => {
-    let idleAnimationTimeoutId: number | undefined;
+  const cancelIdleOnBobTap = useCallback(() => {
+    lastBobTapRef.current = Date.now();
+    lastIdleAnimationTimeRef.current = 0;
+    firstIdleAfterTapRef.current = true;
+    idleAnimationRef.current = "none";
+    sleepRef.current.active = false;
+    setIdleAnimation("none");
+    if (idleAnimationTimeoutRef.current !== undefined) {
+      clearTimeout(idleAnimationTimeoutRef.current);
+      idleAnimationTimeoutRef.current = undefined;
+    }
+  }, []);
 
+  // Only Bob taps reset inactivity. Each idle finishes on its own, then rests.
+  useEffect(() => {
     const checkIdleAnimation = () => {
       const now = Date.now();
-      const timeSinceActivity = now - lastActivityRef.current;
-      const timeSinceLastIdleAnimation =
-        now - lastIdleAnimationTimeRef.current;
-      const idleTimeout = IDLE_TIMEOUT_MIN;
-
-      // trigger one of both idle animations if
-      // user has been idle for 15+ seconds
-      // no animation is currently playing
-      // 15 seconds have passed since the last idle animation
       if (
-        timeSinceActivity > idleTimeout &&
+        now - lastBobTapRef.current >= IDLE_TIMEOUT_MIN &&
         idleAnimationRef.current === "none" &&
-        timeSinceLastIdleAnimation > idleTimeout
+        now - lastIdleAnimationTimeRef.current >= IDLE_ANIMATION_GAP
       ) {
-        const animations: ("spin" | "tilt")[] = ["spin", "tilt"];
-        const randomAnimation =
-          animations[Math.floor(Math.random() * animations.length)];
+        const nextAnimation = firstIdleAfterTapRef.current
+          ? "look"
+          : IDLE_ANIMATIONS[Math.floor(Math.random() * IDLE_ANIMATIONS.length)];
+        firstIdleAfterTapRef.current = false;
 
-        idleAnimationRef.current = randomAnimation;
-        setIdleAnimation(randomAnimation);
+        idleAnimationRef.current = nextAnimation;
+        setIdleAnimation(nextAnimation);
         idleAnimationStartRef.current = now;
-        lastIdleAnimationTimeRef.current = now;
 
-        // reset head to center before animating
-        if (headRef.current) {
-          headRef.current.rotation.set(0, 0, 0);
-        }
-
-        idleAnimationTimeoutId = window.setTimeout(() => {
+        idleAnimationTimeoutRef.current = window.setTimeout(() => {
           idleAnimationRef.current = "none";
+          sleepRef.current.active = false;
           setIdleAnimation("none");
-        }, IDLE_ANIMATION_DURATION);
-      }
-    };
-
-    const handleActivity = () => {
-      lastActivityRef.current = Date.now();
-      if (idleAnimationRef.current !== "none") {
-        idleAnimationRef.current = "none";
-        setIdleAnimation("none");
-        if (idleAnimationTimeoutId !== undefined) {
-          clearTimeout(idleAnimationTimeoutId);
-          idleAnimationTimeoutId = undefined;
-        }
+          lastIdleAnimationTimeRef.current = Date.now();
+          idleAnimationTimeoutRef.current = undefined;
+        }, BOB_IDLE_DURATIONS[nextAnimation]);
       }
     };
 
     const idleCheckInterval = window.setInterval(checkIdleAnimation, 1000);
-    window.addEventListener("mousemove", handleActivity, { passive: true });
-    window.addEventListener("click", handleActivity);
-    window.addEventListener("keydown", handleActivity);
-    window.addEventListener("touchstart", handleActivity);
-
     return () => {
       clearInterval(idleCheckInterval);
-      if (idleAnimationTimeoutId !== undefined) {
-        clearTimeout(idleAnimationTimeoutId);
+      if (idleAnimationTimeoutRef.current !== undefined) {
+        clearTimeout(idleAnimationTimeoutRef.current);
       }
-      window.removeEventListener("mousemove", handleActivity);
-      window.removeEventListener("click", handleActivity);
-      window.removeEventListener("keydown", handleActivity);
-      window.removeEventListener("touchstart", handleActivity);
     };
   }, []);
 
@@ -411,21 +419,46 @@ export function BlobHead({
   }, [emotionState]);
 
   useFrame(({ clock }, delta) => {
-    if (idleAnimation !== "none") {
-      handleIdleAnimation(clock, delta);
+    const isBobIdle = Date.now() - lastBobTapRef.current >= IDLE_TIMEOUT_MIN;
+
+    // Keep camera motion independent of Bob's gaze and personality animations.
+    if (isMobile) {
+      handleMobileMovement(
+        clock, delta, showOptions, orientation, acceleration, permissionGranted,
+        !isBobIdle,
+      );
     } else {
-      // special case: mobile movement using gyro
-      if (isMobile) {
-        handleMobileMovement(
-          clock,
-          delta,
-          showOptions,
-          orientation,
-          acceleration,
-          permissionGranted,
+      handleDesktopMovement(clock, delta, showOptions, !isBobIdle);
+    }
+
+    if (isBobIdle) {
+      applyHeadRotation(restingLookPitch, 0, 0, delta);
+      headRef.current.position.x = MathUtils.lerp(
+        headRef.current.position.x, 0, 1 - Math.exp(-4 * delta),
+      );
+      headRef.current.position.y = HEAD_POSITION_Y +
+        Math.sin(clock.getElapsedTime() * 0.5) * 0.1;
+    }
+
+    if (idleAnimation !== "none" && idleAnimationRef.current !== "none") {
+      handleIdleAnimation();
+    } else {
+      idleEyeOffsetRef.current = 0;
+      idleBlinkRef.current = false;
+      sleepRef.current.active = false;
+      if (idleMotionRef.current) {
+        const settle = 1 - Math.exp(-14 * delta);
+        idleMotionRef.current.position.y = MathUtils.lerp(
+          idleMotionRef.current.position.y, 0, settle,
         );
-      } else {
-        handleDesktopMovement(clock, delta, showOptions);
+        // Use the shortest rotation back when a tap interrupts a full turn.
+        idleMotionRef.current.quaternion.slerp(NEUTRAL_IDLE_ROTATION, settle);
+        const scale = idleMotionRef.current.scale;
+        scale.set(
+          MathUtils.lerp(scale.x, 1, settle),
+          MathUtils.lerp(scale.y, 1, settle),
+          MathUtils.lerp(scale.z, 1, settle),
+        );
       }
     }
 
@@ -472,6 +505,7 @@ export function BlobHead({
     orientation: DeviceOrientation,
     acceleration: DeviceMotionEventAcceleration,
     permissionGranted: boolean,
+    followHead: boolean,
   ) => {
     if (permissionGranted) {
       const {
@@ -484,16 +518,12 @@ export function BlobHead({
         orientBeta,
       } = calculateAcceleratedRotation(acceleration, orientation);
 
-      applyHeadRotation(targetRotY, targetRotX, 0, delta);
-
-      applyMobileHeadPosition(
-        clock,
-        delta,
-        accelX,
-        accelY,
-        orientGamma,
-        orientBeta,
-      );
+      if (followHead) {
+        applyHeadRotation(isShopView ? restingLookPitch : targetRotY, targetRotX, 0, delta);
+        applyMobileHeadPosition(
+          clock, delta, accelX, accelY, orientGamma, orientBeta,
+        );
+      }
 
       const baseZoom = showOptions
         ? VISIBLE_OPTIONS_CAMERA_ZOOM
@@ -528,12 +558,11 @@ export function BlobHead({
         );
       }
     } else {
-      // head is looks back on mobile (???)
-      applyHeadRotation(-0.5, 0, 0, delta);
-
-      // floating animation
-      const floatY = Math.sin(clock.getElapsedTime() * 0.5) * 0.1;
-      headRef.current.position.y = floatY + HEAD_POSITION_Y;
+      if (followHead) {
+        applyHeadRotation(isShopView ? restingLookPitch : -0.5, 0, 0, delta);
+        const floatY = Math.sin(clock.getElapsedTime() * 0.5) * 0.1;
+        headRef.current.position.y = floatY + HEAD_POSITION_Y;
+      }
 
       const baseZoom = showOptions
         ? VISIBLE_OPTIONS_CAMERA_ZOOM
@@ -569,20 +598,21 @@ export function BlobHead({
     clock: Clock,
     delta: number,
     showOptions: boolean,
+    followHead: boolean,
   ) => {
     const cursorX = mousePosition.current.x;
     const cursorY = mousePosition.current.y;
     const targetRotY = cursorX * MAX_ROTATION_X;
-    const targetRotX =
-      (-cursorY - (showOptions ? 0 : CAMERA_Y_POSITION)) *
-      MAX_ROTATION_Y;
+    const targetRotX = isShopView
+      ? restingLookPitch
+      : (-cursorY - (showOptions ? 0 : CAMERA_Y_POSITION)) * MAX_ROTATION_Y;
     const targetRotZ = -cursorX * MAX_ROTATION_X;
 
-    applyHeadRotation(targetRotX, targetRotY, targetRotZ, delta);
-
-    // floating animation
-    const floatY = Math.sin(clock.getElapsedTime() * 0.5) * 0.1;
-    headRef.current.position.y = floatY + HEAD_POSITION_Y;
+    if (followHead) {
+      applyHeadRotation(targetRotX, targetRotY, targetRotZ, delta);
+      const floatY = Math.sin(clock.getElapsedTime() * 0.5) * 0.1;
+      headRef.current.position.y = floatY + HEAD_POSITION_Y;
+    }
 
     const baseZoom = showOptions
       ? VISIBLE_OPTIONS_CAMERA_ZOOM
@@ -662,88 +692,33 @@ export function BlobHead({
     );
   };
 
-  const handleIdleAnimation = (clock: Clock, delta: number) => {
-    const animationProgress =
-      (Date.now() - idleAnimationStartRef.current) / IDLE_ANIMATION_DURATION;
-    const easedProgress = 1 - Math.pow(1 - animationProgress, 3); // Ease out
+  const handleIdleAnimation = () => {
+    if (idleAnimation === "none" || !idleMotionRef.current) return;
+    const seconds = Math.max(0, (Date.now() - idleAnimationStartRef.current) / 1000);
+    idleBlinkRef.current = false;
+    idleEyeOffsetRef.current = 0;
+    sleepRef.current.active = idleAnimation === "sleep";
+    sleepRef.current.seconds = seconds;
 
-    if (idleAnimation === "spin") {
-      if (animationProgress < 0.01 && headRef.current) {
-        headRef.current.rotation.set(0, 0, 0);
-      }
+    // Animate relative to the centered gaze, including Bob's normal starting tilt.
+    const pose = idlePoseRef.current;
+    sampleBobIdlePose(idleAnimation, seconds, pose);
+    idleMotionRef.current.rotation.set(pose[0], pose[1], pose[2]);
+    idleMotionRef.current.position.y = pose[3];
+    // Compensate width and depth to retain volume when squashing/stretching.
+    const width = 1 / Math.sqrt(pose[4]);
+    idleMotionRef.current.scale.set(width, pose[4], width);
 
-      const spinPhase = animationProgress * 3;
-
-      if (spinPhase < 1) {
-        const buildUpProgress = spinPhase;
-        const buildUpEase = 1 - Math.pow(1 - buildUpProgress, 2);
-        const rotationY = buildUpEase * Math.PI * 2 * 0.3;
-
-        headRef.current.rotation.y = rotationY;
-      } else if (spinPhase < 2) {
-        const spinProgress = spinPhase - 1;
-        const spinEase = Math.sin(spinProgress * Math.PI);
-        const fullRotation = Math.PI * 2 * 1.5;
-
-        headRef.current.rotation.y =
-          Math.PI * 2 * 0.3 + fullRotation * spinEase;
-      } else {
-        const settleProgress = spinPhase - 2;
-        const settleEase = 1 - Math.pow(settleProgress, 2);
-
-        headRef.current.rotation.y = MathUtils.lerp(
-          headRef.current.rotation.y,
-          0,
-          1 - Math.exp(-8 * delta),
-        );
-      }
-    } else if (idleAnimation === "tilt") {
-      if (animationProgress < 0.01 && headRef.current) {
-        headRef.current.rotation.set(0, 0, 0);
-      }
-      const tiltPhase = animationProgress * 4;
-
-      if (tiltPhase < 1) {
-        const lookLeftProgress = tiltPhase;
-        const lookLeftEase = Math.sin(lookLeftProgress * Math.PI * 0.5);
-
-        headRef.current.rotation.y = -lookLeftEase * 0.8;
-        headRef.current.rotation.x = lookLeftEase * 0.2;
-      } else if (tiltPhase < 2) {
-        const lookUpProgress = tiltPhase - 1;
-        const lookUpEase = Math.sin(lookUpProgress * Math.PI * 0.5);
-
-        headRef.current.rotation.y = MathUtils.lerp(
-          headRef.current.rotation.y,
-          0,
-          1 - Math.exp(-4 * delta),
-        );
-        headRef.current.rotation.x = lookUpEase * 0.6;
-      } else if (tiltPhase < 3) {
-        const lookRightProgress = tiltPhase - 2;
-        const lookRightEase = Math.sin(lookRightProgress * Math.PI * 0.5);
-
-        headRef.current.rotation.y = lookRightEase * 0.8;
-        headRef.current.rotation.x = MathUtils.lerp(
-          headRef.current.rotation.x,
-          0.2,
-          1 - Math.exp(-4 * delta),
-        );
-      } else {
-        const returnProgress = tiltPhase - 3;
-        const returnEase = 1 - Math.pow(returnProgress, 2);
-
-        headRef.current.rotation.y = MathUtils.lerp(
-          headRef.current.rotation.y,
-          0,
-          1 - Math.exp(-6 * delta),
-        );
-        headRef.current.rotation.x = MathUtils.lerp(
-          headRef.current.rotation.x,
-          0,
-          1 - Math.exp(-6 * delta),
-        );
-      }
+    if (idleAnimation === "look") {
+      // Eyes glance toward the next point just before the body follows.
+      const left = smoothIdleStep((seconds - 0.3) / 0.2) *
+        (1 - smoothIdleStep((seconds - 1.45) / 0.25));
+      const right = smoothIdleStep((seconds - 1.55) / 0.25) *
+        (1 - smoothIdleStep((seconds - 2.95) / 0.3));
+      idleEyeOffsetRef.current = -left * 0.035 + right * 0.035;
+      idleBlinkRef.current = seconds > 1.5 && seconds < 1.65;
+    } else if (idleAnimation === "sleep") {
+      idleBlinkRef.current = seconds > 0.55 && seconds < 5.15;
     }
   };
 
@@ -762,7 +737,7 @@ export function BlobHead({
     let targetGeometry = eyeGeometries.current.baseGeometry;
     let eyeOffsetY = 0;
 
-    if (blinking) {
+    if (blinking || idleBlinkRef.current) {
       targetGeometry = eyeGeometries.current.blinkGeometry;
       eyeOffsetY = 0;
     } else {
@@ -810,37 +785,39 @@ export function BlobHead({
       return;
     }
 
-    const newPositions = new Float32Array(currentPositions.length);
+    const rightPositions = rightEye.geometry.getAttribute("position").array;
+    const eyeBlend = 1 - Math.exp(-8 * delta);
     for (let i = 0; i < currentPositions.length; i++) {
-      newPositions[i] = MathUtils.lerp(
-        currentPositions[i],
-        targetPositions[i],
-        0.1,
-      );
+      const position = MathUtils.lerp(currentPositions[i], targetPositions[i], eyeBlend);
+      currentPositions[i] = position;
+      rightPositions[i] = position;
     }
-
-    // Apply the morphed positions to both eyes
-    leftEye.geometry.setAttribute(
-      "position",
-      new Float32BufferAttribute(newPositions, 3),
-    );
-    rightEye.geometry.setAttribute(
-      "position",
-      new Float32BufferAttribute(newPositions, 3),
-    );
+    leftEye.geometry.getAttribute("position").needsUpdate = true;
+    rightEye.geometry.getAttribute("position").needsUpdate = true;
 
     leftEye.geometry.computeVertexNormals();
     rightEye.geometry.computeVertexNormals();
+
+    const eyePositionBlend = 1 - Math.exp(-12 * delta);
+    leftEye.position.x = MathUtils.lerp(
+      leftEye.position.x, -0.45 + idleEyeOffsetRef.current, eyePositionBlend,
+    );
+    rightEye.position.x = MathUtils.lerp(
+      rightEye.position.x, 0.45 + idleEyeOffsetRef.current, eyePositionBlend,
+    );
+    const closedScale = sleepRef.current.active && idleBlinkRef.current ? 0.55 : 1;
+    leftEye.scale.y = MathUtils.lerp(leftEye.scale.y, closedScale, eyePositionBlend);
+    rightEye.scale.y = MathUtils.lerp(rightEye.scale.y, closedScale, eyePositionBlend);
 
     const currentLeftY = leftEye.position.y;
     const currentRightY = rightEye.position.y;
     const baseY = 0;
 
-    leftEye.position.y = MathUtils.lerp(currentLeftY, baseY + eyeOffsetY, 0.2);
+    leftEye.position.y = MathUtils.lerp(currentLeftY, baseY + eyeOffsetY, eyePositionBlend);
     rightEye.position.y = MathUtils.lerp(
       currentRightY,
       baseY + eyeOffsetY,
-      0.2,
+      eyePositionBlend,
     );
   };
 
@@ -855,6 +832,7 @@ export function BlobHead({
 
   const onClick = (e: any) => {
     e.stopPropagation(); // TODO: check why this stops double click bug
+    cancelIdleOnBobTap();
 
     // trigger particles
     if (showAutoTapParticles) {
@@ -1024,11 +1002,11 @@ export function BlobHead({
 
   const renderBobItems = () => {
     const previewItems = bobItems.filter(
-      (b) => b.preview && b.type === previewMode,
+      (b) => b.preview && getBobItemSlot(b) === previewMode,
     );
 
     const enabledItems = bobItems.filter(
-      (b) => b.enabled && b.type !== previewMode,
+      (b) => b.enabled && getBobItemSlot(b) !== previewMode,
     );
 
     const allEquippedItems = previewMode
@@ -1039,6 +1017,48 @@ export function BlobHead({
     const attachedItems = allEquippedItems.filter((i) => !i.detached);
 
     const attachedModels = attachedItems.map((item) => {
+      if (item.id === "wizardHat" || item.id === "flatCap" || item.id === "propellerHat" || item.id === "royalCrown") {
+        const p = selectedBlobForm.parameters;
+        const radius = p.sphereRadius || 1;
+        const cube = blobFormType === "cube";
+        const fitX = cube ? (p.cubeWidth || 1.75) / 1.75 : radius;
+        const fitZ = cube ? (p.cubeDepth || 1.65) / 1.65 : radius;
+        const top = cube ? (p.cubeHeight || 1.75) / 2 : radius;
+        const cap = item.id === "flatCap" || item.id === "propellerHat";
+        const crown = item.id === "royalCrown";
+        const fitScale = cap ? 1.15 : 1;
+        const inset = cap ? (item.id === "flatCap" ? 0.4 : 0.47) : crown ? 0.37 : 0.22;
+        return (
+          <ToonHat
+            key={item.id}
+            kind={item.id}
+            position={[0, top - (cube ? (crown ? 0.16 : 0.06) : inset * radius), 0]}
+            scale={[fitX * fitScale, Math.min(fitX, fitZ) * fitScale, fitZ * fitScale]}
+            outlineColor={outlineColor}
+            preview={!item.enabled && !!item.preview}
+          />
+        );
+      }
+
+      if (item.id === "bobMoustache") {
+        const p = selectedBlobForm.parameters;
+        const cube = blobFormType === "cube";
+        const radius = p.sphereRadius || 1;
+        const y = cube ? -0.18 + ((p.cubeHeight || 1.75) - 1.75) * 0.25 : -0.18 * radius;
+        const z = cube ? (p.cubeDepth || 1.65) / 2 + 0.015 : Math.sqrt(radius * radius - y * y) + 0.015;
+        const size = cube ? Math.min((p.cubeWidth || 1.75) / 1.75, (p.cubeHeight || 1.75) / 1.75) : radius;
+        return (
+          <BobMoustache
+            key={item.id}
+            position={[0, y, z]}
+            scale={[size, size, size]}
+            curved={!cube}
+            outlineColor={outlineColor}
+            preview={!item.enabled && !!item.preview}
+          />
+        );
+      }
+
       if (item.id === "krustyKrabHat")
         return (
           <KrustyKrabHat
@@ -1150,6 +1170,14 @@ export function BlobHead({
   const content = (
     <>
       {detachedItems}
+      <BobSleepZs
+        sleep={sleepRef}
+        head={headRef}
+        height={(blobFormType === "cube"
+          ? (selectedBlobForm.parameters.cubeHeight || 1.75) / 2
+          : selectedBlobForm.parameters.sphereRadius || 1) * 1.2 + 0.65}
+        color={THEME_CONFIG.DEFAULT.colors.secondary}
+      />
       <RigidBody type="fixed" colliders={false}>
         <BallCollider args={[1]} />
         <a.group
@@ -1173,30 +1201,32 @@ export function BlobHead({
           rotation={[0, Math.PI, 0]}
           // position={[0, 2, 0]}
         >
-          <BlobForm
-            formType={blobFormType}
-            parameters={selectedBlobForm.parameters}
-            blobColor={blobColor || "#ffffff"}
-            outlineColor={outlineColor || "#000000"}
-          />
+          <group ref={idleMotionRef} name="bob-idle-motion">
+            <BlobForm
+              formType={blobFormType}
+              parameters={selectedBlobForm.parameters}
+              blobColor={blobColor || "#ffffff"}
+              outlineColor={outlineColor || "#000000"}
+            />
 
-          <group position={calculateEyePosition([0, 0.2, 0.85])}>
-            <mesh ref={leftEyeRef} position={[-0.45, 0, 0]}>
-              <sphereGeometry args={[0.1, 16, 16]} />
-              <meshToonMaterial color={eyeColor} />
-            </mesh>
-            <mesh ref={rightEyeRef} position={[0.45, 0, 0]}>
-              <sphereGeometry args={[0.1, 16, 16]} />
-              <meshToonMaterial color={eyeColor} />
-            </mesh>
-          </group>
+            <group position={calculateEyePosition([0, 0.2, 0.85])}>
+              <mesh ref={leftEyeRef} position={[-0.45, 0, 0]}>
+                <sphereGeometry args={[0.1, 16, 16]} />
+                <meshToonMaterial color={eyeColor} />
+              </mesh>
+              <mesh ref={rightEyeRef} position={[0.45, 0, 0]}>
+                <sphereGeometry args={[0.1, 16, 16]} />
+                <meshToonMaterial color={eyeColor} />
+              </mesh>
+            </group>
 
-          {attachedItems}
+            {attachedItems}
 
-          <group ref={starsRef} visible={emotionState === "dizzy"}>
-            {[...Array(5)].map((_, i) => (
-              <Star3D key={`dizzy-star-${i}`} />
-            ))}
+            <group ref={starsRef} visible={emotionState === "dizzy"}>
+              {[...Array(5)].map((_, i) => (
+                <Star3D key={`dizzy-star-${i}`} />
+              ))}
+            </group>
           </group>
         </a.group>
       </RigidBody>

@@ -69,7 +69,6 @@ const Debug = () => {
 
 // TODO: make proper constant file
 export const FLOOR_Y_POSITION = -1.5;
-const MOON_WORLD_ID = "world_moon";
 const SPACE_WORLD_ID = "world_space";
 const HOME_LIGHT_RADIUS = 6.7;
 const HOME_LIGHT_TARGET: [number, number, number] = [0, 0.7, 0];
@@ -103,7 +102,6 @@ const HOME_SUN_RIGS: Partial<Record<string, Partial<HomeSunRig>>> = {
     azimuth: 0.44,
     elevation: 0.48,
   },
-  [MOON_WORLD_ID]: {},
   [SPACE_WORLD_ID]: {},
 };
 
@@ -114,7 +112,6 @@ const HOME_WORLD_ENVIRONMENT_PRESETS: Partial<
   world_forest: "forest",
   world_desert: "sunset",
   world_winter: "park",
-  [MOON_WORLD_ID]: "night",
   [SPACE_WORLD_ID]: null,
 };
 

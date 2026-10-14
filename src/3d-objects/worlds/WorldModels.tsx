@@ -124,6 +124,46 @@ function cactusGeometry() {
   }
   return assemble(parts);
 }
+
+function bushGeometry(snow: boolean) {
+  const parts: Part[] = [];
+  const clumps: [Vec3, Vec3, string][] = [
+    [[0, 0.5, 0], [0.78, 0.63, 0.66], "#58804a"],
+    [[-0.58, 0.31, 0.14], [0.55, 0.4, 0.52], "#416b3d"],
+    [[0.56, 0.36, -0.06], [0.58, 0.46, 0.56], "#709650"],
+    [[0.05, 0.29, 0.45], [0.6, 0.38, 0.48], "#638b46"],
+  ];
+  clumps.forEach(([position, scale, color]) => {
+    parts.push([new T.IcosahedronGeometry(1, 1), snow ? "#47766a" : color, position, scale]);
+    if (snow) {
+      // Match the bush facets so the cap cannot intersect the leaves.
+      const cap = new T.IcosahedronGeometry(1, 1);
+      const positions = cap.getAttribute("position");
+      for (let i = 0; i < positions.count; i++) {
+        positions.setY(i, Math.max(0, positions.getY(i)));
+      }
+      cap.computeVertexNormals();
+      parts.push([
+        cap,
+        "#f4fbff", [position[0], position[1] + scale[1] * 0.08, position[2]],
+        [scale[0] * 1.03, scale[1] * 1.04, scale[2] * 1.03],
+      ]);
+    }
+  });
+  return assemble(parts);
+}
+const forestBushGeometry = () => bushGeometry(false);
+const winterBushGeometry = () => bushGeometry(true);
+
+function Bushes({ snow = false }: { snow?: boolean }) {
+  const quality = useWorldQuality();
+  const placements = useMemo(
+    () => ringPlacements(quality === "low" ? 12 : 22, snow ? 623 : 622, 6.8, 10, 0.85),
+    [quality, snow],
+  );
+  return <ModelInstances toon name={snow ? "winter-bushes" : "forest-bushes"} build={snow ? winterBushGeometry : forestBushGeometry} placements={placements} />;
+}
+
 export function ForestModels() {
   const quality = useWorldQuality();
   const trees = useMemo(
@@ -136,6 +176,7 @@ export function ForestModels() {
   );
   return (
     <>
+      <Bushes />
       <ModelInstances
         toon
         name="forest-trees"
@@ -158,12 +199,15 @@ export function WinterModels() {
     [quality],
   );
   return (
-    <ModelInstances
-      toon
-      name="winter-pines"
-      build={pineGeometry}
-      placements={trees}
-    />
+    <>
+      <Bushes snow />
+      <ModelInstances
+        toon
+        name="winter-pines"
+        build={pineGeometry}
+        placements={trees}
+      />
+    </>
   );
 }
 export function DesertCacti() {
@@ -196,6 +240,7 @@ export function MoonRocks() {
   );
   return (
     <ModelInstances
+      toon
       name="moon-rocks"
       build={moonRockGeometry}
       placements={placements}
@@ -336,11 +381,9 @@ export function RingedPlanet({ small = false }: { small?: boolean }) {
 export function MoonTerrain({
   groundColor,
   accentColor,
-  glowIntensity,
 }: {
   groundColor: string;
   accentColor: string;
-  glowIntensity: number;
 }) {
   const quality = useWorldQuality();
   const geometry = useMemo(() => {
@@ -401,12 +444,7 @@ export function MoonTerrain({
       position={[0, -17.44, -0.72]}
       rotation={[0.48, -0.22, 0.84]}
     >
-      <meshStandardMaterial
-        vertexColors
-        roughness={1}
-        emissive={accentColor}
-        emissiveIntensity={glowIntensity * 0.04}
-      />
+      <WorldToonMaterial vertexColors />
     </mesh>
   );
 }

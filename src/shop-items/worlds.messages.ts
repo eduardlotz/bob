@@ -25,15 +25,10 @@ export const worldMessages = defineMessages({
       name: "Winter",
       description: "Kalter Schnee, riesige Tannen und dichter Schneefall.",
     },
-    world_moon: {
-      name: "Mond",
-      description:
-        "Ein warmer Mondboden mit Kratern und fliegenden Meteoriten.",
-    },
     world_space: {
       name: "Im All",
       description:
-        "Ein dunkler Sternenhimmel mit weiter Tiefe und schwächerem Licht.",
+        "Mondkrater, Planeten, Meteoriten und UFOs unter einem weiten Sternenhimmel.",
     },
   },
   en: {
@@ -58,13 +53,9 @@ export const worldMessages = defineMessages({
       name: "Winter",
       description: "Cold snow, towering pines, and heavy snowfall.",
     },
-    world_moon: {
-      name: "Moon",
-      description: "A warm moon surface with craters and flying meteors.",
-    },
     world_space: {
       name: "In Space",
-      description: "A dark starry sky with more depth and softer lighting.",
+      description: "Moon craters, planets, meteors, and UFOs beneath a vast starry sky.",
     },
   },
 });

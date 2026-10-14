@@ -38,6 +38,11 @@ const getBobItemCopyMap = {
   chickenLittleGlasses: true,
   simsPlumbob: true,
   blackCap: true,
+  wizardHat: true,
+  flatCap: true,
+  propellerHat: true,
+  bobMoustache: true,
+  royalCrown: true,
 } as const;
 
 const getTapEffectCopyMap = {
@@ -63,6 +68,5 @@ const getWorldCopyMap = {
   world_city: true,
   world_desert: true,
   world_winter: true,
-  world_moon: true,
   world_space: true,
 } as const;
