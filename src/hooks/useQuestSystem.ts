@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo } from "react";
 import { hasQuestReward, useQuestStore } from "@/store/core/quests";
 import { useCoreStore } from "@/store/core/store";
 import { useAppStore } from "@/store";
+import { useMiniGameStore } from "@/store/minigames";
 import { getRouteIdByPath } from "@/store/config/routes";
 import { calculateAutoTapRate } from "@/shop-items/upgradeMath";
 
@@ -43,6 +44,10 @@ export const useQuestActions = () => {
 };
 
 export const useQuestSystem = () => {
+  const flappyHighScore = useMiniGameStore((state) => state.highScores.FLAPPY_BIRD);
+  const flappyScore = useMiniGameStore((state) =>
+    state.activeGame === "FLAPPY_BIRD" ? state.session.score : 0,
+  );
   const currentRoute = useAppStore((state) => state.currentRoute);
   const upgrades = useCoreStore((state) => state.upgrades);
   const lifetimeTotalTaps = useCoreStore((state) => state.lifetimeTotalTaps);
@@ -130,6 +135,11 @@ export const useQuestSystem = () => {
     () => Math.floor(getTotalTapMultiplier()),
     [getTotalTapMultiplier, upgrades],
   );
+
+  useEffect(() => {
+    if (!gameStoreHydrated || !questStoreHydrated) return;
+    syncQuestProgressFromMetric("minigames_flappy_best_score", Math.max(flappyHighScore, flappyScore));
+  }, [gameStoreHydrated, questStoreHydrated, flappyHighScore, flappyScore, syncQuestProgressFromMetric]);
 
   useEffect(() => {
     if (!gameStoreHydrated || !questStoreHydrated) return;

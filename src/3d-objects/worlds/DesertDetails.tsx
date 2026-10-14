@@ -8,6 +8,7 @@ import {
   type Placement,
 } from "./InstancedModels";
 import { seededRandom, useWorldQuality } from "./quality";
+import { WorldToonMaterial } from "./WorldToonMaterial";
 
 function sandstoneGeometry() {
   return assemble([
@@ -41,7 +42,7 @@ function tumbleweedGeometry() {
 }
 function Tumbleweeds() {
   const quality = useWorldQuality();
-  const count = quality === "low" ? 4 : 8;
+  const count = quality === "low" ? 1 : 2;
   const geometry = useMemo(tumbleweedGeometry, []);
   const mesh = useRef<T.InstancedMesh>(null);
   const dummy = useMemo(() => new T.Object3D(), []);
@@ -85,7 +86,7 @@ function Tumbleweeds() {
       frustumCulled={false}
       name="desert-tumbleweeds"
     >
-      <meshStandardMaterial vertexColors roughness={1} />
+      <WorldToonMaterial vertexColors />
     </instancedMesh>
   );
 }
@@ -116,6 +117,7 @@ export function DesertDetails() {
         build={sandstoneGeometry}
         placements={placements}
         name="desert-rocks"
+        toon
       />
       <Tumbleweeds />
     </>

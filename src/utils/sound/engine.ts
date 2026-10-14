@@ -1,4 +1,12 @@
 import { Howl, Howler } from "howler";
+import { defineSound, type SoundDefinition } from "@web-kits/audio";
+import {
+  getExistingSynthesisContext,
+  getSynthesisContext,
+  resumeSynthesisContext,
+  syncSynthesisVolumes,
+} from "./synthesis";
+import { textSynth, uiSynthSound } from "./textSynth";
 import type * as THREE from "three";
 import {
   DEFAULT_MASTER_VOLUME,
@@ -59,6 +67,43 @@ const howls = new Map<string, Howl>();
 const instances = new Map<string, SoundInstance>();
 const instancesBySoundId = new Map<string, Set<string>>();
 const instancesByGroup = new Map<string, Set<string>>();
+const synthPlayers = new WeakMap<SoundDefinition, ReturnType<typeof defineSound>>();
+let synthInstanceId = 0;
+
+type SoundMix = { gain: number; lowpassHz?: number };
+// Howler exposes no filter API. Keep its pooled gain-node access isolated here.
+type WebAudioHowl = { _webAudio: boolean; _sounds: Array<{ _id: number; _node: GainNode }> };
+const soundMixes = new Map<string, SoundMix>();
+const lowpassNodes = new WeakMap<GainNode, BiquadFilterNode>();
+
+const applyLowpass = (howl: Howl, howlId: number, frequency?: number) => {
+  const webAudio = howl as unknown as WebAudioHowl;
+  if (!webAudio._webAudio || !Howler.ctx || !Howler.masterGain) return;
+  const node = webAudio._sounds.find((sound) => sound._id === howlId)?._node;
+  if (!node) return;
+  let filter = lowpassNodes.get(node);
+  if (frequency === undefined) {
+    if (!filter) return;
+    node.disconnect(filter);
+    filter.disconnect();
+    node.connect(Howler.masterGain);
+    lowpassNodes.delete(node);
+    return;
+  }
+  const cutoff = Math.max(20, Math.min(Howler.ctx.sampleRate / 2 - 1, frequency));
+  if (!filter) {
+    filter = Howler.ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.Q.value = 0.7;
+    filter.frequency.value = cutoff;
+    node.disconnect(Howler.masterGain);
+    node.connect(filter);
+    filter.connect(Howler.masterGain);
+    lowpassNodes.set(node, filter);
+  } else {
+    filter.frequency.setTargetAtTime(cutoff, Howler.ctx.currentTime, 0.08);
+  }
+};
 
 let state: SoundSystemState = {
   enabled: true,
@@ -126,7 +171,7 @@ const normalizeSoundConfig = (config: SoundConfig): NormalizedSoundConfig => {
     ...config,
     src: Array.isArray(config.src)
       ? config.src
-      : [config.src ?? config.filePath].filter(Boolean),
+      : [config.src ?? config.filePath].filter((src): src is string => !!src),
     category: config.category ?? config.type,
     loop: !!config.loop,
     preload: !!config.preload,
@@ -192,7 +237,7 @@ const getOrCreateHowl = (config: NormalizedSoundConfig): Howl => {
 
 const preloadHowl = async (soundId: string): Promise<void> => {
   const config = configs.get(soundId);
-  if (!config) return;
+  if (!config || config.synthesis) return;
 
   const howl = getOrCreateHowl(config);
   if (howl.state() === "loaded") return;
@@ -265,6 +310,12 @@ const cleanupInstance = (instanceId: string) => {
   const instance = instances.get(instanceId);
   if (!instance) return;
 
+  const howl = howls.get(instance.soundId);
+  if (howl && instance.howlId !== undefined) applyLowpass(howl, instance.howlId);
+  if (instance.synth?.cleanupTimer !== undefined) {
+    clearTimeout(instance.synth.cleanupTimer);
+  }
+
   instances.delete(instanceId);
   removeFromIndex(instancesBySoundId, instance.soundId, instanceId);
   removeFromIndex(instancesByGroup, instance.config.playback.group, instanceId);
@@ -286,18 +337,40 @@ const getSoundIdsByType = (type: SoundType): string[] =>
     .map((config) => config.id);
 
 const updateInstanceVolume = (instance: SoundInstance) => {
+  // Synthesized UI and speech volumes are updated on their shared output buses.
+  if (instance.synth) return;
   const howl = howls.get(instance.soundId);
-  if (!howl) return;
-  const volume = calculateFinalVolume(instance.config, instance.attenuation);
+  if (!howl || instance.howlId === undefined) return;
+  const volume = calculateFinalVolume(instance.config, instance.attenuation) *
+    (soundMixes.get(instance.soundId)?.gain ?? 1);
   howl.volume(volume, instance.howlId);
+};
+
+/** Independent of user volume/mute preferences; filters affect only this sound. */
+export const setSoundMix = (soundId: string, mix?: SoundMix): void => {
+  const previous = soundMixes.get(soundId);
+  if (mix && previous?.gain === clamp01(mix.gain) && previous.lowpassHz === mix.lowpassHz) return;
+  if (mix) soundMixes.set(soundId, { gain: clamp01(mix.gain), lowpassHz: mix.lowpassHz });
+  else soundMixes.delete(soundId);
+  const howl = howls.get(soundId);
+  getInstancesForSound(soundId).forEach((instance) => {
+    if (howl && instance.howlId !== undefined) applyLowpass(howl, instance.howlId, mix?.lowpassHz);
+    updateInstanceVolume(instance);
+  });
 };
 
 const stopSoundInternal = (instanceId: string, fadeOutMs?: number) => {
   const instance = instances.get(instanceId);
   if (!instance) return;
 
+  if (instance.synth) {
+    instance.synth.voice.stop(Math.max(0.003, (fadeOutMs ?? instance.config.fadeOut) / 1000));
+    cleanupInstance(instanceId);
+    return;
+  }
+
   const howl = howls.get(instance.soundId);
-  if (!howl) {
+  if (!howl || instance.howlId === undefined) {
     cleanupInstance(instanceId);
     return;
   }
@@ -369,12 +442,55 @@ const registerInstance = (instance: SoundInstance) => {
   addToIndex(instancesByGroup, instance.config.playback.group, instance.id);
 };
 
-export const resumeAudioContext = async () => {
-  const ctx = (Howler as any).ctx as AudioContext | undefined;
-  if (!ctx) return;
-  if (ctx.state === "suspended") {
-    await ctx.resume();
+const playSynthesizedSound = (config: NormalizedSoundConfig) => {
+  const definition = config.synthesis!;
+  const ctx = getSynthesisContext();
+  let player = synthPlayers.get(definition);
+  if (!player) {
+    player = defineSound(definition);
+    synthPlayers.set(definition, player);
   }
+  const voice = player({
+    volume: config.volume * (soundMixes.get(config.id)?.gain ?? 1),
+    detune: 1200 * Math.log2(getRandomPlaybackRate(config)),
+  });
+  const layers = "layers" in definition ? definition.layers : [definition];
+  // Include the package's source-node cleanup tail after each envelope.
+  const duration = Math.max(...layers.map((layer) => {
+    const envelope = layer.envelope;
+    return (layer.delay ?? 0) + (envelope
+      ? (envelope.attack ?? 0) + envelope.decay + (envelope.release ?? 0)
+      : 0.5);
+  })) + 0.1;
+  const instance: SoundInstance = {
+    id: `${config.id}:synth:${++synthInstanceId}`,
+    soundId: config.id,
+    config,
+    startedAt: Date.now(),
+    attenuation: 1,
+    synth: { voice, endsAt: ctx.currentTime + duration },
+  };
+  registerInstance(instance);
+  const cleanupWhenEnded = () => {
+    if (!instances.has(instance.id)) return;
+    const remaining = instance.synth!.endsAt - ctx.currentTime;
+    if (remaining <= 0 || ctx.state === "closed") {
+      cleanupInstance(instance.id);
+      return;
+    }
+    // Use audio time so suspending the context does not prematurely untrack cues.
+    instance.synth!.cleanupTimer = setTimeout(cleanupWhenEnded,
+      ctx.state === "running" ? Math.max(20, remaining * 1000) : 1000);
+  };
+  instance.synth!.cleanupTimer = setTimeout(cleanupWhenEnded, duration * 1000);
+};
+
+export const resumeAudioContext = async () => {
+  const ctx = Howler.ctx;
+  await Promise.all([
+    resumeSynthesisContext(),
+    ctx && ctx.state !== "running" ? ctx.resume() : Promise.resolve(),
+  ]);
 };
 
 export const unlockAudioContext = async () => {
@@ -389,15 +505,14 @@ export const unlockAudioContext = async () => {
     gain.connect(ctx.destination);
     osc.start();
     osc.stop(ctx.currentTime + 0.05);
+    osc.onended = () => { osc.disconnect(); gain.disconnect(); };
   } catch {}
 };
 
 export const suspendAudioContext = async () => {
-  const ctx = (Howler as any).ctx as AudioContext | undefined;
-  if (!ctx) return;
-  if (ctx.state === "running") {
-    await ctx.suspend();
-  }
+  await Promise.all([Howler.ctx, getExistingSynthesisContext()]
+    .filter((ctx): ctx is AudioContext => !!ctx && ctx.state === "running")
+    .map((ctx) => ctx.suspend()));
 };
 
 export const getAudioContextState = (): string | null => {
@@ -435,6 +550,11 @@ export const playSound = (soundId: string, options?: Partial<SoundConfig>): void
     return;
   }
 
+  if (config.synthesis) {
+    playSynthesizedSound(config);
+    return;
+  }
+
   const howl = getOrCreateHowl(config);
   const howlId = howl.play();
   if (typeof howlId !== "number") return;
@@ -453,7 +573,9 @@ export const playSound = (soundId: string, options?: Partial<SoundConfig>): void
 
   registerInstance(instance);
 
-  const targetVolume = calculateFinalVolume(config, instance.attenuation);
+  const mix = soundMixes.get(soundId);
+  applyLowpass(howl, howlId, mix?.lowpassHz);
+  const targetVolume = calculateFinalVolume(config, instance.attenuation) * (mix?.gain ?? 1);
   if (config.fadeIn > 0) {
     howl.volume(0, howlId);
     howl.fade(0, targetVolume, config.fadeIn, howlId);
@@ -461,7 +583,9 @@ export const playSound = (soundId: string, options?: Partial<SoundConfig>): void
     howl.volume(targetVolume, howlId);
   }
 
-  howl.once("end", () => cleanupInstance(instance.id), howlId);
+  // Howler emits `end` after every loop. Keep loops tracked until stopped,
+  // otherwise a completed reel spin (or scene exit) cannot stop its audio.
+  if (!config.loop) howl.once("end", () => cleanupInstance(instance.id), howlId);
   howl.once("loaderror", () => cleanupInstance(instance.id), howlId);
 };
 
@@ -470,20 +594,30 @@ export const stopSound = (instanceId: string): void => {
 };
 
 export const stopSoundsByType = (type: SoundType): void => {
+  if (type === "text") {
+    textSynth.stop();
+    uiSynthSound.stop();
+  }
   Array.from(instances.values())
     .filter((instance) => instance.config.type === type)
     .forEach((instance) => stopSoundInternal(instance.id));
 };
 
 export const stopAllSounds = (): void => {
+  textSynth.stop();
+  uiSynthSound.stop();
   Array.from(instances.keys()).forEach((instanceId) => stopSoundInternal(instanceId));
 };
 
 export const forceStopAllSounds = (): void => {
+  textSynth.stop();
+  uiSynthSound.stop();
   Array.from(instances.values()).forEach((instance) => {
     try {
-      howls.get(instance.soundId)?.stop(instance.howlId);
+      if (instance.synth) instance.synth.voice.stop(0.003);
+      else if (instance.howlId !== undefined) howls.get(instance.soundId)?.stop(instance.howlId);
     } catch {}
+    cleanupInstance(instance.id);
   });
 
   instances.clear();
@@ -492,6 +626,7 @@ export const forceStopAllSounds = (): void => {
 };
 
 const updateAllVolumes = () => {
+  syncSynthesisVolumes(state);
   Array.from(instances.values()).forEach(updateInstanceVolume);
 };
 
@@ -523,6 +658,9 @@ export const setTypeVolume = (type: SoundType, volume: number): void => {
 };
 
 export const addSoundConfig = (config: SoundConfig): void => {
+  if (config.synthesis && (config.type !== "ui" || config.loop)) {
+    throw new Error("Synthesized sound configs must be non-looping UI cues");
+  }
   const normalized = normalizeSoundConfig(config);
   const existing = configs.get(normalized.id);
   configs.set(normalized.id, normalized);
@@ -555,11 +693,18 @@ export const getSoundConfig = (soundId: string): NormalizedSoundConfig | undefin
 export const enable = (): void => {
   state.enabled = true;
   updateAllVolumes();
-  resumeAudioContext().catch(() => {});
+  // Preference hydration can enable audio before the first user gesture.
+  // Resume existing contexts only; Enter/playback creates them when needed.
+  [Howler.ctx, getExistingSynthesisContext()].forEach((ctx) => {
+    if (ctx && ctx.state !== "running" && ctx.state !== "closed") {
+      ctx.resume().catch(() => {});
+    }
+  });
 };
 
 export const disable = (): void => {
   state.enabled = false;
+  syncSynthesisVolumes(state);
   stopAllSounds();
 };
 
@@ -582,7 +727,10 @@ export const updateWorldSoundVolumes = (isMenuOpen: boolean): void => {
 
 export const initializeSoundSystem = async () => {
   ensureDefaultConfigs();
-  await Promise.all(DEFAULT_SOUND_CONFIGS.map((config) => preloadHowl(config.id)));
+  // Creating Howls sets up their context synchronously. Resume both backends
+  // before awaiting any downloads, while the Enter gesture is still active.
+  const loads = DEFAULT_SOUND_CONFIGS.map((config) => preloadHowl(config.id));
+  await Promise.all([resumeAudioContext(), ...loads]);
   if (DEBUG_LOGS) {
     console.log("Howler sound system initialized", Array.from(configs.keys()));
   }

@@ -1,3 +1,5 @@
+import type { SoundDefinition, VoiceHandle } from "@web-kits/audio";
+
 export type SoundType = "tap" | "world" | "ui" | "text";
 
 export type SoundCategory =
@@ -33,7 +35,9 @@ export interface SoundPlaybackConfig {
 
 export interface SoundConfig {
   id: string;
-  filePath: string;
+  filePath?: string;
+  /** Synthesized UI cues use the package's shared UI output bus. */
+  synthesis?: SoundDefinition;
   src?: string | string[];
   type: SoundType;
   category?: SoundCategory;
@@ -69,7 +73,12 @@ export interface NormalizedSoundConfig
 export interface SoundInstance {
   id: string;
   soundId: string;
-  howlId: number;
+  howlId?: number;
+  synth?: {
+    voice: VoiceHandle;
+    endsAt: number;
+    cleanupTimer?: ReturnType<typeof setTimeout>;
+  };
   config: NormalizedSoundConfig;
   startedAt: number;
   attenuation: number;

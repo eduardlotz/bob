@@ -5,6 +5,7 @@ import { seededRandom, useWorldQuality } from "./quality";
 
 type Kind = "rain" | "snow" | "sand";
 const vertexShader = `
+  #include <fog_pars_vertex>
   uniform float uTime;
   uniform float uKind;
   attribute vec4 aSeed;
@@ -37,10 +38,13 @@ const vertexShader = `
     mv.xy += p;
     vFade = smoothstep(0.0, 1.0, y) * (1.0 - smoothstep(16.0, 18.0, y));
     if (sand > 0.5) vFade = 1.0 - smoothstep(15.0, 21.0, abs(center.x));
+    vec4 mvPosition = mv;
+    #include <fog_vertex>
     gl_Position = projectionMatrix * mv;
   }
 `;
 const fragmentShader = `
+  #include <fog_pars_fragment>
   uniform vec3 uColor;
   uniform float uOpacity;
   uniform float uKind;
@@ -54,6 +58,7 @@ const fragmentShader = `
     gl_FragColor = vec4(uColor, alpha);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
+    #include <fog_fragment>
   }
 `;
 
@@ -92,6 +97,7 @@ export function WeatherParticles({
   useEffect(() => () => geometry.dispose(), [geometry]);
   const uniforms = useMemo(
     () => ({
+      ...THREE.UniformsUtils.clone(THREE.UniformsLib.fog),
       uTime: { value: 0 },
       uKind: { value: { rain: 0, snow: 1, sand: 2 }[kind] },
       uColor: {
@@ -123,6 +129,7 @@ export function WeatherParticles({
         uniforms={uniforms}
         vertexShader={vertexShader}
         fragmentShader={fragmentShader}
+        fog
         transparent
         depthWrite={false}
         side={THREE.DoubleSide}

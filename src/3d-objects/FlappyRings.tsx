@@ -1,242 +1,158 @@
-import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useMemo,
-  useRef,
-} from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { BallCollider, RapierRigidBody, RigidBody } from "@react-three/rapier";
+import * as THREE from "three";
+import { ringCrossing } from "./flappyCollision";
 
-export const BASE_RING_SPEED = 4;
-export const RING_SPEED_SCORE_FACTOR = 0.05;
-const RING_DISTANCE = 6;
-const RING_COUNT = 10;
-const RING_START_X = 8;
-const RECYCLE_X = -16;
-const RING_COLLIDER_SEGMENTS = 12;
-const RING_COLLIDER_DEPTH_FACTORS = [-1, 1] as const;
-
+export const BASE_RING_SPEED = 3.8;
+export const RING_SPEED_SCORE_FACTOR = 0.035;
+export const RING_RADIAL_SEGMENTS = 6;
+export const RING_TUBULAR_SEGMENTS = 20;
 export const RING_TUBE_MIN = 0.12;
 export const RING_TUBE_MAX = 0.24;
 export const RING_HOLE_RADIUS_MIN = 0.6;
 export const RING_HOLE_RADIUS_MAX = 1.5;
+const RING_COUNT = 7;
+const RING_DISTANCE = 6.5;
+const RECYCLE_X = -18;
+const FADE_IN_START = RING_DISTANCE * 4;
+const FADE_IN_END = RING_DISTANCE * 2;
+const FADE_OUT_START = -RING_DISTANCE;
+const FADE_OUT_END = RECYCLE_X + 2;
+const RING_COLLIDER_SEGMENTS = 12;
+const RING_COLLIDER_DEPTH_FACTORS = [-1, 1] as const;
 
 type Props = {
   birdBody: React.RefObject<RapierRigidBody>;
   birdRadius: number;
   score: number;
+  active: React.MutableRefObject<boolean>;
   onScore: () => void;
   onMiss: () => void;
 };
+export type FlappyRingsHandle = { reset: () => void };
 
-type RingConfig = {
-  startX: number;
-  x: number;
-  baseY: number;
-  radius: number;
-  tube: number;
-  passed: boolean;
-  wobbleAmp: number;
-  wobbleSpeed: number;
-  wobblePhase: number;
-};
-
-export const FlappyRings = forwardRef<any, Props>(function FlappyRings(
-  { birdBody, birdRadius, score, onScore, onMiss },
-  ref,
+export const FlappyRings = forwardRef<FlappyRingsHandle, Props>(function FlappyRings(
+  { birdBody, birdRadius, score, active, onScore, onMiss }, ref,
 ) {
-  const bodies = useRef<RapierRigidBody[]>([]);
-  const colliderAngles = useMemo(
-    () =>
-      new Array(RING_COLLIDER_SEGMENTS).fill(0).map((_, index) => {
-        const angle = (index / RING_COLLIDER_SEGMENTS) * Math.PI * 2;
-        return [Math.cos(angle), Math.sin(angle)] as const;
+  const bodies = useRef<Array<RapierRigidBody | null>>([]);
+  const meshes = useRef<Array<THREE.Mesh | null>>([]);
+  const time = useRef(0);
+  const moving = useRef(false);
+  const rings = useMemo(() => Array.from({ length: RING_COUNT }, (_, i) => {
+    const tube = THREE.MathUtils.randFloat(RING_TUBE_MIN, RING_TUBE_MAX);
+    const hole = THREE.MathUtils.randFloat(RING_HOLE_RADIUS_MIN, RING_HOLE_RADIUS_MAX);
+    const radius = hole + tube;
+    const geometry = new THREE.TorusGeometry(radius, tube, RING_RADIAL_SEGMENTS, RING_TUBULAR_SEGMENTS);
+    geometry.rotateY(Math.PI / 2);
+    const colliderRadius = Math.max(0.06, tube * 0.75);
+    const colliderDepth = Math.max(0.03, tube * 0.6);
+    const colliderRingRadius = Math.max(0.12, radius - tube * 0.15);
+    const colliderPositions = RING_COLLIDER_DEPTH_FACTORS.flatMap((depthFactor) =>
+      Array.from({ length: RING_COLLIDER_SEGMENTS }, (_, index): [number, number, number] => {
+        const angle = index / RING_COLLIDER_SEGMENTS * Math.PI * 2;
+        return [colliderDepth * depthFactor, Math.cos(angle) * colliderRingRadius, Math.sin(angle) * colliderRingRadius];
       }),
-    [],
-  );
+    );
+    return { x: 8 + i * RING_DISTANCE, y: 1.2, baseY: 1.2, radius, tube,
+      passed: false, phase: Math.random() * Math.PI * 2, geometry,
+      colliderRadius, colliderPositions, recycled: false };
+  }), []);
+  useEffect(() => () => rings.forEach((ring) => ring.geometry.dispose()), [rings]);
 
-  const configs = useMemo<RingConfig[]>(
-    () =>
-      new Array(RING_COUNT).fill(0).map((_, i) => {
-        const tube =
-          RING_TUBE_MIN + Math.random() * (RING_TUBE_MAX - RING_TUBE_MIN);
-        const holeRadius =
-          RING_HOLE_RADIUS_MIN +
-          Math.random() * (RING_HOLE_RADIUS_MAX - RING_HOLE_RADIUS_MIN);
-        const radius = holeRadius + tube;
-        const baseY = Math.random() * 3;
-
-        return {
-          startX: i * RING_DISTANCE + RING_START_X,
-          x: i * RING_DISTANCE + RING_START_X,
-          baseY,
-          radius,
-          tube,
-          passed: false,
-          wobbleAmp: 0.12 + Math.random() * 0.22,
-          wobbleSpeed: 0.5 + Math.random() * 0.7,
-          wobblePhase: Math.random() * Math.PI * 2,
-        };
-      }),
-    [],
-  );
-
-  const cfgRef = useRef(configs);
-  const missLock = useRef(false);
-  const scoreRef = useRef(score);
-  const t = useRef(0);
-
-  useEffect(() => {
-    scoreRef.current = score;
-  }, [score]);
-
-  useImperativeHandle(ref, () => ({
-    reset() {
-      missLock.current = false;
-      cfgRef.current.forEach((cfg, i) => {
-        cfg.passed = false;
-        cfg.x = cfg.startX;
-        cfg.baseY = Math.random() * 3;
-
-        const body = bodies.current[i];
-        if (!body) return;
-
-        body.setTranslation({ x: cfg.x, y: cfg.baseY, z: 0 }, true);
-        body.setNextKinematicTranslation({ x: cfg.x, y: cfg.baseY, z: 0 });
-      });
-    },
-  }));
+  useImperativeHandle(ref, () => ({ reset() {
+    time.current = 0;
+    let y = 1.2;
+    rings.forEach((ring, i) => {
+      if (i > 0) y = THREE.MathUtils.clamp(y + (Math.random() - 0.5) * 1.4, -0.1, 3.2);
+      Object.assign(ring, { x: 8 + i * RING_DISTANCE, y, baseY: y, passed: false, recycled: true });
+      const body = bodies.current[i];
+      body?.setTranslation({ x: ring.x, y, z: 0 }, true);
+      body?.setNextKinematicTranslation({ x: ring.x, y, z: 0 });
+    });
+  } }), [rings]);
 
   useFrame((_, delta) => {
-    if (missLock.current) return;
-
-    t.current += delta;
-
     const bird = birdBody.current;
     if (!bird) return;
+    if (!active.current) {
+      if (!moving.current) return;
+      moving.current = false;
+      // Clear the last kinematic velocity, including catch-up steps after a loss.
+      bodies.current.forEach((body) => {
+        if (!body) return;
+        body.setNextKinematicTranslation(body.translation());
+      });
+      return;
+    }
+    moving.current = true;
+    time.current += delta;
     const birdPos = bird.translation();
+    const speed = BASE_RING_SPEED + Math.min(score, 60) * RING_SPEED_SCORE_FACTOR;
+    let furthest = Math.max(...rings.map((ring) => ring.x - speed * delta));
+    let lastY = rings.reduce((a, b) => a.x > b.x ? a : b).baseY;
 
-    const speed =
-      BASE_RING_SPEED +
-      Math.min(scoreRef.current, 80) * RING_SPEED_SCORE_FACTOR;
-    let recycleAnchor = Number.NEGATIVE_INFINITY;
-
-    cfgRef.current.forEach((cfg) => {
-      const nextX = cfg.x - speed * delta;
-      recycleAnchor = Math.max(recycleAnchor, nextX);
-    });
-
-    if (!Number.isFinite(recycleAnchor)) return;
-
-    cfgRef.current.forEach((cfg, i) => {
+    for (let i = 0; i < rings.length; i++) {
+      const ring = rings[i];
       const body = bodies.current[i];
-      if (!body) return;
-
-      const currentX = cfg.x;
-      const nextX = currentX - speed * delta;
-      const wobble =
-        Math.sin(t.current * cfg.wobbleSpeed + cfg.wobblePhase) * cfg.wobbleAmp;
-      const nextY = cfg.baseY + wobble;
-
-      if (!cfg.passed && currentX > birdPos.x && nextX <= birdPos.x) {
-        // The ring's centre crosses the bird's X plane this frame.
-        // This is the single authoritative scoring / miss decision point.
-        const holeRadius = Math.max(0.1, cfg.radius - cfg.tube);
-        const scoreRadius = Math.min(cfg.radius, holeRadius + 0.1);
-        const dy = birdPos.y - nextY;
-        const dz = birdPos.z; // rings always live at z=0
-        const dist = Math.hypot(dy, dz);
-
-        if (dist + birdRadius < scoreRadius) {
-          // Bird centre + radius fits cleanly inside the hole → score.
-          cfg.passed = true;
+      if (!body) continue;
+      const nextX = ring.x - speed * delta;
+      const nextY = ring.baseY + Math.sin(time.current * 0.65 + ring.phase) * 0.12;
+      ring.recycled = false;
+      if (!ring.passed) {
+        // Original decision point: the ring centre crosses Bob during this frame.
+        const crossing = ringCrossing(
+          ring.x - birdPos.x, nextX - birdPos.x,
+          birdPos.y - nextY, birdPos.z, ring.radius, ring.tube, birdRadius,
+        );
+        if (crossing === "outside") { onMiss(); break; }
+        if (crossing === "inside") {
+          ring.passed = true;
           onScore();
-        } else {
-          // Bird was outside the hole at the moment of crossing → miss.
-          missLock.current = true;
-          onMiss();
-          return;
         }
       }
-
-      // Recycle ring to the far right once it leaves the left edge.
-      if (nextX < RECYCLE_X) {
-        cfg.baseY = Math.random() * 3;
-        cfg.passed = false;
-        const resetY =
-          cfg.baseY +
-          Math.sin(t.current * cfg.wobbleSpeed + cfg.wobblePhase) *
-            cfg.wobbleAmp;
-        const newX = recycleAnchor + RING_DISTANCE;
-        recycleAnchor = newX;
-        cfg.x = newX;
-        // Teleport the ring so it doesn't visibly sweep across the screen.
-        body.setTranslation({ x: newX, y: resetY, z: 0 }, true);
-        body.setNextKinematicTranslation({
-          x: newX,
-          y: resetY,
-          z: 0,
-        });
-        return;
+      ring.x = nextX;
+      ring.y = nextY;
+      if (ring.x < RECYCLE_X) {
+        ring.x = furthest + RING_DISTANCE;
+        furthest = ring.x;
+        lastY = THREE.MathUtils.clamp(lastY + (Math.random() - 0.5) * 1.6, -0.1, 3.2);
+        ring.y = ring.baseY = lastY;
+        ring.passed = false;
+        ring.recycled = true;
+        body?.setTranslation({ x: ring.x, y: ring.y, z: 0 }, true);
       }
-
-      cfg.x = nextX;
-      body.setNextKinematicTranslation({ x: nextX, y: nextY, z: 0 });
-    });
+      body?.setNextKinematicTranslation({ x: ring.x, y: ring.y, z: 0 });
+    }
   });
 
-  return (
-    <>
-      {cfgRef.current.map((cfg, i) => (
-        <RigidBody
-          key={i}
-          ref={(rb) => {
-            if (!rb) return;
-            bodies.current[i] = rb;
-            const cfgNow = cfgRef.current[i];
-            if (!cfgNow) return;
-            rb.setTranslation({ x: cfgNow.x, y: cfgNow.baseY, z: 0 }, true);
-            rb.setNextKinematicTranslation({
-              x: cfgNow.x,
-              y: cfgNow.baseY,
-              z: 0,
-            });
-          }}
-          type="kinematicPosition"
-          colliders={false}
-          position={[cfg.startX, cfg.baseY, 0]}
-        >
-          {/* Rotate so the hole faces the bird along +X */}
-          {RING_COLLIDER_DEPTH_FACTORS.map((depthFactor, depthIndex) => {
-            const colliderRadius = Math.max(0.06, cfg.tube * 0.75);
-            const colliderDepth = Math.max(0.03, cfg.tube * 0.6) * depthFactor;
-            const colliderRingRadius = Math.max(
-              0.12,
-              cfg.radius - cfg.tube * 0.15,
-            );
+  useFrame(() => {
+    const birdX = birdBody.current?.translation().x;
+    if (birdX === undefined) return;
+    for (let i = 0; i < rings.length; i++) {
+      const mesh = meshes.current[i];
+      if (!mesh) continue;
+      // Follow Rapier's interpolated visual position for a smooth frame-by-frame fade.
+      const distance = (mesh.parent?.position.x ?? rings[i].x) - birdX;
+      const opacity = rings[i].recycled ? 0
+        : (1 - THREE.MathUtils.smoothstep(distance, FADE_IN_END, FADE_IN_START))
+          * THREE.MathUtils.smoothstep(distance, FADE_OUT_END, FADE_OUT_START);
+      const material = mesh.material as THREE.MeshToonMaterial;
+      material.opacity = opacity;
+      material.depthWrite = opacity === 1;
+      // Recycled rings stay hidden through the teleport's interpolation frame.
+      mesh.visible = opacity > 0;
+    }
+  });
 
-            return colliderAngles.map(([cosA, sinA], angleIndex) => (
-              <BallCollider
-                key={`${depthIndex}-${angleIndex}`}
-                args={[colliderRadius]}
-                position={[
-                  colliderDepth,
-                  cosA * colliderRingRadius,
-                  sinA * colliderRingRadius,
-                ]}
-              />
-            ));
-          })}
-
-          <group rotation={[0, Math.PI / 2, 0]}>
-            <mesh>
-              <torusGeometry args={[cfg.radius, cfg.tube, 10, 32]} />
-              <meshToonMaterial color="#ffcc00" />
-            </mesh>
-          </group>
-        </RigidBody>
-      ))}
-    </>
-  );
+  return <group name="flappy-rings">
+    {rings.map((ring, i) => <RigidBody key={i} ref={(body) => { bodies.current[i] = body; }}
+      type="kinematicPosition" colliders={false} position={[8 + i * RING_DISTANCE, 1.2, 0]}>
+      {ring.colliderPositions.map((position, index) => <BallCollider key={index}
+        args={[ring.colliderRadius]} position={position} />)}
+      <mesh ref={(mesh) => { meshes.current[i] = mesh; }} geometry={ring.geometry} castShadow>
+        <meshToonMaterial color="#ffcc00" transparent opacity={0} depthWrite={false} />
+      </mesh>
+    </RigidBody>)}
+  </group>;
 });

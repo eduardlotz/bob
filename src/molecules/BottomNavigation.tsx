@@ -82,6 +82,7 @@ export function BottomNavigation() {
         margin: "0 auto",
         left: 0,
         right: 0,
+        zIndex: activeGame === "FLAPPY_BIRD" || activeGame === "PING_PONG" ? 1000 : undefined,
       }}
     >
       <TapUpgrades show={showTapUpgrades} />

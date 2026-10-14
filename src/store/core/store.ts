@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { persist } from "zustand/middleware";
 import { createIndexedDBStorage } from "../indexedDB";
+import { useMiniGameStore } from "../minigames";
 import { match } from "ts-pattern";
 import {
   ROUTE_PATHS,
@@ -64,7 +65,10 @@ export enum GAME_STORE_VERSION {
   V9 = 100104, // version 1.01.104 (motion + tap particle prefs)
   V10 = 100105, // version 1.01.105 (upgrade schema normalization)
   V11 = 100106, // city world catalogue
-  LATEST = V11,
+  V12 = 100107, // astronaut helmet becomes a quest reward
+  V13 = 100108, // merged space world and new hats
+  V14 = 100109, // propeller hat, moustache, and crown
+  LATEST = V14,
 }
 
 // TODO: plan refactor to include component inside item properties
@@ -196,7 +200,10 @@ export interface BobItem extends BaseItem {
   icon: string;
   category: "bob";
   detached?: boolean; // If true, item stays at initial position and doesn't follow head movements
+  equipSlot?: "moustache";
 }
+
+export const getBobItemSlot = (item: BobItem) => item.equipSlot ?? item.type;
 
 const ITEM_NAME_MAP = {
   hat: "Kopf",
@@ -261,7 +268,7 @@ export interface SoundSystemState {
   worldEnabled?: boolean;
 }
 
-type PreviewMode = "theme" | BobItem["type"] | "tapEffect" | "world";
+type PreviewMode = "theme" | ReturnType<typeof getBobItemSlot> | "tapEffect" | "world";
 
 type QualityMode = "auto" | "low" | "high";
 
@@ -343,6 +350,7 @@ interface GameFlags {
 
 interface GameStateActions {
   addTaps: (amount: number) => void;
+  spendTaps: (amount: number) => boolean;
 
   equipBobItem: (bobItemId: string) => void;
   unequipBobItem: (bobItemId: string) => void;
@@ -705,6 +713,12 @@ export const useCoreStore = create<GameStore>()(
 
         setGameReady: (gameReady) => set({ isReady: gameReady }),
 
+        spendTaps: (amount: number) => {
+          if (!Number.isFinite(amount) || amount <= 0 || get().taps < amount) return false;
+          set((state) => ({ taps: state.taps - amount }));
+          return true;
+        },
+
         addTaps: (amount: number) => {
           set((state) => ({
             taps: state.taps + amount,
@@ -916,6 +930,7 @@ export const useCoreStore = create<GameStore>()(
             if (
               !bobItem ||
               bobItem.purchased ||
+              (bobItem.unlocked === false && !forFree) ||
               (!state.canAfford(bobItem.cost) && !forFree)
             ) {
               return state;
@@ -932,7 +947,7 @@ export const useCoreStore = create<GameStore>()(
                 : {
                     ...b,
                     enabled:
-                      b.type === bobItem.type ? b.id === bobItemId : b.enabled,
+                      getBobItemSlot(b) === getBobItemSlot(bobItem) ? b.id === bobItemId : b.enabled,
                   },
             );
 
@@ -951,10 +966,10 @@ export const useCoreStore = create<GameStore>()(
               return state;
             }
 
-            // unequip all items of the same type, then equip the selected one
+            // Replace only the selected wear slot; face items can be combined.
             const updatedBobItems = state.bobItems.map((b) => ({
               ...b,
-              enabled: b.type === bobItem.type ? b.id === bobItemId : b.enabled,
+              enabled: getBobItemSlot(b) === getBobItemSlot(bobItem) ? b.id === bobItemId : b.enabled,
             }));
 
             return {
@@ -971,16 +986,16 @@ export const useCoreStore = create<GameStore>()(
               return state;
             }
 
-            // unequip all items of the same type, then equip the selected one
+            // Preview one slot while retaining the other equipped face items.
             const updatedBobItems = state.bobItems.map((b) => ({
               ...b,
-              preview: b.type === bobItem.type ? b.id === bobItemId : b.preview,
+              preview: b.id === bobItemId,
             }));
 
             return {
               ...state,
               bobItems: updatedBobItems,
-              previewMode: bobItem.type,
+              previewMode: getBobItemSlot(bobItem),
             };
           });
         },
@@ -1290,6 +1305,8 @@ export const useCoreStore = create<GameStore>()(
         },
 
         resetGame: () => {
+          // Clear score metrics before resetting rewards/quests can re-read them.
+          useMiniGameStore.getState().resetMiniGames();
           set({
             ...initialGameState,
             ...initialGameFlags,

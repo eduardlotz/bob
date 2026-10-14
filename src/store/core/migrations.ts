@@ -12,11 +12,22 @@ import { THEME_IDS } from "../config/themes";
 
 const normalizeWorlds = (worlds: any[] = []) => {
   const previousWorlds = new Map(worlds.map((item: any) => [item.id, item]));
-  const enabledWorldId =
+  const previousEnabledId =
     worlds.find((item: any) => item.enabled)?.id ?? "world_default";
+  const enabledWorldId =
+    previousEnabledId === "world_moon" ? "world_space" : previousEnabledId;
+  const moonPurchased = previousWorlds.get("world_moon")?.purchased === true;
 
   return initialWorlds.map((world) => {
     const previousWorld = previousWorlds.get(world.id);
+    if (world.id === "world_space" && moonPurchased) {
+      return {
+        ...world,
+        purchased: true,
+        enabled: world.id === enabledWorldId,
+        preview: false,
+      };
+    }
 
     if (!previousWorld) {
       return {
@@ -76,7 +87,9 @@ const normalizeBobItems = (bobItems: any[] = []) => {
       ...item,
       purchased: previousItem.purchased ?? item.purchased,
       enabled: previousItem.enabled ?? item.enabled,
-      unlocked: previousItem.unlocked ?? item.unlocked,
+      unlocked: item.id === "astronautHelmet"
+        ? previousItem.purchased === true
+        : previousItem.unlocked ?? item.unlocked,
       preview: false,
     };
   });
@@ -120,11 +133,14 @@ export function migrateCoreStore(persisted: any, fromVersion: number) {
   // historical resets again just because the world catalogue gained an item.
   if (
     fromVersion === GAME_STORE_VERSION.V10 ||
-    fromVersion === GAME_STORE_VERSION.V11
+    fromVersion === GAME_STORE_VERSION.V11 ||
+    fromVersion === GAME_STORE_VERSION.V12 ||
+    fromVersion === GAME_STORE_VERSION.V13
   ) {
     return {
       ...state,
       worlds: normalizeWorlds(state.worlds),
+      bobItems: normalizeBobItems(state.bobItems),
       version: GAME_STORE_VERSION.LATEST,
     };
   }
@@ -199,6 +215,8 @@ export function migrateCoreStore(persisted: any, fromVersion: number) {
 
   return {
     ...state,
+    worlds: normalizeWorlds(state.worlds),
+    bobItems: normalizeBobItems(state.bobItems),
     version: GAME_STORE_VERSION.LATEST,
   };
 }

@@ -5,6 +5,7 @@ import {
   AnimatePresence,
   motion,
   useAnimationFrame,
+  useIsPresent,
 } from "motion/react";
 import {
   useCallback,
@@ -51,8 +52,10 @@ function ViewfinderOverlay({
 }: OverlayProps) {
   const [finder, setFinder] = useState<FinderRect | null>(null);
   const lastRectRef = useRef<FinderRect | null>(null);
+  const isPresent = useIsPresent();
 
   const computeFinderRect = useCallback(() => {
+    if (!isPresent) return;
     const body = phoneBodyRef.current;
     if (!body) {
       if (lastRectRef.current) {
@@ -63,14 +66,16 @@ function ViewfinderOverlay({
       return;
     }
 
-    const bodyRect = body.getBoundingClientRect();
-    const width = bodyRect.width;
+    const bodyRect = (body.closest("[data-phone-body]") ?? body).getBoundingClientRect();
+    // Keep the portrait crop inside the viewport, even on short screens.
+    const width = Math.min(bodyRect.width, Math.max(1, (bodyRect.top - FINDER_GAP - 16) / FINDER_ASPECT));
     const height = width * FINDER_ASPECT;
+    const left = bodyRect.left + (bodyRect.width - width) / 2;
 
     const nextRect: FinderRect = {
-      left: bodyRect.left,
+      left,
       top: bodyRect.top - FINDER_GAP - height,
-      right: bodyRect.right,
+      right: left + width,
       bottom: bodyRect.top - FINDER_GAP,
       width,
       height,
@@ -90,7 +95,7 @@ function ViewfinderOverlay({
     lastRectRef.current = nextRect;
     setFinder(nextRect);
     onFinderRect(nextRect);
-  }, [onFinderRect, phoneBodyRef]);
+  }, [onFinderRect, phoneBodyRef, isPresent]);
 
   useEffect(() => {
     const body = phoneBodyRef.current;
@@ -101,13 +106,13 @@ function ViewfinderOverlay({
 
     computeFinderRect();
     window.addEventListener("resize", computeFinderRect);
-    resizeObserver?.observe(body);
+    if (body) resizeObserver?.observe(body);
 
     return () => {
       window.removeEventListener("resize", computeFinderRect);
       resizeObserver?.disconnect();
+      // A cancelled exit can reuse this overlay. Publish its rect again on re-entry.
       lastRectRef.current = null;
-      setFinder(null);
       onFinderRect(null);
     };
   }, [computeFinderRect, onFinderRect, phoneBodyRef]);
@@ -136,7 +141,12 @@ function ViewfinderOverlay({
   `;
 
   return createPortal(
-    <OverlayRoot>
+    <OverlayRoot
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+    >
       {/* Dim mask with SVG cutout — clean, no polygon artifacts */}
       <DimSvg
         style={{
@@ -204,6 +214,7 @@ function downloadPhoto(photo: CapturedPhoto) {
 const APP_ID: CameraViewId = "phone:camera";
 
 export const CameraApp = () => {
+  const isPresent = useIsPresent();
   const { messages } = useI18n();
   const gl = useGLBridge((s) => s.gl);
   const { currentView, transitionToView } = useViewStore();
@@ -211,6 +222,7 @@ export const CameraApp = () => {
 
   const phoneBodyRef = useRef<HTMLDivElement>(null);
   const finderRectRef = useRef<FinderRect | null>(null);
+  const flashTimer = useRef<ReturnType<typeof setTimeout>>();
 
   const [flash, setFlash] = useState(false);
   const [view, setView] = useState<AppView>("camera");
@@ -218,7 +230,12 @@ export const CameraApp = () => {
   const isViewActive = currentView === APP_ID;
 
   useEffect(() => {
-    transitionToView(APP_ID);
+    // AnimatePresence can restore an exiting screen without mounting it again.
+    if (isPresent) transitionToView(APP_ID);
+  }, [isPresent, transitionToView]);
+
+  useEffect(() => {
+    return () => clearTimeout(flashTimer.current);
   }, []);
 
   const handleFinderRect = useCallback((rect: FinderRect | null) => {
@@ -232,7 +249,8 @@ export const CameraApp = () => {
     if (!finder) return;
 
     setFlash(true);
-    setTimeout(() => setFlash(false), 400);
+    clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setFlash(false), 400);
 
     const glCanvas = gl.domElement;
     const canvasRect = glCanvas.getBoundingClientRect();
@@ -282,13 +300,16 @@ export const CameraApp = () => {
   return (
     <>
       {/* Viewfinder overlay — only shown in camera mode */}
-      {isViewActive && view === "camera" && (
-        <ViewfinderOverlay
-          phoneBodyRef={phoneBodyRef}
-          flash={flash}
-          onFinderRect={handleFinderRect}
-        />
-      )}
+      <AnimatePresence>
+        {isPresent && isViewActive && view === "camera" && (
+          <ViewfinderOverlay
+            key="camera-viewfinder"
+            phoneBodyRef={phoneBodyRef}
+            flash={flash}
+            onFinderRect={handleFinderRect}
+          />
+        )}
+      </AnimatePresence>
 
       <CameraRoot ref={phoneBodyRef}>
         {/* ══ CAMERA VIEW ══════════════════════════════════════════════════ */}
@@ -522,7 +543,7 @@ const DownloadIcon = () => (
 
 // ─── Styled components ─────────────────────────────────────────────────────────
 
-const OverlayRoot = styled.div`
+const OverlayRoot = styled(motion.div)`
   position: fixed;
   inset: 0;
   z-index: 998;

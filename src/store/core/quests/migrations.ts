@@ -13,7 +13,8 @@ export enum QUESTS_STORE_VERSION {
   V4 = 1000003,
   // single refresh migration for all current/new quest definitions
   V5 = 1000014,
-  LATEST = V5,
+  V6 = 1000015, // Astrobob Flappy reward
+  LATEST = V6,
 }
 
 const cloneInitialQuests = () => initialQuests.map((quest) => ({ ...quest }));
@@ -71,7 +72,7 @@ export const migrateQuestStore = (
 > => {
   const normalizedState = normalizePersistedState(persisted);
 
-  if (fromVersion < QUESTS_STORE_VERSION.V5) {
+  if (fromVersion < QUESTS_STORE_VERSION.V6) {
     normalizedState.quests = reconcileQuestDefinitions(
       normalizedState.quests ?? [],
       cloneInitialQuests(),

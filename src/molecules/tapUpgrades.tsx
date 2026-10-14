@@ -6,7 +6,7 @@ import { getRevealedUpgradeGroup, getRevealedUpgrades, UPGRADE_GROUPS, type Upgr
 import { Magnetic } from "@/layout/Magnetic";
 import { useCoreStore, type Upgrade } from "@/store";
 import { AnimatePresence, LayoutGroup, motion, useIsPresent, usePresenceData, useReducedMotion } from "motion/react";
-import { forwardRef, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { forwardRef, useEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode } from "react";
 import styled from "styled-components";
 import { formatNumber } from "@/utils/formatNumber";
 import { useKeyPress } from "@/hooks/useKeyPress";
@@ -14,8 +14,9 @@ import { playUISound } from "@/utils/soundSystem";
 import { useI18n } from "@/i18n";
 import { getUpgradeCopy } from "@/shop-items/upgrades.messages";
 import { calculateUpgradeCost } from "@/shop-items/upgradeMath";
+import { PANEL_LAYOUT_SPRING, PANEL_SPRING } from "@/styles/panelMotion";
 
-const TRIGGER_SPRING = { type: "spring" as const, stiffness: 420, damping: 34, mass: 0.55 };
+const UPGRADE_SPRING = { ...PANEL_SPRING, layout: PANEL_LAYOUT_SPRING };
 const UPGRADE_CARD_HEIGHT = "9rem";
 const UPGRADE_CARD_GAP = "0.6rem";
 const UPGRADE_CARD_SLIDE = 24;
@@ -43,16 +44,17 @@ const UpgradeCardPresence = forwardRef<HTMLLIElement, {
   // Keep an exit's direction when another level change interrupts it.
   if (isPresent) exitDirection.current = undefined;
   else exitDirection.current ??= presenceDirection;
-  const transition = reducedMotion ? { duration: 0 } : TRIGGER_SPRING;
+  const transition = reducedMotion ? { duration: 0 } : UPGRADE_SPRING;
 
   return (
     <UpgradeListItem
       ref={ref}
+      aria-hidden={!isPresent}
       layout="position"
       initial={{ opacity: 0, scale: reducedMotion ? 1 : 0.92, x: reducedMotion ? 0 : direction * UPGRADE_CARD_SLIDE }}
       animate={{ opacity: 1, scale: 1, x: 0 }}
       exit={{ opacity: 0, scale: reducedMotion ? 1 : 0.92, x: reducedMotion ? 0 : -(exitDirection.current ?? 0) * UPGRADE_CARD_SLIDE, transition }}
-      transition={{ ...transition, delay: reducedMotion ? 0 : index * 0.015, layout: transition }}
+      transition={{ ...transition, delay: reducedMotion ? 0 : index * 0.015 }}
     >
       {children}
     </UpgradeListItem>
@@ -108,9 +110,8 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const [showUpgrades, setShowUpgrades] = useState(false);
-  const triggerTransition = reducedMotion ? { duration: 0 } : TRIGGER_SPRING;
+  const triggerTransition = reducedMotion ? { duration: 0, layout: { duration: 0 } } : UPGRADE_SPRING;
   const movement = reducedMotion ? 0 : 14;
-  const transition = { duration: reducedMotion ? 0 : 0.2, ease: "easeOut" as const };
 
   const selectGroup = (nextGroup: UpgradeGroup) => {
     setSelection((previous) => previous.group === nextGroup ? previous : {
@@ -161,9 +162,9 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
           initial={{ opacity: 0, y: movement }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: movement }}
-          transition={transition}
+          transition={triggerTransition}
         >
-          <AnimatePresence initial={false}>
+          <AnimatePresence initial={false} propagate>
             {showUpgrades && (
               <UpgradePanel
                 key="upgrade-list"
@@ -276,7 +277,7 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
                 layout
                 layoutDependency={showUpgrades}
                 style={{ width: showUpgrades ? "2.8rem" : "6.35rem", borderRadius: 50 }}
-                transition={{ ...triggerTransition, layout: triggerTransition }}
+                transition={triggerTransition}
                 whileHover={reducedMotion ? undefined : { scale: 1.05 }}
                 whileTap={reducedMotion ? undefined : { scale: 0.95 }}
                 data-ui-sound-id={showUpgrades ? "ui-tap-close" : "ui-tap"}
@@ -285,7 +286,7 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
                   aria-hidden="true"
                   layout="position"
                   layoutDependency={showUpgrades}
-                  transition={{ layout: triggerTransition }}
+                  transition={triggerTransition}
                 >
                   <TriggerMotionLabel
                     initial={false}
@@ -307,7 +308,7 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
                   initial={{ opacity: 0, scale: 0.5 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.5 }}
-                  transition={transition}
+                  transition={triggerTransition}
                 />
               )}
             </AnimatePresence>
@@ -318,7 +319,14 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
   );
 };
 
-const UpgradeRoot = styled(motion.div)`
+const UpgradeRoot = forwardRef<HTMLDivElement, ComponentProps<typeof UpgradeRootElement>>(
+  function UpgradeRoot(props, ref) {
+    const isPresent = useIsPresent();
+    return <UpgradeRootElement {...props} ref={ref} aria-hidden={!isPresent} />;
+  },
+);
+
+const UpgradeRootElement = styled(motion.div)`
   position: relative;
   display: flex;
   align-items: center;
@@ -326,10 +334,22 @@ const UpgradeRoot = styled(motion.div)`
   height: 2.25rem;
   gap: 0.55rem;
   flex-shrink: 0;
+
+  &[aria-hidden="true"],
+  &[aria-hidden="true"] * {
+    pointer-events: none !important;
+  }
 `;
 
 // The panel leaves the trigger in a fixed slot in the bottom navigation.
-const UpgradePanel = styled(motion.div)`
+const UpgradePanel = forwardRef<HTMLDivElement, ComponentProps<typeof UpgradePanelElement>>(
+  function UpgradePanel(props, ref) {
+    const isPresent = useIsPresent();
+    return <UpgradePanelElement {...props} ref={ref} aria-hidden={!isPresent} />;
+  },
+);
+
+const UpgradePanelElement = styled(motion.div)`
   position: absolute;
   bottom: calc(100% + 0.75rem);
   width: min(48rem, calc(100vw - 2rem));
@@ -337,6 +357,11 @@ const UpgradePanel = styled(motion.div)`
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
+
+  &[aria-hidden="true"],
+  &[aria-hidden="true"] * {
+    pointer-events: none !important;
+  }
 
   @media (width < 768px) {
     width: min(22rem, calc(100vw - 2rem));
@@ -389,6 +414,11 @@ const UpgradeList = styled(motion.ul)<{ $count: number }>`
 
 const UpgradeListItem = styled(motion.li)`
   min-width: 0;
+
+  &[aria-hidden="true"],
+  &[aria-hidden="true"] * {
+    pointer-events: none !important;
+  }
 `;
 
 const UpgradeCardButton = styled(motion.button)`

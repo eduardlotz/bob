@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import React, { useRef } from "react";
+import React, { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import {
   RigidBody,
@@ -11,17 +11,22 @@ import { PingPongPaddle } from "./models/pingPongPaddle";
 
 export const Paddle = React.forwardRef<
   RapierRigidBody,
-  { onCollide: (p: any) => void }
->(({ onCollide }, ref) => {
+  { onCollide: (p: any) => void; tiltInput?: React.RefObject<{ x: number; y: number }> }
+>(({ onCollide, tiltInput }, ref) => {
   const visualGroup = useRef<THREE.Group>(null!);
-  const vec = new THREE.Vector3();
-  const dir = new THREE.Vector3();
+  const vec = useMemo(() => new THREE.Vector3(), []);
+  const dir = useMemo(() => new THREE.Vector3(), []);
+  const input = useMemo(() => new THREE.Vector2(), []);
+  const rotation = useMemo(() => new THREE.Quaternion(), []);
+  const rotationAxis = useMemo(() => new THREE.Vector3(0, 0, 1), []);
   const paddleRef = ref as React.MutableRefObject<RapierRigidBody>;
 
   useFrame((state, delta) => {
     if (!paddleRef.current) return;
 
-    vec.set(state.pointer.x, state.pointer.y, 0.5).unproject(state.camera);
+    const target = tiltInput?.current ?? state.pointer;
+    input.lerp(target, 1 - Math.exp(-delta * 14));
+    vec.set(input.x, input.y, 0.5).unproject(state.camera);
     dir.copy(vec).sub(state.camera.position).normalize();
     vec.add(dir.multiplyScalar(state.camera.position.length()));
 
@@ -31,12 +36,8 @@ export const Paddle = React.forwardRef<
       z: 0,
     });
 
-    paddleRef.current.setNextKinematicRotation({
-      x: 0,
-      y: 0,
-      z: (state.pointer.x * Math.PI) / (Math.PI * 5),
-      w: 1,
-    });
+    rotation.setFromAxisAngle(rotationAxis, input.x * 0.4);
+    paddleRef.current.setNextKinematicRotation(rotation);
 
     easing.damp3(visualGroup.current.position, [0, 0, 0], 0.15, delta);
   });

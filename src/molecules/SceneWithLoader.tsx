@@ -10,7 +10,6 @@ import { UILayer } from "@/components/UILayer";
 import { useAppStore, useCoreStore } from "@/store";
 import {
   initializeSoundSystem,
-  resumeAudioContext,
   unlockAudioContext,
 } from "@/utils/soundSystem";
 import { Cursor } from "./Cursor";
@@ -202,7 +201,6 @@ export const SceneWithLoader = ({
   const handleEnter = async () => {
     try {
       await initializeSoundSystem();
-      await resumeAudioContext();
       await unlockAudioContext();
     } catch (error) {
       console.error("failed to initialize sound system:", error);

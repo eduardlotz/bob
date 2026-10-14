@@ -156,6 +156,10 @@ const enQuestMessageOverrides: Record<string, QuestCopy> = {
     title: "Won It Back",
     description: "Win on the slot machine",
   },
+  minigames_flappy_points_50: {
+    title: "Astrobob",
+    description: "Score 50 points in one round of Flappy Bird",
+  },
   routes_purchased_1: {
     title: "First Journey",
     description: "Unlock your first additional route",

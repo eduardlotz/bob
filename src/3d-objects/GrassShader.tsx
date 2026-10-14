@@ -4,6 +4,7 @@ import { shaderMaterial } from "@react-three/drei";
 import * as THREE from "three";
 import { seededRandom, useWorldQuality } from "./worlds/quality";
 
+import { ForestFlowers } from "./worlds/ForestFlowers";
 import { grassPatch, grassGroundTexture } from "./worlds/grassField";
 
 const GrassInstancedMaterial = shaderMaterial(
@@ -12,8 +13,12 @@ const GrassInstancedMaterial = shaderMaterial(
     uFieldRadius: 10,
     uColorBase: new THREE.Color("#315925"),
     uColorTop: new THREE.Color("#86b947"),
+    fogColor: new THREE.Color(),
+    fogNear: 1,
+    fogFar: 2000,
   },
   `
+  #include <fog_pars_vertex>
   uniform float uTime;
   uniform float uFieldRadius;
   varying float vHeight;
@@ -41,10 +46,13 @@ const GrassInstancedMaterial = shaderMaterial(
     vTint = instanceColor;
     vVariation = seed;
     vLight = 0.88 + 0.12 * abs(sin(seed * 6.283));
-    gl_Position = projectionMatrix * viewMatrix * world;
+    vec4 mvPosition = viewMatrix * world;
+    #include <fog_vertex>
+    gl_Position = projectionMatrix * mvPosition;
   }`,
   `
   uniform vec3 uColorBase;
+  #include <fog_pars_fragment>
   uniform vec3 uColorTop;
   varying float vHeight;
   varying float vVariation;
@@ -57,6 +65,7 @@ const GrassInstancedMaterial = shaderMaterial(
     gl_FragColor = vec4(color, 1.0);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
+    #include <fog_fragment>
   }`,
 );
 extend({ GrassInstancedMaterial });
@@ -70,6 +79,7 @@ interface Props {
   /** Preserve the football field's existing ground height. */
   rootOffset?: number;
   fieldRadius?: number;
+  flowers?: boolean;
 }
 
 function BladeBand({
@@ -166,6 +176,7 @@ function BladeBand({
       {/* @ts-expect-error custom shader material */}
       <grassInstancedMaterial
         ref={materialRef}
+        fog
         uFieldRadius={fieldRadius}
         side={THREE.DoubleSide}
       />
@@ -180,6 +191,7 @@ export const GrassShader = ({
   densityMultiplier = 1,
   rootOffset = -0.9,
   fieldRadius = 10,
+  flowers = false,
 }: Props) => {
   const quality = useWorldQuality();
   const count = Math.round(
@@ -201,6 +213,7 @@ export const GrassShader = ({
         <circleGeometry args={[groundRadius, 64]} />
         <meshBasicMaterial map={groundTexture} />
       </mesh>
+      {flowers && <ForestFlowers radius={fieldRadius} rootOffset={rootOffset} />}
       <BladeBand
         count={Math.round(count * (extended ? 0.72 : 1))}
         innerRadius={0}

@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import * as T from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { WorldToonMaterial } from "./WorldToonMaterial";
 
 export type Vec3 = [number, number, number];
 export type Placement = { position: Vec3; scale: Vec3; rotation?: Vec3 };
@@ -40,10 +41,12 @@ export function ModelInstances({
   build,
   placements,
   name,
+  toon = false,
 }: {
   build: () => T.BufferGeometry;
   placements: Placement[];
   name: string;
+  toon?: boolean;
 }) {
   const geometry = useMemo(build, [build]);
   const ref = useRef<T.InstancedMesh>(null);
@@ -72,7 +75,11 @@ export function ModelInstances({
       ref={ref}
       args={[geometry, undefined, placements.length]}
     >
-      <meshStandardMaterial vertexColors roughness={1} flatShading />
+      {toon ? (
+        <WorldToonMaterial vertexColors />
+      ) : (
+        <meshStandardMaterial vertexColors roughness={1} flatShading />
+      )}
     </instancedMesh>
   );
 }
