@@ -1,79 +1,49 @@
-import * as THREE from "three";
-import React, { useEffect, useMemo, useRef } from "react";
-import { Outlines, useGLTF, Wireframe } from "@react-three/drei";
-import { GLTF } from "three-stdlib";
+import { useEffect, useMemo } from "react";
 import { a, useSpring } from "@react-spring/three";
-import { useCoreStore } from "@/store";
-import { previewMaterialProps } from "@/shop-items/utils";
+import { Color, DoubleSide, SphereGeometry } from "three";
+import type { BobBodyFit, Vec3 } from "@/components/bob/wearableFit";
+import { createAstronautGeometry } from "./astronautGeometry";
 
-type GLTFResult = GLTF & {
-  nodes: {
-    Cube_1: THREE.Mesh;
-    Cube_2: THREE.Mesh;
-    Cube_3: THREE.Mesh;
-  };
-  materials: {
-    front: THREE.MeshStandardMaterial;
-    body: THREE.MeshStandardMaterial;
-    accent: THREE.MeshStandardMaterial;
-  };
-};
-
-const PATH = "/gltf/astronaut.glb";
+// Linear RGB/material values from the original Astrobob costume.
+const SHELL_COLOR = new Color().setRGB(0.305411, 0.305411, 0.305411);
+const GLASS_COLOR = new Color().setRGB(0.8, 0.8, 0.8);
 
 interface Props {
-  position: [number, number, number];
-  rotation?: [number, number, number];
-  scale?: [number, number, number];
-  outlineColor?: string;
+  position: Vec3;
+  rotation?: Vec3;
+  scale?: Vec3;
+  body: BobBodyFit;
   preview: boolean;
 }
 
-export const AstronautHelmet = ({
-  scale = [1, 1, 1],
-  outlineColor = "#000000",
-  ...props
-}: Props) => {
-  const group = useRef<THREE.Group>(null!);
-  const { nodes, materials } = useGLTF(PATH) as GLTFResult;
-
-  materials["body"].transparent = props.preview;
-  materials["body"].opacity = props.preview ? 0.25 : 1;
-  materials["accent"].transparent = props.preview;
-  materials["accent"].opacity = props.preview ? 0.25 : 1;
-  // materials["front"].opacity = props.preview ? 0.25 : 1;
-  // materials["front"].opacity = props.preview ? 0.25 : 1;
-
-  materials["front"].transparent = true;
-  materials["front"].opacity = 0.6;
-
-  const [spring, api] = useSpring(() => ({
-    scale: [0, 0, 0], // start invisible
-    config: { tension: 200, friction: 15 },
-  }));
-
-  useEffect(() => {
-    api.start({
-      scale: scale,
-      config: { tension: 300, friction: 10 },
-    });
-  }, []);
+/** Three decorative parts, sized directly from Bob; no imported model/colliders. */
+export function AstronautHelmet({ position, rotation, scale, body, preview }: Props) {
+  const geometry = useMemo(() => createAstronautGeometry(body), [body]);
+  const button = useMemo(() => new SphereGeometry(1, 12, 8), []);
+  useEffect(() => () => {
+    geometry.shell.dispose();
+    geometry.visor.dispose();
+  }, [geometry]);
+  useEffect(() => () => button.dispose(), [button]);
+  const spring = useSpring({ from: { size: 0 }, size: 1, config: { tension: 300, friction: 10 } });
 
   return (
-    <a.group
-      key={Number(props.preview)}
-      ref={group}
-      scale={spring.scale as any}
-      castShadow
-      receiveShadow
-      position={props.position}
-      rotation={props.rotation}
-    >
-      <mesh geometry={nodes.Cube_1.geometry} material={materials.front} />
-      <mesh geometry={nodes.Cube_2.geometry} material={materials.body} />
-      <mesh geometry={nodes.Cube_3.geometry} material={materials.accent} />
-    </a.group>
+    <group position={position} rotation={rotation} scale={scale}>
+      <a.group scale={spring.size}>
+        <mesh name="astrobob-shell" geometry={geometry.shell} castShadow receiveShadow>
+          <meshStandardMaterial color={SHELL_COLOR} roughness={0.5} side={DoubleSide}
+            transparent={preview} opacity={preview ? 0.25 : 1} depthWrite={!preview} />
+        </mesh>
+        <mesh name="astrobob-visor" geometry={geometry.visor}>
+          <meshStandardMaterial color={GLASS_COLOR} metalness={0.844961} roughness={0.197674}
+            transparent opacity={0.6} side={DoubleSide} forceSinglePass depthWrite={false} />
+        </mesh>
+        <mesh name="astrobob-button" geometry={button} position={geometry.buttonPosition}
+          scale={geometry.buttonRadius} castShadow receiveShadow>
+          <meshStandardMaterial color={GLASS_COLOR} roughness={0.670543}
+            transparent={preview} opacity={preview ? 0.25 : 1} depthWrite={!preview} />
+        </mesh>
+      </a.group>
+    </group>
   );
-};
-
-useGLTF.preload(PATH);
+}

@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RapierRigidBody } from "@react-three/rapier";
 
+import { useActiveBobShape } from "@/hooks/useActiveBobShape";
+import { useScaledGameCamera } from "@/hooks/useScaledGameCamera";
+import { useScaledGameBody } from "@/hooks/useScaledGameBody";
 import { CharacterBall } from "@/components/CharacterBall";
 import { Paddle } from "@/3d-objects/PingPongPaddle";
-import { useAppStore, useMiniGameStore, useViewStore } from "@/store";
+import { useAppStore, useMiniGameStore } from "@/store";
 import { useCursor } from "@/hooks/useCursor";
 import { useFrame, useThree } from "@react-three/fiber";
 import CameraControlsImpl from "camera-controls";
@@ -34,12 +37,15 @@ const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));
 
 export function PingPongGame({ onExit: _onExit }: { onExit: () => void }) {
+  const { sizeFactor } = useActiveBobShape();
+  const startPosition = useRef<[number, number, number]>([0, 5 * sizeFactor, 0]);
   const [phase, setPhase] = useState<"idle" | "playing" | "over">("idle");
   const active = useRef(false);
   const lastScore = useRef(0);
   const lostAt = useRef(0);
   const ballApi = useRef<RapierRigidBody>(null!);
   const paddleApi = useRef<RapierRigidBody>(null!);
+  useScaledGameBody(ballApi, sizeFactor);
   const lastHitSoundAtRef = useRef(0);
   const cursor = useCursorStore();
   const { isMobile } = useAppStore();
@@ -55,7 +61,7 @@ export function PingPongGame({ onExit: _onExit }: { onExit: () => void }) {
   const { incrementScore, resetScore } = useMiniGameStore();
   const highScore = useMiniGameStore((state) => state.highScores.PING_PONG);
   const score = useMiniGameStore((state) => state.session.score);
-  const { cameraControlsRef } = useViewStore();
+  const cameraControlsRef = useScaledGameCamera(sizeFactor);
 
   useEffect(() => {
     const controls = cameraControlsRef?.current;
@@ -83,15 +89,15 @@ export function PingPongGame({ onExit: _onExit }: { onExit: () => void }) {
     const body = ballApi.current;
     if (!body) return;
     resetScore();
-    body.setTranslation({ x: 0, y: 5, z: 0 }, true);
-    body.setLinvel({ x: 0, y: 10, z: 0 }, true);
+    body.setTranslation({ x: 0, y: 5 * sizeFactor, z: 0 }, true);
+    body.setLinvel({ x: 0, y: 10 * sizeFactor, z: 0 }, true);
     body.setAngvel({ x: 0, y: 0, z: 0 }, true);
     body.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true);
-    body.setGravityScale(1, true);
+    body.setGravityScale(sizeFactor, true);
     lastHitSoundAtRef.current = 0;
     active.current = true;
     setPhase("playing");
-  }, [resetScore]);
+  }, [resetScore, sizeFactor]);
 
   const finishRound = useCallback(() => {
     if (!active.current) return;
@@ -131,10 +137,10 @@ export function PingPongGame({ onExit: _onExit }: { onExit: () => void }) {
   useFrame(({ clock }) => {
     // Check height regardless of how far sideways or backwards the ball flew.
     const body = ballApi.current;
-    if (active.current && body && body.translation().y < -5) finishRound();
+    if (active.current && body && body.translation().y < -5 * sizeFactor) finishRound();
     if (!active.current && body) {
       body.setGravityScale(0, true);
-      body.setTranslation({ x: 0, y: 5, z: 0 }, true);
+      body.setTranslation({ x: 0, y: 5 * sizeFactor, z: 0 }, true);
       body.setLinvel({ x: 0, y: 0, z: 0 }, true);
       body.setAngvel({ x: 0, y: 0, z: 0 }, true);
       body.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true);
@@ -148,10 +154,10 @@ export function PingPongGame({ onExit: _onExit }: { onExit: () => void }) {
     if (cameraControlsRef) {
       cameraControlsRef.current?.setLookAt(
         0,
-        CAMERA_HEIGHT,
-        HIDDEN_OPTIONS_CAMERA_ZOOM,
-        cursorX + handCamSwayX,
-        cursorY + CAMERA_Y_POSITION + handCamSwayY,
+        CAMERA_HEIGHT * sizeFactor,
+        HIDDEN_OPTIONS_CAMERA_ZOOM * sizeFactor,
+        (cursorX + handCamSwayX) * sizeFactor,
+        (cursorY + CAMERA_Y_POSITION + handCamSwayY) * sizeFactor,
         0,
         true,
       );
@@ -161,11 +167,12 @@ export function PingPongGame({ onExit: _onExit }: { onExit: () => void }) {
   const handleCollision = useCallback(
     (e: { totalForceMagnitude: number }) => {
       if (!active.current) return;
-      const impact = e.totalForceMagnitude / 100;
+      const normalizedForce = e.totalForceMagnitude / sizeFactor;
+      const impact = normalizedForce / 100;
       const now = performance.now();
 
       if (
-        e.totalForceMagnitude > MIN_HIT_FORCE &&
+        normalizedForce > MIN_HIT_FORCE &&
         now - lastHitSoundAtRef.current > SOUND_COOLDOWN_MS
       ) {
         lastHitSoundAtRef.current = now;
@@ -174,11 +181,11 @@ export function PingPongGame({ onExit: _onExit }: { onExit: () => void }) {
         });
       }
 
-      if (e.totalForceMagnitude > SCORE_FORCE_THRESHOLD) {
+      if (normalizedForce > SCORE_FORCE_THRESHOLD) {
         incrementScore();
       }
     },
-    [incrementScore],
+    [incrementScore, sizeFactor],
   );
 
   return (
@@ -193,9 +200,10 @@ export function PingPongGame({ onExit: _onExit }: { onExit: () => void }) {
         idleContent={<PingPongInstructions locale={locale} mode={isMobile ? (tilt.enabled ? "tilt" : "touch") : "mouse"} />}
       /></GameOverlay>
       {phase === "playing" && <PointsCounter number={score} />}
-      <CharacterBall ref={ballApi} position={[0, 5, 0]} scale={0.3} gravityScale={0} />
+      <CharacterBall ref={ballApi} position={startPosition.current} scale={0.3}
+        gravityScale={phase === "playing" ? sizeFactor : 0} />
 
-      <Paddle ref={paddleApi} onCollide={handleCollision} tiltInput={tilt.enabled ? tilt.input : undefined} />
+      <Paddle ref={paddleApi} sizeFactor={sizeFactor} onCollide={handleCollision} tiltInput={tilt.enabled ? tilt.input : undefined} />
 
       {isMobile && phase !== "playing" && <GameOverlay>
         <TiltControl>

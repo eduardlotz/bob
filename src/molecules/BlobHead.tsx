@@ -27,17 +27,15 @@ import { Star3D } from "@/3d-objects/Star3D";
 import { EmotionState } from "@/hooks/useBlobEmotions";
 import { getBobItemSlot, useCoreStore } from "@/store/core/store";
 import { useViewStore } from "@/store/viewStore";
-import { KrustyKrabHat } from "@/3d-objects/models/krustyKrabHat";
 import { match } from "ts-pattern";
-import { RoundGlasses } from "@/3d-objects/models/roundGlasses";
-import { AfroHair } from "@/3d-objects/models/afroHair";
-import { BuilderHelmet } from "@/3d-objects/models/builderHelmet";
+import { BobWearables } from "@/components/BobWearables";
 import { BlobForm } from "@/components/BlobForm";
-import { getSelectedBlobForm, getBlobFormType } from "@/types/blobForms";
+import {
+  getSelectedBlobForm,
+  getBlobFormType,
+  getBobEyePosition,
+} from "@/types/blobForms";
 import { SimsPlumbob } from "@/3d-objects/models/simsPlumbob";
-import { ToonHat } from "@/3d-objects/models/toonHats";
-import { BobMoustache } from "@/3d-objects/models/bobMoustache";
-import { BlackCap } from "@/3d-objects/models/blackCap";
 import { useCursor } from "@/hooks/useCursor";
 import { useCursorStore } from "@/store/core/cursor";
 import { ROUTE_PATHS } from "@/store/config/routes";
@@ -45,8 +43,6 @@ import { useAppStore, useMiniGameStore } from "@/store";
 import { playTapSound } from "@/utils/soundSystem";
 import { resolveTapSoundForEffect } from "@/utils/sound/configs";
 import { BallCollider, RigidBody } from "@react-three/rapier";
-import { AstronautHelmet } from "@/3d-objects/models/astronaut";
-import { RastaBeanie } from "@/3d-objects/models/rastaBeanie";
 import { BobSleepZs } from "./BobSleepZs";
 import { THEME_CONFIG } from "@/store/config/themes";
 import {
@@ -69,25 +65,6 @@ const IDLE_TIMEOUT_MIN = 10000;
 const IDLE_ANIMATION_GAP = 15000;
 const IDLE_ANIMATIONS: BobIdleAnimation[] = ["spin", "look", "bounce", "sleep"];
 const NEUTRAL_IDLE_ROTATION = new Quaternion();
-
-const ACCESSORY_AXIS_CONFIG: Record<
-  string,
-  {
-    x: boolean;
-    y: boolean;
-    z: boolean;
-    yMultiplier?: number;
-    zMultiplier?: number;
-  }
-> = {
-  chickenLittleGlasses: {
-    x: false,
-    y: true,
-    z: true,
-    yMultiplier: 0.5,
-    zMultiplier: 0.7,
-  },
-};
 
 // TODO: move to utils file
 const createEyeGeometries = () => {
@@ -890,115 +867,8 @@ export function BlobHead({
     [selectedBlobForm.id],
   );
 
-  const calculateCostumePosition = useCallback(
-    (
-      basePosition: [number, number, number],
-      itemType: "hat" | "accessory",
-      itemId?: string,
-    ): [number, number, number] => {
-      const [baseX, baseY, baseZ] = basePosition;
-      const { parameters } = selectedBlobForm;
-
-      let adjustedX = baseX;
-      let adjustedY = baseY;
-      let adjustedZ = baseZ;
-
-      if (blobFormType === "sphere") {
-        const radiusDiff = (parameters.sphereRadius || 1) - 1;
-        if (itemType === "hat") {
-          adjustedY += radiusDiff;
-        } else if (itemType === "accessory" && itemId) {
-          const axisConfig = ACCESSORY_AXIS_CONFIG[itemId];
-          if (axisConfig) {
-            if (axisConfig.y) {
-              adjustedY += radiusDiff * (axisConfig.yMultiplier || 0.5);
-            }
-            if (axisConfig.z) {
-              adjustedZ +=
-                MathUtils.clamp(radiusDiff, -0.4, 5) *
-                1.8 *
-                (axisConfig.zMultiplier || 0.3);
-            }
-          }
-        }
-      } else if (blobFormType === "cube") {
-        const heightDiff = (parameters.cubeHeight || 1.75) - 1.75;
-        const depthDiff = (parameters.cubeDepth || 1.65) - 1.65;
-
-        if (itemType === "hat") {
-          adjustedY += heightDiff * 0.5;
-        } else if (itemType === "accessory" && itemId) {
-          const axisConfig = ACCESSORY_AXIS_CONFIG[itemId];
-          if (axisConfig) {
-            if (axisConfig.y) {
-              adjustedY += heightDiff * (axisConfig.yMultiplier || 0.5);
-            }
-            if (axisConfig.z) {
-              adjustedZ += depthDiff * (axisConfig.zMultiplier || 0.3);
-            }
-          }
-        }
-      } else if (blobFormType === "pill") {
-        const heightDiff = (parameters.pillHeight || 1.6) - 1.6; //
-        const radiusDiff =
-          ((parameters.pillRadiusTop || 0.8) +
-            (parameters.pillRadiusBottom || 0.8)) /
-            2 -
-          0.8;
-
-        if (itemType === "hat") {
-          adjustedY += heightDiff * 0.5;
-        } else if (itemType === "accessory" && itemId) {
-          const axisConfig = ACCESSORY_AXIS_CONFIG[itemId];
-          if (axisConfig) {
-            if (axisConfig.y) {
-              adjustedY += heightDiff * (axisConfig.yMultiplier || 0.5);
-            }
-            if (axisConfig.z) {
-              adjustedZ += radiusDiff * (axisConfig.zMultiplier || 0.3);
-            }
-          }
-        }
-      }
-
-      return [adjustedX, adjustedY, adjustedZ];
-    },
-    [selectedBlobForm, blobFormType],
-  );
-
-  const calculateEyePosition = useCallback(
-    (basePosition: [number, number, number]): [number, number, number] => {
-      const [baseX, baseY, baseZ] = basePosition;
-      const { parameters } = selectedBlobForm;
-
-      let adjustedX = baseX;
-      let adjustedY = baseY;
-      let adjustedZ = baseZ;
-
-      if (blobFormType === "sphere") {
-        const radiusDiff = (parameters.sphereRadius || 1) - 1;
-        adjustedY += radiusDiff * 0.4;
-        adjustedZ += radiusDiff * 1.2;
-      } else if (blobFormType === "cube") {
-        const heightDiff = (parameters.cubeHeight || 1.75) - 1.75;
-        const depthDiff = (parameters.cubeDepth || 1.65) - 1.65;
-        adjustedY += heightDiff * 0.4;
-        adjustedZ += depthDiff * 0.5;
-      } else if (blobFormType === "pill") {
-        const heightDiff = (parameters.pillHeight || 1.6) - 1.6;
-        const radiusDiff =
-          ((parameters.pillRadiusTop || 0.8) +
-            (parameters.pillRadiusBottom || 0.8)) /
-            2 -
-          0.8;
-        adjustedY += heightDiff * 0.3;
-        adjustedZ += radiusDiff * 0.5;
-      }
-
-      return [adjustedX, adjustedY, adjustedZ];
-    },
-    [selectedBlobForm, blobFormType],
-  );
+  const calculateEyePosition = (position: [number, number, number]) =>
+    getBobEyePosition(position, blobFormType, selectedBlobForm.parameters);
 
   const renderBobItems = () => {
     const previewItems = bobItems.filter(
@@ -1014,128 +884,15 @@ export function BlobHead({
       : enabledItems;
 
     const detachedItems = allEquippedItems.filter((i) => i.detached);
-    const attachedItems = allEquippedItems.filter((i) => !i.detached);
 
-    const attachedModels = attachedItems.map((item) => {
-      if (item.id === "wizardHat" || item.id === "flatCap" || item.id === "propellerHat" || item.id === "royalCrown") {
-        const p = selectedBlobForm.parameters;
-        const radius = p.sphereRadius || 1;
-        const cube = blobFormType === "cube";
-        const fitX = cube ? (p.cubeWidth || 1.75) / 1.75 : radius;
-        const fitZ = cube ? (p.cubeDepth || 1.65) / 1.65 : radius;
-        const top = cube ? (p.cubeHeight || 1.75) / 2 : radius;
-        const cap = item.id === "flatCap" || item.id === "propellerHat";
-        const crown = item.id === "royalCrown";
-        const fitScale = cap ? 1.15 : 1;
-        const inset = cap ? (item.id === "flatCap" ? 0.4 : 0.47) : crown ? 0.37 : 0.22;
-        return (
-          <ToonHat
-            key={item.id}
-            kind={item.id}
-            position={[0, top - (cube ? (crown ? 0.16 : 0.06) : inset * radius), 0]}
-            scale={[fitX * fitScale, Math.min(fitX, fitZ) * fitScale, fitZ * fitScale]}
-            outlineColor={outlineColor}
-            preview={!item.enabled && !!item.preview}
-          />
-        );
-      }
-
-      if (item.id === "bobMoustache") {
-        const p = selectedBlobForm.parameters;
-        const cube = blobFormType === "cube";
-        const radius = p.sphereRadius || 1;
-        const y = cube ? -0.18 + ((p.cubeHeight || 1.75) - 1.75) * 0.25 : -0.18 * radius;
-        const z = cube ? (p.cubeDepth || 1.65) / 2 + 0.015 : Math.sqrt(radius * radius - y * y) + 0.015;
-        const size = cube ? Math.min((p.cubeWidth || 1.75) / 1.75, (p.cubeHeight || 1.75) / 1.75) : radius;
-        return (
-          <BobMoustache
-            key={item.id}
-            position={[0, y, z]}
-            scale={[size, size, size]}
-            curved={!cube}
-            outlineColor={outlineColor}
-            preview={!item.enabled && !!item.preview}
-          />
-        );
-      }
-
-      if (item.id === "krustyKrabHat")
-        return (
-          <KrustyKrabHat
-            key={item.id}
-            position={calculateCostumePosition([0, 0.9, 0], "hat")}
-            scale={[0.006, 0.006, 0.006]}
-            outlineColor={outlineColor}
-            preview={!item.enabled && !!item.preview}
-          />
-        );
-      if (item.id === "chickenLittleGlasses")
-        return (
-          <RoundGlasses
-            key={item.id}
-            position={calculateCostumePosition(
-              [0, 0.1, 0.7],
-              "accessory",
-              item.id,
-            )}
-            scale={[1.6, 1.6, 1.6]}
-            preview={!item.enabled && !!item.preview}
-          />
-        );
-      if (item.id === "builderHelmet")
-        return (
-          <BuilderHelmet
-            key={item.id}
-            position={calculateCostumePosition([0, 0.75, 0], "hat")}
-            scale={[1.22, 1.25, 1.25]}
-            preview={!item.enabled && !!item.preview}
-          />
-        );
-      if (item.id === "afroHair")
-        return (
-          <AfroHair
-            key={item.id}
-            position={calculateCostumePosition([0, -0.7, -0.05], "hat")}
-            rotation={[(Math.PI / 2) * 0.15, 0, 0]}
-            scale={[0.9, 0.9, 0.9]}
-            preview={!item.enabled && !!item.preview}
-          />
-        );
-      if (item.id === "blackCap")
-        return (
-          <BlackCap
-            key={item.id}
-            position={calculateCostumePosition([0, 0.45, 0], "hat")}
-            scale={[2, 2, 2]}
-            outlineColor={outlineColor}
-            rotation={[0, -Math.PI / 2, 0]}
-            preview={!item.enabled && !!item.preview}
-          />
-        );
-      if (item.id === "astronautHelmet")
-        return (
-          <AstronautHelmet
-            key={item.id}
-            position={calculateCostumePosition([0, 0, 0], "hat")}
-            scale={[1.05, 1.05, 1.05]}
-            outlineColor={outlineColor}
-            rotation={[0, -Math.PI / 2, 0]}
-            preview={!item.enabled && !!item.preview}
-          />
-        );
-      if (item.id === "rastaBeanie")
-        return (
-          <RastaBeanie
-            key={item.id}
-            position={calculateCostumePosition([0, -0.65, -0.1], "hat")}
-            scale={[4, 4, 4]}
-            outlineColor={outlineColor}
-            // rotation={[0, -Math.PI / 2, 0]}
-            preview={!item.enabled && !!item.preview}
-          />
-        );
-      return null;
-    });
+    const attachedModels = (
+      <BobWearables
+        items={allEquippedItems}
+        blobFormType={blobFormType}
+        parameters={selectedBlobForm.parameters}
+        outlineColor={outlineColor}
+      />
+    );
 
     const detachedModels = detachedItems.map((item) => {
       if (item.id === "simsPlumbob") {

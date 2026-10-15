@@ -4,6 +4,7 @@ import {
   initialRoutes,
   initialThemes,
 } from "..";
+import { INITIAL_BLOB_FORMS } from "@/types/blobForms";
 import { initialBobItems } from "@/shop-items/bobItems";
 import { initialTapEffects } from "@/shop-items/tapEffects";
 import { initialTapUpgrades } from "@/shop-items/upgrades";
@@ -122,6 +123,19 @@ const normalizeUpgrades = (upgrades: any[] = []) => {
   });
 };
 
+const normalizeBlobForms = (forms: any[] = []) => {
+  const previousForms = new Map(forms.map((form: any) => [form.id, form]));
+  const selectedId = forms.find((form: any) =>
+    form.selected && INITIAL_BLOB_FORMS.some((initial) => initial.id === form.id),
+  )?.id ?? "sphere";
+
+  return INITIAL_BLOB_FORMS.map((form) => ({
+    ...form,
+    selected: form.id === selectedId,
+    parameters: { ...form.parameters, ...previousForms.get(form.id)?.parameters },
+  }));
+};
+
 export function migrateCoreStore(persisted: any, fromVersion: number) {
   if (!persisted || typeof persisted !== "object") {
     return initialGameState;
@@ -135,12 +149,14 @@ export function migrateCoreStore(persisted: any, fromVersion: number) {
     fromVersion === GAME_STORE_VERSION.V10 ||
     fromVersion === GAME_STORE_VERSION.V11 ||
     fromVersion === GAME_STORE_VERSION.V12 ||
-    fromVersion === GAME_STORE_VERSION.V13
+    fromVersion === GAME_STORE_VERSION.V13 ||
+    fromVersion === GAME_STORE_VERSION.V14
   ) {
     return {
       ...state,
       worlds: normalizeWorlds(state.worlds),
       bobItems: normalizeBobItems(state.bobItems),
+      blobForms: normalizeBlobForms(state.blobForms),
       version: GAME_STORE_VERSION.LATEST,
     };
   }
@@ -217,6 +233,7 @@ export function migrateCoreStore(persisted: any, fromVersion: number) {
     ...state,
     worlds: normalizeWorlds(state.worlds),
     bobItems: normalizeBobItems(state.bobItems),
+    blobForms: normalizeBlobForms(state.blobForms),
     version: GAME_STORE_VERSION.LATEST,
   };
 }

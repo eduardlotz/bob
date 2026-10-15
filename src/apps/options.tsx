@@ -1,4 +1,5 @@
 import { useSoundSystem } from "@/hooks/useSoundSystem";
+import { BlobFormCustomization } from "@/components/BlobFormCustomization";
 import { SegmentedValueSlider } from "@/components/SegmentedValueSlider";
 import { LocaleSegmentedControl } from "@/components/LocaleSegmentedControl";
 import { FillColumn, FillRow } from "@/layout";
@@ -129,6 +130,9 @@ export function OptionsApp() {
             theme="light"
           />
         </FillRow>
+
+        <DividerWithLabel>{messages.options.sections.bobShape}</DividerWithLabel>
+        <BlobFormCustomization />
 
         <DividerWithLabel>{messages.options.sections.effects}</DividerWithLabel>
 

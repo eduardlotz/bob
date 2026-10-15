@@ -35,9 +35,8 @@ export function GoalPost({
       </mesh>
 
       <CuboidCollider
-        args={[radius, radius, width / 2]}
+        args={[radius, height / 2, radius]}
         position={[-width / 2, height / 2, 0]}
-        rotation={[Math.PI / 2, 0, 0]}
       />
 
       {/* Right post */}
@@ -47,9 +46,8 @@ export function GoalPost({
       </mesh>
 
       <CuboidCollider
-        args={[radius, radius, width / 2]}
+        args={[radius, height / 2, radius]}
         position={[width / 2, height / 2, 0]}
-        rotation={[Math.PI / 2, 0, 0]}
       />
 
       {/* Crossbar */}
@@ -58,14 +56,13 @@ export function GoalPost({
         rotation={[0, 0, Math.PI / 2]}
         material={material}
       >
-        <cylinderGeometry args={[radius, radius, width + 0.1, 16]} />
+        <cylinderGeometry args={[radius, radius, width + radius, 16]} />
         <Outlines thickness={0.03} color={outlineColor} screenspace />
       </mesh>
 
       <CuboidCollider
-        args={[radius, radius, width / 2]}
+        args={[(width + radius) / 2, radius, radius]}
         position={[0, height, 0]}
-        rotation={[0, Math.PI / 2, 0]}
       />
 
       {/* Trigger volume */}

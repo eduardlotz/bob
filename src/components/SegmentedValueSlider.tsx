@@ -27,6 +27,7 @@ interface SegmentedValueSliderProps {
   onChange: (value: number) => void;
   formatValue?: (value: number) => string;
   disabled?: boolean;
+  ariaLabel?: string;
   tone?: "light" | "dark";
 }
 
@@ -37,6 +38,7 @@ export function SegmentedValueSlider({
   step,
   onChange,
   formatValue = (next) => formatSegmentedSliderValue(next),
+  ariaLabel,
   disabled = false,
   tone = "light",
 }: SegmentedValueSliderProps) {
@@ -103,6 +105,7 @@ export function SegmentedValueSlider({
         type="button"
         $flex={normalizedValue}
         $visible={canDecrease}
+        aria-label={ariaLabel ? `${ariaLabel} −` : undefined}
         $variant="decrease"
         $tone={tone}
         disabled={disabled || !canDecrease}
@@ -113,6 +116,20 @@ export function SegmentedValueSlider({
 
       <HandleButton
         type="button"
+        role={ariaLabel ? "slider" : undefined}
+        aria-label={ariaLabel}
+        aria-valuemin={ariaLabel ? min : undefined}
+        aria-valuemax={ariaLabel ? max : undefined}
+        aria-valuenow={ariaLabel ? value : undefined}
+        onKeyDown={(event) => {
+          if (!ariaLabel) return;
+          const next = event.key === "ArrowRight" || event.key === "ArrowUp" ? value + step
+            : event.key === "ArrowLeft" || event.key === "ArrowDown" ? value - step
+            : event.key === "Home" ? min : event.key === "End" ? max : undefined;
+          if (next === undefined) return;
+          event.preventDefault();
+          commitValue(next);
+        }}
         $tone={tone}
         disabled={disabled}
         onPointerEnter={() => {
@@ -140,6 +157,7 @@ export function SegmentedValueSlider({
         type="button"
         $flex={1 - normalizedValue}
         $visible={canIncrease}
+        aria-label={ariaLabel ? `${ariaLabel} +` : undefined}
         $variant="increase"
         $tone={tone}
         disabled={disabled || !canIncrease}

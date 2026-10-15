@@ -3,8 +3,23 @@ import { defineMessages } from "@/i18n/defineMessages";
 export const optionsMessages = defineMessages({
   de: {
     sections: {
+      bobShape: "Bobs Form",
       effects: "Effekte",
       audio: "Audio",
+    },
+    bobShape: {
+      reset: "Form zurücksetzen",
+      shapes: {
+        sphere: "Ball",
+        cube: "Würfel",
+      },
+      parameters: {
+        sphereRadius: "Größe",
+        cubeWidth: "Breite",
+        cubeHeight: "Höhe",
+        cubeDepth: "Tiefe",
+        cubeRadius: "Abrundung",
+      },
     },
     tabs: {
       audio: "Audio",
@@ -35,8 +50,23 @@ export const optionsMessages = defineMessages({
   },
   en: {
     sections: {
+      bobShape: "Bob shape",
       effects: "Effects",
       audio: "Audio",
+    },
+    bobShape: {
+      reset: "Reset shape",
+      shapes: {
+        sphere: "Ball",
+        cube: "Cube",
+      },
+      parameters: {
+        sphereRadius: "Size",
+        cubeWidth: "Width",
+        cubeHeight: "Height",
+        cubeDepth: "Depth",
+        cubeRadius: "Roundness",
+      },
     },
     tabs: {
       audio: "Audio",

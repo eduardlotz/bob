@@ -112,7 +112,7 @@ export const FORM_PARAMETER_RANGES: Record<
 export const INITIAL_BLOB_FORMS: BlobFormConfig[] = [
   {
     id: "sphere",
-    name: "Bouba",
+    name: "Ball",
     description: "Der Ball",
     cost: 0,
     unlocked: true,
@@ -121,10 +121,10 @@ export const INITIAL_BLOB_FORMS: BlobFormConfig[] = [
   },
   {
     id: "cube",
-    name: "Kiki",
+    name: "Cube",
     description: "Der Würfel",
-    cost: 200,
-    unlocked: false,
+    cost: 0,
+    unlocked: true,
     selected: false,
     parameters: DEFAULT_FORM_PARAMETERS.cube,
   },
@@ -155,3 +155,37 @@ export const getParametersForForm = (
   const form = getBlobFormById(forms, formId);
   return form?.parameters || DEFAULT_FORM_PARAMETERS[getBlobFormType(formId)];
 };
+
+/** Shared body dimensions, independent of rendering and game physics. */
+export function getBlobFormHalfSize(
+  formType: BlobFormType,
+  parameters: BlobFormParameters,
+): [number, number, number] {
+  if (formType === "cube") {
+    const defaults = DEFAULT_FORM_PARAMETERS.cube;
+    return [
+      (parameters.cubeWidth ?? defaults.cubeWidth!) / 2,
+      (parameters.cubeHeight ?? defaults.cubeHeight!) / 2,
+      (parameters.cubeDepth ?? defaults.cubeDepth!) / 2,
+    ];
+  }
+  const radius = parameters.sphereRadius ?? DEFAULT_FORM_PARAMETERS.sphere.sphereRadius!;
+  return [radius, radius, radius];
+}
+
+/** Keep the same facial placement on home Bob and the decorative minigame body. */
+export function getBobEyePosition(
+  [x, y, z]: [number, number, number],
+  formType: BlobFormType,
+  parameters: BlobFormParameters,
+): [number, number, number] {
+  if (formType === "cube") {
+    return [
+      x,
+      y + ((parameters.cubeHeight || 1.75) - 1.75) * 0.4,
+      z + ((parameters.cubeDepth || 1.65) - 1.65) * 0.5,
+    ];
+  }
+  const radiusDiff = (parameters.sphereRadius || 1) - 1;
+  return [x, y + radiusDiff * 0.4, z + radiusDiff * 1.2];
+}
