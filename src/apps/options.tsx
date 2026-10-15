@@ -55,6 +55,16 @@ export function OptionsApp() {
   const toggleParticleEffects = useCoreStore(
     (state) => state.toggleParticleEffects,
   );
+  const ditheringEnabled = useCoreStore(
+    (state) => state.graphicPreferences.ditheringEnabled,
+  );
+  const toggleDithering = useCoreStore((state) => state.toggleDithering);
+  const ditheringPixelSize = useCoreStore(
+    (state) => state.graphicPreferences.ditheringPixelSize,
+  );
+  const setDitheringPixelSize = useCoreStore(
+    (state) => state.setDitheringPixelSize,
+  );
 
   const { transitionToView } = useViewStore();
 
@@ -131,7 +141,9 @@ export function OptionsApp() {
           />
         </FillRow>
 
-        <DividerWithLabel>{messages.options.sections.bobShape}</DividerWithLabel>
+        <DividerWithLabel>
+          {messages.options.sections.bobShape}
+        </DividerWithLabel>
         <BlobFormCustomization />
 
         <DividerWithLabel>{messages.options.sections.effects}</DividerWithLabel>
@@ -167,6 +179,45 @@ export function OptionsApp() {
             <span />
           </ToggleButton>
         </PreferenceRow>
+
+        <PreferenceRow $align="center" $justify="space-between" $gap="1rem">
+          <FillColumn
+            $align="flex-start"
+            $justify="center"
+            $gap="0.4rem"
+            style={{ flex: 1 }}
+          >
+            <RowLabel>{messages.options.audio.dithering}</RowLabel>
+            <PreferenceText id="dithering-description">
+              {messages.options.audio.ditheringDescription}
+            </PreferenceText>
+          </FillColumn>
+          <ToggleButton
+            role="switch"
+            aria-checked={ditheringEnabled}
+            aria-describedby="dithering-description"
+            aria-label={messages.options.audio.dithering}
+            $active={ditheringEnabled}
+            onClick={toggleDithering}
+          >
+            <span />
+          </ToggleButton>
+        </PreferenceRow>
+
+        {ditheringEnabled && (
+          <VolumeRow>
+            <RowLabel>{messages.options.audio.ditheringPixelSize}</RowLabel>
+            <SegmentedValueSlider
+              value={ditheringPixelSize}
+              min={1}
+              max={4}
+              step={1}
+              onChange={setDitheringPixelSize}
+              formatValue={(value) => `${value}px`}
+              ariaLabel={messages.options.audio.ditheringPixelSize}
+            />
+          </VolumeRow>
+        )}
 
         <DividerWithLabel>{messages.options.sections.audio}</DividerWithLabel>
         {/* <FillRow $align="center" $justify="center" $gap="1rem">
