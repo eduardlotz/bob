@@ -59,6 +59,12 @@ export function OptionsApp() {
     (state) => state.graphicPreferences.ditheringEnabled,
   );
   const toggleDithering = useCoreStore((state) => state.toggleDithering);
+  const ditheringPixelSize = useCoreStore(
+    (state) => state.graphicPreferences.ditheringPixelSize,
+  );
+  const setDitheringPixelSize = useCoreStore(
+    (state) => state.setDitheringPixelSize,
+  );
 
   const { transitionToView } = useViewStore();
 
@@ -135,7 +141,9 @@ export function OptionsApp() {
           />
         </FillRow>
 
-        <DividerWithLabel>{messages.options.sections.bobShape}</DividerWithLabel>
+        <DividerWithLabel>
+          {messages.options.sections.bobShape}
+        </DividerWithLabel>
         <BlobFormCustomization />
 
         <DividerWithLabel>{messages.options.sections.effects}</DividerWithLabel>
@@ -195,6 +203,21 @@ export function OptionsApp() {
             <span />
           </ToggleButton>
         </PreferenceRow>
+
+        {ditheringEnabled && (
+          <VolumeRow>
+            <RowLabel>{messages.options.audio.ditheringPixelSize}</RowLabel>
+            <SegmentedValueSlider
+              value={ditheringPixelSize}
+              min={1}
+              max={4}
+              step={1}
+              onChange={setDitheringPixelSize}
+              formatValue={(value) => `${value}px`}
+              ariaLabel={messages.options.audio.ditheringPixelSize}
+            />
+          </VolumeRow>
+        )}
 
         <DividerWithLabel>{messages.options.sections.audio}</DividerWithLabel>
         {/* <FillRow $align="center" $justify="center" $gap="1rem">

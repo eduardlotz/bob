@@ -308,6 +308,7 @@ interface GameState {
     effectsEnabled: boolean;
     reducedTapMotion: boolean;
     ditheringEnabled: boolean;
+    ditheringPixelSize: number;
   };
 
   audioSelections: {
@@ -393,6 +394,7 @@ interface GameStateActions {
   toggleParticleEffects: () => void;
   toggleReducedTapMotion: () => void;
   toggleDithering: () => void;
+  setDitheringPixelSize: (size: number) => void;
   acceptCookies: () => void;
 
   setWorldMusicId: (id: string) => void;
@@ -604,6 +606,7 @@ export const initialGameState: GameState = {
     effectsEnabled: true,
     reducedTapMotion: false,
     ditheringEnabled: false,
+    ditheringPixelSize: 2,
   },
   audioSelections: {
     worldMusicId: "world-jazz",
@@ -1365,6 +1368,15 @@ export const useCoreStore = create<GameStore>()(
             graphicPreferences: {
               ...state.graphicPreferences,
               ditheringEnabled: !state.graphicPreferences.ditheringEnabled,
+            },
+          }));
+        },
+        setDitheringPixelSize: (size) => {
+          if (!Number.isFinite(size)) return;
+          set((state) => ({
+            graphicPreferences: {
+              ...state.graphicPreferences,
+              ditheringPixelSize: Math.min(16, Math.max(1, Math.round(size))),
             },
           }));
         },

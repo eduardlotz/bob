@@ -1,15 +1,26 @@
 import { useFBO } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
-import { HalfFloatType, ShaderMaterial, Vector2, WebGLRenderTarget } from "three";
+import {
+  HalfFloatType,
+  ShaderMaterial,
+  Vector2,
+  WebGLRenderTarget,
+} from "three";
 import { FullScreenQuad } from "three/examples/jsm/postprocessing/Pass.js";
+import { useCoreStore } from "@/store";
 
 // Keep capture and presentation around Drei's final fisheye projection.
 // Its cubemap is rendered earlier, at priority -1, and remains untouched.
 export const FISHEYE_RENDER_PRIORITY = 2;
 
 // Figma reference: full color, 2px blocks, 3 levels, neutral brightness/contrast.
-const REFERENCE_SETTINGS = { pixelSize: 2, levels: 3, brightness: 0, contrast: 1 };
+const REFERENCE_SETTINGS = {
+  pixelSize: 2,
+  levels: 4,
+  brightness: 0,
+  contrast: 1,
+};
 
 const fragmentShader = /* glsl */ `
   uniform sampler2D sceneTexture;
@@ -49,39 +60,50 @@ const fragmentShader = /* glsl */ `
 
 /** Mount only while enabled: the normal fisheye path has no extra pass or FBO. */
 export function SceneDithering() {
+  const pixelSize = useCoreStore(
+    (state) => state.graphicPreferences.ditheringPixelSize,
+  );
   const size = useThree((state) => state.size);
-  const target = useFBO({ type: HalfFloatType, depthBuffer: false, samples: 0 });
+  const target = useFBO({
+    type: HalfFloatType,
+    depthBuffer: false,
+    samples: 0,
+  });
   const previousTarget = useRef<WebGLRenderTarget | null>(null);
   const material = useMemo(
-    () => new ShaderMaterial({
-      uniforms: {
-        sceneTexture: { value: null },
-        screenSize: { value: new Vector2() },
-        pixelSize: { value: REFERENCE_SETTINGS.pixelSize },
-        levels: { value: REFERENCE_SETTINGS.levels },
-        brightness: { value: REFERENCE_SETTINGS.brightness },
-        contrast: { value: REFERENCE_SETTINGS.contrast },
-      },
-      vertexShader: /* glsl */ `
+    () =>
+      new ShaderMaterial({
+        uniforms: {
+          sceneTexture: { value: null },
+          screenSize: { value: new Vector2() },
+          pixelSize: { value: REFERENCE_SETTINGS.pixelSize },
+          levels: { value: REFERENCE_SETTINGS.levels },
+          brightness: { value: REFERENCE_SETTINGS.brightness },
+          contrast: { value: REFERENCE_SETTINGS.contrast },
+        },
+        vertexShader: /* glsl */ `
         varying vec2 vUv;
         void main() {
           vUv = uv;
           gl_Position = vec4(position.xy, 0.0, 1.0);
         }
       `,
-      fragmentShader,
-      depthTest: false,
-      depthWrite: false,
-      toneMapped: false,
-    }),
+        fragmentShader,
+        depthTest: false,
+        depthWrite: false,
+        toneMapped: false,
+      }),
     [],
   );
   const quad = useMemo(() => new FullScreenQuad(material), [material]);
 
-  useEffect(() => () => {
-    material.dispose();
-    quad.dispose();
-  }, [material, quad]);
+  useEffect(
+    () => () => {
+      material.dispose();
+      quad.dispose();
+    },
+    [material, quad],
+  );
 
   useFrame(({ gl }) => {
     previousTarget.current = gl.getRenderTarget();
@@ -92,6 +114,7 @@ export function SceneDithering() {
     gl.setRenderTarget(previousTarget.current);
     material.uniforms.sceneTexture.value = target.texture;
     material.uniforms.screenSize.value.set(size.width, size.height);
+    material.uniforms.pixelSize.value = pixelSize;
     quad.render(gl);
   }, FISHEYE_RENDER_PRIORITY + 1);
 
