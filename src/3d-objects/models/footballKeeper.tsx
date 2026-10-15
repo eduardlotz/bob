@@ -66,7 +66,7 @@ export function FootBallKeeper({
       <group scale={scale}>
         <mesh material={material}>
           <capsuleGeometry
-            args={[size[0] * scale, size[1] * scale, size[2] * scale, 8]}
+            args={[size[0], size[1], size[2], 8]}
           />
           <Outlines thickness={0.03} color="#000000" screenspace />
         </mesh>

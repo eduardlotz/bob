@@ -2,6 +2,9 @@ import { GrassShader } from "@/3d-objects/GrassShader";
 import { FootBallKeeper } from "@/3d-objects/models/footballKeeper";
 import { GoalPost } from "@/3d-objects/models/goalPost";
 import { CloudEffect } from "@/3d-objects/ParticleEffects";
+import { useActiveBobShape } from "@/hooks/useActiveBobShape";
+import { useScaledGameCamera } from "@/hooks/useScaledGameCamera";
+import { useScaledGameBody } from "@/hooks/useScaledGameBody";
 import { CharacterBall } from "@/components/CharacterBall";
 import { useCursor } from "@/hooks/useCursor";
 import { useQuestActions } from "@/hooks/useQuestSystem";
@@ -12,17 +15,20 @@ import {
 } from "@/molecules/HeadNavigation";
 import { FLOOR_Y_POSITION } from "@/molecules/Scene";
 import { BasketBox } from "@/physics/BasketBox";
-import { useAppStore, useMiniGameStore, useViewStore } from "@/store";
+import { useAppStore, useMiniGameStore } from "@/store";
 import { useFrame } from "@react-three/fiber";
 import { CuboidCollider, RapierRigidBody } from "@react-three/rapier";
 import { useState, useRef, useCallback } from "react";
 
 export const FootballGame = ({ onExit }: { onExit: () => void }) => {
+  const { sizeFactor } = useActiveBobShape();
+  const startPosition = useRef<[number, number, number]>([0, 3 * sizeFactor, 0]);
   const { incrementScore } = useMiniGameStore();
   const { isMobile } = useAppStore();
 
   const [ballKey, setBallKey] = useState(0);
   const ballApi = useRef<RapierRigidBody>(null!);
+  useScaledGameBody(ballApi, sizeFactor);
 
   const isResetting = useRef(false);
 
@@ -31,7 +37,7 @@ export const FootballGame = ({ onExit }: { onExit: () => void }) => {
     positionFactor: 2.5,
   });
 
-  const { cameraControlsRef } = useViewStore();
+  const cameraControlsRef = useScaledGameCamera(sizeFactor);
   const { triggerQuest } = useQuestActions();
 
   const createParticles = useCallback((x = 0, y = 2, z = 0, count = 50) => {
@@ -50,10 +56,10 @@ export const FootballGame = ({ onExit }: { onExit: () => void }) => {
     if (cameraControlsRef) {
       cameraControlsRef.current?.setLookAt(
         0,
-        CAMERA_HEIGHT,
-        HIDDEN_OPTIONS_CAMERA_ZOOM,
-        cursorX + handCamSwayX,
-        cursorY + CAMERA_Y_POSITION + handCamSwayY,
+        CAMERA_HEIGHT * sizeFactor,
+        HIDDEN_OPTIONS_CAMERA_ZOOM * sizeFactor,
+        (cursorX + handCamSwayX) * sizeFactor,
+        (cursorY + CAMERA_Y_POSITION + handCamSwayY) * sizeFactor,
         0,
         true,
       );
@@ -61,8 +67,8 @@ export const FootballGame = ({ onExit }: { onExit: () => void }) => {
   });
 
   const resetBall = () => {
-    ballApi.current.setTranslation({ x: 0, y: 3, z: 0 }, true);
-    ballApi.current.setLinvel({ x: 0, y: 3, z: 0 }, true);
+    ballApi.current.setTranslation({ x: 0, y: 3 * sizeFactor, z: 0 }, true);
+    ballApi.current.setLinvel({ x: 0, y: 3 * sizeFactor, z: 0 }, true);
     isResetting.current = false;
   };
 
@@ -85,37 +91,39 @@ export const FootballGame = ({ onExit }: { onExit: () => void }) => {
     <>
       <CloudEffect preview={false} />
 
-      <FootBallKeeper position={[0, 0.5, -3]} />
+      <FootBallKeeper position={[0, 0.5 * sizeFactor, -3 * sizeFactor]}
+        scale={sizeFactor} amplitudeX={2 * sizeFactor} amplitudeY={sizeFactor} />
 
       <CharacterBall
         ref={ballApi}
-        position={[0, 3, 0]}
+        position={startPosition.current}
         ccd={false}
         enabledTranslations={[true, true, true]}
         key={ballKey}
         scale={0.3}
+        gravityScale={sizeFactor}
       />
-      <GrassShader position={[0, -0.8, 0]} preview={false} />
+      <GrassShader position={[0, -0.8 * sizeFactor, 0]} scale={[sizeFactor, sizeFactor, sizeFactor]} preview={false} />
 
-      <CuboidCollider args={[7 / 2, 0.02, 7 / 2]} position={[0, 4.5, 0]} />
+      <CuboidCollider args={[3.5 * sizeFactor, 0.02 * sizeFactor, 3.5 * sizeFactor]} position={[0, 4.5 * sizeFactor, 0]} />
       <BasketBox
-        position={[0, 3.3 + FLOOR_Y_POSITION, -1]}
-        width={6.6}
-        depth={7}
-        height={6}
-        wallThickness={0.2}
+        position={[0, (3.3 + FLOOR_Y_POSITION) * sizeFactor, -sizeFactor]}
+        width={6.6 * sizeFactor}
+        depth={7 * sizeFactor}
+        height={6 * sizeFactor}
+        wallThickness={0.2 * sizeFactor}
       />
 
       <CuboidCollider
-        args={[3, 1.2, 0.5]}
-        position={[0, 3.8, -3.8]}
+        args={[3 * sizeFactor, 1.2 * sizeFactor, 0.5 * sizeFactor]}
+        position={[0, 3.8 * sizeFactor, -3.8 * sizeFactor]}
         sensor
         onIntersectionEnter={resetBall}
       />
 
       <GoalPost
-        position={[0, -1.2, -3]}
-        scale={2}
+        position={[0, -1.2 * sizeFactor, -3 * sizeFactor]}
+        scale={2 * sizeFactor}
         onEnter={onGoalScored}
         onLeave={() => {
           // console.log("left goal");

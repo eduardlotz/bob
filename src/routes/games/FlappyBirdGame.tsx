@@ -5,7 +5,7 @@ import { Group } from "three";
 
 import CameraControlsImpl from "camera-controls";
 
-import { useMiniGameStore, useAppStore, useViewStore } from "@/store";
+import { useMiniGameStore, useAppStore } from "@/store";
 
 import {
   CAMERA_HEIGHT,
@@ -28,6 +28,10 @@ import { GameOverlay } from "./GameOverlay";
 import { FlappyOverlay } from "./FlappyOverlay";
 import { useI18n } from "@/i18n";
 import { PointsCounter } from "@/molecules/PointsCounter";
+import { useActiveBobShape } from "@/hooks/useActiveBobShape";
+import { useScaledGameCamera } from "@/hooks/useScaledGameCamera";
+import { useScaledGameBody } from "@/hooks/useScaledGameBody";
+import { getGameBallPhysics, scaleGameCoordinate } from "@/utils/gameSizing";
 import { CharacterBall } from "@/components/CharacterBall";
 import { useQuestStore } from "@/store/core/quests";
 import { playSound, stopSoundsById } from "@/utils/soundSystem";
@@ -35,12 +39,15 @@ import { playSound, stopSoundsById } from "@/utils/soundSystem";
 const FLAP_FORCE = 5;
 const BIRD_START_X = 1;
 const BIRD_START_Y = 1;
+const BIRD_SCALE = 0.4;
+const BIRD_ORIGIN = { x: BIRD_START_X, y: BIRD_START_Y, z: 0 };
 const ARCADE_VISUAL_SCALE = 1.2;
 const ARCADE_COLLIDER_SEGMENTS = 12;
 const ARCADE_COLLIDER_DEPTH_FACTORS = [-1, 1] as const;
 
 export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
   const { locale, formatNumber } = useI18n();
+  const { sizeFactor } = useActiveBobShape();
   const [phase, setPhase] = useState<"idle" | "playing" | "over">("idle");
   const active = useRef(false);
   const lastScore = useRef(0);
@@ -48,8 +55,9 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
   const birdApi = useRef<RapierRigidBody>(null!);
   const tilt = useRef({ angle: 0, velocity: 0 });
   const birdVisual = useRef<Group>(null);
+  useScaledGameBody(birdApi, sizeFactor, BIRD_ORIGIN);
 
-  const cameraControlsRef = useViewStore((s) => s.cameraControlsRef);
+  const cameraControlsRef = useScaledGameCamera(sizeFactor);
   const incrementScore = useMiniGameStore((s) => s.incrementScore);
   const resetScore = useMiniGameStore((s) => s.resetScore);
   const score = useMiniGameStore((s) => s.session.score);
@@ -90,7 +98,7 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
       birdApi.current?.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true);
       birdApi.current?.setEnabled(true);
       tilt.current = { angle: 0, velocity: 0 };
-      birdApi.current?.setGravityScale(1, true);
+      birdApi.current?.setGravityScale(sizeFactor, true);
       active.current = true;
       setPhase("playing");
     }
@@ -98,12 +106,12 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
     if (!body) return;
 
     body.wakeUp();
-    body.setLinvel({ x: 0, y: FLAP_FORCE, z: 0 }, true);
+    body.setLinvel({ x: 0, y: FLAP_FORCE * sizeFactor, z: 0 }, true);
     const currentAng = body.angvel();
     body.setAngvel({ x: 0, y: 0, z: Math.max(currentAng.z, 2.2) }, true);
 
     playSound("flappy-flap");
-  }, [resetScore]);
+  }, [resetScore, sizeFactor]);
 
   const reset = useCallback(() => {
     if (!active.current) return;
@@ -131,7 +139,8 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
   useAfterPhysicsStep(() => {
     if (!active.current || !birdApi.current) return;
     const y = birdApi.current.translation().y;
-    if (y < -6 || y > 12) reset();
+    if (y < scaleGameCoordinate(-6, sizeFactor, BIRD_START_Y) ||
+      y > scaleGameCoordinate(12, sizeFactor, BIRD_START_Y)) reset();
   });
 
   const handleScore = useCallback(() => {
@@ -183,19 +192,19 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
     const vel = body.linvel();
 
     if (birdVisual.current) {
-      birdVisual.current.position.y = active.current ? 0 : Math.sin(clock.elapsedTime * 2) * 0.15;
+      birdVisual.current.position.y = active.current ? 0 : Math.sin(clock.elapsedTime * 2) * 0.15 * sizeFactor;
       if (!active.current) birdVisual.current.quaternion.identity();
     }
 
     if (cameraControlsRef?.current) {
-      const targetX = isMobile ? BIRD_START_X + 2 : BIRD_START_X;
+      const targetX = isMobile ? BIRD_START_X + 2 * sizeFactor : BIRD_START_X;
       cameraControlsRef.current.setLookAt(
-        0,
-        CAMERA_HEIGHT,
-        HIDDEN_OPTIONS_CAMERA_ZOOM,
+        scaleGameCoordinate(0, sizeFactor, BIRD_START_X),
+        scaleGameCoordinate(CAMERA_HEIGHT, sizeFactor, BIRD_START_Y),
+        HIDDEN_OPTIONS_CAMERA_ZOOM * sizeFactor,
         // Bird X is locked so use the constant — avoids camera drift.
         targetX,
-        (active.current ? pos.y : BIRD_START_Y) + CAMERA_Y_POSITION,
+        (active.current ? pos.y : BIRD_START_Y) + CAMERA_Y_POSITION * sizeFactor,
         0,
         true,
       );
@@ -204,7 +213,7 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
     if (!active.current) return;
 
     // Restore the original physical rotation control so rim contact can redirect Bob.
-    const targetZ = Math.max(-2, Math.min(2, -vel.y * 0.2));
+    const targetZ = Math.max(-2, Math.min(2, -vel.y / sizeFactor * 0.2));
     const ang = body.angvel();
     body.setAngvel(
       { x: 0, y: 0, z: ang.z + (targetZ - ang.z) * Math.min(1, delta * 6) },
@@ -213,7 +222,7 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
 
     // Pitch follows the flight path: upward on a flap, level at the apex,
     // downward while falling. A damped spring carries momentum across taps.
-    const forwardSpeed = BASE_RING_SPEED + Math.min(score, 60) * RING_SPEED_SCORE_FACTOR;
+    const forwardSpeed = (BASE_RING_SPEED + Math.min(score, 60) * RING_SPEED_SCORE_FACTOR) * sizeFactor;
     const targetAngle = Math.max(-1.1, Math.min(0.65, Math.atan2(vel.y, forwardSpeed) * 0.7));
     const frameDelta = Math.min(delta, 0.05);
     const steps = Math.max(1, Math.ceil(frameDelta / (1 / 120)));
@@ -251,13 +260,16 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
         angularDamping={1}
         enabledRotations={[true, true, true]}
         position={[BIRD_START_X, BIRD_START_Y, 0]}
-        scale={0.4}
+        scale={BIRD_SCALE}
+        gravityScale={phase === "playing" ? sizeFactor : 0}
       />
 
       <FlappyRings
         ref={obstacles}
         birdBody={birdApi}
-        birdRadius={0.3}
+        birdRadius={getGameBallPhysics(BIRD_SCALE, sizeFactor).radius}
+        sizeFactor={sizeFactor}
+        origin={BIRD_ORIGIN}
         active={active}
         score={score}
         onScore={handleScore}

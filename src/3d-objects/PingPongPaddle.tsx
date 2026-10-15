@@ -11,8 +11,8 @@ import { PingPongPaddle } from "./models/pingPongPaddle";
 
 export const Paddle = React.forwardRef<
   RapierRigidBody,
-  { onCollide: (p: any) => void; tiltInput?: React.RefObject<{ x: number; y: number }> }
->(({ onCollide, tiltInput }, ref) => {
+  { onCollide: (p: any) => void; tiltInput?: React.RefObject<{ x: number; y: number }>; sizeFactor?: number }
+>(({ onCollide, tiltInput, sizeFactor = 1 }, ref) => {
   const visualGroup = useRef<THREE.Group>(null!);
   const vec = useMemo(() => new THREE.Vector3(), []);
   const dir = useMemo(() => new THREE.Vector3(), []);
@@ -27,8 +27,14 @@ export const Paddle = React.forwardRef<
     const target = tiltInput?.current ?? state.pointer;
     input.lerp(target, 1 - Math.exp(-delta * 14));
     vec.set(input.x, input.y, 0.5).unproject(state.camera);
-    dir.copy(vec).sub(state.camera.position).normalize();
-    vec.add(dir.multiplyScalar(state.camera.position.length()));
+    dir.copy(vec).sub(state.camera.position);
+    const projectionDistance = dir.length();
+    dir.normalize();
+    // Camera distance scales with the game; its projection near/far planes do
+    // not. Scale that remaining ray offset once to preserve normalized input.
+    vec.copy(state.camera.position).addScaledVector(
+      dir, projectionDistance * sizeFactor + state.camera.position.length(),
+    );
 
     paddleRef.current.setNextKinematicTranslation({
       x: vec.x * 1.5,
@@ -52,8 +58,8 @@ export const Paddle = React.forwardRef<
         // if (e.totalForceMagnitude > 50) visualGroup.current.position.y = -0.15;
       }}
     >
-      <CylinderCollider args={[0.1, 1]} position={[0, 0, 0.5]} />
-      <group ref={visualGroup}>
+      <CylinderCollider args={[0.1 * sizeFactor, sizeFactor]} position={[0, 0, 0.5 * sizeFactor]} />
+      <group ref={visualGroup} scale={sizeFactor}>
         <PingPongPaddle
           position={[0, 0, 3]}
           scale={[1, 1, 1]}

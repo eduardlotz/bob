@@ -1,6 +1,10 @@
-import { forwardRef, useMemo } from "react";
+import { forwardRef, Suspense, useMemo } from "react";
 import { RigidBody, BallCollider } from "@react-three/rapier";
-import { BlobForm } from "./BlobForm"; // Adjust path
+import { BlobForm } from "./BlobForm";
+import { BobWearables } from "./BobWearables";
+import { getBobEyePosition } from "@/types/blobForms";
+import { useActiveBobShape } from "@/hooks/useActiveBobShape";
+import { getGameBallPhysics } from "@/utils/gameSizing";
 import { useCoreStore } from "@/store";
 import React from "react";
 import { Group, SphereGeometry } from "three";
@@ -18,7 +22,9 @@ type Props = Omit<
 
 // TODO: add emotions like blink and dizzy on hit
 export const CharacterBall = forwardRef((props: Props, ref: any) => {
-  const { currentTheme } = useCoreStore();
+  const currentTheme = useCoreStore((state) => state.currentTheme);
+  const bobItems = useCoreStore((state) => state.bobItems);
+  const { formType, parameters, sizeFactor } = useActiveBobShape();
 
   const blobColor = currentTheme?.blobColor;
   const eyeColor = currentTheme?.eyeColor;
@@ -41,6 +47,9 @@ export const CharacterBall = forwardRef((props: Props, ref: any) => {
     ...rigidBodyProps
   } = props;
 
+  const baseScale = typeof scale === "number" ? scale : Math.max(...scale);
+  const physics = getGameBallPhysics(colliderRadius * baseScale, sizeFactor);
+
   return (
     <RigidBody
       ref={ref}
@@ -52,21 +61,19 @@ export const CharacterBall = forwardRef((props: Props, ref: any) => {
       enabledTranslations={enabledTranslations}
       position={position}
     >
-      <BallCollider args={[colliderRadius]} scale={scale} />
+      <BallCollider args={[physics.radius]} mass={physics.mass} />
 
       <group ref={visualRef} scale={scale}>
         <BlobForm
-          formType="sphere"
-          parameters={{
-            sphereRadius: 1,
-            sphereWidthSegments: 32,
-            sphereHeightSegments: 32,
-          }}
+          formType={formType}
+          parameters={parameters}
           blobColor={blobColor || "#ffffff"}
           outlineColor={outlineColor || "#000000"}
         />
 
-        <group position={[0, 0.2, 0.85]}>
+        <group
+          position={getBobEyePosition([0, 0.2, 0.85], formType, parameters)}
+        >
           <mesh geometry={eyeGeoms} position={[-0.45, 0, 0]}>
             <meshToonMaterial color={eyeColor || "#000000"} />
           </mesh>
@@ -74,6 +81,14 @@ export const CharacterBall = forwardRef((props: Props, ref: any) => {
             <meshToonMaterial color={eyeColor || "#000000"} />
           </mesh>
         </group>
+        <Suspense fallback={null}>
+          <BobWearables
+            items={bobItems.filter((item) => item.enabled)}
+            blobFormType={formType}
+            parameters={parameters}
+            outlineColor={outlineColor}
+          />
+        </Suspense>
       </group>
     </RigidBody>
   );

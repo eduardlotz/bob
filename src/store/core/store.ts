@@ -68,7 +68,8 @@ export enum GAME_STORE_VERSION {
   V12 = 100107, // astronaut helmet becomes a quest reward
   V13 = 100108, // merged space world and new hats
   V14 = 100109, // propeller hat, moustache, and crown
-  LATEST = V14,
+  V15 = 100110, // free body shapes in Settings
+  LATEST = V15,
 }
 
 // TODO: plan refactor to include component inside item properties
