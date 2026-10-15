@@ -61,6 +61,7 @@ import { useCursor } from "@/hooks/useCursor";
 import { commonUiMessages } from "@/ui/common.messages";
 import { getLocale } from "@/i18n";
 import { PresetsType } from "@react-three/drei/helpers/environment-assets";
+import { FISHEYE_RENDER_PRIORITY, SceneDithering } from "@/components/SceneDithering";
 
 const Debug = () => {
   const { width } = useThree((s) => s.size);
@@ -353,7 +354,7 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
     <>
       <FullScreenCanvas>
         <AudioListenerBinder />
-        <Fisheye zoom={FISHEYE_CONFIG.MIN} renderPriority={2}>
+        <Fisheye zoom={FISHEYE_CONFIG.MIN} renderPriority={FISHEYE_RENDER_PRIORITY}>
           <CursorFollowCamera />
           <CameraControls
             ref={handleCameraControlsRef}
@@ -432,6 +433,7 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
             </Suspense>
           </Physics>
         </Fisheye>
+        {graphicPreferences.ditheringEnabled && <SceneDithering />}
       </FullScreenCanvas>
     </>
   );

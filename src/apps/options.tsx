@@ -55,6 +55,10 @@ export function OptionsApp() {
   const toggleParticleEffects = useCoreStore(
     (state) => state.toggleParticleEffects,
   );
+  const ditheringEnabled = useCoreStore(
+    (state) => state.graphicPreferences.ditheringEnabled,
+  );
+  const toggleDithering = useCoreStore((state) => state.toggleDithering);
 
   const { transitionToView } = useViewStore();
 
@@ -163,6 +167,30 @@ export function OptionsApp() {
             $active={tapParticlesEnabled}
             onClick={toggleParticleEffects}
             aria-label={messages.options.audio.tapParticles}
+          >
+            <span />
+          </ToggleButton>
+        </PreferenceRow>
+
+        <PreferenceRow $align="center" $justify="space-between" $gap="1rem">
+          <FillColumn
+            $align="flex-start"
+            $justify="center"
+            $gap="0.4rem"
+            style={{ flex: 1 }}
+          >
+            <RowLabel>{messages.options.audio.dithering}</RowLabel>
+            <PreferenceText id="dithering-description">
+              {messages.options.audio.ditheringDescription}
+            </PreferenceText>
+          </FillColumn>
+          <ToggleButton
+            role="switch"
+            aria-checked={ditheringEnabled}
+            aria-describedby="dithering-description"
+            aria-label={messages.options.audio.dithering}
+            $active={ditheringEnabled}
+            onClick={toggleDithering}
           >
             <span />
           </ToggleButton>

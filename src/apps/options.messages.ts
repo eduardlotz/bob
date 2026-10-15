@@ -32,6 +32,8 @@ export const optionsMessages = defineMessages({
       tapAnimationDescription:
         "Auto-Taps werden weiterhin gesammelt, auch ohne Animation",
       tapParticles: "Tap-Partikel",
+      dithering: "Dithering",
+      ditheringDescription: "Retro-Pixellook für die 3D-Welt",
       master: "Master",
       music: "Musik",
       effects: "Tap",
@@ -79,6 +81,8 @@ export const optionsMessages = defineMessages({
       tapAnimationDescription:
         "Auto-taps are still collected, even without animation",
       tapParticles: "Tap Particles",
+      dithering: "Dithering",
+      ditheringDescription: "Retro pixel look for the 3D world",
       master: "Master",
       music: "Music",
       effects: "Tap",

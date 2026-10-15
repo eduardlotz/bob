@@ -307,6 +307,7 @@ interface GameState {
     qualityMode: QualityMode; // TODO: seperate selected, suggested
     effectsEnabled: boolean;
     reducedTapMotion: boolean;
+    ditheringEnabled: boolean;
   };
 
   audioSelections: {
@@ -391,6 +392,7 @@ interface GameStateActions {
   setGraphicsMode: (mode: QualityMode) => void;
   toggleParticleEffects: () => void;
   toggleReducedTapMotion: () => void;
+  toggleDithering: () => void;
   acceptCookies: () => void;
 
   setWorldMusicId: (id: string) => void;
@@ -601,6 +603,7 @@ export const initialGameState: GameState = {
     qualityMode: "auto",
     effectsEnabled: true,
     reducedTapMotion: false,
+    ditheringEnabled: false,
   },
   audioSelections: {
     worldMusicId: "world-jazz",
@@ -1357,6 +1360,14 @@ export const useCoreStore = create<GameStore>()(
             },
           }));
         },
+        toggleDithering: () => {
+          set((state) => ({
+            graphicPreferences: {
+              ...state.graphicPreferences,
+              ditheringEnabled: !state.graphicPreferences.ditheringEnabled,
+            },
+          }));
+        },
         setGraphicsMode: (mode) => {
           set((state) => ({
             ...state,
@@ -1729,6 +1740,17 @@ export const useCoreStore = create<GameStore>()(
         storage: createIndexedDBStorage<GameStore>(),
         migrate: migrateCoreStore,
         partialize: (state) => partializePersisted(state) as GameStore,
+        merge: (persistedState, currentState) => {
+          const saved = persistedState as Partial<GameStore> | undefined;
+          return {
+            ...currentState,
+            ...saved,
+            graphicPreferences: {
+              ...currentState.graphicPreferences,
+              ...saved?.graphicPreferences,
+            },
+          };
+        },
         onRehydrateStorage: () => (state?: GameStore) => {
           if (!state) return;
 
