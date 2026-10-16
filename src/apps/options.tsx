@@ -128,6 +128,8 @@ export function OptionsApp() {
         },
       }}
     >
+      {/* GENERAL */}
+
       <FillColumn $gap="1rem" style={{ height: "fit-content", width: "24rem" }}>
         <FillRow $align="center" $justify="space-between" $gap="1rem">
           <RowLabel>{messages.options.audio.language}</RowLabel>
@@ -141,10 +143,17 @@ export function OptionsApp() {
           />
         </FillRow>
 
-        <DividerWithLabel>
-          {messages.options.sections.bobShape}
-        </DividerWithLabel>
-        <BlobFormCustomization />
+        {/* AUDIO */}
+
+        <DividerWithLabel>{messages.options.sections.audio}</DividerWithLabel>
+
+        <FillColumn $gap="1.5rem">
+          {rows.map((row) => (
+            <VolumeItem key={row.label} {...row} />
+          ))}
+        </FillColumn>
+
+        {/* REDUCE MOTION */}
 
         <DividerWithLabel>{messages.options.sections.effects}</DividerWithLabel>
 
@@ -179,6 +188,8 @@ export function OptionsApp() {
             <span />
           </ToggleButton>
         </PreferenceRow>
+
+        {/* DITHERING // SPECIAL EFFECTS */}
 
         <PreferenceRow $align="center" $justify="space-between" $gap="1rem">
           <FillColumn
@@ -219,20 +230,12 @@ export function OptionsApp() {
           </VolumeRow>
         )}
 
-        <DividerWithLabel>{messages.options.sections.audio}</DividerWithLabel>
-        {/* <FillRow $align="center" $justify="center" $gap="1rem">
-            <AppInfo>
-              {messages.options.audio.status}:{" "}
-              {messages.options.audio.states[sound.audioStatus]}
-            </AppInfo>
-            <Divider />
-          </FillRow> */}
+        {/* BOB SHAPE // EXPERIMENTAL */}
 
-        <FillColumn $gap="1.5rem">
-          {rows.map((row) => (
-            <VolumeItem key={row.label} {...row} />
-          ))}
-        </FillColumn>
+        <DividerWithLabel>
+          {messages.options.sections.bobShape}
+        </DividerWithLabel>
+        <BlobFormCustomization />
       </FillColumn>
     </FillColumn>
   );

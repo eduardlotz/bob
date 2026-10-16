@@ -319,8 +319,13 @@ export const BobPhone = (props: BobPhoneProps) => {
                       initial={{ opacity: 0, y: 6, filter: "blur(4px)" }}
                       animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                       exit={{ opacity: 0, y: 6, filter: "blur(4px)" }}
-                      transition={{ ...PANEL_SPRING, layout: PANEL_LAYOUT_SPRING }}
-                    >{activeAppView()}</AppViewStage>
+                      transition={{
+                        ...PANEL_SPRING,
+                        layout: PANEL_LAYOUT_SPRING,
+                      }}
+                    >
+                      {activeAppView()}
+                    </AppViewStage>
                   ) : (
                     <AppGrid
                       key="app-grid"
@@ -340,7 +345,10 @@ export const BobPhone = (props: BobPhoneProps) => {
                         scaleX: 1.05,
                         filter: "blur(4px)",
                       }}
-                      transition={{ ...PANEL_SPRING, layout: PANEL_LAYOUT_SPRING }}
+                      transition={{
+                        ...PANEL_SPRING,
+                        layout: PANEL_LAYOUT_SPRING,
+                      }}
                     >
                       {BOB_APPS.map((app) => (
                         <AppContainer
@@ -429,12 +437,13 @@ const AppBottomActions = styled(FillRow)`
   height: 2.5rem;
 `;
 
-const PhoneScreen = React.forwardRef<HTMLDivElement, React.ComponentProps<typeof motion.div>>(
-  function PhoneScreen(props, ref) {
-    const isPresent = useIsPresent();
-    return <motion.div {...props} ref={ref} aria-hidden={!isPresent} />;
-  },
-);
+const PhoneScreen = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<typeof motion.div>
+>(function PhoneScreen(props, ref) {
+  const isPresent = useIsPresent();
+  return <motion.div {...props} ref={ref} aria-hidden={!isPresent} />;
+});
 
 const AppViewStage = styled(PhoneScreen)`
   width: 100%;
@@ -485,7 +494,8 @@ const BackHomeButton = styled.button`
 
 const AppName = styled.h5`
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 800;
+  letter-spacing: -0.01em;
 `;
 
 const BobPhoneBody = styled(motion.div)`
@@ -580,13 +590,15 @@ const AppLabel = styled.span`
   color: #212121;
   background-color: rgba(33, 33, 33, 0.1);
   font-weight: 700;
+  letter-spacing: -1%;
+  line-height: 1.2;
   padding: 0.25rem 0.5rem;
   border-radius: 0.625rem;
 `;
 
 const StatusPill = styled(motion.div)`
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 800;
   color: #212121;
   background: rgba(33, 33, 33, 0.08);
   padding: 8px 12px;

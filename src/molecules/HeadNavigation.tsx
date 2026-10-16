@@ -447,15 +447,14 @@ const BackgroundColor = styled.div<{ $active: boolean }>`
   border-radius: 50px;
 
   background-color: ${(p) =>
-    p.$active ? "var(--text-color)" : "var(--primary-color)"};
+    p.$active ? "var(--text-color)" : "var(--secondary-color)"};
   z-index: 0;
-  /* border-color: ${(p) => (p.$active ? "var(--text-color)" : "transparent")};
-  border: 2px solid transparent; */
+  box-shadow: ${(p) => (p.$active ? "none" : "inset 0 -6px 0 #066ed6")};
 `;
 
 const RouteName = styled.p`
   font-size: 22px;
-  font-weight: 500;
+  font-weight: 800;
   z-index: 1;
 `;
 
@@ -463,10 +462,13 @@ const NavigationBubble = styled(motion.button)<{
   $active: boolean;
   $locked?: boolean;
 }>`
-  color: ${(p) => (p.$active ? "var(--primary-color)" : "var(--text-color)")};
-  background-color: ${(p) =>
-    p.$active ? "var(--text-color)" : "var(--primary-color)"};
+  color: ${(p) => (p.$active ? "var(--secondary-color)" : "var(--text-color)")};
+  /*background-color: ${(p) =>
+    p.$active ? "var(--text-color)" : "var(--primary-color)"}; */
 
+  background: var(--secondary-color);
+  /* border: 3px solid transparent; */
+  border-color: ${(p) => (p.$active ? "#066ed6" : "transparent")};
   opacity: ${(p) => (p.$locked ? 1 : 0.25)};
 
   /* &:not(:disabled) {

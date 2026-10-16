@@ -77,7 +77,6 @@ export const ItemStatusChip = styled(motion.div)<{
     `
     background-color: rgba(0,0,0,0.25);
     color: #fff;
-    font-weight: 700;
   `}
   
   ${(p) =>
@@ -87,8 +86,7 @@ export const ItemStatusChip = styled(motion.div)<{
     color: white;
     gap: 0.25rem;
 
-    font-weight: 700;
-    span:nth-child(2) {opacity: 0.5;font-weight: 500;}
+    span:nth-child(2) {opacity: 0.5;font-weight: 700;}
   `}
  
  ${(p) =>
@@ -103,7 +101,6 @@ export const ItemStatusChip = styled(motion.div)<{
     height: 2rem;
     border-radius: 20px;
     
-    font-weight: 700;
   `}
 
 ${(p) =>
@@ -111,11 +108,7 @@ ${(p) =>
     `
     background-color: var(--secondary-color);
     color: var(--text-color);
-    border: 1.5px solid var(--text-color);
     gap: 0.25rem;
-    
-    font-weight: 700;
-
   `}
 `;
 
@@ -140,13 +133,14 @@ export const SettingsWrapper = styled(FillRow)<{
 
   h5 {
     font-size: 1rem;
-    font-weight: 600;
-    color: #212121;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: ${(p) => (p.$variant === "destructive" ? "#d50202" : "#212121")};
   }
 
   p {
     font-size: 0.875rem;
-    font-weight: 400;
+    font-weight: 600;
     line-height: 1.4;
     opacity: 0.6;
     color: #212121;
@@ -223,7 +217,7 @@ export const ActionButton = styled(motion.button)<{
   opacity: 1;
 
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 800;
 
   background-color: #212121;
   color: #ffffff;
@@ -405,7 +399,7 @@ export const ShopItemButton = styled(motion.button)<{
   color: ${(p) => (p.$selected ? "#ffffff" : "#ffffff")};
 
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 800;
 
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);

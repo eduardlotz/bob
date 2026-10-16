@@ -82,7 +82,10 @@ export function BottomNavigation() {
         margin: "0 auto",
         left: 0,
         right: 0,
-        zIndex: activeGame === "FLAPPY_BIRD" || activeGame === "PING_PONG" ? 1000 : undefined,
+        zIndex:
+          activeGame === "FLAPPY_BIRD" || activeGame === "PING_PONG"
+            ? 1000
+            : undefined,
       }}
     >
       <TapUpgrades show={showTapUpgrades} />
@@ -159,12 +162,15 @@ export const NavButton = styled(motion.button)<{ $isActive?: boolean }>`
   border-radius: 1.5rem;
   gap: 0.125rem;
 
-  background: var(--primary-color);
+  /* background: var(--primary-color); */
+  background: #212026;
+  box-shadow: 0 6px 0 #0b0b0c;
+  border: 3px solid #0b0b0c;
   color: var(--text-color);
 
   outline: 2px solid transparent;
   outline-color: ${(props) => (props.$isActive ? "#ffffff" : "transparent")};
-  outline-offset: ${(props) => (props.$isActive ? "3px" : "0")};
+  outline-offset: ${(props) => (props.$isActive ? "6px 3px" : "0")};
 
   display: flex;
   flex-direction: column;
@@ -181,6 +187,6 @@ export const NavButton = styled(motion.button)<{ $isActive?: boolean }>`
     justify-content: center;
 
     font-size: 0.75rem;
-    font-weight: 700;
+    font-weight: 900;
   }
 `;

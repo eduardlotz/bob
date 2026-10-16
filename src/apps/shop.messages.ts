@@ -12,7 +12,7 @@ export const shopMessages = defineMessages({
       activate: "Aktivieren",
       deactivate: "Deaktivieren",
       takeOff: "Ablegen",
-      selected: "Ausgewählt",
+      selected: "Aktiv",
     },
     itemTypes: {
       hat: "Kopf",

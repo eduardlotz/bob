@@ -130,9 +130,9 @@ export const Button = styled(motion.button)<{
   text-align: center;
   font-weight: 600;
   font-size: 1rem;
-  line-height: normal;
+  line-height: 1.3;
   letter-spacing: 1.5px;
-  font-family: "Open Sauce Two";
+  font-family: var(--font-family);
   text-transform: uppercase;
 
   box-shadow: 0px 0px 0px 0px #000;
@@ -169,21 +169,23 @@ export const MenuButton = styled(motion.button)<{ $isActive?: boolean }>`
   padding: 16px 20px;
   height: 3.625rem;
   width: 4.625rem;
-  background-color: rgba(0, 0, 0, 0.25);
-  color: var(--text-color);
   gap: 0.125rem;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+
+  background: #78758d;
+  box-shadow: 0 6px 0 #555363;
+  border: 3px solid #555363;
+  color: var(--text-color);
+
+  /* background-color: rgba(0, 0, 0, 0.25);
+  color: var(--text-color); */
+  /* backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px); */
 
   outline: 2px solid transparent;
   outline-color: ${(props) => (props.$isActive ? "#ffffff" : "transparent")};
-  outline-offset: ${(props) => (props.$isActive ? "3px" : "0")};
+  outline-offset: ${(props) => (props.$isActive ? "6px 3px" : "0")};
   pointer-events: auto;
   border-radius: 1.5rem;
-
-  &:hover {
-    background-color: rgba(0, 0, 0, 0.4);
-  }
 
   span {
     display: flex;
@@ -192,7 +194,7 @@ export const MenuButton = styled(motion.button)<{ $isActive?: boolean }>`
     justify-content: center;
 
     font-size: 0.75rem;
-    font-weight: 700;
+    font-weight: 900;
   }
 `;
 
@@ -213,6 +215,7 @@ export const SensorButton = styled(MenuButton)`
 //TODO: move to own debug components file with more components
 export const DebugBlock = styled.div`
   font-family: monospace;
+  font-size-adjust: none;
   font-size: 12px;
   padding: 12px;
   background: rgba(255, 255, 255, 0.04);
@@ -319,9 +322,9 @@ const DividerContainer = styled(FillRow)`
   justify-content: center;
 
   font-size: 0.75rem;
-  letter-spacing: 0.1em;
+  letter-spacing: 10%;
 
-  font-weight: 700;
+  font-weight: 800;
   color: #212121;
   text-transform: uppercase;
   white-space: nowrap;

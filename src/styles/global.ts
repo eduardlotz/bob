@@ -4,39 +4,8 @@ import reset from "styled-reset";
 export const GlobalStyle = createGlobalStyle`
     ${reset}
 
-    @font-face {
-        font-family: "Open Sauce Two";
-        src: url("/fonts/OpenSauceTwo-Regular.woff2") format("woff2");
-        font-weight: 400;
-        font-style: normal;
-    }
-    
-    @font-face {
-        font-family: "Open Sauce Two";
-        src: url("/fonts/OpenSauceTwo-Medium.woff2") format("woff2");
-        font-weight: 500;
-        font-style: normal;
-    }
-    
-    @font-face {
-        font-family: "Open Sauce Two";
-        src: url("/fonts/OpenSauceTwo-SemiBold.woff2") format("woff2");
-        font-weight: 600;
-        font-style: normal;
-    }
-    
-    @font-face {
-        font-family: "Open Sauce Two";
-        src: url("/fonts/OpenSauceTwo-Bold.woff2") format("woff2");
-        font-weight: 700;
-        font-style: normal;
-    }
-    
-    @font-face {
-        font-family: "Open Sauce Two";
-        src: url("/fonts/OpenSauceTwo-Black.woff2") format("woff2");
-        font-weight: 800;
-        font-style: normal;
+    :root {
+        --font-family: "Nunito", Helvetica, Arial, sans-serif;
     }
 
     html {
@@ -44,12 +13,14 @@ export const GlobalStyle = createGlobalStyle`
         background-color: #000000;
     }
 
-    body, root {
+    body, #root {
         background-color: #000000;
     }
     
-    body, root, button, input, textarea, select, p, a {
-        font-family: "Open Sauce Two", Helvetica, Arial, sans-serif;
+    body, #root, button, input, textarea, select, p, a {
+        font-family: var(--font-family);
+        font-size-adjust: 0.53; // fallback font scale adjust
+        line-height: 1.3;
         user-select: none;
         -webkit-user-select: none;
     }

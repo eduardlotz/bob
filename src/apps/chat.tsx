@@ -75,30 +75,6 @@ export const ChatApp = () => {
   );
 };
 
-const Header = styled(FillRow)`
-  flex-direction: column;
-  gap: 0.125rem;
-`;
-
-const AppTitle = styled.p`
-  font-size: 1rem;
-  font-weight: 700;
-  color: #212121;
-  margin: 0;
-`;
-
-const AppInfo = styled.p`
-  font-size: 0.875rem;
-  font-weight: 400;
-  color: #212121;
-  opacity: 0.5;
-  padding: 0.25rem;
-  margin: 0 1rem;
-  text-wrap: balance;
-  text-align: center;
-  line-height: 1.25;
-`;
-
 const MessageContainer = styled(motion.div)`
   display: flex;
   flex-direction: column;
@@ -113,25 +89,22 @@ const MessageContainer = styled(motion.div)`
   background: var(--chat-color);
   color: var(--text-color);
   border-radius: 1.5rem;
-  box-shadow: 0 4px 20px rgba(33, 33, 33, 0.1);
 `;
 
 const TimeTag = styled.div`
   font-size: 0.75rem;
   opacity: 0.75;
-  font-weight: 400;
+  font-weight: 800;
   color: var(--text-color);
   width: 100%;
   text-align: right;
-  /* letter-spacing: -2%; */
 `;
 
 const Text = styled.p`
   line-height: 1.4;
   font-size: 1rem;
-  font-weight: 400;
-  letter-spacing: -2%;
+  font-weight: 600;
+  letter-spacing: -1%;
   color: var(--text-color);
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   white-space: pre-wrap;
 `;

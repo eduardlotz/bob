@@ -269,7 +269,11 @@ export interface SoundSystemState {
   worldEnabled?: boolean;
 }
 
-type PreviewMode = "theme" | ReturnType<typeof getBobItemSlot> | "tapEffect" | "world";
+type PreviewMode =
+  | "theme"
+  | ReturnType<typeof getBobItemSlot>
+  | "tapEffect"
+  | "world";
 
 type QualityMode = "auto" | "low" | "high";
 
@@ -606,7 +610,7 @@ export const initialGameState: GameState = {
     effectsEnabled: true,
     reducedTapMotion: false,
     ditheringEnabled: false,
-    ditheringPixelSize: 2,
+    ditheringPixelSize: 1,
   },
   audioSelections: {
     worldMusicId: "world-jazz",
@@ -721,7 +725,8 @@ export const useCoreStore = create<GameStore>()(
         setGameReady: (gameReady) => set({ isReady: gameReady }),
 
         spendTaps: (amount: number) => {
-          if (!Number.isFinite(amount) || amount <= 0 || get().taps < amount) return false;
+          if (!Number.isFinite(amount) || amount <= 0 || get().taps < amount)
+            return false;
           set((state) => ({ taps: state.taps - amount }));
           return true;
         },
@@ -954,7 +959,9 @@ export const useCoreStore = create<GameStore>()(
                 : {
                     ...b,
                     enabled:
-                      getBobItemSlot(b) === getBobItemSlot(bobItem) ? b.id === bobItemId : b.enabled,
+                      getBobItemSlot(b) === getBobItemSlot(bobItem)
+                        ? b.id === bobItemId
+                        : b.enabled,
                   },
             );
 
@@ -976,7 +983,10 @@ export const useCoreStore = create<GameStore>()(
             // Replace only the selected wear slot; face items can be combined.
             const updatedBobItems = state.bobItems.map((b) => ({
               ...b,
-              enabled: getBobItemSlot(b) === getBobItemSlot(bobItem) ? b.id === bobItemId : b.enabled,
+              enabled:
+                getBobItemSlot(b) === getBobItemSlot(bobItem)
+                  ? b.id === bobItemId
+                  : b.enabled,
             }));
 
             return {

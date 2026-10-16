@@ -6,7 +6,7 @@ interface BlobFormProps {
   formType: BlobFormType;
   parameters: BlobFormParameters;
   blobColor: string;
-  outlineColor: string;
+  outlineColor?: string;
 }
 
 export const BlobForm = React.memo(
@@ -23,7 +23,9 @@ export const BlobForm = React.memo(
               ]}
             />
             <meshToonMaterial color={blobColor} />
-            <Outlines thickness={0.0125} color={outlineColor} screenspace />
+            {outlineColor && (
+              <Outlines thickness={0.0125} color={outlineColor} screenspace />
+            )}
           </mesh>
         );
 
@@ -41,7 +43,9 @@ export const BlobForm = React.memo(
             receiveShadow
           >
             <meshToonMaterial color={blobColor} />
-            <Outlines thickness={0.0125} color={outlineColor} screenspace />
+            {outlineColor && (
+              <Outlines thickness={0.0125} color={outlineColor} screenspace />
+            )}
           </RoundedBox>
         );
 
@@ -51,7 +55,9 @@ export const BlobForm = React.memo(
           <mesh castShadow receiveShadow>
             <sphereGeometry args={[1, 24, 16]} />
             <meshToonMaterial color={blobColor} />
-            <Outlines thickness={0.0125} color={outlineColor} screenspace />
+            {outlineColor && (
+              <Outlines thickness={0.0125} color={outlineColor} screenspace />
+            )}
           </mesh>
         );
     }

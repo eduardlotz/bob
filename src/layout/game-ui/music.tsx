@@ -175,7 +175,7 @@ export const SoundcloudButton = styled.button`
   border-radius: 9999px;
 
   font-weight: 600;
-  font-family: "Open Sauce Two";
+  font-family: var(--font-family);
   font-size: 1rem;
   color: #ffffff;
   text-decoration: none;

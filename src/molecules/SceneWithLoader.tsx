@@ -8,10 +8,7 @@ import { useProgress } from "@react-three/drei";
 import Scene from "@/molecules/Scene";
 import { UILayer } from "@/components/UILayer";
 import { useAppStore, useCoreStore } from "@/store";
-import {
-  initializeSoundSystem,
-  unlockAudioContext,
-} from "@/utils/soundSystem";
+import { initializeSoundSystem, unlockAudioContext } from "@/utils/soundSystem";
 import { Cursor } from "./Cursor";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { SpeakerIcon } from "@/icons/speaker";
@@ -250,11 +247,14 @@ const StartButton = styled(motion.button)`
   align-items: center;
   justify-content: center;
 
-  padding: 1rem 1.75rem;
+  /* padding: 1rem 1.75rem; */
+  padding: 1.15rem;
+
+  height: 48px;
   border-radius: 50px;
 
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 1.15rem;
+  font-weight: 900;
 
   background-color: #fff;
   color: #212121;
