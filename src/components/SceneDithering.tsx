@@ -16,7 +16,7 @@ export const FISHEYE_RENDER_PRIORITY = 2;
 
 // Figma reference: full color, 2px blocks, 3 levels, neutral brightness/contrast.
 const REFERENCE_SETTINGS = {
-  pixelSize: 2,
+  pixelSize: 1,
   levels: 4,
   brightness: 0,
   contrast: 1,

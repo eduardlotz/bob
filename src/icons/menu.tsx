@@ -12,13 +12,13 @@ export const MenuIcon = ({ color }: IconProps) => {
       <path
         d="M5 16L19 16"
         stroke={color ?? "currentColor"}
-        strokeWidth={2}
+        strokeWidth={2.5}
         strokeLinecap="round"
       />
       <path
         d="M5 8L19 8"
         stroke={color ?? "currentColor"}
-        strokeWidth={2}
+        strokeWidth={2.5}
         strokeLinecap="round"
       />
     </svg>

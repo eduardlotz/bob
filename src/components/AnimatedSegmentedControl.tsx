@@ -33,7 +33,9 @@ export function AnimatedSegmentedControl<T extends string>({
   theme = "light",
 }: AnimatedSegmentedControlProps<T>) {
   const reducedMotion = useReducedMotion();
-  const transition = reducedMotion ? { duration: 0 } : { type: "spring" as const, stiffness: 420, damping: 34, mass: 0.55 };
+  const transition = reducedMotion
+    ? { duration: 0 }
+    : { type: "spring" as const, stiffness: 420, damping: 34, mass: 0.55 };
   const activeIndex = useMemo(
     () =>
       Math.max(
@@ -167,11 +169,22 @@ const SegmentedButton = styled(motion.button)<{
       : css`
           min-height: 2.5rem;
         `}
+        span {
+    ${({ $size }) =>
+      $size === "sm"
+        ? css`
+            font-weight: 900;
+          `
+        : css`
+            font-weight: 800;
+          `}
+  }
 `;
 
 const SegmentedLabel = styled.span`
   position: relative;
   z-index: 1;
-  font-weight: 700;
+  /* font-weight: 900; */
+  letter-spacing: -1%;
   line-height: 1;
 `;

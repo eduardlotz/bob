@@ -59,7 +59,8 @@ const MAX_ROTATION_Y = 0.9;
 const MAX_TAP_CAMERA_SHAKE = 0.25;
 const CURSOR_POSITION_FACTOR = 2.5;
 // Match the preferred gaze with the cursor two-thirds down the screen.
-const IDLE_LOOK_DOWN_OFFSET = (2 / 3 - 0.5) * CURSOR_POSITION_FACTOR * MAX_ROTATION_Y;
+const IDLE_LOOK_DOWN_OFFSET =
+  (2 / 3 - 0.5) * CURSOR_POSITION_FACTOR * MAX_ROTATION_Y;
 
 const IDLE_TIMEOUT_MIN = 10000;
 const IDLE_ANIMATION_GAP = 15000;
@@ -204,7 +205,6 @@ export function BlobHead({
     addManualTap,
     tapEffects,
     audioSelections,
-    tapMultiplier,
     getTotalTapMultiplier,
     graphicPreferences,
   } = useCoreStore();
@@ -213,6 +213,7 @@ export function BlobHead({
   const showAutoTapParticles =
     currentRoute === ROUTE_PATHS.HOME && graphicPreferences.effectsEnabled;
   const reducedTapMotion = graphicPreferences.reducedTapMotion;
+  const ditheringEnabled = graphicPreferences.ditheringEnabled;
 
   const activeTheme =
     previewMode === "theme" ? themes.find((t) => t.preview) : currentTheme;
@@ -280,16 +281,17 @@ export function BlobHead({
   } = useViewStore();
 
   const isShopView = currentView === "phone:shop";
-  const restingLookPitch = (isMobile
-    ? -0.5
-    : IDLE_LOOK_DOWN_OFFSET - (showOptions ? 0 : CAMERA_Y_POSITION) * MAX_ROTATION_Y) +
+  const restingLookPitch =
+    (isMobile
+      ? -0.5
+      : IDLE_LOOK_DOWN_OFFSET -
+        (showOptions ? 0 : CAMERA_Y_POSITION) * MAX_ROTATION_Y) +
     (isShopView ? IDLE_LOOK_DOWN_OFFSET : 0);
 
   const shouldFollowCursor =
     viewMode === "fixed" &&
     !isMobile &&
-    (isDefaultView() ||
-      isNavigationView());
+    (isDefaultView() || isNavigationView());
 
   const mousePosition = useCursor({
     condition: () => shouldFollowCursor,
@@ -401,7 +403,12 @@ export function BlobHead({
     // Keep camera motion independent of Bob's gaze and personality animations.
     if (isMobile) {
       handleMobileMovement(
-        clock, delta, showOptions, orientation, acceleration, permissionGranted,
+        clock,
+        delta,
+        showOptions,
+        orientation,
+        acceleration,
+        permissionGranted,
         !isBobIdle,
       );
     } else {
@@ -411,10 +418,12 @@ export function BlobHead({
     if (isBobIdle) {
       applyHeadRotation(restingLookPitch, 0, 0, delta);
       headRef.current.position.x = MathUtils.lerp(
-        headRef.current.position.x, 0, 1 - Math.exp(-4 * delta),
+        headRef.current.position.x,
+        0,
+        1 - Math.exp(-4 * delta),
       );
-      headRef.current.position.y = HEAD_POSITION_Y +
-        Math.sin(clock.getElapsedTime() * 0.5) * 0.1;
+      headRef.current.position.y =
+        HEAD_POSITION_Y + Math.sin(clock.getElapsedTime() * 0.5) * 0.1;
     }
 
     if (idleAnimation !== "none" && idleAnimationRef.current !== "none") {
@@ -426,7 +435,9 @@ export function BlobHead({
       if (idleMotionRef.current) {
         const settle = 1 - Math.exp(-14 * delta);
         idleMotionRef.current.position.y = MathUtils.lerp(
-          idleMotionRef.current.position.y, 0, settle,
+          idleMotionRef.current.position.y,
+          0,
+          settle,
         );
         // Use the shortest rotation back when a tap interrupts a full turn.
         idleMotionRef.current.quaternion.slerp(NEUTRAL_IDLE_ROTATION, settle);
@@ -496,18 +507,29 @@ export function BlobHead({
       } = calculateAcceleratedRotation(acceleration, orientation);
 
       if (followHead) {
-        applyHeadRotation(isShopView ? restingLookPitch : targetRotY, targetRotX, 0, delta);
+        applyHeadRotation(
+          isShopView ? restingLookPitch : targetRotY,
+          targetRotX,
+          0,
+          delta,
+        );
         applyMobileHeadPosition(
-          clock, delta, accelX, accelY, orientGamma, orientBeta,
+          clock,
+          delta,
+          accelX,
+          accelY,
+          orientGamma,
+          orientBeta,
         );
       }
 
       const baseZoom = showOptions
         ? VISIBLE_OPTIONS_CAMERA_ZOOM
         : HIDDEN_OPTIONS_CAMERA_ZOOM;
-      const zoomOffset = !reducedTapMotion && cameraZoomAnimation
-        ? Math.sin(clock.getElapsedTime() * 20) * 0.5
-        : 0;
+      const zoomOffset =
+        !reducedTapMotion && cameraZoomAnimation
+          ? Math.sin(clock.getElapsedTime() * 20) * 0.5
+          : 0;
       const lookDirX = -targetRotX;
       const lookDirY = targetRotY;
       const lookDirZ = targetRotZ;
@@ -671,7 +693,10 @@ export function BlobHead({
 
   const handleIdleAnimation = () => {
     if (idleAnimation === "none" || !idleMotionRef.current) return;
-    const seconds = Math.max(0, (Date.now() - idleAnimationStartRef.current) / 1000);
+    const seconds = Math.max(
+      0,
+      (Date.now() - idleAnimationStartRef.current) / 1000,
+    );
     idleBlinkRef.current = false;
     idleEyeOffsetRef.current = 0;
     sleepRef.current.active = idleAnimation === "sleep";
@@ -688,9 +713,11 @@ export function BlobHead({
 
     if (idleAnimation === "look") {
       // Eyes glance toward the next point just before the body follows.
-      const left = smoothIdleStep((seconds - 0.3) / 0.2) *
+      const left =
+        smoothIdleStep((seconds - 0.3) / 0.2) *
         (1 - smoothIdleStep((seconds - 1.45) / 0.25));
-      const right = smoothIdleStep((seconds - 1.55) / 0.25) *
+      const right =
+        smoothIdleStep((seconds - 1.55) / 0.25) *
         (1 - smoothIdleStep((seconds - 2.95) / 0.3));
       idleEyeOffsetRef.current = -left * 0.035 + right * 0.035;
       idleBlinkRef.current = seconds > 1.5 && seconds < 1.65;
@@ -765,7 +792,11 @@ export function BlobHead({
     const rightPositions = rightEye.geometry.getAttribute("position").array;
     const eyeBlend = 1 - Math.exp(-8 * delta);
     for (let i = 0; i < currentPositions.length; i++) {
-      const position = MathUtils.lerp(currentPositions[i], targetPositions[i], eyeBlend);
+      const position = MathUtils.lerp(
+        currentPositions[i],
+        targetPositions[i],
+        eyeBlend,
+      );
       currentPositions[i] = position;
       rightPositions[i] = position;
     }
@@ -777,20 +808,37 @@ export function BlobHead({
 
     const eyePositionBlend = 1 - Math.exp(-12 * delta);
     leftEye.position.x = MathUtils.lerp(
-      leftEye.position.x, -0.45 + idleEyeOffsetRef.current, eyePositionBlend,
+      leftEye.position.x,
+      -0.45 + idleEyeOffsetRef.current,
+      eyePositionBlend,
     );
     rightEye.position.x = MathUtils.lerp(
-      rightEye.position.x, 0.45 + idleEyeOffsetRef.current, eyePositionBlend,
+      rightEye.position.x,
+      0.45 + idleEyeOffsetRef.current,
+      eyePositionBlend,
     );
-    const closedScale = sleepRef.current.active && idleBlinkRef.current ? 0.55 : 1;
-    leftEye.scale.y = MathUtils.lerp(leftEye.scale.y, closedScale, eyePositionBlend);
-    rightEye.scale.y = MathUtils.lerp(rightEye.scale.y, closedScale, eyePositionBlend);
+    const closedScale =
+      sleepRef.current.active && idleBlinkRef.current ? 0.55 : 1;
+    leftEye.scale.y = MathUtils.lerp(
+      leftEye.scale.y,
+      closedScale,
+      eyePositionBlend,
+    );
+    rightEye.scale.y = MathUtils.lerp(
+      rightEye.scale.y,
+      closedScale,
+      eyePositionBlend,
+    );
 
     const currentLeftY = leftEye.position.y;
     const currentRightY = rightEye.position.y;
     const baseY = 0;
 
-    leftEye.position.y = MathUtils.lerp(currentLeftY, baseY + eyeOffsetY, eyePositionBlend);
+    leftEye.position.y = MathUtils.lerp(
+      currentLeftY,
+      baseY + eyeOffsetY,
+      eyePositionBlend,
+    );
     rightEye.position.y = MathUtils.lerp(
       currentRightY,
       baseY + eyeOffsetY,
@@ -930,9 +978,13 @@ export function BlobHead({
       <BobSleepZs
         sleep={sleepRef}
         head={headRef}
-        height={(blobFormType === "cube"
-          ? (selectedBlobForm.parameters.cubeHeight || 1.75) / 2
-          : selectedBlobForm.parameters.sphereRadius || 1) * 1.2 + 0.65}
+        height={
+          (blobFormType === "cube"
+            ? (selectedBlobForm.parameters.cubeHeight || 1.75) / 2
+            : selectedBlobForm.parameters.sphereRadius || 1) *
+            1.2 +
+          0.65
+        }
         color={THEME_CONFIG.DEFAULT.colors.secondary}
       />
       <RigidBody type="fixed" colliders={false}>
@@ -963,7 +1015,8 @@ export function BlobHead({
               formType={blobFormType}
               parameters={selectedBlobForm.parameters}
               blobColor={blobColor || "#ffffff"}
-              outlineColor={outlineColor || "#000000"}
+              // outlineColor={ditheringEnabled ? outlineColor : undefined}
+              outlineColor={outlineColor}
             />
 
             <group position={calculateEyePosition([0, 0.2, 0.85])}>

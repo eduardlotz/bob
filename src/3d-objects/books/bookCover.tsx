@@ -1,6 +1,6 @@
 import { Book } from "@/store";
 import { useEffect, useRef } from "react";
-import { paintCover } from "./utils";
+import { loadCoverFonts, paintCover } from "./utils";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CoverCanvas
@@ -32,9 +32,12 @@ export function CoverCanvas({ book, w, h, style }: CoverCanvasProps) {
     // Always paint the fallback first — visible immediately
     paintCover(ctx, book, w, h);
 
-    if (!book.isbn) return;
-
     let cancelled = false;
+    let hasJacket = false;
+    void loadCoverFonts(book).then(() => {
+      if (!cancelled && !hasJacket) paintCover(ctx, book, w, h);
+    }).catch(() => { /* Keep the initial fallback if Google Fonts is unavailable. */ });
+
     const img = new Image();
     img.crossOrigin = "anonymous";
 
@@ -42,6 +45,7 @@ export function CoverCanvas({ book, w, h, style }: CoverCanvasProps) {
       if (cancelled) return;
       // OpenLibrary returns a ~1×1 gif when no cover exists — ignore it
       if (img.naturalWidth < 50 || img.naturalHeight < 50) return;
+      hasJacket = true;
 
       const ctx2 = canvas.getContext("2d");
       if (!ctx2) return;
@@ -50,7 +54,7 @@ export function CoverCanvas({ book, w, h, style }: CoverCanvasProps) {
     };
 
     // onerror: network failure or 404 → fallback canvas already painted, no action
-    img.src = `https://covers.openlibrary.org/b/isbn/${book.isbn}-L.jpg`;
+    if (book.isbn) img.src = `https://covers.openlibrary.org/b/isbn/${book.isbn}-L.jpg`;
 
     return () => {
       cancelled = true;

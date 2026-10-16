@@ -11,7 +11,7 @@ export const ChevronLeftIcon = ({ color }: IconProps) => (
     <path
       d="M14.2188 8L10 11.75L14.2188 15.5"
       stroke={color ?? "currentColor"}
-      strokeWidth="2"
+      strokeWidth="2.5"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
@@ -29,7 +29,7 @@ export const ChevronRightIcon = ({ color }: IconProps) => (
     <path
       d="M10 8L14.2188 11.75L10 15.5"
       stroke={color ?? "currentColor"}
-      strokeWidth="2"
+      strokeWidth="2.5"
       strokeLinecap="round"
       strokeLinejoin="round"
     />

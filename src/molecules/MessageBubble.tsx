@@ -174,31 +174,38 @@ export const MessageBubble = memo(function MessageBubble({
 
       const shownLines = shownLinesRef.current;
       // Earlier visible lines have already used part of their reading time.
-      const readingDeadline = state.queue.length && shownLines.length
-        ? Math.max(
-            ...shownLines.map(
-              (line) =>
-                line.time.getTime() +
-                Math.max(MIN_DISMISS_MS, line.text.length * CHAR_READING_MS),
-            ),
-          )
-        : fullyRevealedAt +
-          Math.max(
-            MIN_DISMISS_MS,
-            shownLines.reduce((chars, line) => chars + line.text.length, 0) *
-              CHAR_READING_MS,
-          );
+      const readingDeadline =
+        state.queue.length && shownLines.length
+          ? Math.max(
+              ...shownLines.map(
+                (line) =>
+                  line.time.getTime() +
+                  Math.max(MIN_DISMISS_MS, line.text.length * CHAR_READING_MS),
+              ),
+            )
+          : fullyRevealedAt +
+            Math.max(
+              MIN_DISMISS_MS,
+              shownLines.reduce((chars, line) => chars + line.text.length, 0) *
+                CHAR_READING_MS,
+            );
       const dismissAt = Math.max(
         readingDeadline,
         fullyRevealedAt + MIN_DISMISS_MS,
         current.minimumDisplayUntil + 1000,
       );
-      dismissTimerRef.current = window.setTimeout(() => {
-        const active = useMessageStore.getState().activeMessage;
-        if (active?.config.id === messageId && active.startedAt === startedAt) {
-          void dismissMessage();
-        }
-      }, Math.max(0, dismissAt - Date.now()));
+      dismissTimerRef.current = window.setTimeout(
+        () => {
+          const active = useMessageStore.getState().activeMessage;
+          if (
+            active?.config.id === messageId &&
+            active.startedAt === startedAt
+          ) {
+            void dismissMessage();
+          }
+        },
+        Math.max(0, dismissAt - Date.now()),
+      );
     },
     [dismissMessage],
   );
@@ -344,7 +351,7 @@ export const MessageBubble = memo(function MessageBubble({
               }}
               onClick={handleClick}
             >
-              {activeMessage?.config.label && (
+              {/* {activeMessage?.config.label && (
                 <Label
                   variants={labelVariants}
                   initial="hidden"
@@ -352,7 +359,7 @@ export const MessageBubble = memo(function MessageBubble({
                 >
                   {activeMessage.config.label}
                 </Label>
-              )}
+              )} */}
 
               <BubbleContainer>
                 <AnimatePresence mode="popLayout">
@@ -395,7 +402,7 @@ const Container = styled(motion.div)`
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   pointer-events: auto;
   gap: 4px;
 `;
@@ -413,7 +420,7 @@ const Label = styled(motion.div)`
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 800;
   color: #ffffff;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 `;
@@ -424,11 +431,11 @@ const BubbleContainer = styled.div`
   gap: 4px;
   width: 100%;
   align-items: flex-start;
-  padding: 4px;
+  /* padding: 4px;
   border-radius: 28px;
   background: rgba(33, 33, 33, 0.1);
   backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px); */
 `;
 
 const BubbleLine = styled(motion.div)`
@@ -450,12 +457,9 @@ const BubbleLine = styled(motion.div)`
 `;
 
 const IndicatorBubble = styled(motion.div)`
-  background: rgba(33, 33, 33, 0.15);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--chat-color);
   padding: 12px 16px;
   border-radius: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   display: flex;
   gap: 4px;
   align-items: center;
@@ -468,7 +472,6 @@ const Dot = styled(motion.div)<{ $delay: number }>`
   height: 6px;
   background: var(--text-color);
   border-radius: 50%;
-  opacity: 0.75;
   animation: bounce 1.4s infinite ease-in-out both;
   animation-delay: ${(props) => props.$delay}s;
 
@@ -488,10 +491,9 @@ const TextContainer = styled.div`
   display: block;
   line-height: 1.4;
   font-size: 1rem;
-  font-weight: 400;
-  letter-spacing: -2%;
+  font-weight: 600;
+  letter-spacing: -1%;
   color: var(--text-color);
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   white-space: pre-wrap;
 `;
 
@@ -509,44 +511,34 @@ const Char = styled(motion.span)`
   display: inline-block;
   backface-visibility: hidden;
   will-change: opacity, transform;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 `;
 
 const TimeTag = styled.div`
   font-size: 0.75rem;
   opacity: 0.75;
-  font-weight: 400;
+  font-weight: 800;
   color: var(--text-color);
-  /* letter-spacing: -2%; */
 `;
-
-const labelVariants: Variants = {
-  hidden: { opacity: 0, y: 10 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4, ease: "easeOut" },
-  },
-};
 
 const charVariants: Variants = {
   hidden: {
     opacity: 0,
     y: 8,
     scale: 0.8,
-    rotateX: -15,
+    rotate: -15,
   },
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
     scale: 1,
-    rotateX: 0,
+    rotate: 0,
     transition: {
       delay: i * (TYPING_SPEED_MS / 1000),
       type: "spring",
       damping: 20,
       stiffness: 450,
-      mass: 0.5,
+      // mass: 0.5,
+      mass: 0.2,
     },
   }),
 };

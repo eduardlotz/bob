@@ -47,7 +47,7 @@ export const SmallArrowLeftIcon = ({ color }: IconProps) => (
     <path
       d="M12.8125 8.75H2.5M2.5 8.75L6.71875 5M2.5 8.75L6.71875 12.5"
       stroke={color ?? "currentColor"}
-      strokeWidth={1.875}
+      strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
     />

@@ -6,6 +6,7 @@ import styled from "styled-components";
 import { SmallArrowLeftIcon } from "@/icons/arrow";
 import { useI18n } from "@/i18n";
 import { backToLobbyButtonMessages } from "./BackToLobbyButton.messages";
+import { ChevronLeftIcon } from "@/icons/chevron";
 
 export const BackToLobbyButton = ({ show }: { show: boolean }) => {
   const { finishGame } = useMiniGameStore();
@@ -43,7 +44,7 @@ export const BackToLobbyButton = ({ show }: { show: boolean }) => {
               layout
               style={{ borderRadius: "50px" }}
             >
-              <SmallArrowLeftIcon />
+              <ChevronLeftIcon />
 
               <motion.span
                 initial={{ filter: "blur(6px)", opacity: 0, y: -20 }}
@@ -72,17 +73,19 @@ const TriggerContainer = styled(motion.button)`
   justify-content: center;
   max-height: 2.25rem;
 
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 0.75rem 0.5rem 0.25rem;
   border-radius: 50px;
   background-color: #fff;
   opacity: 1;
 
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 800;
+  line-height: 1.2;
+
   color: #212121;
   margin: 0 auto;
   overflow: clip;
-  gap: 0.5rem;
+  gap: 0.125rem;
 
   span {
     max-height: 1.5rem;

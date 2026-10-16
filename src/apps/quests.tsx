@@ -495,7 +495,8 @@ const QuestName = styled.h5<{ $struck?: boolean }>`
   text-wrap: pretty;
   line-height: 1.1;
   font-size: 1.06rem;
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   color: #1f1f1f;
   text-decoration: ${(p) => (p.$struck ? "line-through" : "none")};
   opacity: ${(p) => (p.$struck ? 0.3 : 1)};

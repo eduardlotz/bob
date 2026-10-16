@@ -12,11 +12,10 @@ const snapToStep = (value: number, min: number, max: number, step: number) => {
   return clamp(Number(next.toFixed(6)), min, max);
 };
 
-export function formatSegmentedSliderValue(
-  value: number,
-  digits = 2,
-): string {
-  return Number(value).toFixed(digits).replace(/\.?0+$/, "");
+export function formatSegmentedSliderValue(value: number, digits = 2): string {
+  return Number(value)
+    .toFixed(digits)
+    .replace(/\.?0+$/, "");
 }
 
 interface SegmentedValueSliderProps {
@@ -123,9 +122,16 @@ export function SegmentedValueSlider({
         aria-valuenow={ariaLabel ? value : undefined}
         onKeyDown={(event) => {
           if (!ariaLabel) return;
-          const next = event.key === "ArrowRight" || event.key === "ArrowUp" ? value + step
-            : event.key === "ArrowLeft" || event.key === "ArrowDown" ? value - step
-            : event.key === "Home" ? min : event.key === "End" ? max : undefined;
+          const next =
+            event.key === "ArrowRight" || event.key === "ArrowUp"
+              ? value + step
+              : event.key === "ArrowLeft" || event.key === "ArrowDown"
+                ? value - step
+                : event.key === "Home"
+                  ? min
+                  : event.key === "End"
+                    ? max
+                    : undefined;
           if (next === undefined) return;
           event.preventDefault();
           commitValue(next);
@@ -248,7 +254,7 @@ const ValuePill = styled.span<{ $tone: "light" | "dark" }>`
   padding: 0.25rem 0.5rem;
   border-radius: 0.75rem;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 800;
   color: ${({ $tone }) => ($tone === "dark" ? "#ffffff" : "#212121")};
   background-color: ${({ $tone }) =>
     $tone === "dark" ? "rgba(255,255,255,0.12)" : "rgba(33, 33, 33, 0.05)"};

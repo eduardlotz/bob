@@ -66,7 +66,6 @@ const GlobalStyle = createGlobalStyle<{ theme: StyledTheme | undefined }>`
       props.theme?.colors?.basic?.black || "#212121"};
     --text-color: ${(props) =>
       props.theme?.colors?.basic?.white || "#ffffff"}; */
-    --font-family: "Open Sauce Two";
       
     --counter-color: ${(props) =>
       props.theme?.colors?.basic?.white || "#ffffff"};
@@ -91,7 +90,7 @@ const GlobalStyle = createGlobalStyle<{ theme: StyledTheme | undefined }>`
   body {
     background-color: var(--background-color);
     color: var(--text-color);
-    font-family: var(--font-family), Aria, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: var(--font-family);
   }
 
   html, body {

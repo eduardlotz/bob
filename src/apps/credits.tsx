@@ -150,10 +150,7 @@ export const CreditsApp = () => {
           Ultimate Bold <b>by Streamline</b> (streamlinehq.com)
         </p>
         <Divider />
-        <p>
-          Open Sauce Two <b>by Alfredo Marco Pradil</b>{" "}
-          (github.com/marcologous/Open-Sauce-Fonts)
-        </p>
+        <p>Nunito (fonts.google.com/specimen/Nunito)</p>
         <p>
           Open Runde <b>by Laurids Kern</b> (github.com/lauridskern/open-runde)
         </p>
@@ -209,12 +206,13 @@ const ListSectionItem = styled(FillColumn)`
 
   h5 {
     font-size: 1rem;
-    font-weight: 600;
+    font-weight: 900;
+    letter-spacing: -0.01em;
   }
 
   p {
     font-size: 0.875rem;
-    font-weight: 400;
+    font-weight: 600;
     line-height: 1.3;
     opacity: 0.7;
     text-decoration: none;

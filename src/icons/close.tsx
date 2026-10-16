@@ -12,7 +12,7 @@ export const CloseIcon = ({ color }: IconProps) => {
       <path
         d="M7 7L17 17M7 17L17 7"
         stroke={color ?? "currentColor"}
-        strokeWidth={2}
+        strokeWidth={2.5}
         strokeLinecap="round"
       />
     </svg>

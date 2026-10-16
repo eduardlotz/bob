@@ -21,9 +21,7 @@ export const DebugApp = () => {
   const viewDebuggerVisible = useCoreStore(
     (state) => state.viewDebuggerVisible,
   );
-  const toggleViewDebugger = useCoreStore(
-    (state) => state.toggleViewDebugger,
-  );
+  const toggleViewDebugger = useCoreStore((state) => state.toggleViewDebugger);
   const statisticsVisible = useCoreStore((state) => state.statisticsVisible);
   const toggleStatistics = useCoreStore((state) => state.toggleStatistics);
   const physicsDebugEnabled = useCoreStore(
@@ -105,7 +103,6 @@ export const DebugApp = () => {
       <SettingsWrapper>
         <HugColumn>
           <h5>Core Data</h5>
-          <Divider />
 
           <ListItemContainer
             $gridTemplateColumns="0.5fr 1fr"
@@ -175,7 +172,6 @@ export const DebugApp = () => {
       <SettingsWrapper>
         <HugColumn>
           <h5>Quests Data</h5>
-          <Divider />
 
           <ListItemContainer
             $gridTemplateColumns="0.5fr 1fr"
@@ -324,7 +320,7 @@ export const DebugApp = () => {
 
       <DividerWithLabel>Danger zone</DividerWithLabel>
 
-      <SettingsWrapper $variant="destructive">
+      {/* <SettingsWrapper $variant="destructive">
         <h5>Reset Quests</h5>
         <ActionButton
           $variant="destructive"
@@ -336,7 +332,7 @@ export const DebugApp = () => {
         >
           Reset
         </ActionButton>
-      </SettingsWrapper>
+      </SettingsWrapper> */}
 
       <SettingsWrapper $variant="destructive">
         <h5>Reset Everything</h5>

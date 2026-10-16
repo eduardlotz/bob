@@ -4,6 +4,13 @@ import * as THREE from "three";
 import { BOOK_GROUP_REF, STACKS } from ".";
 import { BOOK_D } from "./singleBook";
 
+export function loadCoverFonts(book: Book) {
+  return Promise.all([
+    document.fonts.load('900 16px "Nunito"', book.title),
+    document.fonts.load('600 16px "Nunito"', book.author),
+  ]);
+}
+
 export function paintCover(
   ctx: CanvasRenderingContext2D,
   b: Book,
@@ -46,10 +53,14 @@ export function paintCover(
   ctx.textBaseline = "top";
 
   for (let fs = TITLE_MAX; fs >= TITLE_MIN; fs -= 2) {
-    ctx.font = `${fs}px sans-serif`;
+    ctx.font = `900 ${fs}px "Nunito", sans-serif`;
     const lines = wrapText(ctx, b.title, maxW);
     const lineH = fs * 1.25;
-    if (lines.length <= MAX_LINES && lines.length * lineH <= maxTitleH) {
+    if (
+      lines.length <= MAX_LINES &&
+      lines.length * lineH <= maxTitleH &&
+      lines.every((line) => ctx.measureText(line).width <= maxW)
+    ) {
       titleFS = fs;
       titleLines = lines;
       break;
@@ -59,20 +70,20 @@ export function paintCover(
     titleLines = lines.slice(0, MAX_LINES);
   }
 
-  ctx.font = `${titleFS}px sans-serif`;
+  ctx.font = `900 ${titleFS}px "Nunito", sans-serif`;
   ctx.fillStyle = "#1a1a1a";
   const lineH = titleFS * 1.25;
   titleLines.forEach((line, i) =>
-    ctx.fillText(line, textX, panelTop + H * 0.05 + i * lineH),
+    ctx.fillText(line, textX, panelTop + H * 0.05 + i * lineH, maxW),
   );
 
   // ── Author ────────────────────────────────────────────────────────────────
   const authorFS = Math.floor(W * 0.085);
-  ctx.font = `${authorFS}px serif`;
+  ctx.font = `600 ${authorFS}px "Nunito", sans-serif`;
   ctx.fillStyle = "#3a3a3a";
   const authorY =
     panelTop + H * 0.05 + titleLines.length * lineH + authorFS * 0.5;
-  ctx.fillText(b.author, textX, authorY);
+  ctx.fillText(b.author, textX, authorY, maxW);
 }
 
 function wrapText(
@@ -107,6 +118,18 @@ export function getCoverTex(b: Book): THREE.CanvasTexture {
     paintCover(canvas.getContext("2d")!, b, 128, 192);
     const tex = new THREE.CanvasTexture(canvas);
     coverCache.set(b.id, tex);
+    let hasJacket = false;
+
+    // Canvas textures do not repaint automatically when a web font arrives.
+    void loadCoverFonts(b)
+      .then(() => {
+        if (hasJacket) return;
+        paintCover(canvas.getContext("2d")!, b, 128, 192);
+        tex.needsUpdate = true;
+      })
+      .catch(() => {
+        /* Keep the initial fallback if Google Fonts is unavailable. */
+      });
 
     if (b.isbn) {
       const img = new Image();
@@ -115,6 +138,7 @@ export function getCoverTex(b: Book): THREE.CanvasTexture {
         // OpenLibrary serves a tiny placeholder (~1×1) when no cover exists.
         // Keep the fallback canvas if the image is suspiciously small.
         if (img.naturalWidth < 50 || img.naturalHeight < 50) return;
+        hasJacket = true;
         const ctx = canvas.getContext("2d")!;
         ctx.clearRect(0, 0, 128, 192);
         ctx.drawImage(img, 0, 0, 128, 192);

@@ -24,6 +24,9 @@ type Props = Omit<
 export const CharacterBall = forwardRef((props: Props, ref: any) => {
   const currentTheme = useCoreStore((state) => state.currentTheme);
   const bobItems = useCoreStore((state) => state.bobItems);
+  const ditheringEnabled = useCoreStore(
+    (state) => state.graphicPreferences.ditheringEnabled,
+  );
   const { formType, parameters, sizeFactor } = useActiveBobShape();
 
   const blobColor = currentTheme?.blobColor;
@@ -68,7 +71,8 @@ export const CharacterBall = forwardRef((props: Props, ref: any) => {
           formType={formType}
           parameters={parameters}
           blobColor={blobColor || "#ffffff"}
-          outlineColor={outlineColor || "#000000"}
+          // outlineColor={ditheringEnabled ? outlineColor : undefined}
+          outlineColor={outlineColor}
         />
 
         <group

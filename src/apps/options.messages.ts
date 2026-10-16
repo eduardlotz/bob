@@ -3,7 +3,7 @@ import { defineMessages } from "@/i18n/defineMessages";
 export const optionsMessages = defineMessages({
   de: {
     sections: {
-      bobShape: "Bobs Form",
+      bobShape: "Bobs Form (Experimentell)",
       effects: "Effekte",
       audio: "Audio",
     },
@@ -53,7 +53,7 @@ export const optionsMessages = defineMessages({
   },
   en: {
     sections: {
-      bobShape: "Bob shape",
+      bobShape: "Bob shape (experimental)",
       effects: "Effects",
       audio: "Audio",
     },

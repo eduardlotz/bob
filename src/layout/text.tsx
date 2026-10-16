@@ -37,7 +37,7 @@ export const UppercaseText = styled.p`
   font-size: 14px;
   font-style: normal;
   font-weight: 500;
-  line-height: normal;
+  line-height: 1.3;
   letter-spacing: 1.4px;
   text-transform: uppercase;
   margin: 0;

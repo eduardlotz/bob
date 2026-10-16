@@ -14,6 +14,7 @@ import { Magnetic } from "@/layout/Magnetic";
 import { useSocialsStore } from "@/store/socials";
 import { useI18n } from "@/i18n";
 import { viewControlsMessages } from "./ViewControls.messages";
+import { ChevronLeftIcon } from "@/icons/chevron";
 
 export function ViewControls() {
   const {
@@ -114,7 +115,7 @@ export function ViewControls() {
               data-ui-sound-id="ui-tap-close"
               style={{ borderRadius: "50px" }}
             >
-              <SmallArrowLeftIcon />
+              <ChevronLeftIcon />
 
               <span>{viewControlsMessages[locale].backLabel}</span>
             </TriggerContainer>
@@ -174,26 +175,6 @@ const CurrentViewChip = styled(motion.div)`
   z-index: 1000;
 `;
 
-const BackButton = styled(motion.button)`
-  background: #ffffff;
-  color: #121212;
-  border: none;
-  border-radius: 50px;
-  height: 40px;
-  width: 40px;
-  aspect-ratio: 1/1;
-
-  box-shadow: 0 -2px 10px 0 rgba(0, 0, 0, 0.1);
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  svg {
-    height: 14px;
-  }
-`;
-
 const TriggerContainer = styled(motion.button)`
   display: inline-flex;
   width: fit-content;
@@ -202,17 +183,19 @@ const TriggerContainer = styled(motion.button)`
   justify-content: center;
   max-height: 2.25rem;
 
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 0.75rem 0.5rem 0.25rem;
   border-radius: 50px;
   background-color: #fff;
   opacity: 1;
 
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 800;
+  line-height: 1.2;
+
   color: #212121;
   margin: 0 auto;
   overflow: clip;
-  gap: 0.5rem;
+  gap: 0.125rem;
 
   span {
     max-height: 1.5rem;
