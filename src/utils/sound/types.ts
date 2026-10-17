@@ -39,6 +39,11 @@ export interface SoundConfig {
   /** Synthesized UI cues use the package's shared UI output bus. */
   synthesis?: SoundDefinition;
   src?: string | string[];
+  /** Named excerpts in milliseconds, passed to Howler's sprite playback. */
+  sprite?: Record<string, [number, number]>;
+  spriteName?: string;
+  /** Fade to silence before a non-looping recording or excerpt reaches its end. */
+  fadeOutAtEnd?: boolean;
   type: SoundType;
   category?: SoundCategory;
   volume: number;
@@ -82,6 +87,9 @@ export interface SoundInstance {
   config: NormalizedSoundConfig;
   startedAt: number;
   attenuation: number;
+  stopping?: boolean;
+  endFadeTimer?: ReturnType<typeof setTimeout>;
+  stopTimer?: ReturnType<typeof setTimeout>;
 }
 
 export interface SoundSystemState {

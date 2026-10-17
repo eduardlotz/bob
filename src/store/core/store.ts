@@ -45,7 +45,7 @@ import {
   DEFAULT_WORLD_VOLUME,
 } from "@/utils/sound/defaults";
 import { initialWorlds } from "@/shop-items/worlds";
-import { migrateCoreStore } from "./migrations";
+import { migrateCoreStore, normalizeWorlds } from "./migrations";
 import { OrbitForm } from "@/components/FileOrbit";
 
 const ONE_SECOND_MS = 1000;
@@ -69,7 +69,8 @@ export enum GAME_STORE_VERSION {
   V13 = 100108, // merged space world and new hats
   V14 = 100109, // propeller hat, moustache, and crown
   V15 = 100110, // free body shapes in Settings
-  LATEST = V15,
+  V16 = 100111, // world environments and layered soundscapes
+  LATEST = V16,
 }
 
 // TODO: plan refactor to include component inside item properties
@@ -163,6 +164,8 @@ export interface WorldSceneConfig {
   effects: WorldEffectId[];
   starfield?: boolean;
   lighting?: WorldLightingConfig;
+  environment?: import("@/types/worldEnvironment").WorldEnvironmentConfig;
+  audio?: import("@/types/worldEnvironment").WorldAudioConfig;
 }
 
 export interface WorldItem extends BaseItem {
@@ -1767,6 +1770,9 @@ export const useCoreStore = create<GameStore>()(
           return {
             ...currentState,
             ...saved,
+            // Scenery/audio are authored catalogue data, not player-owned state.
+            // Refresh them even when only tuning a config without a save-version bump.
+            worlds: normalizeWorlds(saved?.worlds ?? currentState.worlds),
             graphicPreferences: {
               ...currentState.graphicPreferences,
               ...saved?.graphicPreferences,

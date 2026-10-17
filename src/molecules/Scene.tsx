@@ -1,8 +1,9 @@
+import { NightMaterialFill, Fireplace, StreetLightPools, CityCornerLights } from "@/3d-objects/worlds/NightLighting";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   CameraControls,
   Fisheye,
-  Environment,
+  useEnvironment,
   PerspectiveCamera,
   PerformanceMonitor,
 } from "@react-three/drei";
@@ -16,6 +17,7 @@ import {
   useRef,
   useState,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useCallback,
 } from "react";
@@ -34,7 +36,7 @@ import {
   attachListenerToCamera,
   playWorldSound,
   setSoundMix,
-  stopAllWorldSounds,
+  stopSoundsById,
 } from "@/utils/soundSystem";
 import { PortfolioScene } from "@/routes/PortfolioScene";
 import { AboutScene } from "../routes/AboutScene";
@@ -62,6 +64,9 @@ import { commonUiMessages } from "@/ui/common.messages";
 import { getLocale } from "@/i18n";
 import { PresetsType } from "@react-three/drei/helpers/environment-assets";
 import { FISHEYE_RENDER_PRIORITY, SceneDithering } from "@/components/SceneDithering";
+import { WorldEnvironment, useWorldEnvironment } from "@/3d-objects/worlds/WorldEnvironment";
+import { WorldAudio } from "@/3d-objects/worlds/WorldAudio";
+import type { WorldEnvironmentConfig } from "@/types/worldEnvironment";
 
 const Debug = () => {
   const { width } = useThree((s) => s.size);
@@ -173,15 +178,19 @@ function HomeDirectionalLight({
   rig,
   color,
   intensity,
+  environmentConfig,
 }: {
   rig: HomeSunRig;
   color: Color;
   intensity: number;
+  environmentConfig?: WorldEnvironmentConfig;
 }) {
+  const environment = useWorldEnvironment();
+  const nightColor = useMemo(() => new Color("#91b3e1"), []);
   const lightRef = useRef<THREE.DirectionalLight>(null);
   const targetRef = useRef<THREE.Object3D>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!lightRef.current || !targetRef.current) return;
     lightRef.current.target = targetRef.current;
     const horizontalRadius = Math.cos(rig.elevation) * rig.radius;
@@ -196,12 +205,73 @@ function HomeDirectionalLight({
     targetRef.current.updateMatrixWorld();
   }, [rig]);
 
+  useFrame(() => {
+    const light = lightRef.current;
+    if (!light) return;
+    const { daylight, rain, elapsed } = environment.current;
+    const cycle = environmentConfig?.dayNight;
+    light.intensity = intensity * THREE.MathUtils.lerp(cycle?.nightDirectional ?? 1, 1, daylight) * (1 - rain * .2);
+    light.color.copy(color).lerp(nightColor, cycle ? 1 - daylight : 0);
+    if (cycle) {
+      const phase = elapsed / cycle.durationSeconds * Math.PI * 2;
+      const azimuth = rig.azimuth + phase;
+      const elevation = .3 + Math.abs(Math.cos(phase)) * rig.elevation;
+      const horizontal = Math.cos(elevation) * rig.radius;
+      light.position.set(rig.target[0] + Math.sin(azimuth) * horizontal, rig.target[1] + Math.sin(elevation) * rig.radius, rig.target[2] + Math.cos(azimuth) * horizontal);
+    }
+  }, -5);
+
   return (
     <>
       <object3D ref={targetRef} />
       <directionalLight ref={lightRef} intensity={intensity} color={color} />
     </>
   );
+}
+
+/** useEnvironment owns a shared loader cache. Preview changes must not dispose its textures. */
+function WorldEnvironmentMap({ preset }: { preset: PresetsType }) {
+  const texture = useEnvironment({ preset });
+  const scene = useThree(s => s.scene);
+  useLayoutEffect(() => {
+    scene.environment = texture;
+    return () => { if (scene.environment === texture) scene.environment = null; };
+  }, [scene, texture]);
+  return null;
+}
+
+function WorldAmbientLight({ intensity, color, config }: { intensity: number; color: Color; config?: WorldEnvironmentConfig }) {
+  const ref = useRef<THREE.AmbientLight>(null);
+  const environment = useWorldEnvironment();
+  const nightColor = useMemo(() => new Color("#839ec6"), []);
+  const scene = useThree((s) => s.scene);
+  useLayoutEffect(() => { scene.environmentIntensity = 1; }, [scene, config]);
+  useFrame(() => {
+    const { daylight, rain } = environment.current;
+    const factor = THREE.MathUtils.lerp(config?.dayNight?.nightAmbient ?? 1, 1, daylight) * (1 - rain * .15);
+    if (ref.current) {
+      ref.current.intensity = intensity * factor;
+      ref.current.color.copy(color).lerp(nightColor, config?.dayNight ? 1 - daylight : 0);
+    }
+    scene.environmentIntensity = factor;
+  }, -5);
+  const lastQA = useRef(0);
+  useFrame(({ clock, gl }) => {
+    if (clock.elapsedTime - lastQA.current < .25) return;
+    lastQA.current = clock.elapsedTime;
+    const lights: unknown[] = [];
+    let shader: unknown;
+    scene.traverse(o => {
+      if ((o as THREE.Light).isLight) { const l = o as THREE.Light & { intensity: number }; lights.push({id:l.id,type:l.type, intensity:l.intensity, position:l.position.toArray(), color:l.color.getHexString()}); }
+      const mesh = o as THREE.Mesh;
+      if (!shader && mesh.isMesh && (mesh.material as THREE.MeshToonMaterial)?.isMeshToonMaterial) {
+        const uniforms = gl.properties.get(mesh.material).uniforms;
+        if (uniforms) shader = {ambient:uniforms.ambientLightColor?.value, directional:uniforms.directionalLights?.value};
+      }
+    });
+    window.dispatchEvent(new CustomEvent("qaLights", { detail: { lights, shader, environment:scene.environment?.uuid ?? null, intensity:scene.environmentIntensity } }));
+  }, -2);
+  return <ambientLight ref={ref} intensity={intensity} color={color} />;
 }
 
 const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
@@ -216,6 +286,7 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
     debugLightSettings,
     soundSystem,
     isPaused,
+    isReady,
     graphicPreferences,
   } = useCoreStore();
   const { activeGame } = useMiniGameStore();
@@ -307,8 +378,6 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
     !isPaused;
 
   useEffect(() => {
-    stopAllWorldSounds();
-
     if (!canPlayRouteMusic || !worldMusicId) {
       activeRouteMusicRef.current = null;
       return;
@@ -332,7 +401,8 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
     return () => {
       if (activeRouteMusicRef.current === worldMusicId)
         activeRouteMusicRef.current = null;
-      stopAllWorldSounds();
+      stopSoundsById(worldMusicId);
+      if (isFlappyGame) stopSoundsById(DEFAULT_PINK_NOISE.id);
       if (isFlappyGame) {
         setSoundMix(DEFAULT_WORLD_MUSIC.id);
         setSoundMix(DEFAULT_PINK_NOISE.id);
@@ -354,6 +424,8 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
     <>
       <FullScreenCanvas>
         <AudioListenerBinder />
+        <WorldEnvironment config={isHome ? sceneWorld?.scene.environment : undefined}>
+        {isHome && <WorldAudio config={sceneWorld?.scene.audio} authorized={isReady} />}
         <Fisheye zoom={FISHEYE_CONFIG.MIN} renderPriority={FISHEYE_RENDER_PRIORITY}>
           <CursorFollowCamera />
           <CameraControls
@@ -361,16 +433,25 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
             truckSpeed={debugCameraSettings.truckSpeed}
             azimuthRotateSpeed={debugCameraSettings.azimuthRotateSpeed}
           />
-          <ambientLight
+          <WorldAmbientLight
+            key={`ambient:${isHome ? sceneWorld?.id : currentRoute}`}
             intensity={resolvedAmbientIntensity}
             color={worldLightColors.ambientColor}
+            config={isHome ? sceneWorld?.scene.environment : undefined}
           />
+          {isHome && sceneWorld?.scene.environment?.nightLight && <>
+            {sceneWorld.scene.environment.nightLight !== "street" && <NightMaterialFill key={sceneWorld.id} kind={sceneWorld.scene.environment.nightLight} />}
+            {sceneWorld.scene.environment.nightLight === "fire" && <Fireplace />}
+            {sceneWorld.scene.environment.nightLight === "street" && <><StreetLightPools /><CityCornerLights /></>}
+          </>}
           <PerspectiveCamera makeDefault position={[0, 0, 3]} />
           {isHome ? (
             <HomeDirectionalLight
+              key={sceneWorld?.id}
               rig={homeSunRig}
               intensity={resolvedDirectionalIntensity}
               color={worldLightColors.directionalColor}
+              environmentConfig={sceneWorld?.scene.environment}
             />
           ) : (
             <directionalLight
@@ -383,7 +464,7 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
             />
           )}
           <Suspense fallback={null}>
-            {envLightPreset && <Environment preset={envLightPreset} />}
+            {envLightPreset && <WorldEnvironmentMap key={`${sceneWorld?.id}:${envLightPreset}`} preset={envLightPreset} />}
           </Suspense>
           {showBackground && <BackgroundPlanet />}
           {statisticsVisible && <Debug />}
@@ -434,6 +515,7 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
           </Physics>
         </Fisheye>
         {graphicPreferences.ditheringEnabled && <SceneDithering />}
+        </WorldEnvironment>
       </FullScreenCanvas>
     </>
   );

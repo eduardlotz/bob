@@ -169,40 +169,8 @@ export function SnowEffect({ enabled = true }: { enabled?: boolean } = {}) {
   return <WeatherParticles kind="snow" enabled={enabled} />;
 }
 
-function useLoopingWeatherWindow(activeMs: number, inactiveMs: number) {
-  const [enabled, setEnabled] = React.useState(true);
-
-  useEffect(() => {
-    let timeoutId: number | undefined;
-    let cancelled = false;
-
-    const schedule = (nextEnabled: boolean, delay: number) => {
-      timeoutId = window.setTimeout(() => {
-        if (cancelled) return;
-
-        setEnabled(nextEnabled);
-        schedule(!nextEnabled, nextEnabled ? activeMs : inactiveMs);
-      }, delay);
-    };
-
-    setEnabled(true);
-    schedule(false, activeMs);
-
-    return () => {
-      cancelled = true;
-      if (timeoutId !== undefined) {
-        window.clearTimeout(timeoutId);
-      }
-    };
-  }, [activeMs, inactiveMs]);
-
-  return enabled;
-}
-
 export function ForestRainEffect() {
-  const raining = useLoopingWeatherWindow(9000, 6000);
-
-  return <RainEffect enabled={raining} />;
+  return <WeatherParticles kind="rain" environmentRain />;
 }
 
 const generateClouds = (count: number): CloudData[] => {
