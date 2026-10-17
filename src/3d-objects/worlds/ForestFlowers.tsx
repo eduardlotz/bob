@@ -3,6 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import * as T from "three";
 import { assemble, type Part } from "./InstancedModels";
 import { seededRandom, useWorldQuality } from "./quality";
+import { useWorldEnvironment } from "./WorldEnvironment";
 
 function flowerGeometry(color: string, form: 0 | 1) {
   const parts: Part[] = [
@@ -30,14 +31,15 @@ function FlowerBand({ palette, form, count, radius, rootOffset }: {
   palette: 0 | 1; form: 0 | 1; count: number; radius: number; rootOffset: number;
 }) {
   const mesh = useRef<T.InstancedMesh>(null);
+  const environment = useWorldEnvironment();
   const geometry = useMemo(() => flowerGeometry(palette === 0 ? "#e74736" : "#f4cc38", form), [palette, form]);
   const material = useMemo(() => new T.ShaderMaterial({
     vertexColors: true,
     side: T.DoubleSide,
     fog: true,
-    uniforms: T.UniformsUtils.merge([T.UniformsLib.fog, { uTime: { value: 0 } }]),
+    uniforms: T.UniformsUtils.merge([T.UniformsLib.fog, { uTime: { value: 0 }, uDaylight: { value: 1 }, uWind: { value: .35 } }]),
     vertexShader: `
-      uniform float uTime;
+      uniform float uTime, uWind;
       #include <fog_pars_vertex>
       varying vec3 vColor;
       varying float vLight;
@@ -48,8 +50,8 @@ function FlowerBand({ palette, form, count, radius, rootOffset }: {
         vec4 world = modelMatrix * instanceMatrix * vec4(position, 1.0);
         float gust = sin(root.x * 0.32 + root.z * 0.2 - uTime * 1.1);
         float ripple = sin(root.x * 1.5 - root.z * 0.7 + uTime * 2.7 + seed * 2.0);
-        world.x += (0.12 + gust * 0.18 + ripple * 0.035) * h * h;
-        world.z += sin(root.z * 0.28 + uTime * 0.85) * 0.09 * h * h;
+        world.x += (0.12 + gust * 0.18 + ripple * 0.035) * h * h * uWind;
+        world.z += sin(root.z * 0.28 + uTime * 0.85) * 0.09 * h * h * uWind;
         vColor = color;
         float light = dot(normalize(mat3(modelMatrix * instanceMatrix) * normal), normalize(vec3(0.4,1.0,0.6)));
         vLight = light > 0.5 ? 1.0 : light > -0.15 ? 0.82 : 0.64;
@@ -61,8 +63,9 @@ function FlowerBand({ palette, form, count, radius, rootOffset }: {
       #include <fog_pars_fragment>
       varying vec3 vColor;
       varying float vLight;
+      uniform float uDaylight;
       void main() {
-        gl_FragColor = vec4(vColor * vLight, 1.0);
+        gl_FragColor = vec4(vColor * vLight * mix(vec3(.2,.28,.43),vec3(1.0),uDaylight), 1.0);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
         #include <fog_fragment>
@@ -88,7 +91,11 @@ function FlowerBand({ palette, form, count, radius, rootOffset }: {
     mesh.current.instanceMatrix.needsUpdate = true;
     mesh.current.boundingSphere = new T.Sphere(new T.Vector3(), outer + 3);
   }, [count, palette, form, radius, rootOffset]);
-  useFrame(({ clock }) => { material.uniforms.uTime.value = clock.elapsedTime; });
+  useFrame(() => {
+    material.uniforms.uTime.value = environment.current.elapsed;
+    material.uniforms.uDaylight.value = environment.current.daylight;
+    material.uniforms.uWind.value = environment.current.wind;
+  });
   return <instancedMesh key={count} ref={mesh} name={`forest-flowers-${palette}-${form}`} args={[geometry, material, count]} />;
 }
 

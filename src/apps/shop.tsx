@@ -66,9 +66,9 @@ export function ShopApp() {
   const { currentView, transitionToView } = useViewStore();
 
   const shopViewsWithItems: Record<ShopTab, ShopItem[]> = {
-    bob: bobItems.filter((b) => b.unlocked !== false),
-    effects: tapEffects,
-    worlds,
+    bob: bobItems.filter((b) => b.unlocked !== false).sort((a, b) => a.cost - b.cost),
+    effects: [...tapEffects].sort((a, b) => a.cost - b.cost),
+    worlds: [...worlds].sort((a, b) => a.cost - b.cost),
   };
 
   const { data, page, pageCount, prev, next, hasNext, hasPrev, goTo } =

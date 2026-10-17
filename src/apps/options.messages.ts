@@ -5,6 +5,7 @@ export const optionsMessages = defineMessages({
     sections: {
       bobShape: "Bobs Form (Experimentell)",
       effects: "Effekte",
+      filter: "Filter",
       audio: "Audio",
     },
     bobShape: {
@@ -32,6 +33,10 @@ export const optionsMessages = defineMessages({
       tapAnimationDescription:
         "Auto-Taps werden weiterhin gesammelt, auch ohne Animation",
       tapParticles: "Tap-Partikel",
+      fisheye: "Fisheye",
+      sceneFilter: "Bildfilter",
+      filterNone: "Keiner",
+      pixelation: "Pixel",
       dithering: "Dithering",
       ditheringDescription: "Retro-Pixellook für die 3D-Welt",
       ditheringPixelSize: "Pixelgröße",
@@ -55,6 +60,7 @@ export const optionsMessages = defineMessages({
     sections: {
       bobShape: "Bob shape (experimental)",
       effects: "Effects",
+      filter: "Filter",
       audio: "Audio",
     },
     bobShape: {
@@ -82,6 +88,10 @@ export const optionsMessages = defineMessages({
       tapAnimationDescription:
         "Auto-taps are still collected, even without animation",
       tapParticles: "Tap Particles",
+      fisheye: "Fisheye",
+      sceneFilter: "Image filter",
+      filterNone: "None",
+      pixelation: "Pixel",
       dithering: "Dithering",
       ditheringDescription: "Retro pixel look for the 3D world",
       ditheringPixelSize: "Pixel size",

@@ -9,6 +9,7 @@ import {
 } from "./InstancedModels";
 import { seededRandom, useWorldQuality } from "./quality";
 import { WorldToonMaterial } from "./WorldToonMaterial";
+import { StylizedBushes, StylizedTrees } from "./StylizedVegetation";
 
 function ringPlacements(
   count: number,
@@ -166,6 +167,7 @@ function Bushes({ snow = false }: { snow?: boolean }) {
 
 export function ForestModels() {
   const quality = useWorldQuality();
+  const bushes = useMemo(() => ringPlacements(quality === "low" ? 12 : 22, 622, 6.8, 10, .85), [quality]);
   const trees = useMemo(
     () => ringPlacements(quality === "low" ? 28 : 48, 41, 10, 13, 1.65),
     [quality],
@@ -176,13 +178,8 @@ export function ForestModels() {
   );
   return (
     <>
-      <Bushes />
-      <ModelInstances
-        toon
-        name="forest-trees"
-        build={treeGeometry}
-        placements={trees}
-      />
+      <StylizedBushes placements={bushes} />
+      <StylizedTrees placements={trees} />
       <ModelInstances
         toon
         name="forest-rocks"

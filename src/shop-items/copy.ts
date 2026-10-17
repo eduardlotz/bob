@@ -32,6 +32,12 @@ export const getShopItemCopy = (
 };
 
 const getBobItemCopyMap = {
+  topHat: true,
+  toonSunglasses: true,
+  dimmadomeHat: true,
+  clownNose: true,
+  rainbowAfro: true,
+
   builderHelmet: true,
   krustyKrabHat: true,
   afroHair: true,
@@ -46,6 +52,11 @@ const getBobItemCopyMap = {
 } as const;
 
 const getTapEffectCopyMap = {
+  tap_effect_comic: true,
+  tap_effect_flowers: true,
+  tap_effect_ducks: true,
+  tap_effect_electric: true,
+
   tap_effect_default: true,
   tap_effect_confetti: true,
   tap_effect_smoke: true,
@@ -68,5 +79,7 @@ const getWorldCopyMap = {
   world_city: true,
   world_desert: true,
   world_winter: true,
+  world_island: true,
+  world_underwater: true,
   world_space: true,
 } as const;

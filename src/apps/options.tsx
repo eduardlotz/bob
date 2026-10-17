@@ -1,6 +1,7 @@
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { BlobFormCustomization } from "@/components/BlobFormCustomization";
 import { SegmentedValueSlider } from "@/components/SegmentedValueSlider";
+import { AnimatedSegmentedControl } from "@/components/AnimatedSegmentedControl";
 import { LocaleSegmentedControl } from "@/components/LocaleSegmentedControl";
 import { FillColumn, FillRow } from "@/layout";
 import { DividerWithLabel, RowLabel } from "@/layout/atoms";
@@ -55,16 +56,12 @@ export function OptionsApp() {
   const toggleParticleEffects = useCoreStore(
     (state) => state.toggleParticleEffects,
   );
-  const ditheringEnabled = useCoreStore(
-    (state) => state.graphicPreferences.ditheringEnabled,
-  );
-  const toggleDithering = useCoreStore((state) => state.toggleDithering);
-  const ditheringPixelSize = useCoreStore(
-    (state) => state.graphicPreferences.ditheringPixelSize,
-  );
-  const setDitheringPixelSize = useCoreStore(
-    (state) => state.setDitheringPixelSize,
-  );
+  const { sceneFilter, fisheyeEnabled, ditheringPixelSize, pixelationPixelSize } =
+    useCoreStore((state) => state.graphicPreferences);
+  const setSceneFilter = useCoreStore((state) => state.setSceneFilter);
+  const toggleFisheye = useCoreStore((state) => state.toggleFisheye);
+  const setDitheringPixelSize = useCoreStore((state) => state.setDitheringPixelSize);
+  const setPixelationPixelSize = useCoreStore((state) => state.setPixelationPixelSize);
 
   const { transitionToView } = useViewStore();
 
@@ -189,44 +186,34 @@ export function OptionsApp() {
           </ToggleButton>
         </PreferenceRow>
 
-        {/* DITHERING // SPECIAL EFFECTS */}
-
+        <DividerWithLabel>{messages.options.sections.filter}</DividerWithLabel>
         <PreferenceRow $align="center" $justify="space-between" $gap="1rem">
-          <FillColumn
-            $align="flex-start"
-            $justify="center"
-            $gap="0.4rem"
-            style={{ flex: 1 }}
-          >
-            <RowLabel>{messages.options.audio.dithering}</RowLabel>
-            <PreferenceText id="dithering-description">
-              {messages.options.audio.ditheringDescription}
-            </PreferenceText>
-          </FillColumn>
-          <ToggleButton
-            role="switch"
-            aria-checked={ditheringEnabled}
-            aria-describedby="dithering-description"
-            aria-label={messages.options.audio.dithering}
-            $active={ditheringEnabled}
-            onClick={toggleDithering}
-          >
+          <RowLabel>{messages.options.audio.fisheye}</RowLabel>
+          <ToggleButton role="switch" aria-checked={fisheyeEnabled}
+            aria-label={messages.options.audio.fisheye}
+            $active={fisheyeEnabled} onClick={toggleFisheye}>
             <span />
           </ToggleButton>
         </PreferenceRow>
-
-        {ditheringEnabled && (
+        <VolumeRow>
+          <RowLabel>{messages.options.audio.sceneFilter}</RowLabel>
+          <AnimatedSegmentedControl
+            value={sceneFilter} onChange={setSceneFilter}
+            options={[
+              { value: "none", label: messages.options.audio.filterNone },
+              { value: "dither", label: messages.options.audio.dithering },
+              { value: "pixel", label: messages.options.audio.pixelation },
+            ]} />
+        </VolumeRow>
+        {sceneFilter !== "none" && (
           <VolumeRow>
             <RowLabel>{messages.options.audio.ditheringPixelSize}</RowLabel>
             <SegmentedValueSlider
-              value={ditheringPixelSize}
-              min={1}
-              max={4}
-              step={1}
-              onChange={setDitheringPixelSize}
+              value={sceneFilter === "dither" ? ditheringPixelSize : pixelationPixelSize}
+              min={sceneFilter === "dither" ? 1 : 2} max={sceneFilter === "dither" ? 4 : 16} step={sceneFilter === "dither" ? 1 : 2}
+              onChange={sceneFilter === "dither" ? setDitheringPixelSize : setPixelationPixelSize}
               formatValue={(value) => `${value}px`}
-              ariaLabel={messages.options.audio.ditheringPixelSize}
-            />
+              ariaLabel={messages.options.audio.ditheringPixelSize} />
           </VolumeRow>
         )}
 

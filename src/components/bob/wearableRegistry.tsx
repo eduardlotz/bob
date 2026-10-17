@@ -1,3 +1,4 @@
+import { ToonWardrobe, type WardrobeKind } from "@/3d-objects/models/toonWardrobe";
 import type { ComponentProps, ComponentType } from "react";
 import type { BlobFormType } from "@/types/blobForms";
 import { KrustyKrabHat } from "@/3d-objects/models/krustyKrabHat";
@@ -26,12 +27,19 @@ export interface WearableDefinition {
   /** Asset units/pivot/orientation, calibrated only once on the default Ball. */
   calibration: { position: Vec3; scale: Vec3; rotation?: Vec3 };
   mount: WearableMount;
+  /** Shift the whole Bob, including body and face, while this item is attached. */
+  bobOffset?: Vec3;
   /** Preserve models that use their own outline color. Defaults to true. */
   useThemeOutline?: boolean;
 }
 
 const toonHat = (kind: ComponentProps<typeof ToonHat>["kind"]): ComponentType<ModelProps> =>
   function HatModel(props) { return <ToonHat {...props} kind={kind} />; };
+
+const wardrobe = (kind: WardrobeKind): ComponentType<ModelProps> =>
+  function WardrobeModel(props) { return <ToonWardrobe {...props} kind={kind} />; };
+
+const RainbowAfro: ComponentType<ModelProps> = (props) => <AfroHair {...props} rainbow />;
 
 const Moustache: ComponentType<ModelProps> = ({ formType, ...props }) =>
   <BobMoustache {...props} curved={formType === "sphere"} />;
@@ -42,6 +50,32 @@ const Moustache: ComponentType<ModelProps> = ({ formType, ...props }) =>
  * Decorations are deliberately absent: this catalogue contains wearables only.
  */
 export const BOB_WEARABLES: Readonly<Record<string, WearableDefinition>> = {
+  topHat: {
+    Model: wardrobe("topHat"),
+    calibration: { position: [0, 0.78, 0], scale: [1, 1, 1] },
+    mount: { kind: "crown", bottom: 0.73 },
+  },
+  dimmadomeHat: {
+    Model: wardrobe("dimmadomeHat"),
+    calibration: { position: [0, 0.78, 0], scale: [1, 1, 1] },
+    mount: { kind: "crown", bottom: 0.735 },
+  },
+  toonSunglasses: {
+    Model: wardrobe("toonSunglasses"),
+    calibration: { position: [0, 0, 0], scale: [1, 1, 1] },
+    mount: { kind: "eyes", front: 1.14, compactForward: 0.04, compactScale: 0.95 },
+  },
+  clownNose: {
+    Model: wardrobe("clownNose"),
+    calibration: { position: [0, 0, 0], scale: [1, 1, 1] },
+    mount: { kind: "face", eyeOffset: -0.23, clearance: 0.04 },
+  },
+  rainbowAfro: {
+    Model: RainbowAfro,
+    useThemeOutline: false,
+    calibration: { position: [0, -0.7, -0.05], scale: [0.9, 0.9, 0.9], rotation: [Math.PI * 0.075, 0, 0] },
+    mount: { kind: "hair" },
+  },
   builderHelmet: {
     Model: BuilderHelmet,
     useThemeOutline: false,
@@ -102,6 +136,7 @@ export const BOB_WEARABLES: Readonly<Record<string, WearableDefinition>> = {
   },
   astronautHelmet: {
     Model: AstronautHelmet,
+    bobOffset: [0, 0.18, 0],
     calibration: { position: [0, 0, 0], scale: [1, 1, 1] },
     mount: { kind: "body" },
   },

@@ -1,10 +1,8 @@
 import * as THREE from "three";
-import React, { useEffect, useRef } from "react";
-import { Outlines, useGLTF, Wireframe } from "@react-three/drei";
+import React, { useEffect, useMemo, useRef } from "react";
+import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
-import { useCoreStore } from "@/store";
-import { previewMaterialProps } from "@/shop-items/utils";
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -23,18 +21,37 @@ interface Props {
   scale?: [number, number, number];
   outlineColor?: string;
   preview: boolean;
+  rainbow?: boolean;
 }
 
 export const AfroHair = ({
   scale = [1, 1, 1],
-  outlineColor = "#4a1919",
+  rainbow = false,
+  outlineColor: _outlineColor,
   ...props
 }: Props) => {
   const group = useRef<THREE.Group>(null!);
-  const { nodes, materials } = useGLTF(PATH) as GLTFResult;
+  const { nodes, materials } = useGLTF(PATH) as unknown as GLTFResult;
 
-  materials["hair"].transparent = props.preview;
-  materials["hair"].opacity = props.preview ? 0.25 : 1;
+  const material = useMemo(() => {
+    const cloned = materials.hair.clone();
+    if (rainbow) {
+      const canvas = document.createElement("canvas");
+      canvas.width = 256; canvas.height = 32;
+      const context = canvas.getContext("2d")!;
+      const gradient = context.createLinearGradient(0, 0, 256, 0);
+      ["#f34556", "#ff963c", "#ffe34b", "#58c569", "#4396ef", "#a664e6", "#f34556"].forEach((color, i) => gradient.addColorStop(i / 6, color));
+      context.fillStyle = gradient; context.fillRect(0, 0, 256, 32);
+      cloned.map = new THREE.CanvasTexture(canvas);
+      cloned.map.colorSpace = THREE.SRGBColorSpace;
+      cloned.map.flipY = false;
+      cloned.color.set("#ffffff");
+    }
+    return cloned;
+  }, [materials.hair, rainbow]);
+  material.transparent = props.preview;
+  material.opacity = props.preview ? 0.25 : 1;
+  useEffect(() => () => { if (rainbow) material.map?.dispose(); material.dispose(); }, [material, rainbow]);
 
   const [spring, api] = useSpring(() => ({
     scale: [0, 0, 0], // start invisible
@@ -62,21 +79,11 @@ export const AfroHair = ({
         castShadow
         receiveShadow
         geometry={nodes.Sphere004.geometry}
-        material={materials.hair}
+        material={material}
         position={[0, 1.406, -0.603]}
         rotation={[0.294, 0, 0]}
         scale={[1.34, 0.966, 1.262]}
       >
-        {/* {props.preview && (
-          <Wireframe simplify thickness={0.04} backfaceStroke={outlineColor} />
-        )} */}
-
-        <Outlines
-          thickness={0.02}
-          color={outlineColor}
-          screenspace
-          {...(props.preview ? previewMaterialProps : {})}
-        />
       </mesh>
     </a.group>
   );

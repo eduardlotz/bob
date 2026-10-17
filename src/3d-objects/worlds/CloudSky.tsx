@@ -3,6 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import * as T from "three";
 import { assemble, type Part } from "./InstancedModels";
 import { seededRandom, useWorldQuality } from "./quality";
+import { useWorldEnvironment } from "./WorldEnvironment";
 
 export type CloudClimate = "forest" | "city" | "desert" | "winter";
 const climates = {
@@ -90,11 +91,20 @@ export function CloudSky({
   climate,
   colors,
   stops,
+  nightColors,
+  cycleSeconds,
 }: {
   climate: CloudClimate;
   colors: [string, string, string];
   stops: [number, number, number];
+  nightColors?: [string, string, string];
+  cycleSeconds?: number;
 }) {
+  const environment = useWorldEnvironment();
+  const skyPalette = useMemo(() => colors.map((c) => new T.Color(c)), [colors]);
+  const nightPalette = useMemo(() => nightColors?.map((c) => new T.Color(c)), [nightColors]);
+  const cloudTint = useRef<T.MeshBasicMaterial>(null);
+  const nightTint = useMemo(() => new T.Color("#34465f"), []);
   const quality = useWorldQuality();
   const low = quality === "low";
   const config = climates[climate];
@@ -115,6 +125,10 @@ export function CloudSky({
       uCloud: { value: new T.Color() },
       uShade: { value: new T.Color() },
       uCoverage: { value: 0 },
+      uSunDirection: { value: new T.Vector3(-.55, .95, -.8).normalize() },
+      uMoonDirection: { value: new T.Vector3(.55, -.65, -.8).normalize() },
+      uSunVisibility: { value: 0 },
+      uMoonVisibility: { value: 0 },
     }),
     [mask],
   );
@@ -169,6 +183,24 @@ export function CloudSky({
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
     if (skyMaterial.current) skyMaterial.current.uniforms.uTime.value = t;
+    if (skyMaterial.current && nightPalette) {
+      const night = 1 - environment.current.daylight;
+      const u = skyMaterial.current.uniforms;
+      [u.uTop, u.uMiddle, u.uBottom].forEach((uniform, i) => {
+        uniform.value.copy(skyPalette[i]).lerp(nightPalette[i], night).multiplyScalar(1 - environment.current.rain * .22);
+      });
+      u.uCloud.value.set(config.color).lerp(nightTint, night).multiplyScalar(1 - environment.current.rain * .25);
+      u.uShade.value.set(config.shade).lerp(nightTint, night);
+      if (cloudTint.current) cloudTint.current.color.setRGB(1, 1, 1).lerp(nightTint, night).multiplyScalar(1 - environment.current.rain * .3);
+      if (cycleSeconds) {
+        const phase = environment.current.elapsed / cycleSeconds * Math.PI * 2;
+        const shift = Math.sin(phase) * .45;
+        u.uSunDirection.value.set(-.55 + shift, Math.cos(phase) * .95, -.8).normalize();
+        u.uMoonDirection.value.set(.55 - shift, -Math.cos(phase) * .65, -.8).normalize();
+        u.uSunVisibility.value = environment.current.daylight * (1 - environment.current.rain * .65);
+        u.uMoonVisibility.value = night * (1 - environment.current.rain * .4);
+      }
+    }
     if (group.current) {
       group.current.rotation.y = Math.sin(t * 0.012) * 0.08;
       group.current.position.x = Math.sin(t * 0.025) * 1.8;
@@ -184,13 +216,16 @@ export function CloudSky({
           side={T.BackSide}
           depthTest={false}
           depthWrite={false}
-          vertexShader={`varying vec2 vUv;
-          void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`}
+          vertexShader={`varying vec2 vUv; varying vec3 vSkyDirection;
+          void main() { vUv = uv; vSkyDirection = mat3(modelMatrix) * position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`}
           fragmentShader={`
           uniform sampler2D uMask;
           uniform float uTime, uCoverage;
           uniform vec3 uTop, uMiddle, uBottom, uCloud, uShade, uStops;
+          uniform vec3 uSunDirection, uMoonDirection;
+          uniform float uSunVisibility, uMoonVisibility;
           varying vec2 vUv;
+          varying vec3 vSkyDirection;
           void main() {
             float y = 1.0 - vUv.y;
             vec3 sky = mix(uTop, uMiddle, clamp((y-uStops.x)/(uStops.y-uStops.x),0.0,1.0));
@@ -200,7 +235,14 @@ export function CloudSky({
             float height = smoothstep(0.51, 0.62, vUv.y) * (1.0-smoothstep(0.9,1.0,vUv.y));
             float cover = smoothstep(uCoverage, uCoverage+0.65, mask) * height * 0.26;
             vec3 cloud = mix(uShade, uCloud, smoothstep(0.2, 0.8, mask));
-            gl_FragColor = vec4(mix(sky, cloud, cover), 1.0);
+            sky = mix(sky, cloud, cover);
+            vec3 direction = normalize(vSkyDirection);
+            // Angular discs live on the sky sphere and are identical in every cube face.
+            float sun = smoothstep(cos(.052),cos(.048),dot(direction,uSunDirection)) * uSunVisibility;
+            float moon = smoothstep(cos(.046),cos(.042),dot(direction,uMoonDirection)) * uMoonVisibility;
+            sky = mix(sky,vec3(1.0,.8,.49),sun);
+            sky = mix(sky,vec3(.78,.86,1.0),moon);
+            gl_FragColor = vec4(sky, 1.0);
             #include <tonemapping_fragment>
             #include <colorspace_fragment>
           }`}
@@ -213,7 +255,7 @@ export function CloudSky({
           ref={clouds}
           args={[geometry, undefined, count]}
         >
-          <meshBasicMaterial vertexColors />
+          <meshBasicMaterial ref={cloudTint} vertexColors />
         </instancedMesh>
       </group>
     </>

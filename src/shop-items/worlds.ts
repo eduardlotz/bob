@@ -1,4 +1,5 @@
 import type { WorldItem } from "@/store";
+import { WORLD_DAY_SECONDS } from "@/types/worldEnvironment";
 
 const DEFAULT_WORLD_LIGHTING = {
   ambientIntensity: 2,
@@ -24,6 +25,7 @@ export const initialWorlds: WorldItem[] = [
       models: ["default_home"],
       effects: ["default_grid"],
       lighting: DEFAULT_WORLD_LIGHTING,
+      audio: { layers: [] },
     },
   },
   {
@@ -44,6 +46,23 @@ export const initialWorlds: WorldItem[] = [
       models: ["forest_grove", "forest_meadow"],
       effects: ["forest_fireflies", "forest_rain"],
       lighting: DEFAULT_WORLD_LIGHTING,
+      environment: {
+        dayNight: { durationSeconds: WORLD_DAY_SECONDS, nightSky: ["#101c34", "#26384d", "#233e36"], nightAmbient: 0.22, nightDirectional: 0.16 },
+        nightLight: "fire",
+        rain: { drySeconds: 90, wetSeconds: 45, transitionSeconds: 12 },
+      },
+      audio: { layers: [
+        { soundId: "ambience-rain", mode: "loop", volume: 0.35, condition: "rain" },
+        { soundId: "ambience-bird", mode: "random", volume: 0.075, intervalSeconds: [6, 16], condition: "day", accentFade: { inSeconds: 1, outSeconds: 1 },
+          excerpts: [
+            { startSeconds: 4.5, durationSeconds: 10 },
+            { startSeconds: 14, durationSeconds: 12 },
+            { startSeconds: 27, durationSeconds: 10 },
+            { startSeconds: 39, durationSeconds: 12 },
+            { startSeconds: 45, durationSeconds: 8 },
+          ],
+        },
+      ] },
     },
   },
   {
@@ -65,6 +84,19 @@ export const initialWorlds: WorldItem[] = [
       models: ["city_blocks"],
       effects: [],
       lighting: DEFAULT_WORLD_LIGHTING,
+      environment: {
+        dayNight: { durationSeconds: WORLD_DAY_SECONDS, nightSky: ["#11192e", "#29374b", "#303b48"], nightAmbient: 0.22, nightDirectional: 0.16 },
+        nightLight: "street",
+      },
+      audio: { layers: [
+        { soundId: "ambience-city", mode: "loop", volume: 0.085 },
+        { soundId: "ambience-horn", mode: "random", volume: 0.055, intervalSeconds: [12, 30], excerpts: [
+          { startSeconds: 0, durationSeconds: 1.4 },
+          { startSeconds: 2, durationSeconds: 2.6 },
+          { startSeconds: 5, durationSeconds: 1.8 },
+        ] },
+        { soundId: "ambience-car", mode: "random", volume: 0.065, intervalSeconds: [15, 35], accentFade: { inSeconds: .8, outSeconds: 1.2 } },
+      ] },
     },
   },
   {
@@ -85,6 +117,26 @@ export const initialWorlds: WorldItem[] = [
       models: ["desert_dunes", "desert_pyramids"],
       effects: ["desert_sand"],
       lighting: DEFAULT_WORLD_LIGHTING,
+      environment: {
+        dayNight: { durationSeconds: WORLD_DAY_SECONDS, nightSky: ["#171a32", "#3d3449", "#574334"], nightAmbient: 0.22, nightDirectional: 0.16 },
+        nightLight: "fire",
+      },
+      audio: { layers: [] },
+    },
+  },
+  {
+    id: "world_island", name: "Einsame Insel",
+    description: "Eine winzige Palmeninsel mit türkisblauem Meer und Lagerfeuer unter Sternen.",
+    cost: 1_000_000, purchased: false, enabled: false, type: "world", icon: "🏝️",
+    scene: {
+      skyColors: ["#a7e9ff", "#49bdea"], gradientStops: [0, .5, 1],
+      gradientColors: ["#55bfe9", "#bdeff5", "#54c8ca"],
+      groundColor: "#f4d58c", accentColor: "#fff0b5",
+      models: ["island_scene"], effects: [], lighting: DEFAULT_WORLD_LIGHTING,
+      environment: {
+        dayNight: { durationSeconds: WORLD_DAY_SECONDS, nightSky: ["#101b3c", "#244465", "#286472"], nightAmbient: .22, nightDirectional: .16 },
+        nightLight: "fire",
+      }, audio: { layers: [] },
     },
   },
   {
@@ -105,6 +157,26 @@ export const initialWorlds: WorldItem[] = [
       models: ["winter_pines", "winter_snowman"],
       effects: ["winter_snow"],
       lighting: DEFAULT_WORLD_LIGHTING,
+      environment: {
+        dayNight: { durationSeconds: WORLD_DAY_SECONDS, nightSky: ["#111e38", "#304760", "#506078"], nightAmbient: 0.22, nightDirectional: 0.16 },
+        nightLight: "moon",
+      },
+      audio: { layers: [] },
+    },
+  },
+  {
+    id: "world_underwater", name: "Unter Wasser",
+    description: "Tropische Korallen, schimmernde Fischschwärme und Sonnenstrahlen im türkisblauen Wasser.",
+    cost: 10_000_000, purchased: false, enabled: false, type: "world", icon: "🪸",
+    scene: {
+      skyColors: ["#52e5e0", "#167cae"], gradientStops: [0, .45, 1],
+      gradientColors: ["#64e5df", "#229ec1", "#116e9e"],
+      groundColor: "#eddbaa", accentColor: "#fff0cb",
+      models: ["underwater_scene"], effects: [], lighting: DEFAULT_WORLD_LIGHTING,
+      environment: {
+        dayNight: { durationSeconds: WORLD_DAY_SECONDS, nightSky: ["#052b42", "#061e34", "#041725"], nightAmbient: .25, nightDirectional: .12 },
+      },
+      audio: { layers: [] },
     },
   },
   {
@@ -133,6 +205,10 @@ export const initialWorlds: WorldItem[] = [
       ],
       starfield: true,
       lighting: DEFAULT_WORLD_LIGHTING,
+      audio: { layers: [
+        { soundId: "ambience-space", mode: "loop", volume: 0.055 },
+        { soundId: "ambience-beep", mode: "random", volume: 0.035, intervalSeconds: [9, 24] },
+      ] },
     },
   },
 ];

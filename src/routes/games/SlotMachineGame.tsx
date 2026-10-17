@@ -707,10 +707,11 @@ export function SlotMachineGame({ onExit: _onExit }: { onExit: () => void }) {
     const elapsed = document.hidden ? 0 : rawDelta;
     time.current += elapsed;
     cooldown.current = Math.max(0, cooldown.current - elapsed);
-    const diameter =
-      Math.hypot(size.width, size.height) * (1 + FISHEYE_CONFIG.MIN);
-    const horizontalAngle = 2 * Math.asin((size.width * 0.78) / diameter);
-    const verticalAngle = 2 * Math.asin((size.height * 0.74) / diameter);
+    const { fisheyeEnabled } = useCoreStore.getState().graphicPreferences;
+    const diameter = Math.hypot(size.width, size.height) * (1 + FISHEYE_CONFIG.MIN);
+    const projectAngle = fisheyeEnabled ? Math.asin : Math.atan;
+    const horizontalAngle = 2 * projectAngle((size.width * 0.78) / diameter);
+    const verticalAngle = 2 * projectAngle((size.height * 0.74) / diameter);
     const distance =
       Math.max(
         1.9 / Math.tan(horizontalAngle),

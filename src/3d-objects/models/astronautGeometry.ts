@@ -10,11 +10,11 @@ export function getAstronautDimensions(body: BobBodyFit) {
   const [x, y, z] = body.halfSize;
   const buttonRadius = Math.min(0.15, Math.max(0.07, Math.min(x, y, z) * 0.1));
   if (body.formType === "sphere") {
-    const radius = Math.max(x * 1.28, (FACE_HALF_WIDTH + FACE_CLEARANCE) / 0.9);
+    const radius = Math.max(x * 1.18, (FACE_HALF_WIDTH + FACE_CLEARANCE) / 0.9);
     return { halfSize: [radius, radius, radius] as Vec3, cornerRadius: 0, buttonRadius };
   }
 
-  const padding = Math.max(0.18, Math.min(x, y, z) * 0.18);
+  const padding = Math.max(0.13, Math.min(x, y, z) * 0.13);
   const halfSize: Vec3 = [
     Math.max(x + padding, FACE_HALF_WIDTH + FACE_CLEARANCE + 0.05),
     Math.max(y + padding, Math.abs(body.eyePosition[1]) + 0.12 + FACE_CLEARANCE),
@@ -95,6 +95,6 @@ export function createAstronautGeometry(body: BobBodyFit) {
   return {
     shell, visor,
     buttonRadius: dimensions.buttonRadius,
-    buttonPosition: [0, y + dimensions.buttonRadius * 0.65, 0] as Vec3,
+    buttonPosition: [0, y + dimensions.buttonRadius * 0.65 + 0.05, 0] as Vec3,
   };
 }
