@@ -4,6 +4,12 @@ import type { Locale } from "@/i18n/types";
 
 export const bobItemMessages = defineMessages({
   de: {
+    topHat: { name: "Zylinder", description: "Black Tie für Bob." },
+    toonSunglasses: { name: "Sonnenbrille", description: "Cool bleiben, auch im Schatten." },
+    dimmadomeHat: { name: "Dimmadome", description: "Dieser Hut nimmt kein Ende." },
+    clownNose: { name: "Clownsnase", description: "Ein kleiner roter Spaß." },
+    rainbowAfro: { name: "Regenbogen-Afro", description: "Alle Farben auf einmal." },
+
     propellerHat: { name: "Propellermütze", description: "Immer eine Drehung voraus." },
     bobMoustache: { name: "Schnubbi", description: "Ein Schnurrbart wie bei Bob Belcher." },
     royalCrown: { name: "Krone", description: "Eine Krone für zehn Millionen." },
@@ -43,6 +49,12 @@ export const bobItemMessages = defineMessages({
     },
   },
   en: {
+    topHat: { name: "Top Hat", description: "Black tie for Bob." },
+    toonSunglasses: { name: "Sunglasses", description: "Stay cool, even in the shade." },
+    dimmadomeHat: { name: "Dimmadome", description: "This hat never ends." },
+    clownNose: { name: "Clown Nose", description: "A little red joke." },
+    rainbowAfro: { name: "Rainbow Afro", description: "Every color at once." },
+
     propellerHat: { name: "Propeller Hat", description: "Always one spin ahead." },
     bobMoustache: { name: "Moustache", description: "A moustache like Bob Belcher's." },
     royalCrown: { name: "Crown", description: "A crown worth ten million." },

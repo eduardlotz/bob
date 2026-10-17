@@ -1,6 +1,11 @@
 import { BobItem } from "@/store";
 
 export const initialBobItems: BobItem[] = [
+  { id: "rainbowAfro", name: "Regenbogen-Afro", description: "Alle Farben auf einmal.", cost: 22000, purchased: false, enabled: false, type: "hat", icon: "🌈", category: "bob" },
+  { id: "clownNose", name: "Clownsnase", description: "Ein kleiner roter Spaß.", cost: 8000, purchased: false, enabled: false, type: "accessory", icon: "🔴", category: "bob", equipSlot: "nose" },
+  { id: "dimmadomeHat", name: "Dimmadome", description: "Dieser Hut nimmt kein Ende.", cost: 32000, purchased: false, enabled: false, type: "hat", icon: "🤠", category: "bob" },
+  { id: "toonSunglasses", name: "Sonnenbrille", description: "Cool bleiben, auch im Schatten.", cost: 12000, purchased: false, enabled: false, type: "accessory", icon: "🕶️", category: "bob" },
+  { id: "topHat", name: "Zylinder", description: "Black Tie für Bob.", cost: 18000, purchased: false, enabled: false, type: "hat", icon: "🎩", category: "bob" },
   {
     id: "builderHelmet",
     name: "Baumeister",

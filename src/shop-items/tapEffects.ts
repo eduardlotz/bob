@@ -1,6 +1,11 @@
 import { TapEffect } from "@/store";
 
 export const initialTapEffects: TapEffect[] = [
+  { id: "tap_effect_comic", name: "Comic", description: "POP! BAM! Kleine Comic-Explosionen.", cost: 14000, purchased: false, enabled: false, type: "tapEffect", effectId: 8 },
+  { id: "tap_effect_flowers", name: "Flower Power", description: "Bunte Blumen wirbeln durch die Luft.", cost: 18000, purchased: false, enabled: false, type: "tapEffect", effectId: 9 },
+  { id: "tap_effect_ducks", name: "Quietscheenten", description: "Kleine gelbe Enten hüpfen davon.", cost: 24000, purchased: false, enabled: false, type: "tapEffect", effectId: 10 },
+  { id: "tap_effect_electric", name: "Funken", description: "Gelbe Blitze springen nach außen.", cost: 30000, purchased: false, enabled: false, type: "tapEffect", effectId: 11 },
+
   {
     id: "tap_effect_default",
     name: "Standard",
@@ -74,7 +79,7 @@ export const initialTapEffects: TapEffect[] = [
   {
     id: "tap_effect_laser",
     name: "Laser",
-    description: "Rote Laserblitze direkt aus der Mitte",
+    description: "Rote Laserblitze fächern seitlich auf",
     cost: 60_000,
     purchased: false,
     type: "tapEffect",

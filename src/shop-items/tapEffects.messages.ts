@@ -4,6 +4,11 @@ import type { Locale } from "@/i18n/types";
 
 export const tapEffectMessages = defineMessages({
   de: {
+    tap_effect_comic: { name: "Comic", description: "POP! BAM! Kleine Comic-Explosionen." },
+    tap_effect_flowers: { name: "Flower Power", description: "Bunte Blumen wirbeln durch die Luft." },
+    tap_effect_ducks: { name: "Quietscheenten", description: "Kleine gelbe Enten hüpfen davon." },
+    tap_effect_electric: { name: "Funken", description: "Gelbe Blitze springen nach außen." },
+
     tap_effect_default: {
       name: "Standard",
       description: "Weiße, graue und schwarze Punkte",
@@ -30,7 +35,7 @@ export const tapEffectMessages = defineMessages({
     },
     tap_effect_laser: {
       name: "Laser",
-      description: "Rote Laserblitze direkt aus der Mitte",
+      description: "Rote Laserblitze fächern seitlich auf",
     },
     tap_effect_emojis: {
       name: "Emojis",
@@ -38,6 +43,11 @@ export const tapEffectMessages = defineMessages({
     },
   },
   en: {
+    tap_effect_comic: { name: "Comic Bursts", description: "POP! BAM! Little comic explosions." },
+    tap_effect_flowers: { name: "Flower Power", description: "Colorful flowers spin through the air." },
+    tap_effect_ducks: { name: "Rubber Ducks", description: "Little yellow ducks bounce away." },
+    tap_effect_electric: { name: "Electric Sparks", description: "Yellow sparks jump outward." },
+
     tap_effect_default: {
       name: "Default",
       description: "White, gray, and black particles",
@@ -64,7 +74,7 @@ export const tapEffectMessages = defineMessages({
     },
     tap_effect_laser: {
       name: "Laser",
-      description: "Red laser bursts straight from the center",
+      description: "Red laser bursts spread outward around Bob",
     },
     tap_effect_emojis: {
       name: "Emojis",

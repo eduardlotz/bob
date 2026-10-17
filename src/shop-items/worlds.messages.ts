@@ -25,6 +25,14 @@ export const worldMessages = defineMessages({
       name: "Winter",
       description: "Kalter Schnee, riesige Tannen und dichter Schneefall.",
     },
+    world_island: {
+      name: "Einsame Insel",
+      description: "Eine winzige Palmeninsel mit türkisblauem Meer und nächtlichem Lagerfeuer.",
+    },
+    world_underwater: {
+      name: "Unter Wasser",
+      description: "Tropische Korallen, Fischschwärme und Sonnenstrahlen im türkisblauen Wasser.",
+    },
     world_space: {
       name: "Im All",
       description:
@@ -52,6 +60,14 @@ export const worldMessages = defineMessages({
     world_winter: {
       name: "Winter",
       description: "Cold snow, towering pines, and heavy snowfall.",
+    },
+    world_island: {
+      name: "Lonely Island",
+      description: "A tiny palm island with turquoise water and a campfire after sunset.",
+    },
+    world_underwater: {
+      name: "Underwater",
+      description: "Tropical corals, schools of fish, and sunbeams in turquoise water.",
     },
     world_space: {
       name: "In Space",

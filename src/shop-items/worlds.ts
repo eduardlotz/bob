@@ -1,4 +1,5 @@
 import type { WorldItem } from "@/store";
+import { WORLD_DAY_SECONDS } from "@/types/worldEnvironment";
 
 const DEFAULT_WORLD_LIGHTING = {
   ambientIntensity: 2,
@@ -46,7 +47,7 @@ export const initialWorlds: WorldItem[] = [
       effects: ["forest_fireflies", "forest_rain"],
       lighting: DEFAULT_WORLD_LIGHTING,
       environment: {
-        dayNight: { durationSeconds: 300, nightSky: ["#101c34", "#26384d", "#233e36"], nightAmbient: 0.22, nightDirectional: 0.16 },
+        dayNight: { durationSeconds: WORLD_DAY_SECONDS, nightSky: ["#101c34", "#26384d", "#233e36"], nightAmbient: 0.22, nightDirectional: 0.16 },
         nightLight: "fire",
         rain: { drySeconds: 90, wetSeconds: 45, transitionSeconds: 12 },
       },
@@ -84,7 +85,7 @@ export const initialWorlds: WorldItem[] = [
       effects: [],
       lighting: DEFAULT_WORLD_LIGHTING,
       environment: {
-        dayNight: { durationSeconds: 300, nightSky: ["#11192e", "#29374b", "#303b48"], nightAmbient: 0.22, nightDirectional: 0.16 },
+        dayNight: { durationSeconds: WORLD_DAY_SECONDS, nightSky: ["#11192e", "#29374b", "#303b48"], nightAmbient: 0.22, nightDirectional: 0.16 },
         nightLight: "street",
       },
       audio: { layers: [
@@ -117,10 +118,25 @@ export const initialWorlds: WorldItem[] = [
       effects: ["desert_sand"],
       lighting: DEFAULT_WORLD_LIGHTING,
       environment: {
-        dayNight: { durationSeconds: 300, nightSky: ["#171a32", "#3d3449", "#574334"], nightAmbient: 0.22, nightDirectional: 0.16 },
+        dayNight: { durationSeconds: WORLD_DAY_SECONDS, nightSky: ["#171a32", "#3d3449", "#574334"], nightAmbient: 0.22, nightDirectional: 0.16 },
         nightLight: "fire",
       },
       audio: { layers: [] },
+    },
+  },
+  {
+    id: "world_island", name: "Einsame Insel",
+    description: "Eine winzige Palmeninsel mit türkisblauem Meer und Lagerfeuer unter Sternen.",
+    cost: 1_000_000, purchased: false, enabled: false, type: "world", icon: "🏝️",
+    scene: {
+      skyColors: ["#a7e9ff", "#49bdea"], gradientStops: [0, .5, 1],
+      gradientColors: ["#55bfe9", "#bdeff5", "#54c8ca"],
+      groundColor: "#f4d58c", accentColor: "#fff0b5",
+      models: ["island_scene"], effects: [], lighting: DEFAULT_WORLD_LIGHTING,
+      environment: {
+        dayNight: { durationSeconds: WORLD_DAY_SECONDS, nightSky: ["#101b3c", "#244465", "#286472"], nightAmbient: .22, nightDirectional: .16 },
+        nightLight: "fire",
+      }, audio: { layers: [] },
     },
   },
   {
@@ -142,8 +158,23 @@ export const initialWorlds: WorldItem[] = [
       effects: ["winter_snow"],
       lighting: DEFAULT_WORLD_LIGHTING,
       environment: {
-        dayNight: { durationSeconds: 300, nightSky: ["#111e38", "#304760", "#506078"], nightAmbient: 0.22, nightDirectional: 0.16 },
+        dayNight: { durationSeconds: WORLD_DAY_SECONDS, nightSky: ["#111e38", "#304760", "#506078"], nightAmbient: 0.22, nightDirectional: 0.16 },
         nightLight: "moon",
+      },
+      audio: { layers: [] },
+    },
+  },
+  {
+    id: "world_underwater", name: "Unter Wasser",
+    description: "Tropische Korallen, schimmernde Fischschwärme und Sonnenstrahlen im türkisblauen Wasser.",
+    cost: 10_000_000, purchased: false, enabled: false, type: "world", icon: "🪸",
+    scene: {
+      skyColors: ["#52e5e0", "#167cae"], gradientStops: [0, .45, 1],
+      gradientColors: ["#64e5df", "#229ec1", "#116e9e"],
+      groundColor: "#eddbaa", accentColor: "#fff0cb",
+      models: ["underwater_scene"], effects: [], lighting: DEFAULT_WORLD_LIGHTING,
+      environment: {
+        dayNight: { durationSeconds: WORLD_DAY_SECONDS, nightSky: ["#052b42", "#061e34", "#041725"], nightAmbient: .25, nightDirectional: .12 },
       },
       audio: { layers: [] },
     },

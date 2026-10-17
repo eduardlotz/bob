@@ -1,3 +1,6 @@
+/** One full day/night loop, shared by world presets and the time controls. */
+export const WORLD_DAY_SECONDS = 180;
+
 /** World-authored settings; runtime values never enter the saved game. */
 export interface WorldEnvironmentConfig {
   dayNight?: {

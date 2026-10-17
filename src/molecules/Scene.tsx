@@ -7,7 +7,6 @@ import {
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   CameraControls,
-  Fisheye,
   useEnvironment,
   PerspectiveCamera,
   PerformanceMonitor,
@@ -36,7 +35,7 @@ import {
 } from "../store";
 import { useViewStore } from "../store/viewStore";
 import { ROUTE_IDS, ROUTE_PATHS } from "../store/config/routes";
-import { FISHEYE_CONFIG } from "../store/config/themes";
+import { SceneLens } from "@/components/SceneLens";
 import {
   attachListenerToCamera,
   playWorldSound,
@@ -68,10 +67,6 @@ import { useCursor } from "@/hooks/useCursor";
 import { commonUiMessages } from "@/ui/common.messages";
 import { getLocale } from "@/i18n";
 import { PresetsType } from "@react-three/drei/helpers/environment-assets";
-import {
-  FISHEYE_RENDER_PRIORITY,
-  SceneDithering,
-} from "@/components/SceneDithering";
 import {
   WorldEnvironment,
   useWorldEnvironment,
@@ -494,10 +489,7 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
           {isHome && (
             <WorldAudio config={sceneWorld?.scene.audio} authorized={isReady} />
           )}
-          <Fisheye
-            zoom={FISHEYE_CONFIG.MIN}
-            renderPriority={FISHEYE_RENDER_PRIORITY}
-          >
+          <SceneLens>
             <CursorFollowCamera />
             <CameraControls
               ref={handleCameraControlsRef}
@@ -601,8 +593,7 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
                   .otherwise(() => null)}
               </Suspense>
             </Physics>
-          </Fisheye>
-          {graphicPreferences.ditheringEnabled && <SceneDithering />}
+          </SceneLens>
         </WorldEnvironment>
       </FullScreenCanvas>
     </>

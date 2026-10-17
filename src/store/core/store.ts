@@ -70,7 +70,8 @@ export enum GAME_STORE_VERSION {
   V14 = 100109, // propeller hat, moustache, and crown
   V15 = 100110, // free body shapes in Settings
   V16 = 100111, // world environments and layered soundscapes
-  LATEST = V16,
+  V17 = 100112, // expanded Bob wardrobe and tap effects
+  LATEST = V17,
 }
 
 // TODO: plan refactor to include component inside item properties
@@ -112,6 +113,8 @@ export interface TapEffect extends BaseItem {
 
 export type WorldModelId =
   | "default_home"
+  | "island_scene"
+  | "underwater_scene"
   | "city_blocks"
   | "forest_grove"
   | "forest_meadow"
@@ -204,7 +207,7 @@ export interface BobItem extends BaseItem {
   icon: string;
   category: "bob";
   detached?: boolean; // If true, item stays at initial position and doesn't follow head movements
-  equipSlot?: "moustache";
+  equipSlot?: "moustache" | "nose";
 }
 
 export const getBobItemSlot = (item: BobItem) => item.equipSlot ?? item.type;
@@ -314,6 +317,9 @@ interface GameState {
     qualityMode: QualityMode; // TODO: seperate selected, suggested
     effectsEnabled: boolean;
     reducedTapMotion: boolean;
+    sceneFilter: "none" | "dither" | "pixel";
+    fisheyeEnabled: boolean;
+    pixelationPixelSize: number;
     ditheringEnabled: boolean;
     ditheringPixelSize: number;
   };
@@ -400,6 +406,9 @@ interface GameStateActions {
   setGraphicsMode: (mode: QualityMode) => void;
   toggleParticleEffects: () => void;
   toggleReducedTapMotion: () => void;
+  setSceneFilter: (filter: "none" | "dither" | "pixel") => void;
+  toggleFisheye: () => void;
+  setPixelationPixelSize: (size: number) => void;
   toggleDithering: () => void;
   setDitheringPixelSize: (size: number) => void;
   acceptCookies: () => void;
@@ -612,6 +621,9 @@ export const initialGameState: GameState = {
     qualityMode: "auto",
     effectsEnabled: true,
     reducedTapMotion: false,
+    sceneFilter: "none",
+    fisheyeEnabled: true,
+    pixelationPixelSize: 4,
     ditheringEnabled: false,
     ditheringPixelSize: 1,
   },
@@ -1376,11 +1388,28 @@ export const useCoreStore = create<GameStore>()(
             },
           }));
         },
+        setSceneFilter: (filter) => {
+          if (!["none", "dither", "pixel"].includes(filter)) return;
+          set((state) => ({ graphicPreferences: {
+            ...state.graphicPreferences, sceneFilter: filter,
+            ditheringEnabled: filter === "dither",
+          } }));
+        },
+        toggleFisheye: () => set((state) => ({ graphicPreferences: {
+          ...state.graphicPreferences, fisheyeEnabled: !state.graphicPreferences.fisheyeEnabled,
+        } })),
+        setPixelationPixelSize: (size) => {
+          if (!Number.isFinite(size)) return;
+          set((state) => ({ graphicPreferences: {
+            ...state.graphicPreferences, pixelationPixelSize: Math.min(16, Math.max(2, Math.round(size / 2) * 2)),
+          } }));
+        },
         toggleDithering: () => {
           set((state) => ({
             graphicPreferences: {
               ...state.graphicPreferences,
               ditheringEnabled: !state.graphicPreferences.ditheringEnabled,
+              sceneFilter: state.graphicPreferences.ditheringEnabled ? "none" : "dither",
             },
           }));
         },
@@ -1776,6 +1805,12 @@ export const useCoreStore = create<GameStore>()(
             graphicPreferences: {
               ...currentState.graphicPreferences,
               ...saved?.graphicPreferences,
+              // Older saves only stored the dither toggle.
+              sceneFilter: saved?.graphicPreferences?.sceneFilter ??
+                (saved?.graphicPreferences?.ditheringEnabled ? "dither" : "none"),
+              ditheringEnabled: saved?.graphicPreferences?.sceneFilter
+                ? saved.graphicPreferences.sceneFilter === "dither"
+                : saved?.graphicPreferences?.ditheringEnabled ?? false,
             },
           };
         },

@@ -16,12 +16,15 @@ const softPool = (shader: T.WebGLProgramParametersWithUniforms) => {
 let nextFillId = 0;
 
 /** An additive material tint, not a Three light: no light loops or shadow maps. */
-export function NightMaterialFill({ kind }: { kind: "fire" | "moon" }) {
+export function NightMaterialFill({ kind }: { kind: "fire" | "moon" | "underwater" }) {
   const scene = useThree(s => s.scene);
   const environment = useWorldEnvironment();
   const fillId = useMemo(() => ++nextFillId, []);
   const uniforms = useMemo(() => ({
     uNightFill: { value: 0 },
+    uNightSoft: { value: 0 },
+    uNightCenter: { value: new T.Vector3(0, 0, 2) },
+    uNightReach: { value: new T.Vector2(1.9, 7.5) },
     uNightSource: { value: new T.Vector3(0, -.8, 2) },
     uNightTint: { value: new T.Color("#ffad54") },
   }), []);
@@ -51,15 +54,15 @@ export function NightMaterialFill({ kind }: { kind: "fire" | "moon" }) {
             vNightPosition = (modelMatrix * nightPosition).xyz;
             vNightNormal = inverseTransformDirection(transformedNormal, viewMatrix);
             #include <project_vertex>`);
-          shader.fragmentShader = 'varying vec3 vNightPosition; varying vec3 vNightNormal; uniform float uNightFill; uniform vec3 uNightTint; uniform vec3 uNightSource;\n' + shader.fragmentShader;
+          shader.fragmentShader = 'varying vec3 vNightPosition; varying vec3 vNightNormal; uniform float uNightFill; uniform float uNightSoft; uniform vec3 uNightTint; uniform vec3 uNightSource; uniform vec3 uNightCenter; uniform vec2 uNightReach;\n' + shader.fragmentShader;
           shader.fragmentShader = shader.fragmentShader.replace('#include <opaque_fragment>', `
-            float nightReach = 1.0 - smoothstep(1.9, 7.5, length(vNightPosition - vec3(0.0, 0.0, 2.0)));
+            float nightReach = 1.0 - smoothstep(uNightReach.x, uNightReach.y, length(vNightPosition - uNightCenter));
             float facing = max(0.0, dot(normalize(vNightNormal), normalize(uNightSource - vNightPosition)));
             float toonBand = step(.25, facing) * .45 + step(.65, facing) * .55;
-            outgoingLight += diffuseColor.rgb * uNightTint * uNightFill * nightReach * toonBand;
+            outgoingLight += diffuseColor.rgb * uNightTint * uNightFill * nightReach * mix(toonBand, .25 + .75 * smoothstep(0.0, 1.0, facing), uNightSoft);
             #include <opaque_fragment>`);
         };
-        material.customProgramCacheKey = () => key.call(material) + ':night-fill-toon-v5:' + fillId;
+        material.customProgramCacheKey = () => key.call(material) + ':night-fill-toon-v7:' + fillId;
         material.needsUpdate = true;
       }
     });
@@ -76,10 +79,15 @@ export function NightMaterialFill({ kind }: { kind: "fire" | "moon" }) {
   }, [scene, uniforms, fillId]);
   useFrame(() => {
     const { daylight, elapsed } = environment.current;
-    uniforms.uNightTint.value.set(kind === "moon" ? "#9dbce8" : "#ffad54");
+    const underwater = kind === "underwater";
+    uniforms.uNightSoft.value = underwater ? 1 : 0;
+    uniforms.uNightTint.value.set(underwater ? "#85cadd" : kind === "moon" ? "#9dbce8" : "#ffad54");
+    uniforms.uNightCenter.value.set(0, underwater ? .35 : 0, underwater ? 0 : 2);
+    uniforms.uNightReach.value.set(underwater ? 1.4 : 1.9, underwater ? 5.3 : 7.5);
     if (kind === "fire") uniforms.uNightSource.value.set(0, -.8, 2);
+    else if (underwater) uniforms.uNightSource.value.set(1.5, 4, 3);
     else uniforms.uNightSource.value.set(3, 5, 6);
-    uniforms.uNightFill.value = kind === "fire" ? firelightStrength(elapsed, daylight) : (1 - daylight) * .24;
+    uniforms.uNightFill.value = kind === "fire" ? firelightStrength(elapsed, daylight) : (1 - daylight) * (underwater ? .35 : .24);
   }, -4);
   return null;
 }

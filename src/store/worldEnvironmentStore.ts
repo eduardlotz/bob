@@ -1,7 +1,7 @@
 import { create } from "zustand";
-import { sampleWorldEnvironment, type WorldEnvironmentConfig } from "@/types/worldEnvironment";
+import { sampleWorldEnvironment, WORLD_DAY_SECONDS, type WorldEnvironmentConfig } from "@/types/worldEnvironment";
 
-export const WORLD_DAY_SECONDS = 300;
+export { WORLD_DAY_SECONDS };
 export type WeatherOverride = "auto" | "clear" | "rain";
 /** Runtime only: world selection and saved progress never own this clock. */
 export const worldClock = { elapsed: 0 };

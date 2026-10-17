@@ -32,6 +32,8 @@ import { seededRandom, useWorldQuality } from "./worlds/quality";
 import { GrassField } from "./worlds/DenseGrassField";
 import { CloudEffect, ForestRainEffect, SnowEffect } from "./ParticleEffects";
 
+import { IslandWorld, UnderwaterWorld, UnderwaterSky } from "./worlds/TropicalWorlds";
+
 const FLOOR_Y = -1.36;
 const SPACE_WORLD_EFFECT_IDS = new Set([
   "world_space",
@@ -107,8 +109,9 @@ function WorldDome({
   scene: WorldSceneConfig;
   lowDetail: boolean;
 }) {
+  if (scene.models.includes("underwater_scene")) return <UnderwaterSky />;
   const isMoonWorld = scene.effects.includes("moon_glow");
-  const climate: CloudClimate | null = scene.models.includes("forest_meadow")
+  const climate: CloudClimate | null = scene.models.includes("island_scene") ? "forest" : scene.models.includes("forest_meadow")
     ? "forest"
     : scene.models.includes("city_blocks")
       ? "city"
@@ -163,6 +166,7 @@ function WorldDome({
 }
 
 function WorldFloor({ scene }: { scene: WorldSceneConfig }) {
+  if (scene.models.includes("island_scene") || scene.models.includes("underwater_scene")) return null;
   const isDefaultGridWorld = scene.effects.includes("default_grid");
   const isMoonWorld = scene.effects.includes("moon_glow");
   const isSpaceWorld = isSpaceWorldScene(scene);
@@ -290,6 +294,8 @@ function WorldModel({
   preview: boolean;
 }) {
   switch (modelId) {
+    case "island_scene": return <IslandWorld />;
+    case "underwater_scene": return <UnderwaterWorld />;
     case "default_home":
       return null;
 

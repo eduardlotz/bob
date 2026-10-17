@@ -4,7 +4,7 @@ import { seededRandom } from "./quality";
 import { WorldToonMaterial } from "./WorldToonMaterial";
 
 /** Bake tileable patches and grain once; rendering needs only one texture sample. */
-function sandTexture(groundColor: string, accentColor: string) {
+export function createSandTexture(groundColor: string, accentColor: string) {
   const size = 512;
   const random = seededRandom(729);
   const cells = 8;
@@ -51,7 +51,7 @@ function sandTexture(groundColor: string, accentColor: string) {
 export function SandGround({ groundColor, accentColor, y }: {
   groundColor: string; accentColor: string; y: number;
 }) {
-  const texture = useMemo(() => sandTexture(groundColor, accentColor), [groundColor, accentColor]);
+  const texture = useMemo(() => createSandTexture(groundColor, accentColor), [groundColor, accentColor]);
   useEffect(() => () => texture.dispose(), [texture]);
   return (
     <mesh name="desert-sand-ground" position={[0, y, 0]} rotation={[-Math.PI / 2, 0, 0]}>

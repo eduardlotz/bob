@@ -1,3 +1,4 @@
+import { TropicalBobMotion } from "@/3d-objects/worlds/TropicalWorlds";
 import {
   DeviceOrientation,
   useDeviceOrientation,
@@ -932,10 +933,15 @@ export function BlobHead({
       ? [...previewItems, ...enabledItems]
       : enabledItems;
 
-    const bobOffset = allEquippedItems.reduce<[number, number, number]>((offset, item) => {
-      const shift = !item.detached && BOB_WEARABLES[item.id]?.bobOffset;
-      return shift ? [offset[0] + shift[0], offset[1] + shift[1], offset[2] + shift[2]] : offset;
-    }, [0, 0, 0]);
+    const bobOffset = allEquippedItems.reduce<[number, number, number]>(
+      (offset, item) => {
+        const shift = !item.detached && BOB_WEARABLES[item.id]?.bobOffset;
+        return shift
+          ? [offset[0] + shift[0], offset[1] + shift[1], offset[2] + shift[2]]
+          : offset;
+      },
+      [0, 0, 0],
+    );
     const detachedItems = allEquippedItems.filter((i) => i.detached);
 
     const attachedModels = (
@@ -976,7 +982,11 @@ export function BlobHead({
     };
   };
 
-  const { attached: attachedItems, detached: detachedItems, bobOffset } = renderBobItems();
+  const {
+    attached: attachedItems,
+    detached: detachedItems,
+    bobOffset,
+  } = renderBobItems();
 
   const content = (
     <>
@@ -1050,5 +1060,5 @@ export function BlobHead({
     </>
   );
 
-  return <group position={bobOffset}>{content}</group>;
+  return <group position={bobOffset}><TropicalBobMotion>{content}</TropicalBobMotion></group>;
 }
