@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { seededRandom, useWorldQuality } from "./quality";
+import { useWorldEnvironment } from "./WorldEnvironment";
 
 type Kind = "rain" | "snow" | "sand";
 const vertexShader = `
@@ -27,7 +28,6 @@ const vertexShader = `
       center.x = mod(aSeed.x * 42.0 + uTime * (0.7 + aSeed.w), 42.0) - 21.0;
       center.y = -1.05 + aSeed.y * 2.0 + sin(uTime + aSeed.z * 20.0) * 0.14;
     }
-    vec4 mv = modelViewMatrix * vec4(center, 1.0);
     float size = mix(0.024, 0.07 + aSeed.w * 0.055, snow);
     size = mix(size, 0.06 + aSeed.w * 0.06, sand);
     vec2 p = position.xy * size;
@@ -35,7 +35,12 @@ const vertexShader = `
       p.y *= 14.0 + aSeed.w * 8.0;
       p.x -= p.y * 0.15;
     }
-    mv.xy += p;
+    vec4 world = modelMatrix * vec4(center,1.0);
+    vec3 toEye = normalize(cameraPosition - world.xyz);
+    vec3 right = normalize(cross(vec3(0.0,1.0,.0001),toEye));
+    vec3 up = cross(toEye,right);
+    world.xyz += right * p.x + up * p.y;
+    vec4 mv = viewMatrix * world;
     vFade = smoothstep(0.0, 1.0, y) * (1.0 - smoothstep(16.0, 18.0, y));
     if (sand > 0.5) vFade = 1.0 - smoothstep(15.0, 21.0, abs(center.x));
     vec4 mvPosition = mv;
@@ -66,10 +71,13 @@ const fragmentShader = `
 export function WeatherParticles({
   kind,
   enabled = true,
+  environmentRain = false,
 }: {
   kind: Kind;
   enabled?: boolean;
+  environmentRain?: boolean;
 }) {
+  const environment = useWorldEnvironment();
   const quality = useWorldQuality();
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const time = useRef(0);
@@ -114,11 +122,11 @@ export function WeatherParticles({
     if (!material) return;
     time.current += Math.min(delta, 0.05);
     material.uniforms.uTime.value = time.current;
-    const target = enabled ? (kind === "sand" ? 0.24 : 0.8) : 0;
+    const target = environmentRain ? environment.current.rain * .8 : enabled ? (kind === "sand" ? 0.24 : 0.8) : 0;
     material.uniforms.uOpacity.value = THREE.MathUtils.damp(
       material.uniforms.uOpacity.value,
       target,
-      2,
+      environmentRain ? 12 : 2,
       delta,
     );
   });

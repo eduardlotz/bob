@@ -24,6 +24,7 @@ export const initialWorlds: WorldItem[] = [
       models: ["default_home"],
       effects: ["default_grid"],
       lighting: DEFAULT_WORLD_LIGHTING,
+      audio: { layers: [] },
     },
   },
   {
@@ -44,6 +45,23 @@ export const initialWorlds: WorldItem[] = [
       models: ["forest_grove", "forest_meadow"],
       effects: ["forest_fireflies", "forest_rain"],
       lighting: DEFAULT_WORLD_LIGHTING,
+      environment: {
+        dayNight: { durationSeconds: 300, nightSky: ["#101c34", "#26384d", "#233e36"], nightAmbient: 0.22, nightDirectional: 0.16 },
+        nightLight: "fire",
+        rain: { drySeconds: 90, wetSeconds: 45, transitionSeconds: 12 },
+      },
+      audio: { layers: [
+        { soundId: "ambience-rain", mode: "loop", volume: 0.35, condition: "rain" },
+        { soundId: "ambience-bird", mode: "random", volume: 0.075, intervalSeconds: [6, 16], condition: "day",
+          excerpts: [
+            { startSeconds: 4.5, durationSeconds: 4, fadeInSeconds: .4, fadeOutSeconds: .7 },
+            { startSeconds: 14, durationSeconds: 5, fadeInSeconds: .4, fadeOutSeconds: .8 },
+            { startSeconds: 27, durationSeconds: 4.5, fadeInSeconds: .4, fadeOutSeconds: .7 },
+            { startSeconds: 39, durationSeconds: 5.5, fadeInSeconds: .5, fadeOutSeconds: 1 },
+            { startSeconds: 47, durationSeconds: 4, fadeInSeconds: .4, fadeOutSeconds: .7 },
+          ],
+        },
+      ] },
     },
   },
   {
@@ -65,6 +83,14 @@ export const initialWorlds: WorldItem[] = [
       models: ["city_blocks"],
       effects: [],
       lighting: DEFAULT_WORLD_LIGHTING,
+      environment: {
+        dayNight: { durationSeconds: 300, nightSky: ["#11192e", "#29374b", "#303b48"], nightAmbient: 0.22, nightDirectional: 0.16 },
+        nightLight: "street",
+      },
+      audio: { layers: [
+        { soundId: "ambience-city", mode: "loop", volume: 0.085 },
+        { soundId: "ambience-horn", mode: "random", volume: 0.055, intervalSeconds: [12, 30] },
+      ] },
     },
   },
   {
@@ -85,6 +111,11 @@ export const initialWorlds: WorldItem[] = [
       models: ["desert_dunes", "desert_pyramids"],
       effects: ["desert_sand"],
       lighting: DEFAULT_WORLD_LIGHTING,
+      environment: {
+        dayNight: { durationSeconds: 300, nightSky: ["#171a32", "#3d3449", "#574334"], nightAmbient: 0.22, nightDirectional: 0.16 },
+        nightLight: "fire",
+      },
+      audio: { layers: [] },
     },
   },
   {
@@ -105,6 +136,11 @@ export const initialWorlds: WorldItem[] = [
       models: ["winter_pines", "winter_snowman"],
       effects: ["winter_snow"],
       lighting: DEFAULT_WORLD_LIGHTING,
+      environment: {
+        dayNight: { durationSeconds: 300, nightSky: ["#111e38", "#304760", "#506078"], nightAmbient: 0.22, nightDirectional: 0.16 },
+        nightLight: "moon",
+      },
+      audio: { layers: [] },
     },
   },
   {
@@ -133,6 +169,10 @@ export const initialWorlds: WorldItem[] = [
       ],
       starfield: true,
       lighting: DEFAULT_WORLD_LIGHTING,
+      audio: { layers: [
+        { soundId: "ambience-space", mode: "loop", volume: 0.055 },
+        { soundId: "ambience-beep", mode: "random", volume: 0.035, intervalSeconds: [9, 24] },
+      ] },
     },
   },
 ];

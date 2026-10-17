@@ -1,3 +1,4 @@
+import { rampAudioGain } from "./audioGain";
 import { Howl, Howler } from "howler";
 import { defineSound, type SoundDefinition } from "@web-kits/audio";
 import {
@@ -71,38 +72,59 @@ const synthPlayers = new WeakMap<SoundDefinition, ReturnType<typeof defineSound>
 let synthInstanceId = 0;
 
 type SoundMix = { gain: number; lowpassHz?: number };
-// Howler exposes no filter API. Keep its pooled gain-node access isolated here.
+// Howler owns voice attack/release. A separate output gain owns weather/scene mixing.
+// Keep access to Howler's pooled Web Audio nodes isolated in these helpers.
 type WebAudioHowl = { _webAudio: boolean; _sounds: Array<{ _id: number; _node: GainNode }> };
 const soundMixes = new Map<string, SoundMix>();
-const lowpassNodes = new WeakMap<GainNode, BiquadFilterNode>();
+const voiceOutputs = new WeakMap<GainNode, { gain: GainNode; filter?: BiquadFilterNode }>();
 
-const applyLowpass = (howl: Howl, howlId: number, frequency?: number) => {
+const applyVoiceMix = (howl: Howl, howlId: number, mix?: SoundMix, rampMs = 0) => {
   const webAudio = howl as unknown as WebAudioHowl;
-  if (!webAudio._webAudio || !Howler.ctx || !Howler.masterGain) return;
-  const node = webAudio._sounds.find((sound) => sound._id === howlId)?._node;
-  if (!node) return;
-  let filter = lowpassNodes.get(node);
-  if (frequency === undefined) {
-    if (!filter) return;
-    node.disconnect(filter);
-    filter.disconnect();
-    node.connect(Howler.masterGain);
-    lowpassNodes.delete(node);
-    return;
+  if (!webAudio._webAudio || !Howler.ctx || !Howler.masterGain) return false;
+  const node = webAudio._sounds.find(sound => sound._id === howlId)?._node;
+  if (!node) return false;
+  let output = voiceOutputs.get(node);
+  if (!output && !mix) return true;
+  if (!output) {
+    const gain = Howler.ctx.createGain();
+    gain.gain.value = mix?.gain ?? 1;
+    // Replace the direct connection; never leave parallel paths to the master bus.
+    node.disconnect();
+    node.connect(gain);
+    gain.connect(Howler.masterGain);
+    output = { gain };
+    voiceOutputs.set(node, output);
   }
-  const cutoff = Math.max(20, Math.min(Howler.ctx.sampleRate / 2 - 1, frequency));
-  if (!filter) {
-    filter = Howler.ctx.createBiquadFilter();
-    filter.type = "lowpass";
-    filter.Q.value = 0.7;
-    filter.frequency.value = cutoff;
-    node.disconnect(Howler.masterGain);
-    node.connect(filter);
-    filter.connect(Howler.masterGain);
-    lowpassNodes.set(node, filter);
-  } else {
-    filter.frequency.setTargetAtTime(cutoff, Howler.ctx.currentTime, 0.08);
+  rampAudioGain(output.gain.gain, Howler.ctx.currentTime, mix?.gain ?? 1, rampMs);
+  if (mix?.lowpassHz !== undefined) {
+    if (!output.filter) {
+      output.filter = Howler.ctx.createBiquadFilter();
+      output.filter.type = "lowpass";
+      output.filter.Q.value = .7;
+      output.gain.disconnect();
+      output.gain.connect(output.filter);
+      output.filter.connect(Howler.masterGain);
+    }
+    const cutoff = Math.max(20, Math.min(Howler.ctx.sampleRate / 2 - 1, mix.lowpassHz));
+    output.filter.frequency.setTargetAtTime(cutoff, Howler.ctx.currentTime, .08);
+  } else if (output.filter) {
+    output.gain.disconnect();
+    output.filter.disconnect();
+    output.gain.connect(Howler.masterGain);
+    output.filter = undefined;
   }
+  return true;
+};
+
+const releaseVoiceMix = (howl: Howl, howlId: number) => {
+  const node = (howl as unknown as WebAudioHowl)._sounds.find(sound => sound._id === howlId)?._node;
+  const output = node && voiceOutputs.get(node);
+  if (!node || !output) return;
+  node.disconnect();
+  output.gain.disconnect();
+  output.filter?.disconnect();
+  if (Howler.masterGain) node.connect(Howler.masterGain);
+  voiceOutputs.delete(node);
 };
 
 let state: SoundSystemState = {
@@ -220,7 +242,9 @@ const getOrCreateHowl = (config: NormalizedSoundConfig): Howl => {
     preload: config.preload,
     html5: config.html5,
     pool: config.pool,
-    volume: 1,
+    sprite: config.sprite,
+    // Every new or pooled voice starts silent until its user/mix gain is applied.
+    volume: 0,
     onloaderror: (_, error) => {
       console.error(`Failed to load sound "${config.id}"`, error);
     },
@@ -311,10 +335,12 @@ const cleanupInstance = (instanceId: string) => {
   if (!instance) return;
 
   const howl = howls.get(instance.soundId);
-  if (howl && instance.howlId !== undefined) applyLowpass(howl, instance.howlId);
+  if (howl && instance.howlId !== undefined) releaseVoiceMix(howl, instance.howlId);
   if (instance.synth?.cleanupTimer !== undefined) {
     clearTimeout(instance.synth.cleanupTimer);
   }
+  clearTimeout(instance.endFadeTimer);
+  clearTimeout(instance.stopTimer);
 
   instances.delete(instanceId);
   removeFromIndex(instancesBySoundId, instance.soundId, instanceId);
@@ -340,28 +366,37 @@ const updateInstanceVolume = (instance: SoundInstance) => {
   // Synthesized UI and speech volumes are updated on their shared output buses.
   if (instance.synth) return;
   const howl = howls.get(instance.soundId);
-  if (!howl || instance.howlId === undefined) return;
-  const volume = calculateFinalVolume(instance.config, instance.attenuation) *
-    (soundMixes.get(instance.soundId)?.gain ?? 1);
+  if (!howl || instance.howlId === undefined || howl.state() !== "loaded" || !howl.playing(instance.howlId)) return;
+  const mix = soundMixes.get(instance.soundId);
+  const nativeMix = applyVoiceMix(howl, instance.howlId, mix);
+  const volume = calculateFinalVolume(instance.config, instance.attenuation) * (nativeMix ? 1 : mix?.gain ?? 1);
+  if (instance.stopping && volume > 0) return;
   howl.volume(volume, instance.howlId);
 };
 
 /** Independent of user volume/mute preferences; filters affect only this sound. */
-export const setSoundMix = (soundId: string, mix?: SoundMix): void => {
+export const setSoundMix = (soundId: string, mix?: SoundMix, rampMs = 0): void => {
   const previous = soundMixes.get(soundId);
   if (mix && previous?.gain === clamp01(mix.gain) && previous.lowpassHz === mix.lowpassHz) return;
   if (mix) soundMixes.set(soundId, { gain: clamp01(mix.gain), lowpassHz: mix.lowpassHz });
   else soundMixes.delete(soundId);
   const howl = howls.get(soundId);
   getInstancesForSound(soundId).forEach((instance) => {
-    if (howl && instance.howlId !== undefined) applyLowpass(howl, instance.howlId, mix?.lowpassHz);
-    updateInstanceVolume(instance);
+    if (instance.stopping) return;
+    if (!howl || instance.howlId === undefined || howl.state() !== "loaded" || !howl.playing(instance.howlId)) return;
+    if (!applyVoiceMix(howl, instance.howlId, mix, rampMs)) {
+      // HTML audio fallback has no mix node; use small volume steps, not competing fades.
+      updateInstanceVolume(instance);
+    }
   });
 };
 
 const stopSoundInternal = (instanceId: string, fadeOutMs?: number) => {
   const instance = instances.get(instanceId);
-  if (!instance) return;
+  if (!instance || (instance.stopping && fadeOutMs === undefined)) return;
+  instance.stopping = true;
+  clearTimeout(instance.endFadeTimer);
+  clearTimeout(instance.stopTimer);
 
   if (instance.synth) {
     instance.synth.voice.stop(Math.max(0.003, (fadeOutMs ?? instance.config.fadeOut) / 1000));
@@ -379,7 +414,7 @@ const stopSoundInternal = (instanceId: string, fadeOutMs?: number) => {
   if (fadeOut > 0 && howl.playing(instance.howlId)) {
     const currentVolume = toFinite(howl.volume(instance.howlId), 0);
     howl.fade(currentVolume, 0, fadeOut, instance.howlId);
-    globalThis.setTimeout(() => {
+    instance.stopTimer = globalThis.setTimeout(() => {
       try {
         howl.stop(instance.howlId);
       } catch {}
@@ -556,11 +591,8 @@ export const playSound = (soundId: string, options?: Partial<SoundConfig>): void
   }
 
   const howl = getOrCreateHowl(config);
-  const howlId = howl.play();
+  const howlId = howl.play(config.spriteName);
   if (typeof howlId !== "number") return;
-
-  howl.loop(config.loop, howlId);
-  howl.rate(getRandomPlaybackRate(config), howlId);
 
   const instance: SoundInstance = {
     id: `${config.id}:${Date.now()}:${howlId}`,
@@ -573,20 +605,32 @@ export const playSound = (soundId: string, options?: Partial<SoundConfig>): void
 
   registerInstance(instance);
 
-  const mix = soundMixes.get(soundId);
-  applyLowpass(howl, howlId, mix?.lowpassHz);
-  const targetVolume = calculateFinalVolume(config, instance.attenuation) * (mix?.gain ?? 1);
-  if (config.fadeIn > 0) {
-    howl.volume(0, howlId);
-    howl.fade(0, targetVolume, config.fadeIn, howlId);
-  } else {
-    howl.volume(targetVolume, howlId);
+  const startMix = () => {
+    if (!instances.has(instance.id) || instance.stopping) return;
+    // Avoid restarting an already-looping voice through Howler.loop(true).
+    if (howl.loop(howlId) !== config.loop) howl.loop(config.loop, howlId);
+    howl.rate(getRandomPlaybackRate(config), howlId);
+    const mix = soundMixes.get(soundId);
+    const nativeMix = applyVoiceMix(howl, howlId, mix);
+    const targetVolume = calculateFinalVolume(config, instance.attenuation) * (nativeMix ? 1 : mix?.gain ?? 1);
+    if (config.fadeIn > 0) howl.fade(0, targetVolume, config.fadeIn, howlId);
+    else howl.volume(targetVolume, howlId);
+  };
+  // Downloading clips use the latest weather gain when playback actually starts.
+  // Do not queue stale volume ramps behind an unloaded Howl's play operation.
+  howl.once("play", startMix, howlId);
+  if (!config.loop && config.fadeOutAtEnd && config.fadeOut > 0) {
+    howl.once("play", () => {
+      if (!instances.has(instance.id) || instance.stopping) return;
+      const durationMs = howl.duration(howlId) * 1000 / howl.rate(howlId);
+      instance.endFadeTimer = setTimeout(() => stopSoundInternal(instance.id), Math.max(0, durationMs - config.fadeOut));
+    }, howlId);
   }
 
   // Howler emits `end` after every loop. Keep loops tracked until stopped,
   // otherwise a completed reel spin (or scene exit) cannot stop its audio.
   if (!config.loop) howl.once("end", () => cleanupInstance(instance.id), howlId);
-  howl.once("loaderror", () => cleanupInstance(instance.id), howlId);
+  howl.once("loaderror", () => cleanupInstance(instance.id));
 };
 
 export const stopSound = (instanceId: string): void => {
@@ -777,8 +821,8 @@ export const playUISound = (soundId: string = DEFAULT_UI_SOUND.id) => {
 export const getDefaultUISoundId = () => DEFAULT_UI_SOUND.id;
 export const getSecondaryUISoundId = () => DEFAULT_UI_SOUND_2.id;
 
-export const stopSoundsById = (soundConfigId: string): void => {
-  getInstancesForSound(soundConfigId).forEach((instance) => stopSoundInternal(instance.id));
+export const stopSoundsById = (soundConfigId: string, fadeOutMs?: number): void => {
+  getInstancesForSound(soundConfigId).forEach((instance) => stopSoundInternal(instance.id, fadeOutMs));
 };
 
 export const setTapVolume = (volume: number) => {

@@ -11,7 +11,7 @@ import { initialTapUpgrades } from "@/shop-items/upgrades";
 import { initialWorlds } from "@/shop-items/worlds";
 import { THEME_IDS } from "../config/themes";
 
-const normalizeWorlds = (worlds: any[] = []) => {
+export const normalizeWorlds = (worlds: any[] = []) => {
   const previousWorlds = new Map(worlds.map((item: any) => [item.id, item]));
   const previousEnabledId =
     worlds.find((item: any) => item.enabled)?.id ?? "world_default";
@@ -150,7 +150,8 @@ export function migrateCoreStore(persisted: any, fromVersion: number) {
     fromVersion === GAME_STORE_VERSION.V11 ||
     fromVersion === GAME_STORE_VERSION.V12 ||
     fromVersion === GAME_STORE_VERSION.V13 ||
-    fromVersion === GAME_STORE_VERSION.V14
+    fromVersion === GAME_STORE_VERSION.V14 ||
+    fromVersion === GAME_STORE_VERSION.V15
   ) {
     return {
       ...state,

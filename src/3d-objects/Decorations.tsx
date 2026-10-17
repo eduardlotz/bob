@@ -29,7 +29,7 @@ import { WorldFog } from "./worlds/WorldFog";
 import { Nebula } from "./worlds/Nebula";
 import { WeatherParticles } from "./worlds/WeatherParticles";
 import { seededRandom, useWorldQuality } from "./worlds/quality";
-import { GrassShader } from "./GrassShader";
+import { GrassField } from "./worlds/DenseGrassField";
 import { CloudEffect, ForestRainEffect, SnowEffect } from "./ParticleEffects";
 
 const FLOOR_Y = -1.36;
@@ -124,6 +124,8 @@ function WorldDome({
           climate={climate}
           colors={scene.gradientColors}
           stops={scene.gradientStops}
+          nightColors={scene.environment?.dayNight?.nightSky}
+          cycleSeconds={scene.environment?.dayNight?.durationSeconds}
         />
       ) : (
         <mesh renderOrder={-10} frustumCulled={false}>
@@ -299,13 +301,12 @@ function WorldModel({
 
     case "forest_meadow":
       return (
-        <GrassShader
+        <GrassField
           position={[0, -1.32, 0]}
-          scale={[1.28, 0.48, 1.28]}
-          preview={preview}
-          densityMultiplier={1.45}
-          rootOffset={0}
-          fieldRadius={72}
+          scale={[1.28, 1, 1.28]}
+          radius={72}
+          height={0.65}
+          exclusions={[{ center: [0, 2 / 1.28], radius: .7 }]}
           flowers
         />
       );
@@ -483,7 +484,6 @@ function WorldEffect({
 export function SceneDecorations() {
   const worlds = useCoreStore((state) => state.worlds);
   const previewMode = useCoreStore((state) => state.previewMode);
-  const quality = useWorldQuality();
   const preview =
     previewMode === "world" && !!worlds.find((world) => world.preview);
   const activeWorld =
@@ -494,7 +494,13 @@ export function SceneDecorations() {
 
   if (!activeWorld) return null;
 
-  const scene = normalizeWorldScene(activeWorld.scene);
+  return <WorldScenery config={activeWorld.scene} preview={preview} />;
+}
+
+/** World composition is independent of shop selection and can be rendered in isolated previews. */
+export function WorldScenery({ config, preview = false }: { config: WorldSceneConfig; preview?: boolean }) {
+  const quality = useWorldQuality();
+  const scene = useMemo(() => normalizeWorldScene(config), [config]);
 
   return (
     <group>
