@@ -8,6 +8,8 @@ import { sileo } from "sileo";
 import { useI18n } from "@/i18n";
 import { createQuestToastIcon } from "@/components/QuestTrophyIcon";
 
+import { WorldEnvironmentControls } from "./WorldEnvironmentControls";
+
 export const DebugIcon = () => (
   <img src="/images/app-logos/debug.png" height={80} width={80} />
 );
@@ -317,6 +319,9 @@ export const DebugApp = () => {
           <span />
         </ToggleButton>
       </SettingsWrapper>
+
+      <DividerWithLabel>Time & weather</DividerWithLabel>
+      <WorldEnvironmentControls />
 
       <DividerWithLabel>Danger zone</DividerWithLabel>
 

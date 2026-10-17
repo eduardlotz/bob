@@ -92,9 +92,9 @@ export function EnvironmentAudio({ config, authorized, owner = "world" }: { conf
         const clip = clips?.[index];
         if (target > 0.15) playSound(active.id, {
           loop: false, spriteName: clip ? `excerpt-${index}` : undefined,
-          fadeIn: clip ? (clip.fadeInSeconds ?? .4) * 1000 : 80,
-          fadeOut: clip ? (clip.fadeOutSeconds ?? .7) * 1000 : WORLD_AMBIENCE_EXIT_MS,
-          fadeOutAtEnd: Boolean(clip),
+          fadeIn: (clip?.fadeInSeconds ?? active.layer.accentFade?.inSeconds ?? .08) * 1000,
+          fadeOut: (clip?.fadeOutSeconds ?? active.layer.accentFade?.outSeconds ?? 0) * 1000,
+          fadeOutAtEnd: Boolean(clip || active.layer.accentFade),
         });
         active.nextAt = elapsed.current + randomInterval(active.layer.intervalSeconds);
       }

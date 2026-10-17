@@ -3,6 +3,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as T from "three";
 import { Fireplace } from "./Fireplace";
 export { Fireplace };
+import { firelightStrength } from "./firelight";
 import { useWorldEnvironment } from "./WorldEnvironment";
 
 const softPool = (shader: T.WebGLProgramParametersWithUniforms) => {
@@ -78,8 +79,7 @@ export function NightMaterialFill({ kind }: { kind: "fire" | "moon" }) {
     uniforms.uNightTint.value.set(kind === "moon" ? "#9dbce8" : "#ffad54");
     if (kind === "fire") uniforms.uNightSource.value.set(0, -.8, 2);
     else uniforms.uNightSource.value.set(3, 5, 6);
-    const flicker = kind === "fire" ? .82 + .1 * Math.sin(elapsed * 13) + .08 * Math.sin(elapsed * 23.7) : 1;
-    uniforms.uNightFill.value = (1 - daylight) * flicker * (kind === "moon" ? .24 : .65);
+    uniforms.uNightFill.value = kind === "fire" ? firelightStrength(elapsed, daylight) : (1 - daylight) * .24;
   }, -4);
   return null;
 }
@@ -96,8 +96,8 @@ export function StreetLightPools() {
     });
   });
   return <group ref={group} name="night-street-pools">{[-4.8, 4.8].flatMap(z => [-1, 1].map(side => <group key={`${side}:${z}`} position={[side * 4.25, -1.28, z]}>
-    <mesh name="beam" position={[0, 2.1, 0]}><coneGeometry args={[1.8, 4.2, 24, 1, true]} /><meshBasicMaterial color="#ffe4a0" side={T.DoubleSide} transparent opacity={0} depthWrite={false} /></mesh>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, .01, 0]}><circleGeometry args={[1.8, 32]} /><meshBasicMaterial color="#ffe4a0" onBeforeCompile={softPool} transparent opacity={0} depthWrite={false} /></mesh>
+    <mesh name="beam" position={[0, 2.1, 0]}><coneGeometry args={[1.5, 4.2, 24, 1, true]} /><meshBasicMaterial color="#ffe4a0" side={T.DoubleSide} transparent opacity={0} depthWrite={false} /></mesh>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, .01, 0]}><circleGeometry args={[1.5, 32]} /><meshBasicMaterial color="#ffe4a0" onBeforeCompile={softPool} transparent opacity={0} depthWrite={false} /></mesh>
   </group>))}</group>;
 }
 
@@ -114,6 +114,6 @@ function CornerLight({ side }: { side: number }) {
   return <>
     <object3D ref={target} position={[0, .4, -1]} />
     <spotLight ref={light} name={`corner-spot-${side}`} position={[side * 4.25, 2.92, 4.8]} color="#ffe4b0"
-      intensity={0} angle={.68} penumbra={.5} distance={16} decay={2} castShadow={false} />
+      intensity={0} angle={.60} penumbra={.5} distance={16} decay={2} castShadow={false} />
   </>;
 }

@@ -13,6 +13,7 @@ export const ENVIRONMENT_AUDIO_SOURCES: Record<string, WorldSoundSource> = {
   "ambience-rain": recording("rain"),
   "ambience-city": recording("city"),
   "ambience-horn": recording("horn"),
+  "ambience-car": recording("car"),
   "ambience-desert-wind": recording("desert-wind"),
   "ambience-sand": recording("sand"),
   "ambience-winter-wind": recording("winter-wind"),

@@ -26,6 +26,8 @@ export interface WearableDefinition {
   /** Asset units/pivot/orientation, calibrated only once on the default Ball. */
   calibration: { position: Vec3; scale: Vec3; rotation?: Vec3 };
   mount: WearableMount;
+  /** Shift the whole Bob, including body and face, while this item is attached. */
+  bobOffset?: Vec3;
   /** Preserve models that use their own outline color. Defaults to true. */
   useThemeOutline?: boolean;
 }
@@ -102,6 +104,7 @@ export const BOB_WEARABLES: Readonly<Record<string, WearableDefinition>> = {
   },
   astronautHelmet: {
     Model: AstronautHelmet,
+    bobOffset: [0, 0.18, 0],
     calibration: { position: [0, 0, 0], scale: [1, 1, 1] },
     mount: { kind: "body" },
   },

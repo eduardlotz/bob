@@ -28,6 +28,7 @@ import { EmotionState } from "@/hooks/useBlobEmotions";
 import { getBobItemSlot, useCoreStore } from "@/store/core/store";
 import { useViewStore } from "@/store/viewStore";
 import { match } from "ts-pattern";
+import { BOB_WEARABLES } from "@/components/bob/wearableRegistry";
 import { BobWearables } from "@/components/BobWearables";
 import { BlobForm } from "@/components/BlobForm";
 import {
@@ -931,6 +932,10 @@ export function BlobHead({
       ? [...previewItems, ...enabledItems]
       : enabledItems;
 
+    const bobOffset = allEquippedItems.reduce<[number, number, number]>((offset, item) => {
+      const shift = !item.detached && BOB_WEARABLES[item.id]?.bobOffset;
+      return shift ? [offset[0] + shift[0], offset[1] + shift[1], offset[2] + shift[2]] : offset;
+    }, [0, 0, 0]);
     const detachedItems = allEquippedItems.filter((i) => i.detached);
 
     const attachedModels = (
@@ -966,11 +971,12 @@ export function BlobHead({
 
     return {
       attached: attachedModels,
+      bobOffset,
       detached: detachedModels,
     };
   };
 
-  const { attached: attachedItems, detached: detachedItems } = renderBobItems();
+  const { attached: attachedItems, detached: detachedItems, bobOffset } = renderBobItems();
 
   const content = (
     <>
@@ -1006,6 +1012,7 @@ export function BlobHead({
             setPointerDown(false);
           }}
           castShadow
+          receiveShadow
           scale={spring.scale as any}
           rotation={[0, Math.PI, 0]}
           // position={[0, 2, 0]}
@@ -1015,8 +1022,8 @@ export function BlobHead({
               formType={blobFormType}
               parameters={selectedBlobForm.parameters}
               blobColor={blobColor || "#ffffff"}
-              // outlineColor={ditheringEnabled ? outlineColor : undefined}
-              outlineColor={outlineColor}
+              outlineColor={ditheringEnabled ? outlineColor : undefined}
+              // outlineColor={outlineColor}
             />
 
             <group position={calculateEyePosition([0, 0.2, 0.85])}>
@@ -1043,5 +1050,5 @@ export function BlobHead({
     </>
   );
 
-  return content;
+  return <group position={bobOffset}>{content}</group>;
 }

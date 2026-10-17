@@ -25,6 +25,8 @@ export interface EnvironmentSoundLayer {
   intervalSeconds?: [number, number];
   condition?: WorldSoundCondition;
   fadeSeconds?: number;
+  /** Optional natural-end envelope for random accents, in seconds. */
+  accentFade?: { inSeconds: number; outSeconds: number };
   /** Randomly choose a timestamp/duration in the layer's source file. */
   excerpts?: WorldSoundExcerpt[];
 }

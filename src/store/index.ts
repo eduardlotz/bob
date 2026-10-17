@@ -1,7 +1,7 @@
 import { EmotionState } from "@/hooks/useBlobEmotions";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import { ROUTE_PATHS } from "./config/routes";
+import { ROUTE_PATHS, ROUTES } from "./config/routes";
 
 export {
   ROUTE_PATHS,
@@ -105,10 +105,7 @@ export const useAppStore = create<AppStore>()(
         }
       },
 
-      getRouteByPath: (path) => {
-        const { ROUTES } = require("./routeConfig");
-        return ROUTES.find((route: any) => route.path === path);
-      },
+      getRouteByPath: (path) => ROUTES.find((route) => route.path === path),
       isRouteActive: (path) => get().currentRoute === path,
     }),
     {

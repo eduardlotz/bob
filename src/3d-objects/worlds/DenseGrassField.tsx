@@ -3,7 +3,8 @@ import { useFrame } from "@react-three/fiber";
 import * as T from "three";
 import { seededRandom, useWorldQuality } from "./quality";
 import { grassGroundTexture } from "./grassField";
-import { useWorldEnvironment } from "./WorldEnvironment";
+import { FIRE_LIGHT_POSITION, FIRE_LIGHT_TINT, firelightStrength, firelightGLSL } from "./firelight";
+import { useWorldEnvironmentConfig, useWorldEnvironment } from "./WorldEnvironment";
 import { ForestFlowers } from "./ForestFlowers";
 
 export type GrassExclusion = { center: [number, number]; radius: number } | { center: [number, number]; size: [number, number] };
@@ -25,6 +26,7 @@ function GrassBand({ inner, outer, count, height, size, exclusions, seed }: {
   inner: number; outer: number; count: number; height: number; size?: [number, number]; exclusions: GrassExclusion[]; seed: number;
 }) {
   const environment = useWorldEnvironment();
+  const config = useWorldEnvironmentConfig();
   const material = useRef<T.ShaderMaterial>(null);
   const geometry = useMemo(() => {
     const plane = new T.PlaneGeometry(1, 1, 1, inner === 0 ? 3 : 1);
@@ -59,6 +61,7 @@ function GrassBand({ inner, outer, count, height, size, exclusions, seed }: {
   const uniforms = useMemo(() => ({
     ...T.UniformsUtils.clone(T.UniformsLib.fog),
     uTime: { value: 0 }, uWind: { value: .35 }, uDaylight: { value: 1 }, uRain: { value: 0 },
+    uFirePosition: { value: FIRE_LIGHT_POSITION }, uFireTint: { value: FIRE_LIGHT_TINT }, uFireStrength: { value: 0 },
     uBase: { value: new T.Color("#315925") }, uTip: { value: new T.Color("#86a95b") },
   }), []);
   useFrame(() => {
@@ -66,6 +69,7 @@ function GrassBand({ inner, outer, count, height, size, exclusions, seed }: {
     const u = material.current.uniforms, state = environment.current;
     u.uTime.value = state.elapsed; u.uWind.value = state.wind;
     u.uDaylight.value = state.daylight; u.uRain.value = state.rain;
+    u.uFireStrength.value = config?.nightLight === "fire" ? firelightStrength(state.elapsed, state.daylight) : 0;
   });
   return <mesh geometry={geometry} name={`meadow-grass-${inner ? "far" : "near"}`}>
     <shaderMaterial ref={material} uniforms={uniforms} fog side={T.DoubleSide}
@@ -75,6 +79,7 @@ function GrassBand({ inner, outer, count, height, size, exclusions, seed }: {
         attribute vec4 aShape;
         uniform float uTime, uWind;
         varying float vHeight, vTone, vLight;
+        varying vec3 vFirePosition;
         void main() {
           float h = uv.y;
           vec4 root = modelMatrix * vec4(aRoot, 1.0);
@@ -93,19 +98,27 @@ function GrassBand({ inner, outer, count, height, size, exclusions, seed }: {
           p.z += (.06 + gust * .09) * uWind * h * h * sx * aShape.y * 1.5;
           p += right * (aShape.z - .5) * h * h * .18 * sx * aShape.y;
           vHeight = h; vTone = aShape.w; vLight = .88 + aShape.z * .16;
+          vFirePosition = p;
           vec4 mvPosition = viewMatrix * vec4(p, 1.0);
           gl_Position = projectionMatrix * mvPosition;
           #include <fog_vertex>
         }`}
       fragmentShader={`
         #include <fog_pars_fragment>
+        ${firelightGLSL}
         uniform vec3 uBase, uTip;
         uniform float uDaylight, uRain;
         varying float vHeight, vTone, vLight;
         void main() {
           vec3 color = mix(uBase, uTip, pow(vHeight, .75));
           color *= (.86 + vTone * .24) * vLight * mix(.65, 1.0, smoothstep(0.0,.4,vHeight));
+          vec3 fireColor = color;
           color *= mix(vec3(.19,.27,.4), vec3(1.0), uDaylight) * (1.0 - uRain * .12);
+          // Light the facing parts in two toon bands, including the bent blade tips.
+          vec3 bladeNormal = normalize(cross(dFdx(vFirePosition), dFdy(vFirePosition)));
+          float facing = abs(dot(bladeNormal, normalize(uFirePosition - vFirePosition)));
+          float fireBand = step(.25, facing) * .45 + step(.65, facing) * .55;
+          color += fireColor * uFireTint * uFireStrength * fireReach() * fireBand;
           gl_FragColor = vec4(color,1.0);
           #include <tonemapping_fragment>
           #include <colorspace_fragment>
@@ -119,13 +132,30 @@ function GrassBand({ inner, outer, count, height, size, exclusions, seed }: {
 export function GrassField({ position, scale, radius = 36, size, height = .48, density = 1, seed = 128, exclusions = noExclusions, flowers = false }: GrassFieldProps) {
   const quality = useWorldQuality();
   const environment = useWorldEnvironment();
+  const config = useWorldEnvironmentConfig();
   const ground = useRef<T.MeshBasicMaterial>(null);
+  const groundFire = useMemo(() => ({
+    uFirePosition: { value: FIRE_LIGHT_POSITION },
+    uFireTint: { value: FIRE_LIGHT_TINT },
+    uFireStrength: { value: 0 },
+  }), []);
+  const patchGround = useMemo(() => (shader: T.WebGLProgramParametersWithUniforms) => {
+    Object.assign(shader.uniforms, groundFire);
+    shader.vertexShader = 'varying vec3 vFirePosition;\n' + shader.vertexShader;
+    shader.vertexShader = shader.vertexShader.replace('#include <project_vertex>',
+      'vFirePosition = (modelMatrix * vec4(transformed, 1.0)).xyz;\n#include <project_vertex>');
+    shader.fragmentShader = firelightGLSL + shader.fragmentShader;
+    shader.fragmentShader = shader.fragmentShader.replace('#include <opaque_fragment>',
+      'outgoingLight += texture2D(map, vMapUv).rgb * uFireTint * uFireStrength * fireReach();\n#include <opaque_fragment>');
+  }, [groundFire]);
   const nightTint = useMemo(() => new T.Color(.19, .27, .4), []);
   const extent = size ? Math.hypot(...size) / 2 : radius;
   const near = Math.min(18, extent);
   const texture = useMemo(() => grassGroundTexture(extent), [extent]);
   useEffect(() => () => texture.dispose(), [texture]);
   useFrame(() => {
+    const state = environment.current;
+    groundFire.uFireStrength.value = config?.nightLight === "fire" ? firelightStrength(state.elapsed, state.daylight) : 0;
     ground.current?.color.setRGB(1, 1, 1).lerp(nightTint, 1 - environment.current.daylight).multiplyScalar(1 - environment.current.rain * .12);
   });
   // Match area on small reusable patches; distant scenery uses wider, simpler blades.
@@ -134,7 +164,7 @@ export function GrassField({ position, scale, radius = 36, size, height = .48, d
   return <group position={position} scale={scale}>
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -.015, 0]}>
       {size ? <planeGeometry args={size} /> : <circleGeometry args={[radius, 64]} />}
-      <meshBasicMaterial ref={ground} map={texture} />
+      <meshBasicMaterial ref={ground} map={texture} onBeforeCompile={patchGround} customProgramCacheKey={() => "grass-ground-fire-v1"} />
     </mesh>
     <GrassBand inner={0} outer={near} count={nearCount} height={height} size={size} exclusions={exclusions} seed={seed} />
     {extent > near && <GrassBand inner={near - 1} outer={extent} count={Math.round(budget * .75)} height={height * 1.15} size={size} exclusions={exclusions} seed={seed + 1} />}

@@ -6,11 +6,19 @@ import { useWorldEnvironment } from "./WorldEnvironment";
 import { seededRandom, useWorldQuality } from "./quality";
 
 function markNightGlow(geometry: T.BufferGeometry, colors: string[]) {
-  const targets = colors.map(c => new T.Color(c));
+  const targets = colors.map((c) => new T.Color(c));
   const color = geometry.getAttribute("color");
   const mask = new Float32Array(color.count);
   for (let i = 0; i < mask.length; i++) {
-    mask[i] = targets.some(c => Math.abs(c.r - color.getX(i)) + Math.abs(c.g - color.getY(i)) + Math.abs(c.b - color.getZ(i)) < .00001) ? 1 : 0;
+    mask[i] = targets.some(
+      (c) =>
+        Math.abs(c.r - color.getX(i)) +
+          Math.abs(c.g - color.getY(i)) +
+          Math.abs(c.b - color.getZ(i)) <
+        0.00001,
+    )
+      ? 1
+      : 0;
   }
   geometry.setAttribute("nightGlow", new T.BufferAttribute(mask, 1));
   return geometry;
@@ -19,15 +27,38 @@ function markNightGlow(geometry: T.BufferGeometry, colors: string[]) {
 function CityNightMaterial({ roughness = 1 }: { roughness?: number }) {
   const environment = useWorldEnvironment();
   const uniform = useMemo(() => ({ value: 0 }), []);
-  const compile = useMemo(() => (shader: T.WebGLProgramParametersWithUniforms) => {
-    shader.uniforms.uCityNight = uniform;
-    shader.vertexShader = "attribute float nightGlow; varying float vNightGlow;\n" + shader.vertexShader;
-    shader.vertexShader = shader.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\nvNightGlow = nightGlow;");
-    shader.fragmentShader = "uniform float uCityNight; varying float vNightGlow;\n" + shader.fragmentShader;
-    shader.fragmentShader = shader.fragmentShader.replace("#include <opaque_fragment>", "outgoingLight += diffuseColor.rgb * vNightGlow * uCityNight * 2.0;\n#include <opaque_fragment>");
-  }, [uniform]);
-  useFrame(() => { uniform.value = 1 - environment.current.daylight; });
-  return <meshStandardMaterial vertexColors roughness={roughness} flatShading onBeforeCompile={compile} customProgramCacheKey={() => "city-night-v1"} />;
+  const compile = useMemo(
+    () => (shader: T.WebGLProgramParametersWithUniforms) => {
+      shader.uniforms.uCityNight = uniform;
+      shader.vertexShader =
+        "attribute float nightGlow; varying float vNightGlow;\n" +
+        shader.vertexShader;
+      shader.vertexShader = shader.vertexShader.replace(
+        "#include <begin_vertex>",
+        "#include <begin_vertex>\nvNightGlow = nightGlow;",
+      );
+      shader.fragmentShader =
+        "uniform float uCityNight; varying float vNightGlow;\n" +
+        shader.fragmentShader;
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <opaque_fragment>",
+        "outgoingLight += diffuseColor.rgb * vNightGlow * uCityNight * 2.0;\n#include <opaque_fragment>",
+      );
+    },
+    [uniform],
+  );
+  useFrame(() => {
+    uniform.value = 1 - environment.current.daylight;
+  });
+  return (
+    <meshStandardMaterial
+      vertexColors
+      roughness={roughness}
+      flatShading
+      onBeforeCompile={compile}
+      customProgramCacheKey={() => "city-night-v1"}
+    />
+  );
 }
 
 function box(parts: Part[], color: string, position: Vec3, scale: Vec3) {
@@ -48,12 +79,14 @@ export function brownstone(
   box(local, brick[index % 4], [0, base + height / 2, 0], [4.6, height, 5]);
   box(local, "#d2c0a3", [0, base + height, 0], [4.95, 0.25, 5.25]);
   box(local, "#755b4c", [0, base + 0.9, 2.55], [0.8, 1.8, 0.12]);
+  // Lift the lowest tread clear of the corner pavement (top at -1.08).
+  // Insets also keep overlapping block sides from sharing a plane.
   for (let step = 0; step < 3; step++) {
     box(
       local,
       "#b6ab96",
-      [0, -1.2 + step * 0.12, 3.45 - step * 0.23],
-      [1.25, 0.24, 0.8 - step * 0.15],
+      [0, -1.16 + step * 0.12, 3.45 - step * 0.23],
+      [1.25 - step * 0.012, 0.24, 0.8 - step * 0.15],
     );
   }
   for (let floor = 0; floor < 3; floor++) {
@@ -203,7 +236,13 @@ function cityGeometry() {
       box(parts, "#f6e6ae", [x - side * 0.75, 2.92, z], [0.35, 0.15, 0.25]);
     }
   }
-  return markNightGlow(assemble(parts), ["#c6d6ce", "#425a66", "#e4d9ad", "#546e80", "#f6e6ae"]);
+  return markNightGlow(assemble(parts), [
+    "#c6d6ce",
+    "#425a66",
+    "#e4d9ad",
+    "#546e80",
+    "#f6e6ae",
+  ]);
 }
 
 function carGeometry(cab: boolean) {

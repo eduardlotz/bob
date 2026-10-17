@@ -52,13 +52,13 @@ export const initialWorlds: WorldItem[] = [
       },
       audio: { layers: [
         { soundId: "ambience-rain", mode: "loop", volume: 0.35, condition: "rain" },
-        { soundId: "ambience-bird", mode: "random", volume: 0.075, intervalSeconds: [6, 16], condition: "day",
+        { soundId: "ambience-bird", mode: "random", volume: 0.075, intervalSeconds: [6, 16], condition: "day", accentFade: { inSeconds: 1, outSeconds: 1 },
           excerpts: [
-            { startSeconds: 4.5, durationSeconds: 4, fadeInSeconds: .4, fadeOutSeconds: .7 },
-            { startSeconds: 14, durationSeconds: 5, fadeInSeconds: .4, fadeOutSeconds: .8 },
-            { startSeconds: 27, durationSeconds: 4.5, fadeInSeconds: .4, fadeOutSeconds: .7 },
-            { startSeconds: 39, durationSeconds: 5.5, fadeInSeconds: .5, fadeOutSeconds: 1 },
-            { startSeconds: 47, durationSeconds: 4, fadeInSeconds: .4, fadeOutSeconds: .7 },
+            { startSeconds: 4.5, durationSeconds: 10 },
+            { startSeconds: 14, durationSeconds: 12 },
+            { startSeconds: 27, durationSeconds: 10 },
+            { startSeconds: 39, durationSeconds: 12 },
+            { startSeconds: 45, durationSeconds: 8 },
           ],
         },
       ] },
@@ -89,7 +89,12 @@ export const initialWorlds: WorldItem[] = [
       },
       audio: { layers: [
         { soundId: "ambience-city", mode: "loop", volume: 0.085 },
-        { soundId: "ambience-horn", mode: "random", volume: 0.055, intervalSeconds: [12, 30] },
+        { soundId: "ambience-horn", mode: "random", volume: 0.055, intervalSeconds: [12, 30], excerpts: [
+          { startSeconds: 0, durationSeconds: 1.4 },
+          { startSeconds: 2, durationSeconds: 2.6 },
+          { startSeconds: 5, durationSeconds: 1.8 },
+        ] },
+        { soundId: "ambience-car", mode: "random", volume: 0.065, intervalSeconds: [15, 35], accentFade: { inSeconds: .8, outSeconds: 1.2 } },
       ] },
     },
   },

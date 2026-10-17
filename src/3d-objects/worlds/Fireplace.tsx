@@ -126,6 +126,8 @@ export function Fireplace() {
   const quality = useWorldQuality();
   const pitMaterial = useRef<T.MeshToonMaterial | null>(null);
   const effects = useRef<T.Group>(null);
+  const flameMaterial = useRef<T.ShaderMaterial>(null);
+  const emberMaterial = useRef<T.ShaderMaterial>(null);
   const pit = useMemo(firepitGeometry, []);
   const flames = useMemo(() => instancedGeometry(new T.ConeGeometry(.5, 1, 7, 7), "aFlame",
     new Float32Array([-.13, -.02, .58, .75, .12, -.05, .46, .59, .01, .12, .4, .9])), []);
@@ -139,8 +141,12 @@ export function Fireplace() {
   useFrame(() => {
     const { elapsed, daylight } = environment.current;
     if (pitMaterial.current) pitMaterial.current.emissiveIntensity = (1 - daylight) * (.16 + Math.sin(elapsed * 6) * .015);
-    uniforms.uTime.value = elapsed;
-    uniforms.uNight.value = 1 - daylight;
+    // Update the live materials: newer R3F versions copy the supplied uniform map.
+    for (const material of [flameMaterial.current, emberMaterial.current]) {
+      if (!material) continue;
+      material.uniforms.uTime.value = elapsed;
+      material.uniforms.uNight.value = 1 - daylight;
+    }
     if (effects.current) effects.current.visible = daylight < .999;
   });
   return <group position={[0, -1.28, 2]} name="night-fireplace">
@@ -148,10 +154,10 @@ export function Fireplace() {
     <mesh geometry={pit} name="firepit-stones-and-crossed-logs"><WorldToonMaterial onUpdate={material => { pitMaterial.current = material; }} vertexColors emissive="#aa582c" emissiveIntensity={0} /></mesh>
     <group ref={effects} visible={false}>
       <mesh geometry={flames} frustumCulled={false} name="fire-tongues">
-        <shaderMaterial uniforms={uniforms} vertexShader={flameVertex} fragmentShader={flameFragment} transparent depthWrite={false} toneMapped={false} />
+        <shaderMaterial ref={flameMaterial} uniforms={uniforms} vertexShader={flameVertex} fragmentShader={flameFragment} transparent depthWrite={false} toneMapped={false} />
       </mesh>
       <mesh geometry={embers} frustumCulled={false} name="fire-embers">
-        <shaderMaterial uniforms={uniforms} vertexShader={emberVertex} fragmentShader={emberFragment} transparent depthWrite={false} toneMapped={false} />
+        <shaderMaterial ref={emberMaterial} uniforms={uniforms} vertexShader={emberVertex} fragmentShader={emberFragment} transparent depthWrite={false} toneMapped={false} />
       </mesh>
     </group>
   </group>;
