@@ -74,24 +74,24 @@ export const FORM_PARAMETER_RANGES: Record<
   },
   cube: {
     cubeWidth: {
-      min: 0.8,
-      max: 2.5,
+      min: 0.4,
+      max: 3.5,
       step: 0.05,
       default: 1.75,
       label: "Breite",
       description: "Breite von Bobs Körper",
     },
     cubeHeight: {
-      min: 0.8,
-      max: 2.5,
+      min: 0.4,
+      max: 3.5,
       step: 0.05,
       default: 1.75,
       label: "Höhe",
       description: "Höhe von Bobs Körper",
     },
     cubeDepth: {
-      min: 0.8,
-      max: 2.5,
+      min: 0.4,
+      max: 3.5,
       step: 0.05,
       default: 1.65,
       label: "Tiefe",
@@ -107,6 +107,42 @@ export const FORM_PARAMETER_RANGES: Record<
     },
   },
 };
+
+/** Rounding must fit inside every axis, including very thin Cube forms. */
+export function getBlobFormParameterRange(
+  formType: BlobFormType,
+  key: string,
+  parameters: BlobFormParameters,
+): BlobFormParameterRange {
+  const range = FORM_PARAMETER_RANGES[formType][key];
+  if (formType !== "cube" || key !== "cubeRadius") return range;
+  const halfSize = Math.min(...getBlobFormHalfSize("cube", parameters));
+  const max = Math.min(range.max, Math.floor((halfSize + 1e-8) / range.step) * range.step);
+  return { ...range, max: Number(max.toFixed(2)) };
+}
+
+export function normalizeBlobFormParameters(
+  formType: BlobFormType,
+  parameters: BlobFormParameters,
+): BlobFormParameters {
+  const normalized = { ...DEFAULT_FORM_PARAMETERS[formType], ...parameters };
+  for (const [key, range] of Object.entries(FORM_PARAMETER_RANGES[formType])) {
+    const parameter = key as keyof BlobFormParameters;
+    const value = normalized[parameter];
+    normalized[parameter] = typeof value === "number" && Number.isFinite(value)
+      ? Math.max(range.min, Math.min(range.max, value))
+      : range.default;
+  }
+  if (formType === "cube") {
+    normalized.cubeRadius = Math.min(normalized.cubeRadius!, getBlobFormParameterRange(formType, "cubeRadius", normalized).max);
+  }
+  return normalized;
+}
+
+export function getCubeCornerRadius(parameters: BlobFormParameters): number {
+  const requested = parameters.cubeRadius ?? DEFAULT_FORM_PARAMETERS.cube.cubeRadius!;
+  return Math.min(requested, Math.min(...getBlobFormHalfSize("cube", parameters)) - 0.00001);
+}
 
 // initial blob form configurations
 export const INITIAL_BLOB_FORMS: BlobFormConfig[] = [

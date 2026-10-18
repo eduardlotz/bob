@@ -1,5 +1,4 @@
 import { useSoundSystem } from "@/hooks/useSoundSystem";
-import { BlobFormCustomization } from "@/components/BlobFormCustomization";
 import { SegmentedValueSlider } from "@/components/SegmentedValueSlider";
 import { AnimatedSegmentedControl } from "@/components/AnimatedSegmentedControl";
 import { LocaleSegmentedControl } from "@/components/LocaleSegmentedControl";
@@ -217,12 +216,7 @@ export function OptionsApp() {
           </VolumeRow>
         )}
 
-        {/* BOB SHAPE // EXPERIMENTAL */}
 
-        <DividerWithLabel>
-          {messages.options.sections.bobShape}
-        </DividerWithLabel>
-        <BlobFormCustomization />
       </FillColumn>
     </FillColumn>
   );

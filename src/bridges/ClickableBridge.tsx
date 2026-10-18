@@ -52,14 +52,15 @@ export function ClickableBridge() {
     window.addEventListener("pointerout", out);
     window.addEventListener("pointerdown", down);
     window.addEventListener("pointerup", up);
-    window.addEventListener("click", click);
+    // Read the action's sound before React changes the trigger's open/close state.
+    window.addEventListener("click", click, true);
 
     return () => {
       window.removeEventListener("pointerover", over);
       window.removeEventListener("pointerout", out);
       window.removeEventListener("pointerdown", down);
       window.removeEventListener("pointerup", up);
-      window.removeEventListener("click", click);
+      window.removeEventListener("click", click, true);
     };
   }, [setHovering, setPointerDown]);
 

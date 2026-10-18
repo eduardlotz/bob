@@ -1,6 +1,6 @@
 import React from "react";
 import { RoundedBox, Outlines } from "@react-three/drei";
-import { BlobFormType, BlobFormParameters } from "@/types/blobForms";
+import { BlobFormType, BlobFormParameters, getCubeCornerRadius } from "@/types/blobForms";
 
 interface BlobFormProps {
   formType: BlobFormType;
@@ -37,7 +37,7 @@ export const BlobForm = React.memo(
               parameters.cubeHeight || 1.75,
               parameters.cubeDepth || 1.65,
             ]}
-            radius={parameters.cubeRadius || 0.2}
+            radius={getCubeCornerRadius(parameters)}
             smoothness={2}
             castShadow
             receiveShadow

@@ -45,7 +45,9 @@ export function ViewControls() {
   const isGameActive = activeGame !== "LOBBY";
   const isMinigamesRoute = currentRoute === ROUTE_PATHS.MINIGAMES;
 
+  const isShopPreview = currentView === "shop:preview";
   const shouldHide =
+    isShopPreview ||
     isGameActive ||
     isMinigamesRoute ||
     isTransitioning ||
@@ -58,6 +60,8 @@ export function ViewControls() {
   useKeyPress("Escape", () => {
     if (
       !isDefault &&
+      !isPhone &&
+      !isShopPreview &&
       !isCreative &&
       !isTransitioning &&
       !isNavigation &&

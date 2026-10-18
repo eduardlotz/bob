@@ -116,7 +116,7 @@ export const homeMessageConfigs = defineMessages<Record<string, MessageConfig>>(
         id: "return_shop_affordable",
         text: [
           "Hast du eigentlich schon den shop gesehen? ",
-          "Schau mal unten im phone, da wirst du bestimmt was cooles finden um die ganzen taps wieder auszugeben 🤪",
+          "Tippe unten auf Shop, da wirst du bestimmt was Cooles finden, um die ganzen Taps wieder auszugeben 🤪",
         ],
         label: "Bob",
         options: {
@@ -256,7 +256,7 @@ export const homeMessageConfigs = defineMessages<Record<string, MessageConfig>>(
         id: "return_shop_affordable",
         text: [
           "Have you already checked out the shop?",
-          "Take a look in the phone below, you'll probably find something cool to spend all those taps on 🤪",
+          "Tap Shop below, you'll probably find something cool to spend all those taps on 🤪",
         ],
         label: "Bob",
         options: {

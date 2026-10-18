@@ -3,6 +3,7 @@ import {
   FORM_PARAMETER_RANGES,
   getBobEyePosition,
   getBlobFormHalfSize,
+  getCubeCornerRadius,
   type BlobFormParameters,
   type BlobFormType,
 } from "@/types/blobForms";
@@ -20,9 +21,12 @@ export interface BobBodyFit {
   compactness: number;
 }
 
+/** Horizontal keeps height fixed; uniform uses the widest horizontal dimension. */
+export type WearableScaling = "body" | "horizontal" | "uniform" | "none";
+
 export type WearableMount =
-  | { kind: "crown"; bottom: number; inset?: number }
-  | { kind: "hair" }
+  | { kind: "crown"; bottom: number; inset?: number; cubeInset?: number; scaling?: WearableScaling }
+  | { kind: "hair"; scaling?: WearableScaling; cubeDepthScale?: number }
   | { kind: "body" }
   | { kind: "eyes"; front: number; compactForward?: number; compactScale?: number }
   | { kind: "face"; eyeOffset: number; clearance: number };
@@ -30,6 +34,18 @@ export type WearableMount =
 export interface WearableTransform {
   position: Vec3;
   scale: Vec3;
+}
+
+function scaleWearable(width: number, height: number, depth: number, scaling: WearableScaling): Vec3 {
+  switch (scaling) {
+    case "none": return [1, 1, 1];
+    case "horizontal": return [width, 1, depth];
+    case "uniform": {
+      const widest = Math.max(width, depth);
+      return [widest, widest, widest];
+    }
+    case "body": return [width, height, depth];
+  }
 }
 
 // Rounded-box support bound in normalized body coordinates. Unlike a fixed
@@ -53,7 +69,7 @@ export function getBobBodyFit(
 ): BobBodyFit {
   const defaults = DEFAULT_FORM_PARAMETERS[formType];
   const halfSize = getBlobFormHalfSize(formType, parameters);
-  const radius = Math.min(parameters.cubeRadius ?? defaults.cubeRadius ?? 0, ...halfSize);
+  const radius = formType === "cube" ? getCubeCornerRadius(parameters) : 0;
   const minimumSize = formType === "sphere"
     ? FORM_PARAMETER_RANGES.sphere.sphereRadius.min
     : Math.max(...["cubeWidth", "cubeHeight", "cubeDepth"].map(key => FORM_PARAMETER_RANGES.cube[key].min / 2));
@@ -78,22 +94,34 @@ export function fitBobWearable(body: BobBodyFit, mount: WearableMount): Wearable
   const [x, y, z] = body.halfSize;
   switch (mount.kind) {
     case "crown": {
-      if (body.formType === "sphere") {
-        return { position: [0, 0, 0], scale: [x, y, z] };
-      }
       const width = x * body.crownCoverage;
       const depth = z * body.crownCoverage;
-      const height = Math.min(width, depth);
+      const height = body.formType === "sphere" ? y : Math.min(width, depth);
+      const scale = scaleWearable(width, height, depth, mount.scaling ?? "horizontal");
+      const inset = mount.cubeInset === undefined
+        ? (mount.inset ?? 0.02) * height
+        : mount.cubeInset * scale[1];
       return {
-        position: [0, y - (mount.bottom + (mount.inset ?? 0.02)) * height, 0],
-        scale: [width, height, depth],
+        // Cube seating follows the hat's own height, independent of body aspect ratio.
+        position: [0, body.formType === "sphere"
+          ? mount.bottom * (height - scale[1])
+          : y - mount.bottom * scale[1] - inset, 0],
+        scale,
       };
     }
-    case "hair":
+    case "hair": {
+      const scale = scaleWearable(x * body.crownCoverage, y, z * body.crownCoverage, mount.scaling ?? "horizontal");
+      if (body.formType === "cube") {
+        // Extra afro depth is needed on wide, shallow bodies; fade it out on deep forms.
+        const shallowBlend = Math.max(0, 1 - z / x);
+        scale[2] *= 1 + ((mount.cubeDepthScale ?? 1) - 1) * shallowBlend;
+      }
       return {
-        position: [0, 0, 0],
-        scale: [x * body.crownCoverage, y, z * body.crownCoverage],
+        // Hair wraps the scalp; keep its unit-height attachment at the body top.
+        position: [0, y - scale[1], 0],
+        scale,
       };
+    }
     case "body":
       // Procedural models consume body measurements directly, keeping round
       // details round instead of stretching an imported asset.

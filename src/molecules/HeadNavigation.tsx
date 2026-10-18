@@ -1,6 +1,8 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useRef, useEffect, useMemo } from "react";
 import * as THREE from "three";
-import { Html, Float, CameraControls } from "@react-three/drei";
+import { Html, CameraControls } from "@react-three/drei";
+import { useThree } from "@react-three/fiber";
+import { createNavigationPositionCalculator, getNavigationPositions } from "./navigationLayout";
 import { motion } from "motion/react";
 import { MotionVariants } from "@/styles/motion";
 import { BlobHead } from "./BlobHead";
@@ -11,24 +13,13 @@ import { useNavigate } from "react-router-dom";
 import { match } from "ts-pattern";
 import { LockIcon } from "@/icons/lock";
 import { useAppStore } from "@/store";
-import { useViewStore } from "@/store/viewStore";
-import { Magnetic } from "@/layout/Magnetic";
 import { useMessageStore } from "@/store/messageStore";
-import { useKeyPress } from "@/hooks/useKeyPress";
-import { playUISound } from "@/utils/soundSystem";
 import { useI18n } from "@/i18n";
 import { getRouteCopyByPath } from "@/store/config/routes";
 
 //#region constants
-export const CAMERA_Y_POSITION = 1;
-export const CAMERA_HEIGHT = 2;
-export const CAMERA_FOLLOW_OFFSET = 5;
-export const OPTIONS_Y_OFFSET = -1.5;
-
-export const VISIBLE_OPTIONS_CAMERA_ZOOM = 8;
-export const HIDDEN_OPTIONS_CAMERA_ZOOM = 4;
-export const FUNNY_FISHEYE_ZOOM = 1.15;
-export const CAMERA_ZOOM_ON_TAP = -1.5;
+export * from "@/store/config/camera";
+export { OPTIONS_Y_OFFSET } from "./navigationLayout";
 
 export const OPTION_RADIUS_OFFSET = 0.005;
 export const OPTIONS_BASE_RADIUS_MULTIPLIER = 1.3;
@@ -135,49 +126,14 @@ export function HeadNavigation({
   cameraControlsRef: React.RefObject<CameraControls>;
   permissionGranted: boolean;
 }) {
-  const [cameraZoomAnimation, setCameraZoomAnimation] = useState(false);
   const { emotionState, handleTap, triggerEmotion } = useBlobEmotions();
-  const { isNavigationView, resetToDefaultView, currentView } = useViewStore();
 
   const {
     isMobile,
-    toggleOptions,
     showOptions,
     isOptionsClosing,
     closeOptionsWithAnimation,
   } = useAppStore();
-
-  // close options menu when entering a custom view
-  useEffect(() => {
-    if (!isNavigationView() && showOptions) {
-      closeOptionsWithAnimation();
-    }
-  }, [currentView, showOptions]);
-
-  useKeyPress("Escape", () => {
-    if (showOptions) {
-      toggleOptions();
-      resetToDefaultView();
-      playUISound("ui-tap-close");
-    }
-  });
-
-  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
-
-  useEffect(() => {
-    setWindowSize({
-      width: window.innerWidth,
-      height: window.innerHeight,
-    });
-    const handleResize = () => {
-      setWindowSize({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   // listen for global emotion requests
   useEffect(() => {
@@ -202,15 +158,11 @@ export function HeadNavigation({
         isMobile={isMobile}
         cameraControlsRef={cameraControlsRef}
         showOptions={showOptions}
-        isClosing={isOptionsClosing}
         emotionState={emotionState}
-        onCameraZoomAnimation={setCameraZoomAnimation}
       />
 
       {showOptions && (
         <OptionsGroup
-          windowWidth={windowSize.width}
-          windowHeight={windowSize.height}
           hideOptions={closeOptionsWithAnimation}
           isClosing={isOptionsClosing}
         />
@@ -220,82 +172,22 @@ export function HeadNavigation({
 }
 
 function OptionsGroup({
-  windowWidth,
-  windowHeight,
   hideOptions,
   isClosing,
 }: {
-  windowWidth: number;
-  windowHeight: number;
   hideOptions: () => void;
   isClosing: boolean;
 }) {
   const routes = useCoreStore((state) => state.routes);
-  const isMobileLayout = windowWidth < 768;
-  const count = routes.length;
+  const { width, height } = useThree((state) => state.size);
+  const isMobileLayout = width < 768;
+  const routePositions = useMemo(
+    () => getNavigationPositions(routes.length, width, height),
+    [routes.length, width, height],
+  );
+  const calculatePosition = useMemo(createNavigationPositionCalculator, []);
 
-  if (count === 0) {
-    return <group />;
-  }
-
-  const routePositions = useMemo(() => {
-    if (!routes.length || !windowWidth || !windowHeight) {
-      return [];
-    }
-
-    const screenCenter = new THREE.Vector3(
-      isMobileLayout ? 0 : -0.5,
-      OPTIONS_Y_OFFSET,
-      0,
-    );
-    const aspect = windowWidth / windowHeight;
-    const fov = 50;
-    const distance = 7;
-
-    const vFOV = (fov * Math.PI) / 180;
-    const worldHeight = 2 * Math.tan(vFOV / 2) * distance;
-    const worldWidth = worldHeight * aspect;
-
-    const marginPercent = 0.1; // 10% margin from edges
-    const bottomNavPercent = 0.15;
-
-    const safeWidth = worldWidth * (1 - 2 * marginPercent);
-    const safeHeight = worldHeight * (1 - marginPercent - bottomNavPercent);
-
-    const maxXRadius = safeWidth / 2;
-    const maxYRadius = safeHeight / 2;
-
-    // radius based on number of items
-    const baseRadiusMultiplier = Math.min(1, Math.sqrt(count / 6));
-    const xRadius = maxXRadius * baseRadiusMultiplier;
-    const yRadius = maxYRadius * baseRadiusMultiplier;
-
-    return routes.map((route, index) => {
-      // calculate angle for even distribution
-      const angle = (index / count) * Math.PI * 2;
-      const adjustedAngle = angle - Math.PI / 2;
-
-      // calculate ellipse position
-      let x = Math.cos(adjustedAngle) * xRadius;
-      let y = Math.sin(adjustedAngle) * yRadius;
-
-      // safety margin for bottom button and edges
-      const halfSafeWidth = safeWidth / 2;
-      const halfSafeHeight = safeHeight / 2;
-      const bottomOffset = worldHeight * bottomNavPercent;
-
-      const extraBottomMargin = worldHeight * 0.05; // 5% extra margin
-      const effectiveBottomOffset = bottomOffset + extraBottomMargin;
-
-      x = Math.max(-halfSafeWidth - 40, Math.min(halfSafeWidth, x));
-      y = Math.max(
-        -halfSafeHeight + effectiveBottomOffset,
-        Math.min(halfSafeHeight, y),
-      );
-
-      return new THREE.Vector3(x, y, 0).add(screenCenter);
-    });
-  }, [routes, count, windowWidth, windowHeight, isMobileLayout]);
+  if (routePositions.length === 0) return null;
 
   return (
     <group>
@@ -303,21 +195,16 @@ function OptionsGroup({
         const position = routePositions[index];
 
         return (
-          // <Float
-          //   floatIntensity={3}
-          //   floatingRange={[0.2, 0.1]}
-          //   speed={1.5}
-          //   >
           <Option
             key={route.id}
             initialPosition={position}
+            calculatePosition={calculatePosition}
             route={route}
             index={index}
             hideOptions={hideOptions}
             isClosing={isClosing}
             isMobileLayout={isMobileLayout}
           />
-          // </Float>
         );
       })}
     </group>
@@ -326,6 +213,7 @@ function OptionsGroup({
 
 function Option({
   initialPosition,
+  calculatePosition,
   route,
   index,
   hideOptions,
@@ -333,6 +221,7 @@ function Option({
   isMobileLayout,
 }: {
   initialPosition: THREE.Vector3;
+  calculatePosition: ReturnType<typeof createNavigationPositionCalculator>;
   route: Route;
   index: number;
   hideOptions: () => void;
@@ -345,6 +234,18 @@ function Option({
   const { currentRoute } = useAppStore();
   const { canAfford, purchaseRoute } = useCoreStore();
   const { showMessage } = useMessageStore();
+  const variants = useMemo(
+    () => ({
+      hidden: MotionVariants.OptionButton.initial,
+      open: MotionVariants.OptionButton.animate({
+        delay: index,
+        isDisabled: !route.purchased,
+        isLocked: route.isLocked,
+      }),
+      closed: MotionVariants.OptionButton.exit,
+    }),
+    [index, route.purchased, route.isLocked],
+  );
 
   const isActive = currentRoute === route.path;
 
@@ -375,22 +276,19 @@ function Option({
   return (
     <group ref={optionRef} position={position}>
       {/* Keep mobile centering separate from the button's animated transform. */}
-      <Html center={isMobileLayout} position={[0, 1.5, 0]}>
+      <Html
+        center={isMobileLayout}
+        position={[0, 1.5, 0]}
+        calculatePosition={calculatePosition}
+      >
         <NavigationBubble
           key={route.id}
-          initial={MotionVariants.OptionButton.initial}
-          animate={
-            isClosing
-              ? MotionVariants.OptionButton.exit
-              : MotionVariants.OptionButton.animate({
-                  delay: index,
-                  isDisabled: !route.purchased,
-                  isLocked: route.isLocked,
-                })
-          }
+          variants={variants}
+          initial="hidden"
+          animate={isClosing ? "closed" : "open"}
           $active={isActive}
           $locked={!route.isLocked}
-          exit={MotionVariants.OptionButton.exit}
+          exit="closed"
           whileHover={MotionVariants.OptionButton.hover({
             isDisabled: !route.purchased,
             isLocked: route.isLocked,

@@ -4,7 +4,7 @@ export const bobPhoneMessages = defineMessages({
   de: {
     phoneLabel: "Phone",
     apps: {
-      shop: "Shop",
+      bob: "Bob",
       options: "Optionen",
       chat: "Chat",
       quests: "Quests",
@@ -16,7 +16,7 @@ export const bobPhoneMessages = defineMessages({
   en: {
     phoneLabel: "Phone",
     apps: {
-      shop: "Shop",
+      bob: "Bob",
       options: "Options",
       chat: "Chat",
       quests: "Quests",

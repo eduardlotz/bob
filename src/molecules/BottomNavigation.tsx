@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -19,10 +19,13 @@ import { BobPhone } from "./BobPhone";
 import { playUISound } from "@/utils/soundSystem";
 import { BackToLobbyButton } from "./BackToLobbyButton";
 import { useI18n } from "@/i18n";
+import { ShopOverlay } from "@/apps/shop";
+import { CartIcon } from "@/icons/cart";
 
 export function BottomNavigation() {
   const { messages } = useI18n();
   const [showPhone, setShowPhone] = useState(false);
+  const [showShop, setShowShop] = useState(false);
   const {
     currentView,
     resetToDefaultView,
@@ -32,14 +35,27 @@ export function BottomNavigation() {
     isObjectView,
   } = useViewStore();
 
-  const { currentRoute, showOptions, toggleOptions } = useAppStore();
+  const {
+    currentRoute,
+    showOptions,
+    isOptionsClosing,
+    openOptions,
+    closeOptionsWithAnimation,
+  } = useAppStore();
 
   const { focusedBook } = useBooksStore();
 
   const { activeGame } = useMiniGameStore();
 
   useKeyPress("Escape", () => {
-    resetToDefaultView();
+    if (showPhone) return;
+    if (showShop) {
+      setShowShop(false);
+      playUISound("ui-tap-close");
+      return;
+    }
+    if (showOptions) closeOptionsWithAnimation();
+    else resetToDefaultView();
     playUISound("ui-tap-close");
   });
 
@@ -49,20 +65,41 @@ export function BottomNavigation() {
     showOptions || showPhone ? "ui-tap-close" : "ui-tap";
 
   const handleMenuButtonClick = () => {
-    if (showOptions) {
-      resetToDefaultView();
+    setShowShop(false);
+    if (showOptions && !isOptionsClosing) {
+      closeOptionsWithAnimation();
     } else {
       transitionToView("navigation");
+      openOptions();
     }
-    toggleOptions();
     if (showPhone) setShowPhone(false);
   };
 
   const handlePhoneClick = (open: boolean) => {
+    if (open) setShowShop(false);
     setShowPhone(open);
   };
 
-  const showTapUpgrades = !showOptions && isHomeRoute && !isPhoneView();
+  useEffect(() => {
+    setShowShop(false);
+  }, [currentRoute, activeGame]);
+
+  useEffect(() => {
+    if (showOptions) setShowShop(false);
+  }, [showOptions]);
+
+  const handleShopClick = () => {
+    if (showShop) {
+      setShowShop(false);
+    } else {
+      setShowPhone(false);
+      closeOptionsWithAnimation();
+      resetToDefaultView();
+      setShowShop(true);
+    }
+  };
+
+  const showTapUpgrades = !showShop && !showOptions && isHomeRoute && !isPhoneView();
 
   const showBackToLobby = activeGame !== "LOBBY";
 
@@ -70,7 +107,7 @@ export function BottomNavigation() {
     (isPortfolioRoute && isImageFocused) ||
     focusedBook ||
     currentView === CAMERA_VIEWS.bookshelf.id ||
-    (isObjectView() && !isPhoneView() && !isPortfolioRoute);
+    (isObjectView() && !isPhoneView() && !isPortfolioRoute && currentView !== "shop:preview");
 
   return (
     <HugColumn
@@ -88,6 +125,7 @@ export function BottomNavigation() {
             : undefined,
       }}
     >
+      <AnimatePresence>{showShop && <ShopOverlay key="shop-overlay" />}</AnimatePresence>
       <TapUpgrades show={showTapUpgrades} />
       <BackToLobbyButton show={showBackToLobby} />
       <HugRow $gap={"8px"} style={{ height: showBackToLobby ? 0 : "auto" }}>
@@ -149,6 +187,25 @@ export function BottomNavigation() {
               <BobPhone isOpen={showPhone} setIsOpen={handlePhoneClick} />
             </motion.div>
           )}
+          {!showBackToLobby && !hideNavigation && (
+            <ShopNavButton
+              key="shop-button"
+              onClick={handleShopClick}
+              data-ui-sound-id={showShop ? "ui-tap-close" : "ui-tap"}
+              aria-expanded={showShop}
+              $isActive={showShop}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0, y: 40, filter: "blur(6px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: 40, filter: "blur(6px)" }}
+              transition={{ type: "spring", bounce: 0.5 }}
+              layout="position"
+            >
+              <span>{showShop ? <CloseIcon /> : <CartIcon />}</span>
+              <span>{messages.navigation.shopLabel}</span>
+            </ShopNavButton>
+          )}
         </AnimatePresence>
       </HugRow>
     </HugColumn>
@@ -189,4 +246,11 @@ export const NavButton = styled(motion.button)<{ $isActive?: boolean }>`
     font-size: 0.75rem;
     font-weight: 900;
   }
+`;
+
+const ShopNavButton = styled(MenuButton)`
+  background: #4178f7;
+  border-color: #2a5ee2;
+  box-shadow: 0 6px 0 #2a5ee2;
+  outline-offset: 1px;
 `;

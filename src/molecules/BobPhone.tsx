@@ -10,7 +10,7 @@ import { PhoneMenuIcon } from "@/icons/phoneMenu";
 import { useCoreStore, useViewStore } from "@/store";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { SpeakerIcon } from "@/icons/speaker";
-import { ShopApp, ShopIcon, TapCounterChip } from "@/apps/shop";
+import { BobApp, BobIcon } from "@/apps/bob";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { DebugApp, DebugIcon } from "@/apps/debug";
 import { useClickOutside } from "@/hooks/useClickOutside";
@@ -30,7 +30,7 @@ import { ChevronLeftIcon } from "@/icons/chevron";
 import { PANEL_LAYOUT_SPRING, PANEL_SPRING } from "@/styles/panelMotion";
 
 type AppId =
-  | "shop"
+  | "bob"
   | "options"
   | "chat"
   | "quests"
@@ -70,10 +70,9 @@ const BOB_APPS: Array<BobAppData> = [
     view: <ChatApp />,
   },
   {
-    id: "shop",
-    icon: ShopIcon,
-    view: <ShopApp />,
-    bottomAction: <TapCounterChip />,
+    id: "bob",
+    icon: BobIcon,
+    view: <BobApp />,
     hideStatusBar: true,
   },
   {
@@ -161,7 +160,7 @@ export const BobPhone = (props: BobPhoneProps) => {
   });
 
   useEffect(() => {
-    if (currentView.startsWith("phone:") && currentView !== "phone:shop") {
+    if (currentView.startsWith("phone:") && currentView !== "phone:bob") {
       // setIsOpen(true);
       resetPreview();
     }

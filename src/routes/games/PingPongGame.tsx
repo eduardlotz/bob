@@ -15,7 +15,7 @@ import {
   CAMERA_HEIGHT,
   CAMERA_Y_POSITION,
   HIDDEN_OPTIONS_CAMERA_ZOOM,
-} from "@/molecules/HeadNavigation";
+} from "@/store/config/camera";
 import { BackSide } from "three";
 import { useCursorStore } from "@/store/core/cursor";
 import { playSound } from "@/utils/soundSystem";
