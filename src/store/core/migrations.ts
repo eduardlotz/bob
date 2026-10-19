@@ -125,7 +125,10 @@ const normalizeUpgrades = (upgrades: any[] = []) => {
 
 export const normalizeBlobForms = (forms: any[] = []) => {
   const previousForms = new Map(forms.map((form: any) => [form.id, form]));
-  const selectedId = forms.find((form: any) =>
+  const legacyCube = !previousForms.has("cuboid") ? previousForms.get("cube") : undefined;
+  const legacyCuboid = legacyCube && (legacyCube.parameters?.cubeWidth !== legacyCube.parameters?.cubeHeight || legacyCube.parameters?.cubeWidth !== legacyCube.parameters?.cubeDepth);
+  if (legacyCuboid) { previousForms.set("cuboid", { ...legacyCube, id: "cuboid" }); previousForms.delete("cube"); }
+  const selectedId = legacyCuboid && legacyCube.selected ? "cuboid" : forms.find((form: any) =>
     form.selected && INITIAL_BLOB_FORMS.some((initial) => initial.id === form.id),
   )?.id ?? "sphere";
 

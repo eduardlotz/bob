@@ -340,7 +340,7 @@ export const MessageBubble = memo(function MessageBubble({
       >
         <AnimatePresence mode="popLayout">
           {activeMessage && (
-            <Container
+            <Container data-bob-hud
               initial={{ y: 10, scale: 0.9, opacity: 0 }}
               animate={{ y: 0, scale: 1, opacity: 1 }}
               exit={{ y: -10, scale: 0.9, opacity: 0 }}

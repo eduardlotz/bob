@@ -16,6 +16,8 @@ import { useCoreStore } from "./core/store";
 import { connectNavigationMenu } from "./core/navigationMenuController";
 import { useMiniGameStore } from "@/store/minigames";
 import { Vector3 } from "three";
+import { getSelectedBlobForm, getBlobFormType, getBlobFormHalfSize } from "@/types/blobForms";
+import { getBobEditorFraming } from "./config/bobEditorFraming";
 
 export interface CameraView {
   id: string;
@@ -158,6 +160,11 @@ const applyOrbitSettingsToControls = (
 };
 
 const resolveViewPose = (viewConfig?: CameraView) => {
+  if (viewConfig?.id === "phone:bob") {
+    const mobile = window.innerWidth <= 1000 || window.innerHeight <= 600;
+    const selected = getSelectedBlobForm(useCoreStore.getState().blobForms);
+    return getBobEditorFraming(window.innerWidth, window.innerHeight, mobile, useCoreStore.getState().graphicPreferences.fisheyeEnabled, null, getBlobFormHalfSize(getBlobFormType(selected.id), selected.parameters));
+  }
   if (!viewConfig?.position || !viewConfig.target) return null;
   if (!viewConfig.orbit) {
     return {
@@ -243,7 +250,7 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
       duration: 1000,
       easing: "easeInOutCubic",
     },
-    defaultViewMode: "object",
+    defaultViewMode: "fixed",
   },
   "shop:preview": {
     id: "shop:preview",
@@ -490,7 +497,7 @@ export const useViewStore = create<ViewStore>()(
         const currentViewConfig = get().getCurrentViewConfig();
         const focusedImageTitle = get().focusedImageTitle;
 
-        if (mode === "object") {
+        if (mode === "object" && get().currentView !== "phone:bob") {
           const cameraPos = new Vector3();
           controls.getPosition(cameraPos); // current camera world position
           set({ lastFocusPosition: cameraPos.clone() }); // store for later restore

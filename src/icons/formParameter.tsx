@@ -4,7 +4,7 @@ export function FormParameterIcon({ parameter }: { parameter: keyof BlobFormPara
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <g stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        {parameter === "sphereRadius" && <>
+        {["sphereRadius", "eggUpperRadius", "eggLowerRadius"].includes(parameter) && <>
           <path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5M4 4l5 5M20 4l-5 5M20 20l-5-5M4 20l5-5" />
         </>}
         {parameter === "cubeWidth" && <>
@@ -26,8 +26,8 @@ export function FormParameterIcon({ parameter }: { parameter: keyof BlobFormPara
 
 export function ResetFormIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M4 10a8 8 0 1 1 1.3 7M4 4v6h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M6.07208 3.38732C6.65208 3.21398 7.29208 3.10065 7.99875 3.10065C11.1921 3.10065 13.7788 5.68732 13.7788 8.88065C13.7788 12.074 11.1921 14.6607 7.99875 14.6607C4.80542 14.6607 2.21875 12.074 2.21875 8.88065C2.21875 7.69398 2.57875 6.58732 3.19208 5.66732M7.17208 1.33398L5.24542 3.54732L7.49208 5.18732" stroke="#292D32" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

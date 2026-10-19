@@ -26,6 +26,7 @@ import { Star3D } from "@/3d-objects/Star3D";
 import { EmotionState } from "@/hooks/useBlobEmotions";
 import { getBobItemSlot, useCoreStore } from "@/store/core/store";
 import { useViewStore } from "@/store/viewStore";
+import { useBobEditor } from "@/store/bobEditor";
 import { match } from "ts-pattern";
 import { BOB_WEARABLES } from "@/components/bob/wearableRegistry";
 import { BobWearables } from "@/components/BobWearables";
@@ -33,6 +34,9 @@ import { BlobForm } from "@/components/BlobForm";
 import {
   getSelectedBlobForm,
   getBlobFormType,
+  getBlobFormHalfSize,
+  getBobGroundOffset,
+  getBobFaceScale,
   getBobEyePosition,
 } from "@/types/blobForms";
 import { SimsPlumbob } from "@/3d-objects/models/simsPlumbob";
@@ -207,6 +211,7 @@ export function BlobHead({
     graphicPreferences,
   } = useCoreStore();
   const { currentRoute } = useAppStore();
+  const formDraft = useBobEditor(state => state.draft);
 
   const showAutoTapParticles =
     currentRoute === ROUTE_PATHS.HOME && graphicPreferences.effectsEnabled;
@@ -396,6 +401,22 @@ export function BlobHead({
   }, [emotionState]);
 
   useFrame(({ clock }, delta) => {
+    if (useBobEditor.getState().open) {
+      // A steady face makes the spatial dimension tools readable.
+      applyHeadRotation(isMobile ? 0.06 : 0, 0, 0, delta);
+      headRef.current.position.x = MathUtils.damp(headRef.current.position.x, 0, 12, delta);
+      headRef.current.position.y = MathUtils.damp(headRef.current.position.y, HEAD_POSITION_Y, 12, delta);
+      if (idleMotionRef.current) {
+        const settle = 1 - Math.exp(-14 * delta);
+        idleMotionRef.current.position.multiplyScalar(1 - settle);
+        idleMotionRef.current.quaternion.slerp(NEUTRAL_IDLE_ROTATION, settle);
+        const scale = idleMotionRef.current.scale;
+        scale.set(MathUtils.lerp(scale.x, 1, settle), MathUtils.lerp(scale.y, 1, settle), MathUtils.lerp(scale.z, 1, settle));
+      }
+      idleEyeOffsetRef.current = 0; idleBlinkRef.current = false; sleepRef.current.active = false;
+      animateEyes(delta);
+      return;
+    }
     const isBobIdle = Date.now() - lastBobTapRef.current >= IDLE_TIMEOUT_MIN;
 
     // Keep camera motion independent of Bob's gaze and personality animations.
@@ -902,8 +923,11 @@ export function BlobHead({
   // useKeyPress(" ", () => onHeadClick());
 
   const selectedBlobForm = useMemo(
-    () => getSelectedBlobForm(blobForms),
-    [blobForms],
+    () => {
+      const selected = getSelectedBlobForm(blobForms);
+      return formDraft?.id === selected.id ? { ...selected, parameters: formDraft.parameters } : selected;
+    },
+    [blobForms, formDraft],
   );
   const blobFormType = useMemo(
     () => getBlobFormType(selectedBlobForm.id),
@@ -961,7 +985,7 @@ export function BlobHead({
             position={[0, 3.5, 0]}
             scale={[0.4, 0.4, 0.4]}
             color={emotionColor}
-            preview={!item.enabled && !!item.preview}
+            preview={false}
           />
         );
       }
@@ -988,9 +1012,7 @@ export function BlobHead({
         sleep={sleepRef}
         head={headRef}
         height={
-          (blobFormType === "cube"
-            ? (selectedBlobForm.parameters.cubeHeight || 1.75) / 2
-            : selectedBlobForm.parameters.sphereRadius || 1) *
+          getBlobFormHalfSize(blobFormType, selectedBlobForm.parameters)[1] *
             1.2 +
           0.65
         }
@@ -1029,7 +1051,7 @@ export function BlobHead({
               // outlineColor={outlineColor}
             />
 
-            <group position={calculateEyePosition([0, 0.2, 0.85])}>
+            <group position={calculateEyePosition([0, 0.2, 0.85])} scale={getBobFaceScale(blobFormType, selectedBlobForm.parameters)}>
               <mesh ref={leftEyeRef} position={[-0.45, 0, 0]}>
                 <sphereGeometry args={[0.1, 16, 16]} />
                 <meshToonMaterial color={eyeColor} />
@@ -1053,5 +1075,6 @@ export function BlobHead({
     </>
   );
 
-  return <group position={bobOffset}><TropicalBobMotion>{content}</TropicalBobMotion></group>;
+  const bodyLift = getBobGroundOffset(blobFormType, selectedBlobForm.parameters);
+  return <group position={[bobOffset[0], bobOffset[1] + bodyLift, bobOffset[2]]}><TropicalBobMotion>{content}</TropicalBobMotion></group>;
 }

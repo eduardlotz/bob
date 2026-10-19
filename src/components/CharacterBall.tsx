@@ -2,7 +2,7 @@ import { forwardRef, Suspense, useMemo } from "react";
 import { RigidBody, BallCollider } from "@react-three/rapier";
 import { BlobForm } from "./BlobForm";
 import { BobWearables } from "./BobWearables";
-import { getBobEyePosition } from "@/types/blobForms";
+import { getBobEyePosition, getBobFaceScale } from "@/types/blobForms";
 import { useActiveBobShape } from "@/hooks/useActiveBobShape";
 import { getGameBallPhysics } from "@/utils/gameSizing";
 import { useCoreStore } from "@/store";
@@ -77,6 +77,7 @@ export const CharacterBall = forwardRef((props: Props, ref: any) => {
 
         <group
           position={getBobEyePosition([0, 0.2, 0.85], formType, parameters)}
+          scale={getBobFaceScale(formType, parameters)}
         >
           <mesh geometry={eyeGeoms} position={[-0.45, 0, 0]}>
             <meshToonMaterial color={eyeColor || "#000000"} />

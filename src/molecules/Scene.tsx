@@ -36,6 +36,8 @@ import {
 import { useViewStore } from "../store/viewStore";
 import { ROUTE_IDS, ROUTE_PATHS } from "../store/config/routes";
 import { SceneLens } from "@/components/SceneLens";
+import { BobEditorScene, BobEditorCounterFade } from "@/components/bob/BobEditorScene";
+import { useBobEditor } from "@/store/bobEditor";
 import {
   attachListenerToCamera,
   playWorldSound,
@@ -333,6 +335,8 @@ function WorldAmbientLight({
 }
 
 const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
+  const bobEditing = useBobEditor(state => state.open);
+  const bobCameraLocked = useViewStore(state => state.currentView === "phone:bob");
   const cameraControlsRef = useRef<CameraControls>(null!);
   const { setCameraControlsRef } = useViewStore();
   const {
@@ -493,6 +497,7 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
             <CursorFollowCamera />
             <CameraControls
               ref={handleCameraControlsRef}
+              enabled={!bobCameraLocked}
               truckSpeed={debugCameraSettings.truckSpeed}
               azimuthRotateSpeed={debugCameraSettings.azimuthRotateSpeed}
             />
@@ -560,9 +565,10 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
               <MessageBubble anchor={[0, 2.4, 0]} />
 
               <a.group visible={isHome} scale={spring.scale}>
-                <TapCounter />
-                {graphicPreferences.effectsEnabled && <TapEffects />}
+                <BobEditorCounterFade><TapCounter /></BobEditorCounterFade>
+                {graphicPreferences.effectsEnabled && !bobEditing && <TapEffects />}
               </a.group>
+              <BobEditorScene />
 
               <Suspense fallback={null}>
                 {isHome && <SceneDecorations />}

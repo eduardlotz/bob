@@ -11,11 +11,10 @@ interface Props {
   outlineColor?: string;
 }
 
-const Wearable = memo(function Wearable({ id, definition, body, preview, outlineColor }: {
+const Wearable = memo(function Wearable({ id, definition, body, outlineColor }: {
   id: string;
   definition: WearableDefinition;
   body: BobBodyFit;
-  preview: boolean;
   outlineColor?: string;
 }) {
   const transform = useMemo(() => fitBobWearable(body, definition.mount), [body, definition]);
@@ -26,7 +25,8 @@ const Wearable = memo(function Wearable({ id, definition, body, preview, outline
         {...calibration}
         formType={body.formType}
         body={body}
-        preview={preview}
+        // Preview is a temporary selection, never a material treatment.
+        preview={false}
         outlineColor={definition.useThemeOutline === false ? undefined : outlineColor}
       />
     </group>
@@ -46,7 +46,6 @@ export function BobWearables({ items, blobFormType, parameters, outlineColor }: 
         id={item.id}
         definition={definition}
         body={body}
-        preview={!item.enabled && !!item.preview}
         outlineColor={outlineColor}
       />
     );

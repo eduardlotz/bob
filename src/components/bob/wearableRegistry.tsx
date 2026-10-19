@@ -42,7 +42,7 @@ const wardrobe = (kind: WardrobeKind): ComponentType<ModelProps> =>
 const RainbowAfro: ComponentType<ModelProps> = (props) => <AfroHair {...props} rainbow />;
 
 const Moustache: ComponentType<ModelProps> = ({ formType, ...props }) =>
-  <BobMoustache {...props} curved={formType === "sphere"} />;
+  <BobMoustache {...props} curved={formType === "sphere" || formType === "egg"} />;
 
 /**
  * Add a wearable by registering its model, default-Ball calibration and mount.
@@ -74,7 +74,7 @@ export const BOB_WEARABLES: Readonly<Record<string, WearableDefinition>> = {
     Model: RainbowAfro,
     useThemeOutline: false,
     calibration: { position: [0, -0.7, -0.05], scale: [0.9, 0.9, 0.9], rotation: [Math.PI * 0.075, 0, 0] },
-    mount: { kind: "hair", scaling: "horizontal", cubeDepthScale: 1.5 },
+    mount: { kind: "hair", bottom: -0.770111, scaling: "horizontal", cubeDepthScale: 1.5 },
   },
   builderHelmet: {
     Model: BuilderHelmet,
@@ -91,7 +91,7 @@ export const BOB_WEARABLES: Readonly<Record<string, WearableDefinition>> = {
     Model: AfroHair,
     useThemeOutline: false,
     calibration: { position: [0, -0.7, -0.05], scale: [0.9, 0.9, 0.9], rotation: [Math.PI * 0.075, 0, 0] },
-    mount: { kind: "hair", scaling: "horizontal", cubeDepthScale: 1.5 },
+    mount: { kind: "hair", bottom: -0.770111, scaling: "horizontal", cubeDepthScale: 1.5 },
   },
   chickenLittleGlasses: {
     Model: RoundGlasses,

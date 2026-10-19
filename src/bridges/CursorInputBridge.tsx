@@ -8,15 +8,15 @@ export function CursorInputBridge() {
     const down = () => setPointerDown(true);
     const up = () => setPointerDown(false);
 
-    window.addEventListener("pointerdown", down);
-    window.addEventListener("pointerup", up);
-    window.addEventListener("pointercancel", up);
+    window.addEventListener("pointerdown", down, true);
+    window.addEventListener("pointerup", up, true);
+    window.addEventListener("pointercancel", up, true);
     window.addEventListener("blur", up);
 
     return () => {
-      window.removeEventListener("pointerdown", down);
-      window.removeEventListener("pointerup", up);
-      window.removeEventListener("pointercancel", up);
+      window.removeEventListener("pointerdown", down, true);
+      window.removeEventListener("pointerup", up, true);
+      window.removeEventListener("pointercancel", up, true);
       window.removeEventListener("blur", up);
     };
   }, [setPointerDown]);

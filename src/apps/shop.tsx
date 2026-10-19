@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useIsPresent } from "motion/react";
 import styled from "styled-components";
 import { AnimatedSegmentedControl } from "@/components/AnimatedSegmentedControl";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
+import { PriceTag, TimeChip } from "@/components/StatusChips";
+import { ItemStatusChip } from "@/apps/ui";
 import { useCoreStore, useViewStore, type ShopItem } from "@/store";
 import { useI18n } from "@/i18n";
 import { getShopItemCopy } from "@/shop-items/copy";
-import { formatNumber } from "@/utils/formatNumber";
 import { PANEL_SPRING } from "@/styles/panelMotion";
 import { ChevronLeftIcon } from "@/icons/chevron";
 import { EyeIcon } from "@/icons/eye";
@@ -19,10 +20,11 @@ const itemThumbnails: Record<string, string> = thumbnails.items;
 export function ShopOverlay() {
   const [previewItem, setPreviewItem] = useState<string | null>(null);
   const scrollPosition = useRef(0);
+  const catalogueIsActive = useRef(true);
+  const catalogueRef = useRef<HTMLDivElement>(null);
   const currentView = useViewStore((state) => state.currentView);
   const isTransitioning = useViewStore((state) => state.isTransitioning);
   const [activeTab, setActiveTab] = useState<ShopTab>("hats");
-  const [time, setTime] = useState(() => new Date());
   const { locale, messages } = useI18n();
   const isPresent = useIsPresent();
   const store = useCoreStore();
@@ -30,14 +32,25 @@ export function ShopOverlay() {
 
   useEffect(() => {
     resetPreview();
-    const timer = window.setInterval(() => setTime(new Date()), 1000);
     return () => {
-      window.clearInterval(timer);
       resetPreview();
       const view = useViewStore.getState();
       if (view.currentView === "shop:preview") view.resetToDefaultView();
     };
   }, [resetPreview]);
+
+  useLayoutEffect(() => {
+    const catalogue = catalogueRef.current;
+    if (!catalogue || previewItem) return;
+    catalogueIsActive.current = true;
+    catalogue.scrollTop = scrollPosition.current;
+    const update = () => updateScrollFades(catalogue);
+    const observer = new ResizeObserver(update);
+    observer.observe(catalogue);
+    if (catalogue.firstElementChild) observer.observe(catalogue.firstElementChild);
+    update();
+    return () => observer.disconnect();
+  }, [activeTab, previewItem]);
 
   useEffect(() => {
     if (!isPresent || isTransitioning) return;
@@ -47,6 +60,10 @@ export function ShopOverlay() {
   }, [previewItem, currentView, isTransitioning, isPresent]);
 
   const openPreview = (item: ShopItem) => {
+    scrollPosition.current = catalogueRef.current?.scrollTop ?? scrollPosition.current;
+    // popLayout keeps the old catalogue mounted during its exit. Ignore any
+    // scroll events caused by that exiting layout so Back restores this offset.
+    catalogueIsActive.current = false;
     resetPreview();
     if (activeTab === "worlds") store.previewWorld(item.id);
     else if (activeTab === "effects") store.previewTapEffect(item.id);
@@ -67,14 +84,15 @@ export function ShopOverlay() {
     worlds,
   };
   const items = [...categories[activeTab]].sort((a, b) => a.cost - b.cost);
+  const preview = categories[activeTab].find((item) => item.id === previewItem);
 
-  const handleItem = (item: ShopItem) => {
+  const handleItem = (item: ShopItem, confirmOnly = false) => {
     // Read the current store so rapid repeated clicks cannot buy twice.
     const current = useCoreStore.getState();
     const source = activeTab === "effects" ? current.tapEffects
       : activeTab === "worlds" ? current.worlds : current.bobItems;
     const latest = source.find((entry) => entry.id === item.id);
-    if (!latest || (!latest.purchased && !current.canAfford(latest.cost))) return;
+    if (!latest || (confirmOnly && latest.enabled) || (!latest.purchased && !current.canAfford(latest.cost))) return false;
 
     if (activeTab === "effects") {
       if (!latest.purchased) current.purchaseTapEffect(latest.id);
@@ -87,11 +105,12 @@ export function ShopOverlay() {
       else if (latest.enabled) current.unequipBobItem(latest.id);
       else current.equipBobItem(latest.id);
     }
+    return true;
   };
 
   return createPortal(
     <OverlayAnchor aria-hidden={!isPresent}>
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="popLayout" anchorY="bottom">
       {!previewItem ? <ShopPanel
         key="shop-catalogue"
         role="dialog"
@@ -103,12 +122,17 @@ export function ShopOverlay() {
         transition={PANEL_SPRING}
       >
         <StatusBar>
-          <StatusPill>{time.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}</StatusPill>
-          <StatusPill aria-live="polite">{formatNumber(Math.floor(taps))} <span aria-hidden="true">🫵</span></StatusPill>
+          <TimeChip />
+          <PriceTag value={Math.floor(taps)} />
         </StatusBar>
+        <CatalogueFrame>
         <Catalogue key={activeTab} aria-label={messages.shop.tabs[activeTab]}
-          ref={(element) => { if (element) element.scrollTop = scrollPosition.current; }}
-          onScroll={(event) => { scrollPosition.current = event.currentTarget.scrollTop; }}
+          ref={catalogueRef}
+          onScroll={(event) => {
+            if (!catalogueIsActive.current) return;
+            scrollPosition.current = event.currentTarget.scrollTop;
+            updateScrollFades(event.currentTarget);
+          }}
         >
           <ItemGrid>
             {items.map((item) => {
@@ -120,17 +144,19 @@ export function ShopOverlay() {
               const removeLabel = activeTab === "effects" ? messages.shop.actions.deactivate : messages.shop.actions.takeOff;
               return (
                 <ItemCard key={item.id} data-shop-item={item.id}>
-                  <Thumbnail $active={item.enabled}>
-                    <img src={itemThumbnails[item.id]} alt="" width={80} height={80} draggable={false} />
+                  <ItemMedia>
+                    <Thumbnail $active={item.enabled}>
+                      <img src={itemThumbnails[item.id]} alt="" width={80} height={80} draggable={false} />
+                    </Thumbnail>
+                    <ItemToolbar>
+                    {!item.purchased && <PriceTag value={item.cost} />}
                     <PreviewButton type="button" onClick={() => openPreview(item)}
                       aria-label={`${messages.shop.actions.preview}: ${name}`} data-ui-sound-id="ui-tap">
                       <EyeIcon />
                     </PreviewButton>
-                  </Thumbnail>
+                    </ItemToolbar>
+                  </ItemMedia>
                   <ItemName>{name}</ItemName>
-                  <PriceSlot>
-                    {!item.purchased && <Price>{formatNumber(item.cost)} <span aria-hidden="true">🫵</span></Price>}
-                  </PriceSlot>
                   <ItemAction
                     type="button"
                     $active={item.enabled}
@@ -146,6 +172,7 @@ export function ShopOverlay() {
             })}
           </ItemGrid>
         </Catalogue>
+        </CatalogueFrame>
         <CategoryBar>
           <AnimatedSegmentedControl
             options={(["hats", "accessories", "effects", "worlds"] as const).map((value) => ({ value, label: messages.shop.tabs[value] }))}
@@ -155,20 +182,52 @@ export function ShopOverlay() {
             fullWidth
           />
         </CategoryBar>
-      </ShopPanel> : <PreviewBackButton
-        key="shop-preview-back"
-        type="button"
-        onClick={backToShop}
-        data-ui-sound-id="ui-tap-close"
+      </ShopPanel> : <PreviewControls
+        key="shop-preview-controls"
+        role="group"
+        aria-label={preview ? getShopItemCopy(preview.id, locale)?.name ?? preview.name : undefined}
+        layout
         initial={{ opacity: 0, y: 16, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 16, scale: 0.95 }}
         transition={PANEL_SPRING}
-      ><ChevronLeftIcon />{messages.shop.actions.backToShop}</PreviewBackButton>}
+      >
+        {preview && <>
+          <PreviewDetails layout transition={PANEL_SPRING}>
+            <PreviewNameTag $variant="dark" layout="position" transition={PANEL_SPRING}>
+              <span>{getShopItemCopy(preview.id, locale)?.name ?? preview.name}</span>
+              <span>{messages.shop.itemTypes[preview.type as keyof typeof messages.shop.itemTypes]}</span>
+            </PreviewNameTag>
+          <AnimatePresence mode="popLayout" initial={false}>
+            {!preview.purchased && <motion.div key="preview-price" layout
+              initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }} transition={PANEL_SPRING}>
+              <PriceTag value={preview.cost} />
+            </motion.div>}
+          </AnimatePresence>
+          </PreviewDetails>
+          <ItemAction layout type="button" $active={preview.enabled} $owned={preview.purchased}
+            disabled={preview.enabled || (!preview.purchased && !store.canAfford(preview.cost))}
+            aria-pressed={preview.purchased ? preview.enabled : undefined}
+            onClick={() => { if (handleItem(preview, true)) resetPreview(); }} data-ui-sound-id="ui-tap">
+            {preview.enabled ? messages.shop.actions.selected
+              : preview.purchased ? messages.shop.actions.equip : messages.shop.actions.purchase}
+          </ItemAction>
+        </>}
+        <PreviewBackButton $variant="white" type="button" onClick={backToShop} data-ui-sound-id="ui-tap-close">
+          <ChevronLeftIcon />{messages.shop.actions.backToShop}
+        </PreviewBackButton>
+      </PreviewControls>}
       </AnimatePresence>
     </OverlayAnchor>,
     document.getElementById("motion-root")!,
   );
+}
+
+function updateScrollFades(element: HTMLDivElement) {
+  const frame = element.parentElement;
+  frame?.style.setProperty("--scroll-top-opacity", String(Math.min(1, Math.max(0, element.scrollTop) / 22)));
+  frame?.style.setProperty("--scroll-bottom-opacity", String(Math.min(1, Math.max(0, element.scrollHeight - element.clientHeight - element.scrollTop) / 22)));
 }
 
 const OverlayAnchor = styled.div`
@@ -203,33 +262,51 @@ const StatusBar = styled.div`
   justify-content: space-between;
   flex-shrink: 0;
 `;
-const StatusPill = styled.div`
+const CatalogueFrame = styled.div`
+  --catalogue-color: #eae9ee;
+  position: relative;
+  isolation: isolate;
+  min-height: 0;
   display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 8px 12px;
-  min-height: 40px;
-  border-radius: 999px;
-  background: #ededf0;
-  font-size: 1.125rem;
-  font-weight: 900;
+  overflow: hidden;
+  border-radius: 24px;
+  background: var(--catalogue-color);
+  &::before, &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 22px;
+    z-index: 1;
+    pointer-events: none;
+  }
+  &::before {
+    top: 0;
+    background: linear-gradient(var(--catalogue-color), transparent);
+    opacity: var(--scroll-top-opacity, 0);
+  }
+  &::after {
+    bottom: 0;
+    background: linear-gradient(transparent, var(--catalogue-color));
+    opacity: var(--scroll-bottom-opacity, 0);
+  }
 `;
 const Catalogue = styled.div`
+  width: 100%;
   min-height: 0;
   height: 25rem;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
   border-radius: 24px;
-  background: #eae9ee;
-  mask-image: linear-gradient(#000 calc(100% - 22px), transparent);
+  background: var(--catalogue-color);
 `;
 const ItemGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  column-gap: 24px;
-  row-gap: 24px;
-  padding: 16px 10px 32px;
+  column-gap: 16px;
+  row-gap: 20px;
+  padding: 16px 10px 24px;
   @media (max-width: 560px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     column-gap: 16px;
@@ -241,6 +318,24 @@ const ItemCard = styled.article`
   align-items: center;
   min-width: 0;
 `;
+const ItemMedia = styled.div`
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding-top: 10px;
+`;
+const ItemToolbar = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  > button { margin-left: auto; }
+`;
 const Thumbnail = styled.div<{ $active: boolean }>`
   position: relative;
   width: 80px;
@@ -249,10 +344,7 @@ const Thumbnail = styled.div<{ $active: boolean }>`
   display: grid;
   place-items: center;
   border-radius: 24px;
-  background: #d2cfdf;
-  outline: ${({ $active }) => $active ? "3px solid #212026" : "3px solid transparent"};
-  outline-offset: 3px;
-  box-shadow: ${({ $active }) => $active ? "inset 0 0 0 2px #fff, inset 0 0 15px rgba(255,255,255,0.8)" : "none"};
+  background: ${({ $active }) => $active ? "radial-gradient(circle, #fff 0%, #D0CEDD 70%)" : "#D0CEDD"};
   img { width: 80px; height: 80px; object-fit: contain; }
 `;
 const ItemName = styled.h3`
@@ -260,31 +352,14 @@ const ItemName = styled.h3`
   line-height: 1.15;
   font-weight: 900;
   text-align: center;
-  margin: 10px 0 0;
+  margin: 8px 0 4px;
   min-height: 2.3em;
   display: flex;
   align-items: flex-start;
   justify-content: center;
   overflow-wrap: anywhere;
 `;
-const PriceSlot = styled.div`
-  height: 28px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-`;
-const Price = styled.span`
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  padding: 2px 7px;
-  border-radius: 999px;
-  background: #ffff50;
-  font-size: 0.875rem;
-  line-height: 1.1;
-  font-weight: 900;
-`;
-const ItemAction = styled.button<{ $active: boolean; $owned: boolean }>`
+const ItemAction = styled(motion.button)<{ $active: boolean; $owned: boolean }>`
   position: relative;
   width: 100%;
   min-height: 52px;
@@ -319,9 +394,7 @@ const CategoryBar = styled.div`
 `;
 
 const PreviewButton = styled.button`
-  position: absolute;
-  top: -5px;
-  right: -5px;
+  flex-shrink: 0;
   display: grid;
   place-items: center;
   width: 30px;
@@ -336,6 +409,33 @@ const PreviewButton = styled.button`
   &:active { transform: scale(0.92); }
   &:focus-visible { outline: 2px solid #4178f7; outline-offset: 3px; }
 `;
-const PreviewBackButton = styled(FloatingActionButton)`
+const PreviewControls = styled(motion.div)`
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: min(240px, 100%);
   margin: 0 auto 12px;
+  pointer-events: auto;
+`;
+const PreviewDetails = styled(motion.div)`
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  > div { flex-shrink: 0; }
+`;
+const PreviewNameTag = styled(ItemStatusChip)`
+  min-width: 0;
+  height: auto;
+  min-height: 1.375rem;
+  span:first-child { min-width: 0; overflow-wrap: anywhere; }
+  span:last-child { flex-shrink: 0; white-space: nowrap; }
+`;
+const PreviewBackButton = styled(FloatingActionButton)`
+  width: 100%;
 `;

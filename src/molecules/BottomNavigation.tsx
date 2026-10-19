@@ -128,7 +128,7 @@ export function BottomNavigation() {
       <AnimatePresence>{showShop && <ShopOverlay key="shop-overlay" />}</AnimatePresence>
       <TapUpgrades show={showTapUpgrades} />
       <BackToLobbyButton show={showBackToLobby} />
-      <HugRow $gap={"8px"} style={{ height: showBackToLobby ? 0 : "auto" }}>
+      <HugRow data-bob-navigation $gap={"8px"} style={{ height: showBackToLobby ? 0 : "auto" }}>
         <AnimatePresence mode="popLayout">
           {!showBackToLobby && !hideNavigation && (
             <MenuButton

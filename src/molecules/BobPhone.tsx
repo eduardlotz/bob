@@ -4,13 +4,13 @@ import { motion, AnimatePresence, useIsPresent } from "motion/react";
 import { CloseIcon } from "@/icons/close";
 import { NavButton } from "./BottomNavigation";
 import { FillColumn, FillRow, HugColumn } from "@/layout";
-import { format } from "date-fns/format";
+import { TimeChip } from "@/components/StatusChips";
 
 import { PhoneMenuIcon } from "@/icons/phoneMenu";
 import { useCoreStore, useViewStore } from "@/store";
 import { useSoundSystem } from "@/hooks/useSoundSystem";
 import { SpeakerIcon } from "@/icons/speaker";
-import { BobApp, BobIcon } from "@/apps/bob";
+import { BobApp, BobIcon, BobResetButton } from "@/apps/bob";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { DebugApp, DebugIcon } from "@/apps/debug";
 import { useClickOutside } from "@/hooks/useClickOutside";
@@ -73,6 +73,7 @@ const BOB_APPS: Array<BobAppData> = [
     id: "bob",
     icon: BobIcon,
     view: <BobApp />,
+    bottomAction: <BobResetButton />,
     hideStatusBar: true,
   },
   {
@@ -140,8 +141,6 @@ export const BobPhone = (props: BobPhoneProps) => {
     }
   };
 
-  const currentHour = format(new Date(), "HH");
-  const currentMinutes = format(new Date(), "mm");
   const triggerSoundId =
     props.isOpen || showOptions ? "ui-tap-close" : "ui-tap";
 
@@ -236,7 +235,7 @@ export const BobPhone = (props: BobPhoneProps) => {
               transition={{ layout: PANEL_LAYOUT_SPRING }}
               $align="center"
             >
-              <AnimatePresence mode="popLayout">
+              <PhonePresence mode="popLayout">
                 {activeApp ? (
                   <AppBottomActions
                     key="app_bottom_actions"
@@ -268,18 +267,7 @@ export const BobPhone = (props: BobPhoneProps) => {
                       ease: "easeOut",
                     }}
                   >
-                    <StatusPill layout="position">
-                      {currentHour}
-                      <Blinking
-                        style={{
-                          paddingLeft: "0.1ch",
-                          paddingRight: "0.05ch",
-                        }}
-                      >
-                        :
-                      </Blinking>
-                      {currentMinutes}
-                    </StatusPill>
+                    <TimeChip />
 
                     <StatusPillButton
                       $active={!isMuted}
@@ -302,7 +290,7 @@ export const BobPhone = (props: BobPhoneProps) => {
                     </StatusPillButton>
                   </FillRow>
                 )}
-              </AnimatePresence>
+              </PhonePresence>
               <PhoneContent
                 $gap={activeApp ? "4px" : "0"}
                 $align="center"
@@ -310,7 +298,7 @@ export const BobPhone = (props: BobPhoneProps) => {
                 transition={{ layout: PANEL_LAYOUT_SPRING }}
                 layout="position"
               >
-                <AnimatePresence mode="popLayout" initial={false}>
+                <PhonePresence mode="popLayout" initial={false}>
                   {activeApp ? (
                     <AppViewStage
                       key={activeApp}
@@ -360,7 +348,7 @@ export const BobPhone = (props: BobPhoneProps) => {
                       ))}
                     </AppGrid>
                   )}
-                </AnimatePresence>
+                </PhonePresence>
               </PhoneContent>
             </HugColumn>
           </PhoneShell>
@@ -426,7 +414,21 @@ const PhoneShell = React.forwardRef<
 
 PhoneShell.displayName = "PhoneShell";
 
-const AppBottomActions = styled(FillRow)`
+/** Empty outgoing boundaries so propagation cannot re-add their exiting keys. */
+function PhonePresence({ children, ...props }: React.ComponentProps<typeof AnimatePresence>) {
+  const isPresent = useIsPresent();
+  return <AnimatePresence {...props} propagate>{isPresent ? children : null}</AnimatePresence>;
+}
+
+const PhoneActionRow = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<typeof FillRow>
+>(function PhoneActionRow(props, ref) {
+  const isPresent = useIsPresent();
+  return <FillRow {...props} ref={ref} aria-hidden={!isPresent} inert={!isPresent} />;
+});
+
+const AppBottomActions = styled(PhoneActionRow)`
   position: relative;
 
   align-items: center;
@@ -441,7 +443,7 @@ const PhoneScreen = React.forwardRef<
   React.ComponentProps<typeof motion.div>
 >(function PhoneScreen(props, ref) {
   const isPresent = useIsPresent();
-  return <motion.div {...props} ref={ref} aria-hidden={!isPresent} />;
+  return <motion.div {...props} ref={ref} aria-hidden={!isPresent} inert={!isPresent} />;
 });
 
 const AppViewStage = styled(PhoneScreen)`
@@ -593,39 +595,4 @@ const AppLabel = styled.span`
   line-height: 1.2;
   padding: 0.25rem 0.5rem;
   border-radius: 0.625rem;
-`;
-
-const StatusPill = styled(motion.div)`
-  font-size: 1rem;
-  font-weight: 800;
-  color: #212121;
-  background: rgba(33, 33, 33, 0.08);
-  padding: 8px 12px;
-  border-radius: 100px;
-
-  display: flex;
-  align-items: center;
-  height: 2.25rem;
-`;
-
-const Blinking = styled.span`
-  animation: blinking linear 3s infinite;
-
-  @keyframes blinking {
-    0% {
-      opacity: 0;
-    }
-
-    50% {
-      opacity: 0;
-    }
-
-    51% {
-      opacity: 1;
-    }
-
-    100% {
-      opacity: 1;
-    }
-  }
 `;
