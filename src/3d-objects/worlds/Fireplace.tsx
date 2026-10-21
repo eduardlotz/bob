@@ -120,15 +120,13 @@ function instancedGeometry(source: T.BufferGeometry, attribute: string, values: 
   return geometry;
 }
 
-/** Shader-driven tongues and a single instanced ember draw. No additive white accumulation. */
-export function Fireplace() {
+/** Shared flame and ember renderer for campfires and wall torches. */
+export function FireFlames() {
   const environment = useWorldEnvironment();
   const quality = useWorldQuality();
-  const pitMaterial = useRef<T.MeshToonMaterial | null>(null);
   const effects = useRef<T.Group>(null);
   const flameMaterial = useRef<T.ShaderMaterial>(null);
   const emberMaterial = useRef<T.ShaderMaterial>(null);
-  const pit = useMemo(firepitGeometry, []);
   const flames = useMemo(() => instancedGeometry(new T.ConeGeometry(.5, 1, 7, 7), "aFlame",
     new Float32Array([-.13, -.02, .58, .75, .12, -.05, .46, .59, .01, .12, .4, .9])), []);
   const embers = useMemo(() => {
@@ -136,12 +134,11 @@ export function Fireplace() {
     return instancedGeometry(new T.PlaneGeometry(1, 1), "aSeed", Float32Array.from({ length: (quality === "low" ? 18 : 36) * 4 }, random));
   }, [quality]);
   const uniforms = useMemo(() => ({ uTime: { value: 0 }, uNight: { value: 0 } }), []);
-  useEffect(() => () => { pit.dispose(); flames.dispose(); }, [pit, flames]);
+  useEffect(() => () => flames.dispose(), [flames]);
   useEffect(() => () => embers.dispose(), [embers]);
   useFrame(() => {
     const { elapsed, daylight } = environment.current;
-    if (pitMaterial.current) pitMaterial.current.emissiveIntensity = (1 - daylight) * (.16 + Math.sin(elapsed * 6) * .015);
-    // Update the live materials: newer R3F versions copy the supplied uniform map.
+    // R3F copies supplied uniform maps, so update the live materials.
     for (const material of [flameMaterial.current, emberMaterial.current]) {
       if (!material) continue;
       material.uniforms.uTime.value = elapsed;
@@ -149,16 +146,28 @@ export function Fireplace() {
     }
     if (effects.current) effects.current.visible = daylight < .999;
   });
+  return <group ref={effects} visible={false}>
+    <mesh geometry={flames} frustumCulled={false} name="fire-tongues">
+      <shaderMaterial ref={flameMaterial} uniforms={uniforms} vertexShader={flameVertex} fragmentShader={flameFragment} transparent depthWrite={false} toneMapped={false} />
+    </mesh>
+    <mesh geometry={embers} frustumCulled={false} name="fire-embers">
+      <shaderMaterial ref={emberMaterial} uniforms={uniforms} vertexShader={emberVertex} fragmentShader={emberFragment} transparent depthWrite={false} toneMapped={false} />
+    </mesh>
+  </group>;
+}
+
+export function Fireplace() {
+  const environment = useWorldEnvironment();
+  const pitMaterial = useRef<T.MeshToonMaterial | null>(null);
+  const pit = useMemo(firepitGeometry, []);
+  useEffect(() => () => pit.dispose(), [pit]);
+  useFrame(() => {
+    const { elapsed, daylight } = environment.current;
+    if (pitMaterial.current) pitMaterial.current.emissiveIntensity = (1 - daylight) * (.16 + Math.sin(elapsed * 6) * .015);
+  });
   return <group position={[0, -1.28, 2]} name="night-fireplace">
     <ObjectAudio config={CAMPFIRE_AUDIO} />
     <mesh geometry={pit} name="firepit-stones-and-crossed-logs"><WorldToonMaterial onUpdate={material => { pitMaterial.current = material; }} vertexColors emissive="#aa582c" emissiveIntensity={0} /></mesh>
-    <group ref={effects} visible={false}>
-      <mesh geometry={flames} frustumCulled={false} name="fire-tongues">
-        <shaderMaterial ref={flameMaterial} uniforms={uniforms} vertexShader={flameVertex} fragmentShader={flameFragment} transparent depthWrite={false} toneMapped={false} />
-      </mesh>
-      <mesh geometry={embers} frustumCulled={false} name="fire-embers">
-        <shaderMaterial ref={emberMaterial} uniforms={uniforms} vertexShader={emberVertex} fragmentShader={emberFragment} transparent depthWrite={false} toneMapped={false} />
-      </mesh>
-    </group>
+    <FireFlames />
   </group>;
 }

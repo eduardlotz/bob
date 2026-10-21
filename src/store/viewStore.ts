@@ -7,10 +7,17 @@ import {
   CAMERA_HEIGHT,
   HIDDEN_OPTIONS_CAMERA_ZOOM,
   VISIBLE_OPTIONS_CAMERA_ZOOM,
-} from "@/molecules/HeadNavigation";
-import { ROUTE_PATHS, useAppStore, useCoreStore } from ".";
+  HEAD_CAMERA_POSES,
+  BOB_CAMERA_POSE,
+} from "@/store/config/camera";
+import { ROUTE_PATHS } from "./config/routes";
+import { useAppStore } from "./core/app";
+import { useCoreStore } from "./core/store";
+import { connectNavigationMenu } from "./core/navigationMenuController";
 import { useMiniGameStore } from "@/store/minigames";
 import { Vector3 } from "three";
+import { getSelectedBlobForm, getBlobFormType, getBlobFormHalfSize } from "@/types/blobForms";
+import { getBobEditorFraming } from "./config/bobEditorFraming";
 
 export interface CameraView {
   id: string;
@@ -58,7 +65,8 @@ export type CameraViewId =
   | "minigames:slot_machine"
   | "navigation"
   | "phone:home"
-  | "phone:shop"
+  | "phone:bob"
+  | "shop:preview"
   | "phone:debug"
   | "phone:quests"
   | "phone:options"
@@ -152,6 +160,11 @@ const applyOrbitSettingsToControls = (
 };
 
 const resolveViewPose = (viewConfig?: CameraView) => {
+  if (viewConfig?.id === "phone:bob") {
+    const mobile = window.innerWidth <= 1000 || window.innerHeight <= 600;
+    const selected = getSelectedBlobForm(useCoreStore.getState().blobForms);
+    return getBobEditorFraming(window.innerWidth, window.innerHeight, mobile, useCoreStore.getState().graphicPreferences.fisheyeEnabled, null, getBlobFormHalfSize(getBlobFormType(selected.id), selected.parameters));
+  }
   if (!viewConfig?.position || !viewConfig.target) return null;
   if (!viewConfig.orbit) {
     return {
@@ -202,8 +215,7 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   default: {
     id: "default",
     name: "Default View",
-    position: [0, CAMERA_HEIGHT, HIDDEN_OPTIONS_CAMERA_ZOOM],
-    target: [0, CAMERA_Y_POSITION, 0],
+    ...HEAD_CAMERA_POSES.default,
     transition: {
       duration: 1000,
       easing: "easeInOutCubic",
@@ -213,8 +225,7 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   navigation: {
     id: "navigation",
     name: "Navigation/Menu View",
-    position: [0, CAMERA_HEIGHT - 1.5, VISIBLE_OPTIONS_CAMERA_ZOOM],
-    target: [0, CAMERA_Y_POSITION, 0],
+    ...HEAD_CAMERA_POSES.navigation,
     transition: {
       duration: 1000,
       easing: "easeInOutCubic",
@@ -231,11 +242,20 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
       easing: "easeInOutCubic",
     },
   },
-  "phone:shop": {
-    id: "phone:shop",
-    name: "Shop View",
-    position: [0, CAMERA_HEIGHT - 1.5, VISIBLE_OPTIONS_CAMERA_ZOOM - 2],
-    target: [0, CAMERA_Y_POSITION - 1.5, 0],
+  "phone:bob": {
+    id: "phone:bob",
+    name: "Bob View",
+    ...BOB_CAMERA_POSE,
+    transition: {
+      duration: 1000,
+      easing: "easeInOutCubic",
+    },
+    defaultViewMode: "fixed",
+  },
+  "shop:preview": {
+    id: "shop:preview",
+    name: "Shop Preview",
+    ...BOB_CAMERA_POSE,
     transition: {
       duration: 1000,
       easing: "easeInOutCubic",
@@ -477,7 +497,7 @@ export const useViewStore = create<ViewStore>()(
         const currentViewConfig = get().getCurrentViewConfig();
         const focusedImageTitle = get().focusedImageTitle;
 
-        if (mode === "object") {
+        if (mode === "object" && get().currentView !== "phone:bob") {
           const cameraPos = new Vector3();
           controls.getPosition(cameraPos); // current camera world position
           set({ lastFocusPosition: cameraPos.clone() }); // store for later restore
@@ -602,10 +622,12 @@ export const useViewStore = create<ViewStore>()(
       transitionToView: async (nextView: CameraViewId) => {
         const { cameraControlsRef, isTransitioning } = get();
 
-        // prevent multiple transitions
-        if (isTransitioning || !cameraControlsRef?.current) {
+        // Keep the latest requested view when a panel changes during a zoom.
+        if (isTransitioning) {
+          set({ pendingView: nextView });
           return;
         }
+        if (!cameraControlsRef?.current) return;
 
         const viewConfig = CAMERA_VIEWS[nextView];
         if (!viewConfig) {
@@ -683,9 +705,11 @@ export const useViewStore = create<ViewStore>()(
           isImageFocused,
         } = get();
 
-        if (isTransitioning || !cameraControlsRef?.current) {
+        if (isTransitioning) {
+          set({ pendingView: resolveRouteViewId(useAppStore.getState().currentRoute) });
           return;
         }
+        if (!cameraControlsRef?.current) return;
 
         useCoreStore.getState().resetPreview();
         const appStore = useAppStore.getState();
@@ -903,3 +927,8 @@ export const useViewStore = create<ViewStore>()(
     },
   ),
 );
+
+// Explicit view changes dismiss the menu. A menu-only close holds its camera
+// pose until the exit finishes, so zooming back cannot enlarge fading buttons.
+const disconnectNavigationMenu = connectNavigationMenu(useAppStore, useViewStore);
+if (import.meta.hot) import.meta.hot.dispose(disconnectNavigationMenu);

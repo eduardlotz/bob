@@ -42,7 +42,7 @@ const wardrobe = (kind: WardrobeKind): ComponentType<ModelProps> =>
 const RainbowAfro: ComponentType<ModelProps> = (props) => <AfroHair {...props} rainbow />;
 
 const Moustache: ComponentType<ModelProps> = ({ formType, ...props }) =>
-  <BobMoustache {...props} curved={formType === "sphere"} />;
+  <BobMoustache {...props} curved={formType === "sphere" || formType === "egg"} />;
 
 /**
  * Add a wearable by registering its model, default-Ball calibration and mount.
@@ -53,12 +53,12 @@ export const BOB_WEARABLES: Readonly<Record<string, WearableDefinition>> = {
   topHat: {
     Model: wardrobe("topHat"),
     calibration: { position: [0, 0.78, 0], scale: [1, 1, 1] },
-    mount: { kind: "crown", bottom: 0.73 },
+    mount: { kind: "crown", bottom: 0.73, scaling: "horizontal" },
   },
   dimmadomeHat: {
     Model: wardrobe("dimmadomeHat"),
     calibration: { position: [0, 0.78, 0], scale: [1, 1, 1] },
-    mount: { kind: "crown", bottom: 0.735 },
+    mount: { kind: "crown", bottom: 0.735, scaling: "horizontal", cubeInset: 0.07 },
   },
   toonSunglasses: {
     Model: wardrobe("toonSunglasses"),
@@ -74,24 +74,24 @@ export const BOB_WEARABLES: Readonly<Record<string, WearableDefinition>> = {
     Model: RainbowAfro,
     useThemeOutline: false,
     calibration: { position: [0, -0.7, -0.05], scale: [0.9, 0.9, 0.9], rotation: [Math.PI * 0.075, 0, 0] },
-    mount: { kind: "hair" },
+    mount: { kind: "hair", bottom: -0.770111, scaling: "horizontal", cubeDepthScale: 1.5 },
   },
   builderHelmet: {
     Model: BuilderHelmet,
     useThemeOutline: false,
     calibration: { position: [0, 0.75, 0], scale: [1.22, 1.25, 1.25] },
-    mount: { kind: "crown", bottom: 0.459315 },
+    mount: { kind: "crown", bottom: 0.459315, scaling: "horizontal", cubeInset: 0.12 },
   },
   krustyKrabHat: {
     Model: KrustyKrabHat,
     calibration: { position: [0, 0.9, 0], scale: [0.006, 0.006, 0.006] },
-    mount: { kind: "crown", bottom: 0.895456 },
+    mount: { kind: "crown", bottom: 0.895456, scaling: "none" },
   },
   afroHair: {
     Model: AfroHair,
     useThemeOutline: false,
     calibration: { position: [0, -0.7, -0.05], scale: [0.9, 0.9, 0.9], rotation: [Math.PI * 0.075, 0, 0] },
-    mount: { kind: "hair" },
+    mount: { kind: "hair", bottom: -0.770111, scaling: "horizontal", cubeDepthScale: 1.5 },
   },
   chickenLittleGlasses: {
     Model: RoundGlasses,
@@ -102,12 +102,12 @@ export const BOB_WEARABLES: Readonly<Record<string, WearableDefinition>> = {
   blackCap: {
     Model: BlackCap,
     calibration: { position: [0, 0.45, 0], scale: [2, 2, 2], rotation: [0, -Math.PI / 2, 0] },
-    mount: { kind: "crown", bottom: 0.322949 },
+    mount: { kind: "crown", bottom: 0.322949, scaling: "horizontal", cubeInset: 0.14 },
   },
   flatCap: {
     Model: toonHat("flatCap"),
     calibration: { position: [0, 0.6, 0], scale: [1.15, 1.15, 1.15] },
-    mount: { kind: "crown", bottom: 0.61725 },
+    mount: { kind: "crown", bottom: 0.61725, scaling: "uniform", cubeInset: 0.10 },
   },
   bobMoustache: {
     Model: Moustache,
@@ -117,22 +117,22 @@ export const BOB_WEARABLES: Readonly<Record<string, WearableDefinition>> = {
   propellerHat: {
     Model: toonHat("propellerHat"),
     calibration: { position: [0, 0.53, 0], scale: [1.15, 1.15, 1.15] },
-    mount: { kind: "crown", bottom: 0.507 },
+    mount: { kind: "crown", bottom: 0.507, scaling: "horizontal", cubeInset: 0.08 },
   },
   rastaBeanie: {
     Model: RastaBeanie,
     calibration: { position: [0, -0.65, -0.1], scale: [4, 4, 4] },
-    mount: { kind: "hair" },
+    mount: { kind: "hair", scaling: "horizontal" },
   },
   wizardHat: {
     Model: toonHat("wizardHat"),
     calibration: { position: [0, 0.78, 0], scale: [1, 1, 1] },
-    mount: { kind: "crown", bottom: 0.7375 },
+    mount: { kind: "crown", bottom: 0.7375, scaling: "uniform", cubeInset: 0.07 },
   },
   royalCrown: {
     Model: toonHat("royalCrown"),
     calibration: { position: [0, 0.63, 0], scale: [1, 1, 1] },
-    mount: { kind: "crown", bottom: 0.65 },
+    mount: { kind: "crown", bottom: 0.65, scaling: "uniform", cubeInset: 0.10 },
   },
   astronautHelmet: {
     Model: AstronautHelmet,

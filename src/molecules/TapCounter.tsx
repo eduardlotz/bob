@@ -7,6 +7,7 @@ import { THEME_CONFIG } from "@/store/config/themes";
 import { useFrame } from "@react-three/fiber";
 import { ROUTE_PATHS, useAppStore } from "@/store";
 import { formatNumber } from "@/utils/formatNumber";
+import { useBobEditor } from "@/store/bobEditor";
 
 const FONT_PATH = "/fonts/OpenRundeBold.json";
 
@@ -82,7 +83,7 @@ export const TapCounter = () => {
     addAutoTaps(steps);
     // playTapSound();
 
-    if (showAutoTapParticles && (window as any).createTapParticles) {
+    if (showAutoTapParticles && !useBobEditor.getState().open && (window as any).createTapParticles) {
       (window as any).createTapParticles(0, 0.5, -2, 15);
     }
   });

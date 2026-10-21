@@ -15,6 +15,21 @@ type GLTFResult = GLTF & {
 
 const PATH = "/gltf/bob-boolean.glb";
 
+export function createRainbowAfroGeometry(source: THREE.BufferGeometry) {
+  const geometry = source.clone();
+  geometry.computeBoundingBox();
+  const { min, max } = geometry.boundingBox!;
+  const positions = geometry.getAttribute("position");
+  const uv = new Float32Array(positions.count * 2);
+  for (let i = 0; i < positions.count; i++) {
+    // Position-based projection gives UV-split vertices the exact same color.
+    uv[i * 2] = (positions.getX(i) - min.x) / (max.x - min.x || 1);
+    uv[i * 2 + 1] = 0.5;
+  }
+  geometry.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+  return geometry;
+}
+
 interface Props {
   position: [number, number, number];
   rotation?: [number, number, number];
@@ -32,9 +47,16 @@ export const AfroHair = ({
 }: Props) => {
   const group = useRef<THREE.Group>(null!);
   const { nodes, materials } = useGLTF(PATH) as unknown as GLTFResult;
+  const geometry = useMemo(() => rainbow
+    ? createRainbowAfroGeometry(nodes.Sphere004.geometry)
+    : nodes.Sphere004.geometry, [nodes.Sphere004.geometry, rainbow]);
+  useEffect(() => () => { if (rainbow) geometry.dispose(); }, [geometry, rainbow]);
 
   const material = useMemo(() => {
-    const cloned = materials.hair.clone();
+    // The imported hair is unlit; the rainbow variant needs scene lights and night fill.
+    const cloned = rainbow
+      ? new THREE.MeshToonMaterial({ side: materials.hair.side })
+      : materials.hair.clone();
     if (rainbow) {
       const canvas = document.createElement("canvas");
       canvas.width = 256; canvas.height = 32;
@@ -78,7 +100,7 @@ export const AfroHair = ({
       <mesh
         castShadow
         receiveShadow
-        geometry={nodes.Sphere004.geometry}
+        geometry={geometry}
         material={material}
         position={[0, 1.406, -0.603]}
         rotation={[0.294, 0, 0]}

@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useMemo, useEffect } from "react";
+import { createEggGeometry } from "@/3d-objects/models/eggGeometry";
 import { RoundedBox, Outlines } from "@react-three/drei";
-import { BlobFormType, BlobFormParameters } from "@/types/blobForms";
+import { BlobFormType, BlobFormParameters, getCubeCornerRadius } from "@/types/blobForms";
 
 interface BlobFormProps {
   formType: BlobFormType;
@@ -29,6 +30,10 @@ export const BlobForm = React.memo(
           </mesh>
         );
 
+      case "egg":
+        return <EggForm parameters={parameters} blobColor={blobColor} outlineColor={outlineColor} />;
+
+      case "cuboid":
       case "cube":
         return (
           <RoundedBox
@@ -37,7 +42,7 @@ export const BlobForm = React.memo(
               parameters.cubeHeight || 1.75,
               parameters.cubeDepth || 1.65,
             ]}
-            radius={parameters.cubeRadius || 0.2}
+            radius={getCubeCornerRadius(parameters)}
             smoothness={2}
             castShadow
             receiveShadow
@@ -63,3 +68,9 @@ export const BlobForm = React.memo(
     }
   },
 );
+
+function EggForm({ parameters, blobColor, outlineColor }: Omit<BlobFormProps, "formType">) {
+  const geometry = useMemo(() => createEggGeometry(parameters), [parameters.eggUpperRadius, parameters.eggLowerRadius]);
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  return <mesh geometry={geometry} castShadow receiveShadow><meshToonMaterial color={blobColor} />{outlineColor && <Outlines thickness={0.0125} color={outlineColor} screenspace />}</mesh>;
+}

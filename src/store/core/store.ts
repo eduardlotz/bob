@@ -34,6 +34,8 @@ import {
   BlobFormConfig,
   INITIAL_BLOB_FORMS,
   DEFAULT_FORM_PARAMETERS,
+  getBlobFormType,
+  normalizeBlobFormParameters,
 } from "@/types/blobForms";
 import { initialWeatherEffects } from "@/shop-items/weatherEffects";
 import { initialBobItems } from "@/shop-items/bobItems";
@@ -45,7 +47,7 @@ import {
   DEFAULT_WORLD_VOLUME,
 } from "@/utils/sound/defaults";
 import { initialWorlds } from "@/shop-items/worlds";
-import { migrateCoreStore, normalizeWorlds } from "./migrations";
+import { migrateCoreStore, normalizeWorlds, normalizeBlobForms } from "./migrations";
 import { OrbitForm } from "@/components/FileOrbit";
 
 const ONE_SECOND_MS = 1000;
@@ -115,6 +117,7 @@ export type WorldModelId =
   | "default_home"
   | "island_scene"
   | "underwater_scene"
+  | "halloween_grove"
   | "city_blocks"
   | "forest_grove"
   | "forest_meadow"
@@ -670,13 +673,13 @@ const partializePersisted = (state: GameStore): PersistedGameStore => ({
   upgrades: state.upgrades,
   revealedUpgradeGroup: state.revealedUpgradeGroup,
   upgradeLevelControlsRevealed: state.upgradeLevelControlsRevealed,
-  worlds: state.worlds,
-  bobItems: state.bobItems,
+  worlds: state.worlds.map((item) => ({ ...item, preview: false })),
+  bobItems: state.bobItems.map((item) => ({ ...item, preview: false })),
   blobForms: state.blobForms,
   themes: state.themes,
   currentTheme: state.currentTheme,
   routes: state.routes,
-  tapEffects: state.tapEffects,
+  tapEffects: state.tapEffects.map((item) => ({ ...item, preview: false })),
   weatherEffects: state.weatherEffects,
   fisheyeIntensity: state.fisheyeIntensity,
   soundSystem: state.soundSystem,
@@ -1103,7 +1106,7 @@ export const useCoreStore = create<GameStore>()(
           set((state) => {
             const updatedBlobForms = state.blobForms.map((f) =>
               f.id === blobFormId
-                ? { ...f, parameters: { ...f.parameters, ...parameters } }
+                ? { ...f, parameters: normalizeBlobFormParameters(getBlobFormType(f.id), { ...f.parameters, ...parameters }) }
                 : f,
             );
 
@@ -1801,7 +1804,11 @@ export const useCoreStore = create<GameStore>()(
             ...saved,
             // Scenery/audio are authored catalogue data, not player-owned state.
             // Refresh them even when only tuning a config without a save-version bump.
-            worlds: normalizeWorlds(saved?.worlds ?? currentState.worlds),
+            worlds: normalizeWorlds(saved?.worlds ?? currentState.worlds).map((item) => ({ ...item, preview: false })),
+            bobItems: (saved?.bobItems ?? currentState.bobItems).map((item) => ({ ...item, preview: false })),
+            tapEffects: (saved?.tapEffects ?? currentState.tapEffects).map((item) => ({ ...item, preview: false })),
+            previewMode: null,
+            blobForms: normalizeBlobForms(saved?.blobForms ?? currentState.blobForms),
             graphicPreferences: {
               ...currentState.graphicPreferences,
               ...saved?.graphicPreferences,

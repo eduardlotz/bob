@@ -34,7 +34,12 @@ import { playUISound } from "@/utils/soundSystem";
 import { useI18n } from "@/i18n";
 import { getUpgradeCopy } from "@/shop-items/upgrades.messages";
 import { calculateUpgradeCost } from "@/shop-items/upgradeMath";
-import { PANEL_LAYOUT_SPRING, PANEL_SPRING } from "@/styles/panelMotion";
+import {
+  PANEL_LAYOUT_SPRING,
+  PANEL_SPRING,
+  getPanelItemMotion,
+  usePanelMotion,
+} from "@/styles/panelMotion";
 
 const UPGRADE_SPRING = { ...PANEL_SPRING, layout: PANEL_LAYOUT_SPRING };
 const UPGRADE_CARD_HEIGHT = "9rem";
@@ -55,7 +60,6 @@ function UpgradeCardsPresence({
     <AnimatePresence
       mode="popLayout"
       custom={isPanelPresent ? direction : 0}
-      propagate
     >
       {children}
     </AnimatePresence>
@@ -80,28 +84,25 @@ const UpgradeCardPresence = forwardRef<
   // Keep an exit's direction when another level change interrupts it.
   if (isPresent) exitDirection.current = undefined;
   else exitDirection.current ??= presenceDirection;
-  const transition = reducedMotion ? { duration: 0 } : UPGRADE_SPRING;
+  const itemMotion = getPanelItemMotion(index, reducedMotion);
 
   return (
     <UpgradeListItem
       ref={ref}
       aria-hidden={!isPresent}
       layout="position"
+      {...itemMotion}
       initial={{
-        opacity: 0,
-        scale: reducedMotion ? 1 : 0.92,
+        ...itemMotion.initial,
         x: reducedMotion ? 0 : direction * UPGRADE_CARD_SLIDE,
       }}
-      animate={{ opacity: 1, scale: 1, x: 0 }}
+      animate={{ ...itemMotion.animate, x: 0 }}
       exit={{
-        opacity: 0,
-        scale: reducedMotion ? 1 : 0.92,
+        ...itemMotion.exit,
         x: reducedMotion
           ? 0
           : -(exitDirection.current ?? 0) * UPGRADE_CARD_SLIDE,
-        transition,
       }}
-      transition={{ ...transition, delay: reducedMotion ? 0 : index * 0.015 }}
     >
       {children}
     </UpgradeListItem>
@@ -140,6 +141,7 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
   } = useCoreStore();
   const { locale } = useI18n();
   const reducedMotion = useReducedMotion();
+  const panelMotion = usePanelMotion();
   const [isMobile, setIsMobile] = useState(
     () => window.matchMedia("(width < 768px)").matches,
   );
@@ -195,7 +197,6 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
   const triggerTransition = reducedMotion
     ? { duration: 0, layout: { duration: 0 } }
     : UPGRADE_SPRING;
-  const movement = reducedMotion ? 0 : 14;
 
   const selectGroup = (nextGroup: UpgradeGroup) => {
     setSelection((previous) =>
@@ -246,21 +247,13 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
   return (
     <AnimatePresence>
       {show && (
-        <UpgradeRoot
-          key="upgrades"
-          ref={containerRef}
-          initial={{ opacity: 0, y: movement }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: movement }}
-          transition={triggerTransition}
-        >
-          <AnimatePresence initial={false} propagate>
+        <UpgradeRoot key="upgrades" ref={containerRef}>
+          {/* An empty boundary must not hold the trigger's outer exit open. */}
+          <AnimatePresence initial={false} propagate={showUpgrades}>
             {showUpgrades && (
               <UpgradePanel
                 key="upgrade-list"
-                initial={{ opacity: 1 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 1 }}
+                {...panelMotion}
               >
                 <LayoutGroup>
                   <GroupContent
@@ -348,13 +341,6 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
                     ) : (
                       <EmptyUpgradeState
                         id="tap-upgrades-list"
-                        initial={{
-                          opacity: 0,
-                          scale: reducedMotion ? 1 : 0.92,
-                        }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: reducedMotion ? 1 : 0.92 }}
-                        transition={triggerTransition}
                       >
                         {prerequisite
                           ? locale === "de"
@@ -366,7 +352,7 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
                       </EmptyUpgradeState>
                     )}
                   </GroupContent>
-                  <AnimatePresence propagate>
+                  <AnimatePresence initial={false}>
                     {showLevelControls && (
                       <GroupControl
                         key="upgrade-level-controls"
@@ -398,7 +384,9 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
             )}
           </AnimatePresence>
 
-          <TriggerShell>
+          <TriggerShell
+            {...panelMotion}
+          >
             <Magnetic>
               <TriggerContainer
                 ref={triggerRef}
@@ -433,20 +421,14 @@ export const TapUpgrades = ({ show }: { show: boolean }) => {
                   layoutDependency={showUpgrades}
                   transition={triggerTransition}
                 >
-                  <TriggerMotionLabel
-                    initial={false}
-                    animate={{ opacity: showUpgrades ? 0 : 1 }}
-                    transition={triggerTransition}
-                  >
-                    Upgrades
-                  </TriggerMotionLabel>
-                  <TriggerMotionLabel
-                    initial={false}
-                    animate={{ opacity: showUpgrades ? 1 : 0 }}
-                    transition={triggerTransition}
-                  >
-                    <CloseIcon />
-                  </TriggerMotionLabel>
+                  <AnimatePresence initial={false} mode="popLayout">
+                    <TriggerMotionLabel
+                      key={showUpgrades ? "close" : "label"}
+                      {...getPanelItemMotion(0, reducedMotion)}
+                    >
+                      {showUpgrades ? <CloseIcon /> : "Upgrades"}
+                    </TriggerMotionLabel>
+                  </AnimatePresence>
                 </TriggerLabelWrap>
               </TriggerContainer>
             </Magnetic>
@@ -497,7 +479,7 @@ const UpgradePanel = forwardRef<
   ComponentProps<typeof UpgradePanelElement>
 >(function UpgradePanel(props, ref) {
   const isPresent = useIsPresent();
-  return <UpgradePanelElement {...props} ref={ref} aria-hidden={!isPresent} />;
+  return <UpgradePanelElement {...props} ref={ref} aria-hidden={!isPresent} inert={!isPresent} />;
 });
 
 const UpgradePanelElement = styled(motion.div)`
@@ -628,7 +610,7 @@ const EmptyUpgradeState = styled(motion.div)`
   text-align: center;
 `;
 
-const TriggerShell = styled.div`
+const TriggerShell = styled(motion.div)`
   position: relative;
   display: inline-flex;
   justify-content: center;

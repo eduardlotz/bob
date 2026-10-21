@@ -2,7 +2,8 @@ import { useEffect, useRef } from "react";
 import { useFrame, useThree, type RootState } from "@react-three/fiber";
 import { Vector3 } from "three";
 import { useCoreStore } from "@/store";
-import { FISHEYE_CONFIG } from "@/store/config/themes";
+import { useBobEditor } from "@/store/bobEditor";
+import { getSceneLensRadius } from "@/utils/sceneLensFraming";
 /** Keep scene picking in the same live fisheye projection as the rendered objects.
  * Drei's fisheye event closure retains its initial sphere radius after a resize.
  */
@@ -22,9 +23,10 @@ export function useScenePointer() {
                     state.raycaster.setFromCamera(state.pointer, state.camera);
                     return;
                 }
-                const radius = Math.hypot(width, height) * (0.5 + FISHEYE_CONFIG.MIN / 2);
-                const nx = (event.offsetX - width / 2) / radius;
-                const ny = (height / 2 - event.offsetY) / radius;
+                const offset = useBobEditor.getState().screenOffset;
+                const radius = getSceneLensRadius(width, height, offset);
+                const nx = (event.offsetX + offset.x - width / 2) / radius;
+                const ny = (height / 2 - event.offsetY - offset.y) / radius;
                 const nz = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
                 state.pointer.set(event.offsetX / width * 2 - 1, 1 - event.offsetY / height * 2);
                 state.camera.getWorldPosition(state.raycaster.ray.origin);

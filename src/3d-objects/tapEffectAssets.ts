@@ -66,13 +66,12 @@ export function flowerGeometry(variant: number) {
 export function duckGeometry() {
   const parts: Part[] = [
     [new T.IcosahedronGeometry(1, 1), "#f9ce38", [0, 0, 0], [0.42, 0.28, 0.31]],
-    [new T.IcosahedronGeometry(1, 1), "#ffdd46", [0.25, 0.32, 0], [0.24, 0.24, 0.24]],
-    [new T.ConeGeometry(0.17, 0.26, 4), "#ed8730", [0.51, 0.28, 0], [1, 1, 0.55], [0, 0, -Math.PI / 2]],
+    [new T.IcosahedronGeometry(1, 1), "#f9ce38", [0.25, 0.32, 0], [0.24, 0.24, 0.24]],
+    [new T.ConeGeometry(0.12, 0.26, 5), "#f9ce38", [0.47, 0.29, 0], [1, 1, 0.7], [0, 0, -Math.PI / 2]],
     [new T.ConeGeometry(0.18, 0.33, 5), "#f9ce38", [-0.38, 0.08, 0], [1, 1, 0.7], [0, 0, Math.PI / 3]],
   ];
   for (const side of [-1, 1]) {
-    parts.push([new T.IcosahedronGeometry(1, 0), "#edb82e", [-0.04, 0.03, side * 0.27], [0.25, 0.13, 0.065]]);
-    parts.push([new T.SphereGeometry(0.032, 6, 4), "#202329", [0.34, 0.38, side * 0.19]]);
+    parts.push([new T.SphereGeometry(0.032, 6, 4), "#000000", [0.34, 0.38, side * 0.19]]);
   }
   return assemble(parts);
 }

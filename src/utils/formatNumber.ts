@@ -23,10 +23,10 @@ const SI_SUFFIXES = [
 
 const d3Formatter = format(".3~s");
 
-export const formatNumber = (num: number): string => {
+export const formatNumber = (num: number, compactFrom = 10_000): string => {
   const absolute = Math.abs(num);
 
-  if (absolute < 10_000) {
+  if (absolute < compactFrom) {
     return GERMAN_FORMATTER.format(Math.floor(num));
   }
 
@@ -37,3 +37,6 @@ export const formatNumber = (num: number): string => {
     return index >= 0 ? (SI_SUFFIXES[index + 1] ?? si) : si;
   });
 };
+
+/** Prices compact at one thousand while counters retain their usual precision. */
+export const formatPrice = (num: number): string => formatNumber(num, 1_000);

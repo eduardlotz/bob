@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion, type MotionStyle } from "motion/react";
 import styled from "styled-components";
+import { priceTagStyles } from "./StatusChips";
 
 interface UpgradeLevelProgressProps {
   level: number;
@@ -125,20 +126,9 @@ const PriceArea = styled.span`
 `;
 
 const PriceBubble = styled(motion.span)`
+  ${priceTagStyles}
   position: absolute;
   top: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: max-content;
-  max-width: 100%;
-  height: 2.1rem;
-  padding: 0 0.7rem;
-  font-size: 0.945rem;
-  font-weight: 800;
-  line-height: 1.2;
-  text-align: center;
-  white-space: nowrap;
   isolation: isolate;
   z-index: 2;
 

@@ -12,7 +12,7 @@ import {
   CAMERA_HEIGHT,
   HIDDEN_OPTIONS_CAMERA_ZOOM,
   CAMERA_Y_POSITION,
-} from "@/molecules/HeadNavigation";
+} from "@/store/config/camera";
 import { FLOOR_Y_POSITION } from "@/molecules/Scene";
 import { BasketBox } from "@/physics/BasketBox";
 import { useAppStore, useMiniGameStore } from "@/store";

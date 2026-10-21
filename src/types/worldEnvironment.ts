@@ -5,6 +5,8 @@ export const WORLD_DAY_SECONDS = 180;
 export interface WorldEnvironmentConfig {
   dayNight?: {
     durationSeconds: number;
+    /** Lock only the sky/light phase: 0 is noon, .5 is midnight. Animation time continues. */
+    fixedPhase?: number;
     nightSky: [string, string, string];
     nightAmbient: number;
     nightDirectional: number;
@@ -51,11 +53,16 @@ export interface WorldEnvironmentState {
 
 const smooth = (t: number) => { const x = Math.max(0, Math.min(1, t)); return x * x * (3 - 2 * x); };
 
+export function worldDayPhase(elapsed: number, config?: WorldEnvironmentConfig) {
+  const cycle = config?.dayNight;
+  return cycle?.fixedPhase ?? elapsed / Math.max(1, cycle?.durationSeconds ?? WORLD_DAY_SECONDS);
+}
+
 /** Starts in daylight and calm weather; wraps continuously at both boundaries. */
 export function sampleWorldEnvironment(elapsed: number, config?: WorldEnvironmentConfig): WorldEnvironmentState {
   const cycle = config?.dayNight;
   const daylight = cycle
-    ? smooth((Math.cos(elapsed * Math.PI * 2 / Math.max(1, cycle.durationSeconds)) + 0.25) / 0.65)
+    ? smooth((Math.cos(worldDayPhase(elapsed, config) * Math.PI * 2) + 0.25) / 0.65)
     : 1;
   let rain = 0;
   if (config?.rain) {

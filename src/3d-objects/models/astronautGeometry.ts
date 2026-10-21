@@ -1,5 +1,6 @@
 import { BufferGeometry, Float32BufferAttribute, SphereGeometry } from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
+import { createEggGeometry } from "./eggGeometry";
 import type { BobBodyFit, Vec3 } from "@/components/bob/wearableFit";
 
 // The face stays the same size as Bob shrinks. Keep its eyes inside the visor.
@@ -12,6 +13,11 @@ export function getAstronautDimensions(body: BobBodyFit) {
   if (body.formType === "sphere") {
     const radius = Math.max(x * 1.18, (FACE_HALF_WIDTH + FACE_CLEARANCE) / 0.9);
     return { halfSize: [radius, radius, radius] as Vec3, cornerRadius: 0, buttonRadius };
+  }
+
+  if (body.formType === "egg") {
+    const padding = Math.max(0.14, Math.min(x, y, z) * 0.18);
+    return { halfSize: [x + padding, y + padding, z + padding] as Vec3, cornerRadius: 0, buttonRadius };
   }
 
   const padding = Math.max(0.13, Math.min(x, y, z) * 0.13);
@@ -85,6 +91,14 @@ export function createAstronautGeometry(body: BobBodyFit) {
     visor = new SphereGeometry(glassRadius, 24, 12, 0, Math.PI * 2, 0, glassAngle);
     visor.rotateX(Math.PI / 2);
     visor.translate(0, 0, seam + bulge - glassRadius);
+  } else if (body.formType === "egg") {
+    const source = createEggGeometry(body.parameters, y - body.halfSize[1]);
+    const primitive = source.toNonIndexed();
+    const seam = z * 0.35;
+    shell = primitivePart(primitive, seam, false);
+    visor = primitivePart(primitive, seam, true);
+    primitive.dispose();
+    source.dispose();
   } else {
     const primitive = new RoundedBoxGeometry(x * 2, y * 2, z * 2, 2, dimensions.cornerRadius);
     const seam = z * 0.35;

@@ -11,7 +11,7 @@ import {
   CAMERA_HEIGHT,
   CAMERA_Y_POSITION,
   HIDDEN_OPTIONS_CAMERA_ZOOM,
-} from "@/molecules/HeadNavigation";
+} from "@/store/config/camera";
 import {
   FlappyRings,
   BASE_RING_SPEED,

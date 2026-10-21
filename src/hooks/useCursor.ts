@@ -29,7 +29,7 @@ export const useCursor = ({
   }, [condition]);
 
   useEffect(() => {
-    const onMove = (e: MouseEvent) => {
+    const onMove = (e: PointerEvent) => {
       if (!conditionRef.current()) return;
 
       const cursor = cursorRef.current;
@@ -39,8 +39,8 @@ export const useCursor = ({
       cursor.py = e.clientY;
     };
 
-    window.addEventListener("mousemove", onMove, { passive: true });
-    return () => window.removeEventListener("mousemove", onMove);
+    window.addEventListener("pointermove", onMove, { passive: true, capture: true });
+    return () => window.removeEventListener("pointermove", onMove, true);
   }, [positionFactor]);
 
   return cursorRef;

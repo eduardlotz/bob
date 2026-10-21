@@ -6,6 +6,8 @@ import { useCoreStore } from "@/store";
 import { useScenePointer } from "@/hooks/useScenePointer";
 import { SCENE_RENDER_PRIORITY, SceneFilters } from "./SceneFilters";
 import { FISHEYE_CONFIG } from "@/store/config/themes";
+import { useBobEditor } from "@/store/bobEditor";
+import { getSceneLensRadius } from "@/utils/sceneLensFraming";
 
 /** Drei's cubemap/sphere projection, with a direct render path sharing the same portal.
  * Keeping the portal mounted preserves physics, camera controls and game state.
@@ -14,6 +16,7 @@ export function SceneLens({ children }: { children: ReactNode }) {
   const { fisheyeEnabled: enabled, sceneFilter } = useCoreStore(s => s.graphicPreferences);
   const zoom = FISHEYE_CONFIG.MIN;
   const size = useThree(s => s.size);
+  const screenOffset = useBobEditor(s => s.screenOffset);
   const cube = useRef<RenderCubeTextureApi>(null!);
   const world = useRef<{ scene: Scene; camera: Camera } | null>(null);
   const captureAutoClear = useRef(true);
@@ -26,17 +29,18 @@ export function SceneLens({ children }: { children: ReactNode }) {
   useFrame(({ gl }) => { gl.autoClear = captureAutoClear.current; }, -0.9);
   const [presentation] = useState(() => new Scene());
   const [ortho] = useState(() => new OrthographicCamera());
-  const radius = Math.hypot(size.width, size.height) / 100 * (0.5 + zoom / 2);
+  const radius = getSceneLensRadius(size.width, size.height, screenOffset) / 100;
 
   useLayoutEffect(() => {
-    ortho.position.set(0, 0, 100);
+    // The reflected cubemap moves opposite the presentation camera's offset.
+    ortho.position.set(screenOffset.x / 100, -screenOffset.y / 100, 100);
     ortho.zoom = 100;
     ortho.left = size.width / -2;
     ortho.right = size.width / 2;
     ortho.top = size.height / 2;
     ortho.bottom = size.height / -2;
     ortho.updateProjectionMatrix();
-  }, [ortho, size.width, size.height]);
+  }, [ortho, size.width, size.height, screenOffset]);
 
   const source = useCallback(() => enabled || !world.current
     ? { scene: presentation, camera: ortho }
@@ -82,6 +86,7 @@ function LensCamera({ cube, world, enabled, zoom }: {
   const camera = useThree(s => s.camera);
   const scene = useThree(s => s.scene);
   const size = useThree(s => s.size);
+  const screenOffset = useBobEditor(s => s.screenOffset);
   const [scratch] = useState(() => ({
     position: new Vector3(), rotation: new Quaternion(), scale: new Vector3(),
     flip: new Quaternion().setFromEuler(new Euler(0, Math.PI, 0)),
@@ -97,6 +102,13 @@ function LensCamera({ cube, world, enabled, zoom }: {
     camera.updateProjectionMatrix();
     return () => { camera.fov = originalFov; camera.updateProjectionMatrix(); };
   }, [camera, scene, enabled, zoom, size.width, size.height, world]);
+
+  useLayoutEffect(() => {
+    if (!(camera instanceof PerspectiveCamera)) return;
+    if (!enabled && (screenOffset.x || screenOffset.y)) camera.setViewOffset(size.width, size.height, screenOffset.x, screenOffset.y, size.width, size.height);
+    else camera.clearViewOffset();
+    return () => { camera.clearViewOffset(); };
+  }, [camera, enabled, size.width, size.height, screenOffset]);
 
   useFrame(() => {
     if (!enabled || !cube.current) return;

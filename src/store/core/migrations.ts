@@ -4,7 +4,7 @@ import {
   initialRoutes,
   initialThemes,
 } from "..";
-import { INITIAL_BLOB_FORMS } from "@/types/blobForms";
+import { INITIAL_BLOB_FORMS, getBlobFormType, normalizeBlobFormParameters } from "@/types/blobForms";
 import { initialBobItems } from "@/shop-items/bobItems";
 import { initialTapEffects } from "@/shop-items/tapEffects";
 import { initialTapUpgrades } from "@/shop-items/upgrades";
@@ -123,16 +123,19 @@ const normalizeUpgrades = (upgrades: any[] = []) => {
   });
 };
 
-const normalizeBlobForms = (forms: any[] = []) => {
+export const normalizeBlobForms = (forms: any[] = []) => {
   const previousForms = new Map(forms.map((form: any) => [form.id, form]));
-  const selectedId = forms.find((form: any) =>
+  const legacyCube = !previousForms.has("cuboid") ? previousForms.get("cube") : undefined;
+  const legacyCuboid = legacyCube && (legacyCube.parameters?.cubeWidth !== legacyCube.parameters?.cubeHeight || legacyCube.parameters?.cubeWidth !== legacyCube.parameters?.cubeDepth);
+  if (legacyCuboid) { previousForms.set("cuboid", { ...legacyCube, id: "cuboid" }); previousForms.delete("cube"); }
+  const selectedId = legacyCuboid && legacyCube.selected ? "cuboid" : forms.find((form: any) =>
     form.selected && INITIAL_BLOB_FORMS.some((initial) => initial.id === form.id),
   )?.id ?? "sphere";
 
   return INITIAL_BLOB_FORMS.map((form) => ({
     ...form,
     selected: form.id === selectedId,
-    parameters: { ...form.parameters, ...previousForms.get(form.id)?.parameters },
+    parameters: normalizeBlobFormParameters(getBlobFormType(form.id), previousForms.get(form.id)?.parameters ?? form.parameters),
   }));
 };
 

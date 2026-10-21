@@ -15,7 +15,6 @@ import {
   DesertCacti,
   MoonRocks,
   Dune,
-  SnowmanDetails,
   RingedPlanet,
   MoonTerrain,
 } from "./worlds/WorldModels";
@@ -33,6 +32,8 @@ import { GrassField } from "./worlds/DenseGrassField";
 import { CloudEffect, ForestRainEffect, SnowEffect } from "./ParticleEffects";
 
 import { IslandWorld, UnderwaterWorld, UnderwaterSky } from "./worlds/TropicalWorlds";
+import { WinterSnowmen } from "./worlds/ChristmasDecorations";
+import { HalloweenWorld } from "./worlds/HalloweenWorld";
 
 const FLOOR_Y = -1.36;
 const SPACE_WORLD_EFFECT_IDS = new Set([
@@ -111,7 +112,7 @@ function WorldDome({
 }) {
   if (scene.models.includes("underwater_scene")) return <UnderwaterSky />;
   const isMoonWorld = scene.effects.includes("moon_glow");
-  const climate: CloudClimate | null = scene.models.includes("island_scene") ? "forest" : scene.models.includes("forest_meadow")
+  const climate: CloudClimate | null = scene.models.includes("island_scene") || scene.models.includes("halloween_grove") ? "forest" : scene.models.includes("forest_meadow")
     ? "forest"
     : scene.models.includes("city_blocks")
       ? "city"
@@ -360,27 +361,10 @@ function WorldModel({
       return <WinterModels />;
 
     case "winter_snowman":
-      return (
-        <group position={[7.2, -0.82, -6.8]}>
-          <SnowmanDetails />
-          <mesh position={[0, -0.3, 0]} scale={[0.42, 0.42, 0.42]}>
-            <sphereGeometry args={[1, 16, 16]} />
-            <WorldToonMaterial color="#ffffff" />
-          </mesh>
-          <mesh position={[0, 0.18, 0]} scale={[0.28, 0.28, 0.28]}>
-            <sphereGeometry args={[1, 16, 16]} />
-            <WorldToonMaterial color="#ffffff" />
-          </mesh>
-          <mesh
-            position={[0.08, 0.16, 0.24]}
-            rotation={[Math.PI / 2, 0, 0]}
-            scale={[0.04, 0.12, 0.04]}
-          >
-            <coneGeometry args={[1, 1, 10]} />
-            <WorldToonMaterial color="#ff9f40" />
-          </mesh>
-        </group>
-      );
+      return <WinterSnowmen />;
+
+    case "halloween_grove":
+      return <HalloweenWorld />;
 
     case "moon_craters":
       return (

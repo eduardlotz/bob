@@ -37,7 +37,15 @@ export function wardrobeGeometry(kind: WardrobeKind) {
     }
     parts.push([new T.BoxGeometry(0.16, 0.08, 0.09), "#101117", [0, 0.25, 1.05]]);
   }
-  return assemble(parts);
+  const geometry = assemble(parts);
+  if (kind === "topHat" || kind === "dimmadomeHat") {
+    const heightScale = kind === "topHat" ? 1.25 : 2;
+    const brimBottom = kind === "topHat" ? -0.05 : -0.045;
+    // Grow upward from the existing contact point so placement stays unchanged.
+    geometry.scale(1, heightScale, 1);
+    geometry.translate(0, brimBottom * (1 - heightScale), 0);
+  }
+  return geometry;
 }
 
 export function ToonWardrobe({ kind, position, scale, preview }: {

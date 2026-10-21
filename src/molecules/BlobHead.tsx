@@ -16,11 +16,9 @@ import {
 } from "three";
 import {
   CAMERA_Y_POSITION,
-  CAMERA_HEIGHT,
-  HIDDEN_OPTIONS_CAMERA_ZOOM,
-  VISIBLE_OPTIONS_CAMERA_ZOOM,
+  HEAD_CAMERA_POSES,
   CAMERA_ZOOM_ON_TAP,
-} from "./HeadNavigation";
+} from "@/store/config/camera";
 import { CameraControls } from "@react-three/drei";
 import { calculateAcceleratedRotation } from "@/utils/math";
 import { a, useSpring } from "@react-spring/three";
@@ -28,6 +26,7 @@ import { Star3D } from "@/3d-objects/Star3D";
 import { EmotionState } from "@/hooks/useBlobEmotions";
 import { getBobItemSlot, useCoreStore } from "@/store/core/store";
 import { useViewStore } from "@/store/viewStore";
+import { useBobEditor } from "@/store/bobEditor";
 import { match } from "ts-pattern";
 import { BOB_WEARABLES } from "@/components/bob/wearableRegistry";
 import { BobWearables } from "@/components/BobWearables";
@@ -35,6 +34,9 @@ import { BlobForm } from "@/components/BlobForm";
 import {
   getSelectedBlobForm,
   getBlobFormType,
+  getBlobFormHalfSize,
+  getBobGroundOffset,
+  getBobFaceScale,
   getBobEyePosition,
 } from "@/types/blobForms";
 import { SimsPlumbob } from "@/3d-objects/models/simsPlumbob";
@@ -185,7 +187,6 @@ export function BlobHead({
   isMobile,
   cameraControlsRef,
   showOptions,
-  isClosing,
   emotionState,
   onCameraZoomAnimation,
 }: {
@@ -194,7 +195,6 @@ export function BlobHead({
   isMobile: boolean;
   cameraControlsRef: React.RefObject<CameraControls>;
   showOptions: boolean;
-  isClosing: boolean;
   emotionState: EmotionState;
   onCameraZoomAnimation?: (isAnimating: boolean) => void;
 }) {
@@ -211,6 +211,7 @@ export function BlobHead({
     graphicPreferences,
   } = useCoreStore();
   const { currentRoute } = useAppStore();
+  const formDraft = useBobEditor(state => state.draft);
 
   const showAutoTapParticles =
     currentRoute === ROUTE_PATHS.HOME && graphicPreferences.effectsEnabled;
@@ -282,13 +283,13 @@ export function BlobHead({
     isObjectView,
   } = useViewStore();
 
-  const isShopView = currentView === "phone:shop";
+  const isBobView = currentView === "phone:bob" || currentView === "shop:preview";
   const restingLookPitch =
     (isMobile
       ? -0.5
       : IDLE_LOOK_DOWN_OFFSET -
         (showOptions ? 0 : CAMERA_Y_POSITION) * MAX_ROTATION_Y) +
-    (isShopView ? IDLE_LOOK_DOWN_OFFSET : 0);
+    (isBobView ? IDLE_LOOK_DOWN_OFFSET : 0);
 
   const shouldFollowCursor =
     viewMode === "fixed" &&
@@ -400,6 +401,22 @@ export function BlobHead({
   }, [emotionState]);
 
   useFrame(({ clock }, delta) => {
+    if (useBobEditor.getState().open) {
+      // A steady face makes the spatial dimension tools readable.
+      applyHeadRotation(isMobile ? 0.06 : 0, 0, 0, delta);
+      headRef.current.position.x = MathUtils.damp(headRef.current.position.x, 0, 12, delta);
+      headRef.current.position.y = MathUtils.damp(headRef.current.position.y, HEAD_POSITION_Y, 12, delta);
+      if (idleMotionRef.current) {
+        const settle = 1 - Math.exp(-14 * delta);
+        idleMotionRef.current.position.multiplyScalar(1 - settle);
+        idleMotionRef.current.quaternion.slerp(NEUTRAL_IDLE_ROTATION, settle);
+        const scale = idleMotionRef.current.scale;
+        scale.set(MathUtils.lerp(scale.x, 1, settle), MathUtils.lerp(scale.y, 1, settle), MathUtils.lerp(scale.z, 1, settle));
+      }
+      idleEyeOffsetRef.current = 0; idleBlinkRef.current = false; sleepRef.current.active = false;
+      animateEyes(delta);
+      return;
+    }
     const isBobIdle = Date.now() - lastBobTapRef.current >= IDLE_TIMEOUT_MIN;
 
     // Keep camera motion independent of Bob's gaze and personality animations.
@@ -510,7 +527,7 @@ export function BlobHead({
 
       if (followHead) {
         applyHeadRotation(
-          isShopView ? restingLookPitch : targetRotY,
+          isBobView ? restingLookPitch : targetRotY,
           targetRotX,
           0,
           delta,
@@ -525,9 +542,8 @@ export function BlobHead({
         );
       }
 
-      const baseZoom = showOptions
-        ? VISIBLE_OPTIONS_CAMERA_ZOOM
-        : HIDDEN_OPTIONS_CAMERA_ZOOM;
+      const cameraPose = HEAD_CAMERA_POSES[showOptions ? "navigation" : "default"];
+      const baseZoom = cameraPose.position[2];
       const zoomOffset =
         !reducedTapMotion && cameraZoomAnimation
           ? Math.sin(clock.getElapsedTime() * 20) * 0.5
@@ -540,7 +556,7 @@ export function BlobHead({
       const normalizedLookDirY = lookDirY / lookDirLength;
       const normalizedLookDirZ = lookDirZ / lookDirLength;
       const cameraX = 0;
-      const cameraY = CAMERA_HEIGHT;
+      const cameraY = cameraPose.position[1];
       const cameraZ = baseZoom + zoomOffset;
       const targetX = cameraX + normalizedLookDirX;
       const targetY = cameraY + normalizedLookDirY;
@@ -560,14 +576,13 @@ export function BlobHead({
       }
     } else {
       if (followHead) {
-        applyHeadRotation(isShopView ? restingLookPitch : -0.5, 0, 0, delta);
+        applyHeadRotation(isBobView ? restingLookPitch : -0.5, 0, 0, delta);
         const floatY = Math.sin(clock.getElapsedTime() * 0.5) * 0.1;
         headRef.current.position.y = floatY + HEAD_POSITION_Y;
       }
 
-      const baseZoom = showOptions
-        ? VISIBLE_OPTIONS_CAMERA_ZOOM
-        : HIDDEN_OPTIONS_CAMERA_ZOOM;
+      const cameraPose = HEAD_CAMERA_POSES[showOptions ? "navigation" : "default"];
+      const baseZoom = cameraPose.position[2];
       const zoomOffset =
         !reducedTapMotion && cameraZoomAnimation ? CAMERA_ZOOM_ON_TAP : 0;
       const handCamSwayX = Math.sin(clock.getElapsedTime() * 1) * 0.03;
@@ -584,10 +599,10 @@ export function BlobHead({
       if (!isTransitioning && !isObjectView()) {
         cameraControlsRef.current?.setLookAt(
           0,
-          CAMERA_HEIGHT,
+          cameraPose.position[1],
           baseZoom + zoomOffset,
           handCamSwayX + cameraShakeX,
-          CAMERA_Y_POSITION + handCamSwayY + cameraShakeY,
+          cameraPose.target[1] + handCamSwayY + cameraShakeY,
           0,
           true,
         );
@@ -604,7 +619,7 @@ export function BlobHead({
     const cursorX = mousePosition.current.x;
     const cursorY = mousePosition.current.y;
     const targetRotY = cursorX * MAX_ROTATION_X;
-    const targetRotX = isShopView
+    const targetRotX = isBobView
       ? restingLookPitch
       : (-cursorY - (showOptions ? 0 : CAMERA_Y_POSITION)) * MAX_ROTATION_Y;
     const targetRotZ = -cursorX * MAX_ROTATION_X;
@@ -615,9 +630,8 @@ export function BlobHead({
       headRef.current.position.y = floatY + HEAD_POSITION_Y;
     }
 
-    const baseZoom = showOptions
-      ? VISIBLE_OPTIONS_CAMERA_ZOOM
-      : HIDDEN_OPTIONS_CAMERA_ZOOM;
+    const cameraPose = HEAD_CAMERA_POSES[showOptions ? "navigation" : "default"];
+    const baseZoom = cameraPose.position[2];
     const zoomOffset =
       !reducedTapMotion && cameraZoomAnimation ? CAMERA_ZOOM_ON_TAP : 0;
     const handCamSwayX = Math.sin(clock.getElapsedTime() * 1) * 0.03;
@@ -634,10 +648,10 @@ export function BlobHead({
     if (shouldFollowCursor && !isTransitioning && !isObjectView()) {
       cameraControlsRef.current?.setLookAt(
         0,
-        CAMERA_HEIGHT,
+        cameraPose.position[1],
         baseZoom + zoomOffset,
         cursorX + handCamSwayX + cameraShakeX,
-        cursorY * 0.4 + CAMERA_Y_POSITION + handCamSwayY + cameraShakeY,
+        cursorY * 0.4 + cameraPose.target[1] + handCamSwayY + cameraShakeY,
         0,
         true,
       );
@@ -909,8 +923,11 @@ export function BlobHead({
   // useKeyPress(" ", () => onHeadClick());
 
   const selectedBlobForm = useMemo(
-    () => getSelectedBlobForm(blobForms),
-    [blobForms],
+    () => {
+      const selected = getSelectedBlobForm(blobForms);
+      return formDraft?.id === selected.id ? { ...selected, parameters: formDraft.parameters } : selected;
+    },
+    [blobForms, formDraft],
   );
   const blobFormType = useMemo(
     () => getBlobFormType(selectedBlobForm.id),
@@ -968,7 +985,7 @@ export function BlobHead({
             position={[0, 3.5, 0]}
             scale={[0.4, 0.4, 0.4]}
             color={emotionColor}
-            preview={!item.enabled && !!item.preview}
+            preview={false}
           />
         );
       }
@@ -995,9 +1012,7 @@ export function BlobHead({
         sleep={sleepRef}
         head={headRef}
         height={
-          (blobFormType === "cube"
-            ? (selectedBlobForm.parameters.cubeHeight || 1.75) / 2
-            : selectedBlobForm.parameters.sphereRadius || 1) *
+          getBlobFormHalfSize(blobFormType, selectedBlobForm.parameters)[1] *
             1.2 +
           0.65
         }
@@ -1036,7 +1051,7 @@ export function BlobHead({
               // outlineColor={outlineColor}
             />
 
-            <group position={calculateEyePosition([0, 0.2, 0.85])}>
+            <group position={calculateEyePosition([0, 0.2, 0.85])} scale={getBobFaceScale(blobFormType, selectedBlobForm.parameters)}>
               <mesh ref={leftEyeRef} position={[-0.45, 0, 0]}>
                 <sphereGeometry args={[0.1, 16, 16]} />
                 <meshToonMaterial color={eyeColor} />
@@ -1060,5 +1075,6 @@ export function BlobHead({
     </>
   );
 
-  return <group position={bobOffset}><TropicalBobMotion>{content}</TropicalBobMotion></group>;
+  const bodyLift = getBobGroundOffset(blobFormType, selectedBlobForm.parameters);
+  return <group position={[bobOffset[0], bobOffset[1] + bodyLift, bobOffset[2]]}><TropicalBobMotion>{content}</TropicalBobMotion></group>;
 }

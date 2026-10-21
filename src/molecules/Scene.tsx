@@ -36,6 +36,8 @@ import {
 import { useViewStore } from "../store/viewStore";
 import { ROUTE_IDS, ROUTE_PATHS } from "../store/config/routes";
 import { SceneLens } from "@/components/SceneLens";
+import { BobEditorScene, BobEditorCounterFade } from "@/components/bob/BobEditorScene";
+import { useBobEditor } from "@/store/bobEditor";
 import {
   attachListenerToCamera,
   playWorldSound,
@@ -72,7 +74,7 @@ import {
   useWorldEnvironment,
 } from "@/3d-objects/worlds/WorldEnvironment";
 import { WorldAudio } from "@/3d-objects/worlds/WorldAudio";
-import type { WorldEnvironmentConfig } from "@/types/worldEnvironment";
+import { worldDayPhase, type WorldEnvironmentConfig } from "@/types/worldEnvironment";
 
 const Debug = () => {
   const { width } = useThree((s) => s.size);
@@ -221,7 +223,7 @@ function HomeDirectionalLight({
       (1 - rain * 0.2);
     light.color.copy(color).lerp(nightColor, cycle ? 1 - daylight : 0);
     if (cycle) {
-      const phase = (elapsed / cycle.durationSeconds) * Math.PI * 2;
+      const phase = worldDayPhase(elapsed, environmentConfig) * Math.PI * 2;
       const azimuth = rig.azimuth + phase;
       const elevation = 0.3 + Math.abs(Math.cos(phase)) * rig.elevation;
       const horizontal = Math.cos(elevation) * rig.radius;
@@ -333,6 +335,8 @@ function WorldAmbientLight({
 }
 
 const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
+  const bobEditing = useBobEditor(state => state.open);
+  const bobCameraLocked = useViewStore(state => state.currentView === "phone:bob");
   const cameraControlsRef = useRef<CameraControls>(null!);
   const { setCameraControlsRef } = useViewStore();
   const {
@@ -493,6 +497,7 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
             <CursorFollowCamera />
             <CameraControls
               ref={handleCameraControlsRef}
+              enabled={!bobCameraLocked}
               truckSpeed={debugCameraSettings.truckSpeed}
               azimuthRotateSpeed={debugCameraSettings.azimuthRotateSpeed}
             />
@@ -560,9 +565,10 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
               <MessageBubble anchor={[0, 2.4, 0]} />
 
               <a.group visible={isHome} scale={spring.scale}>
-                <TapCounter />
-                {graphicPreferences.effectsEnabled && <TapEffects />}
+                <BobEditorCounterFade><TapCounter /></BobEditorCounterFade>
+                {graphicPreferences.effectsEnabled && !bobEditing && <TapEffects />}
               </a.group>
+              <BobEditorScene />
 
               <Suspense fallback={null}>
                 {isHome && <SceneDecorations />}

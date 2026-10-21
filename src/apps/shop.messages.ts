@@ -4,12 +4,19 @@ export const shopMessages = defineMessages({
   de: {
     tabs: {
       bob: "Bob",
+      hats: "Hüte",
+      accessories: "Accessoires",
       effects: "Effekte",
-      worlds: "Welt",
+      worlds: "Welten",
     },
     actions: {
       purchase: "Kaufen",
+      preview: "Vorschau",
+      previousItem: "Vorheriger Artikel",
+      nextItem: "Nächster Artikel",
+      backToShop: "Zurück zum Shop",
       activate: "Aktivieren",
+      equip: "Ausrüsten",
       deactivate: "Deaktivieren",
       takeOff: "Ablegen",
       selected: "Aktiv",
@@ -26,15 +33,22 @@ export const shopMessages = defineMessages({
   en: {
     tabs: {
       bob: "Bob",
+      hats: "Hats",
+      accessories: "Accessories",
       effects: "Effects",
       worlds: "Worlds",
     },
     actions: {
-      purchase: "Purchase",
+      purchase: "Buy",
+      preview: "Preview",
+      previousItem: "Previous item",
+      nextItem: "Next item",
+      backToShop: "Back to shop",
       activate: "Activate",
+      equip: "Equip",
       deactivate: "Deactivate",
       takeOff: "Take off",
-      selected: "Selected",
+      selected: "Active",
     },
     itemTypes: {
       hat: "Head",

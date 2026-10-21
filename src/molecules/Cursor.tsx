@@ -26,16 +26,16 @@ export function Cursor({ attachToParent }: CursorProps) {
   }, []);
 
   useEffect(() => {
-    const updatePosition = (e: MouseEvent) => {
+    const updatePosition = (e: PointerEvent) => {
       cursorX.set(e.clientX);
       cursorY.set(e.clientY);
     };
 
-    document.addEventListener("mousemove", updatePosition, { passive: true });
+    document.addEventListener("pointermove", updatePosition, { passive: true, capture: true });
     document.body.style.cursor = attachToParent ? "auto" : "none";
 
     return () => {
-      document.removeEventListener("mousemove", updatePosition);
+      document.removeEventListener("pointermove", updatePosition, true);
       document.body.style.cursor = "auto";
     };
   }, [attachToParent, cursorX, cursorY]);
