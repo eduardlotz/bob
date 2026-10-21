@@ -40,7 +40,8 @@
     "world_island": "/images/shop-items/world/world_island.png",
     "world_winter": "/images/shop-items/world/world_winter.png",
     "world_underwater": "/images/shop-items/world/world_underwater.png",
-    "world_space": "/images/shop-items/world/world_space.png"
+    "world_space": "/images/shop-items/world/world_space.png",
+    "world_halloween": "/images/shop-items/world/world_halloween.png"
   },
   "worldObjects": {
     "world_default": "grid tile",
@@ -50,6 +51,7 @@
     "world_island": "palm",
     "world_winter": "snowman",
     "world_underwater": "single coral",
-    "world_space": "UFO"
+    "world_space": "UFO",
+    "world_halloween": "jack-o-lantern"
   }
 }
