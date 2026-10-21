@@ -12,6 +12,8 @@ export const shopMessages = defineMessages({
     actions: {
       purchase: "Kaufen",
       preview: "Vorschau",
+      previousItem: "Vorheriger Artikel",
+      nextItem: "Nächster Artikel",
       backToShop: "Zurück zum Shop",
       activate: "Aktivieren",
       equip: "Ausrüsten",
@@ -39,6 +41,8 @@ export const shopMessages = defineMessages({
     actions: {
       purchase: "Buy",
       preview: "Preview",
+      previousItem: "Previous item",
+      nextItem: "Next item",
       backToShop: "Back to shop",
       activate: "Activate",
       equip: "Equip",

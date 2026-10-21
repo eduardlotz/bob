@@ -21,8 +21,10 @@ import { BackToLobbyButton } from "./BackToLobbyButton";
 import { useI18n } from "@/i18n";
 import { ShopOverlay } from "@/apps/shop";
 import { CartIcon } from "@/icons/cart";
+import { usePanelMotion } from "@/styles/panelMotion";
 
 export function BottomNavigation() {
+  const panelMotion = usePanelMotion();
   const { messages } = useI18n();
   const [showPhone, setShowPhone] = useState(false);
   const [showShop, setShowShop] = useState(false);
@@ -111,6 +113,7 @@ export function BottomNavigation() {
 
   return (
     <HugColumn
+      layoutRoot
       $align="center"
       $gap="0.75rem"
       style={{
@@ -196,10 +199,7 @@ export function BottomNavigation() {
               $isActive={showShop}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              initial={{ opacity: 0, y: 40, filter: "blur(6px)" }}
-              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              exit={{ opacity: 0, y: 40, filter: "blur(6px)" }}
-              transition={{ type: "spring", bounce: 0.5 }}
+              {...panelMotion}
               layout="position"
             >
               <span>{showShop ? <CloseIcon /> : <CartIcon />}</span>

@@ -3,7 +3,8 @@ import { useFrame } from "@react-three/fiber";
 import * as T from "three";
 import { assemble, type Part } from "./InstancedModels";
 import { seededRandom, useWorldQuality } from "./quality";
-import { useWorldEnvironment } from "./WorldEnvironment";
+import { useWorldEnvironment, useWorldEnvironmentConfig } from "./WorldEnvironment";
+import { worldDayPhase } from "@/types/worldEnvironment";
 
 export type CloudClimate = "forest" | "city" | "desert" | "winter";
 const climates = {
@@ -101,6 +102,7 @@ export function CloudSky({
   cycleSeconds?: number;
 }) {
   const environment = useWorldEnvironment();
+  const environmentConfig = useWorldEnvironmentConfig();
   const skyPalette = useMemo(() => colors.map((c) => new T.Color(c)), [colors]);
   const nightPalette = useMemo(() => nightColors?.map((c) => new T.Color(c)), [nightColors]);
   const cloudTint = useRef<T.MeshBasicMaterial>(null);
@@ -193,7 +195,7 @@ export function CloudSky({
       u.uShade.value.set(config.shade).lerp(nightTint, night);
       if (cloudTint.current) cloudTint.current.color.setRGB(1, 1, 1).lerp(nightTint, night).multiplyScalar(1 - environment.current.rain * .3);
       if (cycleSeconds) {
-        const phase = environment.current.elapsed / cycleSeconds * Math.PI * 2;
+        const phase = (environmentConfig ? worldDayPhase(environment.current.elapsed, environmentConfig) : environment.current.elapsed / cycleSeconds) * Math.PI * 2;
         const shift = Math.sin(phase) * .45;
         u.uSunDirection.value.set(-.55 + shift, Math.cos(phase) * .95, -.8).normalize();
         u.uMoonDirection.value.set(.55 - shift, -Math.cos(phase) * .65, -.8).normalize();

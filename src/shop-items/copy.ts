@@ -79,6 +79,7 @@ const getWorldCopyMap = {
   world_city: true,
   world_desert: true,
   world_winter: true,
+  world_halloween: true,
   world_island: true,
   world_underwater: true,
   world_space: true,

@@ -69,7 +69,6 @@ const StepButton = styled(FloatingActionButton)`
   padding: 0;
   border-radius: 18px;
   svg { flex-shrink: 0; }
-  &:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 2px 0 var(--floating-button-edge); }
   @media (max-width: 600px) and (max-height: 740px) { height: 36px; }
 `;
 const Value = styled.output<FloatingButtonStyleProps>`

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import styled from "styled-components";
-import { motion, AnimatePresence, useIsPresent } from "motion/react";
+import { motion, AnimatePresence, useIsPresent, useReducedMotion } from "motion/react";
 import { CloseIcon } from "@/icons/close";
 import { NavButton } from "./BottomNavigation";
 import { FillColumn, FillRow, HugColumn } from "@/layout";
@@ -27,7 +27,12 @@ import { useI18n } from "@/i18n";
 import { useAppStore } from "@/store";
 
 import { ChevronLeftIcon } from "@/icons/chevron";
-import { PANEL_LAYOUT_SPRING, PANEL_SPRING } from "@/styles/panelMotion";
+import {
+  PANEL_LAYOUT_SPRING,
+  PANEL_SPRING,
+  getPanelItemMotion,
+  usePanelMotion,
+} from "@/styles/panelMotion";
 
 type AppId =
   | "bob"
@@ -97,6 +102,8 @@ interface BobPhoneProps {
 
 // MAYDO: check ref error
 export const BobPhone = (props: BobPhoneProps) => {
+  const panelMotion = usePanelMotion();
+  const reducedMotion = useReducedMotion();
   const containerRef = useRef(null);
   const triggerRef = useRef(null);
   const { transitionToView, currentView, resetToDefaultView } = useViewStore();
@@ -177,14 +184,7 @@ export const BobPhone = (props: BobPhoneProps) => {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         $isActive={props.isOpen}
-        initial={{ opacity: 0, y: 40, filter: "blur(6px)" }}
-        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-        exit={{ opacity: 0, y: 40, filter: "blur(6px)" }}
-        transition={{
-          type: "spring" as const,
-          bounce: 0.5,
-          delay: 0.1,
-        }}
+        {...panelMotion}
         ref={triggerRef}
         layout="position"
       >
@@ -222,138 +222,126 @@ export const BobPhone = (props: BobPhoneProps) => {
         <span>{messages.phone.phoneLabel}</span>
       </NavButton>
 
-      <AnimatePresence mode="wait">
-        {props.isOpen && (
-          <PhoneShell
-            ref={containerRef}
-            clipStyle={clipStyle}
-            key="bob-phone-body"
-          >
-            <HugColumn
-              $gap={activeApp ? "4px" : "0"}
-              layout="position"
-              transition={{ layout: PANEL_LAYOUT_SPRING }}
-              $align="center"
+      {/* The fixed measurement root must not also be the resizing surface:
+          Motion intentionally skips layout animations on layoutRoot nodes. */}
+      <PhonePositioner layoutRoot>
+        <AnimatePresence>
+          {props.isOpen && (
+            <PhoneShell
+              ref={containerRef}
+              clipStyle={clipStyle}
+              key="bob-phone-body"
             >
-              <PhonePresence mode="popLayout">
-                {activeApp ? (
-                  <AppBottomActions
-                    key="app_bottom_actions"
-                    initial={{ filter: "blur(4px)", opacity: 0 }}
-                    animate={{ filter: "blur(0px)", opacity: 1 }}
-                    exit={{ filter: "blur(4px)", opacity: 0 }}
-                    transition={{
-                      ease: "easeOut",
-                    }}
-                  >
-                    <BackHomeButton
-                      onClick={goToHomeScreen}
-                      data-ui-sound-id="ui-tap-close"
+              <HugColumn
+                $gap={activeApp ? "4px" : "0"}
+                layout="position"
+                transition={{ layout: PANEL_LAYOUT_SPRING }}
+                $align="center"
+              >
+                {/* Keep the contents mounted while the whole phone exits. */}
+                <AnimatePresence mode="popLayout" initial={false}>
+                  {activeApp ? (
+                    <AppBottomActions
+                      key="app_bottom_actions"
+                      initial={{ filter: "blur(4px)", opacity: 0 }}
+                      animate={{ filter: "blur(0px)", opacity: 1 }}
+                      exit={{ filter: "blur(4px)", opacity: 0 }}
+                      transition={{
+                        ease: "easeOut",
+                      }}
                     >
-                      <ChevronLeftIcon />
+                      <BackHomeButton
+                        onClick={goToHomeScreen}
+                        data-ui-sound-id="ui-tap-close"
+                      >
+                        <ChevronLeftIcon />
 
-                      <AppName>{activeAppName}</AppName>
-                    </BackHomeButton>
+                        <AppName>{activeAppName}</AppName>
+                      </BackHomeButton>
 
-                    <AppAction>{activeAppBottomAction()}</AppAction>
-                  </AppBottomActions>
-                ) : (
-                  <FillRow
-                    key={"bob-phone-statusbar"}
-                    initial={{ filter: "blur(4px)", opacity: 0 }}
-                    animate={{ filter: "blur(0px)", opacity: 1 }}
-                    exit={{ filter: "blur(4px)", opacity: 0 }}
-                    transition={{
-                      ease: "easeOut",
-                    }}
-                  >
-                    <TimeChip />
-
-                    <StatusPillButton
-                      $active={!isMuted}
-                      onClick={handleAudioButtonClick}
-                      layout="position"
+                      <AppAction>{activeAppBottomAction()}</AppAction>
+                    </AppBottomActions>
+                  ) : (
+                    <FillRow
+                      key={"bob-phone-statusbar"}
+                      initial={{ filter: "blur(4px)", opacity: 0 }}
+                      animate={{ filter: "blur(0px)", opacity: 1 }}
+                      exit={{ filter: "blur(4px)", opacity: 0 }}
+                      transition={{
+                        ease: "easeOut",
+                      }}
                     >
-                      <motion.div
-                        key={!isMuted ? "on" : "off"}
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0, opacity: 0 }}
+                      <TimeChip />
+
+                      <StatusPillButton
+                        $active={!isMuted}
+                        onClick={handleAudioButtonClick}
+                        layout="position"
+                      >
+                        <motion.div
+                          key={!isMuted ? "on" : "off"}
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0, opacity: 0 }}
+                          transition={{
+                            duration: 0.2,
+                            type: "spring",
+                            bounce: 0.7,
+                          }}
+                        >
+                          <SpeakerIcon muted={isMuted} />
+                        </motion.div>
+                      </StatusPillButton>
+                    </FillRow>
+                  )}
+                </AnimatePresence>
+                <PhoneContent
+                  $gap={activeApp ? "4px" : "0"}
+                  $align="center"
+                  $justify="center"
+                  transition={{ layout: PANEL_LAYOUT_SPRING }}
+                  layout="position"
+                >
+                  <AnimatePresence mode="popLayout">
+                    {activeApp ? (
+                      <AppViewStage
+                        key={activeApp}
+                        layout="position"
+                        {...panelMotion}
+                      >
+                        {activeAppView()}
+                      </AppViewStage>
+                    ) : (
+                      <AppGrid
+                        key="app-grid"
+                        layout="position"
+                        initial={false}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
                         transition={{
-                          duration: 0.2,
-                          type: "spring",
-                          bounce: 0.7,
+                          ...PANEL_SPRING,
+                          layout: PANEL_LAYOUT_SPRING,
                         }}
                       >
-                        <SpeakerIcon muted={isMuted} />
-                      </motion.div>
-                    </StatusPillButton>
-                  </FillRow>
-                )}
-              </PhonePresence>
-              <PhoneContent
-                $gap={activeApp ? "4px" : "0"}
-                $align="center"
-                $justify="center"
-                transition={{ layout: PANEL_LAYOUT_SPRING }}
-                layout="position"
-              >
-                <PhonePresence mode="popLayout" initial={false}>
-                  {activeApp ? (
-                    <AppViewStage
-                      key={activeApp}
-                      layout="position"
-                      initial={{ opacity: 0, y: 6, filter: "blur(4px)" }}
-                      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                      exit={{ opacity: 0, y: 6, filter: "blur(4px)" }}
-                      transition={{
-                        ...PANEL_SPRING,
-                        layout: PANEL_LAYOUT_SPRING,
-                      }}
-                    >
-                      {activeAppView()}
-                    </AppViewStage>
-                  ) : (
-                    <AppGrid
-                      key="app-grid"
-                      layout="position"
-                      initial={{
-                        opacity: 0,
-                        scaleX: 1.05,
-                        filter: "blur(4px)",
-                      }}
-                      animate={{
-                        opacity: 1,
-                        scaleX: 1,
-                        filter: "blur(0px)",
-                      }}
-                      exit={{
-                        opacity: 0,
-                        scaleX: 1.05,
-                        filter: "blur(4px)",
-                      }}
-                      transition={{
-                        ...PANEL_SPRING,
-                        layout: PANEL_LAYOUT_SPRING,
-                      }}
-                    >
-                      {BOB_APPS.map((app) => (
-                        <AppContainer
-                          key={app.id}
-                          onClick={() => openApp(app.id)}
-                        >
-                          {app.icon()}
-                          <AppLabel>{appNameMap[app.id]}</AppLabel>
-                        </AppContainer>
-                      ))}
-                    </AppGrid>
-                  )}
-                </PhonePresence>
-              </PhoneContent>
-            </HugColumn>
-          </PhoneShell>
-        )}
-      </AnimatePresence>
+                        {BOB_APPS.map((app, index) => (
+                          <AppContainer
+                            key={app.id}
+                            {...getPanelItemMotion(index, reducedMotion)}
+                            onClick={() => openApp(app.id)}
+                          >
+                            {app.icon()}
+                            <AppLabel>{appNameMap[app.id]}</AppLabel>
+                          </AppContainer>
+                        ))}
+                      </AppGrid>
+                    )}
+                  </AnimatePresence>
+                </PhoneContent>
+              </HugColumn>
+            </PhoneShell>
+          )}
+        </AnimatePresence>
+      </PhonePositioner>
     </>
   );
 };
@@ -365,60 +353,30 @@ const PhoneShell = React.forwardRef<
   }
 >(({ clipStyle, style, ...props }, ref) => {
   const isPresent = useIsPresent();
+  const panelMotion = usePanelMotion();
 
   return (
     <BobPhoneBody
       ref={ref}
       {...props}
+      {...panelMotion}
       aria-hidden={!isPresent}
+      inert={!isPresent}
       style={{
+        ...panelMotion.style,
         ...clipStyle,
         ...style,
         borderRadius: "24px",
-        opacity: 0,
-        transformPerspective: 900,
-        transformStyle: "preserve-3d",
         pointerEvents: isPresent ? "auto" : "none",
       }}
       data-phone-body
       key="bob-phone-body"
-      initial={{
-        opacity: 0,
-        scaleX: 1.05,
-        rotateX: -15,
-        y: 12,
-        filter: "blur(2px)",
-      }}
-      animate={{
-        opacity: 1,
-        scaleX: 1,
-        rotateX: 0,
-        y: 0,
-        filter: "blur(0px)",
-      }}
-      exit={{
-        opacity: 0,
-        scaleX: 0.95,
-        rotateX: -5,
-        y: -12,
-        filter: "blur(2px)",
-      }}
-      transition={{
-        ...PANEL_SPRING,
-        layout: PANEL_LAYOUT_SPRING,
-      }}
       layout
     />
   );
 });
 
 PhoneShell.displayName = "PhoneShell";
-
-/** Empty outgoing boundaries so propagation cannot re-add their exiting keys. */
-function PhonePresence({ children, ...props }: React.ComponentProps<typeof AnimatePresence>) {
-  const isPresent = useIsPresent();
-  return <AnimatePresence {...props} propagate>{isPresent ? children : null}</AnimatePresence>;
-}
 
 const PhoneActionRow = React.forwardRef<
   HTMLDivElement,
@@ -499,6 +457,13 @@ const AppName = styled.h5`
   letter-spacing: -0.01em;
 `;
 
+const PhonePositioner = styled(motion.div)`
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+`;
+
 const BobPhoneBody = styled(motion.div)`
   position: fixed;
   bottom: 94px;
@@ -537,7 +502,7 @@ const AppGrid = styled(PhoneScreen)`
   width: 18rem;
 `;
 
-const AppContainer = styled.button`
+const AppContainer = styled(motion.button)`
   position: relative;
   align-items: center;
   width: fit-content;

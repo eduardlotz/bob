@@ -191,10 +191,10 @@ export function ElasticValueSlider(props: Props) {
         </svg>
         <Moving ref={moving}>
           <Thumb $variant="dark" ref={thumb} role="slider" tabIndex={0} aria-label={label} aria-valuemin={min} aria-valuemax={max} aria-valuenow={Number(value.toFixed(1))} aria-valuetext={format(value)} aria-orientation={vertical ? "vertical" : "horizontal"} aria-disabled={max <= min} onKeyDown={keyboard} onBlur={finishKeyboard} onPointerDown={e => start(e, true)}><span ref={content}>{format(value)}</span></Thumb>
-          <Caption data-bob-caption $kind={kind} $compact={props.compact}>
-            <LabelRow>{!props.compact && <Label>{label}</Label>}{props.dirty && <Reset type="button" aria-label={props.resetLabel} title={props.resetLabel} onPointerDown={e => e.stopPropagation()} onClick={props.onReset} data-ui-sound-id="ui-tap"><ResetFormIcon /></Reset>}</LabelRow>
-            {!props.compact && info && <Limit role="status">{info}</Limit>}
-          </Caption>
+          {!props.compact && <Caption data-bob-caption $kind={kind}>
+            <LabelRow><Label>{label}</Label>{props.dirty && <SliderResetButton type="button" aria-label={props.resetLabel} title={props.resetLabel} onPointerDown={e => e.stopPropagation()} onClick={props.onReset} data-ui-sound-id="ui-tap"><ResetFormIcon /></SliderResetButton>}</LabelRow>
+            {info && <Limit role="status">{info}</Limit>}
+          </Caption>}
           {props.compact && info && <Limit $compact role="status">{info}</Limit>}
         </Moving>
       </Drawing>
@@ -218,16 +218,15 @@ const Thumb = styled.div<FloatingButtonStyleProps>`
   [data-mobile="true"] & { font-size: 24px; }
   @media (max-height: 700px) { [data-mobile="true"] & { font-size: 27px; } }
 `;
-const Caption = styled.div<{ $kind: TrackKind; $compact?: boolean }>`
+const Caption = styled.div<{ $kind: TrackKind }>`
   position: absolute; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; width: max-content;
   left: ${({ $kind }) => ["rounding", "roundingLower", "depth"].includes($kind) ? "auto" : $kind === "width" ? "0" : "calc(var(--thumb-width) / 2 + 12px)"};
   right: ${({ $kind }) => ["rounding", "roundingLower", "depth"].includes($kind) ? "calc(var(--thumb-width) / 2 + 12px)" : "auto"};
   top: ${({ $kind }) => $kind === "width" ? "calc(var(--thumb-height) / 2 + 12px)" : "0"};
   transform: ${({ $kind }) => $kind === "width" ? "translateX(-50%)" : "translateY(-50%)"};
   ${({ $kind }) => ["rounding", "roundingLower", "depth"].includes($kind) ? "align-items: flex-end;" : ""}
-  ${({ $compact }) => $compact ? "left: 0; right: auto; top: calc(var(--thumb-height) / -2 - 12px); transform: translate(-50%, -100%); align-items: center;" : ""}
 `;
 const LabelRow = styled.div`display: flex; align-items: center; gap: 7px; pointer-events: none;`;
 const Label = styled.span`background: #212026; color: white; font-weight: 900; font-size: 15px; white-space: nowrap; border-radius: 12px; padding: 7px 11px; [data-mobile="true"] & { font-size: 20px; } @media (max-height: 700px) { [data-mobile="true"] & { font-size: 23px; } }`;
-const Reset = styled.button`display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border-radius: 50%; background: white; color: #212026; pointer-events: auto; flex-shrink: 0; &:focus-visible { outline: 2px solid white; outline-offset: 3px; } [data-mobile="true"] & { width: 66px; height: 66px; svg { width: 26px; height: 26px; } } @media (max-height: 700px) { [data-mobile="true"] & { width: 80px; height: 80px; } }`;
+export const SliderResetButton = styled.button`display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border-radius: 50%; background: white; color: #212026; pointer-events: auto; flex-shrink: 0; &:focus-visible { outline: 2px solid white; outline-offset: 3px; } [data-mobile="true"] & { width: 66px; height: 66px; svg { width: 26px; height: 26px; } } @media (max-height: 700px) { [data-mobile="true"] & { width: 80px; height: 80px; } }`;
 const Limit = styled.span<{ $compact?: boolean }>`max-width: 180px; text-align: inherit; color: white; background: #212026; border-radius: 10px; padding: 6px 8px; font-size: 11px; [data-mobile="true"] & { max-width: 210px; font-size: 20px; } ${({ $compact }) => $compact ? "position: absolute; left: 0; top: calc(var(--thumb-height) / 2 + 12px); width: max-content; transform: translateX(-50%); text-align: center;" : ""}`;

@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { AnimatePresence, motion, useIsPresent } from "motion/react";
+import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/react";
 import styled from "styled-components";
 import { AnimatedSegmentedControl } from "@/components/AnimatedSegmentedControl";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
@@ -9,8 +9,8 @@ import { ItemStatusChip } from "@/apps/ui";
 import { useCoreStore, useViewStore, type ShopItem } from "@/store";
 import { useI18n } from "@/i18n";
 import { getShopItemCopy } from "@/shop-items/copy";
-import { PANEL_SPRING } from "@/styles/panelMotion";
-import { ChevronLeftIcon } from "@/icons/chevron";
+import { PANEL_SPRING, getPanelItemMotion, usePanelMotion } from "@/styles/panelMotion";
+import { ChevronLeftIcon, ChevronRightIcon } from "@/icons/chevron";
 import { EyeIcon } from "@/icons/eye";
 import thumbnails from "../../public/images/shop-items/manifest.json";
 
@@ -18,6 +18,8 @@ type ShopTab = "hats" | "accessories" | "effects" | "worlds";
 const itemThumbnails: Record<string, string> = thumbnails.items;
 
 export function ShopOverlay() {
+  const panelMotion = usePanelMotion();
+  const reducedMotion = useReducedMotion();
   const [previewItem, setPreviewItem] = useState<string | null>(null);
   const scrollPosition = useRef(0);
   const catalogueIsActive = useRef(true);
@@ -60,7 +62,7 @@ export function ShopOverlay() {
   }, [previewItem, currentView, isTransitioning, isPresent]);
 
   const openPreview = (item: ShopItem) => {
-    scrollPosition.current = catalogueRef.current?.scrollTop ?? scrollPosition.current;
+    if (!previewItem) scrollPosition.current = catalogueRef.current?.scrollTop ?? scrollPosition.current;
     // popLayout keeps the old catalogue mounted during its exit. Ignore any
     // scroll events caused by that exiting layout so Back restores this offset.
     catalogueIsActive.current = false;
@@ -85,14 +87,35 @@ export function ShopOverlay() {
   };
   const items = [...categories[activeTab]].sort((a, b) => a.cost - b.cost);
   const preview = categories[activeTab].find((item) => item.id === previewItem);
+  const stepPreview = (direction: -1 | 1) => {
+    if (!preview || items.length < 2) return;
+    const index = items.findIndex((item) => item.id === preview.id);
+    openPreview(items[(index + direction + items.length) % items.length]);
+  };
 
-  const handleItem = (item: ShopItem, confirmOnly = false) => {
+  const getItemActionProps = (item: ShopItem) => {
+    const name = getShopItemCopy(item.id, locale)?.name ?? item.name;
+    const label = item.enabled ? messages.shop.actions.selected
+      : item.purchased ? messages.shop.actions.equip : messages.shop.actions.purchase;
+    const canRemove = item.enabled && activeTab !== "worlds";
+    const removeLabel = activeTab === "effects" ? messages.shop.actions.deactivate : messages.shop.actions.takeOff;
+    return {
+      $active: item.enabled,
+      $variant: item.enabled ? "dark" as const : item.purchased ? "muted" as const : "blue" as const,
+      disabled: (!item.purchased && !store.canAfford(item.cost)) || (item.enabled && activeTab === "worlds"),
+      "aria-label": `${canRemove ? removeLabel : label}: ${name}`,
+      "aria-pressed": item.purchased ? item.enabled : undefined,
+      children: label,
+    };
+  };
+
+  const handleItem = (item: ShopItem) => {
     // Read the current store so rapid repeated clicks cannot buy twice.
     const current = useCoreStore.getState();
     const source = activeTab === "effects" ? current.tapEffects
       : activeTab === "worlds" ? current.worlds : current.bobItems;
     const latest = source.find((entry) => entry.id === item.id);
-    if (!latest || (confirmOnly && latest.enabled) || (!latest.purchased && !current.canAfford(latest.cost))) return false;
+    if (!latest || (!latest.purchased && !current.canAfford(latest.cost))) return false;
 
     if (activeTab === "effects") {
       if (!latest.purchased) current.purchaseTapEffect(latest.id);
@@ -109,17 +132,14 @@ export function ShopOverlay() {
   };
 
   return createPortal(
-    <OverlayAnchor aria-hidden={!isPresent}>
+    <OverlayAnchor {...panelMotion} initial={false} layoutRoot aria-hidden={!isPresent} inert={!isPresent}>
       <AnimatePresence mode="popLayout" anchorY="bottom">
       {!previewItem ? <ShopPanel
         key="shop-catalogue"
         role="dialog"
         aria-label={messages.navigation.shopLabel}
         aria-hidden={!isPresent}
-        initial={{ opacity: 0, scale: 0.94, y: 24, filter: "blur(4px)" }}
-        animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
-        exit={{ opacity: 0, scale: 0.96, y: 20, filter: "blur(4px)" }}
-        transition={PANEL_SPRING}
+        {...panelMotion}
       >
         <StatusBar>
           <TimeChip />
@@ -135,17 +155,12 @@ export function ShopOverlay() {
           }}
         >
           <ItemGrid>
-            {items.map((item) => {
+            {items.map((item, index) => {
               const name = getShopItemCopy(item.id, locale)?.name ?? item.name;
-              const canAfford = store.canAfford(item.cost);
-              const label = item.enabled ? messages.shop.actions.selected
-                : item.purchased ? messages.shop.actions.equip : messages.shop.actions.purchase;
-              const canRemove = item.enabled && activeTab !== "worlds";
-              const removeLabel = activeTab === "effects" ? messages.shop.actions.deactivate : messages.shop.actions.takeOff;
               return (
-                <ItemCard key={item.id} data-shop-item={item.id}>
+                <ItemCard key={item.id} data-shop-item={item.id} {...getPanelItemMotion(index, reducedMotion)}>
                   <ItemMedia>
-                    <Thumbnail $active={item.enabled}>
+                    <Thumbnail $active={item.enabled} $owned={item.purchased}>
                       <img src={itemThumbnails[item.id]} alt="" width={80} height={80} draggable={false} />
                     </Thumbnail>
                     <ItemToolbar>
@@ -158,15 +173,11 @@ export function ShopOverlay() {
                   </ItemMedia>
                   <ItemName>{name}</ItemName>
                   <ItemAction
+                    {...getItemActionProps(item)}
                     type="button"
-                    $active={item.enabled}
-                    $owned={item.purchased}
-                    disabled={(!item.purchased && !canAfford) || (item.enabled && activeTab === "worlds")}
-                    aria-label={`${canRemove ? removeLabel : label}: ${name}`}
-                    aria-pressed={item.purchased ? item.enabled : undefined}
                     onClick={() => handleItem(item)}
                     data-ui-sound-id="ui-tap"
-                  >{label}</ItemAction>
+                  />
                 </ItemCard>
               );
             })}
@@ -187,13 +198,15 @@ export function ShopOverlay() {
         role="group"
         aria-label={preview ? getShopItemCopy(preview.id, locale)?.name ?? preview.name : undefined}
         layout
-        initial={{ opacity: 0, y: 16, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 16, scale: 0.95 }}
-        transition={PANEL_SPRING}
+        {...panelMotion}
       >
         {preview && <>
-          <PreviewDetails layout transition={PANEL_SPRING}>
+          <PreviewPagination>
+          <PreviewNavButton $variant="white" type="button" onClick={() => stepPreview(-1)}
+            disabled={items.length < 2} aria-label={messages.shop.actions.previousItem} data-ui-sound-id="ui-tap">
+            <ChevronLeftIcon />
+          </PreviewNavButton>
+          <PreviewDetails layout transition={PANEL_SPRING} aria-live="polite" aria-atomic="true">
             <PreviewNameTag $variant="dark" layout="position" transition={PANEL_SPRING}>
               <span>{getShopItemCopy(preview.id, locale)?.name ?? preview.name}</span>
               <span>{messages.shop.itemTypes[preview.type as keyof typeof messages.shop.itemTypes]}</span>
@@ -206,16 +219,16 @@ export function ShopOverlay() {
             </motion.div>}
           </AnimatePresence>
           </PreviewDetails>
-          <ItemAction layout type="button" $active={preview.enabled} $owned={preview.purchased}
-            disabled={preview.enabled || (!preview.purchased && !store.canAfford(preview.cost))}
-            aria-pressed={preview.purchased ? preview.enabled : undefined}
-            onClick={() => { if (handleItem(preview, true)) resetPreview(); }} data-ui-sound-id="ui-tap">
-            {preview.enabled ? messages.shop.actions.selected
-              : preview.purchased ? messages.shop.actions.equip : messages.shop.actions.purchase}
-          </ItemAction>
+          <PreviewNavButton $variant="white" type="button" onClick={() => stepPreview(1)}
+            disabled={items.length < 2} aria-label={messages.shop.actions.nextItem} data-ui-sound-id="ui-tap">
+            <ChevronRightIcon />
+          </PreviewNavButton>
+          </PreviewPagination>
+          <PreviewAction {...getItemActionProps(preview)} layout type="button"
+            onClick={() => { if (handleItem(preview)) resetPreview(); }} data-ui-sound-id="ui-tap" />
         </>}
         <PreviewBackButton $variant="white" type="button" onClick={backToShop} data-ui-sound-id="ui-tap-close">
-          <ChevronLeftIcon />{messages.shop.actions.backToShop}
+          {messages.shop.actions.backToShop}
         </PreviewBackButton>
       </PreviewControls>}
       </AnimatePresence>
@@ -230,7 +243,7 @@ function updateScrollFades(element: HTMLDivElement) {
   frame?.style.setProperty("--scroll-bottom-opacity", String(Math.min(1, Math.max(0, element.scrollHeight - element.clientHeight - element.scrollTop) / 22)));
 }
 
-const OverlayAnchor = styled.div`
+const OverlayAnchor = styled(motion.div)`
   position: fixed;
   bottom: 94px;
   left: 0;
@@ -312,7 +325,7 @@ const ItemGrid = styled.div`
     column-gap: 16px;
   }
 `;
-const ItemCard = styled.article`
+const ItemCard = styled(motion.article)`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -336,7 +349,7 @@ const ItemToolbar = styled.div`
   gap: 4px;
   > button { margin-left: auto; }
 `;
-const Thumbnail = styled.div<{ $active: boolean }>`
+const Thumbnail = styled.div<{ $active: boolean; $owned: boolean }>`
   position: relative;
   width: 80px;
   height: 80px;
@@ -345,7 +358,21 @@ const Thumbnail = styled.div<{ $active: boolean }>`
   place-items: center;
   border-radius: 24px;
   background: ${({ $active }) => $active ? "radial-gradient(circle, #fff 0%, #D0CEDD 70%)" : "#D0CEDD"};
-  img { width: 80px; height: 80px; object-fit: contain; }
+  &::after {
+    content: ${({ $active }) => $active ? '""' : "none"};
+    position: absolute;
+    inset: 2px;
+    border: 1.5px solid #000;
+    border-radius: 22px;
+    pointer-events: none;
+  }
+  img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    filter: ${({ $owned }) => $owned ? "none" : "grayscale(1)"};
+    opacity: ${({ $owned }) => $owned ? 1 : 0.5};
+  }
 `;
 const ItemName = styled.h3`
   font-size: 1rem;
@@ -359,18 +386,11 @@ const ItemName = styled.h3`
   justify-content: center;
   overflow-wrap: anywhere;
 `;
-const ItemAction = styled(motion.button)<{ $active: boolean; $owned: boolean }>`
+const ItemAction = styled(FloatingActionButton)`
   position: relative;
   width: 100%;
   min-height: 52px;
   padding: 10px 6px;
-  border-radius: 24px;
-  background: ${({ $active, $owned }) => $active ? "#212026" : $owned ? "#78758d" : "#4178f7"};
-  border: 3px solid ${({ $active, $owned }) => $active ? "#0b0b0c" : $owned ? "#555363" : "#2a5ee2"};
-  box-shadow: 0 5px 0 ${({ $active, $owned }) => $active ? "#0b0b0c" : $owned ? "#555363" : "#2a5ee2"};
-  color: #fff;
-  font-size: 1rem;
-  font-weight: 900;
   flex-shrink: 0;
   &::after {
     content: "";
@@ -381,8 +401,6 @@ const ItemAction = styled(motion.button)<{ $active: boolean; $owned: boolean }>`
     pointer-events: none;
   }
   &:disabled { opacity: ${({ $active }) => $active ? 1 : 0.25}; cursor: default; }
-  &:hover:not(:disabled) { filter: brightness(1.05); }
-  &:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 2px 0 ${({ $active, $owned }) => $active ? "#0b0b0c" : $owned ? "#555363" : "#2a5ee2"}; }
   &:focus-visible { outline: 3px solid #212026; outline-offset: 7px; }
 `;
 const CategoryBar = styled.div`
@@ -414,28 +432,54 @@ const PreviewControls = styled(motion.div)`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  width: min(240px, 100%);
+  gap: 16px;
+  width: min(480px, 100%);
   margin: 0 auto 12px;
   pointer-events: auto;
+`;
+const PreviewPagination = styled.div`
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) 64px;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  @media (max-width: 560px) {
+    grid-template-columns: 48px minmax(0, 1fr) 48px;
+    gap: 8px;
+  }
+`;
+const PreviewNavButton = styled(FloatingActionButton)`
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  @media (max-width: 560px) {
+    width: 48px;
+    height: 48px;
+    border-radius: 18px;
+  }
 `;
 const PreviewDetails = styled(motion.div)`
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 8px;
-  width: max-content;
-  max-width: calc(100vw - 32px);
+  min-width: 0;
+  width: 100%;
   > div { flex-shrink: 0; }
 `;
 const PreviewNameTag = styled(ItemStatusChip)`
   min-width: 0;
+  max-width: 100%;
   height: auto;
   min-height: 1.375rem;
   span:first-child { min-width: 0; overflow-wrap: anywhere; }
   span:last-child { flex-shrink: 0; white-space: nowrap; }
 `;
+const PreviewAction = styled(ItemAction)`
+  width: min(240px, 100%);
+`;
 const PreviewBackButton = styled(FloatingActionButton)`
-  width: 100%;
+  width: min(240px, 100%);
 `;

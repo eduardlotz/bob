@@ -117,6 +117,7 @@ export type WorldModelId =
   | "default_home"
   | "island_scene"
   | "underwater_scene"
+  | "halloween_grove"
   | "city_blocks"
   | "forest_grove"
   | "forest_meadow"

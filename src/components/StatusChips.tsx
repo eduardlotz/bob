@@ -49,12 +49,12 @@ export const priceTagStyles = css`
   justify-content: center;
   width: max-content;
   max-width: 100%;
-  height: 2.1rem;
-  padding: 0 0.7rem;
-  border-radius: 999px;
-  font-size: 0.945rem;
+  min-height: 1.375rem;
+  padding: 4px 8px;
+  border-radius: 0.625rem;
+  font-size: 0.875rem;
   font-weight: 900;
-  line-height: 1.2;
+  line-height: 1.25;
   text-align: center;
   white-space: nowrap;
 `;

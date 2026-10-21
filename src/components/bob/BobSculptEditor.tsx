@@ -6,8 +6,8 @@ import { PANEL_SPRING } from "@/styles/panelMotion";
 import { commitBobParameters, useBobEditor, type BobParameter } from "@/store/bobEditor";
 import { DEFAULT_FORM_PARAMETERS, getBlobFormType, getSelectedBlobForm } from "@/types/blobForms";
 import { useI18n } from "@/i18n";
-import { FormParameterIcon } from "@/icons/formParameter";
-import { ElasticValueSlider } from "./ElasticValueSlider";
+import { FormParameterIcon, ResetFormIcon } from "@/icons/formParameter";
+import { ElasticValueSlider, SliderResetButton } from "./ElasticValueSlider";
 import type { TrackKind } from "./elasticTrack";
 import { getBobControlPosition } from "./bobEditorLayout";
 import { getBobEditorGuide } from "@/store/config/bobEditorFraming";
@@ -79,14 +79,22 @@ export function BobSculptEditor() {
     });
   };
   const position = (key: BobParameter): CSSProperties => {
-    if (mobile) return { width: viewport.phoneWidth, height: 160 * compactScale, "--slider-scale": compactScale } as CSSProperties;
+    if (mobile) return { width: viewport.phoneWidth, height: 160 * compactScale };
     return getBobControlPosition(key, guide, formType);
   };
   return <>
     <FocusStyle $focused={isPresent && !!dragging} />
-    <Editor style={{ "--phone-width": `${viewport.phoneWidth}px` } as CSSProperties} initial={{ opacity: 0, y: reducedMotion ? 0 : 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: reducedMotion ? 0 : 8 }} transition={reducedMotion ? { duration: 0 } : { ...PANEL_SPRING, opacity: { duration: 0.18 } }} aria-hidden={!isPresent} inert={!isPresent} data-bob-editor data-mobile={mobile} role="region" aria-label={messages.options.sections.bobShape}>
+    <Editor style={{ "--phone-width": `${viewport.phoneWidth}px`, "--slider-scale": compactScale } as CSSProperties} initial={{ opacity: 0, y: reducedMotion ? 0 : 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: reducedMotion ? 0 : 8 }} transition={reducedMotion ? { duration: 0 } : { ...PANEL_SPRING, opacity: { duration: 0.18 } }} aria-hidden={!isPresent} inert={!isPresent} data-bob-editor data-mobile={mobile} role="region" aria-label={messages.options.sections.bobShape}>
       {mobile && <ToolTabs initial={{ opacity: 0, scale: reducedMotion ? 1 : 0.85 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: reducedMotion ? 1 : 0.85 }} transition={PANEL_SPRING} data-bob-secondary role="group" aria-label={copy.tools}>
-        {keys.map(key => <button type="button" key={key} aria-pressed={activeKey === key} onClick={() => setActive(key)}><FormParameterIcon parameter={key} /><span>{formType === "cube" && key === "cubeWidth" ? copy.parameters.sphereRadius : copy.parameters[key]}</span></button>)}
+        {keys.map(key => {
+          const base = DEFAULT_FORM_PARAMETERS[formType][key]!;
+          const dirty = Math.abs((parameters[key] ?? base) - base) > 0.000001;
+          const label = formType === "cube" && key === "cubeWidth" ? copy.parameters.sphereRadius : copy.parameters[key];
+          return <ToolTabSlot key={key}>
+            <ToolTabButton type="button" aria-pressed={activeKey === key} onClick={() => setActive(key)}><FormParameterIcon parameter={key} /><span>{label}</span></ToolTabButton>
+            {activeKey === key && dirty && <MobileValueReset type="button" aria-label={`${copy.resetValue}: ${label}`} title={`${copy.resetValue}: ${label}`} onClick={() => commitBobParameters({ [key]: base })} data-ui-sound-id="ui-tap"><ResetFormIcon /></MobileValueReset>}
+          </ToolTabSlot>;
+        })}
       </ToolTabs>}
       <Tools>
         <AnimatePresence propagate mode="popLayout">
@@ -131,18 +139,32 @@ const FocusStyle = createGlobalStyle<{ $focused: boolean }>`
 const Editor = styled(motion.div)`
   position: fixed; inset: 0; z-index: 1000; pointer-events: none;
   &[aria-hidden="true"], &[aria-hidden="true"] * { pointer-events: none !important; }
-  &[data-mobile="true"] { top: auto; bottom: calc(164px + env(safe-area-inset-bottom, 0px)); left: 12px; right: 12px; display: flex; flex-direction: column; align-items: center; }
-  @media (max-height: 700px) and (max-width: 760px) { &[data-mobile="true"] { bottom: 178px; } }
+  &[data-mobile="true"] { top: auto; bottom: calc(188px + env(safe-area-inset-bottom, 0px)); left: 12px; right: 12px; display: flex; flex-direction: column; align-items: center; }
+  @media (max-height: 700px) and (max-width: 760px) { &[data-mobile="true"] { bottom: 202px; } }
   @media (orientation: landscape) and (max-height: 600px) { &[data-mobile="true"] { left: auto; right: 12px; top: 8px; bottom: auto; width: min(var(--phone-width), calc(50vw - 24px)); } }
 `;
 const ToolTabs = styled(motion.div)`
   display: flex; justify-content: center; gap: 4px; max-width: 100%; margin-bottom: 0; pointer-events: auto;
-  button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 62px; min-height: 56px; padding: 7px 9px; border-radius: 18px; background: #212026; color: white; font-size: 12px; font-weight: 800; border: 2px solid #0b0b0c; box-shadow: 0 3px 0 #0b0b0c; }
-  button[aria-pressed="true"] { background: #212026; border-color: #0b0b0c; box-shadow: 0 3px 0 #0b0b0c, inset 0 0 0 2px white; }
-  button[aria-pressed="false"] { color: #929294; }
-  button:focus-visible { outline: 2px solid white; outline-offset: 3px; }
-  @media (max-width: 350px) { button { min-width: 54px; padding: 6px; font-size: 11px; } }
-  @media (orientation: landscape) and (max-height: 600px) { width: 100%; button { min-width: 0; flex: 1; padding: 6px; font-size: 11px; } }
+  @media (orientation: landscape) and (max-height: 600px) { width: 100%; }
+`;
+const ToolTabSlot = styled.div`
+  position: relative;
+  @media (orientation: landscape) and (max-height: 600px) { min-width: 0; flex: 1; }
+`;
+const ToolTabButton = styled.button`
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 62px; min-height: 56px; padding: 7px 9px; border-radius: 18px; background: #212026; color: white; font-size: 12px; font-weight: 800; border: 2px solid #0b0b0c; box-shadow: 0 3px 0 #0b0b0c;
+  &[aria-pressed="true"] { box-shadow: 0 3px 0 #0b0b0c, inset 0 0 0 2px white; }
+  &[aria-pressed="false"] { color: #929294; }
+  &:focus-visible { outline: 2px solid white; outline-offset: 3px; }
+  @media (max-width: 350px) { min-width: 54px; padding: 6px; font-size: 11px; }
+  @media (orientation: landscape) and (max-height: 600px) { min-width: 0; width: 100%; padding: 6px; font-size: 11px; }
+`;
+const MobileValueReset = styled(SliderResetButton)`
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 12px);
+  transform: translateX(-50%) scale(var(--slider-scale));
+  transform-origin: center bottom;
 `;
 const Tools = styled.div`
   [data-mobile="true"] & { position: relative; width: min(320px, calc(100vw - 24px)); height: 124px; display: flex; align-items: center; justify-content: center; }

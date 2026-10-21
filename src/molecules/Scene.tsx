@@ -74,7 +74,7 @@ import {
   useWorldEnvironment,
 } from "@/3d-objects/worlds/WorldEnvironment";
 import { WorldAudio } from "@/3d-objects/worlds/WorldAudio";
-import type { WorldEnvironmentConfig } from "@/types/worldEnvironment";
+import { worldDayPhase, type WorldEnvironmentConfig } from "@/types/worldEnvironment";
 
 const Debug = () => {
   const { width } = useThree((s) => s.size);
@@ -223,7 +223,7 @@ function HomeDirectionalLight({
       (1 - rain * 0.2);
     light.color.copy(color).lerp(nightColor, cycle ? 1 - daylight : 0);
     if (cycle) {
-      const phase = (elapsed / cycle.durationSeconds) * Math.PI * 2;
+      const phase = worldDayPhase(elapsed, environmentConfig) * Math.PI * 2;
       const azimuth = rig.azimuth + phase;
       const elevation = 0.3 + Math.abs(Math.cos(phase)) * rig.elevation;
       const horizontal = Math.cos(elevation) * rig.radius;

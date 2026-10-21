@@ -243,10 +243,10 @@ export const DebugApp = () => {
       <SettingsWrapper>
         <HugColumn $gap={"0.5rem"}>
           <h5>Taps</h5>
-          <p>Add 10K taps 🫵</p>
+          <p>Get 1M 🫵</p>
         </HugColumn>
 
-        <ActionButton onClick={() => addTaps(10000)}>Add 🫵</ActionButton>
+        <ActionButton onClick={() => addTaps(1_000_000)}>Get 🫵</ActionButton>
       </SettingsWrapper>
 
       <SettingsWrapper>

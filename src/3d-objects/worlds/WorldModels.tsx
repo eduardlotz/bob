@@ -10,6 +10,8 @@ import {
 import { seededRandom, useWorldQuality } from "./quality";
 import { WorldToonMaterial } from "./WorldToonMaterial";
 import { StylizedBushes, StylizedTrees } from "./StylizedVegetation";
+import { ChristmasDecorations } from "./ChristmasDecorations";
+import { WinterCabin, WINTER_CABIN_POSITION } from "./WinterCabin";
 
 function ringPlacements(
   count: number,
@@ -153,17 +155,7 @@ function bushGeometry(snow: boolean) {
   });
   return assemble(parts);
 }
-const forestBushGeometry = () => bushGeometry(false);
 const winterBushGeometry = () => bushGeometry(true);
-
-function Bushes({ snow = false }: { snow?: boolean }) {
-  const quality = useWorldQuality();
-  const placements = useMemo(
-    () => ringPlacements(quality === "low" ? 12 : 22, snow ? 623 : 622, 6.8, 10, 0.85),
-    [quality, snow],
-  );
-  return <ModelInstances toon name={snow ? "winter-bushes" : "forest-bushes"} build={snow ? winterBushGeometry : forestBushGeometry} placements={placements} />;
-}
 
 export function ForestModels() {
   const quality = useWorldQuality();
@@ -191,19 +183,34 @@ export function ForestModels() {
 }
 export function WinterModels() {
   const quality = useWorldQuality();
-  const trees = useMemo(
-    () => ringPlacements(quality === "low" ? 22 : 34, 77, 8, 11, 2),
-    [quality],
-  );
+  const bushes = useMemo(() => ringPlacements(quality === "low" ? 12 : 22, 623, 6.8, 10, .85), [quality]);
+  const trees = useMemo(() => {
+    const placements = ringPlacements(quality === "low" ? 22 : 34, 77, 8, 11, 2);
+    const background: [number, number][] = [[-8.5, -11], [-3.3, -16], [.2, -20], [4.2, -23], [10.8, -22], [13.2, -13]];
+    const nearest = placements.map((tree, index) => ({ tree, index }))
+      .sort((a, b) => b.tree.position[2] - a.tree.position[2])
+      .slice(0, background.length);
+    nearest.forEach(({ index }, i) => {
+      placements[index] = { ...placements[index], position: [background[i][0], -1.36, background[i][1]] };
+    });
+    // Clear the cabin front and roof without changing the total tree budget.
+    const [cabinX, , cabinZ] = WINTER_CABIN_POSITION;
+    return placements.map(tree => Math.abs(tree.position[0] - cabinX) < 5.5 && tree.position[2] > cabinZ - 4 && tree.position[2] < cabinZ + 8
+      ? { ...tree, position: [-12 - Math.abs(tree.position[0] - cabinX), -1.36, tree.position[2]] as Vec3 }
+      : tree);
+  }, [quality]);
+  const christmasTrees = useMemo(() => trees.filter((_, index) => index % 3 === 1), [trees]);
   return (
     <>
-      <Bushes snow />
+      <ModelInstances toon name="winter-bushes" build={winterBushGeometry} placements={bushes} />
       <ModelInstances
         toon
         name="winter-pines"
         build={pineGeometry}
         placements={trees}
       />
+      <ChristmasDecorations trees={christmasTrees} bushes={bushes} />
+      <WinterCabin />
     </>
   );
 }
@@ -279,40 +286,6 @@ export function Dune({
   );
 }
 
-export function SnowmanDetails() {
-  return (
-    <group>
-      {[-0.1, 0.1].map((x) => (
-        <mesh key={x} position={[x, 0.27, 0.245]}>
-          <sphereGeometry args={[0.035, 6, 4]} />
-          <WorldToonMaterial color="#343c43" />
-        </mesh>
-      ))}
-      <mesh position={[0, 0.04, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[0.245, 0.045, 5, 12]} />
-        <WorldToonMaterial color="#bc5b4c" />
-      </mesh>
-      <mesh position={[0, 0.46, 0]}>
-        <cylinderGeometry args={[0.3, 0.3, 0.045, 12]} />
-        <WorldToonMaterial color="#455766" />
-      </mesh>
-      <mesh position={[0, 0.57, 0]}>
-        <cylinderGeometry args={[0.17, 0.18, 0.22, 10]} />
-        <WorldToonMaterial color="#455766" />
-      </mesh>
-      {[-1, 1].map((side) => (
-        <mesh
-          key={side}
-          position={[side * 0.5, -0.1, 0]}
-          rotation={[0, 0, side * -1.0]}
-        >
-          <cylinderGeometry args={[0.022, 0.035, 0.5, 5]} />
-          <WorldToonMaterial color="#71533d" />
-        </mesh>
-      ))}
-    </group>
-  );
-}
 
 export function RingedPlanet({ small = false }: { small?: boolean }) {
   const quality = useWorldQuality();

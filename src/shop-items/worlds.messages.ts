@@ -19,11 +19,15 @@ export const worldMessages = defineMessages({
     },
     world_desert: {
       name: "Wüste",
-      description: "Warme Dünen, Kakteen und ein bisschen Staub in der Luft.",
+      description: "Warme Dünen, rollende Steppenläufer, Schlangen und ein verwitterter Sandsteinbogen.",
     },
     world_winter: {
       name: "Winter",
-      description: "Kalter Schnee, riesige Tannen und dichter Schneefall.",
+      description: "Verschneite Tannen, bunte Weihnachtslichter und große und kleine Schneemänner.",
+    },
+    world_halloween: {
+      name: "Halloween",
+      description: "Ein riesiges Spukschloss, leuchtende Kürbisse und tanzende Herbstblätter.",
     },
     world_island: {
       name: "Einsame Insel",
@@ -55,11 +59,15 @@ export const worldMessages = defineMessages({
     },
     world_desert: {
       name: "Desert",
-      description: "Warm dunes, cacti, and a little dust in the air.",
+      description: "Warm dunes, rolling tumbleweeds, snakes, and a weathered sandstone arch.",
     },
     world_winter: {
       name: "Winter",
-      description: "Cold snow, towering pines, and heavy snowfall.",
+      description: "Snowy pines, colorful Christmas lights, and snowmen big and small.",
+    },
+    world_halloween: {
+      name: "Halloween",
+      description: "A towering haunted castle, glowing pumpkins, and drifting autumn leaves.",
     },
     world_island: {
       name: "Lonely Island",

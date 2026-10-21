@@ -1,6 +1,9 @@
 import type { WorldItem } from "@/store";
 import { WORLD_DAY_SECONDS } from "@/types/worldEnvironment";
 
+// Set to false after the holidays to restore Winter and Halloween's normal day/night cycles.
+export const SEASONAL_NIGHT_ONLY = true;
+
 const DEFAULT_WORLD_LIGHTING = {
   ambientIntensity: 2,
   directionalIntensity: 1.2,
@@ -102,7 +105,7 @@ export const initialWorlds: WorldItem[] = [
   {
     id: "world_desert",
     name: "Wüste",
-    description: "Warme Dünen, Kakteen und ein bisschen Staub in der Luft.",
+    description: "Warme Dünen, rollende Steppenläufer, Schlangen und ein verwitterter Sandsteinbogen.",
     cost: 300_000,
     purchased: false,
     enabled: false,
@@ -142,7 +145,7 @@ export const initialWorlds: WorldItem[] = [
   {
     id: "world_winter",
     name: "Winter",
-    description: "Kalter Schnee, riesige Tannen und dichter Schneefall.",
+    description: "Verschneite Tannen, bunte Weihnachtslichter und große und kleine Schneemänner.",
     cost: 2_000_000,
     purchased: false,
     enabled: false,
@@ -158,10 +161,25 @@ export const initialWorlds: WorldItem[] = [
       effects: ["winter_snow"],
       lighting: DEFAULT_WORLD_LIGHTING,
       environment: {
-        dayNight: { durationSeconds: WORLD_DAY_SECONDS, nightSky: ["#111e38", "#304760", "#506078"], nightAmbient: 0.22, nightDirectional: 0.16 },
+        dayNight: { durationSeconds: WORLD_DAY_SECONDS, fixedPhase: SEASONAL_NIGHT_ONLY ? .5 : undefined, nightSky: ["#111e38", "#304760", "#506078"], nightAmbient: 0.22, nightDirectional: 0.16 },
         nightLight: "moon",
       },
       audio: { layers: [] },
+    },
+  },
+  {
+    id: "world_halloween", name: "Halloween",
+    description: "Ein riesiges Spukschloss, leuchtende Kürbisse und tanzende Herbstblätter.",
+    cost: 5_000_000, purchased: false, enabled: false, type: "world", icon: "🎃",
+    scene: {
+      skyColors: ["#b3a2c5", "#665078"], gradientStops: [0, .45, 1],
+      gradientColors: ["#655176", "#b8a1be", "#665a73"],
+      groundColor: "#514654", accentColor: "#73617b",
+      models: ["halloween_grove"], effects: [], lighting: DEFAULT_WORLD_LIGHTING,
+      environment: {
+        dayNight: { durationSeconds: WORLD_DAY_SECONDS, fixedPhase: SEASONAL_NIGHT_ONLY ? .5 : undefined, nightSky: ["#17152e", "#322846", "#51445f"], nightAmbient: .3, nightDirectional: .23 },
+        nightLight: "moon",
+      }, audio: { layers: [] },
     },
   },
   {

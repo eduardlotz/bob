@@ -2,13 +2,15 @@ import { motion } from "motion/react";
 import styled, { css } from "styled-components";
 
 export interface FloatingButtonStyleProps {
-  $variant?: "blue" | "dark" | "white";
+  $variant?: "blue" | "dark" | "white" | "muted";
+  $active?: boolean;
 }
 
 const BUTTON_PALETTES = {
   blue: { background: "#4178f7", edge: "#2a5ee2", text: "#fff" },
   dark: { background: "#212026", edge: "#0b0b0c", text: "#fff" },
   white: { background: "#fff", edge: "#D0CEDD", text: "#212026" },
+  muted: { background: "#78758d", edge: "#555363", text: "#fff" },
 } as const;
 
 /** Shared raised button treatment for controls that float over the scene. */
@@ -35,4 +37,11 @@ export const floatingActionButtonStyles = css<FloatingButtonStyleProps>`
 
 export const FloatingActionButton = styled(motion.button)<FloatingButtonStyleProps>`
   ${floatingActionButtonStyles}
+  /* Individual translate composes with Motion's layout and entrance transforms. */
+  translate: 0 ${({ $active }) => $active ? "3px" : "0px"};
+  box-shadow: 0 ${({ $active }) => $active ? "2px" : "5px"} 0 var(--floating-button-edge);
+  &:active:not(:disabled) {
+    translate: 0 3px;
+    box-shadow: 0 2px 0 var(--floating-button-edge);
+  }
 `;
