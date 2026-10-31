@@ -9,12 +9,15 @@ import {
 } from "@/store";
 import type { MiniGameType } from "@/store/minigames";
 import { GradientTexture, Grid } from "@react-three/drei";
+import { useThree } from "@react-three/fiber";
 import { CuboidCollider } from "@react-three/rapier";
 import {
   type ComponentType,
   type ReactNode,
   useCallback,
   useEffect,
+  lazy,
+  Suspense,
 } from "react";
 import { useNavigate } from "react-router-dom";
 import { BackSide } from "three";
@@ -25,13 +28,16 @@ import { stopAllWorldSounds } from "@/utils/soundSystem";
 import { FlappyBirdGame, FlappyBirdRingPreview } from "./games/FlappyBirdGame";
 import { MiniGameThrone } from "./games/MiniGameThrone";
 import {
-  MiniGameItem,
   type SupportedMiniGameType,
 } from "./games/withMiniGameItem";
 import { PingPongGame } from "./games/PingPongGame";
-import { SlotMachineArcade, SlotMachineGame } from "./games/SlotMachineGame";
+import { SlotMachineGame } from "./games/SlotMachineGame";
+import { SlotMachineLobbyPreview } from "./games/SlotMachineLobbyPreview";
 import { useI18n } from "@/i18n";
 import { miniGamesSceneMessages } from "./MiniGamesScene.messages";
+
+const MiniGolfGame = lazy(() => import("./games/golf/MiniGolfGame").then(m => ({ default: m.MiniGolfGame })));
+const GolfLobbyPreview = lazy(() => import("./games/golf/GolfModels").then(m => ({ default: m.GolfLobbyPreview })));
 
 const DEFAULT_MINIGAMES_VIEW = "default";
 const getMiniGameThroneY = () => FLOOR_Y_POSITION + 0.18;
@@ -40,12 +46,15 @@ const getMiniGameThroneY = () => FLOOR_Y_POSITION + 0.18;
 type MiniGamesView = typeof DEFAULT_MINIGAMES_VIEW | "minigames:slot_machine";
 type MiniGameComponent = ComponentType<{ onExit: () => void }>;
 
+interface LobbyPlacement { position: [number, number, number]; scale: number; }
+
 interface MiniGameDefinition {
   cameraView: MiniGamesView;
   GameComponent: MiniGameComponent;
   renderLobbyItem: (
     label: string,
     onSelect: (game: SupportedMiniGameType) => void,
+    placement: LobbyPlacement,
   ) => ReactNode;
 }
 
@@ -53,27 +62,40 @@ const MINI_GAME_ORDER: SupportedMiniGameType[] = [
   "SLOT_MACHINE",
   "PING_PONG",
   "FLAPPY_BIRD",
+  "MINI_GOLF",
 ];
 
 const MINI_GAME_DEFINITIONS: Record<SupportedMiniGameType, MiniGameDefinition> =
   {
+    MINI_GOLF: {
+      cameraView: DEFAULT_MINIGAMES_VIEW,
+      GameComponent: MiniGolfGame,
+      renderLobbyItem: (label, onSelect, placement) => (
+        <MiniGameThrone label={label} onClick={() => onSelect("MINI_GOLF")}
+          position={placement.position} scale={placement.scale} objectOffset={[0, 1.8, 0]} objectScale={.8}>
+          <Suspense fallback={null}><GolfLobbyPreview /></Suspense>
+        </MiniGameThrone>
+      ),
+    },
     SLOT_MACHINE: {
       cameraView: "minigames:slot_machine",
       GameComponent: SlotMachineGame,
-      renderLobbyItem: (label, onSelect) => (
-        <MiniGameItem game="SLOT_MACHINE" label={label} onSelect={onSelect}>
-          <SlotMachineArcade position={[0, 0, -2]} scale={[1, 1, 1]} />
-        </MiniGameItem>
+      renderLobbyItem: (label, onSelect, placement) => (
+        <MiniGameThrone label={label} onClick={() => onSelect("SLOT_MACHINE")}
+          position={placement.position} scale={placement.scale} objectOffset={[0, 1.74, 0]} objectScale={.85}>
+          <SlotMachineLobbyPreview />
+        </MiniGameThrone>
       ),
     },
     PING_PONG: {
       cameraView: DEFAULT_MINIGAMES_VIEW,
       GameComponent: PingPongGame,
-      renderLobbyItem: (label, onSelect) => (
+      renderLobbyItem: (label, onSelect, placement) => (
         <MiniGameThrone
           label={label}
           onClick={() => onSelect("PING_PONG")}
-          position={[-2, getMiniGameThroneY(), 0]}
+          position={placement.position}
+          scale={placement.scale}
           objectOffset={[0, 2.22, 0]}
           objectScale={0.58}
         >
@@ -84,11 +106,12 @@ const MINI_GAME_DEFINITIONS: Record<SupportedMiniGameType, MiniGameDefinition> =
     FLAPPY_BIRD: {
       cameraView: DEFAULT_MINIGAMES_VIEW,
       GameComponent: FlappyBirdGame,
-      renderLobbyItem: (label, onSelect) => (
+      renderLobbyItem: (label, onSelect, placement) => (
         <MiniGameThrone
           label={label}
           onClick={() => onSelect("FLAPPY_BIRD")}
-          position={[2, getMiniGameThroneY(), 0]}
+          position={placement.position}
+          scale={placement.scale}
           objectOffset={[0, 3, 0]}
           objectScale={0.46}
         >
@@ -111,10 +134,11 @@ function MiniGamesLobby({
   onSelect: (game: SupportedMiniGameType) => void;
 }) {
   const { locale } = useI18n();
+  const compact = useThree(state => state.size.width < 600);
 
   return (
     <group>
-      {MINI_GAME_ORDER.map((game) => {
+      {MINI_GAME_ORDER.map((game, index) => {
         const definition = MINI_GAME_DEFINITIONS[game];
 
         return (
@@ -122,6 +146,10 @@ function MiniGamesLobby({
             {definition.renderLobbyItem(
               miniGamesSceneMessages[locale][game].label,
               onSelect,
+              {
+                position: [(index % 2 ? 1 : -1) * (compact ? 1.85 : 2.25), getMiniGameThroneY(), index < 2 ? -1.8 : (compact ? .85 : 1.3)],
+                scale: compact ? .62 : .78,
+              },
             )}
           </group>
         );
@@ -258,7 +286,7 @@ export function MiniGamesScene() {
       />
       {activeGame === "LOBBY" ? (
         <MiniGamesBackdrop />
-      ) : activeGame !== "FLAPPY_BIRD" && activeGame !== "PING_PONG" ? (
+      ) : activeGame !== "FLAPPY_BIRD" && activeGame !== "PING_PONG" && activeGame !== "MINI_GOLF" ? (
         <PointsCounter number={score} />
       ) : null}
     </>

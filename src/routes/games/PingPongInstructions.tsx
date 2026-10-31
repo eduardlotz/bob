@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from "motion/react";
-import styled from "styled-components";
+import { GameTutorial as Instructions } from "./GameScreenStyles";
 import { PANEL_SPRING } from "@/styles/panelMotion";
 
 type ControlMode = "mouse" | "touch" | "tilt";
@@ -71,35 +71,3 @@ export function PingPongInstructions({ locale, mode }: { locale: "de" | "en"; mo
     <strong>{mode === "mouse" ? copy.desktopStart : copy.mobileStart}</strong>
   </Instructions>;
 }
-
-const Instructions = styled(motion.div)`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  max-width: 360px;
-  color: #fff;
-  svg { flex-shrink: 0; max-width: 100%; }
-  h2, p { margin: 0; }
-  h2 {
-    font-size: clamp(24px, 5vw, 32px);
-    font-weight: 800;
-    line-height: 1.2;
-    -webkit-text-stroke: 3px #202630;
-    paint-order: stroke fill;
-    text-shadow: 2px 2px 0 #202630;
-  }
-  p { font-size: 16px; line-height: 1.5; }
-  strong {
-    font-size: 16px;
-    font-weight: 800;
-    line-height: 1.4;
-    -webkit-text-stroke: 2px #202630;
-    paint-order: stroke fill;
-    text-shadow: 2px 2px 0 #202630;
-  }
-  @media (max-height: 520px) {
-    gap: 10px;
-    svg { width: 164px; height: 120px; }
-  }
-`;

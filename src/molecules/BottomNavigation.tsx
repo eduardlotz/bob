@@ -123,7 +123,7 @@ export function BottomNavigation() {
         left: 0,
         right: 0,
         zIndex:
-          activeGame === "FLAPPY_BIRD" || activeGame === "PING_PONG"
+          activeGame === "FLAPPY_BIRD" || activeGame === "PING_PONG" || activeGame === "MINI_GOLF"
             ? 1000
             : undefined,
       }}

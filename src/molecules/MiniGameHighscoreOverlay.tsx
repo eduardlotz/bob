@@ -17,7 +17,8 @@ export function MiniGameHighscoreOverlay() {
     activeGame !== "LOBBY" &&
     activeGame !== "SLOT_MACHINE" &&
     activeGame !== "FLAPPY_BIRD" &&
-    activeGame !== "PING_PONG";
+    activeGame !== "PING_PONG" &&
+    activeGame !== "MINI_GOLF";
 
   const rawCurrentHighScore =
     activeGame === "LOBBY"

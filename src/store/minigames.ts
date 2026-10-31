@@ -7,13 +7,16 @@ export type MiniGameType =
   | "FOOTBALL"
   | "PING_PONG"
   | "FLAPPY_BIRD"
-  | "SLOT_MACHINE";
+  | "SLOT_MACHINE"
+  | "MINI_GOLF";
 
 interface MiniGameState {
   activeGame: MiniGameType;
   setActiveGame: (game: MiniGameType) => void;
 
   highScores: Record<MiniGameType, number>;
+  bestGolfScore: number | null;
+  recordGolfRound: (strokes: number) => void;
 
   session: {
     score: number;
@@ -31,6 +34,7 @@ const DEFAULT_HIGH_SCORES: Record<MiniGameType, number> = {
   PING_PONG: 0,
   FLAPPY_BIRD: 0,
   SLOT_MACHINE: 0,
+  MINI_GOLF: 0,
 };
 
 const sanitizeScore = (value: unknown) => {
@@ -42,7 +46,7 @@ const commitSessionHighScore = (
   state: Pick<MiniGameState, "activeGame" | "session" | "highScores">,
 ) => {
   const game = state.activeGame;
-  if (game === "LOBBY") return;
+  if (game === "LOBBY" || game === "MINI_GOLF") return;
 
   const currentBest = sanitizeScore(state.highScores[game]);
   const runScore = sanitizeScore(state.session.score);
@@ -57,6 +61,11 @@ export const useMiniGameStore = create<MiniGameState>()(
       activeGame: "LOBBY",
 
       highScores: { ...DEFAULT_HIGH_SCORES },
+      bestGolfScore: null,
+      recordGolfRound: (strokes) => set((state) => {
+        if (!Number.isFinite(strokes) || strokes < 10) return;
+        state.bestGolfScore = Math.min(state.bestGolfScore ?? Infinity, strokes);
+      }),
 
       session: {
         score: 0,
@@ -92,12 +101,13 @@ export const useMiniGameStore = create<MiniGameState>()(
           state.activeGame = "LOBBY";
           state.session.score = 0;
           state.highScores = { ...DEFAULT_HIGH_SCORES };
+          state.bestGolfScore = null;
         }),
     })),
     {
       name: "mini-game-storage",
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ highScores: state.highScores }),
+      partialize: (state) => ({ highScores: state.highScores, bestGolfScore: state.bestGolfScore }),
       merge: (persistedState, currentState) => {
         const persistedHighScores: Partial<Record<MiniGameType, unknown>> =
           (persistedState as Partial<MiniGameState> | undefined)?.highScores ??
@@ -112,6 +122,10 @@ export const useMiniGameStore = create<MiniGameState>()(
           ...currentState,
           ...(persistedState as Partial<MiniGameState>),
           highScores: mergedHighScores,
+          bestGolfScore: (() => {
+            const score = (persistedState as Partial<MiniGameState> | undefined)?.bestGolfScore;
+            return typeof score === "number" && Number.isFinite(score) && score >= 10 ? score : null;
+          })(),
         };
       },
     },

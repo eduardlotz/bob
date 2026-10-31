@@ -101,7 +101,7 @@ function FlowerBand({ palette, form, count, radius, rootOffset }: {
 
 export function ForestFlowers({ radius, rootOffset }: { radius: number; rootOffset: number }) {
   const quality = useWorldQuality();
-  const count = { low: 60, medium: 120, high: 180 }[quality];
+  const count = { low: 120, medium: 240, high: 360 }[quality];
   return <>{([0, 1] as const).flatMap((palette) => ([0, 1] as const).map((form) =>
     <FlowerBand key={`${palette}-${form}`} palette={palette} form={form} count={count / 2} radius={radius} rootOffset={rootOffset} />
   ))}</>;

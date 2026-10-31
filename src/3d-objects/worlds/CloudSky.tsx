@@ -94,12 +94,15 @@ export function CloudSky({
   stops,
   nightColors,
   cycleSeconds,
+  sunDirection,
 }: {
   climate: CloudClimate;
   colors: [string, string, string];
   stops: [number, number, number];
   nightColors?: [string, string, string];
   cycleSeconds?: number;
+  /** Optional fixed sun for reusable daytime scenes such as the golf garden. */
+  sunDirection?: [number, number, number];
 }) {
   const environment = useWorldEnvironment();
   const environmentConfig = useWorldEnvironmentConfig();
@@ -202,6 +205,10 @@ export function CloudSky({
         u.uSunVisibility.value = environment.current.daylight * (1 - environment.current.rain * .65);
         u.uMoonVisibility.value = night * (1 - environment.current.rain * .4);
       }
+    }
+    if (skyMaterial.current && sunDirection) {
+      skyMaterial.current.uniforms.uSunDirection.value.set(...sunDirection).normalize();
+      skyMaterial.current.uniforms.uSunVisibility.value = environment.current.daylight * (1 - environment.current.rain * .65);
     }
     if (group.current) {
       group.current.rotation.y = Math.sin(t * 0.012) * 0.08;

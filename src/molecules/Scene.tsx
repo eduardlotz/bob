@@ -1,3 +1,4 @@
+import { useShallow } from "zustand/react/shallow";
 import {
   NightMaterialFill,
   Fireplace,
@@ -18,6 +19,7 @@ import { Physics } from "@react-three/rapier";
 import { Perf } from "r3f-perf";
 import {
   Suspense,
+  memo,
   useRef,
   useState,
   useEffect,
@@ -350,7 +352,18 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
     isPaused,
     isReady,
     graphicPreferences,
-  } = useCoreStore();
+  } = useCoreStore(useShallow(state => ({
+    statisticsVisible: state.statisticsVisible,
+    physicsDebugEnabled: state.physicsDebugEnabled,
+    worlds: state.worlds,
+    previewMode: state.previewMode,
+    debugCameraSettings: state.debugCameraSettings,
+    debugLightSettings: state.debugLightSettings,
+    soundSystem: state.soundSystem,
+    isPaused: state.isPaused,
+    isReady: state.isReady,
+    graphicPreferences: state.graphicPreferences,
+  })));
   const { activeGame } = useMiniGameStore();
   const activeRouteMusicRef = useRef<string | null>(null);
   const location = useLocation();
@@ -606,7 +619,8 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
   );
 };
 
-export default Scene;
+// Counter/quest updates in the UI must not rerender the 3D scene.
+export default memo(Scene);
 
 const CursorFollowCamera = () => {
   const { isMobile } = useAppStore();
@@ -615,6 +629,7 @@ const CursorFollowCamera = () => {
   const cursor = useCursor({ condition: () => !isMobile, positionFactor: 1 });
 
   useFrame(({ clock }) => {
+    if (useMiniGameStore.getState().activeGame === "MINI_GOLF") return;
     if (isMobile) return;
     if (viewMode !== "fixed" || isTransitioning) return;
 
