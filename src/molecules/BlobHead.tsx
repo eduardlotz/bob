@@ -1,10 +1,13 @@
+import { useBobSkin } from "@/hooks/useBobSkin";
+import { BobTransitionTarget } from "@/components/BobTransitionTarget";
+import { OutlineScope } from "@/components/ForegroundOutlines";
 import { TropicalBobMotion } from "@/3d-objects/worlds/TropicalWorlds";
 import {
   DeviceOrientation,
   useDeviceOrientation,
 } from "@/hooks/useDeviceOrientation";
 import { useFrame } from "@react-three/fiber";
-import { useRef, useState, useEffect, useMemo, useCallback } from "react";
+import { useRef, useState, useEffect, useLayoutEffect, useMemo, useCallback } from "react";
 import {
   Group,
   Mesh,
@@ -62,6 +65,7 @@ const MAX_ROTATION_X = 0.9;
 const MAX_ROTATION_Y = 0.9;
 const MAX_TAP_CAMERA_SHAKE = 0.25;
 const CURSOR_POSITION_FACTOR = 2.5;
+const MENU_GAZE_LIFT = CAMERA_Y_POSITION * MAX_ROTATION_Y * 0.5;
 // Match the preferred gaze with the cursor two-thirds down the screen.
 const IDLE_LOOK_DOWN_OFFSET =
   (2 / 3 - 0.5) * CURSOR_POSITION_FACTOR * MAX_ROTATION_Y;
@@ -199,8 +203,6 @@ export function BlobHead({
   onCameraZoomAnimation?: (isAnimating: boolean) => void;
 }) {
   const {
-    currentTheme,
-    themes,
     previewMode,
     bobItems,
     blobForms,
@@ -216,15 +218,13 @@ export function BlobHead({
   const showAutoTapParticles =
     currentRoute === ROUTE_PATHS.HOME && graphicPreferences.effectsEnabled;
   const reducedTapMotion = graphicPreferences.reducedTapMotion;
-  const ditheringEnabled = graphicPreferences.ditheringEnabled;
+  const skin = useBobSkin();
 
-  const activeTheme =
-    previewMode === "theme" ? themes.find((t) => t.preview) : currentTheme;
-
-  const blobColor = activeTheme?.blobColor;
-  const outlineColor = activeTheme?.outlineColor;
-  const eyeColor = activeTheme?.eyeColor;
+  const blobColor = skin.body;
+  const outlineColor = skin.outline;
+  const eyeColor = skin.eyes;
   const headRef = useRef<Group>(null!);
+  const menuGazeLift = useRef(0);
   const idleMotionRef = useRef<Group>(null!);
   const idlePoseRef = useRef([0, 0, 0, 0, 1]);
   const idleEyeOffsetRef = useRef(0);
@@ -266,7 +266,7 @@ export function BlobHead({
   );
   const [cameraZoomAnimation, setCameraZoomAnimation] = useState(false);
   const idleAnimationStartRef = useRef(0);
-  const lastBobTapRef = useRef(Date.now());
+  const lastBobInteractionRef = useRef(Date.now());
   const lastIdleAnimationTimeRef = useRef(0);
   const firstIdleAfterTapRef = useRef(true);
   const idleAnimationRef = useRef<BobIdleAnimation | "none">("none");
@@ -281,6 +281,8 @@ export function BlobHead({
     viewMode,
     isTransitioning,
     isObjectView,
+    loadingCameraActive,
+    loadingCameraView,
   } = useViewStore();
 
   const isBobView = currentView === "phone:bob" || currentView === "shop:preview";
@@ -288,13 +290,13 @@ export function BlobHead({
     (isMobile
       ? -0.5
       : IDLE_LOOK_DOWN_OFFSET -
-        (showOptions ? 0 : CAMERA_Y_POSITION) * MAX_ROTATION_Y) +
+        CAMERA_Y_POSITION * MAX_ROTATION_Y) +
     (isBobView ? IDLE_LOOK_DOWN_OFFSET : 0);
 
   const shouldFollowCursor =
     viewMode === "fixed" &&
     !isMobile &&
-    (isDefaultView() || isNavigationView());
+    (isDefaultView() || isNavigationView() || currentView === "loading");
 
   const mousePosition = useCursor({
     condition: () => shouldFollowCursor,
@@ -322,8 +324,8 @@ export function BlobHead({
     idleAnimationRef.current = idleAnimation;
   }, [idleAnimation]);
 
-  const cancelIdleOnBobTap = useCallback(() => {
-    lastBobTapRef.current = Date.now();
+  const markBobActive = useCallback(() => {
+    lastBobInteractionRef.current = Date.now();
     lastIdleAnimationTimeRef.current = 0;
     firstIdleAfterTapRef.current = true;
     idleAnimationRef.current = "none";
@@ -335,12 +337,34 @@ export function BlobHead({
     }
   }, []);
 
-  // Only Bob taps reset inactivity. Each idle finishes on its own, then rests.
+  useLayoutEffect(() => {
+    if (loadingCameraActive && loadingCameraView === "default") markBobActive();
+  }, [loadingCameraActive, loadingCameraView, markBobActive]);
+
+  // Menu interaction uses the ordinary gaze, including when Bob was idle before
+  // the menu opened. Capture pointer movement over the HTML option bubbles too.
+  useEffect(() => {
+    if (!showOptions || isMobile) return;
+    markBobActive();
+    const onMenuPointerMove = () => {
+      const now = Date.now();
+      if (now - lastBobInteractionRef.current >= IDLE_TIMEOUT_MIN || idleAnimationRef.current !== "none") {
+        markBobActive();
+      } else {
+        lastBobInteractionRef.current = now;
+      }
+    };
+    window.addEventListener("pointermove", onMenuPointerMove, { passive: true, capture: true });
+    return () => window.removeEventListener("pointermove", onMenuPointerMove, true);
+  }, [showOptions, isMobile, markBobActive]);
+
+  // Bob taps and desktop menu activity reset inactivity. Elsewhere, idle
+  // animations still finish on their own and then rest.
   useEffect(() => {
     const checkIdleAnimation = () => {
       const now = Date.now();
       if (
-        now - lastBobTapRef.current >= IDLE_TIMEOUT_MIN &&
+        now - lastBobInteractionRef.current >= IDLE_TIMEOUT_MIN &&
         idleAnimationRef.current === "none" &&
         now - lastIdleAnimationTimeRef.current >= IDLE_ANIMATION_GAP
       ) {
@@ -401,6 +425,34 @@ export function BlobHead({
   }, [emotionState]);
 
   useFrame(({ clock }, delta) => {
+    const view = useViewStore.getState();
+    const runtimeLoading = view.loadingCameraActive && view.loadingCameraView === "loading";
+    menuGazeLift.current = MathUtils.damp(
+      menuGazeLift.current,
+      showOptions && !isMobile && !runtimeLoading ? MENU_GAZE_LIFT : 0,
+      4,
+      delta,
+    );
+    if (runtimeLoading) {
+      if (idleAnimationRef.current !== "none") markBobActive();
+      headRef.current.position.set(0, HEAD_POSITION_Y, 0);
+      const cursorX = isMobile ? 0 : mousePosition.current.x;
+      const cursorY = isMobile ? 0 : mousePosition.current.y;
+      applyHeadRotation(
+        isMobile ? 0 : (-cursorY - CAMERA_Y_POSITION) * MAX_ROTATION_Y,
+        cursorX * MAX_ROTATION_X,
+        -cursorX * MAX_ROTATION_X,
+        delta,
+      );
+      idleMotionRef.current?.position.set(0, 0, 0);
+      idleMotionRef.current?.quaternion.identity();
+      idleMotionRef.current?.scale.set(1, 1, 1);
+      idleEyeOffsetRef.current = 0;
+      idleBlinkRef.current = false;
+      sleepRef.current.active = false;
+      animateEyes(delta);
+      return;
+    }
     if (useBobEditor.getState().open) {
       // A steady face makes the spatial dimension tools readable.
       applyHeadRotation(isMobile ? 0.06 : 0, 0, 0, delta);
@@ -417,7 +469,7 @@ export function BlobHead({
       animateEyes(delta);
       return;
     }
-    const isBobIdle = Date.now() - lastBobTapRef.current >= IDLE_TIMEOUT_MIN;
+    const isBobIdle = Date.now() - lastBobInteractionRef.current >= IDLE_TIMEOUT_MIN;
 
     // Keep camera motion independent of Bob's gaze and personality animations.
     if (isMobile) {
@@ -435,7 +487,7 @@ export function BlobHead({
     }
 
     if (isBobIdle) {
-      applyHeadRotation(restingLookPitch, 0, 0, delta);
+      applyHeadRotation(restingLookPitch + menuGazeLift.current, 0, 0, delta);
       headRef.current.position.x = MathUtils.lerp(
         headRef.current.position.x,
         0,
@@ -621,7 +673,7 @@ export function BlobHead({
     const targetRotY = cursorX * MAX_ROTATION_X;
     const targetRotX = isBobView
       ? restingLookPitch
-      : (-cursorY - (showOptions ? 0 : CAMERA_Y_POSITION)) * MAX_ROTATION_Y;
+      : (-cursorY - CAMERA_Y_POSITION) * MAX_ROTATION_Y + menuGazeLift.current;
     const targetRotZ = -cursorX * MAX_ROTATION_X;
 
     if (followHead) {
@@ -873,7 +925,7 @@ export function BlobHead({
 
   const onClick = (e: any) => {
     e.stopPropagation(); // TODO: check why this stops double click bug
-    cancelIdleOnBobTap();
+    markBobActive();
 
     // trigger particles
     if (showAutoTapParticles) {
@@ -1007,7 +1059,7 @@ export function BlobHead({
 
   const content = (
     <>
-      {detachedItems}
+      <OutlineScope category={false}>{detachedItems}</OutlineScope>
       <BobSleepZs
         sleep={sleepRef}
         head={headRef}
@@ -1042,29 +1094,31 @@ export function BlobHead({
           rotation={[0, Math.PI, 0]}
           // position={[0, 2, 0]}
         >
-          <group ref={idleMotionRef} name="bob-idle-motion">
-            <BlobForm
-              formType={blobFormType}
-              parameters={selectedBlobForm.parameters}
-              blobColor={blobColor || "#ffffff"}
-              outlineColor={ditheringEnabled ? outlineColor : undefined}
-              // outlineColor={outlineColor}
-            />
+          <group ref={idleMotionRef} name="bob-idle-motion" userData={{ foregroundOutline: "bob" }}>
+            <BobTransitionTarget>
+              <BlobForm
+                formType={blobFormType}
+                parameters={selectedBlobForm.parameters}
+                blobColor={blobColor || "#ffffff"}
+                skin={skin}
+              />
 
-            <group position={calculateEyePosition([0, 0.2, 0.85])} scale={getBobFaceScale(blobFormType, selectedBlobForm.parameters)}>
-              <mesh ref={leftEyeRef} position={[-0.45, 0, 0]}>
-                <sphereGeometry args={[0.1, 16, 16]} />
-                <meshToonMaterial color={eyeColor} />
-              </mesh>
-              <mesh ref={rightEyeRef} position={[0.45, 0, 0]}>
-                <sphereGeometry args={[0.1, 16, 16]} />
-                <meshToonMaterial color={eyeColor} />
-              </mesh>
-            </group>
+              <group userData={{ foregroundOutline: false }} position={calculateEyePosition([0, 0.2, 0.85])} scale={getBobFaceScale(blobFormType, selectedBlobForm.parameters)}>
+                <mesh ref={leftEyeRef} position={[-0.45, 0, 0]}>
+                  <sphereGeometry args={[0.1, 16, 16]} />
+                  <meshToonMaterial color={eyeColor} />
+                </mesh>
+                <mesh ref={rightEyeRef} position={[0.45, 0, 0]}>
+                  <sphereGeometry args={[0.1, 16, 16]} />
+                  <meshToonMaterial color={eyeColor} />
+                </mesh>
+              </group>
+
+            </BobTransitionTarget>
 
             {attachedItems}
 
-            <group ref={starsRef} visible={emotionState === "dizzy"}>
+            <group userData={{ foregroundOutline: false }} ref={starsRef} visible={emotionState === "dizzy"}>
               {[...Array(5)].map((_, i) => (
                 <Star3D key={`dizzy-star-${i}`} />
               ))}

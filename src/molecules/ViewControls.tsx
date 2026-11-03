@@ -47,6 +47,7 @@ export function ViewControls() {
 
   const isShopPreview = currentView === "shop:preview";
   const shouldHide =
+    currentView === "loading" ||
     isShopPreview ||
     isGameActive ||
     isMinigamesRoute ||

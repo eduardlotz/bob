@@ -2,6 +2,7 @@ import { AnimatePresence, useReducedMotion } from "motion/react";
 import { GameScreenBackdrop as Backdrop, GameScores as Scores, GameScore as Score, GameScoreLabel as Label, GameInstructionPrompt as Instructions } from "./GameScreenStyles";
 import { PANEL_SPRING } from "@/styles/panelMotion";
 import type { ReactNode } from "react";
+import { useScreenTransition } from "@/store/screenTransition";
 
 export function FlappyOverlay({ phase, score, highScore, instructions, scoreLabel, idleContent }: {
   phase: "idle" | "playing" | "over";
@@ -12,6 +13,7 @@ export function FlappyOverlay({ phase, score, highScore, instructions, scoreLabe
   idleContent?: ReactNode;
 }) {
   const reducedMotion = useReducedMotion();
+  const covered = useScreenTransition(state => state.phase === "covered");
   const pop = (rotation: number, delay = 0) => ({
     initial: { scale: reducedMotion ? 1 : 0.5, rotate: reducedMotion ? 0 : rotation - 12, opacity: 0 },
     animate: { scale: 1, rotate: reducedMotion ? 0 : rotation, opacity: 1 },
@@ -23,7 +25,7 @@ export function FlappyOverlay({ phase, score, highScore, instructions, scoreLabe
   return <AnimatePresence>
     {phase !== "playing" && <Backdrop key={phase}
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}>
+      transition={{ duration: covered ? 0 : 0.3 }}>
       {phase === "over" ? <Scores role="status" aria-live="polite">
         <Score {...pop(-6)}>
           <strong>{score}</strong>

@@ -1,3 +1,6 @@
+import { useBobSkin } from "@/hooks/useBobSkin";
+import { BobTransitionTarget } from "./BobTransitionTarget";
+import type { BobSkin } from "./bob/skins/registry";
 import { forwardRef, Suspense, useMemo, useEffect } from "react";
 import { RigidBody, BallCollider } from "@react-three/rapier";
 import { BlobForm } from "./BlobForm";
@@ -22,16 +25,13 @@ type Props = Omit<
 
 // TODO: add emotions like blink and dizzy on hit
 export const CharacterBall = forwardRef((props: Props, ref: any) => {
-  const currentTheme = useCoreStore((state) => state.currentTheme);
+  const skin = useBobSkin();
   const bobItems = useCoreStore((state) => state.bobItems);
-  const ditheringEnabled = useCoreStore(
-    (state) => state.graphicPreferences.ditheringEnabled,
-  );
   const { formType, parameters, sizeFactor } = useActiveBobShape();
 
-  const blobColor = currentTheme?.blobColor;
-  const eyeColor = currentTheme?.eyeColor;
-  const outlineColor = currentTheme?.outlineColor;
+  const blobColor = skin.body;
+  const eyeColor = skin.eyes;
+  const outlineColor = skin.outline;
 
   const {
     position,
@@ -61,8 +61,8 @@ export const CharacterBall = forwardRef((props: Props, ref: any) => {
     >
       <BallCollider args={[physics.radius]} mass={physics.mass} />
 
-      <CharacterBallModel ref={visualRef} scale={scale} formType={formType} parameters={parameters}
-        blobColor={blobColor || "#ffffff"} eyeColor={eyeColor || "#000000"} outlineColor={outlineColor}>
+      <CharacterBallModel ref={visualRef} scale={scale} formType={formType} parameters={parameters} transitionTarget
+        blobColor={blobColor} eyeColor={eyeColor} skin={skin}>
         <Suspense fallback={null}>
           <BobWearables
             items={bobItems.filter((item) => item.enabled)}
@@ -76,20 +76,26 @@ export const CharacterBall = forwardRef((props: Props, ref: any) => {
   );
 });
 
-/** Shared game model. Defaults are classic Bob; customization is explicitly opt-in. */
+/** Shared game model: skins follow Bob everywhere; shape/physics remain opt-in. */
 export const CharacterBallModel = forwardRef<Group, {
   scale?: number | [number, number, number]; formType?: BlobFormType; parameters?: BlobFormParameters;
-  blobColor?: string; eyeColor?: string; outlineColor?: string; children?: React.ReactNode;
+  skin?: BobSkin; blobColor?: string; eyeColor?: string; children?: React.ReactNode; transitionTarget?: boolean;
 }>(function CharacterBallModel({ scale = 1, formType = "sphere", parameters = DEFAULT_FORM_PARAMETERS.sphere,
-  blobColor = "#ffffff", eyeColor = "#000000", outlineColor, children }, ref) {
+  blobColor, eyeColor, skin: skinOverride, children, transitionTarget = false }, ref) {
+  const selectedSkin = useBobSkin();
+  const skin = skinOverride ?? selectedSkin;
+  blobColor ??= skin.body;
+  eyeColor ??= skin.eyes;
   const eyes = useMemo(() => new SphereGeometry(.12, 16, 16), []);
   useEffect(() => () => eyes.dispose(), [eyes]);
-  return <group ref={ref} scale={scale}>
-    <BlobForm formType={formType} parameters={parameters} blobColor={blobColor} outlineColor={outlineColor} />
-    <group position={getBobEyePosition([0, .2, .85], formType, parameters)} scale={getBobFaceScale(formType, parameters)}>
-      <mesh geometry={eyes} position={[-.45, 0, 0]}><meshToonMaterial color={eyeColor} /></mesh>
-      <mesh geometry={eyes} position={[.45, 0, 0]}><meshToonMaterial color={eyeColor} /></mesh>
-    </group>
+  return <group ref={ref} scale={scale} userData={{ foregroundOutline: "bob" }}>
+    <BobTransitionTarget enabled={transitionTarget}>
+      <BlobForm formType={formType} parameters={parameters} blobColor={blobColor} skin={skin} />
+      <group userData={{ foregroundOutline: false }} position={getBobEyePosition([0, .2, .85], formType, parameters)} scale={getBobFaceScale(formType, parameters)}>
+        <mesh geometry={eyes} position={[-.45, 0, 0]}><meshToonMaterial color={eyeColor} /></mesh>
+        <mesh geometry={eyes} position={[.45, 0, 0]}><meshToonMaterial color={eyeColor} /></mesh>
+      </group>
+    </BobTransitionTarget>
     {children}
   </group>;
 });

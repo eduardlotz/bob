@@ -9,6 +9,8 @@ import {
   VISIBLE_OPTIONS_CAMERA_ZOOM,
   HEAD_CAMERA_POSES,
   BOB_CAMERA_POSE,
+  LOADING_CAMERA_POSE,
+  PHOTO_CAMERA_POSE,
 } from "@/store/config/camera";
 import { ROUTE_PATHS } from "./config/routes";
 import { useAppStore } from "./core/app";
@@ -16,8 +18,10 @@ import { useCoreStore } from "./core/store";
 import { connectNavigationMenu } from "./core/navigationMenuController";
 import { useMiniGameStore } from "@/store/minigames";
 import { Vector3 } from "three";
-import { getSelectedBlobForm, getBlobFormType, getBlobFormHalfSize } from "@/types/blobForms";
+import { getSelectedBlobForm, getBlobFormType, getBlobFormHalfSize, getBobGroundOffset } from "@/types/blobForms";
+import { useBobEditor } from "./bobEditor";
 import { getBobEditorFraming } from "./config/bobEditorFraming";
+import { getPhotoCameraFraming } from "./config/photoCameraFraming";
 
 export interface CameraView {
   id: string;
@@ -58,6 +62,7 @@ export interface FocusTarget {
 
 export type CameraViewId =
   | "default"
+  | "loading"
   | "upgrades"
   | "about"
   | "portfolio"
@@ -71,6 +76,7 @@ export type CameraViewId =
   | "phone:quests"
   | "phone:options"
   | "phone:camera"
+  | "phone:photo"
   | "desk"
   | "bookshelf"
   | "computer"
@@ -160,6 +166,26 @@ const applyOrbitSettingsToControls = (
 };
 
 const resolveViewPose = (viewConfig?: CameraView) => {
+  if (viewConfig?.id === "phone:photo") {
+    const state = useCoreStore.getState();
+    const selected = getSelectedBlobForm(state.blobForms);
+    return getPhotoCameraFraming(window.innerWidth, window.innerHeight,
+      state.graphicPreferences.fisheyeEnabled,
+      getBobGroundOffset(getBlobFormType(selected.id), selected.parameters));
+  }
+  if (viewConfig?.id === "loading") {
+    const selected = getSelectedBlobForm(useCoreStore.getState().blobForms);
+    const form = getBlobFormType(selected.id);
+    const halfSize = getBlobFormHalfSize(form, selected.parameters);
+    const y = getBobGroundOffset(form, selected.parameters);
+    const distance = Math.max(LOADING_CAMERA_POSE.position[2], Math.max(...halfSize) * 4);
+    const height = y + LOADING_CAMERA_POSE.position[1];
+    const slope = (LOADING_CAMERA_POSE.position[1] - LOADING_CAMERA_POSE.target[1]) / LOADING_CAMERA_POSE.position[2];
+    return {
+      position: [0, height, distance] as [number, number, number],
+      target: [0, height - distance * slope, 0] as [number, number, number],
+    };
+  }
   if (viewConfig?.id === "phone:bob") {
     const mobile = window.innerWidth <= 1000 || window.innerHeight <= 600;
     const selected = getSelectedBlobForm(useCoreStore.getState().blobForms);
@@ -212,6 +238,13 @@ const resolveViewPose = (viewConfig?: CameraView) => {
 
 // camera settings for different object views
 export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
+  loading: {
+    id: "loading",
+    name: "Loading View",
+    ...LOADING_CAMERA_POSE,
+    orbit: { minDistance: 0.1, maxDistance: 1000 },
+    defaultViewMode: "fixed",
+  },
   default: {
     id: "default",
     name: "Default View",
@@ -333,6 +366,18 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
     name: "Quests View",
     defaultViewMode: "fixed",
   },
+  "phone:photo": {
+    id: "phone:photo",
+    name: "Photo Camera View",
+    ...PHOTO_CAMERA_POSE,
+    orbit: {
+      minPolarAngle: 0.35,
+      maxPolarAngle: 2.15,
+      minDistance: 2,
+      maxDistance: 75,
+    },
+    defaultViewMode: "object",
+  },
   "phone:camera": {
     id: "phone:camera",
     name: "Camera View",
@@ -426,6 +471,11 @@ interface ViewStore {
   >;
 
   cameraControlsRef: React.RefObject<CameraControls> | null;
+  loadingCameraActive: boolean;
+  loadingCameraView: "default" | "loading";
+  beginLoadingCamera: (animate?: boolean, options?: { initial?: boolean }) => Promise<void>;
+  holdLoadingCamera: () => void;
+  finishLoadingCamera: (route: string) => void;
 
   applyViewModeToControls: (mode: ViewMode) => void;
 
@@ -475,6 +525,8 @@ interface ViewStore {
   clearImageFocus: () => void;
 }
 
+let loadingCameraSettings: { controls: CameraControls; smoothTime: number } | null = null;
+
 export const useViewStore = create<ViewStore>()(
   devtools(
     (set, get) => ({
@@ -489,7 +541,53 @@ export const useViewStore = create<ViewStore>()(
       runtimeCursorFollowOverride: null,
       runtimeOrbitOverrides: {},
       cameraControlsRef: null,
+      loadingCameraActive: false,
+      loadingCameraView: "loading",
       lastFocusPosition: null,
+
+      beginLoadingCamera: async (animate = true, { initial = false } = {}) => {
+        if (get().loadingCameraActive) return;
+        const controls = get().cameraControlsRef?.current;
+        if (controls) loadingCameraSettings = { controls, smoothTime: controls.smoothTime };
+        const loadingCameraView = initial ? "default" : "loading";
+        set({
+          loadingCameraActive: true, loadingCameraView, currentView: loadingCameraView, viewMode: "fixed",
+          isTransitioning: false, pendingView: null,
+          runtimeViewModeOverride: null, runtimeCursorFollowOverride: null,
+          runtimeOrbitOverrides: {}, isImageFocused: false, focusedImageTitle: null,
+        });
+        useBobEditor.setState({ screenOffset: { x: 0, y: 0 } });
+        if (!controls) return;
+        controls.cancel();
+        if (!initial) controls.smoothTime = 0.12;
+        get().applyViewModeToControls("fixed");
+        controls.setFocalOffset(0, 0, 0, animate);
+        const pose = resolveViewPose(CAMERA_VIEWS[loadingCameraView])!;
+        const ready = controls.setLookAt(...pose.position, ...pose.target, animate);
+        if (!animate) controls.update(0);
+        await ready;
+      },
+      holdLoadingCamera: () => {
+        if (!get().loadingCameraActive || get().loadingCameraView === "default") return;
+        const controls = get().cameraControlsRef?.current;
+        if (!controls) return;
+        get().applyViewModeToControls("fixed");
+        controls.setFocalOffset(0, 0, 0, false);
+        const pose = resolveViewPose(CAMERA_VIEWS[get().loadingCameraView])!;
+        controls.setLookAt(...pose.position, ...pose.target, false);
+        controls.update(0);
+      },
+      finishLoadingCamera: (route) => {
+        if (!get().loadingCameraActive) return;
+        const initial = get().loadingCameraView === "default";
+        const destination = resolveRouteViewId(route);
+        if (loadingCameraSettings) loadingCameraSettings.controls.smoothTime = loadingCameraSettings.smoothTime;
+        loadingCameraSettings = null;
+        set({ loadingCameraActive: false, loadingCameraView: "loading", isTransitioning: false, pendingView: null });
+        // Initial follow is already running at the default view. Reapplying its
+        // neutral pose here would interrupt the cursor target on the last frame.
+        if (!initial || get().currentView !== destination) void get().transitionToView(destination);
+      },
 
       applyViewModeToControls: (mode: ViewMode) => {
         const controls = get().cameraControlsRef?.current;
@@ -532,8 +630,9 @@ export const useViewStore = create<ViewStore>()(
       setDefaultViewMode: (mode: ViewMode) =>
         set({ defaultViewMode: mode, viewMode: mode, previousViewMode: mode }),
 
-      setCurrentView: (viewId) => set({ currentView: viewId }),
+      setCurrentView: (viewId) => get().loadingCameraActive ? set({ pendingView: viewId }) : set({ currentView: viewId }),
       setViewMode: (mode) => {
+        if (get().loadingCameraActive) return;
         set({ viewMode: mode });
         get().applyViewModeToControls(mode);
       },
@@ -577,6 +676,7 @@ export const useViewStore = create<ViewStore>()(
       },
       syncViewToRoute: (route) => {
         const viewId = resolveRouteViewId(route);
+        if (get().loadingCameraActive) { set({ pendingView: viewId }); return; }
         const viewConfig = CAMERA_VIEWS[viewId];
         if (!viewConfig) return;
 
@@ -620,6 +720,7 @@ export const useViewStore = create<ViewStore>()(
       },
 
       transitionToView: async (nextView: CameraViewId) => {
+        if (get().loadingCameraActive) { set({ pendingView: nextView }); return; }
         const { cameraControlsRef, isTransitioning } = get();
 
         // Keep the latest requested view when a panel changes during a zoom.
@@ -656,6 +757,7 @@ export const useViewStore = create<ViewStore>()(
         );
 
         const finishTransition = () => {
+          if (get().loadingCameraActive) return;
           set({ isTransitioning: false });
           const pendingView = get().pendingView;
           if (pendingView && pendingView !== get().currentView) {
@@ -698,6 +800,7 @@ export const useViewStore = create<ViewStore>()(
       },
 
       resetToDefaultView: async () => {
+        if (get().loadingCameraActive) return;
         const {
           isTransitioning,
           cameraControlsRef,
@@ -716,7 +819,6 @@ export const useViewStore = create<ViewStore>()(
         const currentRoute = appStore.currentRoute;
 
         // viewMode is set to fixed without transition
-        // TODO: fix edge case when going from portfolio -> any other
         const targetView: CameraViewId = resolveRouteViewId(
           currentRoute ?? window.location.pathname,
         );
@@ -772,6 +874,7 @@ export const useViewStore = create<ViewStore>()(
         }
       },
       resetToPreviousView: async () => {
+        if (get().loadingCameraActive) return;
         const { isTransitioning, previousView, previousViewMode } = get();
 
         if (isTransitioning || !previousView) {

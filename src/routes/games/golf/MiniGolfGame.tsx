@@ -15,6 +15,7 @@ import { GolfAim, type GolfAimState } from './GolfAim';
 import { GolfOverlay, type GolfPhase as Phase } from './GolfOverlay';
 import { getSceneLensRadius } from '@/utils/sceneLensFraming';
 import { useBobEditor } from '@/store/bobEditor';
+import { useScreenTransition } from '@/store/screenTransition';
 import { golfPointerRay, hitsGolfBob, golfDragBasis, golfShotFromDrag } from './golfInput';
 import { setGolfFollowView } from './golfCamera';
 import { BALL_RADIUS, COURSE_Y, GOLF_COURSES, TILE_SIZE, TURF_HEIGHT, MIN_SHOT_POWER, isOutsideCourse, ballNeedsReset, canSink, goalPosition, isRough, type Course } from './courses';
@@ -36,12 +37,14 @@ export function MiniGolfGame({ onExit: _onExit }: { onExit: () => void }) {
   }, [scores, hole]);
   const addStroke = useCallback(() => setStrokes(s => s + 1), []);
   const next = () => { setHole(h => h + 1); setStrokes(0); setPhase('ready'); };
-  const replay = () => { setHole(0); setStrokes(0); setScores([]); setPhase('ready'); };
+  const replay = () => {
+    setHole(0); setStrokes(0); setScores([]); setPhase('ready'); setRound(r => r + 1);
+  };
   // A new key resets the physics body, aim and last safe position for every hole/replay.
   const [round, setRound] = useState(0);
   return <GolfRound key={`${round}:${hole}`} course={GOLF_COURSES[hole]} hole={hole} strokes={strokes} total={total}
     phase={phase} best={best} setPhase={setPhase} onStroke={addStroke} onSink={finishHole}
-    onNext={next} onReplay={() => { replay(); setRound(r => r + 1); }} />;
+    onNext={next} onReplay={replay} />;
 }
 function GolfRound({ course, hole, strokes, total, phase, best, setPhase, onStroke, onSink, onNext, onReplay }: {
   course: Course; hole: number; strokes: number; total: number; phase: Phase; best: number | null;
@@ -98,6 +101,10 @@ function GolfRound({ course, hole, strokes, total, phase, best, setPhase, onStro
     if (drag && controlsRef?.current) controlsRef.current.enabled = !following.current && !state.current.paused;
     if (drag && gl.domElement.hasPointerCapture(drag.pointer)) gl.domElement.releasePointerCapture(drag.pointer);
   }, [gl, controlsRef]);
+  const startPlaying = useCallback(() => {
+    if (useScreenTransition.getState().phase !== 'idle') return;
+    state.current.phase = 'ready'; setPhase('ready');
+  }, [setPhase]);
   useEffect(() => {
     if (paused) cancelAim();
     if (controlsRef?.current && !transitioning) controlsRef.current.enabled = !paused && !aim.current && !following.current;
@@ -153,9 +160,9 @@ function GolfRound({ course, hole, strokes, total, phase, best, setPhase, onStro
         return;
       }
       if (event.button === 0 && state.current.phase === 'idle' && !state.current.paused) {
-        event.stopImmediatePropagation(); state.current.phase = 'ready'; setPhase('ready'); return;
+        event.stopImmediatePropagation(); startPlaying(); return;
       }
-      if (state.current.paused || document.hidden || transitioning) return;
+      if (state.current.paused || document.hidden || transitioning || useScreenTransition.getState().phase !== 'idle') return;
       if (aim.current) return;
       if (event.button !== 0 || state.current.phase !== 'ready' || !hitBob(event)) { freeCamera(); return; }
       // Run before CameraControls so this gesture exclusively belongs to Bob.
@@ -211,7 +218,7 @@ function GolfRound({ course, hole, strokes, total, phase, best, setPhase, onStro
       if (event.code === 'Escape' && aim.current) { event.preventDefault(); cancelAim(); return; }
       if (event.code !== 'Space' || event.repeat || state.current.phase !== 'idle' || state.current.paused ||
         (event.target as HTMLElement | null)?.closest('button,input,textarea,[contenteditable=true]')) return;
-      event.preventDefault(); state.current.phase = 'ready'; setPhase('ready');
+      event.preventDefault(); startPlaying();
     };
     canvas.addEventListener('pointerdown', down, true);
     canvas.addEventListener('pointermove', move);
@@ -230,7 +237,7 @@ function GolfRound({ course, hole, strokes, total, phase, best, setPhase, onStro
       canvas.removeEventListener('wheel', freeCamera, true);
       document.removeEventListener('visibilitychange', blur); window.removeEventListener('keydown', key);
     };
-  }, [camera, gl, cancelAim, onStroke, setPhase, course, controlsRef, transitioning, size.width, goal]);
+  }, [camera, gl, cancelAim, onStroke, setPhase, startPlaying, course, controlsRef, transitioning, size.width, goal]);
 
   const suspended = useRef<{ linear: T.Vector3; angular: T.Vector3 } | null>(null);
   useBeforePhysicsStep(() => {
@@ -290,7 +297,7 @@ function GolfRound({ course, hole, strokes, total, phase, best, setPhase, onStro
       }
     }
     const controls = controlsRef?.current;
-    if (controls && following.current && !aim.current && !transitioning) {
+    if (controls && following.current && !aim.current && !transitioning && !useViewStore.getState().loadingCameraActive) {
       look.set(goal[0] - p.x, 0, goal[2] - p.z);
       if (look.length() > .4) direction.current.lerp(look.normalize(), 1 - Math.exp(-delta * 3)).normalize();
       setGolfFollowView(controls, p, goal, direction.current, size.width, phase === 'rolling');
@@ -301,7 +308,7 @@ function GolfRound({ course, hole, strokes, total, phase, best, setPhase, onStro
     impactAt.current = performance.now(); playSound(DEFAULT_PING_PONG_HIT_SOUND.id, { volume: .15 });
   };
   return <group name="mini-golf">
-    <GolfGarden course={course} />
+    <group userData={{ foregroundOutline: false }}><GolfGarden course={course} /></group>
     {course.tiles.map((tile, i) => <GolfTile key={i} tile={tile} />)}
     <group position={goal}><GolfModel asset="flag-red" scale={TILE_SIZE * .65} /></group>
     <Billboard position={[goal[0], -1.5 + .42 + .015, goal[2] - 2.5]} follow>
@@ -310,7 +317,7 @@ function GolfRound({ course, hole, strokes, total, phase, best, setPhase, onStro
     <RigidBody ref={ball} colliders={false} position={start.toArray()} ccd linearDamping={.12} angularDamping={.5}
       enabledRotations={[true, true, true]} gravityScale={phase === 'idle' || phase === 'ready' || phase === 'sunk' || phase === 'complete' || paused ? 0 : 1} canSleep={false}>
       <BallCollider args={[BALL_RADIUS]} restitution={.4} friction={.45} mass={.045} onCollisionEnter={hit} />
-      <CharacterBallModel scale={BALL_RADIUS} />
+      <CharacterBallModel scale={BALL_RADIUS} transitionTarget />
     </RigidBody>
     <GolfAim ball={ball} aim={aim} />
     <GolfOverlay hole={hole} strokes={strokes} total={total} phase={phase} penalty={penalty} best={best} onNext={onNext} onReplay={onReplay} />

@@ -14,6 +14,7 @@ import {
 } from "@/store";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { DebugSceneTuningOverlays } from "@/components/DebugSceneTuningOverlays";
+import { RouteScreenTransitions } from "@/components/RouteScreenTransitions";
 
 import Home from "./routes/Home";
 import About from "./routes/About";
@@ -234,6 +235,7 @@ export default function App() {
 
           <DebugSceneTuningOverlays />
 
+          <RouteScreenTransitions />
           <MainLayout>
             <ContentWrapper>
               <ContentWidth>

@@ -1,4 +1,4 @@
-import { Text3D, Outlines } from "@react-three/drei";
+import { Text3D } from "@react-three/drei";
 import { useRef, useEffect, useMemo, useState } from "react";
 import { Vector3, Group, Mesh } from "three";
 import { useSpring, a } from "@react-spring/three";
@@ -133,7 +133,7 @@ export const TapCounter = () => {
   }, [taps, api, reducedTapMotion]);
 
   return (
-    <a.group ref={groupRef} scale={spring.scale as any}>
+    <a.group userData={{ foregroundOutline: "counter" }} ref={groupRef} scale={spring.scale as any}>
       <a.group position={responsivePosition}>
         <Text3D
           font={FONT_PATH}
@@ -150,12 +150,6 @@ export const TapCounter = () => {
         >
           {formattedNumber}
           <meshToonMaterial color={themeConfig.counterColor} />
-
-          {/* <Outlines
-            thickness={0.02}
-            color={themeConfig.outlineColor}
-            screenspace
-          /> */}
         </Text3D>
       </a.group>
     </a.group>

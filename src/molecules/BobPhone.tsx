@@ -22,7 +22,6 @@ import { CreditsApp, CreditsIcon } from "@/apps/credits";
 import { StatusPillButton } from "@/apps/ui";
 
 import { CameraApp, CameraIcon } from "@/apps/camera";
-import { usePhoneBodyClip } from "@/hooks/usePhoneClip";
 import { useI18n } from "@/i18n";
 import { useAppStore } from "@/store";
 
@@ -110,7 +109,6 @@ export const BobPhone = (props: BobPhoneProps) => {
   const showOptions = useAppStore((state) => state.showOptions);
   const [activeApp, setActiveApp] = useState<AppId | undefined>();
 
-  const clipStyle = usePhoneBodyClip();
   const { messages } = useI18n();
   const appNameMap: Record<AppId, string> = messages.phone.apps;
 
@@ -229,7 +227,6 @@ export const BobPhone = (props: BobPhoneProps) => {
           {props.isOpen && (
             <PhoneShell
               ref={containerRef}
-              clipStyle={clipStyle}
               key="bob-phone-body"
             >
               <HugColumn
@@ -348,10 +345,8 @@ export const BobPhone = (props: BobPhoneProps) => {
 
 const PhoneShell = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<typeof BobPhoneBody> & {
-    clipStyle: React.CSSProperties;
-  }
->(({ clipStyle, style, ...props }, ref) => {
+  React.ComponentProps<typeof BobPhoneBody>
+>(({ style, ...props }, ref) => {
   const isPresent = useIsPresent();
   const panelMotion = usePanelMotion();
 
@@ -364,7 +359,6 @@ const PhoneShell = React.forwardRef<
       inert={!isPresent}
       style={{
         ...panelMotion.style,
-        ...clipStyle,
         ...style,
         borderRadius: "24px",
         pointerEvents: isPresent ? "auto" : "none",

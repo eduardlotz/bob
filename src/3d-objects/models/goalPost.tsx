@@ -1,7 +1,6 @@
 import * as THREE from "three";
 import { useMemo } from "react";
 import { RigidBody, CuboidCollider } from "@react-three/rapier";
-import { Outlines } from "@react-three/drei";
 
 interface GoalPostProps {
   position: [number, number, number];
@@ -31,7 +30,7 @@ export function GoalPost({
       {/* Left post */}
       <mesh position={[-width / 2, height / 2, 0]} material={material}>
         <cylinderGeometry args={[radius, radius, height, 16]} />
-        <Outlines thickness={0.03} color={outlineColor} screenspace />
+
       </mesh>
 
       <CuboidCollider
@@ -42,7 +41,7 @@ export function GoalPost({
       {/* Right post */}
       <mesh position={[width / 2, height / 2, 0]} material={material}>
         <cylinderGeometry args={[radius, radius, height, 16]} />
-        <Outlines thickness={0.03} color={outlineColor} screenspace />
+
       </mesh>
 
       <CuboidCollider
@@ -57,7 +56,7 @@ export function GoalPost({
         material={material}
       >
         <cylinderGeometry args={[radius, radius, width + radius, 16]} />
-        <Outlines thickness={0.03} color={outlineColor} screenspace />
+
       </mesh>
 
       <CuboidCollider

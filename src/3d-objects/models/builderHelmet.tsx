@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import React, { useEffect, useMemo, useRef } from "react";
-import { Outlines, useGLTF, Wireframe } from "@react-three/drei";
+import { useGLTF, Wireframe } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
 import { useCoreStore } from "@/store";

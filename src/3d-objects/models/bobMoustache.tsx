@@ -1,6 +1,5 @@
 import { useEffect, useMemo } from "react";
 import { a, useSpring } from "@react-spring/three";
-import { Outlines } from "@react-three/drei";
 import * as T from "three";
 import { assemble, type Vec3 } from "../worlds/InstancedModels";
 import { WorldToonMaterial } from "../worlds/WorldToonMaterial";
@@ -45,7 +44,7 @@ export function BobMoustache({ position, scale, curved, preview, outlineColor = 
     <group position={position} scale={scale}>
       <a.mesh name="bobMoustache" scale={spring.size} geometry={geometry} castShadow receiveShadow>
         <WorldToonMaterial vertexColors transparent={preview} opacity={preview ? 0.5 : 1} depthWrite={!preview} />
-        <Outlines thickness={0.005} color={outlineColor} screenspace transparent={preview} opacity={preview ? 0.5 : 1} />
+
       </a.mesh>
     </group>
   );

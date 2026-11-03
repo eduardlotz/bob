@@ -1,6 +1,6 @@
 import { HugColumn } from "@/layout";
 import { Magnetic } from "@/layout/Magnetic";
-import { useMiniGameStore } from "@/store";
+import { exitMiniGame } from "@/utils/miniGameTransitions";
 import { AnimatePresence, motion } from "motion/react";
 import styled from "styled-components";
 import { SmallArrowLeftIcon } from "@/icons/arrow";
@@ -9,11 +9,10 @@ import { backToLobbyButtonMessages } from "./BackToLobbyButton.messages";
 import { ChevronLeftIcon } from "@/icons/chevron";
 
 export const BackToLobbyButton = ({ show }: { show: boolean }) => {
-  const { finishGame } = useMiniGameStore();
   const { locale } = useI18n();
 
   const onTriggerClick = () => {
-    finishGame();
+    exitMiniGame();
   };
 
   return (

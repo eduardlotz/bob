@@ -16,6 +16,7 @@ import { useAppStore } from "@/store";
 import { useMessageStore } from "@/store/messageStore";
 import { useI18n } from "@/i18n";
 import { getRouteCopyByPath } from "@/store/config/routes";
+import { useScreenTransition } from "@/store/screenTransition";
 
 //#region constants
 export * from "@/store/config/camera";
@@ -234,6 +235,10 @@ function Option({
   const { currentRoute } = useAppStore();
   const { canAfford, purchaseRoute } = useCoreStore();
   const { showMessage } = useMessageStore();
+  const isMorphing = useScreenTransition(state =>
+    state.request?.appearance.loadingDots !== false &&
+    (state.request?.menuBubbles?.some(bubble => bubble.id === route.path) ?? false),
+  );
   const variants = useMemo(
     () => ({
       hidden: MotionVariants.OptionButton.initial,
@@ -297,6 +302,8 @@ function Option({
           onPointerDown={(e) => e.stopPropagation()}
           onClick={handleOptionClick}
           data-ui-sound-id="ui-tap-close"
+          data-menu-route={route.path}
+          style={{ visibility: isMorphing ? "hidden" : undefined }}
         >
           {!route.purchased && <PriceChip>{route.cost} 🫵</PriceChip>}
           {route.isLocked && (
@@ -304,8 +311,8 @@ function Option({
               <LockIcon />
             </PriceChip>
           )}
-          <RouteName>{getRouteCopyByPath(route.path, locale).name}</RouteName>
-          <BackgroundColor $active={isActive} />
+          <RouteName data-menu-route-label>{getRouteCopyByPath(route.path, locale).name}</RouteName>
+          <BackgroundColor $active={isActive} data-menu-bubble-fill />
         </NavigationBubble>
       </Html>
     </group>

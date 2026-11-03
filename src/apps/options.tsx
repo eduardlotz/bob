@@ -55,12 +55,11 @@ export function OptionsApp() {
   const toggleParticleEffects = useCoreStore(
     (state) => state.toggleParticleEffects,
   );
-  const { sceneFilter, fisheyeEnabled, ditheringPixelSize, pixelationPixelSize } =
+  const { fisheyeEnabled } =
     useCoreStore((state) => state.graphicPreferences);
-  const setSceneFilter = useCoreStore((state) => state.setSceneFilter);
+  const outlines = useCoreStore(state => state.graphicPreferences.outlines);
+  const toggleOutline = useCoreStore(state => state.toggleOutline);
   const toggleFisheye = useCoreStore((state) => state.toggleFisheye);
-  const setDitheringPixelSize = useCoreStore((state) => state.setDitheringPixelSize);
-  const setPixelationPixelSize = useCoreStore((state) => state.setPixelationPixelSize);
 
   const { transitionToView } = useViewStore();
 
@@ -185,7 +184,17 @@ export function OptionsApp() {
           </ToggleButton>
         </PreferenceRow>
 
-        <DividerWithLabel>{messages.options.sections.filter}</DividerWithLabel>
+        <DividerWithLabel>{messages.options.sections.outlines}</DividerWithLabel>
+        {(["counter", "bob", "foreground"] as const).map(category => {
+          const label = { counter: messages.options.audio.outlineCounter, bob: messages.options.audio.outlineBob, foreground: messages.options.audio.outlineForeground }[category];
+          return <PreferenceRow key={category} $align="center" $justify="space-between" $gap="1rem">
+            <RowLabel>{label}</RowLabel>
+            <ToggleButton type="button" role="switch" aria-label={label} aria-checked={outlines[category]}
+              $active={outlines[category]} onClick={() => toggleOutline(category)}><span /></ToggleButton>
+          </PreferenceRow>;
+        })}
+
+        <DividerWithLabel>{messages.options.sections.camera}</DividerWithLabel>
         <PreferenceRow $align="center" $justify="space-between" $gap="1rem">
           <RowLabel>{messages.options.audio.fisheye}</RowLabel>
           <ToggleButton role="switch" aria-checked={fisheyeEnabled}
@@ -194,27 +203,7 @@ export function OptionsApp() {
             <span />
           </ToggleButton>
         </PreferenceRow>
-        <VolumeRow>
-          <RowLabel>{messages.options.audio.sceneFilter}</RowLabel>
-          <AnimatedSegmentedControl
-            value={sceneFilter} onChange={setSceneFilter}
-            options={[
-              { value: "none", label: messages.options.audio.filterNone },
-              { value: "dither", label: messages.options.audio.dithering },
-              { value: "pixel", label: messages.options.audio.pixelation },
-            ]} />
-        </VolumeRow>
-        {sceneFilter !== "none" && (
-          <VolumeRow>
-            <RowLabel>{messages.options.audio.ditheringPixelSize}</RowLabel>
-            <SegmentedValueSlider
-              value={sceneFilter === "dither" ? ditheringPixelSize : pixelationPixelSize}
-              min={sceneFilter === "dither" ? 1 : 2} max={sceneFilter === "dither" ? 4 : 16} step={sceneFilter === "dither" ? 1 : 2}
-              onChange={sceneFilter === "dither" ? setDitheringPixelSize : setPixelationPixelSize}
-              formatValue={(value) => `${value}px`}
-              ariaLabel={messages.options.audio.ditheringPixelSize} />
-          </VolumeRow>
-        )}
+
 
 
       </FillColumn>

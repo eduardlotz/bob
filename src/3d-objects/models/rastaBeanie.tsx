@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import React, { useEffect, useMemo, useRef } from "react";
-import { Outlines, useGLTF } from "@react-three/drei";
+import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
 import { previewMaterialProps } from "@/shop-items/utils";
@@ -108,12 +108,7 @@ export const RastaBeanie = ({
       >
         <meshToonMaterial color={materials.rasta_beanie.color} map={beanieMap} side={materials.rasta_beanie.side}
           {...(props.preview ? previewMaterialProps : {})} />
-        <Outlines
-          thickness={0.005}
-          color={outlineColor}
-          screenspace
-          {...(props.preview ? previewMaterialProps : {})}
-        />
+
       </mesh>
     </a.group>
   );

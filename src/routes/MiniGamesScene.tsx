@@ -16,6 +16,7 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useRef,
   lazy,
   Suspense,
 } from "react";
@@ -24,7 +25,7 @@ import { BackSide } from "three";
 
 import { PingPongPaddle } from "@/3d-objects/models/pingPongPaddle";
 import { PointsCounter } from "@/molecules/PointsCounter";
-import { stopAllWorldSounds } from "@/utils/soundSystem";
+import { exitMiniGame } from "@/utils/miniGameTransitions";
 import { FlappyBirdGame, FlappyBirdRingPreview } from "./games/FlappyBirdGame";
 import { MiniGameThrone } from "./games/MiniGameThrone";
 import {
@@ -35,6 +36,8 @@ import { SlotMachineGame } from "./games/SlotMachineGame";
 import { SlotMachineLobbyPreview } from "./games/SlotMachineLobbyPreview";
 import { useI18n } from "@/i18n";
 import { miniGamesSceneMessages } from "./MiniGamesScene.messages";
+import { transitionScreen } from "@/store/screenTransition";
+import { getGameTransition } from "@/styles/screenTransitions";
 
 const MiniGolfGame = lazy(() => import("./games/golf/MiniGolfGame").then(m => ({ default: m.MiniGolfGame })));
 const GolfLobbyPreview = lazy(() => import("./games/golf/GolfModels").then(m => ({ default: m.GolfLobbyPreview })));
@@ -155,7 +158,7 @@ function MiniGamesLobby({
         );
       })}
 
-      <MiniGamesLobbyBounds />
+      <group userData={{ foregroundOutline: false }}><MiniGamesLobbyBounds /></group>
     </group>
   );
 }
@@ -210,7 +213,7 @@ function MiniGamesContent({
 
   const ActiveGame = activeDefinition.GameComponent;
 
-  return <ActiveGame onExit={onExit} />;
+  return <group userData={{ foregroundOutline: false }}><ActiveGame onExit={onExit} /></group>;
 }
 
 function MiniGamesBackdrop() {
@@ -247,16 +250,19 @@ export function MiniGamesScene() {
   const activeGame = useMiniGameStore((state) => state.activeGame);
   const score = useMiniGameStore((state) => state.session.score);
   const setActiveGame = useMiniGameStore((state) => state.setActiveGame);
-  const finishGame = useMiniGameStore((state) => state.finishGame);
   const transitionToView = useViewStore((state) => state.transitionToView);
   const cameraControlsRef = useViewStore((state) => state.cameraControlsRef);
+  const pendingGameReady = useRef<(() => void) | null>(null);
 
   const isAllowedToAccess = checkUnlockedRoutes(ROUTE_PATHS.MINIGAMES);
   const activeDefinition = getMiniGameDefinition(activeGame);
-  const handleExit = useCallback(() => {
-    stopAllWorldSounds();
-    finishGame();
-  }, [finishGame]);
+  const handleSelect = useCallback((game: SupportedMiniGameType) => {
+    transitionScreen(() => new Promise<void>(resolve => {
+      pendingGameReady.current = resolve;
+      setActiveGame(game);
+    }), undefined, { appearance: getGameTransition(game) });
+  }, [setActiveGame]);
+  const handleExit = useCallback(() => { exitMiniGame(); }, []);
 
   useEffect(() => {
     if (!isAllowedToAccess) {
@@ -268,6 +274,9 @@ export function MiniGamesScene() {
   useEffect(() => {
     if (activeGame !== "LOBBY") {
       setHoveredObject(null);
+      // This effect commits after a lazy game's suspended subtree mounts.
+      pendingGameReady.current?.();
+      pendingGameReady.current = null;
     }
   }, [activeGame, setHoveredObject]);
 
@@ -279,11 +288,11 @@ export function MiniGamesScene() {
 
   return (
     <>
-      <MiniGamesContent
+      <group userData={{ foregroundOutline: "foreground" }}><MiniGamesContent
         activeGame={activeGame}
-        onSelect={setActiveGame}
+        onSelect={handleSelect}
         onExit={handleExit}
-      />
+      /></group>
       {activeGame === "LOBBY" ? (
         <MiniGamesBackdrop />
       ) : activeGame !== "FLAPPY_BIRD" && activeGame !== "PING_PONG" && activeGame !== "MINI_GOLF" ? (

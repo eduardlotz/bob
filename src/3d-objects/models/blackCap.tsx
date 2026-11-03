@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import React, { useEffect, useMemo, useRef } from "react";
-import { Outlines, useGLTF, Wireframe } from "@react-three/drei";
+import { useGLTF, Wireframe } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
 import { useCoreStore } from "@/store";
@@ -66,12 +66,7 @@ export const BlackCap = ({
       rotation={props.rotation}
     >
       <mesh geometry={nodes.Sphere.geometry} material={toonMat}>
-        <Outlines
-          thickness={0.005}
-          color={outlineColor}
-          screenspace
-          {...(props.preview ? previewMaterialProps : {})}
-        />
+
 
         {/* {props.preview && (
           <Wireframe thickness={1} backfaceStroke={outlineColor} />

@@ -7,7 +7,6 @@ import {
   CylinderCollider,
   CapsuleCollider,
 } from "@react-three/rapier";
-import { Outlines } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 
 interface FootBallKeeperProps {
@@ -68,7 +67,6 @@ export function FootBallKeeper({
           <capsuleGeometry
             args={[size[0], size[1], size[2], 8]}
           />
-          <Outlines thickness={0.03} color="#000000" screenspace />
         </mesh>
       </group>
     </RigidBody>

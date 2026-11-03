@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/react";
 import styled from "styled-components";
@@ -11,10 +12,15 @@ import { useI18n } from "@/i18n";
 import { getShopItemCopy } from "@/shop-items/copy";
 import { PANEL_SPRING, getPanelItemMotion, usePanelMotion } from "@/styles/panelMotion";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/icons/chevron";
+import { getSkinShopItems, isSkinShopItem, type SkinShopItem } from "@/shop-items/skins";
+import { useQuestStore } from "@/store/core/quests/store";
+import { getSkinPreview } from "@/components/bob/skins/previews";
+import { BOB_SKINS, isBobSkinUnlocked } from "@/components/bob/skins/registry";
 import { EyeIcon } from "@/icons/eye";
 import thumbnails from "../../public/images/shop-items/manifest.json";
 
-type ShopTab = "hats" | "accessories" | "effects" | "worlds";
+type CatalogueItem = ShopItem | SkinShopItem;
+type ShopTab = "hats" | "skins" | "accessories" | "effects" | "worlds";
 const itemThumbnails: Record<string, string> = thumbnails.items;
 
 export function ShopOverlay() {
@@ -29,8 +35,18 @@ export function ShopOverlay() {
   const [activeTab, setActiveTab] = useState<ShopTab>("hats");
   const { locale, messages } = useI18n();
   const isPresent = useIsPresent();
-  const store = useCoreStore();
-  const { bobItems, tapEffects, worlds, taps, resetPreview } = store;
+  const store = useCoreStore(useShallow(state => ({
+    bobItems: state.bobItems, tapEffects: state.tapEffects, worlds: state.worlds,
+    bobSkinId: state.bobSkinId, purchasedBobSkinIds: state.purchasedBobSkinIds, resetPreview: state.resetPreview,
+    previewBobSkin: state.previewBobSkin, previewWorld: state.previewWorld,
+    previewTapEffect: state.previewTapEffect, previewBobItem: state.previewBobItem,
+    canAfford: state.canAfford,
+    // Only price threshold crossings affect catalogue actions, not every auto-tap.
+    affordableCount: [...state.bobItems, ...state.tapEffects, ...state.worlds, ...BOB_SKINS].filter(item => state.taps >= (item.cost ?? 0)).length,
+  })));
+  useQuestStore(state => BOB_SKINS.map(skin => isBobSkinUnlocked(skin, state.quests) ? "1" : "0").join(""));
+  const quests = useQuestStore.getState().quests;
+  const { bobItems, tapEffects, worlds, resetPreview } = store;
 
   useEffect(() => {
     resetPreview();
@@ -61,15 +77,18 @@ export function ShopOverlay() {
     else if (!previewItem && currentView === "shop:preview") view.resetToDefaultView();
   }, [previewItem, currentView, isTransitioning, isPresent]);
 
-  const openPreview = (item: ShopItem) => {
+  const openPreview = (item: CatalogueItem) => {
     if (!previewItem) scrollPosition.current = catalogueRef.current?.scrollTop ?? scrollPosition.current;
     // popLayout keeps the old catalogue mounted during its exit. Ignore any
     // scroll events caused by that exiting layout so Back restores this offset.
     catalogueIsActive.current = false;
-    resetPreview();
-    if (activeTab === "worlds") store.previewWorld(item.id);
-    else if (activeTab === "effects") store.previewTapEffect(item.id);
-    else store.previewBobItem(item.id);
+    if (isSkinShopItem(item)) store.previewBobSkin(item.skinId);
+    else {
+      resetPreview();
+      if (activeTab === "worlds") store.previewWorld(item.id);
+      else if (activeTab === "effects") store.previewTapEffect(item.id);
+      else store.previewBobItem(item.id);
+    }
     setPreviewItem(item.id);
   };
 
@@ -79,8 +98,9 @@ export function ShopOverlay() {
   };
 
   const visibleBobItems = bobItems.filter((item) => item.unlocked !== false);
-  const categories: Record<ShopTab, ShopItem[]> = {
+  const categories: Record<ShopTab, CatalogueItem[]> = {
     hats: visibleBobItems.filter((item) => item.type === "hat"),
+    skins: getSkinShopItems(store.bobSkinId, quests, locale, store.purchasedBobSkinIds),
     accessories: visibleBobItems.filter((item) => item.type !== "hat"),
     effects: tapEffects,
     worlds,
@@ -93,7 +113,18 @@ export function ShopOverlay() {
     openPreview(items[(index + direction + items.length) % items.length]);
   };
 
-  const getItemActionProps = (item: ShopItem) => {
+  const getItemActionProps = (item: CatalogueItem) => {
+    if (isSkinShopItem(item)) {
+      const label = !item.unlocked ? messages.shop.actions.locked : item.enabled ? messages.shop.actions.selected : item.purchased ? messages.shop.actions.equip : messages.shop.actions.purchase;
+      return {
+        $active: item.enabled,
+        $variant: item.enabled ? "dark" as const : item.purchased ? "muted" as const : "blue" as const,
+        disabled: !item.unlocked || item.enabled || (!item.purchased && !store.canAfford(item.cost)),
+        "aria-label": `${label}: ${item.name}`,
+        "aria-pressed": item.enabled,
+        children: label,
+      };
+    }
     const name = getShopItemCopy(item.id, locale)?.name ?? item.name;
     const label = item.enabled ? messages.shop.actions.selected
       : item.purchased ? messages.shop.actions.equip : messages.shop.actions.purchase;
@@ -109,7 +140,13 @@ export function ShopOverlay() {
     };
   };
 
-  const handleItem = (item: ShopItem) => {
+  const handleItem = (item: CatalogueItem) => {
+    if (isSkinShopItem(item)) {
+      const current = useCoreStore.getState();
+      if (!item.purchased) current.purchaseBobSkin(item.skinId);
+      else current.setBobSkin(item.skinId);
+      return useCoreStore.getState().bobSkinId === item.skinId;
+    }
     // Read the current store so rapid repeated clicks cannot buy twice.
     const current = useCoreStore.getState();
     const source = activeTab === "effects" ? current.tapEffects
@@ -143,7 +180,7 @@ export function ShopOverlay() {
       >
         <StatusBar>
           <TimeChip />
-          <PriceTag value={Math.floor(taps)} />
+          <ShopBalance />
         </StatusBar>
         <CatalogueFrame>
         <Catalogue key={activeTab} aria-label={messages.shop.tabs[activeTab]}
@@ -161,10 +198,10 @@ export function ShopOverlay() {
                 <ItemCard key={item.id} data-shop-item={item.id} {...getPanelItemMotion(index, reducedMotion)}>
                   <ItemMedia>
                     <Thumbnail $active={item.enabled} $owned={item.purchased}>
-                      <img src={itemThumbnails[item.id]} alt="" width={80} height={80} draggable={false} />
+                      <img src={isSkinShopItem(item) ? getSkinPreview(item.skinId) : itemThumbnails[item.id]} alt="" width={80} height={80} draggable={false} decoding="async" />
                     </Thumbnail>
                     <ItemToolbar>
-                    {!item.purchased && <PriceTag value={item.cost} />}
+                    {!item.purchased && (isSkinShopItem(item) && !item.unlocked ? <LockedSkinTag title={messages.shop.actions.hiddenQuest}>{messages.shop.actions.locked}</LockedSkinTag> : <PriceTag value={item.cost} />)}
                     <PreviewButton type="button" onClick={() => openPreview(item)}
                       aria-label={`${messages.shop.actions.preview}: ${name}`} data-ui-sound-id="ui-tap">
                       <EyeIcon />
@@ -186,7 +223,7 @@ export function ShopOverlay() {
         </CatalogueFrame>
         <CategoryBar>
           <AnimatedSegmentedControl
-            options={(["hats", "accessories", "effects", "worlds"] as const).map((value) => ({ value, label: messages.shop.tabs[value] }))}
+            options={(["hats", "skins", "accessories", "effects", "worlds"] as const).map((value) => ({ value, label: messages.shop.tabs[value] }))}
             value={activeTab}
             onChange={(tab) => { scrollPosition.current = 0; setActiveTab(tab); }}
             layoutId="shop-categories"
@@ -215,7 +252,7 @@ export function ShopOverlay() {
             {!preview.purchased && <motion.div key="preview-price" layout
               initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }} transition={PANEL_SPRING}>
-              <PriceTag value={preview.cost} />
+              {isSkinShopItem(preview) && !preview.unlocked ? <ItemStatusChip $variant="dark">{messages.shop.actions.hiddenQuest}</ItemStatusChip> : <PriceTag value={preview.cost} />}
             </motion.div>}
           </AnimatePresence>
           </PreviewDetails>
@@ -235,6 +272,11 @@ export function ShopOverlay() {
     </OverlayAnchor>,
     document.getElementById("motion-root")!,
   );
+}
+
+function ShopBalance() {
+  const taps = useCoreStore(state => Math.floor(state.taps));
+  return <PriceTag value={taps} />;
 }
 
 function updateScrollFades(element: HTMLDivElement) {
@@ -411,6 +453,7 @@ const CategoryBar = styled.div`
   }
 `;
 
+const LockedSkinTag = styled.span`padding: 4px 7px; border-radius: 10px; background: #212026; color: white; font-size: 11px; font-weight: 800;`;
 const PreviewButton = styled.button`
   flex-shrink: 0;
   display: grid;

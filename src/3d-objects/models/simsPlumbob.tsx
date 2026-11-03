@@ -2,7 +2,6 @@ import * as THREE from "three";
 import React, { useEffect, useMemo, useRef } from "react";
 import {
   MeshTransmissionMaterial,
-  Outlines,
   useGLTF,
   Wireframe,
 } from "@react-three/drei";

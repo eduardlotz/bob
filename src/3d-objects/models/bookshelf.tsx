@@ -96,7 +96,7 @@ export const BookshelfModel = ({
 
         {/* Book meshes — hidden when using R3F-generated books */}
         {!hideGltfBooks && (
-          <>
+          <group userData={{ outlineThickness: 0.0025 }}>
             <mesh
               geometry={nodes.Cube033_1.geometry}
               material={materials["PurpleDark.003"]}
@@ -125,7 +125,7 @@ export const BookshelfModel = ({
               geometry={nodes.Cube033_8.geometry}
               material={materials["Black.030"]}
             />
-          </>
+          </group>
         )}
       </group>
     </a.group>

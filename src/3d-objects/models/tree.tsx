@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import React, { useEffect, useRef } from "react";
-import { Outlines, useGLTF, Wireframe } from "@react-three/drei";
+import { useGLTF, Wireframe } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
 import { previewMaterialProps } from "@/shop-items/utils";
@@ -62,12 +62,7 @@ export const TreeModel = ({
         material={materials.color_main}
       >
         {/* {props.preview && <Wireframe thickness={0.04} />} */}
-        <Outlines
-          thickness={0.02}
-          color={outlineColor}
-          screenspace
-          {...(props.preview ? previewMaterialProps : {})}
-        />
+
       </mesh>
     </a.group>
   );

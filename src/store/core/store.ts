@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { BOB_SKINS, getBobSkin, isBobSkinAvailable, type SkinId } from "@/components/bob/skins/registry";
+import { useQuestStore } from "./quests/store";
 import { devtools } from "zustand/middleware";
 import { persist } from "zustand/middleware";
 import { createIndexedDBStorage } from "../indexedDB";
@@ -280,6 +282,7 @@ export interface SoundSystemState {
 
 type PreviewMode =
   | "theme"
+  | "skin"
   | ReturnType<typeof getBobItemSlot>
   | "tapEffect"
   | "world";
@@ -301,6 +304,8 @@ interface GameState {
   worlds: WorldItem[];
   bobItems: BobItem[];
   blobForms: BlobFormConfig[];
+  bobSkinId: SkinId;
+  purchasedBobSkinIds: SkinId[];
   themes: Theme[];
   currentTheme: Theme | null;
 
@@ -320,11 +325,8 @@ interface GameState {
     qualityMode: QualityMode; // TODO: seperate selected, suggested
     effectsEnabled: boolean;
     reducedTapMotion: boolean;
-    sceneFilter: "none" | "dither" | "pixel";
     fisheyeEnabled: boolean;
-    pixelationPixelSize: number;
-    ditheringEnabled: boolean;
-    ditheringPixelSize: number;
+    outlines: { counter: boolean; bob: boolean; foreground: boolean };
   };
 
   audioSelections: {
@@ -354,6 +356,7 @@ interface GameComputed {
 
 interface GameFlags {
   previewMode: PreviewMode | null;
+  bobSkinPreviewId: SkinId | null;
   customCameraControlsEnabled: boolean;
   animationsEnabled: boolean;
   statisticsVisible: boolean;
@@ -374,6 +377,10 @@ interface GameStateActions {
   equipBobItem: (bobItemId: string) => void;
   unequipBobItem: (bobItemId: string) => void;
 
+  setBobSkin: (skinId: SkinId) => void;
+  purchaseBobSkin: (skinId: SkinId) => void;
+  previewBobSkin: (skinId: SkinId) => void;
+  toggleOutline: (category: "counter" | "bob" | "foreground") => void;
   selectBlobForm: (blobFormId: string) => void;
   updateBlobFormParameters: (
     blobFormId: string,
@@ -409,11 +416,7 @@ interface GameStateActions {
   setGraphicsMode: (mode: QualityMode) => void;
   toggleParticleEffects: () => void;
   toggleReducedTapMotion: () => void;
-  setSceneFilter: (filter: "none" | "dither" | "pixel") => void;
   toggleFisheye: () => void;
-  setPixelationPixelSize: (size: number) => void;
-  toggleDithering: () => void;
-  setDitheringPixelSize: (size: number) => void;
   acceptCookies: () => void;
 
   setWorldMusicId: (id: string) => void;
@@ -604,6 +607,8 @@ export const initialGameState: GameState = {
   tapEffects: initialTapEffects,
   weatherEffects: initialWeatherEffects,
   blobForms: INITIAL_BLOB_FORMS,
+  bobSkinId: "white",
+  purchasedBobSkinIds: [],
   themes: initialThemes,
   currentTheme: initialThemes[0],
   routes: initialRoutes,
@@ -624,11 +629,8 @@ export const initialGameState: GameState = {
     qualityMode: "auto",
     effectsEnabled: true,
     reducedTapMotion: false,
-    sceneFilter: "none",
     fisheyeEnabled: true,
-    pixelationPixelSize: 4,
-    ditheringEnabled: false,
-    ditheringPixelSize: 1,
+    outlines: { counter: true, bob: true, foreground: true },
   },
   audioSelections: {
     worldMusicId: "world-jazz",
@@ -643,6 +645,7 @@ export const initialGameState: GameState = {
 
 const initialGameFlags: GameFlags = {
   previewMode: null,
+  bobSkinPreviewId: null,
   customCameraControlsEnabled: false,
   animationsEnabled: true,
   statisticsVisible: false,
@@ -676,6 +679,8 @@ const partializePersisted = (state: GameStore): PersistedGameStore => ({
   worlds: state.worlds.map((item) => ({ ...item, preview: false })),
   bobItems: state.bobItems.map((item) => ({ ...item, preview: false })),
   blobForms: state.blobForms,
+  bobSkinId: state.bobSkinId,
+  purchasedBobSkinIds: state.purchasedBobSkinIds,
   themes: state.themes,
   currentTheme: state.currentTheme,
   routes: state.routes,
@@ -698,6 +703,7 @@ const partializePersisted = (state: GameStore): PersistedGameStore => ({
   cameraSettingsOverlayVisible: state.cameraSettingsOverlayVisible,
   lightSettingsOverlayVisible: state.lightSettingsOverlayVisible,
   previewMode: null, // reset on reload
+  bobSkinPreviewId: null,
   graphicPreferences: state.graphicPreferences,
   // selectedOrbitForm: state.selectedOrbitForm,
   selectedOrbitForm: "EQUATORIAL_RING", // TODO: add configs with minMax angles/zooms for other forms or delete select option altogether
@@ -1079,6 +1085,39 @@ export const useCoreStore = create<GameStore>()(
           });
         },
 
+        previewBobSkin: (skinId) => {
+          if (getBobSkin(skinId).id !== skinId) return;
+          set(state => {
+            if (state.previewMode === "skin" && state.bobSkinPreviewId === skinId) return state;
+            // Paging between skins changes only the preview, without rebuilding
+            // every item array or briefly restoring the equipped material.
+            if (state.previewMode === null || state.previewMode === "skin") return { previewMode: "skin", bobSkinPreviewId: skinId };
+            return {
+              previewMode: "skin", bobSkinPreviewId: skinId,
+              themes: state.themes.map(item => item.preview ? { ...item, preview: false } : item),
+              bobItems: state.bobItems.map(item => item.preview ? { ...item, preview: false } : item),
+              tapEffects: state.tapEffects.map(item => item.preview ? { ...item, preview: false } : item),
+              worlds: state.worlds.map(item => item.preview ? { ...item, preview: false } : item),
+            };
+          });
+        },
+        setBobSkin: (skinId) => {
+          const skin = getBobSkin(skinId);
+          if (skin.id === skinId && isBobSkinAvailable(skin, useQuestStore.getState().quests, get().purchasedBobSkinIds)) set({ bobSkinId: skinId });
+        },
+        purchaseBobSkin: (skinId) => {
+          const skin = getBobSkin(skinId);
+          if (skin.id !== skinId || !skin.cost) return;
+          set(state => {
+            if (state.purchasedBobSkinIds.includes(skinId) || state.taps < skin.cost!) return state;
+            return { taps: state.taps - skin.cost!, purchasedBobSkinIds: [...state.purchasedBobSkinIds, skinId], bobSkinId: skinId };
+          });
+        },
+        toggleOutline: (category) => set(state => ({ graphicPreferences: {
+          ...state.graphicPreferences,
+          outlines: { ...state.graphicPreferences.outlines, [category]: !state.graphicPreferences.outlines[category] },
+        } })),
+
         selectBlobForm: (blobFormId: string) => {
           set((state) => {
             const blobForm = state.blobForms.find((f) => f.id === blobFormId);
@@ -1256,6 +1295,8 @@ export const useCoreStore = create<GameStore>()(
         },
         resetPreview: () => {
           set((state) => {
+            if (state.previewMode === null) return state;
+            if (state.previewMode === "skin") return { previewMode: null, bobSkinPreviewId: null };
             const themes = state.themes.map((t) => ({
               ...t,
               preview: false,
@@ -1283,6 +1324,7 @@ export const useCoreStore = create<GameStore>()(
               tapEffects,
               worlds,
               previewMode: null,
+              bobSkinPreviewId: null,
             };
           });
         },
@@ -1391,40 +1433,9 @@ export const useCoreStore = create<GameStore>()(
             },
           }));
         },
-        setSceneFilter: (filter) => {
-          if (!["none", "dither", "pixel"].includes(filter)) return;
-          set((state) => ({ graphicPreferences: {
-            ...state.graphicPreferences, sceneFilter: filter,
-            ditheringEnabled: filter === "dither",
-          } }));
-        },
         toggleFisheye: () => set((state) => ({ graphicPreferences: {
           ...state.graphicPreferences, fisheyeEnabled: !state.graphicPreferences.fisheyeEnabled,
         } })),
-        setPixelationPixelSize: (size) => {
-          if (!Number.isFinite(size)) return;
-          set((state) => ({ graphicPreferences: {
-            ...state.graphicPreferences, pixelationPixelSize: Math.min(16, Math.max(2, Math.round(size / 2) * 2)),
-          } }));
-        },
-        toggleDithering: () => {
-          set((state) => ({
-            graphicPreferences: {
-              ...state.graphicPreferences,
-              ditheringEnabled: !state.graphicPreferences.ditheringEnabled,
-              sceneFilter: state.graphicPreferences.ditheringEnabled ? "none" : "dither",
-            },
-          }));
-        },
-        setDitheringPixelSize: (size) => {
-          if (!Number.isFinite(size)) return;
-          set((state) => ({
-            graphicPreferences: {
-              ...state.graphicPreferences,
-              ditheringPixelSize: Math.min(16, Math.max(1, Math.round(size))),
-            },
-          }));
-        },
         setGraphicsMode: (mode) => {
           set((state) => ({
             ...state,
@@ -1808,16 +1819,14 @@ export const useCoreStore = create<GameStore>()(
             bobItems: (saved?.bobItems ?? currentState.bobItems).map((item) => ({ ...item, preview: false })),
             tapEffects: (saved?.tapEffects ?? currentState.tapEffects).map((item) => ({ ...item, preview: false })),
             previewMode: null,
+            bobSkinPreviewId: null,
             blobForms: normalizeBlobForms(saved?.blobForms ?? currentState.blobForms),
+            bobSkinId: getBobSkin(saved?.bobSkinId).id,
+            purchasedBobSkinIds: BOB_SKINS.filter(skin => skin.cost && Array.isArray(saved?.purchasedBobSkinIds) && saved.purchasedBobSkinIds.includes(skin.id)).map(skin => skin.id),
             graphicPreferences: {
               ...currentState.graphicPreferences,
               ...saved?.graphicPreferences,
-              // Older saves only stored the dither toggle.
-              sceneFilter: saved?.graphicPreferences?.sceneFilter ??
-                (saved?.graphicPreferences?.ditheringEnabled ? "dither" : "none"),
-              ditheringEnabled: saved?.graphicPreferences?.sceneFilter
-                ? saved.graphicPreferences.sceneFilter === "dither"
-                : saved?.graphicPreferences?.ditheringEnabled ?? false,
+              outlines: { ...currentState.graphicPreferences.outlines, ...saved?.graphicPreferences?.outlines },
             },
           };
         },

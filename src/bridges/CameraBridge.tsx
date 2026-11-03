@@ -1,11 +1,11 @@
 import { useEffect } from "react";
-import { useThree } from "@react-three/fiber";
-import { useGLBridge } from "@/store/core/gl";
+import { useFrame, useThree } from "@react-three/fiber";
+import { renderCameraPreviews, useGLBridge } from "@/store/core/gl";
 
 /**
  * Place this component anywhere inside your R3F <Canvas>.
- * It runs inside the Three context and pushes `gl` into the bridge store
- * so that CameraApp (outside Canvas) can call gl.domElement.toDataURL().
+ * Shares the renderer for camera gestures and publishes completed scene frames
+ * to the app-owned camera preview.
  *
  * @example
  * <Canvas gl={{ preserveDrawingBuffer: true }}>
@@ -19,7 +19,12 @@ export function CameraGLBridge() {
 
   useEffect(() => {
     setGL(gl);
+    return () => setGL(null);
   }, [gl, setGL]);
+
+  // Copy after SceneLens presents the clean frame, before the browser discards
+  // its drawing buffer. No preview work runs when the camera app is closed.
+  useFrame(() => renderCameraPreviews(gl.domElement), 3);
 
   return null;
 }

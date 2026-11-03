@@ -38,6 +38,7 @@ import {
 import { useViewStore } from "../store/viewStore";
 import { ROUTE_IDS, ROUTE_PATHS } from "../store/config/routes";
 import { SceneLens } from "@/components/SceneLens";
+import { LoadingCamera } from "@/components/LoadingCamera";
 import { BobEditorScene, BobEditorCounterFade } from "@/components/bob/BobEditorScene";
 import { useBobEditor } from "@/store/bobEditor";
 import {
@@ -507,6 +508,7 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
             <WorldAudio config={sceneWorld?.scene.audio} authorized={isReady} />
           )}
           <SceneLens>
+            <LoadingCamera />
             <CursorFollowCamera />
             <CameraControls
               ref={handleCameraControlsRef}
@@ -629,6 +631,8 @@ const CursorFollowCamera = () => {
   const cursor = useCursor({ condition: () => !isMobile, positionFactor: 1 });
 
   useFrame(({ clock }) => {
+    const view = useViewStore.getState();
+    if (view.loadingCameraActive && view.loadingCameraView === "loading") return;
     if (useMiniGameStore.getState().activeGame === "MINI_GOLF") return;
     if (isMobile) return;
     if (viewMode !== "fixed" || isTransitioning) return;
@@ -737,7 +741,7 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
       style={{
         width: "100vw",
         height: "100dvh",
-        position: "absolute",
+        position: "fixed",
         top: 0,
         left: 0,
         zIndex: 0,

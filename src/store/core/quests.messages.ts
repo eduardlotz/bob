@@ -76,6 +76,10 @@ const enQuestMessageOverrides: Record<string, QuestCopy> = {
     title: "Five Digits",
     description: "Reach 10,000 total taps",
   },
+  total_taps_100000: {
+    title: "Six Digits",
+    description: "Reach 100,000 total taps",
+  },
   total_taps_1000000: {
     title: "Millionaire",
     description: "Reach 1,000,000 total taps",

@@ -4,7 +4,6 @@ import {
   Center,
   GradientTexture,
   Line,
-  Outlines,
   RoundedBox,
   Text3D,
 } from "@react-three/drei";
@@ -28,6 +27,7 @@ import { useQuestActions } from "@/hooks/useQuestSystem";
 import { playSound, stopSoundsById } from "@/utils/soundSystem";
 import { useI18n } from "@/i18n";
 import { createEmojiTexture } from "@/utils/emojiTexture";
+import { useScreenTransition } from "@/store/screenTransition";
 import { FISHEYE_CONFIG } from "@/store/config/themes";
 import {
   SLOT_SYMBOLS,
@@ -90,7 +90,6 @@ function PrintedText({
         >
           {children}
           <meshToonMaterial color={color} />
-          {/* <Outlines screenspace thickness={0.005} color="#421f2a" /> */}
         </Text3D>
       </Center>
     </group>
@@ -189,6 +188,7 @@ function CabinetBox({
 }) {
   return (
     <RoundedBox
+      userData={{ foregroundOutline: outlines ? "foreground" : false, outlineColor: highlighted ? "#ffd15c" : "#421f2a" }}
       position={position}
       args={size}
       radius={0.06}
@@ -197,13 +197,6 @@ function CabinetBox({
       receiveShadow
     >
       <meshToonMaterial color={color} />
-      {outlines && (
-        <Outlines
-          screenspace
-          thickness={highlighted ? 0.032 : 0.018}
-          color={highlighted ? "#ffd15c" : "#421f2a"}
-        />
-      )}
     </RoundedBox>
   );
 }
@@ -267,6 +260,7 @@ function SlotMachineBody({
   const de = locale === "de";
   return (
     <group
+      userData={{ foregroundOutline: false }}
       name="slot-machine"
       onPointerDown={
         onTrigger
@@ -409,22 +403,21 @@ function SlotMachineBody({
         color="#792332"
         outlines
       />
-      <mesh position={[0, 0.65, 1.95]}>
+      <mesh userData={{ foregroundOutline: "foreground" }} position={[0, 0.65, 1.95]}>
         <cylinderGeometry args={[0.79, 0.84, 0.2, 40]} />
         <meshToonMaterial color="#f4c66b" />
-        <Outlines screenspace thickness={0.018} color="#421f2a" />
       </mesh>
       <group
         ref={buttonRef}
         position={[0, BUTTON_REST_Y, 1.95]}
         name="slot-play-button"
+        userData={{ foregroundOutline: "foreground" }}
       >
         <mesh>
           <cylinderGeometry args={[0.66, 0.7, 0.65, 40]} />
           <meshToonMaterial color={canSpin ? "#ef3c46" : "#94333b"} />
-          <Outlines screenspace thickness={0.022} color="#421f2a" />
         </mesh>
-        <group position={[0, 0.333, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <group userData={{ foregroundOutline: false }} position={[0, 0.333, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <PrintedText size={0.24} color="#fff1c2">
             {de ? "Spielen" : "Play"}
           </PrintedText>
@@ -447,10 +440,9 @@ function SlotMachineBody({
           color="#792332"
           outlines
         />
-        <mesh position={[1.5, 0.59, 1.95]}>
+        <mesh userData={{ foregroundOutline: "foreground" }} position={[1.5, 0.59, 1.95]}>
           <cylinderGeometry args={[0.2, 0.24, 0.1, 16]} />
           <meshToonMaterial color="#f4c66b" />
-          <Outlines screenspace thickness={0.018} color="#421f2a" />
         </mesh>
         <group
           ref={switchRef}
@@ -461,10 +453,9 @@ function SlotMachineBody({
             <cylinderGeometry args={[0.04, 0.06, 0.46, 10]} />
             <meshToonMaterial color="#f4c66b" />
           </mesh>
-          <mesh position={[0, 0.49, 0]}>
+          <mesh userData={{ foregroundOutline: "foreground" }} position={[0, 0.49, 0]}>
             <sphereGeometry args={[0.13, 12, 8]} />
             <meshToonMaterial color={autoPlay ? "#77e5a5" : "#ef3c46"} />
-            <Outlines screenspace thickness={0.018} color="#421f2a" />
           </mesh>
         </group>
         <PrintedText position={[1.5, 0.34, 2.39]} size={0.14}>
@@ -621,7 +612,7 @@ export function SlotMachineGame({ onExit: _onExit }: { onExit: () => void }) {
     setAutoPlay(false);
   }, []);
 
-  const spin = useCallback(() => {
+  const beginSpin = useCallback(() => {
     if (running.current) return;
     if (!useCoreStore.getState().spendTaps(SPIN_COST)) {
       stopAuto();
@@ -650,6 +641,11 @@ export function SlotMachineGame({ onExit: _onExit }: { onExit: () => void }) {
     playSound("slot-spin");
     triggerQuest("minigames_slot_spin");
   }, [emitText, locale, stopAuto, triggerQuest]);
+
+  const spin = useCallback(() => {
+    if (running.current || useScreenTransition.getState().phase !== "idle") return;
+    beginSpin();
+  }, [beginSpin]);
 
   const handleTrigger = useCallback(() => {
     if (auto.current) {

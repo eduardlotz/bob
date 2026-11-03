@@ -64,6 +64,7 @@ export function InteractiveObject({
 
   return (
     <group
+      userData={{ foregroundOutline: "foreground" }}
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
       onClick={handlePointerDown}

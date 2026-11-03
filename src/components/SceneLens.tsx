@@ -1,10 +1,10 @@
+import { ForegroundOutlines } from "./ForegroundOutlines";
 import { RenderCubeTexture, type RenderCubeTextureApi } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useCallback, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Euler, OrthographicCamera, PerspectiveCamera, Quaternion, Scene, Vector3, type Camera } from "three";
 import { useCoreStore } from "@/store";
 import { useScenePointer } from "@/hooks/useScenePointer";
-import { SCENE_RENDER_PRIORITY, SceneFilters } from "./SceneFilters";
 import { FISHEYE_CONFIG } from "@/store/config/themes";
 import { useBobEditor } from "@/store/bobEditor";
 import { getSceneLensRadius } from "@/utils/sceneLensFraming";
@@ -13,20 +13,12 @@ import { getSceneLensRadius } from "@/utils/sceneLensFraming";
  * Keeping the portal mounted preserves physics, camera controls and game state.
  */
 export function SceneLens({ children }: { children: ReactNode }) {
-  const { fisheyeEnabled: enabled, sceneFilter } = useCoreStore(s => s.graphicPreferences);
+  const enabled = useCoreStore(s => s.graphicPreferences.fisheyeEnabled);
   const zoom = FISHEYE_CONFIG.MIN;
   const size = useThree(s => s.size);
   const screenOffset = useBobEditor(s => s.screenOffset);
   const cube = useRef<RenderCubeTextureApi>(null!);
   const world = useRef<{ scene: Scene; camera: Camera } | null>(null);
-  const captureAutoClear = useRef(true);
-  // EffectComposer disables autoClear globally. Each cubemap face must still
-  // clear its color/depth, or moving objects leave stale depth/ghost images.
-  useFrame(({ gl }) => {
-    captureAutoClear.current = gl.autoClear;
-    gl.autoClear = true;
-  }, -1.1);
-  useFrame(({ gl }) => { gl.autoClear = captureAutoClear.current; }, -0.9);
   const [presentation] = useState(() => new Scene());
   const [ortho] = useState(() => new OrthographicCamera());
   const radius = getSceneLensRadius(size.width, size.height, screenOffset) / 100;
@@ -46,10 +38,10 @@ export function SceneLens({ children }: { children: ReactNode }) {
     ? { scene: presentation, camera: ortho }
     : world.current, [enabled, presentation, ortho]);
   useFrame(({ gl }) => {
-    if (sceneFilter !== "none") return;
     const { scene, camera } = source();
+    gl.autoClear = true;
     gl.render(scene, camera);
-  }, SCENE_RENDER_PRIORITY);
+  }, 2);
 
   return (
     <>
@@ -65,12 +57,12 @@ export function SceneLens({ children }: { children: ReactNode }) {
               frames={enabled ? Infinity : 0}
             >
               <LensCamera cube={cube} world={world} enabled={enabled} zoom={zoom} />
+              <ForegroundOutlines />
               {children}
             </RenderCubeTexture>
           </meshBasicMaterial>
         </mesh>
       </primitive>
-      {sceneFilter !== "none" && <SceneFilters source={source} />}
     </>
   );
 }

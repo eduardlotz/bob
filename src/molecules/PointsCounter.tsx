@@ -1,4 +1,4 @@
-import { Html, Outlines, Text3D } from "@react-three/drei";
+import { Html, Text3D } from "@react-three/drei";
 import { useRef, useEffect, useState } from "react";
 import { Vector3, Mesh } from "three";
 import { useSpring, a } from "@react-spring/three";
@@ -55,7 +55,7 @@ export const PointsCounter = ({
   }, [number, api]);
 
   return (
-    <a.group scale={spring.scale as any}>
+    <a.group userData={{ foregroundOutline: "counter" }} scale={spring.scale as any}>
       <a.group position={responsivePosition}>
         {statusLabel && (
           <Html position={[numberWidth * 0.5, 4, 0.2]} center transform scale={0.15}>
@@ -98,7 +98,6 @@ export const PointsCounter = ({
         >
           {formattedNumber}
           <meshToonMaterial color={counterColor} />
-          <Outlines thickness={0.02} color={outlineColor} screenspace />
         </Text3D>
       </a.group>
     </a.group>

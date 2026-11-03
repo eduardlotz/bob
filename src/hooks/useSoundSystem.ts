@@ -62,6 +62,7 @@ export interface SoundSystemHook {
 
 export function useSoundSystem(): SoundSystemHook {
   const soundSystem = useCoreStore((state) => state.soundSystem);
+  const isHydrated = useCoreStore((state) => state.isHydrated);
   const worldSoundIds = useCoreStore(
     (state) => state.audioSelections?.worldSoundIds ?? [],
   );
@@ -170,7 +171,8 @@ export function useSoundSystem(): SoundSystemHook {
   );
 
   useEffect(() => {
-    if (initPerformed) return;
+    // IndexedDB restores the saved mix asynchronously; do not initialize defaults first.
+    if (!isHydrated || initPerformed) return;
 
     try {
       engineSetMasterVolume(soundSystem.masterVolume);
@@ -190,6 +192,7 @@ export function useSoundSystem(): SoundSystemHook {
 
     initPerformed = true;
   }, [
+    isHydrated,
     soundSystem.enabled,
     soundSystem.masterVolume,
     soundSystem.tapVolume,

@@ -20,7 +20,7 @@ const Wearable = memo(function Wearable({ id, definition, body, outlineColor }: 
   const transform = useMemo(() => fitBobWearable(body, definition.mount), [body, definition]);
   const { Model, calibration } = definition;
   return (
-    <group name={`bob-wearable:${id}`} {...transform}>
+    <group name={`bob-wearable:${id}`} userData={{ foregroundOutline: id === "clownNose" ? "bob" : false }} {...transform}>
       <Model
         {...calibration}
         formType={body.formType}

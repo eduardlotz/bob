@@ -13,12 +13,16 @@ export function SlotMachineLobbyPreview() {
       [new T.BoxGeometry(.055, .5, .055), '#f4c66b', [.65, .7, 0]],
       [new T.SphereGeometry(.10, 10, 8), '#d23b42', [.65, .99, 0]],
     ];
+    const interior = parts.splice(3, 1);
     for (const x of [-.27, 0, .27]) {
-      parts.push([new T.BoxGeometry(.23, .33, .035), '#fff7e5', [x, .83, .38]]);
-      parts.push([new T.TorusGeometry(.06, .018, 5, 12), '#b72c39', [x, .83, .405]]);
+      interior.push([new T.BoxGeometry(.23, .33, .035), '#fff7e5', [x, .83, .38]]);
+      interior.push([new T.TorusGeometry(.06, .018, 5, 12), '#b72c39', [x, .83, .405]]);
     }
-    return assemble(parts);
+    return { outer: assemble(parts), interior: assemble(interior) };
   }, []);
-  useEffect(() => () => geometry.dispose(), [geometry]);
-  return <mesh geometry={geometry} castShadow receiveShadow><meshToonMaterial vertexColors /></mesh>;
+  useEffect(() => () => Object.values(geometry).forEach(part => part.dispose()), [geometry]);
+  return <group>
+    <mesh geometry={geometry.outer} userData={{ foregroundOutline: "foreground" }} castShadow receiveShadow><meshToonMaterial vertexColors /></mesh>
+    <mesh geometry={geometry.interior} userData={{ foregroundOutline: false }} castShadow receiveShadow><meshToonMaterial vertexColors /></mesh>
+  </group>;
 }

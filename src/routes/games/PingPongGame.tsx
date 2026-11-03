@@ -28,6 +28,8 @@ import { usePaddleTilt } from "@/hooks/usePaddleTilt";
 import { useI18n } from "@/i18n";
 import { PointsCounter } from "@/molecules/PointsCounter";
 import { PingPongInstructions } from "./PingPongInstructions";
+import { useScreenTransition } from "@/store/screenTransition";
+import { useViewStore } from "@/store/viewStore";
 
 const MIN_HIT_FORCE = 10;
 const SCORE_FORCE_THRESHOLD = 50;
@@ -85,18 +87,29 @@ export function PingPongGame({ onExit: _onExit }: { onExit: () => void }) {
   }, [phase, cursor.hide, cursor.show]);
 
   const startRound = useCallback(() => {
+    if (useScreenTransition.getState().phase !== "idle") return;
     if (active.current || performance.now() - lostAt.current < 400) return;
-    const body = ballApi.current;
-    if (!body) return;
-    resetScore();
-    body.setTranslation({ x: 0, y: 5 * sizeFactor, z: 0 }, true);
-    body.setLinvel({ x: 0, y: 10 * sizeFactor, z: 0 }, true);
-    body.setAngvel({ x: 0, y: 0, z: 0 }, true);
-    body.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true);
-    body.setGravityScale(sizeFactor, true);
-    lastHitSoundAtRef.current = 0;
-    active.current = true;
-    setPhase("playing");
+    const prepareRound = () => {
+      const body = ballApi.current;
+      if (!body) return;
+      resetScore();
+      body.setTranslation({ x: 0, y: 5 * sizeFactor, z: 0 }, true);
+      body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      body.setAngvel({ x: 0, y: 0, z: 0 }, true);
+      body.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true);
+      body.setGravityScale(0, true);
+      lastHitSoundAtRef.current = 0;
+      setPhase("playing");
+    };
+    const beginRound = () => {
+      const body = ballApi.current;
+      if (!body) return;
+      body.setLinvel({ x: 0, y: 10 * sizeFactor, z: 0 }, true);
+      body.setGravityScale(sizeFactor, true);
+      active.current = true;
+    };
+    prepareRound();
+    beginRound();
   }, [resetScore, sizeFactor]);
 
   const finishRound = useCallback(() => {
@@ -151,7 +164,7 @@ export function PingPongGame({ onExit: _onExit }: { onExit: () => void }) {
     const handCamSwayX = Math.sin(clock.getElapsedTime() * 1) * 0.03;
     const handCamSwayY = Math.sin(clock.getElapsedTime() * 0.5) * 0.02;
 
-    if (cameraControlsRef) {
+    if (cameraControlsRef && !useViewStore.getState().loadingCameraActive) {
       cameraControlsRef.current?.setLookAt(
         0,
         CAMERA_HEIGHT * sizeFactor,
@@ -217,7 +230,7 @@ export function PingPongGame({ onExit: _onExit }: { onExit: () => void }) {
           {tilt.unavailable && <span role="status">{locale === "de" ? "Neigung nicht verfügbar. Touch bleibt aktiv." : "Tilt unavailable. Touch controls remain active."}</span>}
         </TiltControl></GameOverlay>}
 
-      <mesh>
+      <mesh userData={{ foregroundOutline: false }}>
         <sphereGeometry args={[100, 16, 16]} />
         <meshBasicMaterial side={BackSide}>
           <GradientTexture
