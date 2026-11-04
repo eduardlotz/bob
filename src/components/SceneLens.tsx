@@ -2,18 +2,25 @@ import { ForegroundOutlines } from "./ForegroundOutlines";
 import { RenderCubeTexture, type RenderCubeTextureApi } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useCallback, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
-import { Euler, OrthographicCamera, PerspectiveCamera, Quaternion, Scene, Vector3, type Camera } from "three";
+import { Euler, OrthographicCamera, PerspectiveCamera, Quaternion, Scene, ShaderChunk, Vector3, type Camera } from "three";
 import { useCoreStore } from "@/store";
 import { useScenePointer } from "@/hooks/useScenePointer";
 import { FISHEYE_CONFIG } from "@/store/config/themes";
 import { useBobEditor } from "@/store/bobEditor";
-import { getSceneLensRadius } from "@/utils/sceneLensFraming";
+import { getSceneLensRadius, SCENE_LENS } from "@/utils/sceneLensFraming";
 
 /** Drei's cubemap/sphere projection, with a direct render path sharing the same portal.
  * Keeping the portal mounted preserves physics, camera controls and game state.
  */
-export function SceneLens({ children }: { children: ReactNode }) {
-  const enabled = useCoreStore(s => s.graphicPreferences.fisheyeEnabled);
+export function SceneLens({ children, enabled: enabledOverride, transparent = false, bobOutlineColor }: {
+  children: ReactNode;
+  enabled?: boolean;
+  /** Preserve the captured background alpha when authoring transparent PNGs. */
+  transparent?: boolean;
+  bobOutlineColor?: string;
+}) {
+  const storedEnabled = useCoreStore(s => s.graphicPreferences.fisheyeEnabled);
+  const enabled = enabledOverride ?? storedEnabled;
   const zoom = FISHEYE_CONFIG.MIN;
   const size = useThree(s => s.size);
   const screenOffset = useBobEditor(s => s.screenOffset);
@@ -47,17 +54,25 @@ export function SceneLens({ children }: { children: ReactNode }) {
     <>
       <primitive object={presentation}>
         <mesh scale={radius}>
-          <sphereGeometry args={[1, 64, 64]} />
-          <meshBasicMaterial>
+          <sphereGeometry args={[1, SCENE_LENS.sphereSegments, SCENE_LENS.sphereSegments]} />
+          <meshBasicMaterial transparent={transparent}
+            customProgramCacheKey={() => `scene-lens-alpha:${transparent}`}
+            onBeforeCompile={shader => {
+              if (!transparent) return;
+              shader.fragmentShader = shader.fragmentShader.replace("#include <envmap_fragment>", ShaderChunk.envmap_fragment.replace(
+                "#ifdef ENVMAP_BLENDING_MULTIPLY",
+                "diffuseColor.a *= envColor.a;\nenvColor.rgb /= max(envColor.a, 0.00001);\n#ifdef ENVMAP_BLENDING_MULTIPLY",
+              ));
+            }}>
             <RenderCubeTexture
               ref={cube}
               attach="envMap"
               flip
-              resolution={896}
+              resolution={SCENE_LENS.cubeResolution}
               frames={enabled ? Infinity : 0}
             >
               <LensCamera cube={cube} world={world} enabled={enabled} zoom={zoom} />
-              <ForegroundOutlines />
+              <ForegroundOutlines bobColor={bobOutlineColor} />
               {children}
             </RenderCubeTexture>
           </meshBasicMaterial>

@@ -6,7 +6,7 @@ export type SkinUnlock = { quest: string } | { stack: string };
 export interface BobSkin {
   id: SkinId;
   name: { de: string; en: string };
-  material: "solid" | "moon" | "denim" | "leather" | "glass" | "gold" | "wood" | "water" | "tnt";
+  material: "solid" | "moon" | "disco" | "watermelon" | "glass" | "gold" | "wood" | "water" | "jelly";
   body: string;
   eyes: string;
   outline: string;
@@ -24,23 +24,24 @@ const palette = (id: "DEFAULT" | "DARK" | "PASTEL" | "NEON") => {
  */
 export const BOB_SKINS: readonly BobSkin[] = [
   { id: "white", name: { de: "Weiß", en: "White" }, material: "solid", ...palette("DEFAULT") },
-  { id: "dark", name: { de: "Schwarz", en: "Black" }, material: "solid", body: "#292a30", eyes: "#000000", outline: "#090a0d" },
-  { id: "pastel", name: { de: "Pastell", en: "Pastel" }, material: "solid", ...palette("PASTEL") },
-  { id: "peach", name: { de: "Pfirsich", en: "Peach" }, material: "solid", body: "#ffc5ad", eyes: "#16151b", outline: "#9f675c" },
-  { id: "mint", name: { de: "Minze", en: "Mint" }, material: "solid", body: "#b9ebce", eyes: "#151b18", outline: "#54846c" },
-  { id: "lilac", name: { de: "Flieder", en: "Lilac" }, material: "solid", body: "#d7c3f2", eyes: "#19151e", outline: "#827096" },
-  { id: "sky", name: { de: "Himmelblau", en: "Sky blue" }, material: "solid", body: "#b5ddfa", eyes: "#141923", outline: "#5c819e" },
+  { id: "dark", name: { de: "Schwarz", en: "Black" }, material: "solid", body: "#292a30", eyes: "#ffffff", outline: "#090a0d" },
+  { id: "pastel", name: { de: "Pastell", en: "Pastel" }, material: "solid", ...palette("PASTEL"), eyes: "#000000" },
+  { id: "peach", name: { de: "Pfirsich", en: "Peach" }, material: "solid", body: "#ffc5ad", eyes: "#000000", outline: "#9f675c" },
+  { id: "mint", name: { de: "Minze", en: "Mint" }, material: "solid", body: "#b9ebce", eyes: "#000000", outline: "#54846c" },
+  { id: "lilac", name: { de: "Flieder", en: "Lilac" }, material: "solid", body: "#d7c3f2", eyes: "#000000", outline: "#827096" },
+  { id: "sky", name: { de: "Himmelblau", en: "Sky blue" }, material: "solid", body: "#b5ddfa", eyes: "#000000", outline: "#5c819e" },
   { id: "neon-lime", name: { de: "Neon-Limette", en: "Neon lime" }, material: "solid", body: "#baff17", eyes: "#101600", outline: "#546e0a" },
   { id: "neon-pink", name: { de: "Neon-Pink", en: "Neon pink" }, material: "solid", body: "#ff37b6", eyes: "#20051a", outline: "#8e1b66" },
   { id: "neon-cyan", name: { de: "Neon-Cyan", en: "Neon cyan" }, material: "solid", body: "#13edfa", eyes: "#042023", outline: "#087b87" },
   { id: "moon", name: { de: "Mond", en: "Moon" }, material: "moon", body: "#e2dfcf", secondary: "#9b978b", eyes: "#08090b", outline: "#68675f" },
-  { id: "denim", name: { de: "Jeans", en: "Denim" }, material: "denim", body: "#294d85", secondary: "#a5b8d4", eyes: "#060b16", outline: "#11223b", unlock: { quest: "routes_purchased_3" } },
-  { id: "leather", name: { de: "Leder", en: "Leather" }, material: "leather", body: "#593521", secondary: "#a4754b", eyes: "#070403", outline: "#22130d", unlock: { quest: "total_taps_1000" } },
+  // Keep these saved IDs so existing selections and quest rewards carry over.
+  { id: "denim", name: { de: "Disco", en: "Disco" }, material: "disco", body: "#c2c9db", secondary: "#cbe4ff", eyes: "#10131d", outline: "#323647", unlock: { quest: "routes_purchased_3" } },
+  { id: "leather", name: { de: "Wassermelone", en: "Watermelon" }, material: "watermelon", body: "#86bf49", secondary: "#246333", eyes: "#07160c", outline: "#183d1e", unlock: { quest: "total_taps_1000" } },
   { id: "glass", name: { de: "Glas", en: "Glass" }, material: "glass", body: "#c0f9e8", secondary: "#21bdd6", eyes: "#123c46", outline: "#255d67", unlock: { stack: "shop_item_categories" } },
-  { id: "gold", name: { de: "Gold", en: "Gold" }, material: "gold", body: "#efb838", secondary: "#fff1b0", eyes: "#231606", outline: "#8b5716", unlock: { quest: "total_taps_10000" } },
+  { id: "gold", name: { de: "Chrom", en: "Chrome" }, material: "gold", body: "#bec6d0", secondary: "#ffffff", eyes: "#10141b", outline: "#343c49", unlock: { quest: "total_taps_10000" } },
   { id: "wood", name: { de: "Holz", en: "Wood" }, material: "wood", body: "#bd834b", secondary: "#704123", eyes: "#211409", outline: "#55301b", cost: 50_000 },
   { id: "water", name: { de: "Wasser", en: "Water" }, material: "water", body: "#c6f4ff", secondary: "#159ed9", eyes: "#082d46", outline: "#33768f", cost: 100_000 },
-  { id: "tnt", name: { de: "TNT", en: "TNT" }, material: "tnt", body: "#ed5140", secondary: "#fff0cd", eyes: "#23160f", outline: "#7b261f", cost: 250_000 },
+  { id: "tnt", name: { de: "Gelee", en: "Jelly" }, material: "jelly", body: "#c7ff64", secondary: "#49bc25", eyes: "#153807", outline: "#3b7924", cost: 250_000 },
 ];
 export const getBobSkin = (id: unknown): BobSkin => BOB_SKINS.find(skin => skin.id === (id === "neon" ? "moon" : id === "stripes" ? "denim" : id)) ?? BOB_SKINS[0];
 export function isBobSkinUnlocked(skin: BobSkin, quests: readonly { id: string; stackId?: string; completed: boolean }[]) {

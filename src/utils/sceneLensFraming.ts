@@ -1,5 +1,8 @@
 import { FISHEYE_CONFIG } from "@/store/config/themes";
 
+/** Shared by the live lens and the offline skin thumbnail renderer. */
+export const SCENE_LENS = { cubeResolution: 896, sphereSegments: 64 } as const;
+
 /** Keep the lens covering all four corners when an editor shifts its composition. */
 export function getSceneLensRadius(width: number, height: number, offset = { x: 0, y: 0 }) {
   return Math.max(

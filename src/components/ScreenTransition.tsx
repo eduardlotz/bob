@@ -14,12 +14,13 @@ import { useActiveBobShape } from "@/hooks/useActiveBobShape";
 import { getBlobFormHalfSize } from "@/types/blobForms";
 import { bobTransitionFocus, getInitialTransitionCenter, getTransitionGeometry, getTransitionMask } from "@/utils/screenTransitionMask";
 import { getMenuOrbitAngles, type MenuTransitionBubble } from "@/utils/menuTransitionBubbles";
+import { afterScreenTransitionPaint } from "@/utils/screenTransitionPaint";
 
 export function ScreenTransition({ children }: { children?: ReactNode }) {
   const phase = useScreenTransition(state => state.phase);
   const request = useScreenTransition(state => state.request);
   const openness = useMotionValue(0);
-  const mask = useMotionValue("none");
+  const curtain = useRef<HTMLDivElement>(null);
   const orbitX = useMotionValue(0);
   const orbitY = useMotionValue(0);
   const orbitDiameter = useMotionValue(64);
@@ -52,7 +53,20 @@ export function ScreenTransition({ children }: { children?: ReactNode }) {
         window.innerWidth, window.innerHeight, openness.get() / 101,
         appearance.shape, formType, aspect, focus, initialCenter,
       );
-      mask.set(getTransitionMask(window.innerWidth, window.innerHeight, geometry));
+      const mask = getTransitionMask(window.innerWidth, window.innerHeight, geometry);
+      const style = curtain.current?.style;
+      if (style) {
+        // Motion writes JS property names directly; WebKit's prefixed mask
+        // properties need real CSS names. Keep these writes in the same frame
+        // as the geometry, including the final closed frame before scene work.
+        for (const prefix of ["-webkit-", ""]) {
+          style.setProperty(`${prefix}mask-image`, mask.image);
+          style.setProperty(`${prefix}mask-size`, mask.size);
+          style.setProperty(`${prefix}mask-position`, mask.position);
+          style.setProperty(`${prefix}mask-repeat`, "no-repeat");
+          style.setProperty(`${prefix}mask-composite`, prefix ? "xor, source-over" : "exclude, add");
+        }
+      }
       orbitX.set(geometry.x);
       orbitY.set(geometry.y);
       // Bubbles move straight from their measured menu positions to the final
@@ -72,7 +86,7 @@ export function ScreenTransition({ children }: { children?: ReactNode }) {
     frame = requestAnimationFrame(track);
     const unsubscribe = openness.on("change", draw);
     return () => { cancelAnimationFrame(frame); unsubscribe(); };
-  }, [phase, request, appearance, formType, parameters, openness, mask, orbitX, orbitY, orbitDiameter, orbitOpacity, orbitRotation, morphProgress, reducedMotion]);
+  }, [phase, request, appearance, formType, parameters, openness, orbitX, orbitY, orbitDiameter, orbitOpacity, orbitRotation, morphProgress, reducedMotion]);
 
   useEffect(() => {
     if (!request) {
@@ -103,8 +117,10 @@ export function ScreenTransition({ children }: { children?: ReactNode }) {
         };
         frame = requestAnimationFrame(waitForScene);
       };
-      void changeScene();
-      return () => { cancelled = true; cancelAnimationFrame(frame); };
+      // Animation completion runs before browser paint. A synchronous mount or
+      // shader compile here can otherwise freeze the outgoing scene on Safari.
+      const cancelPaint = afterScreenTransitionPaint(() => { void changeScene(); });
+      return () => { cancelled = true; cancelPaint(); cancelAnimationFrame(frame); };
     }
 
     if (phase !== "closing" && phase !== "opening") return;
@@ -142,15 +158,12 @@ export function ScreenTransition({ children }: { children?: ReactNode }) {
   return createPortal(
     <>
       <Curtain
+        ref={curtain}
         data-screen-transition={phase}
         data-transition-focus={request?.keepBobVisible ? "bob" : "screen"}
         data-transition-fill={appearance.fill.kind}
         $fill={appearance.fill}
         aria-busy={phase !== "loading"}
-        style={{
-          maskImage: phase === "loading" ? undefined : mask,
-          WebkitMaskImage: phase === "loading" ? undefined : mask,
-        }}
         onPointerDown={event => event.stopPropagation()}
         onClick={event => event.stopPropagation()}
       >
@@ -274,7 +287,7 @@ const drift = keyframes`
   to { background-position: var(--checker-tile) 0; }
 `;
 
-const Curtain = styled(motion.div)<{ $fill: TransitionAppearance["fill"] }>`
+const Curtain = styled.div<{ $fill: TransitionAppearance["fill"] }>`
   position: fixed;
   inset: 0;
   z-index: 99998;

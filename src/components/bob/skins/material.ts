@@ -8,8 +8,8 @@ toonRamp.generateMipmaps = false;
 toonRamp.needsUpdate = true;
 
 const modes: Record<BobSkin["material"], number> = {
-  solid: 0, moon: 1, denim: 2, leather: 3, glass: 4, gold: 5,
-  wood: 7, water: 8, tnt: 9,
+  solid: 0, moon: 1, disco: 2, watermelon: 3, glass: 4, gold: 5,
+  wood: 7, water: 8, jelly: 9,
 };
 
 const surface = /* glsl */ `
@@ -80,18 +80,39 @@ const patterns = /* glsl */ `
     diffuseColor.rgb = mix(diffuseColor.rgb, skinSecondary, clamp(crater.x * 0.62, 0.0, 0.7));
     diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0,0.98,0.89), clamp(crater.y * 0.4, 0.0, 0.4));
   } else if (skinMode > 1.5 && skinMode < 2.5) {
-    // Broad diagonal twill, filtered at a distance rather than subpixel yarn.
-    float diagonal = (sp.x - sp.y + sp.z * 0.25) * 16.0;
-    float thread = cos(diagonal * 6.2831853);
-    float aa = max(fwidth(thread), 0.08);
-    float weave = smoothstep(0.25 - aa, 0.25 + aa, thread);
-    weave *= 1.0 - smoothstep(0.3, 0.85, fwidth(diagonal));
-    diffuseColor.rgb = mix(diffuseColor.rgb, skinSecondary, 0.08 + weave * 0.22);
+    // Each mirror tile uses a flat reflected direction. Moving studio lights
+    // sweep across the facets; small dark seams keep the disco grid readable.
+    vec3 p = normalize(sp);
+    vec2 uv = vec2(atan(p.x, p.z) / 6.2831853 + 0.5,
+      asin(clamp(p.y, -1.0, 1.0)) / 3.1415927 + 0.5) * vec2(24.0, 12.0);
+    vec2 tile = floor(uv);
+    vec2 angles = ((tile + 0.5) / vec2(24.0, 12.0) - 0.5) * vec2(6.2831853, 3.1415927);
+    vec3 tileNormal = vec3(sin(angles.x) * cos(angles.y), sin(angles.y), cos(angles.x) * cos(angles.y));
+    vec3 reflection = reflect(-normalize(skinView), tileNormal);
+    float phase = skinTime * 0.32;
+    vec3 light = normalize(vec3(sin(phase) * 0.8, 0.65, cos(phase) * 0.8));
+    float beam = pow(max(dot(reflection, light), 0.0), 22.0);
+    float horizon = smoothstep(-0.2, 0.45, reflection.y);
+    float bands = 0.5 + 0.5 * sin(reflection.y * 11.0 + reflection.x * 3.0 + phase);
+    float tint = skinHash(vec3(tile, 2.0));
+    vec3 color = 0.78 + 0.18 * cos(vec3(0.0, 2.1, 4.2) + tint * 6.2831853);
+    vec3 mirror = color * (0.1 + horizon * 0.48 + bands * 0.2) + vec3(beam * 0.8);
+    vec2 edge = min(fract(uv), 1.0 - fract(uv));
+    float seamAA = max(max(fwidth(uv.x), fwidth(uv.y)) * 0.35, 0.015);
+    float mirrorFace = smoothstep(0.025, 0.025 + seamAA, min(edge.x, edge.y));
+    diffuseColor.rgb = mix(vec3(0.025, 0.035, 0.055), mirror, mirrorFace);
+    skinHighlight = skinSparkle(p, vec3(-0.4,0.55,0.9), 0.0)
+      + skinSparkle(p, vec3(0.55,-0.15,0.9), 2.1);
   } else if (skinMode > 2.5 && skinMode < 3.5) {
-    // Large, quiet grain preserves the warm leather color and clean light bands.
-    float grain = skinNoise(sp * 12.0);
-    float patches = smoothstep(0.48, 0.55, grain);
-    diffuseColor.rgb = mix(diffuseColor.rgb, skinSecondary, patches * 0.2);
+    // Wavy, broad rind stripes follow the length of every selected Bob form.
+    float longitude = atan(sp.x, sp.z);
+    float warp = sin(sp.y * 5.0 + sin(longitude * 3.0)) * 0.32;
+    float stripes = sin(longitude * 9.0 + warp);
+    float aa = max(fwidth(stripes), 0.04);
+    float rind = smoothstep(0.12 - aa, 0.36 + aa, stripes);
+    float mottling = skinNoise(sp * 18.0);
+    diffuseColor.rgb = mix(diffuseColor.rgb, skinSecondary, rind * 0.92);
+    diffuseColor.rgb *= 0.92 + mottling * 0.12;
   } else if (skinMode > 3.5 && skinMode < 4.5) {
     float facing = abs(dot(normalize(vNormal), normalize(vViewPosition)));
     float rim = smoothstep(0.28, 0.34, 1.0 - facing);
@@ -102,10 +123,26 @@ const patterns = /* glsl */ `
     diffuseColor.rgb = mix(diffuseColor.rgb, skinSecondary, rim * 0.35);
     diffuseColor.a *= clamp(0.3 + rim * 0.45 + skinHighlight, 0.0, 1.0);
   } else if (skinMode > 4.5 && skinMode < 5.5) {
-    // Keep the shared toon shading, with one small painted highlight.
+    // A procedural studio reflection gives silver chrome a dark horizon,
+    // bright softboxes, and a polished rim without an extra scene capture.
+    vec3 reflection = inverseTransformDirection(
+      reflect(-normalize(vViewPosition), normalize(vNormal)), viewMatrix);
+    float sky = smoothstep(-0.12, 0.55, reflection.y);
+    float ground = 1.0 - smoothstep(-0.7, -0.12, reflection.y);
+    float softbox = exp(-pow((reflection.y - 0.42 + reflection.x * 0.17) * 9.0, 2.0));
+    float strip = exp(-pow((reflection.x + 0.62) * 18.0, 2.0)) * smoothstep(-0.4, 0.5, reflection.y);
+    float metal = clamp(0.055 + sky * 0.66 + ground * 0.35 + softbox * 0.48 + strip * 0.5, 0.0, 1.0);
+    // Four crisp reflection bands, with only pixel-wide edge antialiasing.
+    // Preserve the studio reflection layout and layer soft highlights on top.
+    float bandAA = max(fwidth(metal), 0.001);
+    float band = 0.1 + 0.25 * smoothstep(0.2 - bandAA, 0.2 + bandAA, metal)
+      + 0.3 * smoothstep(0.45 - bandAA, 0.45 + bandAA, metal)
+      + 0.35 * smoothstep(0.75 - bandAA, 0.75 + bandAA, metal);
+    float rim = pow(1.0 - abs(dot(normalize(vNormal), normalize(vViewPosition))), 4.0);
+    diffuseColor.rgb = mix(vec3(0.018, 0.025, 0.04), diffuseColor.rgb, band);
+    diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0), softbox * 0.3 + rim * 0.4);
     vec3 p = normalize(sp);
-    skinHighlight = smoothstep(0.984, 0.993, dot(p, normalize(vec3(-0.5,0.65,1.0)))) * 0.65;
-    skinHighlight += skinSparkle(p, vec3(0.48,0.48,0.85), 0.0)
+    skinHighlight = skinSparkle(p, vec3(0.48,0.48,0.85), 0.0)
       + skinSparkle(p, vec3(0.45,-0.4,0.9), 2.1)
       + skinSparkle(p, vec3(-0.55,-0.25,0.85), 4.2)
       + skinSparkle(p, vec3(-0.3,-0.6,-0.8), 1.5)
@@ -147,25 +184,23 @@ const patterns = /* glsl */ `
     skinHighlight = max(skinHighlight, gleam * 0.65);
     diffuseColor.a *= clamp(0.16 + filled * 0.66 + top * 0.4 + rim * 0.48 + gleam * 0.7, 0.0, 1.0);
   } else if (skinMode > 8.5) {
-    float aa = max(fwidth(sp.y), 0.008);
-    float belt = 1.0 - smoothstep(0.26 - aa, 0.26 + aa, abs(sp.y + 0.03));
-    float sticks = smoothstep(0.93, 0.98, cos(atan(sp.x, sp.z) * 10.0));
-    diffuseColor.rgb *= 1.0 - sticks * 0.16;
-    diffuseColor.rgb = mix(diffuseColor.rgb, skinSecondary, belt);
-    // Bold T-N-T below the face, projected onto the front of every Bob form.
-    vec2 text = vec2(sp.x, sp.y + 0.17);
-    float ink = 0.0;
-    for (int i = 0; i < 3; i++) {
-      vec2 letter = text - vec2((float(i) - 1.0) * 0.18,0.0);
-      if (i == 1) {
-        ink = max(ink, step(abs(letter.x),0.065) * step(abs(letter.y),0.065) *
-          max(step(0.043,abs(letter.x)), 1.0 - smoothstep(0.014,0.025,abs(letter.x + letter.y * 0.7))));
-      } else {
-        ink = max(ink, max(step(abs(letter.x),0.065) * step(0.035,letter.y) * step(letter.y,0.065),
-          step(abs(letter.x),0.018) * step(abs(letter.y),0.065)));
-      }
-    }
-    diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.055,0.025,0.015), ink * step(0.45,sp.z) * belt);
+    // Lime jelly: an analytic interior depth and suspended bubbles give it
+    // volume. Both the tint and opacity change smoothly across the whole body.
+    vec3 ray = -normalize(skinView / max(skinBounds, vec3(0.001)));
+    vec3 p = normalize(sp);
+    float facing = abs(dot(normalize(vNormal), normalize(vViewPosition)));
+    float rim = pow(1.0 - facing, 2.5);
+    float depth = sqrt(max(0.0, 1.0 - dot(p.xy, p.xy)));
+    float wobble = sin(sp.y * 4.0 + skinTime * 0.9) * cos(sp.x * 3.0 - skinTime * 0.6) * 0.04;
+    float tint = clamp(0.25 + depth * 0.48 - sp.y * 0.14 + wobble, 0.0, 1.0);
+    diffuseColor.rgb = mix(diffuseColor.rgb, skinSecondary, tint);
+    float bubbles = skinBubble(sp, ray, vec3(-0.35,-0.3,0.15), 0.09)
+      + skinBubble(sp, ray, vec3(0.3,0.35,-0.15), 0.065)
+      + skinBubble(sp, ray, vec3(0.15,-0.6,0.25), 0.045);
+    float gleam = pow(max(0.0, dot(p, normalize(vec3(-0.5,0.65,1.0)))), 32.0);
+    skinHighlight = clamp(gleam * 0.8 + bubbles * 0.24 + rim * 0.1, 0.0, 0.85);
+    diffuseColor.a *= 0.66 + depth * 0.16 + rim * 0.14;
+
   }
 `;
 
@@ -183,7 +218,7 @@ export function createBobSkinMaterial(skin: BobSkin, halfSize: readonly number[]
   };
   const material = new MeshToonMaterial({ gradientMap: toonRamp });
   const setSkin = (next: BobSkin) => {
-    const transparent = next.material === "glass" || next.material === "water";
+    const transparent = next.material === "glass" || next.material === "water" || next.material === "jelly";
     if (material.transparent !== transparent) {
       material.transparent = transparent;
       material.needsUpdate = true;
@@ -204,9 +239,9 @@ export function createBobSkinMaterial(skin: BobSkin, halfSize: readonly number[]
     );
     shader.fragmentShader = `${surface}\n${shader.fragmentShader}`
       .replace("#include <color_fragment>", `#include <color_fragment>\n${patterns}`)
-      .replace("#include <opaque_fragment>", "outgoingLight = mix(outgoingLight, vec3(1.0), skinHighlight);\n#include <opaque_fragment>");
+      .replace("#include <opaque_fragment>", "if ((skinMode > 1.5 && skinMode < 2.5) || (skinMode > 4.5 && skinMode < 5.5) || skinMode > 8.5) outgoingLight = diffuseColor.rgb;\noutgoingLight = mix(outgoingLight, vec3(1.0), skinHighlight);\n#include <opaque_fragment>");
   };
-  material.customProgramCacheKey = () => "bob-skin-toon-v3";
+  material.customProgramCacheKey = () => "bob-skin-toon-v6";
   return {
     material,
     setSkin,

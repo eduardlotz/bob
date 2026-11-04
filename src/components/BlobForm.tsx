@@ -1,6 +1,5 @@
 import type { BobSkin } from "./bob/skins/registry";
 import { BobSkinMaterial } from "./bob/skins/BobSkinMaterial";
-import { BobSkinEffects } from "./bob/skins/BobSkinEffects";
 import React, { useMemo, useEffect } from "react";
 import { createEggGeometry } from "@/3d-objects/models/eggGeometry";
 import { RoundedBox } from "@react-three/drei";
@@ -27,7 +26,6 @@ export const BlobForm = React.memo(
               ]}
             />
             {skin ? <BobSkinMaterial skin={skin} form={formType} parameters={parameters} /> : <meshToonMaterial color={blobColor} />}
-            {skin && <BobSkinEffects skin={skin} form={formType} parameters={parameters} />}
           </mesh>
         );
 
@@ -49,7 +47,6 @@ export const BlobForm = React.memo(
             receiveShadow
           >
             {skin ? <BobSkinMaterial skin={skin} form={formType} parameters={parameters} /> : <meshToonMaterial color={blobColor} />}
-            {skin && <BobSkinEffects skin={skin} form={formType} parameters={parameters} />}
 
           </RoundedBox>
         );
@@ -60,7 +57,6 @@ export const BlobForm = React.memo(
           <mesh castShadow receiveShadow>
             <sphereGeometry args={[1, 24, 16]} />
             {skin ? <BobSkinMaterial skin={skin} form={formType} parameters={parameters} /> : <meshToonMaterial color={blobColor} />}
-            {skin && <BobSkinEffects skin={skin} form={formType} parameters={parameters} />}
           </mesh>
         );
     }
@@ -70,5 +66,5 @@ export const BlobForm = React.memo(
 function EggForm({ parameters, blobColor, skin }: Omit<BlobFormProps, "formType">) {
   const geometry = useMemo(() => createEggGeometry(parameters), [parameters.eggUpperRadius, parameters.eggLowerRadius]);
   useEffect(() => () => geometry.dispose(), [geometry]);
-  return <mesh geometry={geometry} castShadow receiveShadow>{skin ? <BobSkinMaterial skin={skin} form="egg" parameters={parameters} /> : <meshToonMaterial color={blobColor} />}{skin && <BobSkinEffects skin={skin} form="egg" parameters={parameters} />}</mesh>;
+  return <mesh geometry={geometry} castShadow receiveShadow>{skin ? <BobSkinMaterial skin={skin} form="egg" parameters={parameters} /> : <meshToonMaterial color={blobColor} />}</mesh>;
 }

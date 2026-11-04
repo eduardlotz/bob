@@ -2,6 +2,7 @@ import type { TransitionShape } from "@/styles/screenTransitions";
 
 const CIRCLE = "M1 0A1 1 0 1 0-1 0A1 1 0 1 0 1 0Z";
 const ROUNDED_RECTANGLE = "M-.7-1H.7Q1-1 1-.7V.7Q1 1 .7 1H-.7Q-1 1-1 .7V-.7Q-1-1-.7-1Z";
+const apertureImages = new Map<string, string>();
 
 export interface BobTransitionFocus { x: number; y: number; halfWidth: number; halfHeight: number; }
 /** Updated by the visible Bob, without rerendering the application every frame. */
@@ -38,10 +39,17 @@ export function getTransitionGeometry(
 
 export function getTransitionMask(width: number, height: number, geometry: ReturnType<typeof getTransitionGeometry>) {
   const { x, y, halfWidth, halfHeight, path } = geometry;
-  if (path === CIRCLE) {
-    if (halfWidth <= 0 || halfHeight <= 0) return "linear-gradient(#000, #000)";
-    return `radial-gradient(ellipse ${halfWidth}px ${halfHeight}px at ${x}px ${y}px, transparent calc(100% - 0.75px), #000 100%)`;
+  let image = apertureImages.get(path);
+  if (!image) {
+    // Decode each silhouette once. Updating an SVG data URL every animation
+    // frame can make WebKit repeatedly load mask images, leaving gaps while busy.
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-1 -1 2 2" width="2" height="2" preserveAspectRatio="none"><path d="${path}" fill="black"/></svg>`;
+    image = `url("data:image/svg+xml,${encodeURIComponent(svg)}"), linear-gradient(#000, #000)`;
+    apertureImages.set(path, image);
   }
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><defs><mask id="a"><rect width="100%" height="100%" fill="white"/><path d="${path}" fill="black" transform="translate(${x} ${y}) scale(${halfWidth} ${halfHeight})"/></mask></defs><rect width="100%" height="100%" mask="url(#a)"/></svg>`;
-  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+  return {
+    image,
+    size: `${Math.max(0, halfWidth * 2)}px ${Math.max(0, halfHeight * 2)}px, ${width}px ${height}px`,
+    position: `${x - halfWidth}px ${y - halfHeight}px, 0px 0px`,
+  };
 }

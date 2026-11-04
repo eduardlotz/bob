@@ -15,7 +15,7 @@ export function BobSkinMaterial({ skin, form, parameters }: { skin: BobSkin; for
     recipe.setRound(form === "sphere" || form === "egg");
   }, [recipe, skin, form, x, y, z]);
   useFrame(({ clock }) => {
-    if (skin.material === "water" || skin.material === "gold") recipe.setTime(clock.elapsedTime, effectsEnabled);
+    if (skin.material === "water" || skin.material === "gold" || skin.material === "disco" || skin.material === "jelly") recipe.setTime(clock.elapsedTime, effectsEnabled);
   });
   useEffect(() => () => recipe.material.dispose(), [recipe]);
   return <primitive object={recipe.material} attach="material" />;
