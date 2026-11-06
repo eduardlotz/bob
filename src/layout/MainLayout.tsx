@@ -6,7 +6,8 @@ import styled from "styled-components";
 import { useAppStore } from "@/store";
 
 export default function MainLayout({ children }: any) {
-  const { permissionGranted, setIsMobile } = useAppStore();
+  const permissionGranted = useAppStore((state) => state.permissionGranted);
+  const setIsMobile = useAppStore((state) => state.setIsMobile);
 
   useEffect(() => {
     const isMobile =

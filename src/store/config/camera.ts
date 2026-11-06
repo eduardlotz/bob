@@ -7,6 +7,10 @@ export const HIDDEN_OPTIONS_CAMERA_ZOOM = 4;
 export const FUNNY_FISHEYE_ZOOM = 1.15;
 export const CAMERA_ZOOM_ON_TAP = -1.5;
 
+export function followsOverviewCamera(viewId: string) {
+  return ["default", "navigation", "loading", "library"].includes(viewId);
+}
+
 export const HEAD_CAMERA_POSES = {
   default: {
     position: [0, CAMERA_HEIGHT, HIDDEN_OPTIONS_CAMERA_ZOOM] as [number, number, number],

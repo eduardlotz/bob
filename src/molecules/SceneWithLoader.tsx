@@ -8,6 +8,9 @@ import { Cursor } from "./Cursor";
 import { InitialLoadingScreen } from "@/components/InitialLoadingScreen";
 import { ScreenTransition } from "@/components/ScreenTransition";
 import { useScreenTransition } from "@/store/screenTransition";
+import { useLocation } from "react-router-dom";
+import { isInitialRouteReady, useRouteLoading } from "@/store/routeLoading";
+import { getBobAssetKey } from "@/utils/bobAssetKeys";
 
 export const CustomLoader = ({
   onEnter,
@@ -17,6 +20,11 @@ export const CustomLoader = ({
   isInitialLoad: boolean;
 }) => {
   const { active, progress } = useProgress();
+  const { pathname } = useLocation();
+  const hydrated = useCoreStore(state => state.isHydrated);
+  const attachedKey = useCoreStore(state => getBobAssetKey(state.bobItems.filter(item => item.enabled), false));
+  const detachedKey = useCoreStore(state => getBobAssetKey(state.bobItems.filter(item => item.enabled), true));
+  const routeReady = useRouteLoading(state => isInitialRouteReady(pathname, attachedKey, detachedKey, state)) && hydrated;
   const [percentage, setPercentage] = useState(0);
   const [finished, setFinished] = useState(false);
 
@@ -26,14 +34,14 @@ export const CustomLoader = ({
   useEffect(() => {
     // Only update progress during initial load
     if (isInitialLoad && !initialLoadCompleteRef.current) {
-      setPercentage((prev) => Math.max(prev, progress));
+      setPercentage((prev) => Math.max(prev, routeReady && !active ? 100 : Math.min(progress, 99)));
 
-      if (!active && progress === 100) {
+      if (routeReady && !active) {
         setFinished(true);
         initialLoadCompleteRef.current = true;
       }
     }
-  }, [active, progress, isInitialLoad]);
+  }, [active, progress, isInitialLoad, routeReady]);
 
   const handleEnter = () => {
     if (!finished || useScreenTransition.getState().phase !== "loading") return;
@@ -58,10 +66,14 @@ export const SceneWithLoader = ({
   permissionGranted: boolean;
   onLoaded?: () => void;
 }) => {
-  const { isMobile, emotionData, setPermissionGranted } = useAppStore();
-  const { isReady, setGameReady } = useCoreStore();
+  const isMobile = useAppStore(state => state.isMobile);
+  const emotionState = useAppStore(state => state.emotionData?.emotionState || "normal");
+  const setPermissionGranted = useAppStore(state => state.setPermissionGranted);
+  const isReady = useCoreStore(state => state.isReady);
+  const setGameReady = useCoreStore(state => state.setGameReady);
   const [hasEntered, setHasEntered] = useState(false);
   const [mountLoader, setMountLoader] = useState(true);
+  const { pathname } = useLocation();
 
   const handleEnter = () => {
     setGameReady(true);
@@ -86,7 +98,7 @@ export const SceneWithLoader = ({
     <>
       <ScreenTransition>
         {mountLoader && (
-          <CustomLoader onEnter={handleEnter} isInitialLoad={!hasEntered} />
+          <CustomLoader key={pathname} onEnter={handleEnter} isInitialLoad={!hasEntered} />
         )}
       </ScreenTransition>
 
@@ -102,7 +114,7 @@ export const SceneWithLoader = ({
           isMobile={isMobile}
           sceneLoaded={isReady}
           setPermissionGranted={setPermissionGranted}
-          emotionState={emotionData?.emotionState || "normal"}
+          emotionState={emotionState}
         />
       )}
     </>

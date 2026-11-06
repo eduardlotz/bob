@@ -45,7 +45,7 @@ function createConfetti() {
 }
 
 export function LoadingLogo({ progress, finished, label, interactionLabel }: {
-  progress: number;
+  progress?: number;
   finished: boolean;
   label: string;
   interactionLabel: string;
@@ -146,12 +146,12 @@ export function LoadingLogo({ progress, finished, label, interactionLabel }: {
   return (
     <LogoArea>
       <LogoLift role="progressbar" aria-label={label}
-        aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} aria-busy={!finished}
+        aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress === undefined ? undefined : Math.round(progress)} aria-busy={!finished}
         style={{ scale: finishScale }}>
         <LogoLift aria-hidden="true" style={{ scale: interactionScale }}>
           <LogoRecoil style={{ rotateX: pitch, rotateY: yaw, rotate: roll }}>
             <LogoSilhouette />
-            <LogoFill initial={false} animate={{ clipPath: `inset(${100 - progress}% 0 0 0)` }}
+            <LogoFill initial={false} animate={{ clipPath: `inset(${100 - (progress ?? 100)}% 0 0 0)` }}
               transition={{ duration: reducedMotion ? 0 : .45, ease: "easeOut" }} />
           </LogoRecoil>
         </LogoLift>
@@ -190,10 +190,12 @@ export function LoadingLogo({ progress, finished, label, interactionLabel }: {
 
 const LogoArea = styled.div`
   position: relative;
-  width: 86px;
-  height: 92px;
+  width: 112px;
+  height: 120px;
   flex-shrink: 0;
   perspective: 500px;
+
+  @media (max-height: 600px) { width: 96px; height: 103px; }
 `;
 
 const LogoLift = styled(motion.div)`

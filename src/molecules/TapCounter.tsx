@@ -3,30 +3,25 @@ import { useRef, useEffect, useMemo, useState } from "react";
 import { Vector3, Group, Mesh } from "three";
 import { useSpring, a } from "@react-spring/three";
 import { useCoreStore } from "@/store/core/store";
+import { useShallow } from "zustand/react/shallow";
 import { THEME_CONFIG } from "@/store/config/themes";
-import { useFrame } from "@react-three/fiber";
-import { ROUTE_PATHS, useAppStore } from "@/store";
 import { formatNumber } from "@/utils/formatNumber";
-import { useBobEditor } from "@/store/bobEditor";
 
-const FONT_PATH = "/fonts/OpenRundeBold.json";
+const FONT_PATH = "/fonts/OpenRundeBoldCounter.json";
 
-const AUTO_TAP_PAYOUT_INTERVAL = 0.25;
-const FLOAT_EPSILON = 1e-9;
-
-// TODO: move tap interval to debug / add method to let user choose
+/** Home-only presentation; route-independent earnings live in AutoTapController. */
 export const TapCounter = () => {
   const {
     taps,
     themes,
     previewMode,
-    getAutoTapRate,
-    addAutoTaps,
-    isPaused,
-    graphicPreferences,
-  } = useCoreStore();
-
-  const { currentRoute } = useAppStore();
+    reducedTapMotion,
+  } = useCoreStore(useShallow(state => ({
+    taps: state.taps,
+    themes: state.themes,
+    previewMode: state.previewMode,
+    reducedTapMotion: state.graphicPreferences.reducedTapMotion,
+  })));
 
   const activeTheme = useMemo(
     () =>
@@ -35,10 +30,6 @@ export const TapCounter = () => {
         : themes.find((t) => t.active),
     [previewMode, themes],
   );
-
-  const showAutoTapParticles =
-    currentRoute === ROUTE_PATHS.HOME && graphicPreferences.effectsEnabled;
-  const reducedTapMotion = graphicPreferences.reducedTapMotion;
 
   const themeConfig = useMemo(() => {
     if (!activeTheme) {
@@ -53,40 +44,9 @@ export const TapCounter = () => {
 
   const formattedNumber = formatNumber(taps);
   const groupRef = useRef<Group>(null!);
-  const pendingAutoTapsRef = useRef(0);
-  const payoutTimerRef = useRef(0);
 
   const numberRef = useRef<Mesh>(null);
   const [numberWidth, setNumberWidth] = useState(0);
-
-  useFrame((_, delta) => {
-    if (isPaused) return;
-
-    const autoTapRate = getAutoTapRate();
-    if (autoTapRate <= 0) return;
-
-    // Integrate rate over time and payout whole taps to avoid long-run drift.
-    pendingAutoTapsRef.current += autoTapRate * delta;
-    payoutTimerRef.current += delta;
-
-    const shouldPayout =
-      pendingAutoTapsRef.current + FLOAT_EPSILON >= 1 &&
-      payoutTimerRef.current >= AUTO_TAP_PAYOUT_INTERVAL;
-    if (!shouldPayout) return;
-
-    const steps = Math.floor(pendingAutoTapsRef.current + FLOAT_EPSILON);
-    if (steps <= 0) return;
-
-    pendingAutoTapsRef.current -= steps;
-    payoutTimerRef.current = 0;
-
-    addAutoTaps(steps);
-    // playTapSound();
-
-    if (showAutoTapParticles && !useBobEditor.getState().open && (window as any).createTapParticles) {
-      (window as any).createTapParticles(0, 0.5, -2, 15);
-    }
-  });
 
   useEffect(() => {
     if (!numberRef.current) return;

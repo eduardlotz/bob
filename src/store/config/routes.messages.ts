@@ -18,6 +18,10 @@ export const routeMessages = defineMessages({
         name: "Portfolio",
         description: "Mein Design-Portfolio.",
       },
+      "/literature": {
+        name: "Literatur",
+        description: "Meine Bücher, Lesestoff und Video-Empfehlungen.",
+      },
       "/technical": {
         name: "Technisches",
         description: "Noch nicht verfügbar.",
@@ -52,6 +56,10 @@ export const routeMessages = defineMessages({
       "/portfolio": {
         name: "Portfolio",
         description: "My design portfolio.",
+      },
+      "/literature": {
+        name: "Literature",
+        description: "My books, reading notes, and video recommendations.",
       },
       "/technical": {
         name: "Technical",

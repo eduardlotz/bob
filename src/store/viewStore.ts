@@ -1,3 +1,4 @@
+import { LIBRARY_SHELF_MIN_DISTANCE, LIBRARY_SHELF_MAX_DISTANCE, LIBRARY_SHELF_FOCUS_DISTANCE } from "./config/library";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import type { CameraControls } from "@react-three/drei";
@@ -16,7 +17,6 @@ import { ROUTE_PATHS } from "./config/routes";
 import { useAppStore } from "./core/app";
 import { useCoreStore } from "./core/store";
 import { connectNavigationMenu } from "./core/navigationMenuController";
-import { useMiniGameStore } from "@/store/minigames";
 import { Vector3 } from "three";
 import { getSelectedBlobForm, getBlobFormType, getBlobFormHalfSize, getBobGroundOffset } from "@/types/blobForms";
 import { useBobEditor } from "./bobEditor";
@@ -67,7 +67,6 @@ export type CameraViewId =
   | "about"
   | "portfolio"
   | "minigames"
-  | "minigames:slot_machine"
   | "navigation"
   | "phone:home"
   | "phone:bob"
@@ -80,15 +79,18 @@ export type CameraViewId =
   | "desk"
   | "bookshelf"
   | "computer"
-  | "cardbox";
+  | "cardbox"
+  | "library"
+  | "library:have-read"
+  | "library:currently-reading"
+  | "library:will-read"
+  | "library:wanna-buy"
+  | "library:blogs"
+  | "library:videos";
 
 const resolveRouteViewId = (route: string): CameraViewId => {
   if (route === ROUTE_PATHS.PORTFOLIO) return "portfolio";
-  if (route === ROUTE_PATHS.MINIGAMES) {
-    const activeGame = useMiniGameStore.getState().activeGame;
-    if (activeGame === "SLOT_MACHINE") return "minigames:slot_machine";
-    return "default";
-  }
+  if (route === ROUTE_PATHS.LITERATURE) return "library";
   return "default";
 };
 
@@ -265,6 +267,38 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
     },
     defaultViewMode: "fixed",
   },
+  library: {
+    id: "library", name: "Literature", ...HEAD_CAMERA_POSES.default,
+    defaultViewMode: "fixed", transition: { duration: 800, easing: "easeInOutCubic" },
+  },
+  "library:currently-reading": {
+    id: "library:currently-reading", name: "Currently Reading", position: [-0.7, 1.15, 0.4], target: [-4.4, -0.05, -0.8],
+    defaultViewMode: "fixed", transition: { duration: 650, easing: "easeInOutCubic" },
+    orbit: { defaultDistance: LIBRARY_SHELF_FOCUS_DISTANCE, minDistance: LIBRARY_SHELF_MIN_DISTANCE, maxDistance: LIBRARY_SHELF_MAX_DISTANCE },
+  },
+  "library:have-read": {
+    id: "library:have-read", name: "Read", position: [-2.25, 1.2, 0], target: [-2.25, -0.05, -4.35],
+    defaultViewMode: "fixed", transition: { duration: 650, easing: "easeInOutCubic" },
+    orbit: { defaultDistance: LIBRARY_SHELF_FOCUS_DISTANCE, minDistance: LIBRARY_SHELF_MIN_DISTANCE, maxDistance: LIBRARY_SHELF_MAX_DISTANCE },
+  },
+  "library:will-read": {
+    id: "library:will-read", name: "To Read", position: [2.25, 1.2, 0], target: [2.25, -0.05, -4.35],
+    defaultViewMode: "fixed", transition: { duration: 650, easing: "easeInOutCubic" },
+    orbit: { defaultDistance: LIBRARY_SHELF_FOCUS_DISTANCE, minDistance: LIBRARY_SHELF_MIN_DISTANCE, maxDistance: LIBRARY_SHELF_MAX_DISTANCE },
+  },
+  "library:wanna-buy": {
+    id: "library:wanna-buy", name: "Wishlist", position: [0.7, 1.15, 0.4], target: [4.4, -0.05, -0.8],
+    defaultViewMode: "fixed", transition: { duration: 650, easing: "easeInOutCubic" },
+    orbit: { defaultDistance: LIBRARY_SHELF_FOCUS_DISTANCE, minDistance: LIBRARY_SHELF_MIN_DISTANCE, maxDistance: LIBRARY_SHELF_MAX_DISTANCE },
+  },
+  "library:blogs": {
+    id: "library:blogs", name: "Reading Notes", position: [1, 1.1, 5], target: [3.45, -0.4, 2.5],
+    defaultViewMode: "fixed", transition: { duration: 650, easing: "easeInOutCubic" },
+  },
+  "library:videos": {
+    id: "library:videos", name: "TV Corner", position: [-1, 0.7, 5.2], target: [-3.5, -0.8, 2.65],
+    defaultViewMode: "fixed", transition: { duration: 650, easing: "easeInOutCubic" },
+  },
   about: {
     id: "about",
     name: "About Me Room View",
@@ -283,7 +317,7 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
       duration: 1000,
       easing: "easeInOutCubic",
     },
-    defaultViewMode: "fixed",
+    defaultViewMode: "object",
   },
   "shop:preview": {
     id: "shop:preview",
@@ -335,19 +369,6 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
     position: [0, CAMERA_HEIGHT, HIDDEN_OPTIONS_CAMERA_ZOOM],
     target: [0, CAMERA_Y_POSITION, 0],
     defaultViewMode: "fixed",
-  },
-  "minigames:slot_machine": {
-    id: "minigames:slot_machine",
-    name: "Slot Machine View",
-    position: [0, CAMERA_HEIGHT + 1.1, HIDDEN_OPTIONS_CAMERA_ZOOM - 0.4],
-    target: [0, CAMERA_Y_POSITION + 1.2, 0],
-    defaultViewMode: "fixed",
-    cursorFollow: {
-      strength: 2.3,
-      yScale: 0.4,
-      swayX: 0.03,
-      swayY: 0.02,
-    },
   },
   "phone:home": {
     id: "phone:home",
@@ -423,9 +444,9 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   },
   computer: {
     id: "computer",
-    name: "Computer View",
-    position: [4, 0, 2],
-    target: [4, 0, 2],
+    name: "Work Corner View",
+    position: [2, 1.45, -0.45],
+    target: [2, -0.1, -3.8],
     transition: {
       duration: 1200,
       easing: "easeInOutCubic",
@@ -434,9 +455,9 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   },
   cardbox: {
     id: "cardbox",
-    name: "Cardbox View",
-    position: [3, CAMERA_HEIGHT, 2],
-    target: [4.5, -1.5, 2],
+    name: "Plant Corner View",
+    position: [1.65, 0.8, 4.3],
+    target: [3.8, -0.7, 2],
     transition: {
       duration: 1200,
       easing: "easeInOutCubic",
@@ -595,7 +616,7 @@ export const useViewStore = create<ViewStore>()(
         const currentViewConfig = get().getCurrentViewConfig();
         const focusedImageTitle = get().focusedImageTitle;
 
-        if (mode === "object" && get().currentView !== "phone:bob") {
+        if (mode === "object") {
           const cameraPos = new Vector3();
           controls.getPosition(cameraPos); // current camera world position
           set({ lastFocusPosition: cameraPos.clone() }); // store for later restore

@@ -1,11 +1,10 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, forwardRef, type ComponentProps, type ReactNode } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { createPortal } from "react-dom";
-import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion, useIsPresent, useReducedMotion, useAnimationControls } from "motion/react";
 import styled from "styled-components";
 import { AnimatedSegmentedControl } from "@/components/AnimatedSegmentedControl";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
-import { PriceTag, TimeChip } from "@/components/StatusChips";
+import { PriceTag } from "@/components/StatusChips";
 import { ItemStatusChip } from "@/apps/ui";
 import { useCoreStore, useViewStore, type ShopItem } from "@/store";
 import { useI18n } from "@/i18n";
@@ -17,13 +16,16 @@ import { useQuestStore } from "@/store/core/quests/store";
 import { getSkinPreview } from "@/components/bob/skins/previews";
 import { BOB_SKINS, isBobSkinUnlocked } from "@/components/bob/skins/registry";
 import { EyeIcon } from "@/icons/eye";
+import { ShopCategoryIcon } from "@/icons/shopCategories";
+import { mutedScrollSurface } from "@/styles/scrollSurface";
 import thumbnails from "../../public/images/shop-items/manifest.json";
+import { ShopThumbnailImage } from "@/components/ShopThumbnailImage";
 
 type CatalogueItem = ShopItem | SkinShopItem;
 type ShopTab = "hats" | "skins" | "accessories" | "effects" | "worlds";
 const itemThumbnails: Record<string, string> = thumbnails.items;
 
-export function ShopOverlay() {
+export function ShopApp({ onPreviewChange }: { onPreviewChange: (preview: boolean) => void }) {
   const panelMotion = usePanelMotion();
   const reducedMotion = useReducedMotion();
   const [previewItem, setPreviewItem] = useState<string | null>(null);
@@ -33,6 +35,7 @@ export function ShopOverlay() {
   const currentView = useViewStore((state) => state.currentView);
   const isTransitioning = useViewStore((state) => state.isTransitioning);
   const [activeTab, setActiveTab] = useState<ShopTab>("hats");
+  const [categoryClicks, setCategoryClicks] = useState<Partial<Record<ShopTab, number>>>({});
   const { locale, messages } = useI18n();
   const isPresent = useIsPresent();
   const store = useCoreStore(useShallow(state => ({
@@ -52,10 +55,13 @@ export function ShopOverlay() {
     resetPreview();
     return () => {
       resetPreview();
-      const view = useViewStore.getState();
-      if (view.currentView === "shop:preview") view.resetToDefaultView();
     };
   }, [resetPreview]);
+
+  useLayoutEffect(() => {
+    onPreviewChange(previewItem !== null);
+    return () => onPreviewChange(false);
+  }, [previewItem, onPreviewChange]);
 
   useLayoutEffect(() => {
     const catalogue = catalogueRef.current;
@@ -74,7 +80,7 @@ export function ShopOverlay() {
     if (!isPresent || isTransitioning) return;
     const view = useViewStore.getState();
     if (previewItem && currentView !== "shop:preview") view.transitionToView("shop:preview");
-    else if (!previewItem && currentView === "shop:preview") view.resetToDefaultView();
+    else if (!previewItem && currentView === "shop:preview") view.transitionToView("phone:home");
   }, [previewItem, currentView, isTransitioning, isPresent]);
 
   const openPreview = (item: CatalogueItem) => {
@@ -168,8 +174,8 @@ export function ShopOverlay() {
     return true;
   };
 
-  return createPortal(
-    <OverlayAnchor {...panelMotion} initial={false} layoutRoot aria-hidden={!isPresent} inert={!isPresent}>
+  return (
+    <ShopRoot $preview={!!previewItem} aria-hidden={!isPresent} inert={!isPresent} data-shop-app>
       <AnimatePresence mode="popLayout" anchorY="bottom">
       {!previewItem ? <ShopPanel
         key="shop-catalogue"
@@ -178,12 +184,8 @@ export function ShopOverlay() {
         aria-hidden={!isPresent}
         {...panelMotion}
       >
-        <StatusBar>
-          <TimeChip />
-          <ShopBalance />
-        </StatusBar>
         <CatalogueFrame>
-        <Catalogue key={activeTab} aria-label={messages.shop.tabs[activeTab]}
+        <Catalogue key={activeTab} aria-label={messages.shop.tabs[activeTab]} data-shop-catalogue
           ref={catalogueRef}
           onScroll={(event) => {
             if (!catalogueIsActive.current) return;
@@ -198,7 +200,7 @@ export function ShopOverlay() {
                 <ItemCard key={item.id} data-shop-item={item.id} {...getPanelItemMotion(index, reducedMotion)}>
                   <ItemMedia>
                     <Thumbnail $active={item.enabled} $owned={item.purchased}>
-                      <img src={isSkinShopItem(item) ? getSkinPreview(item.skinId) : itemThumbnails[item.id]} alt="" width={80} height={80} draggable={false} decoding="async" />
+                      <ShopThumbnailImage src={isSkinShopItem(item) ? getSkinPreview(item.skinId) : itemThumbnails[item.id]} />
                     </Thumbnail>
                     <ItemToolbar>
                     {!item.purchased && (isSkinShopItem(item) && !item.unlocked ? <LockedSkinTag title={messages.shop.actions.hiddenQuest}>{messages.shop.actions.locked}</LockedSkinTag> : <PriceTag value={item.cost} />)}
@@ -223,10 +225,23 @@ export function ShopOverlay() {
         </CatalogueFrame>
         <CategoryBar>
           <AnimatedSegmentedControl
-            options={(["hats", "skins", "accessories", "effects", "worlds"] as const).map((value) => ({ value, label: messages.shop.tabs[value] }))}
+            options={(["hats", "skins", "accessories", "effects", "worlds"] as const).map((value) => ({
+              value,
+              label: <CategoryClickBounce title={messages.shop.tabs[value]} clickCount={categoryClicks[value] ?? 0} reducedMotion={reducedMotion}>
+                <ShopCategoryIcon category={value} />
+                <CategoryVisibleLabel aria-hidden="true">{messages.shop.tabs[value]}</CategoryVisibleLabel>
+                <CategoryLabel>{messages.shop.tabs[value]}</CategoryLabel>
+              </CategoryClickBounce>,
+            }))}
             value={activeTab}
-            onChange={(tab) => { scrollPosition.current = 0; setActiveTab(tab); }}
+            onChange={(tab) => {
+              scrollPosition.current = 0;
+              setActiveTab(tab);
+              setCategoryClicks(previous => ({ ...previous, [tab]: (previous[tab] ?? 0) + 1 }));
+            }}
             layoutId="shop-categories"
+            indicatorSize="content"
+            animateOptions={false}
             fullWidth
           />
         </CategoryBar>
@@ -269,12 +284,11 @@ export function ShopOverlay() {
         </PreviewBackButton>
       </PreviewControls>}
       </AnimatePresence>
-    </OverlayAnchor>,
-    document.getElementById("motion-root")!,
+    </ShopRoot>
   );
 }
 
-function ShopBalance() {
+export function ShopBalance() {
   const taps = useCoreStore(state => Math.floor(state.taps));
   return <PriceTag value={taps} />;
 }
@@ -285,40 +299,36 @@ function updateScrollFades(element: HTMLDivElement) {
   frame?.style.setProperty("--scroll-bottom-opacity", String(Math.min(1, Math.max(0, element.scrollHeight - element.clientHeight - element.scrollTop) / 22)));
 }
 
-const OverlayAnchor = styled(motion.div)`
-  position: fixed;
-  bottom: 94px;
-  left: 0;
-  right: 0;
-  margin: 0 auto;
-  width: min(43.25rem, calc(100vw - 32px));
-  z-index: 1001;
-  pointer-events: none;
+const ShopRoot = styled.div<{ $preview: boolean }>`
+  position: relative;
+  width: ${({ $preview }) => $preview ? "min(480px, calc(100vw - 56px))" : "min(42.75rem, calc(100vw - 48px))"};
+  max-width: 100%;
+  color: #212121;
   &[aria-hidden="true"], &[aria-hidden="true"] * { pointer-events: none !important; }
 `;
 
-const ShopPanel = styled(motion.div)`
+const ShopScreen = forwardRef<HTMLDivElement, ComponentProps<typeof motion.div>>(function ShopScreen(props, ref) {
+  const isPresent = useIsPresent();
+  return <motion.div {...props} ref={ref} aria-hidden={!isPresent} inert={!isPresent} />;
+});
+
+const ShopPanel = styled(ShopScreen)`
   display: flex;
   flex-direction: column;
   padding: 4px;
   gap: 4px;
   border-radius: 24px;
-  border: 1px solid rgba(120, 117, 141, 0.35);
-  background: #fff;
+  background: transparent;
   color: #212121;
-  max-height: calc(100dvh - 124px);
+  max-height: calc(100dvh - 164px);
   pointer-events: auto;
   transform-origin: bottom center;
   &[aria-hidden="true"], &[aria-hidden="true"] * { pointer-events: none !important; }
 `;
 
-const StatusBar = styled.div`
-  display: flex;
-  justify-content: space-between;
-  flex-shrink: 0;
-`;
 const CatalogueFrame = styled.div`
-  --catalogue-color: #eae9ee;
+  ${mutedScrollSurface}
+  --catalogue-color: var(--muted-scroll-color);
   position: relative;
   isolation: isolate;
   min-height: 0;
@@ -445,11 +455,55 @@ const ItemAction = styled(FloatingActionButton)`
   &:disabled { opacity: ${({ $active }) => $active ? 1 : 0.25}; cursor: default; }
   &:focus-visible { outline: 3px solid #212026; outline-offset: 7px; }
 `;
+function CategoryClickBounce({ clickCount, reducedMotion, title, children }: {
+  clickCount: number;
+  reducedMotion: boolean | null;
+  title: string;
+  children: ReactNode;
+}) {
+  const controls = useAnimationControls();
+  const previousClickCount = useRef(clickCount);
+  useEffect(() => {
+    controls.stop();
+    const clicked = previousClickCount.current !== clickCount;
+    previousClickCount.current = clickCount;
+    controls.set({ scale: 1, y: 0 });
+    if (!clicked || reducedMotion) return;
+    void controls.start({ scale: [1, 1.08, 1], y: [0, -3, 0], transition: { duration: 0.32, ease: "easeInOut" } });
+    return () => controls.stop();
+  }, [clickCount, reducedMotion, controls]);
+  return <CategoryIconLabel title={title} initial={false} animate={controls}>{children}</CategoryIconLabel>;
+}
+
+const CategoryIconLabel = styled(motion.span)`
+  position: relative;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  svg { flex-shrink: 0; }
+`;
+const CategoryVisibleLabel = styled.span`
+  display: inline-block;
+  font-size: 14px;
+  white-space: nowrap;
+  color: #212121;
+  transition: color 0.12s ease-out;
+  button[aria-pressed="false"] & { color: rgba(33, 33, 33, 0.4); }
+  @media (width < 768px) { display: none; }
+`;
+const CategoryLabel = styled.span`
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+`;
 const CategoryBar = styled.div`
+  width: 100%;
+  max-width: 100%;
+  button { overflow: hidden; }
+  svg { display: block; opacity: 1; transition: opacity 0.12s ease-out; }
+  button[aria-pressed="false"] svg { opacity: 0.4; }
+
   flex-shrink: 0;
   > div { background: #eae9ee; }
   @media (max-width: 560px) {
-    button { padding-inline: 7px; font-size: 0.8rem; }
+    button { padding-inline: 4px; font-size: 0.8rem; }
   }
 `;
 
@@ -470,7 +524,7 @@ const PreviewButton = styled.button`
   &:active { transform: scale(0.92); }
   &:focus-visible { outline: 2px solid #4178f7; outline-offset: 3px; }
 `;
-const PreviewControls = styled(motion.div)`
+const PreviewControls = styled(ShopScreen)`
   position: relative;
   display: flex;
   flex-direction: column;

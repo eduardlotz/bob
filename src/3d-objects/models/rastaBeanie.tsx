@@ -113,5 +113,3 @@ export const RastaBeanie = ({
     </a.group>
   );
 };
-
-useGLTF.preload(PATH);

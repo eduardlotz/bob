@@ -1,16 +1,19 @@
-import { ToonWardrobe, type WardrobeKind } from "@/3d-objects/models/toonWardrobe";
-import type { ComponentProps, ComponentType } from "react";
+import type { WardrobeKind } from "@/3d-objects/models/toonWardrobe";
+import { lazy, type ComponentProps, type ComponentType } from "react";
 import type { BlobFormType } from "@/types/blobForms";
-import { KrustyKrabHat } from "@/3d-objects/models/krustyKrabHat";
-import { RoundGlasses } from "@/3d-objects/models/roundGlasses";
-import { AfroHair } from "@/3d-objects/models/afroHair";
-import { BuilderHelmet } from "@/3d-objects/models/builderHelmet";
-import { ToonHat } from "@/3d-objects/models/toonHats";
-import { BobMoustache } from "@/3d-objects/models/bobMoustache";
-import { BlackCap } from "@/3d-objects/models/blackCap";
-import { AstronautHelmet } from "@/3d-objects/models/astronaut";
-import { RastaBeanie } from "@/3d-objects/models/rastaBeanie";
 import type { BobBodyFit, Vec3, WearableMount } from "./wearableFit";
+
+// Keep fitting metadata available without importing or downloading unused models.
+const ToonWardrobe = lazy(() => import("@/3d-objects/models/toonWardrobe").then(module => ({ default: module.ToonWardrobe })));
+const KrustyKrabHat = lazy(() => import("@/3d-objects/models/krustyKrabHat").then(module => ({ default: module.KrustyKrabHat })));
+const RoundGlasses = lazy(() => import("@/3d-objects/models/roundGlasses").then(module => ({ default: module.RoundGlasses })));
+const AfroHair = lazy(() => import("@/3d-objects/models/afroHair").then(module => ({ default: module.AfroHair })));
+const BuilderHelmet = lazy(() => import("@/3d-objects/models/builderHelmet").then(module => ({ default: module.BuilderHelmet })));
+const ToonHat = lazy(() => import("@/3d-objects/models/toonHats").then(module => ({ default: module.ToonHat })));
+const BobMoustache = lazy(() => import("@/3d-objects/models/bobMoustache").then(module => ({ default: module.BobMoustache })));
+const BlackCap = lazy(() => import("@/3d-objects/models/blackCap").then(module => ({ default: module.BlackCap })));
+const AstronautHelmet = lazy(() => import("@/3d-objects/models/astronaut").then(module => ({ default: module.AstronautHelmet })));
+const RastaBeanie = lazy(() => import("@/3d-objects/models/rastaBeanie").then(module => ({ default: module.RastaBeanie })));
 
 interface ModelProps {
   position: Vec3;

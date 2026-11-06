@@ -2,7 +2,7 @@ import { forwardRef, useRef } from "react";
 import { TextureLoader, Mesh } from "three";
 import { useLoader, extend, useFrame } from "@react-three/fiber";
 import { Decal } from "@react-three/drei";
-import { FLOOR_Y_POSITION } from "@/molecules/Scene";
+import { FLOOR_Y_POSITION } from "@/store/config/scene";
 import { GridToonMaterial } from "./GridToonMaterial";
 import { WoodToonMaterial } from "./WoodToonMaterial";
 import * as THREE from "three";

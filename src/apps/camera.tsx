@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/react";
 import styled from "styled-components";
-import { useCameraStore, useViewStore, type CapturedPhoto } from "@/store";
-import { isCameraFull, MAX_CAMERA_PHOTOS, type PhotoSaveResult } from "@/store/core/camera";
+import { useViewStore } from "@/store";
+import { useCameraStore, isCameraFull, MAX_CAMERA_PHOTOS, type CapturedPhoto, type PhotoSaveResult } from "@/store/core/camera";
 import { CameraPortal } from "@/components/CameraPortal";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
 import { useI18n } from "@/i18n";
+import { phoneAppSurface } from "@/styles/phoneAppSurface";
 import { PHOTO_VIEWFINDER } from "@/store/config/camera";
 
 export const CameraIcon = () => <img src="/images/app-logos/camera.png" height={80} width={80} alt="" />;
@@ -19,7 +20,7 @@ function downloadPhoto(photo: CapturedPhoto) {
   link.remove();
 }
 
-export const CameraApp = () => {
+export const CameraApp = ({ galleryOnly = false }: { galleryOnly?: boolean }) => {
   const isPresent = useIsPresent();
   const reducedMotion = useReducedMotion();
   const { messages } = useI18n();
@@ -30,12 +31,12 @@ export const CameraApp = () => {
   const galleryButtonRef = useRef<HTMLButtonElement>(null);
   const photoButtons = useRef(new Map<string, HTMLButtonElement>());
   const flashTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(galleryOnly);
   const [lightboxId, setLightboxId] = useState<string | null>(null);
   const [flash, setFlash] = useState(false);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<Exclude<PhotoSaveResult, "saved"> | null>(null);
-  const active = isPresent && currentView === "phone:photo";
+  const active = isPresent && (galleryOnly || currentView === "phone:photo");
   const full = isCameraFull(photos);
   const captureBlocked = full || error === "full";
   const lightboxPhoto = photos.find(photo => photo.id === lightboxId);
@@ -43,12 +44,12 @@ export const CameraApp = () => {
   const transition = { duration: reducedMotion ? 0 : 0.22, ease: "easeOut" as const };
 
   useEffect(() => {
-    if (!isPresent) return;
+    if (!isPresent || galleryOnly) return;
     const framePhoto = () => { void transitionToView("phone:photo"); };
     framePhoto();
     window.addEventListener("resize", framePhoto);
     return () => window.removeEventListener("resize", framePhoto);
-  }, [isPresent, transitionToView]);
+  }, [isPresent, galleryOnly, transitionToView]);
   useEffect(() => () => clearTimeout(flashTimer.current), []);
 
   const closePhoto = useCallback(() => {
@@ -61,17 +62,6 @@ export const CameraApp = () => {
     setGalleryOpen(false);
     galleryButtonRef.current?.focus();
   }, []);
-
-  useEffect(() => {
-    if (!active || !galleryOpen) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      event.stopPropagation();
-      if (lightboxId) closePhoto(); else closeGallery();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [active, galleryOpen, lightboxId, closePhoto, closeGallery]);
 
   const capture = () => {
     if (!ready || !active || galleryOpen || !canvasRef.current || captureBlocked) return;
@@ -86,8 +76,12 @@ export const CameraApp = () => {
   };
 
   return (
-    <CameraRoot data-camera-app>
-      <PreviewLayer initial={entrance}
+    <CameraRoot $gallery={galleryOpen} data-camera-app onKeyUpCapture={event => {
+      if (event.key !== "Escape" || !galleryOpen || !active) return;
+      if (lightboxId) { event.stopPropagation(); closePhoto(); }
+      else if (!galleryOnly) { event.stopPropagation(); closeGallery(); }
+    }}>
+      {!galleryOnly && <PreviewLayer initial={entrance}
         animate={{ opacity: galleryOpen ? 0 : 1, scale: galleryOpen && !reducedMotion ? 0.96 : 1 }}
         transition={transition} aria-hidden={galleryOpen} inert={galleryOpen || !active}>
         <CameraPortal canvasRef={canvasRef} active={active && !galleryOpen} onReady={setReady} />
@@ -99,7 +93,7 @@ export const CameraApp = () => {
           whileTap={{ scale: 0.94 }}>
           <ShutterRing />
         </ShutterButton>
-      </PreviewLayer>
+      </PreviewLayer>}
 
       <AnimatePresence>
         {galleryOpen && (
@@ -150,7 +144,7 @@ export const CameraApp = () => {
         )}
       </AnimatePresence>
 
-      <CornerButton ref={galleryButtonRef} $variant="white" aria-expanded={galleryOpen}
+      {!galleryOnly && <CornerButton ref={galleryButtonRef} $variant="white" aria-expanded={galleryOpen}
         aria-label={galleryOpen ? text.gallery.close : text.gallery.label}
         onClick={() => { if (galleryOpen) closeGallery(); else setGalleryOpen(true); }}
         inert={!!lightboxPhoto} aria-hidden={!!lightboxPhoto} whileTap={{ scale: 0.94 }}>
@@ -160,7 +154,7 @@ export const CameraApp = () => {
             {galleryOpen ? <CloseIcon /> : photos[0] ? <img src={photos[0].dataUrl} alt="" /> : <GalleryIcon />}
           </CornerContent>
         </AnimatePresence>
-      </CornerButton>
+      </CornerButton>}
       {(full || error) && <StorageNotice role="status">{error === "storage-error" ? text.gallery.storageError : text.gallery.full}</StorageNotice>}
     </CameraRoot>
   );
@@ -169,7 +163,7 @@ export const CameraApp = () => {
 const CloseIcon = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="m6 6 12 12M18 6 6 18" /></svg>;
 const GalleryIcon = () => <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="4" /><circle cx="8" cy="8" r="1" /><path d="m3 17 6-6 4 4 3-3 5 5" /></svg>;
 
-const CameraRoot = styled.div`
+const CameraRoot = styled.div<{ $gallery: boolean }>`
   position: relative;
   width: min(${PHOTO_VIEWFINDER.maxWidth}px, calc(100vw - ${PHOTO_VIEWFINDER.viewportPadding}px), calc((100dvh - ${PHOTO_VIEWFINDER.reservedHeight}px) * 0.75));
   height: min(${PHOTO_VIEWFINDER.maxHeight}px, calc((100vw - ${PHOTO_VIEWFINDER.viewportPadding}px) / 0.75), calc(100dvh - ${PHOTO_VIEWFINDER.reservedHeight}px));
@@ -178,7 +172,8 @@ const CameraRoot = styled.div`
   overflow: hidden;
   border-radius: 18px;
   isolation: isolate;
-  background: #b9b3c9;
+  background: ${({ $gallery }) => $gallery ? "transparent" : "#b9b3c9"};
+  border-radius: ${({ $gallery }) => $gallery ? "20px" : "18px"};
 `;
 const PreviewLayer = styled(motion.div)`position: absolute; inset: 0;`;
 const Flash = styled(motion.div)`position: absolute; inset: 0; background: white; pointer-events: none;`;
@@ -199,13 +194,17 @@ const CornerContent = styled(motion.span)`
   width: 100%; height: 100%; display: grid; place-items: center;
   img { width: 100%; height: 100%; object-fit: cover; }
 `;
-const GalleryLayer = styled(motion.div)`position: absolute; inset: 0; background: #f2f2f3;`;
+const GalleryLayer = styled(motion.div)`
+  ${phoneAppSurface}
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; overflow: hidden;
+`;
 const GalleryScroll = styled.div`
-  position: absolute; inset: 0; overflow-y: auto; scrollbar-width: none;
-  padding: 6px 6px 92px; overscroll-behavior: contain;
+  position: relative; flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none;
+  padding: 0 0 76px; overscroll-behavior: contain;
   &::-webkit-scrollbar { display: none; }
 `;
-const PhotoGrid = styled.div`display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px;`;
+const PhotoGrid = styled.div`display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px;`;
 const PhotoThumb = styled(motion.button)`
   padding: 0; overflow: hidden; border-radius: 14px; aspect-ratio: 1;
   img { display: block; width: 100%; height: 100%; object-fit: cover; }
@@ -216,7 +215,7 @@ const EmptyGallery = styled.p`
 `;
 const GalleryFade = styled.div`
   position: absolute; inset: auto 0 0; height: 90px; pointer-events: none;
-  background: linear-gradient(transparent, #f2f2f3 80%);
+  background: linear-gradient(transparent, var(--phone-app-fade-color) 80%);
 `;
 const PhotoCount = styled.span`
   position: absolute; right: 16px; bottom: 25px; color: #78758d; font-size: 0.75rem; font-weight: 800;

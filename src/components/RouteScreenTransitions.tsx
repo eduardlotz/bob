@@ -4,7 +4,6 @@ import { useAppStore, useCoreStore, useMiniGameStore } from "@/store";
 import { transitionScreen, useScreenTransition } from "@/store/screenTransition";
 import { getPageTransition } from "@/styles/screenTransitions";
 import { useViewStore } from "@/store/viewStore";
-import { captureMenuTransitionBubbles } from "@/utils/menuTransitionBubbles";
 
 /** Includes menu navigation, redirects, and browser back/forward. */
 export function RouteScreenTransitions() {
@@ -26,7 +25,6 @@ export function RouteScreenTransitions() {
       }
     }, undefined, {
       keepBobVisible: true, appearance: getPageTransition(blocker.location.pathname),
-      menuBubbles: useAppStore.getState().showOptions ? captureMenuTransitionBubbles() : undefined,
       onFinished: () => useViewStore.getState().finishLoadingCamera(useAppStore.getState().currentRoute),
     });
     if (accepted) void useViewStore.getState().beginLoadingCamera();

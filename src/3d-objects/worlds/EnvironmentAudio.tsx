@@ -7,7 +7,7 @@ import { worldSoundGain, type EnvironmentAudioConfig, type EnvironmentSoundLayer
 import { useWorldEnvironment } from "./WorldEnvironment";
 import { worldAudioTransition, WORLD_AMBIENCE_EXIT_MS } from "@/utils/sound/worldAudioTransition";
 
-type ActiveLayer = { id: string; layer: EnvironmentSoundLayer; nextAt: number };
+type ActiveLayer = { id: string; layer: EnvironmentSoundLayer; nextAt: number; started: boolean };
 const randomInterval = (range: [number, number] = [15, 40]) => Math.max(1, range[0] + Math.random() * Math.max(0, range[1] - range[0]));
 
 /** Shared lifecycle for world beds and object-owned loops/excerpts. Each mount owns its voices. */
@@ -55,9 +55,11 @@ export function EnvironmentAudio({ config, authorized, owner = "world" }: { conf
           distanceAttenuation: true,
           playback: { group: id, overlap: "ignore", maxConcurrent: 1, limitBehavior: "skip-new" },
         });
-        setSoundMix(id, { gain: worldSoundGain(layer.condition, environment.current) });
-        if (layer.mode === "loop") playSound(id);
-        active.push({ id, layer, nextAt: elapsed.current + randomInterval(layer.intervalSeconds) });
+        const gain = worldSoundGain(layer.condition, environment.current);
+        setSoundMix(id, { gain });
+        const started = layer.mode === "loop" && gain > 0;
+        if (started) playSound(id);
+        active.push({ id, layer, started, nextAt: elapsed.current + randomInterval(layer.intervalSeconds) });
       });
       layers.current = active;
     };
@@ -86,6 +88,10 @@ export function EnvironmentAudio({ config, authorized, owner = "world" }: { conf
       const target = worldSoundGain(active.layer.condition, environment.current);
       // Weather and day/night use a separate native gain; the voice owns one entry/exit fade.
       setSoundMix(active.id, { gain: target }, 110);
+      if (active.layer.mode === "loop" && !active.started && target > 0) {
+        active.started = true;
+        playSound(active.id);
+      }
       if (active.layer.mode === "random" && elapsed.current >= active.nextAt) {
         const clips = active.layer.excerpts;
         const index = clips?.length ? Math.floor(Math.random() * clips.length) : -1;

@@ -49,7 +49,7 @@ import {
   DEFAULT_WORLD_VOLUME,
 } from "@/utils/sound/defaults";
 import { initialWorlds } from "@/shop-items/worlds";
-import { migrateCoreStore, normalizeWorlds, normalizeBlobForms } from "./migrations";
+import { migrateCoreStore, normalizeWorlds, normalizeBlobForms, reconcileRoutes } from "./migrations";
 import { OrbitForm } from "@/components/FileOrbit";
 
 const ONE_SECOND_MS = 1000;
@@ -75,7 +75,9 @@ export enum GAME_STORE_VERSION {
   V15 = 100110, // free body shapes in Settings
   V16 = 100111, // world environments and layered soundscapes
   V17 = 100112, // expanded Bob wardrobe and tap effects
-  LATEST = V17,
+  V18 = 100113, // Library, Places, and the updated Mini Games price
+  V19 = 100114, // Consolidate literature and remove retired destinations
+  LATEST = V19,
 }
 
 // TODO: plan refactor to include component inside item properties
@@ -529,42 +531,9 @@ export const initialRoutes: Route[] = [
     isLocked: ROUTE_CONFIG[ROUTE_PATHS.PORTFOLIO].isLocked,
     category: "pages",
   },
-  // {
-  //   id: ROUTE_IDS.TECHNICAL,
-  //   name: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].name,
-  //   description: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].description,
-  //   cost: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].cost,
-  //   purchased: false,
-  //   unlocked: false,
-  //   path: ROUTE_PATHS.TECHNICAL,
-  //   icon: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].icon,
-  //   isLocked: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].isLocked,
-  //   category: "pages",
-  // },
-  // {
-  //   id: ROUTE_IDS.CREATIVE,
-  //   name: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].name,
-  //   description: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].description,
-  //   cost: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].cost,
-  //   purchased: false,
-  //   unlocked: false,
-  //   path: ROUTE_PATHS.CREATIVE,
-  //   icon: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].icon,
-  //   isLocked: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].isLocked,
-  //   category: "pages",
-  // },
-  // {
-  //   id: ROUTE_IDS.GUESTBOOK,
-  //   name: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].name,
-  //   description: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].description,
-  //   cost: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].cost,
-  //   purchased: false,
-  //   unlocked: false,
-  //   path: ROUTE_PATHS.GUESTBOOK,
-  //   icon: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].icon,
-  //   isLocked: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].isLocked,
-  //   category: "pages",
-  // },
+  ...([ROUTE_PATHS.LITERATURE] as const).map((path): Route => ({
+    ...ROUTE_CONFIG[path], path, purchased: false, unlocked: false, category: "pages",
+  })),
   {
     id: ROUTE_IDS.MINIGAMES,
     name: ROUTE_CONFIG[ROUTE_PATHS.MINIGAMES].name,
@@ -711,6 +680,7 @@ const partializePersisted = (state: GameStore): PersistedGameStore => ({
 });
 
 // TODO: split storeCreate into groups for better readability
+const gameStorage = createIndexedDBStorage<GameStore>();
 export const useCoreStore = create<GameStore>()(
   devtools(
     persist(
@@ -1384,14 +1354,18 @@ export const useCoreStore = create<GameStore>()(
         resetGame: () => {
           // Clear score metrics before resetting rewards/quests can re-read them.
           useMiniGameStore.getState().resetMiniGames();
-          set({
-            ...initialGameState,
+          set((state) => ({
+            ...structuredClone(initialGameState),
             ...initialGameFlags,
             ...initialGameComputedValues,
+            // A reset changes saved game data, not the running app's lifecycle.
+            isHydrated: state.isHydrated,
+            isReady: state.isReady,
+            lastAutoTapTime: Date.now(),
             _cachedTapsPerSecond: undefined,
             _cachedTapMultiplier: undefined,
             _lastUpgradeHash: undefined,
-          });
+          }));
         },
 
         pauseGame: () => {
@@ -1505,6 +1479,7 @@ export const useCoreStore = create<GameStore>()(
               routes: updatedRoutes,
               bobItems: updatedBobItems,
               blobForms: updatedBlobForms,
+              purchasedBobSkinIds: BOB_SKINS.filter((skin) => skin.cost).map((skin) => skin.id),
               _cachedTapsPerSecond: undefined,
               _cachedTapMultiplier: undefined,
               _lastUpgradeHash: undefined,
@@ -1805,7 +1780,15 @@ export const useCoreStore = create<GameStore>()(
       {
         name: "game-store",
         version: GAME_STORE_VERSION.LATEST,
-        storage: createIndexedDBStorage<GameStore>(),
+        storage: {
+          ...gameStorage,
+          setItem: (name, value) => {
+            // Startup effects and failed hot reloads must not replace a save
+            // with defaults while the existing record is still being restored.
+            if (!useCoreStore.getState().isHydrated) return Promise.resolve();
+            return gameStorage.setItem(name, value);
+          },
+        },
         migrate: migrateCoreStore,
         partialize: (state) => partializePersisted(state) as GameStore,
         merge: (persistedState, currentState) => {
@@ -1813,6 +1796,7 @@ export const useCoreStore = create<GameStore>()(
           return {
             ...currentState,
             ...saved,
+            routes: reconcileRoutes(saved?.routes ?? currentState.routes),
             // Scenery/audio are authored catalogue data, not player-owned state.
             // Refresh them even when only tuning a config without a save-version bump.
             worlds: normalizeWorlds(saved?.worlds ?? currentState.worlds).map((item) => ({ ...item, preview: false })),

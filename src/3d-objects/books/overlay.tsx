@@ -261,7 +261,7 @@ const StackNav = memo(
   },
 );
 
-const BookContent = memo(({ book }: { book: Book }) => {
+const BookContent = memo(({ book, onSelectBook, compact = false }: { book: Book; onSelectBook?: (id: number) => void; compact?: boolean }) => {
   const navigateToBookId = useBooksStore((s) => s.navigateToBookId);
   const { messages } = useI18n();
   const tags: string[] = (book.tags as unknown as string[]) ?? [];
@@ -281,8 +281,8 @@ const BookContent = memo(({ book }: { book: Book }) => {
         }}
       >
         <PanelScroll>
-          <HeroRow>
-            <div
+          <HeroRow style={compact ? { paddingRight: 36 } : undefined}>
+            {!compact && <div
               style={{
                 flexShrink: 0,
                 borderRadius: 6,
@@ -291,7 +291,7 @@ const BookContent = memo(({ book }: { book: Book }) => {
               }}
             >
               <CoverCanvas book={book} w={80} h={120} />
-            </div>
+            </div>}
 
             <FillColumn $gap="4px" $justify="center" $align="flex-start">
               {book.rating && <RatingStars rating={book.rating} />}
@@ -367,7 +367,7 @@ const BookContent = memo(({ book }: { book: Book }) => {
               {book.related.map((rid) => {
                 const rb = BOOK_BY_ID.get(rid);
                 return rb ? (
-                  <BookListItem key={rid} onClick={() => navigateToBookId(rid)}>
+                  <BookListItem key={rid} onClick={() => (onSelectBook ?? navigateToBookId)(rid)}>
                     <div
                       style={{
                         flexShrink: 0,
@@ -392,8 +392,73 @@ const BookContent = memo(({ book }: { book: Book }) => {
   );
 });
 
-export const BookPortalOverlay = () => {
+const DetailsDrawer = styled(Panel)<{ $compact: boolean }>`
+  ${({ $compact, $mobile }) => $compact && `
+    z-index: 110;
+    color: #212121;
+    background: #f7f7f8;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    ${$mobile ? `
+      height: 42dvh;
+      padding-bottom: env(safe-area-inset-bottom);
+    ` : `
+      width: 340px;
+      right: 24px;
+      margin: auto 0;
+      height: min(480px, 65dvh);
+    `}
+    & > button { top: 10px; right: 10px; width: 32px; height: 32px; }
+  `}
+`;
+
+/** The original book side drawer, shared by the table and the library world. */
+export function BookDetailsPanel({ book, isMobile, posInStack, stackSize, onPrev, onNext, onClose, onSelectBook, compact = false }: {
+  book: Book; isMobile: boolean; posInStack: number; stackSize: number; compact?: boolean;
+  onPrev: () => void; onNext: () => void; onClose: () => void; onSelectBook?: (id: number) => void;
+}) {
   const { messages } = useI18n();
+  return (
+    <DetailsDrawer
+      $compact={compact}
+      aria-label={book.title}
+      key="panel"
+      $mobile={isMobile}
+      layout
+      initial={
+        isMobile
+          ? { y: "100%", opacity: 0 }
+          : { x: 80, opacity: 0, filter: "blur(6px)" }
+      }
+      animate={
+        isMobile
+          ? { y: "0%", opacity: 1 }
+          : { x: 0, opacity: 1, filter: "blur(0px)" }
+      }
+      exit={
+        isMobile
+          ? { y: "100%", opacity: 0 }
+          : { x: 80, opacity: 0, filter: "blur(6px)" }
+      }
+      transition={{ type: "spring", bounce: 0.2, duration: 0.42 }}
+    >
+      <CloseBtn onClick={onClose} aria-label={messages.books.overlay.close}>
+        <CloseIcon />
+      </CloseBtn>
+
+      <BookContent book={book} onSelectBook={onSelectBook} compact={compact} />
+
+      <StackNav
+        book={book}
+        posInStack={posInStack}
+        stackSize={stackSize}
+        onPrev={onPrev}
+        onNext={onNext}
+      />
+    </DetailsDrawer>
+  );
+}
+
+export const BookPortalOverlay = () => {
   const { isMobile } = useAppStore();
   const focusedBook = useBooksStore((s) => s.focusedBook);
   const focusedIdx = useBooksStore((s) => s.focusedIdx);
@@ -451,41 +516,8 @@ export const BookPortalOverlay = () => {
   const content = (
     <AnimatePresence>
       {isOpen && focusedBook && activeStack && (
-        <Panel
-          key="panel"
-          $mobile={isMobile}
-          layout
-          initial={
-            isMobile
-              ? { y: "100%", opacity: 0 }
-              : { x: 80, opacity: 0, filter: "blur(6px)" }
-          }
-          animate={
-            isMobile
-              ? { y: "0%", opacity: 1 }
-              : { x: 0, opacity: 1, filter: "blur(0px)" }
-          }
-          exit={
-            isMobile
-              ? { y: "100%", opacity: 0 }
-              : { x: 80, opacity: 0, filter: "blur(6px)" }
-          }
-          transition={{ type: "spring", bounce: 0.2, duration: 0.42 }}
-        >
-          <CloseBtn onClick={onClose} aria-label={messages.books.overlay.close}>
-            <CloseIcon />
-          </CloseBtn>
-
-          <BookContent book={focusedBook} />
-
-          <StackNav
-            book={focusedBook}
-            posInStack={posInStack}
-            stackSize={statusIndices.length}
-            onPrev={prevBook}
-            onNext={nextBook}
-          />
-        </Panel>
+        <BookDetailsPanel book={focusedBook} isMobile={isMobile} posInStack={posInStack}
+          stackSize={statusIndices.length} onPrev={prevBook} onNext={nextBook} onClose={onClose} />
       )}
     </AnimatePresence>
   );

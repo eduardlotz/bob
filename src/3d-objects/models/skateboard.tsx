@@ -47,20 +47,21 @@ export const SkateboardModel = forwardRef(
     };
 
     return (
-      <Grabbable rigidBodyRef={api} mode={"spring"}>
+      <Grabbable rigidBodyRef={api} mode={"spring"} throwMult={scale[0] * scale[1] * scale[2]}>
         <RigidBody
           {...props}
           ref={api}
           colliders="hull"
           restitution={0.5}
           friction={0.7}
+          ccd
         >
           <mesh
             onPointerEnter={handlePointerEnter}
             onPointerLeave={handlePointerLeave}
             geometry={nodes.skateboard.geometry}
             material={materials["colormap.001"]}
-            scale={2}
+            scale={scale.map((value) => value * 2) as [number, number, number]}
           />
         </RigidBody>
       </Grabbable>

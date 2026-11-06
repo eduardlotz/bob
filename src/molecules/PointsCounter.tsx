@@ -3,7 +3,7 @@ import { useRef, useEffect, useState } from "react";
 import { Vector3, Mesh } from "three";
 import { useSpring, a } from "@react-spring/three";
 
-const FONT_PATH = "/fonts/OpenRundeBold.json";
+const FONT_PATH = "/fonts/OpenRundeBoldCounter.json";
 
 interface PointsCounterProps {
   number: number;

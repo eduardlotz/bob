@@ -78,5 +78,3 @@ export const RoundGlasses = ({
     </a.group>
   );
 };
-
-useGLTF.preload(PATH);

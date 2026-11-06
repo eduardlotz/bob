@@ -127,5 +127,3 @@ export const KrustyKrabHat = ({
     </a.group>
   );
 };
-
-useGLTF.preload(PATH);

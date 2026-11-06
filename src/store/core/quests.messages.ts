@@ -41,8 +41,8 @@ const enQuestMessageOverrides: Record<string, QuestCopy> = {
     description: "Take a look at a few of my creative projects",
   },
   about_books_shelf_3: {
-    title: "Bookworm",
-    description: "Inspect several books in the collection",
+    title: "Desk Check",
+    description: "Explore my work corner and the miniature interests on the desk",
   },
   about_socials_1: {
     title: "Social Butterfly",
@@ -53,8 +53,8 @@ const enQuestMessageOverrides: Record<string, QuestCopy> = {
     description: "Interact with the desk in the About area",
   },
   about_box_1: {
-    title: "Box Hunter",
-    description: "Interact with the box in the About area",
+    title: "Green Thumb",
+    description: "Discover the plant corner in the About area",
   },
   manual_taps_50: {
     title: "Warmup Fingers",
@@ -155,10 +155,6 @@ const enQuestMessageOverrides: Record<string, QuestCopy> = {
   minigames_flappy_points_10: {
     title: "Flappy Bobbie",
     description: "Score 10 points in the Flappy Bird minigame",
-  },
-  minigames_slot_wins_5: {
-    title: "Won It Back",
-    description: "Win on the slot machine",
   },
   minigames_flappy_points_50: {
     title: "Astrobob",

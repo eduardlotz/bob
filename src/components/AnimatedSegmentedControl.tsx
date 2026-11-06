@@ -1,4 +1,4 @@
-import { type CSSProperties, type ReactNode, useMemo } from "react";
+import { type CSSProperties, type ReactNode, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import styled, { css } from "styled-components";
 
@@ -16,6 +16,8 @@ interface AnimatedSegmentedControlProps<T extends string> {
   layoutId?: string;
   size?: SegmentedSize;
   fullWidth?: boolean;
+  indicatorSize?: "segment" | "content";
+  animateOptions?: boolean;
   className?: string;
   style?: CSSProperties;
   theme?: "dark" | "light";
@@ -28,6 +30,8 @@ export function AnimatedSegmentedControl<T extends string>({
   layoutId: _layoutId,
   size = "md",
   fullWidth = true,
+  indicatorSize = "segment",
+  animateOptions = true,
   className,
   style,
   theme = "light",
@@ -45,25 +49,51 @@ export function AnimatedSegmentedControl<T extends string>({
     [options, value],
   );
   const optionCount = Math.max(1, options.length);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLSpanElement>(null);
+  const [contentIndicator, setContentIndicator] = useState<{ x: number; width: number } | null>(null);
+
+  useLayoutEffect(() => {
+    if (indicatorSize !== "content") return;
+    const root = rootRef.current;
+    const track = trackRef.current;
+    const button = root?.querySelectorAll<HTMLButtonElement>("button")[activeIndex];
+    const label = button?.querySelector<HTMLElement>("[data-segmented-label]");
+    if (!root || !track || !button || !label) return;
+    const measure = () => {
+      const width = button.offsetWidth;
+      // Offset metrics ignore layout animation transforms, keeping the pill's
+      // target stable while the phone or label is moving.
+      const x = button.offsetLeft - track.offsetLeft;
+      setContentIndicator(previous => previous?.x === x && previous.width === width ? previous : { x, width });
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(root);
+    observer.observe(button);
+    observer.observe(label);
+    return () => observer.disconnect();
+  }, [activeIndex, indicatorSize, optionCount]);
 
   return (
     <SegmentedRoot
+      ref={rootRef}
       className={className}
       style={style}
       $size={size}
       $fullWidth={fullWidth}
+      $fitContent={indicatorSize === "content"}
       $theme={theme}
       data-layout-id={_layoutId}
     >
-      <SlidingTrack>
-        <SlidingBackground
+      <SlidingTrack ref={trackRef}>
+        {(indicatorSize === "segment" || contentIndicator) && <SlidingBackground
           initial={false}
-          animate={{
-            width: `${100 / optionCount}%`,
-            x: `${activeIndex * 100}%`,
-          }}
+          animate={indicatorSize === "content" && contentIndicator
+            ? contentIndicator
+            : { width: `${100 / optionCount}%`, x: `${activeIndex * 100}%` }}
           transition={transition}
-        />
+        />}
       </SlidingTrack>
 
       <AnimatePresence initial={false} mode="popLayout">
@@ -73,19 +103,20 @@ export function AnimatedSegmentedControl<T extends string>({
           return (
             <SegmentedButton
               key={option.value}
-              layout="position"
-              initial={{ opacity: 0, scale: reducedMotion ? 1 : 0.9 }}
+              layout={animateOptions ? "position" : false}
+              initial={animateOptions ? { opacity: 0, scale: reducedMotion ? 1 : 0.9 } : false}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: reducedMotion ? 1 : 0.9 }}
               transition={transition}
               type="button"
               $size={size}
               $active={isActive}
+              $fitContent={indicatorSize === "content"}
               $theme={theme}
               aria-pressed={isActive}
               onClick={() => onChange(option.value)}
             >
-              <SegmentedLabel>{option.label}</SegmentedLabel>
+              <SegmentedLabel data-segmented-label $fitContent={indicatorSize === "content"}>{option.label}</SegmentedLabel>
             </SegmentedButton>
           );
         })}
@@ -97,10 +128,12 @@ export function AnimatedSegmentedControl<T extends string>({
 const SegmentedRoot = styled.div<{
   $size: SegmentedSize;
   $fullWidth: boolean;
+  $fitContent: boolean;
   $theme: "dark" | "light";
 }>`
   display: flex;
   align-items: center;
+  ${({ $fitContent }) => $fitContent && "justify-content: space-between;"}
   gap: 0;
   width: ${({ $fullWidth }) => ($fullWidth ? "100%" : "fit-content")};
   padding: 4px;
@@ -130,9 +163,16 @@ const SlidingBackground = styled(motion.span)`
 const SegmentedButton = styled(motion.button)<{
   $size: SegmentedSize;
   $active: boolean;
+  $fitContent: boolean;
   $theme: "dark" | "light";
 }>`
-  flex: 1;
+  flex: ${({ $fitContent }) => $fitContent ? "0 0 auto" : "1"};
+  ${({ $fitContent, $size }) => $fitContent && css`
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: ${$size === "sm" ? "2rem" : "2.5rem"};
+  `}
   position: relative;
   overflow: hidden;
   border: none;
@@ -181,7 +221,8 @@ const SegmentedButton = styled(motion.button)<{
   }
 `;
 
-const SegmentedLabel = styled.span`
+const SegmentedLabel = styled.span<{ $fitContent: boolean }>`
+  ${({ $fitContent }) => $fitContent && "display: inline-flex; align-items: center; justify-content: center;"}
   position: relative;
   z-index: 1;
   /* font-weight: 900; */

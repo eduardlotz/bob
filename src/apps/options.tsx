@@ -6,12 +6,14 @@ import { FillColumn, FillRow } from "@/layout";
 import { DividerWithLabel, RowLabel } from "@/layout/atoms";
 import { CameraViewId, useCoreStore, useViewStore } from "@/store";
 import { useEffect } from "react";
+import { useIsPresent } from "motion/react";
 import styled from "styled-components";
 import { useI18n } from "@/i18n";
+import { phoneAppSurface } from "@/styles/phoneAppSurface";
 import { ToggleButton } from "./ui";
 
 export const OptionsIcon = () => (
-  <img src="/images/app-logos/options.png" height={80} width={80} />
+  <img src="/images/app-logos/settings.png" height={80} width={80} />
 );
 
 const APP_ID: CameraViewId = "phone:options";
@@ -41,6 +43,7 @@ function VolumeItem({ label, value, onChange }: VolumeItemProps) {
 }
 
 export function OptionsApp() {
+  const isPresent = useIsPresent();
   const { locale, setLocale, messages } = useI18n();
   const sound = useSoundSystem();
   const reducedTapMotion = useCoreStore(
@@ -64,8 +67,8 @@ export function OptionsApp() {
   const { transitionToView } = useViewStore();
 
   useEffect(() => {
-    transitionToView(APP_ID);
-  }, [transitionToView]);
+    if (isPresent) transitionToView(APP_ID);
+  }, [isPresent, transitionToView]);
 
   const normalizeVolumeValue = (next: number) =>
     Math.min(1, Math.max(0, Math.round(next * 100) / 100));
@@ -99,15 +102,12 @@ export function OptionsApp() {
   ];
 
   return (
-    <FillColumn
+    <OptionsPanel
       style={{
         maxWidth: "100%",
         maxHeight: "23rem",
         overflowY: "auto",
 
-        borderRadius: "1.25rem",
-        background: "rgba(33, 33, 33, 0.05)",
-        padding: "1rem",
       }}
       animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
       initial={{ y: 15, opacity: 0, filter: "blur(6px)" }}
@@ -207,9 +207,13 @@ export function OptionsApp() {
 
 
       </FillColumn>
-    </FillColumn>
+    </OptionsPanel>
   );
 }
+
+const OptionsPanel = styled(FillColumn)`
+  ${phoneAppSurface}
+`;
 
 const VolumeRow = styled.div`
   display: grid;

@@ -10,7 +10,6 @@ export type TransitionShape = "bob" | "circle" | "rounded-rectangle" | "oval" | 
 
 export interface TransitionAppearance {
   shape: TransitionShape;
-  loadingDots?: boolean;
   fill: { kind: "solid"; color: string } | {
     kind: "checkerboard";
     colors: [string, string];
@@ -26,7 +25,6 @@ export const PAGE_TRANSITION: TransitionAppearance = {
 
 export const GAME_TRANSITION: TransitionAppearance = {
   shape: "bob",
-  loadingDots: false,
   fill: { kind: "checkerboard", colors: ["#0b0b0b", "#151515"], squareSize: 80, duration: 3 },
 };
 

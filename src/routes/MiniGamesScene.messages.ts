@@ -2,10 +2,6 @@ import { defineMessages } from "@/i18n/defineMessages";
 
 export const miniGamesSceneMessages = defineMessages({
   de: {
-    MINI_GOLF: { label: "Minigolf" },
-    SLOT_MACHINE: {
-      label: "Slotautomat",
-    },
     PING_PONG: {
       label: "Ping Pong",
     },
@@ -14,10 +10,6 @@ export const miniGamesSceneMessages = defineMessages({
     },
   },
   en: {
-    MINI_GOLF: { label: "Minigolf" },
-    SLOT_MACHINE: {
-      label: "Slot Machine",
-    },
     PING_PONG: {
       label: "Ping Pong",
     },

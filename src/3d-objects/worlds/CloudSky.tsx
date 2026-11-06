@@ -101,7 +101,7 @@ export function CloudSky({
   stops: [number, number, number];
   nightColors?: [string, string, string];
   cycleSeconds?: number;
-  /** Optional fixed sun for reusable daytime scenes such as the golf garden. */
+  /** Optional fixed sun for reusable daytime scenes. */
   sunDirection?: [number, number, number];
 }) {
   const environment = useWorldEnvironment();

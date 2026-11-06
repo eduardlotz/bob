@@ -75,5 +75,3 @@ export const BlackCap = ({
     </a.group>
   );
 };
-
-useGLTF.preload(PATH);

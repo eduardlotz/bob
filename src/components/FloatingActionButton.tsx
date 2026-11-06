@@ -1,6 +1,8 @@
 import { motion } from "motion/react";
 import styled, { css } from "styled-components";
 
+export const FLOATING_CONTROL_SPRING = { type: "spring", stiffness: 420, damping: 14 } as const;
+
 export interface FloatingButtonStyleProps {
   $variant?: "blue" | "red" | "dark" | "white" | "muted";
   $active?: boolean;

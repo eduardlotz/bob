@@ -87,5 +87,3 @@ export const SimsPlumbob = ({
     </a.group>
   );
 };
-
-useGLTF.preload(PATH);

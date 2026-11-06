@@ -11,6 +11,5 @@ export * from "./core/app";
 export * from "./core/store";
 export * from "./minigames";
 export * from "./core/quests";
-export * from "./core/camera";
 export * from "./viewStore";
 export * from "./books";

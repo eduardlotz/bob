@@ -16,7 +16,6 @@ import { useAppStore } from "@/store";
 import { useMessageStore } from "@/store/messageStore";
 import { useI18n } from "@/i18n";
 import { getRouteCopyByPath } from "@/store/config/routes";
-import { useScreenTransition } from "@/store/screenTransition";
 
 //#region constants
 export * from "@/store/config/camera";
@@ -232,13 +231,9 @@ function Option({
   const optionRef = useRef<THREE.Group>(null!);
   const navigate = useNavigate();
   const { locale } = useI18n();
-  const { currentRoute } = useAppStore();
-  const { canAfford, purchaseRoute } = useCoreStore();
-  const { showMessage } = useMessageStore();
-  const isMorphing = useScreenTransition(state =>
-    state.request?.appearance.loadingDots !== false &&
-    (state.request?.menuBubbles?.some(bubble => bubble.id === route.path) ?? false),
-  );
+  const currentRoute = useAppStore(state => state.currentRoute);
+  const purchaseRoute = useCoreStore(state => state.purchaseRoute);
+  const showMessage = useMessageStore(state => state.showMessage);
   const variants = useMemo(
     () => ({
       hidden: MotionVariants.OptionButton.initial,
@@ -262,7 +257,7 @@ function Option({
   };
 
   const handleOptionClick = () => {
-    match({ ...route, canPurchase: canAfford(route.cost) })
+    match({ ...route, canPurchase: useCoreStore.getState().canAfford(route.cost) })
       .with({ isLocked: false, purchased: false, canPurchase: true }, () => {
         purchaseRoute(route.id);
         resetCamAndNavigate();
@@ -294,16 +289,15 @@ function Option({
           $active={isActive}
           $locked={!route.isLocked}
           exit="closed"
-          whileHover={MotionVariants.OptionButton.hover({
+          whileHover={isClosing ? undefined : MotionVariants.OptionButton.hover({
             isDisabled: !route.purchased,
             isLocked: route.isLocked,
           })}
-          whileTap={MotionVariants.OptionButton.tap}
+          whileTap={isClosing ? undefined : MotionVariants.OptionButton.tap}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={handleOptionClick}
           data-ui-sound-id="ui-tap-close"
           data-menu-route={route.path}
-          style={{ visibility: isMorphing ? "hidden" : undefined }}
         >
           {!route.purchased && <PriceChip>{route.cost} 🫵</PriceChip>}
           {route.isLocked && (

@@ -1,12 +1,22 @@
-import { motion, useReducedMotion } from "motion/react";
+import { useEffect, useState } from "react";
+import {
+  AnimatePresence,
+  LayoutGroup,
+  motion,
+  useReducedMotion,
+} from "motion/react";
 import styled from "styled-components";
 import { LOCALE_LABELS, SUPPORTED_LOCALES, useI18n } from "@/i18n";
-import { useSoundSystem } from "@/hooks/useSoundSystem";
+import { PhoneSoundToggle } from "@/components/PhoneSoundToggle";
 import { useCoreStore } from "@/store";
-import { FloatingActionButton } from "@/components/FloatingActionButton";
-import { LoadingLogo, LOADING_LOGO_LANDING_TIME } from "@/components/LoadingLogo";
-
-const CONTROL_SPRING = { type: "spring", stiffness: 420, damping: 14 } as const;
+import {
+  FloatingActionButton,
+  FLOATING_CONTROL_SPRING as CONTROL_SPRING,
+} from "@/components/FloatingActionButton";
+import {
+  LoadingLogo,
+  LOADING_LOGO_LANDING_TIME,
+} from "@/components/LoadingLogo";
 
 function LocaleFlag({ locale }: { locale: "de" | "en" }) {
   if (locale === "de") {
@@ -22,16 +32,33 @@ function LocaleFlag({ locale }: { locale: "de" | "en" }) {
     <svg viewBox="0 0 32 32" aria-hidden="true">
       <path fill="#eee" d="M0 0h32v32H0z" />
       {Array.from({ length: 7 }, (_, row) => (
-        <rect key={row} y={row * 64 / 13} width="32" height={32 / 13} fill="#b33b50" />
+        <rect
+          key={row}
+          y={(row * 64) / 13}
+          width="32"
+          height={32 / 13}
+          fill="#b33b50"
+        />
       ))}
       <path fill="#25456a" d="M0 0h16v17.23H0z" />
       {Array.from({ length: 9 }, (_, row) =>
         Array.from({ length: row % 2 ? 5 : 6 }, (_, col) => (
-          <circle key={`${row}-${col}`} cx={1.3 + col * 2.65 + (row % 2 ? 1.3 : 0)} cy={1.3 + row * 1.8} r=".55" fill="#fff" />
+          <circle
+            key={`${row}-${col}`}
+            cx={1.3 + col * 2.65 + (row % 2 ? 1.3 : 0)}
+            cy={1.3 + row * 1.8}
+            r=".55"
+            fill="#fff"
+          />
         )),
       )}
     </svg>
   );
+}
+
+function randomIntFromInterval(min: number, max: number) {
+  // min and max included
+  return Math.floor(Math.random() * (max - min + 1) + min);
 }
 
 export function InitialLoadingScreen({
@@ -44,85 +71,129 @@ export function InitialLoadingScreen({
   onStart: () => void;
 }) {
   const { locale, setLocale, messages } = useI18n();
-  const { isActive, enable, unmute, mute } = useSoundSystem();
   const reducedMotion = useReducedMotion();
   const soundSettingsReady = useCoreStore((state) => state.isHydrated);
+  const [messageIndex, setMessageIndex] = useState(
+    randomIntFromInterval(0, messages.loader.loadingMessages.length - 1),
+  );
   const percentage = finished ? 100 : Math.min(100, Math.max(0, progress));
 
-  const toggleSound = () => {
-    if (isActive) mute();
-    else {
-      enable();
-      unmute();
-    }
-  };
+  useEffect(() => {
+    if (finished) return;
+    const timer = window.setInterval(() => {
+      setMessageIndex(
+        (index) => (index + 1) % messages.loader.loadingMessages.length,
+      );
+    }, 2500);
+    return () => window.clearInterval(timer);
+  }, [finished, messages.loader.loadingMessages.length]);
 
   return (
     <LoadingWrapper aria-label={messages.loader.loading}>
-      <LoadingContent>
-        <LoadingLogo progress={percentage} finished={finished} label={messages.loader.loading}
-          interactionLabel={messages.loader.celebrate} />
+      <LoadingLayout>
+        <LoadingContent>
+          <LogoPosition>
+            <LoadingLogo
+              progress={percentage}
+              finished={finished}
+              label={messages.loader.loading}
+              interactionLabel={messages.loader.celebrate}
+            />
+          </LogoPosition>
 
-        <Settings>
-          <Setting>
-            <SettingLabel id="loader-sound-label">{messages.loader.sound}</SettingLabel>
-            <SoundSwitchSlot>
-              {soundSettingsReady && (
-                <SoundSwitch
-                  type="button"
-                  whileTap={reducedMotion ? undefined : { scale: .88 }}
-                  transition={CONTROL_SPRING}
-                  role="switch"
-                  aria-checked={isActive}
-                  aria-labelledby="loader-sound-label"
-                  $enabled={isActive}
-                  onClick={toggleSound}
-                >
-                  <SwitchThumb />
-                </SoundSwitch>
-              )}
-            </SoundSwitchSlot>
-          </Setting>
-          <Setting>
-            <SettingLabel id="loader-language-label">{messages.loader.language}</SettingLabel>
-            <LanguageOptions role="group" aria-labelledby="loader-language-label">
-              {SUPPORTED_LOCALES.map((value) => (
-                <FlagButton
-                  key={value}
-                  type="button"
-                  aria-label={LOCALE_LABELS[value].long}
-                  aria-pressed={locale === value}
-                  $selected={locale === value}
-                  onClick={() => setLocale(value)}
-                  whileTap={reducedMotion ? undefined : { scale: .85 }}
-                  transition={CONTROL_SPRING}
-                >
-                  <LocaleFlag locale={value} />
-                </FlagButton>
-              ))}
-            </LanguageOptions>
-          </Setting>
-        </Settings>
+          <ActionSlot>
+            {finished ? (
+              <StartButton
+                type="button"
+                onClick={onStart}
+                initial={{ opacity: 0, scale: reducedMotion ? 1 : 0 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={
+                  reducedMotion
+                    ? { duration: 0 }
+                    : {
+                        scale: {
+                          type: "spring",
+                          stiffness: 300,
+                          damping: 13,
+                          delay: LOADING_LOGO_LANDING_TIME,
+                        },
+                        opacity: {
+                          duration: 0.12,
+                          delay: LOADING_LOGO_LANDING_TIME,
+                        },
+                      }
+                }
+              >
+                {messages.loader.start}
+              </StartButton>
+            ) : (
+              <LoadingMessage role="status" aria-live="polite">
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.span
+                    key={messageIndex}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: reducedMotion ? 0 : 0.18 }}
+                  >
+                    {messages.loader.loadingMessages[messageIndex]}
+                  </motion.span>
+                </AnimatePresence>
+              </LoadingMessage>
+            )}
+          </ActionSlot>
+        </LoadingContent>
 
-        <ActionSlot>
-          {finished && (
-            <StartButton
-              type="button"
-              onClick={onStart}
-              initial={{ opacity: 0, scale: reducedMotion ? 1 : 0 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={reducedMotion ? { duration: 0 } : {
-                scale: { type: "spring", stiffness: 300, damping: 13, delay: LOADING_LOGO_LANDING_TIME },
-                opacity: { duration: .12, delay: LOADING_LOGO_LANDING_TIME },
-              }}
+        <Footer>
+          <Settings>
+            <SoundSwitchSlot
+              whileTap={reducedMotion ? undefined : { scale: 0.88 }}
+              transition={CONTROL_SPRING}
             >
-              {messages.loader.start}
-            </StartButton>
-          )}
-        </ActionSlot>
-      </LoadingContent>
-
-      <Credit>{messages.loader.credit} <a href="https://eduardlotz.de" target="_blank" rel="noreferrer">Eduard Lotz</a></Credit>
+              {soundSettingsReady && <PhoneSoundToggle />}
+            </SoundSwitchSlot>
+            <LayoutGroup id="initial-loader-language">
+              <LanguageOptions
+                role="group"
+                aria-label={messages.loader.language}
+              >
+                {SUPPORTED_LOCALES.map((value) => (
+                  <FlagButton
+                    key={value}
+                    type="button"
+                    aria-label={LOCALE_LABELS[value].long}
+                    aria-pressed={locale === value}
+                    $selected={locale === value}
+                    onClick={() => setLocale(value)}
+                    whileTap={reducedMotion ? undefined : { scale: 0.85 }}
+                    transition={CONTROL_SPRING}
+                  >
+                    {locale === value && (
+                      <FlagOutline
+                        layoutId="active-language-outline"
+                        initial={false}
+                        transition={
+                          reducedMotion
+                            ? { duration: 0 }
+                            : { ...CONTROL_SPRING, damping: 28 }
+                        }
+                      />
+                    )}
+                    <LocaleFlag locale={value} />
+                  </FlagButton>
+                ))}
+              </LanguageOptions>
+            </LayoutGroup>
+          </Settings>
+          <Credit>
+            {messages.loader.credit}{" "}
+            <a href="https://eduardlotz.de" target="_blank" rel="noreferrer">
+              Eduard Lotz
+            </a>
+          </Credit>
+        </Footer>
+      </LoadingLayout>
     </LoadingWrapper>
   );
 }
@@ -134,83 +205,69 @@ const LoadingWrapper = styled.div`
   width: 100%;
   height: 100dvh;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: clamp(48px, 15.3dvh, 160px) 20px max(30px, env(safe-area-inset-bottom));
   background: #000;
   color: #fff;
 
-  button:focus-visible, a:focus-visible {
+  button:focus-visible,
+  a:focus-visible {
     outline: 2px solid #fff;
     outline-offset: 7px;
   }
+`;
+
+const LoadingLayout = styled.div`
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+`;
+
+// Anchor the action itself to the screen center, independent of logo/footer size.
+const LoadingContent = styled.div`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(calc(100% - 40px), 400px);
+`;
+
+const LogoPosition = styled.div`
+  position: absolute;
+  bottom: calc(100% + 44px);
+  left: 50%;
+  transform: translateX(-50%);
 
   @media (max-height: 600px) {
-    padding-top: 32px;
-    padding-bottom: 20px;
+    bottom: calc(100% + 24px);
   }
 `;
 
-const LoadingContent = styled.div`
-  width: min(100%, 400px);
+const Footer = styled.div`
+  position: absolute;
+  bottom: max(38px, env(safe-area-inset-bottom));
+  left: 20px;
+  right: 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  flex-shrink: 0;
+  gap: 56px;
+
+  @media (max-height: 600px) {
+    bottom: max(20px, env(safe-area-inset-bottom));
+    gap: 24px;
+  }
 `;
 
 const Settings = styled.div`
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: center;
   gap: 40px;
-  margin-top: 64px;
-
-  @media (max-height: 600px) { margin-top: 32px; }
 `;
 
-const Setting = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-`;
-
-const SettingLabel = styled.span`
-  font-size: 16px;
-  font-weight: 900;
-  line-height: 1.3;
-`;
-
-const SwitchThumb = styled.span`
-  display: block;
-  width: 30px;
-  height: 20px;
-  border-radius: 20px;
-  background: #fff;
-  transition: transform .2s ease;
-`;
-
-const SoundSwitchSlot = styled.div`
-  width: 64px;
-  height: 32px;
-`;
-
-const SoundSwitch = styled(motion.button)<{ $enabled: boolean }>`
-  display: flex;
-  align-items: center;
-  width: 64px;
-  height: 32px;
-  padding: 6px;
-  border-radius: 32px;
-  background: ${({ $enabled }) => $enabled ? '#3dcc46' : '#40403f'};
-  transition: background .2s ease;
-
-  ${SwitchThumb} { transform: translateX(${({ $enabled }) => $enabled ? '22px' : '0'}); }
-
-  @media (prefers-reduced-motion: reduce) {
-    &, ${SwitchThumb} { transition: none; }
-  }
+const SoundSwitchSlot = styled(motion.div)`
+  width: 70px;
+  height: 38px;
 `;
 
 const LanguageOptions = styled.div`
@@ -219,32 +276,55 @@ const LanguageOptions = styled.div`
 `;
 
 const FlagButton = styled(motion.button)<{ $selected: boolean }>`
+  position: relative;
   width: 32px;
   height: 32px;
   padding: 0;
   border-radius: 12px;
   background: transparent;
-  outline: ${({ $selected }) => $selected ? '1.5px solid #fff' : 'none'};
-  outline-offset: 3px;
 
   svg {
     display: block;
     width: 100%;
     height: 100%;
     border-radius: inherit;
-    opacity: ${({ $selected }) => $selected ? 1 : .55};
-    transition: opacity .2s ease;
+    opacity: ${({ $selected }) => ($selected ? 1 : 0.55)};
+    transition: opacity 0.2s ease;
   }
 
-  &:hover svg { opacity: 1; }
+  &:hover svg {
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    svg {
+      transition: none;
+    }
+  }
+`;
+
+const FlagOutline = styled(motion.span)`
+  position: absolute;
+  inset: -5px;
+  border: 2px solid #fff;
+  border-radius: 16px;
+  pointer-events: none;
 `;
 
 const ActionSlot = styled.div`
   display: grid;
-  place-items: start center;
+  place-items: center;
   width: 100%;
-  min-height: 60px;
-  margin-top: 72px;
+  height: 60px;
+`;
+
+const LoadingMessage = styled.div`
+  width: 100%;
+  color: #808080;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.5;
 `;
 
 const StartButton = styled(FloatingActionButton)`
@@ -255,13 +335,16 @@ const StartButton = styled(FloatingActionButton)`
 `;
 
 const Credit = styled.p`
-  margin: auto 0 0;
-  padding-top: 48px;
+  margin: 0;
   color: #808080;
   font-size: 12px;
   font-weight: 700;
   text-align: center;
   line-height: 1.5;
 
-  a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+  a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
 `;

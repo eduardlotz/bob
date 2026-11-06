@@ -2,7 +2,7 @@ import { GradientTexture } from "@react-three/drei";
 import { DoubleSide, type MeshBasicMaterial } from "three";
 import type { Ref } from "react";
 
-/** The selection-screen beam, also used for the slot machine's win lights. */
+/** The selection-screen beam. */
 export function FakeSpotlight({ materialRef, height = 9.5, upwards = false }: {
   materialRef?: Ref<MeshBasicMaterial>; height?: number; upwards?: boolean;
 }) {

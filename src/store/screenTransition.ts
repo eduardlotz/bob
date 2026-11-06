@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { PAGE_TRANSITION, type TransitionAppearance } from "@/styles/screenTransitions";
-import type { MenuTransitionBubble } from "@/utils/menuTransitionBubbles";
 
 export const INITIAL_REVEAL_SECONDS = 1.8 / 1.15;
 export const SCREEN_TRANSITION_SECONDS = 0.9;
@@ -14,7 +13,6 @@ interface TransitionRequest {
   initial: boolean;
   appearance: TransitionAppearance;
   keepBobVisible: boolean;
-  menuBubbles?: MenuTransitionBubble[];
   action?: ScreenTransitionAction;
   onRevealed?: () => void;
   onFinished?: () => void;
@@ -24,7 +22,7 @@ interface ScreenTransitionState {
   phase: ScreenTransitionPhase;
   request: TransitionRequest | null;
   reveal: (onRevealed?: () => void) => boolean;
-  run: (action: ScreenTransitionAction, onRevealed?: () => void, options?: { appearance?: TransitionAppearance; keepBobVisible?: boolean; menuBubbles?: MenuTransitionBubble[]; onFinished?: () => void }) => boolean;
+  run: (action: ScreenTransitionAction, onRevealed?: () => void, options?: { appearance?: TransitionAppearance; keepBobVisible?: boolean; onFinished?: () => void }) => boolean;
   advance: (id: number, phase: ScreenTransitionPhase) => void;
   complete: (id: number, succeeded?: boolean) => void;
 }
@@ -46,7 +44,6 @@ export const useScreenTransition = create<ScreenTransitionState>((set, get) => {
         id: ++nextId, initial: false, action, onRevealed,
         appearance: options?.appearance ?? PAGE_TRANSITION,
         keepBobVisible: options?.keepBobVisible ?? false,
-        menuBubbles: options?.menuBubbles,
         onFinished: options?.onFinished,
       } });
       return true;

@@ -77,5 +77,3 @@ export const BuilderHelmet = ({
     </a.group>
   );
 };
-
-useGLTF.preload(PATH);

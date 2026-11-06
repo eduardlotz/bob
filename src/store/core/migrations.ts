@@ -139,6 +139,20 @@ export const normalizeBlobForms = (forms: any[] = []) => {
   }));
 };
 
+export const reconcileRoutes = (routes: any[] = []) => {
+  const previous = new Map(routes.map((route) => [route.id, route]));
+  return initialRoutes.map((route) => {
+    const legacyRoutes = route.id === "route_literature"
+      ? routes.filter(entry => entry.id === "route_library" || entry.id === "route_places")
+      : [];
+    const saved = previous.get(route.id) ?? (legacyRoutes.length ? {
+      purchased: legacyRoutes.some(entry => entry.purchased),
+      unlocked: legacyRoutes.some(entry => entry.unlocked),
+    } : undefined);
+    return { ...route, purchased: saved?.purchased ?? route.purchased, unlocked: saved?.unlocked ?? route.unlocked };
+  });
+};
+
 export function migrateCoreStore(persisted: any, fromVersion: number) {
   if (!persisted || typeof persisted !== "object") {
     return initialGameState;
@@ -155,10 +169,12 @@ export function migrateCoreStore(persisted: any, fromVersion: number) {
     fromVersion === GAME_STORE_VERSION.V13 ||
     fromVersion === GAME_STORE_VERSION.V14 ||
     fromVersion === GAME_STORE_VERSION.V15 ||
-    fromVersion === GAME_STORE_VERSION.V16
+    fromVersion === GAME_STORE_VERSION.V16 ||
+    fromVersion === GAME_STORE_VERSION.V17
   ) {
     return {
       ...state,
+      routes: reconcileRoutes(state.routes),
       worlds: normalizeWorlds(state.worlds),
       bobItems: normalizeBobItems(state.bobItems),
       tapEffects: normalizeTapEffects(state.tapEffects),
@@ -237,6 +253,7 @@ export function migrateCoreStore(persisted: any, fromVersion: number) {
 
   return {
     ...state,
+    routes: reconcileRoutes(state.routes),
     worlds: normalizeWorlds(state.worlds),
     bobItems: normalizeBobItems(state.bobItems),
     tapEffects: normalizeTapEffects(state.tapEffects),

@@ -1,8 +1,7 @@
-import { CameraViewId, useViewStore } from "@/store/viewStore";
+import { useViewStore } from "@/store/viewStore";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { motion, AnimatePresence } from "motion/react";
 import styled from "styled-components";
-import { SmallArrowLeftIcon } from "@/icons/arrow";
 import { playUISound } from "@/utils/soundSystem";
 import {
   ROUTE_PATHS,
@@ -15,12 +14,14 @@ import { useSocialsStore } from "@/store/socials";
 import { useI18n } from "@/i18n";
 import { viewControlsMessages } from "./ViewControls.messages";
 import { ChevronLeftIcon } from "@/icons/chevron";
+import { useLibraryStore } from "@/store/exploration";
+import { sceneChipStyle } from "@/components/SceneChip";
+import { explorationMessages } from "@/routes/exploration.messages";
 
 export function ViewControls() {
   const {
     currentView,
     isDefaultView,
-    isAboutView,
     isCreativeView,
     isPhoneView,
     isImageFocused,
@@ -33,7 +34,12 @@ export function ViewControls() {
   const currentRoute = useAppStore((s) => s.currentRoute);
   const { focusedBook } = useBooksStore();
   const { focusedThrone } = useSocialsStore();
-  const { locale } = useI18n();
+  const { locale, messages } = useI18n();
+  const libraryStatus = useLibraryStore(state => state.status);
+  const libraryMedia = useLibraryStore(state => state.media);
+  const libraryBook = useLibraryStore(state => state.bookId);
+  const isLiterature = currentRoute === ROUTE_PATHS.LITERATURE;
+  const isLiteratureDetail = isLiterature && (libraryStatus !== null || libraryMedia !== null);
 
   const activeGame = useMiniGameStore((s) => s.activeGame);
   const viewTitles = viewControlsMessages[locale].viewTitles;
@@ -47,6 +53,7 @@ export function ViewControls() {
 
   const isShopPreview = currentView === "shop:preview";
   const shouldHide =
+    (isLiterature && (!isLiteratureDetail || libraryBook !== null || isPhone || isNavigation)) ||
     currentView === "loading" ||
     isShopPreview ||
     isGameActive ||
@@ -55,7 +62,7 @@ export function ViewControls() {
     focusedBook ||
     focusedThrone;
   const isViewEligible = !isDefault && !isPhone && !isCreative && !isNavigation;
-  const showControls = !shouldHide && (isImageFocused || isViewEligible);
+  const showControls = !shouldHide && (isLiteratureDetail || isImageFocused || isViewEligible);
 
   // escape key to return to default view
   useKeyPress("Escape", () => {
@@ -67,6 +74,7 @@ export function ViewControls() {
       !isTransitioning &&
       !isNavigation &&
       !isMinigamesRoute
+      && currentRoute !== ROUTE_PATHS.LITERATURE
     ) {
       handleBackClick();
       playUISound("ui-tap-close");
@@ -75,11 +83,15 @@ export function ViewControls() {
 
   const handleBackClick = () => {
     if (isTransitioning) return;
-
+    if (isLiterature) { useLibraryStore.getState().reset(); return; }
     resetToDefaultView();
   };
 
-  const title = isImageFocused
+  const title = isLiterature && libraryStatus
+    ? messages.books.statuses[libraryStatus]
+    : isLiterature && libraryMedia
+    ? explorationMessages[locale][libraryMedia]
+    : isImageFocused
     ? focusedImageTitle
     : (viewTitles[currentView as keyof typeof viewTitles] ?? "");
 
@@ -87,23 +99,6 @@ export function ViewControls() {
     <AnimatePresence>
       {showControls && (
         <ViewControlsWrapper>
-          {/* <BackButton
-            onClick={handleBackClick}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            key="view-controls-back-button"
-            initial={{ y: 120, filter: "blur(6px)" }}
-            animate={{
-              y: 0,
-              filter: "blur(0px)",
-            }}
-            exit={{ y: 120, filter: "blur(6px)" }}
-            transition={{ duration: 0.5, ease: "circInOut" }}
-            data-ui-sound-id="ui-tap-close"
-          >
-            <ArrowLeftIcon />
-          </BackButton> */}
-
           <Magnetic>
             <TriggerContainer
               onClick={handleBackClick}
@@ -162,21 +157,13 @@ const ViewControlsWrapper = styled(motion.div)`
 `;
 
 const CurrentViewChip = styled(motion.div)`
+  ${sceneChipStyle}
+  position: relative;
   min-width: fit-content;
   width: fit-content;
   max-width: calc(100vw - 32px);
   word-wrap: nowrap;
 
-  color: #ffffff;
-  padding: 12px 16px;
-  border-radius: 24px;
-  background-color: rgba(0, 0, 0, 0.2);
-  -webkit-backdrop-filter: blur(32px);
-  backdrop-filter: blur(32px);
-  border-radius: 50px;
-  font-size: 16px;
-  letter-spacing: -2%;
-  font-weight: 600;
   z-index: 1000;
 `;
 
@@ -186,9 +173,11 @@ const TriggerContainer = styled(motion.button)`
   white-space: nowrap;
   align-items: center;
   justify-content: center;
-  max-height: 2.25rem;
+  height: 2.5rem;
+  border: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
 
-  padding: 0.5rem 0.75rem 0.5rem 0.25rem;
+  padding: 0.5rem 14px 0.5rem 8px;
   border-radius: 50px;
   background-color: #fff;
   opacity: 1;

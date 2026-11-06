@@ -6,8 +6,8 @@ export const viewControlsMessages = defineMessages({
     viewTitles: {
       desk: "Musik & Mixes",
       bookshelf: "Buchsammlung",
-      computer: "Apps & Seiten",
-      cardbox: "Interessen & Hobbies",
+      computer: "Arbeitsplatz & Interessen",
+      cardbox: "Grüne Ecke",
       socials: "Eddies Ecke",
     },
   },
@@ -16,8 +16,8 @@ export const viewControlsMessages = defineMessages({
     viewTitles: {
       desk: "Music & Mixes",
       bookshelf: "Book Collection",
-      computer: "Apps & Sites",
-      cardbox: "Interests & Hobbies",
+      computer: "Work & Interests",
+      cardbox: "Green Corner",
       socials: "Eddie's Corner",
     },
   },

@@ -15,7 +15,9 @@ export enum QUESTS_STORE_VERSION {
   V5 = 1000014,
   V6 = 1000015, // Astrobob Flappy reward
   V7 = 1000016, // Obsidian skin: 100,000 lifetime taps
-  LATEST = V7,
+  V8 = 1000017, // About: work corner and plant replace the books and hobby box
+  V9 = 1000018, // Remove the retired slot machine quest
+  LATEST = V9,
 }
 
 const cloneInitialQuests = () => initialQuests.map((quest) => ({ ...quest }));
@@ -73,7 +75,7 @@ export const migrateQuestStore = (
 > => {
   const normalizedState = normalizePersistedState(persisted);
 
-  if (fromVersion < QUESTS_STORE_VERSION.V7) {
+  if (fromVersion < QUESTS_STORE_VERSION.V9) {
     normalizedState.quests = reconcileQuestDefinitions(
       normalizedState.quests ?? [],
       cloneInitialQuests(),

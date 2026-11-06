@@ -110,5 +110,3 @@ export const AfroHair = ({
     </a.group>
   );
 };
-
-useGLTF.preload(PATH);

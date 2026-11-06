@@ -9,6 +9,7 @@ import { useAppStore, useViewStore } from "@/store";
 import { useCoreStore } from "@/store/core/store";
 import { textSynth } from "@/utils/sound/textSynth";
 import { resumeAudioContext, unlockAudioContext } from "@/utils/soundSystem";
+import { chatBubbleStyles, chatTextStyles } from "@/styles/chatBubble";
 import { format } from "date-fns/format";
 
 const AUDIO_CHAR_DURATION_MS = 20;
@@ -25,7 +26,7 @@ export interface MessageBubbleProps {
 }
 
 const useTypewriterAudio = (text: string, isTyping: boolean) => {
-  const { soundSystem } = useCoreStore();
+  const soundSystem = useCoreStore(state => state.soundSystem);
 
   useEffect(() => {
     if (!isTyping || !text) return;
@@ -140,9 +141,10 @@ export const MessageBubble = memo(function MessageBubble({
     pauseSystem,
     resumeSystem,
   } = useMessageStore();
-  const { requestEmotion } = useAppStore();
-  const { previewMode, isReady } = useCoreStore();
-  const { currentView } = useViewStore();
+  const requestEmotion = useAppStore(state => state.requestEmotion);
+  const previewMode = useCoreStore(state => state.previewMode);
+  const isReady = useCoreStore(state => state.isReady);
+  const currentView = useViewStore(state => state.currentView);
 
   const [visibleLines, setVisibleLines] = useState<VisibleLine[]>([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -439,21 +441,7 @@ const BubbleContainer = styled.div`
 `;
 
 const BubbleLine = styled(motion.div)`
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 10px;
-  padding: 15px 20px;
-
-  background: var(--chat-color);
-  color: var(--text-color);
-  border-radius: 24px;
-  box-shadow: 0 4px 20px rgba(33, 33, 33, 0.1);
-
-  width: fit-content;
-  min-width: 90px;
-  max-width: 100%;
+  ${chatBubbleStyles}
 `;
 
 const IndicatorBubble = styled(motion.div)`
@@ -489,12 +477,7 @@ const Dot = styled(motion.div)<{ $delay: number }>`
 
 const TextContainer = styled.div`
   display: block;
-  line-height: 1.4;
-  font-size: 1rem;
-  font-weight: 600;
-  letter-spacing: -1%;
-  color: var(--text-color);
-  white-space: pre-wrap;
+  ${chatTextStyles}
 `;
 
 const WordWrapper = styled.span`

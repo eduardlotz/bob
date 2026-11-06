@@ -47,20 +47,21 @@ export const XboxControllerModel = forwardRef(
     };
 
     return (
-      <Grabbable rigidBodyRef={api} mode={"spring"}>
+      <Grabbable rigidBodyRef={api} mode={"spring"} throwMult={scale[0] * scale[1] * scale[2]}>
         <RigidBody
           {...props}
           ref={api}
           colliders="hull"
           restitution={0.5}
           friction={0.7}
+          ccd
         >
           <mesh
             onPointerEnter={handlePointerEnter}
             onPointerLeave={handlePointerLeave}
             geometry={nodes.Xbox_Controller.geometry}
             material={materials.Mat}
-            scale={0.02}
+            scale={scale.map((value) => value * 0.02) as [number, number, number]}
           />
         </RigidBody>
       </Grabbable>

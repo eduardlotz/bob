@@ -1,5 +1,5 @@
 import { useFloatingBar } from "@/layout/FloatingBar";
-import { FLOOR_Y_POSITION } from "@/molecules/Scene";
+import { FLOOR_Y_POSITION } from "@/store/config/scene";
 import { BasketBox } from "@/physics/BasketBox";
 import {
   ROUTE_PATHS,
@@ -17,8 +17,6 @@ import {
   useCallback,
   useEffect,
   useRef,
-  lazy,
-  Suspense,
 } from "react";
 import { useNavigate } from "react-router-dom";
 import { BackSide } from "three";
@@ -32,21 +30,16 @@ import {
   type SupportedMiniGameType,
 } from "./games/withMiniGameItem";
 import { PingPongGame } from "./games/PingPongGame";
-import { SlotMachineGame } from "./games/SlotMachineGame";
-import { SlotMachineLobbyPreview } from "./games/SlotMachineLobbyPreview";
 import { useI18n } from "@/i18n";
 import { miniGamesSceneMessages } from "./MiniGamesScene.messages";
 import { transitionScreen } from "@/store/screenTransition";
 import { getGameTransition } from "@/styles/screenTransitions";
 
-const MiniGolfGame = lazy(() => import("./games/golf/MiniGolfGame").then(m => ({ default: m.MiniGolfGame })));
-const GolfLobbyPreview = lazy(() => import("./games/golf/GolfModels").then(m => ({ default: m.GolfLobbyPreview })));
 
 const DEFAULT_MINIGAMES_VIEW = "default";
 const getMiniGameThroneY = () => FLOOR_Y_POSITION + 0.18;
 
-// TODO: refactor minigames view to be included as static view configs like slotmachine
-type MiniGamesView = typeof DEFAULT_MINIGAMES_VIEW | "minigames:slot_machine";
+type MiniGamesView = typeof DEFAULT_MINIGAMES_VIEW;
 type MiniGameComponent = ComponentType<{ onExit: () => void }>;
 
 interface LobbyPlacement { position: [number, number, number]; scale: number; }
@@ -62,34 +55,12 @@ interface MiniGameDefinition {
 }
 
 const MINI_GAME_ORDER: SupportedMiniGameType[] = [
-  "SLOT_MACHINE",
   "PING_PONG",
   "FLAPPY_BIRD",
-  "MINI_GOLF",
 ];
 
 const MINI_GAME_DEFINITIONS: Record<SupportedMiniGameType, MiniGameDefinition> =
   {
-    MINI_GOLF: {
-      cameraView: DEFAULT_MINIGAMES_VIEW,
-      GameComponent: MiniGolfGame,
-      renderLobbyItem: (label, onSelect, placement) => (
-        <MiniGameThrone label={label} onClick={() => onSelect("MINI_GOLF")}
-          position={placement.position} scale={placement.scale} objectOffset={[0, 1.8, 0]} objectScale={.8}>
-          <Suspense fallback={null}><GolfLobbyPreview /></Suspense>
-        </MiniGameThrone>
-      ),
-    },
-    SLOT_MACHINE: {
-      cameraView: "minigames:slot_machine",
-      GameComponent: SlotMachineGame,
-      renderLobbyItem: (label, onSelect, placement) => (
-        <MiniGameThrone label={label} onClick={() => onSelect("SLOT_MACHINE")}
-          position={placement.position} scale={placement.scale} objectOffset={[0, 1.74, 0]} objectScale={.85}>
-          <SlotMachineLobbyPreview />
-        </MiniGameThrone>
-      ),
-    },
     PING_PONG: {
       cameraView: DEFAULT_MINIGAMES_VIEW,
       GameComponent: PingPongGame,
@@ -295,7 +266,7 @@ export function MiniGamesScene() {
       /></group>
       {activeGame === "LOBBY" ? (
         <MiniGamesBackdrop />
-      ) : activeGame !== "FLAPPY_BIRD" && activeGame !== "PING_PONG" && activeGame !== "MINI_GOLF" ? (
+      ) : activeGame !== "FLAPPY_BIRD" && activeGame !== "PING_PONG" ? (
         <PointsCounter number={score} />
       ) : null}
     </>

@@ -1,4 +1,5 @@
 import { useBobSkin } from "@/hooks/useBobSkin";
+import { useShallow } from "zustand/react/shallow";
 import { BobTransitionTarget } from "@/components/BobTransitionTarget";
 import { OutlineScope } from "@/components/ForegroundOutlines";
 import { TropicalBobMotion } from "@/3d-objects/worlds/TropicalWorlds";
@@ -7,7 +8,7 @@ import {
   useDeviceOrientation,
 } from "@/hooks/useDeviceOrientation";
 import { useFrame } from "@react-three/fiber";
-import { useRef, useState, useEffect, useLayoutEffect, useMemo, useCallback } from "react";
+import { lazy, Suspense, useRef, useState, useEffect, useLayoutEffect, useMemo, useCallback } from "react";
 import {
   Group,
   Mesh,
@@ -30,6 +31,7 @@ import { EmotionState } from "@/hooks/useBlobEmotions";
 import { getBobItemSlot, useCoreStore } from "@/store/core/store";
 import { useViewStore } from "@/store/viewStore";
 import { useBobEditor } from "@/store/bobEditor";
+import { followsOverviewCamera } from "@/store/config/camera";
 import { match } from "ts-pattern";
 import { BOB_WEARABLES } from "@/components/bob/wearableRegistry";
 import { BobWearables } from "@/components/BobWearables";
@@ -42,7 +44,8 @@ import {
   getBobFaceScale,
   getBobEyePosition,
 } from "@/types/blobForms";
-import { SimsPlumbob } from "@/3d-objects/models/simsPlumbob";
+import { SceneReady } from "@/components/SceneReady";
+import { getBobAssetKey } from "@/utils/bobAssetKeys";
 import { useCursor } from "@/hooks/useCursor";
 import { useCursorStore } from "@/store/core/cursor";
 import { ROUTE_PATHS } from "@/store/config/routes";
@@ -60,6 +63,8 @@ import {
 } from "./bobIdleMotion";
 
 // TODO: move constants to a shared config file
+const SimsPlumbob = lazy(() => import("@/3d-objects/models/simsPlumbob").then(module => ({ default: module.SimsPlumbob })));
+
 const HEAD_POSITION_Y = 0;
 const MAX_ROTATION_X = 0.9;
 const MAX_ROTATION_Y = 0.9;
@@ -174,6 +179,7 @@ const createEyeGeometries = () => {
     new Float32BufferAttribute(dizzyPositions, 3),
   );
   dizzyGeometry.computeVertexNormals();
+  sphereGeometry.dispose();
 
   return {
     baseGeometry,
@@ -211,7 +217,16 @@ export function BlobHead({
     audioSelections,
     getTotalTapMultiplier,
     graphicPreferences,
-  } = useCoreStore();
+  } = useCoreStore(useShallow(state => ({
+    previewMode: state.previewMode,
+    bobItems: state.bobItems,
+    blobForms: state.blobForms,
+    addManualTap: state.addManualTap,
+    tapEffects: state.tapEffects,
+    audioSelections: state.audioSelections,
+    getTotalTapMultiplier: state.getTotalTapMultiplier,
+    graphicPreferences: state.graphicPreferences,
+  })));
   const { currentRoute } = useAppStore();
   const formDraft = useBobEditor(state => state.draft);
 
@@ -233,7 +248,12 @@ export function BlobHead({
   const leftEyeRef = useRef<Mesh>(null!);
   const rightEyeRef = useRef<Mesh>(null!);
 
-  const eyeGeometries = useRef(createEyeGeometries());
+  const eyeGeometries = useRef<ReturnType<typeof createEyeGeometries> | null>(null);
+  if (!eyeGeometries.current) eyeGeometries.current = createEyeGeometries();
+  useEffect(() => {
+    const geometries = eyeGeometries.current!;
+    return () => { Object.values(geometries).forEach(geometry => geometry.dispose()); };
+  }, []);
 
   const setHovering = useCursorStore.getState().setHoveringClickable;
   const setPointerDown = useCursorStore.getState().setPointerDown;
@@ -276,8 +296,6 @@ export function BlobHead({
 
   const {
     currentView,
-    isDefaultView,
-    isNavigationView,
     viewMode,
     isTransitioning,
     isObjectView,
@@ -296,7 +314,7 @@ export function BlobHead({
   const shouldFollowCursor =
     viewMode === "fixed" &&
     !isMobile &&
-    (isDefaultView() || isNavigationView() || currentView === "loading");
+    followsOverviewCamera(currentView);
 
   const mousePosition = useCursor({
     condition: () => shouldFollowCursor,
@@ -648,7 +666,7 @@ export function BlobHead({
       const cameraShakeY =
         !reducedTapMotion && cameraZoomAnimation ? cameraShakeStrength : 0;
 
-      if (!isTransitioning && !isObjectView()) {
+      if (!isTransitioning && !isObjectView() && followsOverviewCamera(currentView)) {
         cameraControlsRef.current?.setLookAt(
           0,
           cameraPose.position[1],
@@ -1048,6 +1066,8 @@ export function BlobHead({
       attached: attachedModels,
       bobOffset,
       detached: detachedModels,
+      attachedAssetKey: getBobAssetKey(allEquippedItems, false),
+      detachedAssetKey: getBobAssetKey(allEquippedItems, true),
     };
   };
 
@@ -1055,11 +1075,16 @@ export function BlobHead({
     attached: attachedItems,
     detached: detachedItems,
     bobOffset,
+    attachedAssetKey,
+    detachedAssetKey,
   } = renderBobItems();
 
   const content = (
     <>
-      <OutlineScope category={false}>{detachedItems}</OutlineScope>
+      <Suspense fallback={null}>
+        <OutlineScope category={false}>{detachedItems}</OutlineScope>
+        <SceneReady key={detachedAssetKey} route={detachedAssetKey} part="bob-detached" />
+      </Suspense>
       <BobSleepZs
         sleep={sleepRef}
         head={headRef}
@@ -1116,7 +1141,10 @@ export function BlobHead({
 
             </BobTransitionTarget>
 
-            {attachedItems}
+            <Suspense fallback={null}>
+              {attachedItems}
+              <SceneReady key={attachedAssetKey} route={attachedAssetKey} part="bob-attached" />
+            </Suspense>
 
             <group userData={{ foregroundOutline: false }} ref={starsRef} visible={emotionState === "dizzy"}>
               {[...Array(5)].map((_, i) => (

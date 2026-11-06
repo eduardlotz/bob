@@ -13,7 +13,7 @@ import {
   HIDDEN_OPTIONS_CAMERA_ZOOM,
   CAMERA_Y_POSITION,
 } from "@/store/config/camera";
-import { FLOOR_Y_POSITION } from "@/molecules/Scene";
+import { FLOOR_Y_POSITION } from "@/store/config/scene";
 import { BasketBox } from "@/physics/BasketBox";
 import { useAppStore, useMiniGameStore } from "@/store";
 import { useFrame } from "@react-three/fiber";
