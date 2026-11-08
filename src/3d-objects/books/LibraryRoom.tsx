@@ -1,112 +1,111 @@
-import { useEffect, useMemo, useRef } from "react";
-import { useFrame } from "@react-three/fiber";
-import { useAppStore } from "@/store";
-import { CanvasTexture, MathUtils, SRGBColorSpace, type Group, type Texture } from "three";
+import { useMemo } from "react";
+import { CatmullRomCurve3, DoubleSide, Shape, Vector3 } from "three";
+import { CloudSky } from "@/3d-objects/worlds/CloudSky";
+import { LIBRARY_ARC, LIBRARY_FLOOR_Y } from "@/store/config/library";
 
-/** A small shared oak grain map; no external texture downloads. */
-export function useLibraryOak() {
-  const texture = useMemo(() => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 128; canvas.height = 512;
-    const ctx = canvas.getContext("2d")!;
-    ctx.fillStyle = "#79583d"; ctx.fillRect(0, 0, 128, 512);
-    for (let x = 0; x < 128; x++) {
-      const shade = 40 + Math.round(18 * Math.sin(x * 1.7) + 12 * Math.sin(x * 0.31));
-      ctx.strokeStyle = `rgba(28,12,6,${0.1 + shade / 250})`;
-      ctx.lineWidth = x % 9 === 0 ? 2 : 0.6;
-      ctx.beginPath(); ctx.moveTo(x, 0);
-      for (let y = 0; y <= 512; y += 16) ctx.lineTo(x + Math.sin(y * 0.018 + x) * 1.6, y);
-      ctx.stroke();
-    }
-    const result = new CanvasTexture(canvas); result.colorSpace = SRGBColorSpace;
-    return result;
-  }, []);
-  useEffect(() => () => texture.dispose(), [texture]);
-  return texture;
+export function Stone({ color = "#a9afac" }: { color?: string }) {
+  return <meshStandardMaterial color={color} roughness={0.94} metalness={0} />;
 }
 
-export function Oak({ texture, color = "#82634e" }: { texture: Texture; color?: string }) {
-  return <meshStandardMaterial map={texture} color={color} roughness={0.83} />;
+/** Static ivy joins the scenery batches, including its stems and two-sided leaves. */
+function ClimbingVine({ angle, length, seed }: { angle: number; length: number; seed: number }) {
+  const { curve, leaves, leaf } = useMemo(() => {
+    const points = Array.from({ length: 17 }, (_, index) => {
+      const t = index / 16;
+      return new Vector3(Math.sin(t * 8 + seed) * 0.11, -t * length, 0.1 + Math.sin(t * 5 + seed) * 0.035);
+    });
+    const curve = new CatmullRomCurve3(points);
+    const leaf = new Shape();
+    leaf.moveTo(0, 0);
+    leaf.bezierCurveTo(-0.12, 0.025, -0.14, 0.17, 0, 0.29);
+    leaf.bezierCurveTo(0.14, 0.17, 0.12, 0.025, 0, 0);
+    const leaves = Array.from({ length: Math.ceil(length * 10) }, (_, index) => {
+      const t = (index + 0.5) / Math.ceil(length * 10);
+      const side = index % 2 ? 1 : -1;
+      const position = curve.getPoint(t);
+      position.x += side * 0.045;
+      position.z += 0.025;
+      return { position, angle: side * (0.65 + Math.sin(index + seed) * 0.28),
+        scale: 0.65 + (Math.sin(index * 2.3 + seed) + 1) * 0.22,
+        color: ["#426347", "#56764f", "#66835b", "#3e5d43"][index % 4] };
+    });
+    return { curve, leaves, leaf };
+  }, [length, seed]);
+  const radius = LIBRARY_ARC.wallInnerRadius - 0.42;
+  return <group position={[Math.sin(angle) * radius, 3.13, -Math.cos(angle) * radius]} rotation={[0, -angle, 0]}>
+    <mesh castShadow><tubeGeometry args={[curve, 32, 0.018, 5, false]} /><meshStandardMaterial color="#526143" roughness={1} /></mesh>
+    {leaves.map((entry, index) => <mesh key={index} position={entry.position} rotation={[0.15 * Math.sin(index), 0.3 * Math.cos(index + seed), entry.angle]} scale={entry.scale} castShadow receiveShadow>
+      <shapeGeometry args={[leaf, 5]} /><meshStandardMaterial color={entry.color} roughness={0.86} side={DoubleSide} />
+    </mesh>)}
+  </group>;
 }
 
-export function LibraryCandle({ position, scale = 1, light = false }: {
-  position: [number, number, number]; scale?: number; light?: boolean;
+/** Solid annular sections, including their end caps; the opening faces +Z. */
+function StoneArc({ inner, outer, top, height, start = -Math.PI / 2, end = Math.PI / 2, color }: {
+  inner: number; outer: number; top: number; height: number; start?: number; end?: number; color?: string;
 }) {
-  return <group position={position} scale={scale}>
-    <mesh position={[0, 0.025, 0]}><cylinderGeometry args={[0.11, 0.14, 0.05, 12]} /><meshStandardMaterial color="#927044" metalness={0.65} roughness={0.4} /></mesh>
-    <mesh position={[0, 0.18, 0]}><cylinderGeometry args={[0.048, 0.055, 0.28, 12]} /><meshStandardMaterial color="#e4c99b" roughness={0.9} /></mesh>
-    <mesh position={[0, 0.36, 0]} scale={[0.045, 0.095, 0.045]}><sphereGeometry args={[1, 8, 8]} /><meshBasicMaterial color="#ffd48a" toneMapped={false} /></mesh>
-    <mesh position={[0, 0.35, 0]} scale={[0.025, 0.05, 0.025]}><sphereGeometry args={[1, 8, 8]} /><meshBasicMaterial color="#fff1cf" toneMapped={false} /></mesh>
-    {light && <pointLight position={[0, 0.45, 0]} color="#ffc579" intensity={3.5} distance={6} decay={2} />}
+  const shape = useMemo(() => {
+    const shape = new Shape();
+    const from = start - Math.PI / 2, to = end - Math.PI / 2;
+    shape.moveTo(Math.cos(from) * outer, Math.sin(from) * outer);
+    shape.absarc(0, 0, outer, from, to, false);
+    if (inner > 0) {
+      shape.lineTo(Math.cos(to) * inner, Math.sin(to) * inner);
+      shape.absarc(0, 0, inner, to, from, true);
+    } else shape.lineTo(0, 0);
+    shape.closePath();
+    return shape;
+  }, [inner, outer, start, end]);
+  return <mesh position={[0, top, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
+    <extrudeGeometry args={[shape, { depth: height, bevelEnabled: false, curveSegments: 48 }]} />
+    <Stone color={color} />
+  </mesh>;
+}
+
+function Column({ angle }: { angle: number }) {
+  const radius = LIBRARY_ARC.wallInnerRadius - 0.18;
+  return <group position={[Math.sin(angle) * radius, -2.04, -Math.cos(angle) * radius]} rotation={[0, -angle, 0]}>
+    <mesh position={[0, 0.13, 0]} castShadow receiveShadow><boxGeometry args={[0.55, 0.26, 0.55]} /><Stone /></mesh>
+    <mesh position={[0, 2.56, 0]} castShadow receiveShadow><cylinderGeometry args={[0.17, 0.22, 4.6, 12]} /><Stone color="#b9bfbc" /></mesh>
+    <mesh position={[0, 4.94, 0]} castShadow receiveShadow><boxGeometry args={[0.55, 0.2, 0.55]} /><Stone /></mesh>
   </group>;
 }
 
-export function LibraryRoom({ oak }: { oak: Texture }) {
+/** A semicircular colonnade: no rear wall, rear roof, or moving camera obstruction. */
+export function LibraryRoom() {
+  const { wallInnerRadius: inner, wallOuterRadius: outer } = LIBRARY_ARC;
   return <group>
-    {/* Dark oak floorboards, offset at the joints. */}
-    <mesh position={[0, -2.12, 0]} receiveShadow><boxGeometry args={[10.4, 0.14, 12]} /><Oak texture={oak} color="#3d2a20" /></mesh>
-    {Array.from({ length: 20 }, (_, row) => [-1, 0, 1].map(column => <mesh key={`${row}-${column}`}
-      position={[-4.94 + row * 0.52, -2.039, column * 4 + (row % 2 ? 0.65 : 0)]} receiveShadow>
-      <boxGeometry args={[0.505, 0.025, 3.98]} /><Oak texture={oak} color={row % 3 ? "#82624b" : "#735039"} />
-    </mesh>))}
-    {/* Paneled walls and their raised timber framing. */}
-    <mesh position={[0, 0.6, -5.05]} receiveShadow><boxGeometry args={[10.4, 5.4, 0.2]} /><meshStandardMaterial color="#302a26" roughness={1} /></mesh>
-    {[-1, 1].map(side => <group key={side}>
-      <mesh position={[side * 5.1, 0.6, 0.5]} receiveShadow><boxGeometry args={[0.2, 5.4, 11.2]} /><meshStandardMaterial color="#302a26" roughness={1} /></mesh>
-      {[-1.85, -0.45, 2.7].map(y => <mesh key={y} position={[side * 4.98, y, 0.5]}><boxGeometry args={[0.13, 0.14, 11]} /><Oak texture={oak} color="#654832" /></mesh>)}
-      {[-4.9, -2, 1, 4].map(z => <mesh key={z} position={[side * 4.97, 0.6, z]}><boxGeometry args={[0.16, 5.4, 0.2]} /><Oak texture={oak} color="#59402e" /></mesh>)}
-    </group>)}
-    {[-1.85, -0.45, 2.7].map(y => <mesh key={y} position={[0, y, -4.91]}><boxGeometry args={[10, 0.14, 0.16]} /><Oak texture={oak} color="#654832" /></mesh>)}
-    {[-4.8, 0, 4.8].map(x => <mesh key={x} position={[x, 0.6, -4.9]}><boxGeometry args={[0.24, 5.4, 0.22]} /><Oak texture={oak} color="#59402e" /></mesh>)}
-    <mesh position={[0, 3.35, 0]}><boxGeometry args={[10.4, 0.15, 12]} /><meshStandardMaterial color="#251d19" roughness={1} /></mesh>
-    {[-4, -1, 2, 5].map(z => <mesh key={z} position={[0, 3.12, z]}><boxGeometry args={[10, 0.35, 0.28]} /><Oak texture={oak} color="#543926" /></mesh>)}
-    {/* Plain woven rug with a subtle tonal border. */}
-    <group position={[0, -2.005, 0.5]}>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow><planeGeometry args={[5.2, 5.7]} /><meshStandardMaterial color="#4b2429" roughness={1} /></mesh>
-      <mesh position={[0, 0.004, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow><planeGeometry args={[4.9, 5.4]} /><meshStandardMaterial color="#532b30" roughness={1} /></mesh>
+    <StoneArc inner={0} outer={6.15} top={LIBRARY_FLOOR_Y} height={0.2} color="#929c99" />
+    {/* Broad, quiet stone tiles follow the room's arc instead of a square grid. */}
+    {[0, 1, 2, 3].flatMap(ring => {
+      const count = 6 + ring * 4;
+      return Array.from({ length: count }, (_, index) => <StoneArc key={`${ring}-${index}`}
+        inner={ring * 1.52 + 0.012} outer={(ring + 1) * 1.52 - 0.012}
+        start={-Math.PI / 2 + index / count * Math.PI + 0.002}
+        end={-Math.PI / 2 + (index + 1) / count * Math.PI - 0.002}
+        top={LIBRARY_FLOOR_Y + 0.02} height={0.02} color={(ring + index) % 4 ? "#aeb6b2" : "#a4ada9"} />);
+    })}
+    {/* A shallow apron under the overview, with the space behind the camera open. */}
+    <mesh position={[0, LIBRARY_FLOOR_Y - 0.1, 0.98]} receiveShadow><boxGeometry args={[12.3, 0.2, 1.96]} /><Stone color="#aeb6b2" /></mesh>
+    <StoneArc inner={inner} outer={outer} top={3} height={5.05} />
+    <StoneArc inner={inner - 0.16} outer={outer + 0.04} top={-1.66} height={0.38} color="#929d99" />
+    <StoneArc inner={inner - 0.2} outer={outer + 0.15} top={3.2} height={0.28} color="#c3c9c5" />
+    {[-90, -45, 0, 45, 90].map(degrees => <Column key={degrees} angle={degrees * Math.PI / 180} />)}
+    {[[-87, 3.65], [-49, 2.15], [-42, 1.1], [-5, 1.5], [3, 0.85], [43, 2.7], [49, 1.3], [87, 4.15]].map(([degrees, length], index) =>
+      <ClimbingVine key={degrees} angle={degrees * Math.PI / 180} length={length} seed={index * 1.7} />)}
+    <group position={[0, -2.02, 0.35]}>
+      <mesh position={[0, 0.6, 0]} castShadow receiveShadow><boxGeometry args={[2.2, 0.16, 0.72]} /><Stone color="#c3c9c5" /></mesh>
+      {[-0.8, 0.8].map(x => <mesh key={x} position={[x, 0.26, 0]} castShadow receiveShadow><boxGeometry args={[0.22, 0.52, 0.58]} /><Stone /></mesh>)}
     </group>
-    {/* A heavy reading table with turned feet, brass corners, and open pages. */}
-    <group position={[0, -2.03, 0.75]}>
-      <mesh position={[0, 1.05, 0]} castShadow receiveShadow><boxGeometry args={[2.5, 0.16, 1.3]} /><Oak texture={oak} color="#987453" /></mesh>
-      <mesh position={[0, 0.87, 0]} castShadow><boxGeometry args={[2.24, 0.25, 1.1]} /><Oak texture={oak} color="#735039" /></mesh>
-      {[-1, 1].flatMap(x => [-0.46, 0.46].map(z => <group key={`${x}-${z}`} position={[x, 0, z]}>
-        <mesh position={[0, 0.47, 0]} castShadow><cylinderGeometry args={[0.095, 0.12, 0.94, 10]} /><Oak texture={oak} color="#76553c" /></mesh>
-        {[0.15, 0.72].map(y => <mesh key={y} position={[0, y, 0]}><sphereGeometry args={[0.14, 10, 8]} /><Oak texture={oak} color="#76553c" /></mesh>)}
-      </group>))}
-      <mesh position={[0, 0.23, 0]}><boxGeometry args={[2.1, 0.1, 0.12]} /><Oak texture={oak} /></mesh>
-      <group position={[-0.2, 1.16, 0.08]} rotation={[0, -0.16, 0]}>
-        {[-1, 1].map(side => <group key={side} rotation={[0, 0, side * -0.08]}>
-          <mesh position={[side * 0.22, 0, 0]}><boxGeometry args={[0.44, 0.045, 0.61]} /><meshStandardMaterial color="#392029" roughness={0.9} /></mesh>
-          <mesh position={[side * 0.21, 0.033, 0]}><boxGeometry args={[0.41, 0.035, 0.57]} /><meshStandardMaterial color="#caba96" roughness={1} /></mesh>
-          {Array.from({ length: 9 }, (_, i) => <mesh key={i} position={[side * 0.21, 0.052, -0.21 + i * 0.05]}><boxGeometry args={[0.28, 0.001, 0.007]} /><meshStandardMaterial color="#766652" /></mesh>)}
-        </group>)}
-      </group>
-      <LibraryCandle position={[0.86, 1.14, -0.2]} light />
-      <LibraryCandle position={[0.62, 1.14, -0.31]} scale={0.75} />
-    </group>
-    {/* Warm fill keeps the oak readable beneath the shared scene lighting. */}
-    <pointLight position={[-3.8, 1.7, -2.6]} color="#ffc17b" intensity={7} distance={9} decay={2} />
-    <pointLight position={[3.8, 1.7, -2.6]} color="#ffc17b" intensity={7} distance={9} decay={2} />
   </group>;
 }
 
-/** Keep the wall behind the overview camera, and move it back for the menu camera. */
-export function LibraryBackWall({ oak }: { oak: Texture }) {
-  const wall = useRef<Group>(null);
-  const showOptions = useAppStore(state => state.showOptions);
-  useFrame((_, delta) => {
-    if (wall.current) wall.current.position.z = MathUtils.damp(wall.current.position.z, showOptions ? 10 : 6, 10, delta);
-  }, -1.5);
-  return <group ref={wall} position={[0, 0, 6]} userData={{ foregroundOutline: false }}>
-    <mesh position={[0, 0.6, 0]} receiveShadow>
-      <boxGeometry args={[10.4, 5.4, 0.2]} />
-      <meshStandardMaterial color="#302a26" roughness={1} />
-    </mesh>
-    {[-1.85, -0.45, 2.7].map(y => <mesh key={y} position={[0, y, -0.14]}>
-      <boxGeometry args={[10, 0.14, 0.16]} /><Oak texture={oak} color="#654832" />
-    </mesh>)}
-    {[-4.8, 0, 4.8].map(x => <mesh key={x} position={[x, 0.6, -0.15]}>
-      <boxGeometry args={[0.24, 5.4, 0.22]} /><Oak texture={oak} color="#59402e" />
-    </mesh>)}
-  </group>;
+export function LibraryDaylight() {
+  return <>
+    <CloudSky climate="city" colors={["#93afc7", "#c5d4df", "#e7eceb"]} stops={[0, 0.48, 1]} sunDirection={[-0.4, 1, 0.6]} />
+    <hemisphereLight args={["#eef3f6", "#8b9289", 1.15]} />
+    <directionalLight position={[-4, 10, 6]} color="#fffefa" intensity={1.65} castShadow
+      shadow-mapSize={[1024, 1024]} shadow-camera-left={-8} shadow-camera-right={8}
+      shadow-camera-top={8} shadow-camera-bottom={-8} shadow-normalBias={0.025} shadow-radius={4} />
+  </>;
 }

@@ -3,6 +3,7 @@ import CameraControls from "camera-controls";
 import { useViewStore } from "@/store/viewStore";
 import { LIBRARY_SHELF_MIN_DISTANCE, LIBRARY_SHELF_MAX_DISTANCE } from "@/store/config/library";
 import { useLibraryStore } from "@/store/exploration";
+import { getLibraryWorldTransform } from "@/store/config/libraryFraming";
 
 export function useLibraryControls() {
   const currentView = useViewStore(state => state.currentView);
@@ -20,8 +21,9 @@ export function useLibraryControls() {
     controls.mouseButtons.wheel = focused ? CameraControls.ACTION.NONE : CameraControls.ACTION.DOLLY;
     controls.touches.one = focused ? CameraControls.ACTION.NONE : CameraControls.ACTION.TOUCH_TRUCK;
     controls.touches.two = focused ? CameraControls.ACTION.NONE : CameraControls.ACTION.TOUCH_DOLLY_TRUCK;
-    controls.minDistance = LIBRARY_SHELF_MIN_DISTANCE;
-    controls.maxDistance = LIBRARY_SHELF_MAX_DISTANCE;
+    const { scale } = getLibraryWorldTransform();
+    controls.minDistance = LIBRARY_SHELF_MIN_DISTANCE * scale;
+    controls.maxDistance = LIBRARY_SHELF_MAX_DISTANCE * scale;
     return () => {
       const state = useViewStore.getState();
       state.applyViewModeToControls(state.viewMode);

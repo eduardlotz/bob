@@ -78,7 +78,7 @@ export const helpDataset: Record<Locale, Record<HelpTopicId, HelpEntry>> = {
     },
     settings: {
       question: "What can I change in Options?",
-      answer: "Options lets you switch between English and German, adjust sound volumes, and change visual preferences such as tap animations, particles, outlines, and fisheye. You can change these whenever you like.",
+      answer: "Options lets you switch between English and German, adjust sound volumes, and change visual preferences such as tap animations, particles, and fisheye. You can change these whenever you like.",
       next: ["sound", "photos"],
     },
     sound: {
@@ -140,7 +140,7 @@ export const helpDataset: Record<Locale, Record<HelpTopicId, HelpEntry>> = {
     },
     settings: {
       question: "Was kann ich in Optionen ändern?",
-      answer: "Hier wechselst du zwischen Deutsch und Englisch, passt Lautstärken an und änderst visuelle Optionen wie Tap-Animationen, Partikel, Konturen und Fisheye. Du kannst alles jederzeit anpassen.",
+      answer: "Hier wechselst du zwischen Deutsch und Englisch, passt Lautstärken an und änderst visuelle Optionen wie Tap-Animationen, Partikel und Fisheye. Du kannst alles jederzeit anpassen.",
       next: ["sound", "photos"],
     },
     sound: {

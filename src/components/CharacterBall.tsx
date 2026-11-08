@@ -31,7 +31,6 @@ export const CharacterBall = forwardRef((props: Props, ref: any) => {
 
   const blobColor = skin.body;
   const eyeColor = skin.eyes;
-  const outlineColor = skin.outline;
 
   const {
     position,
@@ -68,7 +67,6 @@ export const CharacterBall = forwardRef((props: Props, ref: any) => {
             items={bobItems.filter((item) => item.enabled)}
             blobFormType={formType}
             parameters={parameters}
-            outlineColor={outlineColor}
           />
         </Suspense>
       </CharacterBallModel>
@@ -88,10 +86,10 @@ export const CharacterBallModel = forwardRef<Group, {
   eyeColor ??= skin.eyes;
   const eyes = useMemo(() => new SphereGeometry(.12, 16, 16), []);
   useEffect(() => () => eyes.dispose(), [eyes]);
-  return <group ref={ref} scale={scale} userData={{ foregroundOutline: "bob" }}>
+  return <group ref={ref} scale={scale}>
     <BobTransitionTarget enabled={transitionTarget}>
       <BlobForm formType={formType} parameters={parameters} blobColor={blobColor} skin={skin} />
-      <group userData={{ foregroundOutline: false }} position={getBobEyePosition([0, .2, .85], formType, parameters)} scale={getBobFaceScale(formType, parameters)}>
+      <group position={getBobEyePosition([0, .2, .85], formType, parameters)} scale={getBobFaceScale(formType, parameters)}>
         <mesh geometry={eyes} position={[-.45, 0, 0]}><meshToonMaterial color={eyeColor} /></mesh>
         <mesh geometry={eyes} position={[.45, 0, 0]}><meshToonMaterial color={eyeColor} /></mesh>
       </group>

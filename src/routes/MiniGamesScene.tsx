@@ -129,7 +129,7 @@ function MiniGamesLobby({
         );
       })}
 
-      <group userData={{ foregroundOutline: false }}><MiniGamesLobbyBounds /></group>
+      <group><MiniGamesLobbyBounds /></group>
     </group>
   );
 }
@@ -184,7 +184,7 @@ function MiniGamesContent({
 
   const ActiveGame = activeDefinition.GameComponent;
 
-  return <group userData={{ foregroundOutline: false }}><ActiveGame onExit={onExit} /></group>;
+  return <group><ActiveGame onExit={onExit} /></group>;
 }
 
 function MiniGamesBackdrop() {
@@ -259,7 +259,7 @@ export function MiniGamesScene() {
 
   return (
     <>
-      <group userData={{ foregroundOutline: "foreground" }}><MiniGamesContent
+      <group><MiniGamesContent
         activeGame={activeGame}
         onSelect={handleSelect}
         onExit={handleExit}

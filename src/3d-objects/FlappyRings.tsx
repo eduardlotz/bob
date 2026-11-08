@@ -11,7 +11,6 @@ import * as THREE from "three";
 import { ringCrossing } from "./flappyCollision";
 import { getFlappyRingColliders } from "./flappyRingGeometry";
 import { scaleGameCoordinate } from "@/utils/gameSizing";
-import { Outlines } from "@react-three/drei";
 
 export const BASE_RING_SPEED = 3.8;
 export const RING_SPEED_SCORE_FACTOR = 0.035;

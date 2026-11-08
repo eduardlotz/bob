@@ -5,7 +5,6 @@ export const optionsMessages = defineMessages({
     sections: {
       bobShape: "Bobs Form",
       effects: "Effekte",
-      outlines: "Konturen",
       camera: "Kamera",
       audio: "Audio",
     },
@@ -48,7 +47,6 @@ export const optionsMessages = defineMessages({
       tapAnimationDescription:
         "Auto-Taps werden weiterhin gesammelt, auch ohne Animation",
       tapParticles: "Tap-Partikel",
-      outlineCounter: "Zähler", outlineBob: "Bob & Kostüme", outlineForeground: "Weitere Objekte",
       fisheye: "Fisheye",
       master: "Master",
       music: "Musik",
@@ -70,7 +68,6 @@ export const optionsMessages = defineMessages({
     sections: {
       bobShape: "Bob shape",
       effects: "Effects",
-      outlines: "Outlines",
       camera: "Camera",
       audio: "Audio",
     },
@@ -113,7 +110,6 @@ export const optionsMessages = defineMessages({
       tapAnimationDescription:
         "Auto-taps are still collected, even without animation",
       tapParticles: "Tap Particles",
-      outlineCounter: "Counter", outlineBob: "Bob & costumes", outlineForeground: "Other foreground",
       fisheye: "Fisheye",
       master: "Master",
       music: "Music",

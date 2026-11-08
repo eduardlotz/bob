@@ -328,7 +328,6 @@ interface GameState {
     effectsEnabled: boolean;
     reducedTapMotion: boolean;
     fisheyeEnabled: boolean;
-    outlines: { counter: boolean; bob: boolean; foreground: boolean };
   };
 
   audioSelections: {
@@ -382,7 +381,6 @@ interface GameStateActions {
   setBobSkin: (skinId: SkinId) => void;
   purchaseBobSkin: (skinId: SkinId) => void;
   previewBobSkin: (skinId: SkinId) => void;
-  toggleOutline: (category: "counter" | "bob" | "foreground") => void;
   selectBlobForm: (blobFormId: string) => void;
   updateBlobFormParameters: (
     blobFormId: string,
@@ -599,7 +597,6 @@ export const initialGameState: GameState = {
     effectsEnabled: true,
     reducedTapMotion: false,
     fisheyeEnabled: true,
-    outlines: { counter: true, bob: true, foreground: true },
   },
   audioSelections: {
     worldMusicId: "world-jazz",
@@ -1083,10 +1080,6 @@ export const useCoreStore = create<GameStore>()(
             return { taps: state.taps - skin.cost!, purchasedBobSkinIds: [...state.purchasedBobSkinIds, skinId], bobSkinId: skinId };
           });
         },
-        toggleOutline: (category) => set(state => ({ graphicPreferences: {
-          ...state.graphicPreferences,
-          outlines: { ...state.graphicPreferences.outlines, [category]: !state.graphicPreferences.outlines[category] },
-        } })),
 
         selectBlobForm: (blobFormId: string) => {
           set((state) => {
@@ -1809,8 +1802,10 @@ export const useCoreStore = create<GameStore>()(
             purchasedBobSkinIds: BOB_SKINS.filter(skin => skin.cost && Array.isArray(saved?.purchasedBobSkinIds) && saved.purchasedBobSkinIds.includes(skin.id)).map(skin => skin.id),
             graphicPreferences: {
               ...currentState.graphicPreferences,
-              ...saved?.graphicPreferences,
-              outlines: { ...currentState.graphicPreferences.outlines, ...saved?.graphicPreferences?.outlines },
+              qualityMode: saved?.graphicPreferences?.qualityMode ?? currentState.graphicPreferences.qualityMode,
+              effectsEnabled: saved?.graphicPreferences?.effectsEnabled ?? currentState.graphicPreferences.effectsEnabled,
+              reducedTapMotion: saved?.graphicPreferences?.reducedTapMotion ?? currentState.graphicPreferences.reducedTapMotion,
+              fisheyeEnabled: saved?.graphicPreferences?.fisheyeEnabled ?? currentState.graphicPreferences.fisheyeEnabled,
             },
           };
         },

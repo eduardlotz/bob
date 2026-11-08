@@ -1,3 +1,4 @@
+import { useVinylStore } from "@/store/vinyls";
 import { useViewStore } from "@/store/viewStore";
 import { useKeyPress } from "@/hooks/useKeyPress";
 import { motion, AnimatePresence } from "motion/react";
@@ -34,6 +35,7 @@ export function ViewControls() {
   const currentRoute = useAppStore((s) => s.currentRoute);
   const { focusedBook } = useBooksStore();
   const { focusedThrone } = useSocialsStore();
+  const vinyl = useVinylStore(state => state.selected);
   const { locale, messages } = useI18n();
   const libraryStatus = useLibraryStore(state => state.status);
   const libraryMedia = useLibraryStore(state => state.media);
@@ -59,6 +61,7 @@ export function ViewControls() {
     isGameActive ||
     isMinigamesRoute ||
     isTransitioning ||
+    vinyl !== null ||
     focusedBook ||
     focusedThrone;
   const isViewEligible = !isDefault && !isPhone && !isCreative && !isNavigation;
@@ -83,6 +86,7 @@ export function ViewControls() {
 
   const handleBackClick = () => {
     if (isTransitioning) return;
+    if (vinyl !== null) { useVinylStore.getState().select(null); return; }
     if (isLiterature) { useLibraryStore.getState().reset(); return; }
     resetToDefaultView();
   };

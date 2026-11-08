@@ -1,7 +1,6 @@
 import { useBobSkin } from "@/hooks/useBobSkin";
 import { useShallow } from "zustand/react/shallow";
 import { BobTransitionTarget } from "@/components/BobTransitionTarget";
-import { OutlineScope } from "@/components/ForegroundOutlines";
 import { TropicalBobMotion } from "@/3d-objects/worlds/TropicalWorlds";
 import {
   DeviceOrientation,
@@ -236,7 +235,6 @@ export function BlobHead({
   const skin = useBobSkin();
 
   const blobColor = skin.body;
-  const outlineColor = skin.outline;
   const eyeColor = skin.eyes;
   const headRef = useRef<Group>(null!);
   const menuGazeLift = useRef(0);
@@ -1036,7 +1034,6 @@ export function BlobHead({
         items={allEquippedItems}
         blobFormType={blobFormType}
         parameters={selectedBlobForm.parameters}
-        outlineColor={outlineColor}
       />
     );
 
@@ -1082,7 +1079,7 @@ export function BlobHead({
   const content = (
     <>
       <Suspense fallback={null}>
-        <OutlineScope category={false}>{detachedItems}</OutlineScope>
+        <group>{detachedItems}</group>
         <SceneReady key={detachedAssetKey} route={detachedAssetKey} part="bob-detached" />
       </Suspense>
       <BobSleepZs
@@ -1119,7 +1116,7 @@ export function BlobHead({
           rotation={[0, Math.PI, 0]}
           // position={[0, 2, 0]}
         >
-          <group ref={idleMotionRef} name="bob-idle-motion" userData={{ foregroundOutline: "bob" }}>
+          <group ref={idleMotionRef} name="bob-idle-motion">
             <BobTransitionTarget>
               <BlobForm
                 formType={blobFormType}
@@ -1128,7 +1125,7 @@ export function BlobHead({
                 skin={skin}
               />
 
-              <group userData={{ foregroundOutline: false }} position={calculateEyePosition([0, 0.2, 0.85])} scale={getBobFaceScale(blobFormType, selectedBlobForm.parameters)}>
+              <group position={calculateEyePosition([0, 0.2, 0.85])} scale={getBobFaceScale(blobFormType, selectedBlobForm.parameters)}>
                 <mesh ref={leftEyeRef} position={[-0.45, 0, 0]}>
                   <sphereGeometry args={[0.1, 16, 16]} />
                   <meshToonMaterial color={eyeColor} />
@@ -1146,7 +1143,7 @@ export function BlobHead({
               <SceneReady key={attachedAssetKey} route={attachedAssetKey} part="bob-attached" />
             </Suspense>
 
-            <group userData={{ foregroundOutline: false }} ref={starsRef} visible={emotionState === "dizzy"}>
+            <group ref={starsRef} visible={emotionState === "dizzy"}>
               {[...Array(5)].map((_, i) => (
                 <Star3D key={`dizzy-star-${i}`} />
               ))}

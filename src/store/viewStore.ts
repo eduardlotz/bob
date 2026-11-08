@@ -1,4 +1,5 @@
-import { LIBRARY_SHELF_MIN_DISTANCE, LIBRARY_SHELF_MAX_DISTANCE, LIBRARY_SHELF_FOCUS_DISTANCE } from "./config/library";
+import { LIBRARY_SHELVES, LIBRARY_SHELF_MIN_DISTANCE, LIBRARY_SHELF_MAX_DISTANCE, LIBRARY_SHELF_FOCUS_DISTANCE } from "./config/library";
+import { aboutCornerPose, ABOUT_CORNER_ORBIT } from "./config/aboutRoom";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import type { CameraControls } from "@react-three/drei";
@@ -22,6 +23,7 @@ import { getSelectedBlobForm, getBlobFormType, getBlobFormHalfSize, getBobGround
 import { useBobEditor } from "./bobEditor";
 import { getBobEditorFraming } from "./config/bobEditorFraming";
 import { getPhotoCameraFraming } from "./config/photoCameraFraming";
+import { getLibraryWorldTransform, libraryWorldPoint } from "./config/libraryFraming";
 
 export interface CameraView {
   id: string;
@@ -79,6 +81,7 @@ export type CameraViewId =
   | "desk"
   | "bookshelf"
   | "computer"
+  | "socials"
   | "cardbox"
   | "library"
   | "library:have-read"
@@ -168,6 +171,14 @@ const applyOrbitSettingsToControls = (
 };
 
 const resolveViewPose = (viewConfig?: CameraView) => {
+  if (viewConfig?.position && viewConfig.target && viewConfig.id.startsWith("library:") &&
+    LIBRARY_SHELVES.some(shelf => viewConfig.id === `library:${shelf.status}`)) {
+    const world = getLibraryWorldTransform();
+    return {
+      position: libraryWorldPoint(viewConfig.position, world),
+      target: libraryWorldPoint(viewConfig.target, world),
+    };
+  }
   if (viewConfig?.id === "phone:photo") {
     const state = useCoreStore.getState();
     const selected = getSelectedBlobForm(state.blobForms);
@@ -268,27 +279,27 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
     defaultViewMode: "fixed",
   },
   library: {
-    id: "library", name: "Literature", ...HEAD_CAMERA_POSES.default,
+    id: "library", name: "Library", ...HEAD_CAMERA_POSES.default,
     defaultViewMode: "fixed", transition: { duration: 800, easing: "easeInOutCubic" },
   },
   "library:currently-reading": {
-    id: "library:currently-reading", name: "Currently Reading", position: [-0.7, 1.15, 0.4], target: [-4.4, -0.05, -0.8],
-    defaultViewMode: "fixed", transition: { duration: 650, easing: "easeInOutCubic" },
+    id: "library:currently-reading", name: "Currently Reading", position: LIBRARY_SHELVES.find(shelf => shelf.status === "currently-reading")!.camera, target: LIBRARY_SHELVES.find(shelf => shelf.status === "currently-reading")!.target,
+    defaultViewMode: "fixed", transition: { duration: 450, easing: "easeInOutCubic" },
     orbit: { defaultDistance: LIBRARY_SHELF_FOCUS_DISTANCE, minDistance: LIBRARY_SHELF_MIN_DISTANCE, maxDistance: LIBRARY_SHELF_MAX_DISTANCE },
   },
   "library:have-read": {
-    id: "library:have-read", name: "Read", position: [-2.25, 1.2, 0], target: [-2.25, -0.05, -4.35],
-    defaultViewMode: "fixed", transition: { duration: 650, easing: "easeInOutCubic" },
+    id: "library:have-read", name: "Read", position: LIBRARY_SHELVES.find(shelf => shelf.status === "have-read")!.camera, target: LIBRARY_SHELVES.find(shelf => shelf.status === "have-read")!.target,
+    defaultViewMode: "fixed", transition: { duration: 450, easing: "easeInOutCubic" },
     orbit: { defaultDistance: LIBRARY_SHELF_FOCUS_DISTANCE, minDistance: LIBRARY_SHELF_MIN_DISTANCE, maxDistance: LIBRARY_SHELF_MAX_DISTANCE },
   },
   "library:will-read": {
-    id: "library:will-read", name: "To Read", position: [2.25, 1.2, 0], target: [2.25, -0.05, -4.35],
-    defaultViewMode: "fixed", transition: { duration: 650, easing: "easeInOutCubic" },
+    id: "library:will-read", name: "To Read", position: LIBRARY_SHELVES.find(shelf => shelf.status === "will-read")!.camera, target: LIBRARY_SHELVES.find(shelf => shelf.status === "will-read")!.target,
+    defaultViewMode: "fixed", transition: { duration: 450, easing: "easeInOutCubic" },
     orbit: { defaultDistance: LIBRARY_SHELF_FOCUS_DISTANCE, minDistance: LIBRARY_SHELF_MIN_DISTANCE, maxDistance: LIBRARY_SHELF_MAX_DISTANCE },
   },
   "library:wanna-buy": {
-    id: "library:wanna-buy", name: "Wishlist", position: [0.7, 1.15, 0.4], target: [4.4, -0.05, -0.8],
-    defaultViewMode: "fixed", transition: { duration: 650, easing: "easeInOutCubic" },
+    id: "library:wanna-buy", name: "Wishlist", position: LIBRARY_SHELVES.find(shelf => shelf.status === "wanna-buy")!.camera, target: LIBRARY_SHELVES.find(shelf => shelf.status === "wanna-buy")!.target,
+    defaultViewMode: "fixed", transition: { duration: 450, easing: "easeInOutCubic" },
     orbit: { defaultDistance: LIBRARY_SHELF_FOCUS_DISTANCE, minDistance: LIBRARY_SHELF_MIN_DISTANCE, maxDistance: LIBRARY_SHELF_MAX_DISTANCE },
   },
   "library:blogs": {
@@ -444,13 +455,20 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   },
   computer: {
     id: "computer",
-    name: "Work Corner View",
-    position: [2, 1.45, -0.45],
-    target: [2, -0.1, -3.8],
+    name: "Green & Socials Corner View",
+    ...aboutCornerPose("green", [-0.3, 2.9, 3.2], [0.4, 2.35, 0.2]),
+    orbit: { ...ABOUT_CORNER_ORBIT, defaultDistance: 3.1 },
     transition: {
       duration: 1200,
       easing: "easeInOutCubic",
     },
+    defaultViewMode: "object",
+  },
+  socials: {
+    id: "socials", name: "Vinyl & Socials View",
+    ...aboutCornerPose("socials", [0, 3.1, 3.6], [0, 2.9, 0.05]),
+    orbit: ABOUT_CORNER_ORBIT,
+    transition: { duration: 700, easing: "easeInOutCubic" },
     defaultViewMode: "object",
   },
   cardbox: {

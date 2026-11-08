@@ -13,7 +13,6 @@ interface InteractiveObjectProps {
   mode?: InteractionMode;
   onDialogOpen?: () => void;
   viewId?: CameraViewId;
-  showOutline?: boolean;
   position?: [number, number, number];
 }
 
@@ -64,7 +63,7 @@ export function InteractiveObject({
 
   return (
     <group
-      userData={{ foregroundOutline: "foreground" }}
+
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
       onClick={handlePointerDown}

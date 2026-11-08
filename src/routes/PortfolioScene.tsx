@@ -28,7 +28,7 @@ export function PortfolioScene() {
   return (
     <>
       <Stars radius={70} depth={100} count={1000} factor={1} speed={0.5} fade />
-      {showFileOrbit && <group userData={{ foregroundOutline: "foreground" }}><FileOrbit isSuspended={isFileOrbitSuspended} /></group>}
+      {showFileOrbit && <group><FileOrbit isSuspended={isFileOrbitSuspended} /></group>}
       <color attach="background" args={["#0e0e0e"]} />
     </>
   );

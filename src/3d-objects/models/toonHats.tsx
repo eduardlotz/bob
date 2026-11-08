@@ -229,13 +229,11 @@ export function ToonHat({
   position,
   scale,
   preview,
-  outlineColor = "#000000",
 }: {
   kind: keyof typeof hatBuilders;
   position: Vec3;
   scale: Vec3;
   preview: boolean;
-  outlineColor?: string;
 }) {
   const geometry = useMemo(hatBuilders[kind], [kind]);
   const rotorGeometry = useMemo(

@@ -123,7 +123,7 @@ export const SingleBook = memo(
 
     return (
       <mesh
-        userData={{ outlineThickness: 0.0025 }}
+
         ref={setRef}
         geometry={BOOK_GEO}
         material={mats}
@@ -324,7 +324,7 @@ export const FocusedBookMesh = ({
 
   return (
     <mesh
-      userData={{ foregroundOutline: "foreground", outlineThickness: 0.0025 }}
+
       ref={meshRef}
       geometry={BOOK_GEO}
       material={mats}

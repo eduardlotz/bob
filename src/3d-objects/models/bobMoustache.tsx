@@ -30,12 +30,11 @@ function moustacheGeometry(curved: boolean) {
   return assemble([[geometry, "#211d1b"]]);
 }
 
-export function BobMoustache({ position, scale, curved, preview, outlineColor = "#000000" }: {
+export function BobMoustache({ position, scale, curved, preview }: {
   position: Vec3;
   scale: Vec3;
   curved: boolean;
   preview: boolean;
-  outlineColor?: string;
 }) {
   const geometry = useMemo(() => moustacheGeometry(curved), [curved]);
   useEffect(() => () => geometry.dispose(), [geometry]);

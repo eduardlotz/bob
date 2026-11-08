@@ -93,7 +93,7 @@ export const TapCounter = () => {
   }, [taps, api, reducedTapMotion]);
 
   return (
-    <a.group userData={{ foregroundOutline: "counter" }} ref={groupRef} scale={spring.scale as any}>
+    <a.group ref={groupRef} scale={spring.scale as any}>
       <a.group position={responsivePosition}>
         <Text3D
           font={FONT_PATH}

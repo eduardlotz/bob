@@ -1,6 +1,5 @@
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
-import { Profiler, lazy, useEffect, useRef, useState, type CSSProperties } from "react";
-import { recordAuditCommit } from "@/components/TemporaryPerformanceAudit";
+import { lazy, useEffect, useRef, useState, type CSSProperties } from "react";
 import { FullScreen, ContentWidth, FillColumn } from "@/layout";
 import MainLayout from "@/layout/MainLayout";
 import { GlobalStyle } from "@/styles/global";
@@ -151,7 +150,7 @@ export default function App() {
           <DebugSceneTuningOverlays />
 
           <RouteScreenTransitions />
-          <Profiler id="ui" onRender={recordAuditCommit}><MainLayout>
+          <MainLayout>
             <ContentWrapper>
               <ContentWidth>
                 <RouteLoadingBoundary route={location.pathname}>
@@ -171,7 +170,7 @@ export default function App() {
                 </RouteLoadingBoundary>
               </ContentWidth>
             </ContentWrapper>
-          </MainLayout></Profiler>
+          </MainLayout>
 
           <FloatingBarUI />
           <CursorInputBridge />

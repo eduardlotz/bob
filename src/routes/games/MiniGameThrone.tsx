@@ -5,7 +5,6 @@ import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { type ReactNode, useCallback, useRef } from "react";
 import { type MeshBasicMaterial } from "three";
 import * as THREE from "three";
-// import { Outlines } from "@react-three/drei";
 
 type MiniGameThroneProps = {
   children: ReactNode;
@@ -109,19 +108,16 @@ export function MiniGameThrone({
         <mesh position={[0, 0.08, 0]} receiveShadow>
           <cylinderGeometry args={[0.92, 1.08, 0.16, 8]} />
           <meshToonMaterial color={STONE_SECONDARY} />
-          {/* <Outlines screenspace thickness={0.02} color="#847d74" /> */}
         </mesh>
 
         <mesh position={[0, 0.76, 0]} castShadow receiveShadow>
           <cylinderGeometry args={[0.34, 0.34, 1.2, 40]} />
           <meshToonMaterial color={STONE_WARM} />
-          {/* <Outlines screenspace thickness={0.02} color="#8b877e" /> */}
         </mesh>
 
         <mesh position={[0, 1.47, 0]} castShadow receiveShadow>
           <boxGeometry args={[1.18, 0.3, 1.18]} />
           <meshToonMaterial color={STONE_PRIMARY} />
-          {/* <Outlines screenspace thickness={0.02} color="#8b877e" /> */}
         </mesh>
       </group>
 

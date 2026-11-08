@@ -29,13 +29,12 @@ export function StaticLibraryBatch({ children }: { children: ReactNode }) {
   const source = useRef<Group>(null!);
   const output = useRef<Group>(null!);
   useLayoutEffect(() => {
-    if (new URLSearchParams(window.location.search).has("library-baseline")) return;
     const batches = createLibraryBatches(source.current);
-    const originals: { mesh: Mesh; scope: unknown; visible: boolean }[] = [];
+    const originals: { mesh: Mesh; visible: boolean }[] = [];
     source.current.traverse(object => {
       if (!(object instanceof Mesh)) return;
-      originals.push({ mesh: object, scope: object.userData.foregroundOutline, visible: object.visible });
-      object.visible = false; object.userData.foregroundOutline = false;
+      originals.push({ mesh: object, visible: object.visible });
+      object.visible = false;
     });
     for (const mesh of batches.meshes) output.current.add(mesh);
     return () => {
@@ -43,7 +42,6 @@ export function StaticLibraryBatch({ children }: { children: ReactNode }) {
       batches.dispose();
       for (const original of originals) {
         original.mesh.visible = original.visible;
-        original.mesh.userData.foregroundOutline = original.scope;
       }
     };
   }, []);

@@ -6,13 +6,13 @@ export const routeTitlesMessages = defineMessages({
     about: "Über mich — Eduard Lotz",
     portfolio: "Portfolio — Eduard Lotz",
     minigames: "Minispiele — Eduard Lotz",
-    library: "Literatur — Eduard Lotz",
+    library: "Bibliothek — Eduard Lotz",
   },
   en: {
     home: "Eduard Lotz",
     about: "About — Eduard Lotz",
     portfolio: "Portfolio — Eduard Lotz",
     minigames: "Mini Games — Eduard Lotz",
-    library: "Literature — Eduard Lotz",
+    library: "Library — Eduard Lotz",
   },
 });

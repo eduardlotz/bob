@@ -20,7 +20,6 @@ interface ModelProps {
   scale: Vec3;
   rotation?: Vec3;
   preview: boolean;
-  outlineColor?: string;
   formType: BlobFormType;
   body: BobBodyFit;
 }
@@ -32,8 +31,6 @@ export interface WearableDefinition {
   mount: WearableMount;
   /** Shift the whole Bob, including body and face, while this item is attached. */
   bobOffset?: Vec3;
-  /** Preserve models that use their own outline color. Defaults to true. */
-  useThemeOutline?: boolean;
 }
 
 const toonHat = (kind: ComponentProps<typeof ToonHat>["kind"]): ComponentType<ModelProps> =>
@@ -75,13 +72,11 @@ export const BOB_WEARABLES: Readonly<Record<string, WearableDefinition>> = {
   },
   rainbowAfro: {
     Model: RainbowAfro,
-    useThemeOutline: false,
     calibration: { position: [0, -0.7, -0.05], scale: [0.9, 0.9, 0.9], rotation: [Math.PI * 0.075, 0, 0] },
     mount: { kind: "hair", bottom: -0.770111, scaling: "horizontal", cubeDepthScale: 1.5 },
   },
   builderHelmet: {
     Model: BuilderHelmet,
-    useThemeOutline: false,
     calibration: { position: [0, 0.75, 0], scale: [1.22, 1.25, 1.25] },
     mount: { kind: "crown", bottom: 0.459315, scaling: "horizontal", cubeInset: 0.12 },
   },
@@ -92,13 +87,11 @@ export const BOB_WEARABLES: Readonly<Record<string, WearableDefinition>> = {
   },
   afroHair: {
     Model: AfroHair,
-    useThemeOutline: false,
     calibration: { position: [0, -0.7, -0.05], scale: [0.9, 0.9, 0.9], rotation: [Math.PI * 0.075, 0, 0] },
     mount: { kind: "hair", bottom: -0.770111, scaling: "horizontal", cubeDepthScale: 1.5 },
   },
   chickenLittleGlasses: {
     Model: RoundGlasses,
-    useThemeOutline: false,
     calibration: { position: [0, 0.1, 0.7], scale: [1.6, 1.6, 1.6] },
     mount: { kind: "eyes", front: 1.080128, compactForward: 0.05, compactScale: 0.95 },
   },

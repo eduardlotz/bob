@@ -8,33 +8,30 @@ interface Props {
   items: BobItem[];
   blobFormType: BlobFormType;
   parameters: BlobFormParameters;
-  outlineColor?: string;
 }
 
-const Wearable = memo(function Wearable({ id, definition, body, outlineColor }: {
+const Wearable = memo(function Wearable({ id, definition, body }: {
   id: string;
   definition: WearableDefinition;
   body: BobBodyFit;
-  outlineColor?: string;
 }) {
   const transform = useMemo(() => fitBobWearable(body, definition.mount), [body, definition]);
   const { Model, calibration } = definition;
   return (
-    <group name={`bob-wearable:${id}`} userData={{ foregroundOutline: id === "clownNose" ? "bob" : false }} {...transform}>
+    <group name={`bob-wearable:${id}`} {...transform}>
       <Model
         {...calibration}
         formType={body.formType}
         body={body}
         // Preview is a temporary selection, never a material treatment.
         preview={false}
-        outlineColor={definition.useThemeOutline === false ? undefined : outlineColor}
       />
     </group>
   );
 });
 
 /** Shared decorative wearables; body fitting never creates colliders or geometry. */
-export function BobWearables({ items, blobFormType, parameters, outlineColor }: Props) {
+export function BobWearables({ items, blobFormType, parameters }: Props) {
   const body = useMemo(() => getBobBodyFit(blobFormType, parameters), [blobFormType, parameters]);
   return items.map((item) => {
     const definition = Object.prototype.hasOwnProperty.call(BOB_WEARABLES, item.id)
@@ -46,7 +43,6 @@ export function BobWearables({ items, blobFormType, parameters, outlineColor }: 
         id={item.id}
         definition={definition}
         body={body}
-        outlineColor={outlineColor}
       />
     );
   });

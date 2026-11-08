@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import React, { useEffect, useMemo, useRef } from "react";
-import { useGLTF, Wireframe } from "@react-three/drei";
+import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
 import { useCoreStore } from "@/store";
@@ -20,13 +20,11 @@ interface Props {
   position: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
-  outlineColor?: string;
   preview: boolean;
 }
 
 export const BlackCap = ({
   scale = [1, 1, 1],
-  outlineColor = "#000000",
   ...props
 }: Props) => {
   const group = useRef<THREE.Group>(null!);
@@ -66,11 +64,6 @@ export const BlackCap = ({
       rotation={props.rotation}
     >
       <mesh geometry={nodes.Sphere.geometry} material={toonMat}>
-
-
-        {/* {props.preview && (
-          <Wireframe thickness={1} backfaceStroke={outlineColor} />
-        )} */}
       </mesh>
     </a.group>
   );

@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import React, { useEffect, useMemo, useRef } from "react";
-import { useGLTF, Wireframe } from "@react-three/drei";
+import React, { useEffect, useRef } from "react";
+import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
 import { useCoreStore } from "@/store";
@@ -21,23 +21,15 @@ interface Props {
   position: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
-  outlineColor?: string;
   preview: boolean;
 }
 
 export const RoundGlasses = ({
   scale = [1, 1, 1],
-  outlineColor = "#000000",
   ...props
 }: Props) => {
   const group = useRef<THREE.Group>(null!);
   const { nodes, materials } = useGLTF(PATH) as GLTFResult;
-  const wireframeGeometry = useMemo(
-    () => nodes.Object_3001.geometry.toNonIndexed(),
-    [nodes],
-  );
-
-  useEffect(() => () => wireframeGeometry.dispose(), [wireframeGeometry]);
 
   const [spring, api] = useSpring(() => ({
     scale: [0, 0, 0], // start invisible
@@ -64,16 +56,13 @@ export const RoundGlasses = ({
       <mesh
         castShadow
         receiveShadow
-        geometry={wireframeGeometry}
+        geometry={nodes.Object_3001.geometry}
         rotation={[-1.65, 0, 0]}
       >
         <meshToonMaterial
           color={"#191919"}
           {...(props.preview ? previewMaterialProps : {})}
         />
-        {props.preview && (
-          <Wireframe thickness={0.04} backfaceStroke={outlineColor} />
-        )}
       </mesh>
     </a.group>
   );

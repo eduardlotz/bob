@@ -60,8 +60,6 @@ export function OptionsApp() {
   );
   const { fisheyeEnabled } =
     useCoreStore((state) => state.graphicPreferences);
-  const outlines = useCoreStore(state => state.graphicPreferences.outlines);
-  const toggleOutline = useCoreStore(state => state.toggleOutline);
   const toggleFisheye = useCoreStore((state) => state.toggleFisheye);
 
   const { transitionToView } = useViewStore();
@@ -183,16 +181,6 @@ export function OptionsApp() {
             <span />
           </ToggleButton>
         </PreferenceRow>
-
-        <DividerWithLabel>{messages.options.sections.outlines}</DividerWithLabel>
-        {(["counter", "bob", "foreground"] as const).map(category => {
-          const label = { counter: messages.options.audio.outlineCounter, bob: messages.options.audio.outlineBob, foreground: messages.options.audio.outlineForeground }[category];
-          return <PreferenceRow key={category} $align="center" $justify="space-between" $gap="1rem">
-            <RowLabel>{label}</RowLabel>
-            <ToggleButton type="button" role="switch" aria-label={label} aria-checked={outlines[category]}
-              $active={outlines[category]} onClick={() => toggleOutline(category)}><span /></ToggleButton>
-          </PreferenceRow>;
-        })}
 
         <DividerWithLabel>{messages.options.sections.camera}</DividerWithLabel>
         <PreferenceRow $align="center" $justify="space-between" $gap="1rem">

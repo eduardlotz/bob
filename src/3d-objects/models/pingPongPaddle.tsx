@@ -24,7 +24,6 @@ interface Props {
   position?: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
-  outlineColor?: string;
   enablePhysics?: boolean;
 }
 
@@ -33,7 +32,6 @@ export const PingPongPaddle = forwardRef(
     {
       scale = [1, 1, 1],
       position = [0, 0, 0],
-      outlineColor = "#4a1919",
       enablePhysics = false,
       ...props
     }: Props,

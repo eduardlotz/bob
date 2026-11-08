@@ -254,7 +254,7 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
 
   return (
     <group>
-      <group userData={{ foregroundOutline: false }}><FlappyAtmosphere score={phase === "over" ? lastScore.current : score} active={active} /></group>
+      <group><FlappyAtmosphere score={phase === "over" ? lastScore.current : score} active={active} /></group>
       <GameOverlay><FlappyOverlay phase={phase}
         score={formatNumber(lastScore.current, { maximumFractionDigits: 0 })}
         highScore={formatNumber(Math.max(highScore, lastScore.current), { maximumFractionDigits: 0 })}

@@ -21,7 +21,9 @@ export const useLibraryStore = create<{
   openBook: (bookId) => {
     if (bookId === null) { set({ bookId }); return; }
     const book = BOOK_BY_ID.get(bookId);
-    if (book) set({ bookId, status: book.status, media: null, playingVideo: false });
+    if (!book) return;
+    if (get().status !== book.status) { get().browse(book.status); return; }
+    set({ bookId, status: book.status, media: null, playingVideo: false });
   },
   navigateBook: (direction) => {
     const { status, bookId } = get();

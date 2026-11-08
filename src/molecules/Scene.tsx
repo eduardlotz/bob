@@ -13,7 +13,6 @@ import { Physics } from "@react-three/rapier";
 import { Perf } from "r3f-perf";
 import {
   Suspense,
-  Profiler,
   lazy,
   memo,
   useRef,
@@ -71,7 +70,6 @@ import {
 } from "@/3d-objects/worlds/WorldEnvironment";
 import { WorldAudio } from "@/3d-objects/worlds/WorldAudio";
 import { worldDayPhase, type WorldEnvironmentConfig } from "@/types/worldEnvironment";
-import { TemporaryPerformanceAudit, recordAuditCommit } from "@/components/TemporaryPerformanceAudit";
 
 const HomeScene = lazy(() => import("@/routes/HomeScene"));
 const PortfolioScene = lazy(() => import("@/routes/PortfolioScene").then(module => ({ default: module.PortfolioScene })));
@@ -130,8 +128,8 @@ const HOME_WORLD_ENVIRONMENT_PRESETS: Partial<
 };
 
 const ROUTE_ENVIRONMENT_PRESETS: Partial<Record<string, EnvironmentPreset>> = {
-  [ROUTE_PATHS.ABOUT]: "city",
-  [ROUTE_PATHS.LITERATURE]: "city",
+  [ROUTE_PATHS.ABOUT]: null,
+  [ROUTE_PATHS.LITERATURE]: null,
   [ROUTE_PATHS.PORTFOLIO]: null,
   [ROUTE_PATHS.MINIGAMES]: "sunset",
 };
@@ -503,8 +501,6 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
   return (
     <>
       <FullScreenCanvas>
-        <Profiler id="scene" onRender={recordAuditCommit}>
-        <TemporaryPerformanceAudit />
         <AudioListenerBinder />
         <WorldEnvironment
           config={environmentConfig}
@@ -523,7 +519,7 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
               azimuthRotateSpeed={debugCameraSettings.azimuthRotateSpeed}
             />
             <WorldAmbientLight
-              intensity={resolvedAmbientIntensity}
+              intensity={currentRoute === ROUTE_PATHS.LITERATURE || currentRoute === ROUTE_PATHS.ABOUT ? 0.18 : resolvedAmbientIntensity}
               color={worldLightColors.ambientColor}
               config={environmentConfig}
             />
@@ -537,7 +533,7 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
               />
             ) : (
               <directionalLight
-                intensity={ROUTE_LIGHT_INTENSITY}
+                intensity={currentRoute === ROUTE_PATHS.LITERATURE || currentRoute === ROUTE_PATHS.ABOUT ? 0 : ROUTE_LIGHT_INTENSITY}
                 color={worldLightColors.directionalColor}
                 position={rotateLightPosition(
                   ROUTE_LIGHT_POSITION,
@@ -600,7 +596,6 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
             </Physics>
           </SceneLens>
         </WorldEnvironment>
-        </Profiler>
       </FullScreenCanvas>
     </>
   );

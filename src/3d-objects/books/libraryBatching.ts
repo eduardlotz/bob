@@ -1,11 +1,10 @@
 import { BufferAttribute, Color, Group, Matrix4, Mesh, type BufferGeometry, type Material, type Object3D, type Texture, Vector3 } from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
-import { getOutlineScope, getOutlineThickness, type OutlineScope } from "@/components/outlineManager";
 import type { Book } from "@/store/books";
 
-type Surface = Material & { color?: Color; map?: Texture; roughness?: number; metalness?: number; emissive?: Color; emissiveIntensity?: number; vertexColors?: boolean };
+type Surface = Material & { color?: Color; map?: Texture; gradientMap?: Texture; roughness?: number; metalness?: number; emissive?: Color; emissiveIntensity?: number; vertexColors?: boolean };
 type PickRange = { end: number; shelf: Book["status"] | undefined };
-export type LibraryBatchMesh = Mesh & { userData: { libraryPickRanges: PickRange[]; foregroundOutline: OutlineScope | undefined; outlineThickness: number } };
+export type LibraryBatchMesh = Mesh & { userData: { libraryPickRanges: PickRange[] } };
 
 function shelfOf(object: Object3D): Book["status"] | undefined {
   let current: Object3D | null = object;
@@ -20,29 +19,31 @@ export function libraryShelfAtFace(mesh: Mesh, faceIndex: number | undefined | n
   return (mesh.userData.libraryPickRanges as PickRange[] | undefined)?.find(range => faceIndex < range.end)?.shelf;
 }
 
-/** Bake static transforms and colors; retain shelf picking and outline boundaries. */
+/** Bake static transforms and colors; retain shelf picking. */
 export function createLibraryBatches(source: Group, { cellSize = 4 } = {}) {
   source.updateWorldMatrix(true, true);
   const inverse = source.matrixWorld.clone().invert();
   const transform = new Matrix4();
   const center = new Vector3();
-  const buckets = new Map<string, { geometry: BufferGeometry[]; surface: Surface; ranges: PickRange[]; faces: number; scope: OutlineScope | undefined; thickness: number }>();
+  const buckets = new Map<string, { geometry: BufferGeometry[]; surface: Surface; ranges: PickRange[]; faces: number }>();
   source.traverse(object => {
-    if (!(object instanceof Mesh) || Array.isArray(object.material) || object.userData.foregroundOutlineShell) return;
+    if (!(object instanceof Mesh) || Array.isArray(object.material)) return;
     const material = object.material as Surface;
     if (!material.visible) return;
-    const scope = getOutlineScope(object);
-    const thickness = getOutlineThickness(object, scope || "foreground");
     object.getWorldPosition(center).applyMatrix4(inverse);
-    const key = JSON.stringify([Math.floor(center.x / cellSize), Math.floor(center.z / cellSize), material.type, material.map?.uuid, material.roughness, material.metalness,
+    const key = JSON.stringify([Math.floor(center.x / cellSize), Math.floor(center.z / cellSize), material.type, material.map?.uuid, material.gradientMap?.uuid, material.roughness, material.metalness,
       material.emissive?.getHex(), material.emissiveIntensity, material.side, material.toneMapped,
-      material.transparent, material.opacity, material.depthWrite, scope, thickness]);
+      material.transparent, material.opacity, material.depthWrite, material.customProgramCacheKey()]);
     let bucket = buckets.get(key);
     if (!bucket) {
-      bucket = { geometry: [], surface: material, ranges: [], faces: 0, scope, thickness };
+      bucket = { geometry: [], surface: material, ranges: [], faces: 0 };
       buckets.set(key, bucket);
     }
-    const geometry = object.geometry.clone();
+    // Extrusions are non-indexed, while boxes and columns are indexed.
+    // All parts in a merged draw must use the same triangle representation.
+    const geometry = object.geometry.index
+      ? object.geometry.toNonIndexed()
+      : object.geometry.clone();
     geometry.clearGroups();
     transform.multiplyMatrices(inverse, object.matrixWorld);
     geometry.applyMatrix4(transform);
@@ -66,11 +67,11 @@ export function createLibraryBatches(source: Group, { cellSize = 4 } = {}) {
     if (!geometry) throw new Error("Library static geometry could not be merged");
     const material = bucket.surface.clone() as Surface;
     material.color?.set("white"); material.vertexColors = true;
+    material.onBeforeCompile = bucket.surface.onBeforeCompile;
+    material.customProgramCacheKey = bucket.surface.customProgramCacheKey;
     const mesh = new Mesh(geometry, material) as LibraryBatchMesh;
     mesh.name = "library-static-batch";
     mesh.userData.libraryPickRanges = bucket.ranges;
-    mesh.userData.foregroundOutline = bucket.scope ?? false;
-    mesh.userData.outlineThickness = bucket.thickness;
     mesh.castShadow = true; mesh.receiveShadow = true;
     meshes.push(mesh);
   }

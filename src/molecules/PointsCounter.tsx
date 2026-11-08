@@ -8,7 +8,6 @@ const FONT_PATH = "/fonts/OpenRundeBoldCounter.json";
 interface PointsCounterProps {
   number: number;
   counterColor?: string;
-  outlineColor?: string;
   statusLabel?: string;
   statusVariant?: "default" | "success";
 }
@@ -16,7 +15,6 @@ interface PointsCounterProps {
 export const PointsCounter = ({
   number,
   counterColor = "white",
-  outlineColor = "black",
   statusLabel,
   statusVariant = "default",
 }: PointsCounterProps) => {
@@ -55,7 +53,7 @@ export const PointsCounter = ({
   }, [number, api]);
 
   return (
-    <a.group userData={{ foregroundOutline: "counter" }} scale={spring.scale as any}>
+    <a.group scale={spring.scale as any}>
       <a.group position={responsivePosition}>
         {statusLabel && (
           <Html position={[numberWidth * 0.5, 4, 0.2]} center transform scale={0.15}>

@@ -48,13 +48,11 @@ interface Props {
   position: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
-  outlineColor?: string;
   preview: boolean;
 }
 
 export const RastaBeanie = ({
   scale = [1, 1, 1],
-  outlineColor = "#000000",
   ...props
 }: Props) => {
   const group = useRef<THREE.Group>(null!);

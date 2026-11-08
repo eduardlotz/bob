@@ -3,134 +3,82 @@ import { ROUTE_PATHS, useViewStore } from "@/store";
 import { useEffect } from "react";
 import { InteractiveObject } from "../molecules/InteractiveObject";
 import { useNavigate } from "react-router-dom";
-import { DeskModel } from "@/3d-objects/models/desk";
 import { FLOOR_Y_POSITION } from "@/store/config/scene";
+import { ABOUT_CORNERS, ABOUT_ROOM } from "@/store/config/aboutRoom";
 import { BackgroundPlanet } from "@/3d-objects/BackgroundPlanet";
-import { SkateboardModel } from "@/3d-objects/models/skateboard";
 import { Room } from "@/3d-objects/Room";
-import { XboxControllerModel } from "@/3d-objects/models/xbox-controller";
 import { BasketBox } from "@/physics/BasketBox";
-import { DjControllerModel } from "@/3d-objects/models/dj-controller";
-import { DeskSpeakersModel } from "@/3d-objects/models/desk-speakers";
-import { PSControllerModel } from "@/3d-objects/models/ps-controller";
 import { GreenDiamond } from "@/3d-objects/models/greenDiamond";
 import { MusicOverlay } from "@/layout/game-ui/music";
-import { RigidBodyCameraModel } from "@/3d-objects/models/rigidBodyCamera";
-import { StandaloneSocialsGlobe } from "@/3d-objects/socials";
-
+import { SocialVinylCorner } from "@/3d-objects/about/SocialVinylCorner";
+import { SocialPosters } from "@/3d-objects/about/SocialPosters";
+import { MusicCorner } from "@/3d-objects/about/MusicCorner";
+import { VinylCollection } from "@/3d-objects/about/VinylCollection";
+import { useVinylStore } from "@/store/vinyls";
 import { CuboidCollider, RigidBody } from "@react-three/rapier";
-import { PottedPlant, WorkCorner, WORK_SURFACE_Y } from "@/3d-objects/WorkCorner";
+import { BlenderRoomPart } from "@/3d-objects/about/BlenderRoomPart";
+import { AboutWeatherProvider } from "@/3d-objects/about/AboutWeather";
+import { CornerTrigger } from "@/3d-objects/about/CornerTrigger";
+import { useFloatingBar } from "@/layout/FloatingBar";
+import { useI18n } from "@/i18n";
+import { viewControlsMessages } from "@/molecules/ViewControls.messages";
 
 export function AboutScene() {
-  const workCornerPosition: [number, number, number] = [2, FLOOR_Y_POSITION - 0.55, -4];
-  const { checkUnlockedRoutes } = useCoreStore();
-  const { getCurrentViewConfig } = useViewStore();
+  const checkUnlockedRoutes = useCoreStore(state => state.checkUnlockedRoutes);
+  const currentView = useViewStore(state => state.currentView);
+  const { setHoveredObject } = useFloatingBar();
+  const { locale } = useI18n();
   const navigate = useNavigate();
-
-  const isAllowedToAcces = checkUnlockedRoutes(ROUTE_PATHS.ABOUT);
-
+  const allowed = checkUnlockedRoutes(ROUTE_PATHS.ABOUT);
+  useEffect(() => { if (!allowed) navigate(ROUTE_PATHS.HOME, { replace: true }); }, [allowed, navigate]);
   useEffect(() => {
-    if (!isAllowedToAcces) {
-      navigate(ROUTE_PATHS.HOME, { replace: true });
-    }
-  }, [isAllowedToAcces]);
-
-  return (
-    <>
-      <BackgroundPlanet />
-      <InteractiveObject
-        questAction="click_desk"
-        questValue={1}
-        mode="view"
-        viewId="desk"
-        position={[0, 0, 1.5]}
-      >
-        <DeskModel
-          position={[-3.5, FLOOR_Y_POSITION + 0.7, 0]}
-          rotation={[0, 0, 0]}
-          scale={[2.5, 2.5, 2.5]}
-        />
-
-        <DeskSpeakersModel
-          position={[-3.75, FLOOR_Y_POSITION + 1, 1.25]}
-          rotation={[0, 0.3, 0]}
-        />
-
-        <DeskSpeakersModel
-          position={[-3.75, FLOOR_Y_POSITION + 1, -1.25]}
-          rotation={[0, -0.3, 0]}
-        />
-
-        <DjControllerModel position={[-3, FLOOR_Y_POSITION + 1, 0]} />
-
-        {getCurrentViewConfig()?.id === "desk" && <MusicOverlay />}
-      </InteractiveObject>
-
-      {/* SOCIALS CORNER  */}
-
-      <StandaloneSocialsGlobe
-        questAction="click_socials"
-        questValue={1}
-        position={[-3, FLOOR_Y_POSITION + 2, -3.5]}
-        scale={[3.5, 3.5, 3.5]}
-      />
-
-      {/* The former book table is now the work corner. */}
-      <InteractiveObject
-        questAction="click_work_corner"
-        questValue={1}
-        mode="view"
-        viewId="computer"
-        position={workCornerPosition}
-      >
-        <WorkCorner />
-      </InteractiveObject>
-
-      {/* Miniature interests remain individually grabbable on the desktop. */}
-      <group position={workCornerPosition}>
-        <XboxControllerModel position={[0.83, WORK_SURFACE_Y + 0.04, 0.4]}
-          rotation={[0, -0.2, 0]} scale={[0.45, 0.45, 0.45]} />
-        <PSControllerModel position={[1.44, WORK_SURFACE_Y + 0.16, 0.39]}
-          rotation={[0, 0.2, 0]} scale={[0.5, 0.5, 0.5]} />
-        <SkateboardModel position={[-1.05, WORK_SURFACE_Y + 0.04, 0.4]}
-          rotation={[0, Math.PI / 2 + 0.15, 0]} scale={[0.35, 0.35, 0.35]} />
-        <RigidBodyCameraModel position={[-1.56, WORK_SURFACE_Y + 0.04, 0.35]}
-          rotation={[0, 0.2, 0]} scale={[0.35, 0.35, 0.35]} />
+    if (currentView !== "socials") useVinylStore.getState().select(null);
+    setHoveredObject(null);
+  }, [currentView, setHoveredObject]);
+  useEffect(() => () => { useVinylStore.getState().select(null); }, []);
+  const hover = (view: "desk" | "computer" | "socials") => {
+    if (currentView !== view) setHoveredObject({ title: viewControlsMessages[locale].viewTitles[view] });
+  };
+  return <AboutWeatherProvider>
+    <BackgroundPlanet />
+    <InteractiveObject questAction="click_desk" mode="view" viewId="desk" position={[0, 0, 1.5]}>
+      <MusicCorner />
+      {currentView === "desk" && <MusicOverlay />}
+    </InteractiveObject>
+    <InteractiveObject questAction="click_socials" mode="view" viewId="socials" position={ABOUT_CORNERS.socials.position}>
+      <group rotation={[0, ABOUT_CORNERS.socials.yaw, 0]} onPointerEnter={() => hover("socials")} onPointerLeave={() => setHoveredObject(null)}>
+        <SocialVinylCorner />
       </group>
-
-      {/* A plant occupies the old hobby-box corner, hiding a discoverable plumbob. */}
-      <InteractiveObject
-        questAction="click_plant"
-        questValue={1}
-        mode="view"
-        viewId="cardbox"
-        position={[3.8, FLOOR_Y_POSITION - 0.55, 2]}
-      >
-        <PottedPlant scale={2.7} />
-      </InteractiveObject>
-      <RigidBody type="fixed" colliders={false} position={[3.8, FLOOR_Y_POSITION - 0.55, 2]}>
-        <CuboidCollider args={[0.48, 0.5, 0.48]} position={[0, 0.5, 0]} />
-      </RigidBody>
-      <GreenDiamond position={[4.37, FLOOR_Y_POSITION - 0.04, 1.3]}
-        rotation={[0, 0.3, 0.28]} scale={[0.75, 0.75, 0.75]} />
-
-      <Room />
-
-      <BasketBox
-        position={[0, FLOOR_Y_POSITION + 5, 0]}
-        width={10}
-        depth={10}
-        height={11.5}
-        wallThickness={0.2}
-      />
-      {/* bottom fake shadow */}
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, FLOOR_Y_POSITION - 0.5, 0]}
-      >
-        <circleGeometry args={[0.8, 16, 16]} />
-        <meshToonMaterial color="#111820" transparent opacity={0.5} />
-      </mesh>
-    </>
-  );
+    </InteractiveObject>
+    <VinylCollection />
+    <group position={[ABOUT_CORNERS.green.position[0], ABOUT_ROOM.floorY, -ABOUT_ROOM.depth / 2 + 0.035]}>
+      <SocialPosters />
+    </group>
+    <InteractiveObject questAction="click_plant" mode="view" viewId="computer" position={[4.05, ABOUT_ROOM.floorY, -3.5]}>
+      <group onPointerEnter={() => hover("computer")} onPointerLeave={() => setHoveredObject(null)}><BlenderRoomPart name="Plant" local /></group>
+    </InteractiveObject>
+    <RigidBody type="fixed" colliders={false} position={[4.05, ABOUT_ROOM.floorY, -3.5]}>
+      <CuboidCollider args={[0.45, 0.5, 0.45]} position={[0, 0.5, 0]} />
+    </RigidBody>
+    <GreenDiamond position={[4.68, ABOUT_ROOM.floorY + 0.18, -4.35]} rotation={[0, 0.3, 0.28]} scale={[0.75, 0.75, 0.75]} />
+    <CornerTrigger viewId="socials" questAction="click_socials" surfaces={[
+      {position:[-2.6, ABOUT_ROOM.floorY+2.6, -4.76],size:[5.1,5.15]},
+      {position:[-2.7, ABOUT_ROOM.floorY+.006, -3.65],rotation:[-Math.PI/2,0,0],size:[4.6,2.2]},
+      {position:[-5.16, ABOUT_ROOM.floorY+2.6, -3.65],rotation:[0,Math.PI/2,0],size:[2.2,5.15]},
+    ]} />
+    <CornerTrigger viewId="computer" questAction="click_socials" surfaces={[
+      {position:[2.6, ABOUT_ROOM.floorY+2.6, -4.76],size:[5.1,5.15]},
+      {position:[3.5, ABOUT_ROOM.floorY+.006, -3.5],rotation:[-Math.PI/2,0,0],size:[3.3,2.5]},
+      {position:[5.16, ABOUT_ROOM.floorY+2.6, -3.5],rotation:[0,-Math.PI/2,0],size:[2.5,5.15]},
+    ]} />
+    <CornerTrigger viewId="desk" questAction="click_desk" surfaces={[
+      {position:[-4.99, ABOUT_ROOM.floorY+2.6, 1.7],rotation:[0,Math.PI/2,0],size:[6.1,5.15]},
+      {position:[-3.6, ABOUT_ROOM.floorY+.006, 1.65],rotation:[-Math.PI/2,0,0],size:[2.8,5.9]},
+    ]} />
+    <Room />
+    <BasketBox position={[0, FLOOR_Y_POSITION + 5, 0]} width={ABOUT_ROOM.width} depth={ABOUT_ROOM.depth} height={11.5} wallThickness={0.2} />
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, ABOUT_ROOM.floorY + 0.055, 0]}>
+      <circleGeometry args={[0.8, 32]} /><meshToonMaterial color="#111820" transparent opacity={0.35} depthWrite={false} />
+    </mesh>
+  </AboutWeatherProvider>;
 }

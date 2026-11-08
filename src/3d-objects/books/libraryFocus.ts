@@ -1,10 +1,10 @@
 import { type Camera, Quaternion, Vector3 } from "three";
+import { BOOK_SIZE } from "./libraryLayout";
 
-export const LIBRARY_BOOK_FLIGHT_SECONDS = 0.65;
+export const LIBRARY_BOOK_FLIGHT_SECONDS = 0.38;
 export const LIBRARY_BOOK_FOCUS_DISTANCE = 0.8;
-const BOOK_HEIGHT = 1.08;
-const BOOK_WIDTH = 0.75;
-const BOOK_RADIUS = Math.hypot(BOOK_WIDTH / 2, BOOK_HEIGHT / 2, 0.105 / 2);
+const [BOOK_WIDTH, BOOK_HEIGHT, BOOK_DEPTH] = BOOK_SIZE;
+const BOOK_RADIUS = Math.hypot(BOOK_WIDTH / 2, BOOK_HEIGHT / 2, BOOK_DEPTH / 2);
 
 /** Camera-local framing leaves room for the side drawer or the mobile bottom sheet. */
 export function libraryBookFocusPose(
@@ -42,5 +42,5 @@ export function libraryBookFocusPose(
 
 export function libraryBookFlightProgress(elapsed: number) {
   const t = Math.min(1, Math.max(0, elapsed / LIBRARY_BOOK_FLIGHT_SECONDS));
-  return 1 - (1 - t) ** 3;
+  return t * t * t * (t * (t * 6 - 15) + 10);
 }

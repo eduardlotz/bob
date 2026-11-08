@@ -24,9 +24,11 @@ interface Props {
   position: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
+  interactive?: boolean;
+  topColor?: string;
 }
 
-export const DeskModel = ({ scale = [1, 1, 1], ...props }: Props) => {
+export const DeskModel = ({ scale = [1, 1, 1], interactive = true, topColor, ...props }: Props) => {
   const group = useRef<THREE.Group>(null!);
   const { nodes, materials } = useGLTF(PATH) as GLTFResult;
 
@@ -55,11 +57,13 @@ export const DeskModel = ({ scale = [1, 1, 1], ...props }: Props) => {
       receiveShadow
       position={props.position}
       rotation={props.rotation}
-      onPointerEnter={handlePointerEnter}
-      onPointerLeave={handlePointerLeave}
+      onPointerEnter={interactive ? handlePointerEnter : undefined}
+      onPointerLeave={interactive ? handlePointerLeave : undefined}
     >
       <mesh geometry={nodes.Cube007.geometry} material={materials.MetalBlack} />
-      <mesh geometry={nodes.Cube007_1.geometry} material={materials.DeskWood} />
+      <mesh geometry={nodes.Cube007_1.geometry} material={topColor ? undefined : materials.DeskWood} castShadow receiveShadow>
+        {topColor && <meshStandardMaterial color={topColor} roughness={0.8} />}
+      </mesh>
     </group>
   );
 };

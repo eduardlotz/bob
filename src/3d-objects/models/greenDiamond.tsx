@@ -28,12 +28,10 @@ interface Props {
   position: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
-  outlineColor?: string;
   color?: string;
 }
 
 export const GreenDiamond = ({
-  outlineColor = "#000000",
   color = "#b7e822",
   ...props
 }: Props) => {

@@ -230,7 +230,7 @@ export function PingPongGame({ onExit: _onExit }: { onExit: () => void }) {
           {tilt.unavailable && <span role="status">{locale === "de" ? "Neigung nicht verfügbar. Touch bleibt aktiv." : "Tilt unavailable. Touch controls remain active."}</span>}
         </TiltControl></GameOverlay>}
 
-      <mesh userData={{ foregroundOutline: false }}>
+      <mesh>
         <sphereGeometry args={[100, 16, 16]} />
         <meshBasicMaterial side={BackSide}>
           <GradientTexture

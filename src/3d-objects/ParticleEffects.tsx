@@ -132,10 +132,6 @@ const SHARED_MATERIALS = {
   cloud: new THREE.MeshToonMaterial({
     color: "#ffffff",
   }),
-  cloudOutline: new THREE.MeshBasicMaterial({
-    color: "#000000",
-    side: THREE.BackSide,
-  }),
 };
 
 // Sparkles from drei
@@ -248,7 +244,6 @@ export const CloudEffect = ({ preview }: { preview: boolean }) => {
   const groupRef = useRef<THREE.Group>(null);
   const quality = useWorldQuality();
   const fillRef = useRef<InstancedMesh>(null);
-  const outlineRef = useRef<InstancedMesh>(null);
   const clouds = useMemo(() => {
     return generateClouds(quality === "low" ? 4 : 7);
   }, [quality]);
@@ -268,7 +263,7 @@ export const CloudEffect = ({ preview }: { preview: boolean }) => {
   );
 
   useLayoutEffect(() => {
-    if (!fillRef.current || !outlineRef.current) return;
+    if (!fillRef.current) return;
 
     const dummy = new Object3D();
 
@@ -277,14 +272,9 @@ export const CloudEffect = ({ preview }: { preview: boolean }) => {
       dummy.scale.setScalar(instance.scale);
       dummy.updateMatrix();
       fillRef.current!.setMatrixAt(index, dummy.matrix);
-
-      dummy.scale.setScalar(instance.scale * 1.08);
-      dummy.updateMatrix();
-      outlineRef.current!.setMatrixAt(index, dummy.matrix);
     });
 
     fillRef.current.instanceMatrix.needsUpdate = true;
-    outlineRef.current.instanceMatrix.needsUpdate = true;
   }, [cloudInstances]);
 
   const cloudMaterial = useMemo(() => {
@@ -311,15 +301,6 @@ export const CloudEffect = ({ preview }: { preview: boolean }) => {
 
   return (
     <group ref={groupRef}>
-      <instancedMesh
-        ref={outlineRef}
-        args={[
-          SHARED_GEOMETRIES.cloudSphere,
-          SHARED_MATERIALS.cloudOutline,
-          cloudInstances.length,
-        ]}
-        frustumCulled={false}
-      />
       <instancedMesh
         ref={fillRef}
         args={[

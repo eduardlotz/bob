@@ -1,4 +1,3 @@
-import { ForegroundOutlines } from "./ForegroundOutlines";
 import { RenderCubeTexture, type RenderCubeTextureApi } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useCallback, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
@@ -12,12 +11,11 @@ import { getSceneLensRadius, SCENE_LENS } from "@/utils/sceneLensFraming";
 /** Drei's cubemap/sphere projection, with a direct render path sharing the same portal.
  * Keeping the portal mounted preserves physics, camera controls and game state.
  */
-export function SceneLens({ children, enabled: enabledOverride, transparent = false, bobOutlineColor }: {
+export function SceneLens({ children, enabled: enabledOverride, transparent = false }: {
   children: ReactNode;
   enabled?: boolean;
   /** Preserve the captured background alpha when authoring transparent PNGs. */
   transparent?: boolean;
-  bobOutlineColor?: string;
 }) {
   const storedEnabled = useCoreStore(s => s.graphicPreferences.fisheyeEnabled);
   const enabled = enabledOverride ?? storedEnabled;
@@ -72,7 +70,6 @@ export function SceneLens({ children, enabled: enabledOverride, transparent = fa
               frames={enabled ? Infinity : 0}
             >
               <LensCamera cube={cube} world={world} enabled={enabled} zoom={zoom} />
-              <ForegroundOutlines bobColor={bobOutlineColor} />
               {children}
             </RenderCubeTexture>
           </meshBasicMaterial>

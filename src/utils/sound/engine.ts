@@ -246,6 +246,9 @@ const getOrCreateHowl = (config: NormalizedSoundConfig): Howl => {
     // Every new or pooled voice starts silent until its user/mix gain is applied.
     volume: 0,
     onloaderror: (_, error) => {
+      // Howler also reports a decode error when an in-flight sound was unloaded.
+      // Route exits and visibility changes dispose these instances intentionally.
+      if (howls.get(config.id) !== howl) return;
       console.error(`Failed to load sound "${config.id}"`, error);
     },
     onplayerror: async () => {
