@@ -26,15 +26,12 @@ import { PointsCounter } from "@/molecules/PointsCounter";
 import { exitMiniGame } from "@/utils/miniGameTransitions";
 import { FlappyBirdGame, FlappyBirdRingPreview } from "./games/FlappyBirdGame";
 import { MiniGameThrone } from "./games/MiniGameThrone";
-import {
-  type SupportedMiniGameType,
-} from "./games/withMiniGameItem";
+import { type SupportedMiniGameType } from "./games/withMiniGameItem";
 import { PingPongGame } from "./games/PingPongGame";
 import { useI18n } from "@/i18n";
 import { miniGamesSceneMessages } from "./MiniGamesScene.messages";
 import { transitionScreen } from "@/store/screenTransition";
 import { getGameTransition } from "@/styles/screenTransitions";
-
 
 const DEFAULT_MINIGAMES_VIEW = "default";
 const getMiniGameThroneY = () => FLOOR_Y_POSITION + 0.18;
@@ -42,7 +39,10 @@ const getMiniGameThroneY = () => FLOOR_Y_POSITION + 0.18;
 type MiniGamesView = typeof DEFAULT_MINIGAMES_VIEW;
 type MiniGameComponent = ComponentType<{ onExit: () => void }>;
 
-interface LobbyPlacement { position: [number, number, number]; scale: number; }
+interface LobbyPlacement {
+  position: [number, number, number];
+  scale: number;
+}
 
 interface MiniGameDefinition {
   cameraView: MiniGamesView;
@@ -54,10 +54,7 @@ interface MiniGameDefinition {
   ) => ReactNode;
 }
 
-const MINI_GAME_ORDER: SupportedMiniGameType[] = [
-  "PING_PONG",
-  "FLAPPY_BIRD",
-];
+const MINI_GAME_ORDER: SupportedMiniGameType[] = ["PING_PONG", "FLAPPY_BIRD"];
 
 const MINI_GAME_DEFINITIONS: Record<SupportedMiniGameType, MiniGameDefinition> =
   {
@@ -108,7 +105,7 @@ function MiniGamesLobby({
   onSelect: (game: SupportedMiniGameType) => void;
 }) {
   const { locale } = useI18n();
-  const compact = useThree(state => state.size.width < 600);
+  const compact = useThree((state) => state.size.width < 600);
 
   return (
     <group>
@@ -121,15 +118,21 @@ function MiniGamesLobby({
               miniGamesSceneMessages[locale][game].label,
               onSelect,
               {
-                position: [(index % 2 ? 1 : -1) * (compact ? 1.85 : 2.25), getMiniGameThroneY(), index < 2 ? -1.8 : (compact ? .85 : 1.3)],
-                scale: compact ? .62 : .78,
+                position: [
+                  (index % 2 ? 1 : -1) * (compact ? 1.85 : 2.25),
+                  getMiniGameThroneY(),
+                  index < 2 ? 1.8 : compact ? 0.85 : 1.3,
+                ],
+                scale: compact ? 0.62 : 0.78,
               },
             )}
           </group>
         );
       })}
 
-      <group><MiniGamesLobbyBounds /></group>
+      <group>
+        <MiniGamesLobbyBounds />
+      </group>
     </group>
   );
 }
@@ -184,7 +187,11 @@ function MiniGamesContent({
 
   const ActiveGame = activeDefinition.GameComponent;
 
-  return <group><ActiveGame onExit={onExit} /></group>;
+  return (
+    <group>
+      <ActiveGame onExit={onExit} />
+    </group>
+  );
 }
 
 function MiniGamesBackdrop() {
@@ -227,13 +234,23 @@ export function MiniGamesScene() {
 
   const isAllowedToAccess = checkUnlockedRoutes(ROUTE_PATHS.MINIGAMES);
   const activeDefinition = getMiniGameDefinition(activeGame);
-  const handleSelect = useCallback((game: SupportedMiniGameType) => {
-    transitionScreen(() => new Promise<void>(resolve => {
-      pendingGameReady.current = resolve;
-      setActiveGame(game);
-    }), undefined, { appearance: getGameTransition(game) });
-  }, [setActiveGame]);
-  const handleExit = useCallback(() => { exitMiniGame(); }, []);
+  const handleSelect = useCallback(
+    (game: SupportedMiniGameType) => {
+      transitionScreen(
+        () =>
+          new Promise<void>((resolve) => {
+            pendingGameReady.current = resolve;
+            setActiveGame(game);
+          }),
+        undefined,
+        { appearance: getGameTransition(game) },
+      );
+    },
+    [setActiveGame],
+  );
+  const handleExit = useCallback(() => {
+    exitMiniGame();
+  }, []);
 
   useEffect(() => {
     if (!isAllowedToAccess) {
@@ -259,11 +276,13 @@ export function MiniGamesScene() {
 
   return (
     <>
-      <group><MiniGamesContent
-        activeGame={activeGame}
-        onSelect={handleSelect}
-        onExit={handleExit}
-      /></group>
+      <group>
+        <MiniGamesContent
+          activeGame={activeGame}
+          onSelect={handleSelect}
+          onExit={handleExit}
+        />
+      </group>
       {activeGame === "LOBBY" ? (
         <MiniGamesBackdrop />
       ) : activeGame !== "FLAPPY_BIRD" && activeGame !== "PING_PONG" ? (
