@@ -41,7 +41,13 @@
     "world_winter": "/images/shop-items/world/world_winter.png",
     "world_underwater": "/images/shop-items/world/world_underwater.png",
     "world_space": "/images/shop-items/world/world_space.png",
-    "world_halloween": "/images/shop-items/world/world_halloween.png"
+    "world_halloween": "/images/shop-items/world/world_halloween.png",
+    "cigar": "/images/shop-items/face/cigar.png",
+    "bigSmile": "/images/shop-items/face/bigSmile.png",
+    "sleepingHat": "/images/shop-items/hat/sleepingHat.png",
+    "tap_effect_autumn": "/images/shop-items/effect/tap_effect_autumn.png",
+    "tap_effect_paint": "/images/shop-items/effect/tap_effect_paint.png",
+    "tap_effect_sparkles": "/images/shop-items/effect/tap_effect_sparkles.png"
   },
   "worldObjects": {
     "world_default": "grid tile",

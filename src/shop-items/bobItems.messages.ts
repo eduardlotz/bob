@@ -4,6 +4,9 @@ import type { Locale } from "@/i18n/types";
 
 export const bobItemMessages = defineMessages({
   de: {
+    cigar: { name: "Zigarre", description: "Glühende Spitze und kleine Rauchwölkchen." },
+    bigSmile: { name: "Grinsebacke", description: "Ein breites Lächeln mit großen weißen Zähnen." },
+    sleepingHat: { name: "Schlafmütze", description: "Eine weiche blaue Mütze mit Bommel." },
     topHat: { name: "Zylinder", description: "Black Tie für Bob." },
     toonSunglasses: { name: "Sonnenbrille", description: "Cool bleiben, auch im Schatten." },
     dimmadomeHat: { name: "Dimmadome", description: "Dieser Hut nimmt kein Ende." },
@@ -49,6 +52,9 @@ export const bobItemMessages = defineMessages({
     },
   },
   en: {
+    cigar: { name: "Cigar", description: "A glowing ember and little wisps of smoke." },
+    bigSmile: { name: "Big Smile", description: "A broad grin with big white teeth." },
+    sleepingHat: { name: "Sleeping Hat", description: "A soft blue cap with a pom-pom." },
     topHat: { name: "Top Hat", description: "Black tie for Bob." },
     toonSunglasses: { name: "Sunglasses", description: "Stay cool, even in the shade." },
     dimmadomeHat: { name: "Dimmadome", description: "This hat never ends." },

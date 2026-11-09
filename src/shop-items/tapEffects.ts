@@ -1,6 +1,9 @@
 import { TapEffect } from "@/store";
 
 export const initialTapEffects: TapEffect[] = [
+  { id: "tap_effect_autumn", name: "Blätter", description: "Grüne Blätter spritzen bei jedem Tippen auseinander.", cost: 16000, purchased: false, enabled: false, type: "tapEffect", effectId: 12 },
+  { id: "tap_effect_paint", name: "Farbkleckse", description: "Bunte Farbspritzer bei jedem Tippen.", cost: 22000, purchased: false, enabled: false, type: "tapEffect", effectId: 13 },
+  { id: "tap_effect_sparkles", name: "Glitzern", description: "Lichtpunkte funkeln um Bob, während Sterne und Glanzpunkte bei jedem Tippen nach außen sprühen.", cost: 36000, purchased: false, enabled: false, type: "tapEffect", effectId: 14 },
   { id: "tap_effect_comic", name: "Comic", description: "POP! BAM! Kleine Comic-Explosionen.", cost: 14000, purchased: false, enabled: false, type: "tapEffect", effectId: 8 },
   { id: "tap_effect_flowers", name: "Flower Power", description: "Bunte Blumen wirbeln durch die Luft.", cost: 18000, purchased: false, enabled: false, type: "tapEffect", effectId: 9 },
   { id: "tap_effect_ducks", name: "Quietscheenten", description: "Kleine gelbe Enten hüpfen davon.", cost: 24000, purchased: false, enabled: false, type: "tapEffect", effectId: 10 },

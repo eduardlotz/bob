@@ -49,7 +49,7 @@ import {
   DEFAULT_WORLD_VOLUME,
 } from "@/utils/sound/defaults";
 import { initialWorlds } from "@/shop-items/worlds";
-import { migrateCoreStore, normalizeWorlds, normalizeBlobForms, reconcileRoutes } from "./migrations";
+import { migrateCoreStore, normalizeWorlds, normalizeBlobForms, normalizeBobItems, normalizeTapEffects, reconcileRoutes } from "./migrations";
 import { OrbitForm } from "@/components/FileOrbit";
 
 const ONE_SECOND_MS = 1000;
@@ -214,7 +214,7 @@ export interface BobItem extends BaseItem {
   icon: string;
   category: "bob";
   detached?: boolean; // If true, item stays at initial position and doesn't follow head movements
-  equipSlot?: "moustache" | "nose";
+  equipSlot?: "moustache" | "nose" | "mouth";
 }
 
 export const getBobItemSlot = (item: BobItem) => item.equipSlot ?? item.type;
@@ -1793,8 +1793,8 @@ export const useCoreStore = create<GameStore>()(
             // Scenery/audio are authored catalogue data, not player-owned state.
             // Refresh them even when only tuning a config without a save-version bump.
             worlds: normalizeWorlds(saved?.worlds ?? currentState.worlds).map((item) => ({ ...item, preview: false })),
-            bobItems: (saved?.bobItems ?? currentState.bobItems).map((item) => ({ ...item, preview: false })),
-            tapEffects: (saved?.tapEffects ?? currentState.tapEffects).map((item) => ({ ...item, preview: false })),
+            bobItems: normalizeBobItems(saved?.bobItems ?? currentState.bobItems),
+            tapEffects: normalizeTapEffects(saved?.tapEffects ?? currentState.tapEffects),
             previewMode: null,
             bobSkinPreviewId: null,
             blobForms: normalizeBlobForms(saved?.blobForms ?? currentState.blobForms),

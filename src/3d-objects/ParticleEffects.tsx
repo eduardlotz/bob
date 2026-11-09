@@ -1,7 +1,9 @@
-import { COMIC_VARIANTS, comicTexture, flowerGeometry, duckGeometry, lightningGeometry, type NewTapEffect } from "./tapEffectAssets";
+import { COMIC_VARIANTS, comicTexture, flowerGeometry, duckGeometry, lightningGeometry, autumnLeafGeometry, paintSplashGeometry, type NewTapEffect } from "./tapEffectAssets";
 import React, { useRef, useEffect, useMemo, useLayoutEffect } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Sparkles } from "@react-three/drei";
+import { useActiveBobShape } from "@/hooks/useActiveBobShape";
+import { getBlobFormHalfSize, getBobGroundOffset } from "@/types/blobForms";
 import { WeatherParticles } from "./worlds/WeatherParticles";
 import { useWorldQuality } from "./worlds/quality";
 import { useCoreStore } from "@/store/core/store";
@@ -431,6 +433,9 @@ type BasicConfig = {
   variants?: { geo: BufferGeometry; mat: Material }[];
   billboard?: boolean;
   size?: number;
+  sizeRange?: readonly [number, number];
+  sparkleRadius?: number;
+  sparkleCenterY?: number;
 };
 
 const createEmptyMatrix = () =>
@@ -443,7 +448,7 @@ function BasicTapParticles({
   spawnVariant = "burst",
 }: {
   config: BasicConfig;
-  spawnVariant?: "burst" | "emoji" | "smoke" | "bubble" | "electric";
+  spawnVariant?: "burst" | "emoji" | "smoke" | "bubble" | "electric" | "sparkle";
 }) {
   const meshRefs = useRef<(InstancedMesh | null)[]>([]);
   const { camera } = useThree();
@@ -488,6 +493,7 @@ function BasicTapParticles({
     const isEmoji = spawnVariant === "emoji";
     const isSmoke = spawnVariant === "smoke";
     const isBubble = spawnVariant === "bubble";
+    const isSparkle = spawnVariant === "sparkle";
     const spawnTarget = isBubble ? Math.max(1, Math.ceil(count * 0.25)) : count;
 
     let spawned = 0;
@@ -535,6 +541,10 @@ function BasicTapParticles({
         p.rx = config.billboard || isElectric ? 0 : Math.random() * Math.PI * 2;
         p.ry = config.billboard || isElectric ? 0 : Math.random() * Math.PI * 2;
         p.rz = config.billboard ? (Math.random() - 0.5) * 0.5 : Math.random() * Math.PI * 2;
+        if (config.sizeRange) {
+          const [small, large] = config.sizeRange;
+          p.scale = small + Math.pow(Math.random(), 2) * (large - small);
+        }
         p.scale *= config.size ?? 1;
         if (config.billboard) {
           p.rvx = p.rvy = 0;
@@ -550,6 +560,24 @@ function BasicTapParticles({
         p.vx = direction.x * speed; p.vy = direction.y * speed; p.vz = direction.z * speed;
         p.rvx = p.rvy = p.rvz = 0;
         p.scale = 0.7 + Math.random() * 0.5;
+      }
+      if (isSparkle) {
+        // Begin outside Bob's silhouette, then travel away from him in the
+        // camera plane so the burst reads clearly from every viewing angle.
+        const angle = spawned / Math.max(1, spawnTarget) * Math.PI * 2 + (Math.random() - .5) * .3;
+        right.set(1, 0, 0).applyQuaternion(camera.quaternion);
+        screenUp.set(0, 1, 0).applyQuaternion(camera.quaternion);
+        direction.copy(right).multiplyScalar(Math.cos(angle)).addScaledVector(screenUp, Math.sin(angle));
+        const radius = (config.sparkleRadius ?? 1) * (1.08 + Math.random() * .12);
+        p.x = x + direction.x * radius;
+        p.y = y + (config.sparkleCenterY ?? 1) + direction.y * radius;
+        p.z = z + direction.z * radius;
+        const speed = 2.5 + Math.random() * 3;
+        p.vx = direction.x * speed; p.vy = direction.y * speed; p.vz = direction.z * speed;
+        p.life = p.maxLife = .45 + Math.random() * .35;
+        p.scale = .09 + Math.random() * .13;
+        p.rvx = p.rvy = 0;
+        p.rvz = (Math.random() - .5) * 2;
       }
       p.bucket = Math.floor(Math.random() * batches.length);
       const colorHex = config.colors[Math.floor(Math.random() * config.colors.length)];
@@ -585,7 +613,7 @@ function BasicTapParticles({
 
     const d = Math.min(delta, 0.1);
     const gravity =
-      spawnVariant === "electric"
+      spawnVariant === "electric" || spawnVariant === "sparkle"
         ? 0
         : spawnVariant === "smoke"
         ? -1.2
@@ -593,7 +621,9 @@ function BasicTapParticles({
           ? -0.35
           : GRAVITY;
     const drag =
-      spawnVariant === "electric"
+      spawnVariant === "sparkle"
+        ? Math.exp(-2.5 * d)
+        : spawnVariant === "electric"
         ? 1
         : spawnVariant === "smoke"
         ? 0.994
@@ -631,7 +661,7 @@ function BasicTapParticles({
             ? p.scale * (0.9 + (1 - lifeRatio) * 1.35)
             : spawnVariant === "bubble"
               ? p.scale * (0.95 + (1 - lifeRatio) * 0.65)
-              : spawnVariant === "electric"
+              : spawnVariant === "electric" || spawnVariant === "sparkle"
                 ? p.scale * Math.min(1, lifeRatio * 3)
                 : p.scale * Math.max(0, p.life / 1.5);
         dummy.position.set(p.x, p.y, p.z);
@@ -672,8 +702,11 @@ function CatalogueTapParticles({ kind }: { kind: NewTapEffect }) {
         ? [0, 1, 2].map(i => ({ geo: flowerGeometry(i), mat: new THREE.MeshToonMaterial({ vertexColors: true, side: THREE.DoubleSide }) }))
         : kind === "ducks"
           ? [{ geo: duckGeometry(), mat: new THREE.MeshToonMaterial({ vertexColors: true }) }]
-          : [0, 1, 2].map(i => ({ geo: lightningGeometry(i), mat: new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false }) }));
-    return { ...variants[0], variants, colors: ["#ffffff"], billboard: kind === "comic", size: kind === "comic" ? 3 : kind === "ducks" ? 1.8 : 1.4 };
+          : kind === "autumn" || kind === "paint"
+              ? (kind === "paint" ? [0, 1, 2, 3, 4, 5] : [0, 1, 2]).map(i => ({ geo: kind === "autumn" ? autumnLeafGeometry(i) : paintSplashGeometry(i), mat: new THREE.MeshToonMaterial({ vertexColors: true, side: THREE.DoubleSide }) }))
+              : [0, 1, 2].map(i => ({ geo: lightningGeometry(i), mat: new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false }) }));
+    const colors = kind === "paint" ? ["#ff5290", "#52c9eb", "#ffd747", "#9668e9", "#75cf61"] : ["#ffffff"];
+    return { ...variants[0], variants, colors, billboard: kind === "comic" || kind === "paint", size: kind === "comic" ? 3 : kind === "ducks" ? 1.8 : 1.4, sizeRange: kind === "paint" ? [.16, 1.2] : undefined };
   }, [kind]);
   useEffect(() => () => {
     config.variants?.forEach(({ geo, mat }) => {
@@ -1213,6 +1246,81 @@ function SmokeTapParticles() {
   );
 }
 
+/** Local ambient glow uses the same point renderer as the world's Sparkles. */
+function AmbientTapSparkles() {
+  const points = useRef<THREE.Points>(null);
+  const reducedMotion = useCoreStore(state => state.graphicPreferences.reducedTapMotion);
+  const { formType, parameters } = useActiveBobShape();
+  const [x, y, z] = getBlobFormHalfSize(formType, parameters);
+  const attributes = useMemo(() => {
+    const count = 40;
+    const color = new Float32Array(count * 3);
+    const size = new Float32Array(count);
+    const opacity = new Float32Array(count).fill(.8);
+    for (let i = 0; i < count; i++) {
+      new THREE.Color(i % 3 ? "#fff8e6" : "#ffd576").toArray(color, i * 3);
+      size[i] = 4 + (i % 7) * .6;
+    }
+    return { color, size, opacity };
+  }, []);
+  useFrame(({ clock }) => {
+    const opacity = points.current?.geometry.getAttribute("opacity");
+    if (!opacity || reducedMotion) return;
+    for (let i = 0; i < opacity.count; i++) {
+      const pulse = .5 + .5 * Math.sin(clock.elapsedTime * (1.3 + i % 4 * .2) + i * 2.4);
+      opacity.setX(i, .15 + pulse * pulse * .75);
+    }
+    opacity.needsUpdate = true;
+  });
+  return <Sparkles ref={points} count={40} scale={[x * 3.3, y * 3.3, z * 3.3]}
+    position={[0, getBobGroundOffset(formType, parameters), 0]}
+    color={attributes.color} size={attributes.size} opacity={attributes.opacity}
+    speed={reducedMotion ? 0 : .18} noise={.35} />;
+}
+
+function SparkleTapParticles() {
+  const { formType, parameters } = useActiveBobShape();
+  const [x, y, z] = getBlobFormHalfSize(formType, parameters);
+  const centerY = getBobGroundOffset(formType, parameters);
+  const radius = Math.max(x, y, z);
+  const assets = useMemo(() => {
+    const shape = new THREE.Shape();
+    for (let i = 0; i < 8; i++) {
+      const angle = i * Math.PI / 4;
+      const r = i % 2 ? .2 : 1;
+      const px = Math.cos(angle) * r, py = Math.sin(angle) * r;
+      if (i === 0) shape.moveTo(px, py); else shape.lineTo(px, py);
+    }
+    shape.closePath();
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 32;
+    const context = canvas.getContext("2d")!;
+    const glow = context.createRadialGradient(16, 16, 0, 16, 16, 16);
+    glow.addColorStop(0, "rgba(255,255,255,1)");
+    glow.addColorStop(.25, "rgba(255,255,255,.95)");
+    glow.addColorStop(.5, "rgba(255,255,255,.35)");
+    glow.addColorStop(1, "rgba(255,255,255,0)");
+    context.fillStyle = glow;
+    context.fillRect(0, 0, 32, 32);
+    const map = new THREE.CanvasTexture(canvas);
+    const variants = [
+      { geo: new THREE.ShapeGeometry(shape), mat: new THREE.MeshBasicMaterial({ color: "#ffffff", side: THREE.DoubleSide, toneMapped: false }) },
+      { geo: new THREE.PlaneGeometry(2, 2), mat: new THREE.MeshBasicMaterial({ map, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }) },
+    ];
+    return { variants, map };
+  }, []);
+  const config = useMemo<BasicConfig>(() => ({
+    ...assets.variants[0], variants: assets.variants,
+    colors: ["#fff8e6", "#ffd576", "#ffffff"], billboard: true,
+    sparkleRadius: radius, sparkleCenterY: centerY,
+  }), [assets, radius, centerY]);
+  useEffect(() => () => {
+    assets.variants.forEach(({ geo, mat }) => { geo.dispose(); mat.dispose(); });
+    assets.map.dispose();
+  }, [assets]);
+  return <><AmbientTapSparkles /><BasicTapParticles config={config} spawnVariant="sparkle" /></>;
+}
+
 const BUBBLE_COLORS = ["#d8f1ff", "#c7ebff", "#b5e3ff", "#a8dbff"] as const;
 
 export function TapEffects({ id }: { id?: string }) {
@@ -1230,8 +1338,10 @@ export function TapEffects({ id }: { id?: string }) {
     return null;
   }
 
-  if (effectValue >= 8 && effectValue <= 11) {
-    const kinds: NewTapEffect[] = ["comic", "flowers", "ducks", "electric"];
+  if (effectValue === 14) return <SparkleTapParticles />;
+
+  if (effectValue >= 8 && effectValue <= 13) {
+    const kinds: NewTapEffect[] = ["comic", "flowers", "ducks", "electric", "autumn", "paint"];
     return <CatalogueTapParticles key={effectValue} kind={kinds[effectValue - 8]} />;
   }
 

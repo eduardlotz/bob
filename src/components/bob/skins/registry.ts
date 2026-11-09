@@ -1,12 +1,12 @@
 import { THEME_CONFIG } from "@/store/config/themes";
 
 export type SkinId = "white" | "dark" | "pastel" | "peach" | "mint" | "lilac" | "sky"
-  | "neon-lime" | "neon-pink" | "neon-cyan" | "moon" | "denim" | "leather" | "glass" | "gold" | "wood" | "water" | "tnt";
+  | "neon-lime" | "neon-pink" | "neon-cyan" | "moon" | "denim" | "leather" | "glass" | "gold" | "wood" | "water" | "tnt" | "sponge" | "lightbulb" | "bush";
 export type SkinUnlock = { quest: string } | { stack: string };
 export interface BobSkin {
   id: SkinId;
   name: { de: string; en: string };
-  material: "solid" | "moon" | "disco" | "watermelon" | "glass" | "gold" | "wood" | "water" | "jelly";
+  material: "solid" | "moon" | "disco" | "watermelon" | "glass" | "gold" | "wood" | "water" | "jelly" | "sponge" | "lightbulb";
   body: string;
   eyes: string;
   secondary?: string;
@@ -41,6 +41,9 @@ export const BOB_SKINS: readonly BobSkin[] = [
   { id: "wood", name: { de: "Holz", en: "Wood" }, material: "wood", body: "#bd834b", secondary: "#704123", eyes: "#211409", cost: 50_000 },
   { id: "water", name: { de: "Wasser", en: "Water" }, material: "water", body: "#c6f4ff", secondary: "#159ed9", eyes: "#082d46", cost: 100_000 },
   { id: "tnt", name: { de: "Gelee", en: "Jelly" }, material: "jelly", body: "#c7ff64", secondary: "#49bc25", eyes: "#153807", cost: 250_000 },
+  { id: "sponge", name: { de: "Schwamm", en: "Sponge" }, material: "sponge", body: "#ffdb46", secondary: "#b98a21", eyes: "#161305", cost: 35_000 },
+  { id: "lightbulb", name: { de: "Glühbirne", en: "Lightbulb" }, material: "lightbulb", body: "#fff2b0", secondary: "#ffca54", eyes: "#29200c", cost: 150_000 },
+  { id: "bush", name: { de: "Busch", en: "Bush" }, material: "solid", body: "#416537", eyes: "#0a1409", cost: 75_000 },
 ];
 export const getBobSkin = (id: unknown): BobSkin => BOB_SKINS.find(skin => skin.id === (id === "neon" ? "moon" : id === "stripes" ? "denim" : id)) ?? BOB_SKINS[0];
 export function isBobSkinUnlocked(skin: BobSkin, quests: readonly { id: string; stackId?: string; completed: boolean }[]) {

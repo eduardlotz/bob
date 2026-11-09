@@ -1,10 +1,12 @@
 import type { WardrobeKind } from "@/3d-objects/models/toonWardrobe";
+import type { PlayfulWardrobeKind } from "@/3d-objects/models/playfulWardrobe";
 import { lazy, type ComponentProps, type ComponentType } from "react";
 import type { BlobFormType } from "@/types/blobForms";
 import type { BobBodyFit, Vec3, WearableMount } from "./wearableFit";
 
 // Keep fitting metadata available without importing or downloading unused models.
 const ToonWardrobe = lazy(() => import("@/3d-objects/models/toonWardrobe").then(module => ({ default: module.ToonWardrobe })));
+const PlayfulWardrobe = lazy(() => import("@/3d-objects/models/playfulWardrobe").then(module => ({ default: module.PlayfulWardrobe })));
 const KrustyKrabHat = lazy(() => import("@/3d-objects/models/krustyKrabHat").then(module => ({ default: module.KrustyKrabHat })));
 const RoundGlasses = lazy(() => import("@/3d-objects/models/roundGlasses").then(module => ({ default: module.RoundGlasses })));
 const AfroHair = lazy(() => import("@/3d-objects/models/afroHair").then(module => ({ default: module.AfroHair })));
@@ -22,6 +24,7 @@ interface ModelProps {
   preview: boolean;
   formType: BlobFormType;
   body: BobBodyFit;
+  moustacheEquipped?: boolean;
 }
 
 export interface WearableDefinition {
@@ -39,6 +42,9 @@ const toonHat = (kind: ComponentProps<typeof ToonHat>["kind"]): ComponentType<Mo
 const wardrobe = (kind: WardrobeKind): ComponentType<ModelProps> =>
   function WardrobeModel(props) { return <ToonWardrobe {...props} kind={kind} />; };
 
+const playfulWardrobe = (kind: PlayfulWardrobeKind): ComponentType<ModelProps> =>
+  function PlayfulModel(props) { return <PlayfulWardrobe {...props} kind={kind} />; };
+
 const RainbowAfro: ComponentType<ModelProps> = (props) => <AfroHair {...props} rainbow />;
 
 const Moustache: ComponentType<ModelProps> = ({ formType, ...props }) =>
@@ -50,6 +56,21 @@ const Moustache: ComponentType<ModelProps> = ({ formType, ...props }) =>
  * Decorations are deliberately absent: this catalogue contains wearables only.
  */
 export const BOB_WEARABLES: Readonly<Record<string, WearableDefinition>> = {
+  cigar: {
+    Model: playfulWardrobe("cigar"),
+    calibration: { position: [0, 0, 0], scale: [1, 1, 1] },
+    mount: { kind: "face", eyeOffset: -.6, clearance: .025 },
+  },
+  bigSmile: {
+    Model: playfulWardrobe("bigSmile"),
+    calibration: { position: [0, 0, 0], scale: [1, 1, 1] },
+    mount: { kind: "body" },
+  },
+  sleepingHat: {
+    Model: playfulWardrobe("sleepingHat"),
+    calibration: { position: [0, .6, 0], scale: [1, 1, 1] },
+    mount: { kind: "crown", bottom: .53, scaling: "horizontal", cubeInset: .08 },
+  },
   topHat: {
     Model: wardrobe("topHat"),
     calibration: { position: [0, 0.78, 0], scale: [1, 1, 1] },

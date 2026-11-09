@@ -1,5 +1,6 @@
 import type { BobSkin } from "./bob/skins/registry";
 import { BobSkinMaterial } from "./bob/skins/BobSkinMaterial";
+import { BobSkinFeatures } from "./bob/skins/BobSkinFeatures";
 import React, { useMemo, useEffect } from "react";
 import { createEggGeometry } from "@/3d-objects/models/eggGeometry";
 import { RoundedBox } from "@react-three/drei";
@@ -12,7 +13,12 @@ interface BlobFormProps {
   skin?: BobSkin;
 }
 
-export const BlobForm = React.memo(
+export const BlobForm = React.memo((props: BlobFormProps) => <group>
+  <group scale={props.skin?.id === "bush" ? .9 : 1}><BlobBody {...props} /></group>
+  {props.skin && <BobSkinFeatures skin={props.skin} form={props.formType} parameters={props.parameters} />}
+</group>);
+
+const BlobBody = React.memo(
   ({ formType, parameters, blobColor, skin }: BlobFormProps) => {
     switch (formType) {
       case "sphere":

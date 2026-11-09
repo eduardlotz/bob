@@ -1,6 +1,9 @@
 import { BobItem } from "@/store";
 
 export const initialBobItems: BobItem[] = [
+  { id: "cigar", name: "Zigarre", description: "Glühende Spitze und kleine Rauchwölkchen.", cost: 20000, purchased: false, enabled: false, type: "accessory", equipSlot: "mouth", icon: "🚬", category: "bob" },
+  { id: "bigSmile", name: "Grinsebacke", description: "Ein breites Lächeln mit großen weißen Zähnen.", cost: 10000, purchased: false, enabled: false, type: "accessory", equipSlot: "mouth", icon: "😁", category: "bob" },
+  { id: "sleepingHat", name: "Schlafmütze", description: "Eine weiche blaue Mütze mit Bommel.", cost: 16000, purchased: false, enabled: false, type: "hat", icon: "💤", category: "bob" },
   { id: "rainbowAfro", name: "Regenbogen-Afro", description: "Alle Farben auf einmal.", cost: 22000, purchased: false, enabled: false, type: "hat", icon: "🌈", category: "bob" },
   { id: "clownNose", name: "Clownsnase", description: "Ein kleiner roter Spaß.", cost: 8000, purchased: false, enabled: false, type: "accessory", icon: "🔴", category: "bob", equipSlot: "nose" },
   { id: "dimmadomeHat", name: "Dimmadome", description: "Dieser Hut nimmt kein Ende.", cost: 32000, purchased: false, enabled: false, type: "hat", icon: "🤠", category: "bob" },

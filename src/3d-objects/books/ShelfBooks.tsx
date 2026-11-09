@@ -12,7 +12,6 @@ import { getSceneLensRadius } from "@/utils/sceneLensFraming";
 import { BOOK_SIZE, shelfBookWorldPose } from "./libraryLayout";
 import { libraryBookFlightProgress, libraryBookFocusPose } from "./libraryFocus";
 import { getCoverTex, loadCoverFonts } from "./utils";
-import { libraryToonRamp } from "./libraryToon";
 import { libraryWorldPoint, type LibraryWorldTransform } from "@/store/config/libraryFraming";
 
 const COLUMNS = 8;
@@ -178,10 +177,10 @@ export function ShelfBooks({ world }: { world: LibraryWorldTransform }) {
     }} onPointerLeave={() => { setHoveredObject(null); useCursorStore.getState().setHoveringClickable(false); }}>
     <instancedMesh ref={bodies} args={[atlas.body, undefined, BOOKS.length]} castShadow receiveShadow frustumCulled={false}
      >
-      <meshToonMaterial color="white" gradientMap={libraryToonRamp} />
+      <meshStandardMaterial color="white" roughness={.68} />
     </instancedMesh>
     <instancedMesh ref={jackets} args={[atlas.geometry, undefined, BOOKS.length]} frustumCulled={false}>
-      <meshToonMaterial map={atlas.texture} gradientMap={libraryToonRamp} customProgramCacheKey={() => "library-jacket-atlas-toon-v3"}
+      <meshStandardMaterial map={atlas.texture} roughness={.5} customProgramCacheKey={() => "library-jacket-atlas-daylight-v1"}
         onBeforeCompile={shader => {
           shader.vertexShader = `attribute vec2 atlasOffset;\n${shader.vertexShader}`.replace("#include <uv_vertex>",
             `#include <uv_vertex>\n#ifdef USE_MAP\nvMapUv = vMapUv / vec2(${COLUMNS}.0, ${ROWS}.0) + atlasOffset;\n#endif`);

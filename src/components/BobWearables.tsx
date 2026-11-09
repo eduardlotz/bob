@@ -10,10 +10,11 @@ interface Props {
   parameters: BlobFormParameters;
 }
 
-const Wearable = memo(function Wearable({ id, definition, body }: {
+const Wearable = memo(function Wearable({ id, definition, body, moustacheEquipped }: {
   id: string;
   definition: WearableDefinition;
   body: BobBodyFit;
+  moustacheEquipped: boolean;
 }) {
   const transform = useMemo(() => fitBobWearable(body, definition.mount), [body, definition]);
   const { Model, calibration } = definition;
@@ -23,6 +24,7 @@ const Wearable = memo(function Wearable({ id, definition, body }: {
         {...calibration}
         formType={body.formType}
         body={body}
+        moustacheEquipped={moustacheEquipped}
         // Preview is a temporary selection, never a material treatment.
         preview={false}
       />
@@ -43,6 +45,7 @@ export function BobWearables({ items, blobFormType, parameters }: Props) {
         id={item.id}
         definition={definition}
         body={body}
+        moustacheEquipped={items.some(item => item.id === "bobMoustache")}
       />
     );
   });

@@ -9,7 +9,7 @@ toonRamp.needsUpdate = true;
 
 const modes: Record<BobSkin["material"], number> = {
   solid: 0, moon: 1, disco: 2, watermelon: 3, glass: 4, gold: 5,
-  wood: 7, water: 8, jelly: 9,
+  wood: 7, water: 8, jelly: 9, sponge: 10, lightbulb: 11,
 };
 
 const surface = /* glsl */ `
@@ -183,7 +183,7 @@ const patterns = /* glsl */ `
     float gleam = smoothstep(0.968, 0.977, dot(normalize(sp), normalize(vec3(-0.5,0.65,1.0))));
     skinHighlight = max(skinHighlight, gleam * 0.65);
     diffuseColor.a *= clamp(0.16 + filled * 0.66 + top * 0.4 + rim * 0.48 + gleam * 0.7, 0.0, 1.0);
-  } else if (skinMode > 8.5) {
+  } else if (skinMode > 8.5 && skinMode < 9.5) {
     // Lime jelly: an analytic interior depth and suspended bubbles give it
     // volume. Both the tint and opacity change smoothly across the whole body.
     vec3 ray = -normalize(skinView / max(skinBounds, vec3(0.001)));
@@ -200,7 +200,34 @@ const patterns = /* glsl */ `
     float gleam = pow(max(0.0, dot(p, normalize(vec3(-0.5,0.65,1.0)))), 32.0);
     skinHighlight = clamp(gleam * 0.8 + bubbles * 0.24 + rim * 0.1, 0.0, 0.85);
     diffuseColor.a *= 0.66 + depth * 0.16 + rim * 0.14;
-
+  } else if (skinMode > 9.5 && skinMode < 10.5) {
+    // Volumetric pores wrap over every body form, without a texture seam.
+    vec3 cell = floor(sp * 5.0);
+    float pore = 0.0;
+    float lip = 0.0;
+    for (int x = -1; x <= 1; x++) {
+      for (int y = -1; y <= 1; y++) {
+        for (int z = -1; z <= 1; z++) {
+          vec3 tile = cell + vec3(float(x), float(y), float(z));
+          vec3 center = tile + .2 + vec3(skinHash(tile), skinHash(tile+13.0), skinHash(tile+27.0)) * .6;
+          float radius = .17 + skinHash(tile+7.0) * .16;
+          float d = length(sp * 5.0 - center) / radius;
+          float aa = max(fwidth(d), .04);
+          pore = max(pore, 1.0 - smoothstep(.65-aa, 1.0+aa, d));
+          lip = max(lip, smoothstep(.8-aa, 1.0, d) * (1.0-smoothstep(1.0,1.3+aa,d)));
+        }
+      }
+    }
+    diffuseColor.rgb *= .94 + skinNoise(sp * 65.0) * .12;
+    diffuseColor.rgb = mix(diffuseColor.rgb, skinSecondary * .65, pore * .85);
+    diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0,.92,.45), lip * .4);
+  } else if (skinMode > 10.5) {
+    float facing = abs(dot(normalize(vNormal), normalize(vViewPosition)));
+    float rim = pow(1.0-facing, 2.0);
+    float gleam = pow(max(0.0,dot(normalize(sp),normalize(vec3(-.45,.6,1.0)))),40.0);
+    diffuseColor.rgb = mix(diffuseColor.rgb, skinSecondary, rim * .45);
+    diffuseColor.a *= .2 + rim * .48 + gleam * .6;
+    skinHighlight = gleam * .8;
   }
 `;
 
@@ -218,7 +245,7 @@ export function createBobSkinMaterial(skin: BobSkin, halfSize: readonly number[]
   };
   const material = new MeshToonMaterial({ gradientMap: toonRamp });
   const setSkin = (next: BobSkin) => {
-    const transparent = next.material === "glass" || next.material === "water" || next.material === "jelly";
+    const transparent = next.material === "glass" || next.material === "water" || next.material === "jelly" || next.material === "lightbulb";
     if (material.transparent !== transparent) {
       material.transparent = transparent;
       material.needsUpdate = true;
@@ -239,9 +266,9 @@ export function createBobSkinMaterial(skin: BobSkin, halfSize: readonly number[]
     );
     shader.fragmentShader = `${surface}\n${shader.fragmentShader}`
       .replace("#include <color_fragment>", `#include <color_fragment>\n${patterns}`)
-      .replace("#include <opaque_fragment>", "if ((skinMode > 1.5 && skinMode < 2.5) || (skinMode > 4.5 && skinMode < 5.5) || skinMode > 8.5) outgoingLight = diffuseColor.rgb;\noutgoingLight = mix(outgoingLight, vec3(1.0), skinHighlight);\n#include <opaque_fragment>");
+      .replace("#include <opaque_fragment>", "if ((skinMode > 1.5 && skinMode < 2.5) || (skinMode > 4.5 && skinMode < 5.5) || (skinMode > 8.5 && skinMode < 9.5) || skinMode > 10.5) outgoingLight = diffuseColor.rgb;\noutgoingLight = mix(outgoingLight, vec3(1.0), skinHighlight);\n#include <opaque_fragment>");
   };
-  material.customProgramCacheKey = () => "bob-skin-toon-v6";
+  material.customProgramCacheKey = () => "bob-skin-toon-v7";
   return {
     material,
     setSkin,

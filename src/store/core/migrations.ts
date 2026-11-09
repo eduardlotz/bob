@@ -46,7 +46,7 @@ export const normalizeWorlds = (worlds: any[] = []) => {
   });
 };
 
-const normalizeTapEffects = (tapEffects: any[] = []) => {
+export const normalizeTapEffects = (tapEffects: any[] = []) => {
   const previousTapEffects = new Map(
     tapEffects.map((item: any) => [item.id, item]),
   );
@@ -72,7 +72,7 @@ const normalizeTapEffects = (tapEffects: any[] = []) => {
   });
 };
 
-const normalizeBobItems = (bobItems: any[] = []) => {
+export const normalizeBobItems = (bobItems: any[] = []) => {
   const previousBobItems = new Map(
     bobItems.map((item: any) => [item.id, item]),
   );

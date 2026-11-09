@@ -17,6 +17,7 @@ import { useCoreStore } from "@/store";
 import { useI18n } from "@/i18n";
 
 const SOUNDCLOUD_URLS = [
+  "https://soundcloud.com/captainlowie/egal",
   "https://soundcloud.com/captainlowie/nie-wieder-wie-frueher",
   "https://soundcloud.com/captainlowie/fruehlingsgefuehle",
   "https://soundcloud.com/captainlowie/ist-das-leben-nicht-schoen",

@@ -5,7 +5,7 @@ import { type ShaderMaterial } from "three";
 import { useAppStore, useViewStore } from "@/store";
 import { useLibraryStore } from "@/store/exploration";
 import { LIBRARY_MEDIA_ENABLED, LIBRARY_SHELVES } from "@/store/config/library";
-import { LibraryRoom, LibraryDaylight, Stone } from "@/3d-objects/books/LibraryRoom";
+import { LibraryRoom, LibraryDaylight, LibraryBobShadow } from "@/3d-objects/books/LibraryRoom";
 import { useTemplateCover } from "@/3d-objects/TemplateCover";
 import { libraryMedia, type MediaRecommendation } from "@/content/libraryMedia";
 import { useI18n } from "@/i18n";
@@ -13,33 +13,49 @@ import { useFloatingBar } from "@/layout/FloatingBar";
 import { explorationMessages } from "./exploration.messages";
 import { createSceneLabelPosition } from "@/utils/sceneLabels";
 import { ProjectedVideoScreen } from "@/3d-objects/ProjectedVideoScreen";
-import { StaticLibraryBatch } from "@/3d-objects/books/StaticLibraryBatch";
 import { ShelfBooks } from "@/3d-objects/books/ShelfBooks";
-import { shelfDimensions, SHELF_BASE, SHELF_ROW_HEIGHT } from "@/3d-objects/books/libraryLayout";
+import { shelfDimensions } from "@/3d-objects/books/libraryLayout";
 import { useLibraryControls } from "@/3d-objects/books/useLibraryControls";
 import { EngravedShelfLabel } from "@/3d-objects/books/EngravedShelfLabel";
 import { getLibraryWorldTransform } from "@/store/config/libraryFraming";
+import { useCursorStore } from "@/store/core/cursor";
 
-function BookshelfStructure({ shelf }: { shelf: typeof LIBRARY_SHELVES[number] }) {
-  const { width, height, rows } = shelfDimensions(shelf.status);
-  return <group position={shelf.position} rotation={[0, shelf.rotation, 0]} userData={{ libraryShelf: shelf.status }}>
-    <mesh position={[0, height / 2, -0.25]} receiveShadow><boxGeometry args={[width, height, 0.12]} /><Stone color="#87938e" /></mesh>
-    {[-1, 1].map(side => <mesh key={side} position={[side * (width / 2 + 0.07), height / 2, 0]} castShadow receiveShadow>
-      <boxGeometry args={[0.14, height, 0.7]} /><Stone />
-    </mesh>)}
-    {Array.from({ length: rows + 1 }, (_, row) => <mesh key={row} position={[0, SHELF_BASE + row * SHELF_ROW_HEIGHT, 0]} castShadow receiveShadow>
-      <boxGeometry args={[width, 0.14, 0.7]} /><Stone color="#b9bfbc" />
-    </mesh>)}
-    <mesh position={[0, 0.15, 0]} castShadow receiveShadow><boxGeometry args={[width + 0.35, 0.3, 0.82]} /><Stone color="#929d99" /></mesh>
-    <mesh position={[0, height + 0.04, 0]} castShadow><boxGeometry args={[width + 0.35, 0.16, 0.82]} /><Stone color="#c6ccc8" /></mesh>
+/** The shelf is authored in Blender; this volume preserves whole-shelf picking. */
+function BookshelfTrigger({ shelf }: { shelf: typeof LIBRARY_SHELVES[number] }) {
+  const { width, height } = shelfDimensions(shelf.status);
+  const showOptions = useAppStore(state => state.showOptions);
+  const currentView = useViewStore(state => state.currentView);
+  const bookId = useLibraryStore(state => state.bookId);
+  const { messages } = useI18n();
+  const { setHoveredObject } = useFloatingBar();
+  const interactive = !showOptions && bookId === null && currentView.startsWith("library");
+  const clearHover = () => {
+    setHoveredObject(null);
+    useCursorStore.getState().setHoveringClickable(false);
+  };
+  return <group position={shelf.position} rotation={[0, shelf.rotation, 0]}>
+    <mesh position={[0, height / 2, -.22]}
+      onClick={event => {
+        if (!interactive || event.delta > 5) return;
+        event.stopPropagation(); clearHover(); useLibraryStore.getState().browse(shelf.status);
+      }}
+      onPointerMove={event => {
+        if (!interactive) return;
+        event.stopPropagation();
+        setHoveredObject({ title: messages.books.statuses[shelf.status] });
+        useCursorStore.getState().setHoveringClickable(true);
+      }} onPointerLeave={clearHover}>
+      <boxGeometry args={[width + .4, height + .2, .5]} />
+      <meshBasicMaterial transparent opacity={0} colorWrite={false} depthWrite={false} />
+    </mesh>
   </group>;
 }
 
 const LiteratureScenery = memo(function LiteratureScenery() {
-  return <StaticLibraryBatch>
+  return <>
     <LibraryRoom />
-    {LIBRARY_SHELVES.map(shelf => <BookshelfStructure key={shelf.status} shelf={shelf} />)}
-  </StaticLibraryBatch>;
+    {LIBRARY_SHELVES.map(shelf => <BookshelfTrigger key={shelf.status} shelf={shelf} />)}
+  </>;
 });
 
 const MAGAZINE_COLORS = ["#6d8b77", "#ac765f", "#6f8da4"];
@@ -94,6 +110,7 @@ export function LiteratureScene() {
   const calculatePosition = useMemo(createSceneLabelPosition, []);
   return <>
     <LibraryDaylight />
+    <LibraryBobShadow />
     <ShelfBooks world={world} />
     <group position={world.position} scale={world.scale}>
       <LiteratureScenery />
