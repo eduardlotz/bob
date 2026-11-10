@@ -7,8 +7,8 @@ export const ABOUT_VINYLS = [
 ];
 
 export const ABOUT_PICTURES = [
-  { id: "rave-1", title: "Rave" },
-  { id: "rave-2", title: "Rave" },
-  { id: "rave-3", title: "Rave" },
-  { id: "rave-4", title: "Rave" },
+  { id: "photo-me", title: "me", image: "/images/me.jpg" },
+  { id: "photo-unreal", title: "unreal", image: "/images/rave.jpg" },
+  { id: "photo-peep", title: "peep", image: "/images/bird.jpg" },
+  { id: "photo-young-me", title: "young me", image: "/images/young-me.jpg" },
 ];

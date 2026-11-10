@@ -127,3 +127,15 @@ export function DjControllerModel({ position, rotation, scale = [1, 1, 1] }: Pro
     </group>
   </group>;
 }
+
+/** The About room owns a Blender-baked controller body; meters stay animated. */
+export function DjControllerMeters({ position }: { position: Point }) {
+  const materials = useMemo(() => ({
+    off: new MeshToonMaterial({ color: "#353539" }),
+    on: new MeshToonMaterial({ color: "#99999d", emissive: "#666669", emissiveIntensity: .35 }),
+  }), []);
+  useEffect(() => () => { materials.off.dispose(); materials.on.dispose(); }, [materials]);
+  return <group position={position} rotation={[0, Math.PI / 2, 0]}>
+    <VolumeMeters off={materials.off} on={materials.on} />
+  </group>;
+}

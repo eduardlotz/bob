@@ -15,9 +15,7 @@ import { useSocialsStore } from "@/store/socials";
 import { useI18n } from "@/i18n";
 import { viewControlsMessages } from "./ViewControls.messages";
 import { ChevronLeftIcon } from "@/icons/chevron";
-import { useLibraryStore } from "@/store/exploration";
 import { sceneChipStyle } from "@/components/SceneChip";
-import { explorationMessages } from "@/routes/exploration.messages";
 
 export function ViewControls() {
   const {
@@ -36,13 +34,7 @@ export function ViewControls() {
   const { focusedBook } = useBooksStore();
   const { focusedThrone } = useSocialsStore();
   const vinyl = useVinylStore(state => state.selected);
-  const { locale, messages } = useI18n();
-  const libraryStatus = useLibraryStore(state => state.status);
-  const libraryMedia = useLibraryStore(state => state.media);
-  const libraryBook = useLibraryStore(state => state.bookId);
-  const isLiterature = currentRoute === ROUTE_PATHS.LITERATURE;
-  const isLiteratureDetail = isLiterature && (libraryStatus !== null || libraryMedia !== null);
-
+  const { locale } = useI18n();
   const activeGame = useMiniGameStore((s) => s.activeGame);
   const viewTitles = viewControlsMessages[locale].viewTitles;
 
@@ -55,7 +47,6 @@ export function ViewControls() {
 
   const isShopPreview = currentView === "shop:preview";
   const shouldHide =
-    (isLiterature && (!isLiteratureDetail || libraryBook !== null || isPhone || isNavigation)) ||
     currentView === "loading" ||
     isShopPreview ||
     isGameActive ||
@@ -65,7 +56,7 @@ export function ViewControls() {
     focusedBook ||
     focusedThrone;
   const isViewEligible = !isDefault && !isPhone && !isCreative && !isNavigation;
-  const showControls = !shouldHide && (isLiteratureDetail || isImageFocused || isViewEligible);
+  const showControls = !shouldHide && (isImageFocused || isViewEligible);
 
   // escape key to return to default view
   useKeyPress("Escape", () => {
@@ -77,7 +68,6 @@ export function ViewControls() {
       !isTransitioning &&
       !isNavigation &&
       !isMinigamesRoute
-      && currentRoute !== ROUTE_PATHS.LITERATURE
     ) {
       handleBackClick();
       playUISound("ui-tap-close");
@@ -87,15 +77,10 @@ export function ViewControls() {
   const handleBackClick = () => {
     if (isTransitioning) return;
     if (vinyl !== null) { useVinylStore.getState().select(null); return; }
-    if (isLiterature) { useLibraryStore.getState().reset(); return; }
     resetToDefaultView();
   };
 
-  const title = isLiterature && libraryStatus
-    ? messages.books.statuses[libraryStatus]
-    : isLiterature && libraryMedia
-    ? explorationMessages[locale][libraryMedia]
-    : isImageFocused
+  const title = isImageFocused
     ? focusedImageTitle
     : (viewTitles[currentView as keyof typeof viewTitles] ?? "");
 

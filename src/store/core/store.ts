@@ -75,8 +75,8 @@ export enum GAME_STORE_VERSION {
   V15 = 100110, // free body shapes in Settings
   V16 = 100111, // world environments and layered soundscapes
   V17 = 100112, // expanded Bob wardrobe and tap effects
-  V18 = 100113, // Library, Places, and the updated Mini Games price
-  V19 = 100114, // Consolidate literature and remove retired destinations
+  V18 = 100113, // updated Mini Games price
+  V19 = 100114, // reconcile the current route catalogue
   LATEST = V19,
 }
 
@@ -529,9 +529,6 @@ export const initialRoutes: Route[] = [
     isLocked: ROUTE_CONFIG[ROUTE_PATHS.PORTFOLIO].isLocked,
     category: "pages",
   },
-  ...([ROUTE_PATHS.LITERATURE] as const).map((path): Route => ({
-    ...ROUTE_CONFIG[path], path, purchased: false, unlocked: false, category: "pages",
-  })),
   {
     id: ROUTE_IDS.MINIGAMES,
     name: ROUTE_CONFIG[ROUTE_PATHS.MINIGAMES].name,

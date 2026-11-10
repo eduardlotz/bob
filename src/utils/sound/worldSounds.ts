@@ -11,6 +11,7 @@ export const ENVIRONMENT_AUDIO_SOURCES: Record<string, WorldSoundSource> = {
   "ambience-bird": { filePath: "/audio/ambience/forest-birds.mp3" },
   "ambience-cricket": recording("cricket"),
   "ambience-rain": recording("rain"),
+  "ambience-about-thunder": { filePath: "/audio/ambience/about-thunder.wav" },
   "ambience-city": recording("city"),
   "ambience-horn": recording("horn"),
   "ambience-car": recording("car"),

@@ -8,11 +8,12 @@ import { useFloatingBar } from "@/layout/FloatingBar";
 import { useI18n } from "@/i18n";
 import { viewControlsMessages } from "@/molecules/ViewControls.messages";
 import { getSceneLensRadius } from "@/utils/sceneLensFraming";
-import { libraryBookFlightProgress } from "../books/libraryFocus";
+import { roomObjectFlightProgress, roomObjectFocusPose } from "./roomObjectFocus";
 import { useSocialCorner } from "./useSocialCorner";
 
-export function RoomDisplayObject({ id, title, position, rotation = [0, 0, 0], width, height, children }: {
+export function RoomDisplayObject({ id, title, position, rotation = [0, 0, 0], width, height, children, viewId = "socials" }: {
   id: string; title: string; position: [number, number, number]; rotation?: [number, number, number];
+  viewId?: "socials" | "computer";
   width: number; height: number; children: (focused: boolean) => React.ReactNode;
 }) {
   const selected = useVinylStore(state => state.selected);
@@ -22,7 +23,7 @@ export function RoomDisplayObject({ id, title, position, rotation = [0, 0, 0], w
   const size = useThree(state => state.size);
   const { locale } = useI18n();
   const { setHoveredObject } = useFloatingBar();
-  const enterCorner = useSocialCorner();
+  const enterCorner = useSocialCorner(viewId);
   const ref = useRef<Group>(null!);
   const home = useMemo(() => new Vector3(...position), [position[0], position[1], position[2]]);
   const homeRotation = useMemo(() => new Quaternion().setFromEuler(new Euler(...rotation)), [rotation[0], rotation[1], rotation[2]]);
@@ -53,21 +54,15 @@ export function RoomDisplayObject({ id, title, position, rotation = [0, 0, 0], w
   useFrame(({ camera }, dt) => {
     if (!ref.current) return;
     motion.elapsed += Math.min(dt, 0.1);
-    const t = libraryBookFlightProgress(motion.elapsed);
+    const t = roomObjectFlightProgress(motion.elapsed);
     let scale = 1;
     motion.target.copy(home); motion.rotation.copy(homeRotation);
     if (isSelected) {
-      const distance = 0.72;
       const lens = fisheye ? getSceneLensRadius(size.width, size.height) : undefined;
-      const halfWidth = lens ? distance * size.width / lens : distance / camera.projectionMatrix.elements[0];
-      const halfHeight = lens ? distance * size.height / lens : distance / camera.projectionMatrix.elements[5];
-      motion.target.set(0, 0, -distance);
-      camera.updateWorldMatrix(true, false);
-      motion.target.applyMatrix4(camera.matrixWorld); camera.getWorldQuaternion(motion.cameraRotation);
+      scale = roomObjectFocusPose(camera, size, motion.target, motion.cameraRotation, width, height, lens);
       if (!drag.current) motion.spin += dt * 0.12;
       motion.euler.set(motion.pitch, motion.yaw + motion.spin, -0.025);
       motion.rotation.setFromEuler(motion.euler).premultiply(motion.cameraRotation);
-      scale = Math.min(halfHeight * 1.5 / height, halfWidth * 1.5 / width);
     }
     ref.current.position.lerpVectors(motion.from, motion.target, t);
     ref.current.quaternion.slerpQuaternions(motion.fromRotation, motion.rotation, t);
@@ -77,7 +72,7 @@ export function RoomDisplayObject({ id, title, position, rotation = [0, 0, 0], w
   const hover = (event: ThreeEvent<PointerEvent>) => {
     if (selected) return;
     event.stopPropagation(); useCursorStore.getState().setHoveringClickable(true);
-    setHoveredObject({ title: currentView === "socials" ? title : viewControlsMessages[locale].viewTitles.socials });
+    setHoveredObject({ title: currentView === viewId ? title : viewControlsMessages[locale].viewTitles[viewId] });
   };
   return <group ref={ref} position={home}
     onPointerEnter={hover} onPointerMove={hover} onPointerLeave={leave}

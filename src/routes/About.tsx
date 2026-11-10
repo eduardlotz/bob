@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { useI18n } from "@/i18n";
 import { AnimatePresence } from "motion/react";
 import { useCoreStore } from "@/store";
-import { BookPortalOverlay } from "@/3d-objects/books/overlay";
 import { SocialsPortalOverlay } from "@/3d-objects/socials/overlay";
 
 export default function About() {
@@ -15,6 +14,5 @@ export default function About() {
 
   return ready ? <AnimatePresence>
     <SocialsPortalOverlay key="socials" />
-    <BookPortalOverlay key="books" />
   </AnimatePresence> : null;
 }

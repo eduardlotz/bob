@@ -23,10 +23,11 @@ interface Props {
   position: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
+  physicalLighting?: boolean;
 }
 
 export const DeskSpeakersModel = forwardRef(
-  ({ scale = [1.5, 1.2, 1.1], ...props }: Props, ref: any) => {
+  ({ scale = [1.5, 1.2, 1.1], physicalLighting = false, ...props }: Props, ref: any) => {
     const group = useRef<THREE.Group>(null!);
     const { nodes, materials } = useGLTF(PATH) as GLTFResult;
     const { isMuted } = useSoundSystem();
@@ -74,7 +75,9 @@ export const DeskSpeakersModel = forwardRef(
             // material={materials.Body}
           >
             {/* <meshToonMaterial color="#34343b" /> */}
-            <meshPhongMaterial color="#1b1b1e" />
+            {physicalLighting
+              ? <meshStandardMaterial color="#1b1b1e" metalness={materials.Body.metalness} roughness={materials.Body.roughness} />
+              : <meshPhongMaterial color="#1b1b1e" />}
           </mesh>
         </group>
       </a.group>

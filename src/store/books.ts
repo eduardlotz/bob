@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 
@@ -12,15 +13,12 @@ export interface Book {
   pages?: number;
   publishYear?: number;
   genres?: string[];
-  pages?: number;
-  publishYear?: number;
-  genres?: string[];
 
   url: string;
   fallbackBackgroundColor: string;
   fallbackTextColor: string;
   isbn: string;
-  status: "have-read" | "currently-reading" | "will-read" | "wanna-buy";
+  status: "have-read" | "currently-reading" | "will-read";
 }
 
 function t(...tags: string[]): JSX.Element[] {
@@ -338,7 +336,7 @@ export const BOOKS: Book[] = [
     pages: 368,
     publishYear: 1883,
     genres: ["philosophy", "literature"],
-    related: [53, 60],
+    related: [53],
   },
   {
     id: 32,
@@ -417,7 +415,7 @@ export const BOOKS: Book[] = [
     fallbackTextColor: "#d0f0d8",
     isbn: "",
     url: "",
-    related: [61],
+    related: [],
   },
   {
     id: 39,
@@ -492,7 +490,7 @@ export const BOOKS: Book[] = [
     fallbackTextColor: "#d8d5e8",
     isbn: "",
     url: "",
-    related: [62],
+    related: [],
   },
   {
     id: 48,
@@ -557,7 +555,7 @@ export const BOOKS: Book[] = [
     fallbackTextColor: "#f0d5d5",
     isbn: "",
     url: "",
-    related: [31, 60],
+    related: [31],
   },
   {
     id: 54,
@@ -600,70 +598,6 @@ export const BOOKS: Book[] = [
     url: "",
   },
   {
-    id: 58,
-    title: "Wieviel Erde braucht der Mensch?",
-    author: "Leo Tolstoi",
-    status: "wanna-buy",
-    fallbackBackgroundColor: "#1a2e10",
-    fallbackTextColor: "#d5eacc",
-    isbn: "",
-    url: "",
-  },
-  {
-    id: 59,
-    title: "Der Spieler",
-    author: "Fjodor Dostojewski",
-    status: "wanna-buy",
-    fallbackBackgroundColor: "#2a0a30",
-    fallbackTextColor: "#e8c8f5",
-    isbn: "",
-    url: "",
-    related: [65],
-  },
-  {
-    id: 60,
-    title: "Der Antichrist",
-    author: "Friedrich Nietzsche",
-    status: "wanna-buy",
-    fallbackBackgroundColor: "#380a0a",
-    fallbackTextColor: "#f5c8c8",
-    isbn: "",
-    url: "",
-    related: [31, 53],
-  },
-  {
-    id: 61,
-    title: "The Art of Happiness",
-    author: "Epicurus",
-    status: "wanna-buy",
-    fallbackBackgroundColor: "#484000",
-    fallbackTextColor: "#f8f0cc",
-    isbn: "",
-    url: "",
-    related: [38],
-  },
-  {
-    id: 62,
-    title: "Die Kunst, Recht zu behalten",
-    author: "Arthur Schopenhauer",
-    status: "wanna-buy",
-    fallbackBackgroundColor: "#1e1818",
-    fallbackTextColor: "#e8d8d0",
-    isbn: "",
-    url: "",
-    related: [47],
-  },
-  {
-    id: 63,
-    title: "The Art of Doing Science and Engineering",
-    author: "Richard Hamming",
-    status: "wanna-buy",
-    fallbackBackgroundColor: "#0a1e3a",
-    fallbackTextColor: "#c0d0e8",
-    isbn: "",
-    url: "",
-  },
-  {
     id: 64,
     title: "The Creative Act: A Way of Being",
     author: "Rick Rubin",
@@ -688,18 +622,7 @@ export const BOOKS: Book[] = [
     pages: 704,
     publishYear: 1866,
     genres: ["novel", "philosophy"],
-    related: [59],
-  },
-  {
-    id: 66,
-    title: "Massenpsychologie und Ich-Analyse",
-    author: "Sigmund Freud",
-    status: "wanna-buy",
-    fallbackBackgroundColor: "#1a1040",
-    fallbackTextColor: "#d0c8f0",
-    isbn: "",
-    url: "",
-    related: [71],
+    related: [],
   },
   {
     id: 67,
@@ -757,7 +680,7 @@ export const BOOKS: Book[] = [
     fallbackTextColor: "#000001",
     isbn: "9783150189542",
     url: "",
-    related: [66],
+    related: [],
   },
   {
     id: 72,
@@ -865,77 +788,6 @@ export const BOOKS: Book[] = [
     isbn: "9783518291818",
     url: "https://www.suhrkamp.de/buch/niklas-luhmann-die-religion-der-gesellschaft-t-9783518291818",
   },
-  {
-    id: 82,
-    title: "Several short sentences about writing",
-    author: "Verlyn Klinkenborg",
-    status: "wanna-buy",
-    fallbackBackgroundColor: "#1a2e10",
-    fallbackTextColor: "#d5eacc",
-    isbn: "0307279413",
-    url: "",
-  },
-  {
-    id: 83,
-    title: "Man and His Symbols",
-    author: "Carl Jung",
-    status: "wanna-buy",
-    fallbackBackgroundColor: "#212121",
-    fallbackTextColor: "#d5eacc",
-    isbn: "0440351839",
-    url: "",
-  },
-  {
-    id: 84,
-    title: "Narziß und Goldmund",
-    author: "Hermann Hesse",
-    status: "wanna-buy",
-    fallbackBackgroundColor: "#eaeaea",
-    fallbackTextColor: "#d5eacc",
-    isbn: "9783518367742",
-    url: "",
-  },
-  {
-    id: 85,
-    title: "Thinking in Systems",
-    author: "Donella H. Meadows",
-    status: "wanna-buy",
-    fallbackBackgroundColor: "#ffffff",
-    fallbackTextColor: "#212121",
-    isbn: "1603580557",
-    url: "",
-  },
-  {
-    id: 86,
-    title: "Emotional Design: Why We Love (or Hate) Everyday Things",
-    author: "Don Norman",
-    status: "wanna-buy",
-    fallbackBackgroundColor: "#111111",
-    fallbackTextColor: "#fefefe",
-    isbn: "9780465051366",
-    url: "",
-  },
-  {
-    id: 87,
-    title: "The Design Of Everyday Things",
-    author: "Don Norman",
-    status: "wanna-buy",
-    fallbackBackgroundColor: "#FCDF37",
-    fallbackTextColor: "#212121",
-    isbn: "9780465050659",
-    url: "",
-  },
-  {
-    id: 88,
-    title: "Infokratie: Digitalisierung und die Krise der Demokratie",
-    author: "Byung-Chul Han",
-    status: "wanna-buy",
-    fallbackBackgroundColor: "#0F141C",
-    fallbackTextColor: "#9EB9BE",
-    isbn: "9783751805261",
-    url: "",
-    pages: 88,
-  },
 ];
 
 export const BOOK_BY_ID = new Map<number, Book>(BOOKS.map((b) => [b.id, b]));
@@ -946,71 +798,18 @@ export const BOOK_BY_ID = new Map<number, Book>(BOOKS.map((b) => [b.id, b]));
 
 interface BooksStore {
   focusedBook: Book | null;
-  focusedIdx: number | null;
-  hoveredBook: Book | null;
-
-  // Actions
-  setFocused: (idx: number) => void;
   clearFocus: () => void;
-  navigateNext: () => void;
-  navigatePrev: () => void;
   navigateToBookId: (id: number) => void;
-  setHoveredBook: (book: Book | null) => void;
-
-  // Selectors
-  canNavigateNext: () => boolean;
-  canNavigatePrev: () => boolean;
 }
 
 export const useBooksStore = create<BooksStore>()(
   devtools(
-    (set, get) => ({
+    set => ({
       focusedBook: null,
-      focusedIdx: null,
-      hoveredBook: null,
-
-      setFocused: (idx) =>
-        set({
-          focusedIdx: idx,
-          focusedBook: BOOKS[idx] ?? null,
-        }),
-
-      clearFocus: () =>
-        set({
-          focusedBook: null,
-          focusedIdx: null,
-        }),
-
-      navigateNext: () => {
-        const { focusedIdx } = get();
-        if (focusedIdx === null) return;
-        const next = focusedIdx + 1;
-        if (next < BOOKS.length)
-          set({ focusedIdx: next, focusedBook: BOOKS[next] });
-      },
-
-      navigatePrev: () => {
-        const { focusedIdx } = get();
-        if (focusedIdx === null) return;
-        const prev = focusedIdx - 1;
-        if (prev >= 0) set({ focusedIdx: prev, focusedBook: BOOKS[prev] });
-      },
-
-      navigateToBookId: (id) => {
-        const idx = BOOKS.findIndex((b) => b.id === id);
-        if (idx !== -1) set({ focusedIdx: idx, focusedBook: BOOKS[idx] });
-      },
-
-      setHoveredBook: (book) => set({ hoveredBook: book }),
-
-      canNavigateNext: () => {
-        const { focusedIdx } = get();
-        return focusedIdx !== null && focusedIdx < BOOKS.length - 1;
-      },
-
-      canNavigatePrev: () => {
-        const { focusedIdx } = get();
-        return focusedIdx !== null && focusedIdx > 0;
+      clearFocus: () => set({ focusedBook: null }),
+      navigateToBookId: id => {
+        const book = BOOK_BY_ID.get(id);
+        if (book) set({ focusedBook: book });
       },
     }),
     { name: "books-store" },

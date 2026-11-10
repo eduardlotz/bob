@@ -29,7 +29,6 @@ const Home = lazy(() => import("./routes/Home"));
 const About = lazy(() => import("./routes/About"));
 const Portfolio = lazy(() => import("./routes/Portfolio"));
 const MiniGames = lazy(() => import("./routes/MiniGames"));
-const Literature = lazy(() => import("./routes/Literature"));
 
 const SILEO_TOAST_DURATION_MS = 6000;
 
@@ -159,9 +158,6 @@ export default function App() {
                     <Route path={ROUTE_PATHS.ABOUT} element={<About />} />
                     <Route path={ROUTE_PATHS.PORTFOLIO} element={<Portfolio />} />
                     <Route path={ROUTE_PATHS.MINIGAMES} element={<MiniGames />} />
-                    <Route path={ROUTE_PATHS.LITERATURE} element={<Literature />} />
-                    <Route path="/library" element={<Navigate to={ROUTE_PATHS.LITERATURE} replace />} />
-                    <Route path="/places" element={<Navigate to={ROUTE_PATHS.LITERATURE} replace />} />
                     <Route
                       path="*"
                       element={<Navigate to={ROUTE_PATHS.HOME} replace />}

@@ -34,7 +34,10 @@ import { useViewStore } from "../store/viewStore";
 import { ROUTE_IDS, ROUTE_PATHS } from "../store/config/routes";
 import { SceneLens } from "@/components/SceneLens";
 import { LoadingCamera } from "@/components/LoadingCamera";
-import { BobEditorScene, BobEditorCounterFade } from "@/components/bob/BobEditorScene";
+import {
+  BobEditorScene,
+  BobEditorCounterFade,
+} from "@/components/bob/BobEditorScene";
 import { useBobEditor } from "@/store/bobEditor";
 import {
   attachListenerToCamera,
@@ -69,13 +72,27 @@ import {
   useWorldEnvironment,
 } from "@/3d-objects/worlds/WorldEnvironment";
 import { WorldAudio } from "@/3d-objects/worlds/WorldAudio";
-import { worldDayPhase, type WorldEnvironmentConfig } from "@/types/worldEnvironment";
+import {
+  worldDayPhase,
+  type WorldEnvironmentConfig,
+} from "@/types/worldEnvironment";
 
 const HomeScene = lazy(() => import("@/routes/HomeScene"));
-const PortfolioScene = lazy(() => import("@/routes/PortfolioScene").then(module => ({ default: module.PortfolioScene })));
-const AboutScene = lazy(() => import("@/routes/AboutScene").then(module => ({ default: module.AboutScene })));
-const LiteratureScene = lazy(() => import("@/routes/LiteratureScene").then(module => ({ default: module.LiteratureScene })));
-const MiniGamesScene = lazy(() => import("@/routes/MiniGamesScene").then(module => ({ default: module.MiniGamesScene })));
+const PortfolioScene = lazy(() =>
+  import("@/routes/PortfolioScene").then((module) => ({
+    default: module.PortfolioScene,
+  })),
+);
+const AboutScene = lazy(() =>
+  import("@/routes/AboutScene").then((module) => ({
+    default: module.AboutScene,
+  })),
+);
+const MiniGamesScene = lazy(() =>
+  import("@/routes/MiniGamesScene").then((module) => ({
+    default: module.MiniGamesScene,
+  })),
+);
 
 const Debug = () => {
   const { width } = useThree((s) => s.size);
@@ -129,7 +146,6 @@ const HOME_WORLD_ENVIRONMENT_PRESETS: Partial<
 
 const ROUTE_ENVIRONMENT_PRESETS: Partial<Record<string, EnvironmentPreset>> = {
   [ROUTE_PATHS.ABOUT]: null,
-  [ROUTE_PATHS.LITERATURE]: null,
   [ROUTE_PATHS.PORTFOLIO]: null,
   [ROUTE_PATHS.MINIGAMES]: "sunset",
 };
@@ -337,10 +353,12 @@ function WorldAmbientLight({
 }
 
 const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
-  const bobEditing = useBobEditor(state => state.open);
-  const bobControlDragging = useBobEditor(state => !!state.dragging);
+  const bobEditing = useBobEditor((state) => state.open);
+  const bobControlDragging = useBobEditor((state) => !!state.dragging);
   const cameraControlsRef = useRef<CameraControls>(null!);
-  const setCameraControlsRef = useViewStore(state => state.setCameraControlsRef);
+  const setCameraControlsRef = useViewStore(
+    (state) => state.setCameraControlsRef,
+  );
   const {
     statisticsVisible,
     physicsDebugEnabled,
@@ -352,24 +370,26 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
     isPaused,
     isReady,
     graphicPreferences,
-  } = useCoreStore(useShallow(state => ({
-    statisticsVisible: state.statisticsVisible,
-    physicsDebugEnabled: state.physicsDebugEnabled,
-    worlds: state.worlds,
-    previewMode: state.previewMode,
-    debugCameraSettings: state.debugCameraSettings,
-    debugLightSettings: state.debugLightSettings,
-    soundSystem: state.soundSystem,
-    isPaused: state.isPaused,
-    isReady: state.isReady,
-    graphicPreferences: state.graphicPreferences,
-  })));
+  } = useCoreStore(
+    useShallow((state) => ({
+      statisticsVisible: state.statisticsVisible,
+      physicsDebugEnabled: state.physicsDebugEnabled,
+      worlds: state.worlds,
+      previewMode: state.previewMode,
+      debugCameraSettings: state.debugCameraSettings,
+      debugLightSettings: state.debugLightSettings,
+      soundSystem: state.soundSystem,
+      isPaused: state.isPaused,
+      isReady: state.isReady,
+      graphicPreferences: state.graphicPreferences,
+    })),
+  );
   const { activeGame } = useMiniGameStore();
   const activeRouteMusicRef = useRef<string | null>(null);
   const location = useLocation();
   const routePath = location.pathname;
 
-  const currentRoute = useAppStore(state => state.currentRoute);
+  const currentRoute = useAppStore((state) => state.currentRoute);
 
   // shop items are only visible on home route
   const isHome = currentRoute === ROUTE_PATHS.HOME;
@@ -502,9 +522,7 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
     <>
       <FullScreenCanvas>
         <AudioListenerBinder />
-        <WorldEnvironment
-          config={environmentConfig}
-        >
+        <WorldEnvironment config={environmentConfig}>
           <AutoTapController />
           {isHome && (
             <WorldAudio config={sceneWorld?.scene.audio} authorized={isReady} />
@@ -519,7 +537,11 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
               azimuthRotateSpeed={debugCameraSettings.azimuthRotateSpeed}
             />
             <WorldAmbientLight
-              intensity={currentRoute === ROUTE_PATHS.LITERATURE || currentRoute === ROUTE_PATHS.ABOUT ? 0.18 : resolvedAmbientIntensity}
+              intensity={
+                currentRoute === ROUTE_PATHS.ABOUT
+                  ? 0.18
+                  : resolvedAmbientIntensity
+              }
               color={worldLightColors.ambientColor}
               config={environmentConfig}
             />
@@ -533,7 +555,11 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
               />
             ) : (
               <directionalLight
-                intensity={currentRoute === ROUTE_PATHS.LITERATURE || currentRoute === ROUTE_PATHS.ABOUT ? 0 : ROUTE_LIGHT_INTENSITY}
+                intensity={
+                  currentRoute === ROUTE_PATHS.ABOUT
+                    ? 0
+                    : ROUTE_LIGHT_INTENSITY
+                }
                 color={worldLightColors.directionalColor}
                 position={rotateLightPosition(
                   ROUTE_LIGHT_POSITION,
@@ -553,10 +579,16 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
 
               <MessageBubble anchor={[0, 2.4, 0]} />
 
-              {isHome && <a.group scale={spring.scale}>
-                <BobEditorCounterFade><TapCounter /></BobEditorCounterFade>
-                {graphicPreferences.effectsEnabled && !bobEditing && <TapEffects />}
-              </a.group>}
+              {isHome && (
+                <a.group scale={spring.scale}>
+                  <BobEditorCounterFade>
+                    <TapCounter />
+                  </BobEditorCounterFade>
+                  {graphicPreferences.effectsEnabled && !bobEditing && (
+                    <TapEffects />
+                  )}
+                </a.group>
+              )}
               <BobEditorScene />
 
               {/* bottom fake shadow */}
@@ -584,10 +616,14 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
                   />
                 )}
                 {match(currentRoute)
-                  .with(ROUTE_PATHS.HOME, () => <HomeScene worldId={sceneWorld?.id} nightLight={environmentConfig?.nightLight} />)
+                  .with(ROUTE_PATHS.HOME, () => (
+                    <HomeScene
+                      worldId={sceneWorld?.id}
+                      nightLight={environmentConfig?.nightLight}
+                    />
+                  ))
                   .with(ROUTE_PATHS.ABOUT, () => <AboutScene />)
                   .with(ROUTE_PATHS.PORTFOLIO, () => <PortfolioScene />)
-                  .with(ROUTE_PATHS.LITERATURE, () => <LiteratureScene />)
                   .with(ROUTE_PATHS.MINIGAMES, () => <MiniGamesScene />)
                   .otherwise(() => null)}
                 <SceneReady route={currentRoute} />
@@ -612,7 +648,8 @@ const CursorFollowCamera = () => {
 
   useFrame(({ clock }) => {
     const view = useViewStore.getState();
-    if (view.loadingCameraActive && view.loadingCameraView === "loading") return;
+    if (view.loadingCameraActive && view.loadingCameraView === "loading")
+      return;
     if (isMobile) return;
     if (viewMode !== "fixed" || isTransitioning) return;
 

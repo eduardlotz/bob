@@ -11,7 +11,7 @@ import { viewControlsMessages } from "@/molecules/ViewControls.messages";
 type Point = [number, number, number];
 /** Invisible surfaces sit against the architecture, behind the displayed items. */
 export function CornerTrigger({viewId, questAction, surfaces}: {
-  viewId: Extract<CameraViewId, "desk" | "socials" | "computer">;
+  viewId: Extract<CameraViewId, "desk" | "socials" | "computer" | "lounge">;
   questAction: string;
   surfaces: {position: Point; rotation?: Point; size: [number,number]}[];
 }) {

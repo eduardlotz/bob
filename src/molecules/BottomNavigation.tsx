@@ -20,7 +20,6 @@ import { BobPhone } from "./BobPhone";
 import { playUISound } from "@/utils/soundSystem";
 import { BackToLobbyButton } from "./BackToLobbyButton";
 import { useI18n } from "@/i18n";
-import { useLibraryStore } from "@/store/exploration";
 
 export function BottomNavigation() {
   const { messages } = useI18n();
@@ -56,17 +55,12 @@ export function BottomNavigation() {
   })));
 
   const focusedBook = useBooksStore(state => state.focusedBook);
-  const libraryDetailOpen = useLibraryStore(state => state.status !== null || state.media !== null);
 
   const activeGame = useMiniGameStore(state => state.activeGame);
 
   useKeyPress("Escape", () => {
     if (showPhone) return;
-    if (!showOptions && currentRoute === ROUTE_PATHS.LITERATURE) {
-      const library = useLibraryStore.getState();
-      if (library.bookId !== null) { library.openBook(null); return; }
-      if (library.status || library.media) { library.reset(); return; }
-    }
+    if (focusedBook) { useBooksStore.getState().clearFocus(); return; }
     if (showOptions) closeOptionsWithAnimation();
     else resetToDefaultView();
     playUISound("ui-tap-close");
@@ -97,7 +91,6 @@ export function BottomNavigation() {
   const showBackToLobby = activeGame !== "LOBBY";
 
   const hideNavigation =
-    (currentRoute === ROUTE_PATHS.LITERATURE && libraryDetailOpen && !showOptions) ||
     (isPortfolioRoute && isImageFocused) ||
     focusedBook ||
     currentView === CAMERA_VIEWS.bookshelf.id ||

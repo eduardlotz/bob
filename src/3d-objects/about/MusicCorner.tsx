@@ -1,14 +1,26 @@
-import { DeskModel } from "../models/desk";
+import { BlenderRoomPart } from "./BlenderRoomPart";
 import { DeskSpeakersModel } from "../models/desk-speakers";
-import { DjControllerModel } from "../models/dj-controller";
+import { DjControllerMeters } from "../models/dj-controller";
 import { FLOOR_Y_POSITION } from "@/store/config/scene";
-import { ABOUT_ROOM } from "@/store/config/aboutRoom";
+import { ABOUT_ROOM, ABOUT_MUSIC_WALL_OFFSET, ABOUT_MUSIC_BACK_OFFSET } from "@/store/config/aboutRoom";
+import { useFloatingBar } from "@/layout/FloatingBar";
+import { useViewStore } from "@/store";
+import { getLocale } from "@/i18n";
+import { deskMessages } from "../models/desk.messages";
 
 export function MusicCorner() {
+  const { setHoveredObject } = useFloatingBar();
   return <group>
-    <DeskModel position={[-3.5, FLOOR_Y_POSITION + 0.7, 0]} rotation={[0, 0, 0]} scale={[2.5, 2.5, 2.5]} topColor={ABOUT_ROOM.walnut} />
-    <DeskSpeakersModel position={[-3.75, FLOOR_Y_POSITION + 1, 1.25]} rotation={[0, 0.3, 0]} />
-    <DeskSpeakersModel position={[-3.75, FLOOR_Y_POSITION + 1, -1.25]} rotation={[0, -0.3, 0]} />
-    <DjControllerModel position={[-3, FLOOR_Y_POSITION + 1, 0]} />
+    <group position={[0, ABOUT_ROOM.floorY, -1.5]}
+      onPointerEnter={event => {
+        event.stopPropagation();
+        if (useViewStore.getState().currentView !== "desk") setHoveredObject({ title: deskMessages[getLocale()].floatingLabel });
+      }} onPointerLeave={() => setHoveredObject(null)}>
+      <BlenderRoomPart name="MusicDesk" />
+    </group>
+    <DeskSpeakersModel physicalLighting position={[-3.75 + ABOUT_MUSIC_WALL_OFFSET, FLOOR_Y_POSITION + 1, 0.95 + ABOUT_MUSIC_BACK_OFFSET]} rotation={[0, 0.3, 0]} />
+    <DeskSpeakersModel physicalLighting position={[-3.75 + ABOUT_MUSIC_WALL_OFFSET, FLOOR_Y_POSITION + 1, -1.55 + ABOUT_MUSIC_BACK_OFFSET]} rotation={[0, -0.3, 0]} />
+    <group position={[0, ABOUT_ROOM.floorY, -1.5]}><BlenderRoomPart name="DjController" /></group>
+    <DjControllerMeters position={[-3 + ABOUT_MUSIC_WALL_OFFSET, FLOOR_Y_POSITION + 1, -.3 + ABOUT_MUSIC_BACK_OFFSET]} />
   </group>;
 }

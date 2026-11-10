@@ -1,18 +1,19 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { BoxGeometry, CanvasTexture, Color, DynamicDrawUsage, Euler, InstancedBufferAttribute, InstancedMesh, Matrix4, PlaneGeometry, Quaternion, SRGBColorSpace, Sphere, Vector3 } from "three";
+import { BoxGeometry, CanvasTexture, Color, DynamicDrawUsage, Euler, InstancedBufferAttribute, InstancedMesh, MathUtils, Matrix4, PlaneGeometry, Quaternion, SRGBColorSpace, Sphere, Vector3 } from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { useAppStore, useCoreStore, useViewStore } from "@/store";
 import { useCursorStore } from "@/store/core/cursor";
 import { BOOKS } from "@/store/books";
-import { useLibraryStore } from "@/store/exploration";
-import { useFloatingBar } from "@/layout/FloatingBar";
+import { useBooksStore } from "@/store/books";
+import { useSocialCorner } from "../about/useSocialCorner";
 import { useI18n } from "@/i18n";
+import { viewControlsMessages } from "@/molecules/ViewControls.messages";
+import { useFloatingBar } from "@/layout/FloatingBar";
 import { getSceneLensRadius } from "@/utils/sceneLensFraming";
-import { BOOK_SIZE, shelfBookWorldPose } from "./libraryLayout";
-import { libraryBookFlightProgress, libraryBookFocusPose } from "./libraryFocus";
+import { BOOK_SIZE, shelfBookWorldPose } from "./shelfLayout";
+import { roomObjectFlightProgress, roomObjectFocusPose } from "../about/roomObjectFocus";
 import { getCoverTex, loadCoverFonts } from "./utils";
-import { libraryWorldPoint, type LibraryWorldTransform } from "@/store/config/libraryFraming";
 
 const COLUMNS = 8;
 const ROWS = Math.ceil(BOOKS.length / COLUMNS);
@@ -20,27 +21,57 @@ const TILE = 192;
 const COVER_WIDTH = 128;
 
 /** One model and two instanced draws for both the shelf and the flying books. */
-export function ShelfBooks({ world }: { world: LibraryWorldTransform }) {
-  const selected = useLibraryStore(state => state.bookId);
+export function ShelfBooks() {
+  const selected = useBooksStore(state => state.focusedBook?.id ?? null);
   const showOptions = useAppStore(state => state.showOptions);
   const currentView = useViewStore(state => state.currentView);
   const transitioning = useViewStore(state => state.isTransitioning);
   const fisheye = useCoreStore(state => state.graphicPreferences.fisheyeEnabled);
   const viewport = useThree(state => state.size);
-  const { messages } = useI18n();
   const { setHoveredObject } = useFloatingBar();
+  const enterShelf = useSocialCorner("bookshelf");
+  const hovered = useRef(-1);
+  const { locale } = useI18n();
   const bodies = useRef<InstancedMesh>(null!);
   const jackets = useRef<InstancedMesh>(null!);
   const drag = useRef({ index: -1, x: 0, y: 0, moved: false });
-  const interactive = !showOptions && currentView.startsWith("library") && !transitioning;
+  const interactive = !showOptions && currentView === "bookshelf" && !transitioning;
   const slots = useMemo(() => BOOKS.map(book => {
     const home = shelfBookWorldPose(book);
-    home.position.fromArray(libraryWorldPoint(home.position.toArray(), world));
-    home.scale *= world.scale;
     return { home, position: home.position.clone(), rotation: home.rotation.clone(), scale: home.scale,
       from: home.position.clone(), fromRotation: home.rotation.clone(), fromScale: home.scale,
-      elapsed: 1, focused: false, yaw: 0, pitch: 0, spin: 0 };
-  }), [world]);
+      elapsed: 1, pull: 0, focused: false, yaw: 0, pitch: 0, spin: 0 };
+  }), []);
+  useEffect(() => {
+    useViewStore.getState().setCameraEnabled(selected === null);
+    const key = (event: KeyboardEvent) => {
+      if (selected === null) return;
+      if (event.key === "Escape") {
+        event.preventDefault(); event.stopImmediatePropagation();
+      } else if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        event.preventDefault();
+        const book = BOOKS.find(candidate => candidate.id === selected);
+        const peers = BOOKS.filter(candidate => candidate.status === book?.status);
+        const index = peers.findIndex(candidate => candidate.id === selected);
+        const next = peers[(index + (event.key === "ArrowLeft" ? -1 : 1) + peers.length) % peers.length];
+        if (next) useBooksStore.getState().navigateToBookId(next.id);
+      }
+    };
+    const release = (event: KeyboardEvent) => {
+      if (selected === null || event.key !== "Escape") return;
+      event.preventDefault(); event.stopImmediatePropagation(); useBooksStore.getState().clearFocus();
+    };
+    window.addEventListener("keydown", key, true);
+    window.addEventListener("keyup", release, true);
+    return () => {
+      window.removeEventListener("keydown", key, true); window.removeEventListener("keyup", release, true);
+      useViewStore.getState().setCameraEnabled(true);
+    };
+  }, [selected]);
+  useEffect(() => {
+    if (currentView !== "bookshelf") useBooksStore.getState().clearFocus();
+  }, [currentView]);
+  useEffect(() => () => useBooksStore.getState().clearFocus(), []);
   const scratch = useMemo(() => ({ matrix: new Matrix4(), scale: new Vector3(), target: new Vector3(),
     cameraRotation: new Quaternion(), targetRotation: new Quaternion(), euler: new Euler() }), []);
   const atlas = useMemo(() => {
@@ -89,7 +120,7 @@ export function ShelfBooks({ world }: { world: LibraryWorldTransform }) {
       if (focused === slot.focused) return;
       slot.from.copy(slot.position); slot.fromRotation.copy(slot.rotation); slot.fromScale = slot.scale;
       slot.elapsed = 0; slot.focused = focused;
-      if (focused) { slot.yaw = 0; slot.pitch = 0; slot.spin = 0; }
+      if (focused) { slot.yaw = -.12; slot.pitch = -.05; slot.spin = 0; }
     });
     drag.current.index = -1;
   }, [selected, slots]);
@@ -108,7 +139,8 @@ export function ShelfBooks({ world }: { world: LibraryWorldTransform }) {
       if (state.index < 0) return;
       const dx = event.clientX - state.x, dy = event.clientY - state.y;
       if (Math.abs(dx) + Math.abs(dy) > 2) state.moved = true;
-      slots[state.index].yaw += dx * 0.008; slots[state.index].pitch += dy * 0.008;
+      slots[state.index].yaw += dx * .009;
+      slots[state.index].pitch = MathUtils.clamp(slots[state.index].pitch + dy * .009, -1.2, 1.2);
       state.x = event.clientX; state.y = event.clientY;
     };
     const release = () => { drag.current.index = -1; };
@@ -116,6 +148,7 @@ export function ShelfBooks({ world }: { world: LibraryWorldTransform }) {
     return () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", release); window.removeEventListener("pointercancel", release); };
   }, [slots]);
   useEffect(() => {
+    hovered.current = -1;
     setHoveredObject(null); useCursorStore.getState().setHoveringClickable(false);
     return () => { setHoveredObject(null); useCursorStore.getState().setHoveringClickable(false); };
   }, [selected, currentView, showOptions, setHoveredObject]);
@@ -129,18 +162,20 @@ export function ShelfBooks({ world }: { world: LibraryWorldTransform }) {
     if (repainted) atlas.texture.needsUpdate = true;
     slots.forEach((slot, i) => {
       slot.elapsed += Math.min(delta, 0.1);
-      const progress = libraryBookFlightProgress(slot.elapsed);
+      const progress = roomObjectFlightProgress(slot.elapsed);
       if (slot.focused) {
-        const scale = libraryBookFocusPose(camera, viewport, scratch.target, scratch.cameraRotation,
-          fisheye ? getSceneLensRadius(viewport.width, viewport.height) : undefined);
-        if (drag.current.index !== i) slot.spin += delta * 0.16;
-        scratch.euler.set(slot.pitch - 0.1, slot.yaw + slot.spin - 0.18, -0.04);
+        const scale = roomObjectFocusPose(camera, viewport, scratch.target, scratch.cameraRotation, BOOK_SIZE[0], BOOK_SIZE[1],
+          fisheye ? getSceneLensRadius(viewport.width, viewport.height) : undefined, BOOK_SIZE[2]);
+        if (drag.current.index !== i) slot.spin += delta * .12;
+        scratch.euler.set(slot.pitch, slot.yaw + slot.spin, -.025);
         scratch.targetRotation.setFromEuler(scratch.euler).premultiply(scratch.cameraRotation);
         slot.position.lerpVectors(slot.from, scratch.target, progress);
         slot.rotation.slerpQuaternions(slot.fromRotation, scratch.targetRotation, progress);
         slot.scale = slot.fromScale + (scale - slot.fromScale) * progress;
       } else {
-        slot.position.lerpVectors(slot.from, slot.home.position, progress);
+        slot.pull = MathUtils.damp(slot.pull, selected === null && hovered.current === i ? .10 : 0, 16, delta);
+        scratch.target.copy(slot.home.position); scratch.target.z += slot.pull;
+        slot.position.lerpVectors(slot.from, scratch.target, progress);
         slot.rotation.slerpQuaternions(slot.fromRotation, slot.home.rotation, progress);
         slot.scale = slot.fromScale + (slot.home.scale - slot.fromScale) * progress;
       }
@@ -157,30 +192,32 @@ export function ShelfBooks({ world }: { world: LibraryWorldTransform }) {
       drag.current = { index: event.instanceId, x: event.clientX, y: event.clientY, moved: false };
     }}
     onClick={event => {
-      if (!interactive || event.instanceId === undefined || event.delta > 5) return;
+      if (showOptions || event.instanceId === undefined || event.delta > 5) return;
       event.stopPropagation();
-      const book = BOOKS[event.instanceId]; const state = useLibraryStore.getState();
-      if (selected === book.id) { if (!drag.current.moved) state.openBook(null); }
+      const book = BOOKS[event.instanceId]; const state = useBooksStore.getState();
+      if (selected === null && !enterShelf()) return;
+      hovered.current = -1;
+      if (selected === book.id) { if (!drag.current.moved) state.clearFocus(); }
       else if (selected === null) {
-        if (currentView === `library:${book.status}` && state.status === book.status) state.openBook(book.id);
-        else state.browse(book.status);
+        state.navigateToBookId(book.id);
       }
       setHoveredObject(null); useCursorStore.getState().setHoveringClickable(false);
     }}
     onPointerMove={event => {
-      if (!interactive || event.instanceId === undefined) return;
+      if (showOptions || transitioning || selected !== null || event.instanceId === undefined) return;
       const book = BOOKS[event.instanceId];
       if (selected !== null && selected !== book.id) return;
       event.stopPropagation();
-      setHoveredObject({ title: currentView === `library:${book.status}` ? book.title : messages.books.statuses[book.status] });
+      hovered.current = interactive && selected === null ? event.instanceId : -1;
+      setHoveredObject({ title: interactive ? book.title : viewControlsMessages[locale].viewTitles.bookshelf });
       useCursorStore.getState().setHoveringClickable(true);
-    }} onPointerLeave={() => { setHoveredObject(null); useCursorStore.getState().setHoveringClickable(false); }}>
+    }} onPointerLeave={() => { hovered.current = -1; setHoveredObject(null); useCursorStore.getState().setHoveringClickable(false); }}>
     <instancedMesh ref={bodies} args={[atlas.body, undefined, BOOKS.length]} castShadow receiveShadow frustumCulled={false}
      >
       <meshStandardMaterial color="white" roughness={.68} />
     </instancedMesh>
     <instancedMesh ref={jackets} args={[atlas.geometry, undefined, BOOKS.length]} frustumCulled={false}>
-      <meshStandardMaterial map={atlas.texture} roughness={.5} customProgramCacheKey={() => "library-jacket-atlas-daylight-v1"}
+      <meshStandardMaterial map={atlas.texture} roughness={.5} customProgramCacheKey={() => "about-book-jacket-atlas-v1"}
         onBeforeCompile={shader => {
           shader.vertexShader = `attribute vec2 atlasOffset;\n${shader.vertexShader}`.replace("#include <uv_vertex>",
             `#include <uv_vertex>\n#ifdef USE_MAP\nvMapUv = vMapUv / vec2(${COLUMNS}.0, ${ROWS}.0) + atlasOffset;\n#endif`);
