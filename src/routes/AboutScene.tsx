@@ -62,7 +62,6 @@ export function AboutScene() {
         questAction="click_desk"
         mode="view"
         viewId="desk"
-        position={[0, 0, 1.5]}
       >
         <MusicCorner />
         {currentView === "desk" && <MusicOverlay />}
@@ -131,7 +130,7 @@ export function AboutScene() {
         questAction="click_socials"
         surfaces={[
           {
-            position: [-2.6, ABOUT_ROOM.floorY + 2.6, -4.76],
+            position: [-2.6, ABOUT_ROOM.floorY + 2.6, -4.799],
             size: [5.1, 5.15],
           },
           {
@@ -187,12 +186,12 @@ export function AboutScene() {
         questAction="click_desk"
         surfaces={[
           {
-            position: [-4.99, ABOUT_ROOM.floorY + 2.6, 1.7],
+            position: [-4.99, ABOUT_ROOM.floorY + 2.6, .2],
             rotation: [0, Math.PI / 2, 0],
             size: [6.1, 5.15],
           },
           {
-            position: [-3.6, ABOUT_ROOM.floorY + 0.006, 1.65],
+            position: [-3.6, ABOUT_ROOM.floorY + 0.006, .2],
             rotation: [-Math.PI / 2, 0, 0],
             size: [2.8, 5.9],
           },

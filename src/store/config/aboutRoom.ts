@@ -44,7 +44,15 @@ export const ABOUT_LOUNGE = {
 export const ABOUT_PHOTO_SCALE = 1.10;
 export const ABOUT_VINYL_SHELF_Y = 2.1;
 export const ABOUT_MUSIC_WALL_OFFSET = -0.38;
-export const ABOUT_MUSIC_BACK_OFFSET = -1;
+export const ABOUT_MUSIC = {
+  controller: [-3 + ABOUT_MUSIC_WALL_OFFSET, FLOOR_Y_POSITION + 1, .2] as Point,
+  speakerX: -3.75 + ABOUT_MUSIC_WALL_OFFSET,
+  speakerZ: [1.45, -1.05],
+  camera: {
+    position: [-2.5 + ABOUT_MUSIC_WALL_OFFSET, .5, .2] as Point,
+    target: [-3.5 + ABOUT_MUSIC_WALL_OFFSET, 0, .2] as Point,
+  },
+};
 
 export const ABOUT_PHOTO_POSITIONS: Point[] = Array.from({ length: 4 }, (_, index) => [
   ABOUT_CORNERS.socials.position[0] + (index - 1.5) * .9,
@@ -52,7 +60,6 @@ export const ABOUT_PHOTO_POSITIONS: Point[] = Array.from({ length: 4 }, (_, inde
   -4.43,
 ]);
 export const ABOUT_PHOTO_ROTATIONS: Point[] = Array.from({ length: 4 }, (_, index) => [-.13, (index - 1.5) * -.04, 0]);
-export const ABOUT_CIGARETTE_SMOKE_OFFSET: Point = [-.0535, .7525, -.015];
 
 export function aboutSocialPosterPose(index: number, relativeToFrontWall = false) {
   const front = index >= 3;

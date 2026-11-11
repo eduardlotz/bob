@@ -1,5 +1,6 @@
 import { CuboidCollider, RigidBody } from "@react-three/rapier";
 import { BlenderRoomPart } from "./BlenderRoomPart";
+import { BookshelfNotes } from "./BookshelfNotes";
 import { ShelfBooks } from "../books/ShelfBooks";
 import { ABOUT_BOOKSHELF } from "../books/shelfLayout";
 import { useSocialCorner } from "./useSocialCorner";
@@ -37,6 +38,7 @@ export function AboutBookshelf() {
       </mesh>
     </group>
     <ShelfBooks />
+    <BookshelfNotes />
     <RigidBody type="fixed" colliders={false} position={ABOUT_BOOKSHELF.position}>
       <CuboidCollider args={[1.25, 1.925, .24]} position={[0, 1.925, 0]} />
     </RigidBody>

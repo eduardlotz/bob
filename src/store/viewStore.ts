@@ -1,4 +1,4 @@
-import { aboutCornerPose, ABOUT_CORNER_ORBIT, ABOUT_ROOM, ABOUT_MUSIC_WALL_OFFSET, ABOUT_MUSIC_BACK_OFFSET } from "./config/aboutRoom";
+import { aboutCornerPose, ABOUT_CORNER_ORBIT, ABOUT_ROOM, ABOUT_MUSIC } from "./config/aboutRoom";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import type { CameraControls } from "@react-three/drei";
@@ -386,8 +386,7 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   desk: {
     id: "desk",
     name: "Desk View",
-    position: [-2.5 + ABOUT_MUSIC_WALL_OFFSET, 0.5, 1.5 + ABOUT_MUSIC_BACK_OFFSET],
-    target: [-3.5 + ABOUT_MUSIC_WALL_OFFSET, 0, 1.5 + ABOUT_MUSIC_BACK_OFFSET],
+    ...ABOUT_MUSIC.camera,
     transition: {
       duration: 800,
       easing: "easeInOutCubic",

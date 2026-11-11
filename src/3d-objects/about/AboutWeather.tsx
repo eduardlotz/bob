@@ -1,8 +1,10 @@
 import { createContext, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { useGLTF } from "@react-three/drei";
+import { ABOUT_ROOM_MODEL } from "./aboutRoomAssets";
 import { useFrame } from "@react-three/fiber";
-import { Color, Object3D, DirectionalLight, DoubleSide, InstancedBufferAttribute, InstancedBufferGeometry, PlaneGeometry, ShaderMaterial } from "three";
+import { Color, Object3D, Vector3, DirectionalLight, DoubleSide, InstancedBufferAttribute, InstancedBufferGeometry, PlaneGeometry, ShaderMaterial } from "three";
 import { useCoreStore } from "@/store";
-import { ABOUT_WINDOW, ABOUT_ROOM, ABOUT_LOUNGE, ABOUT_CIGARETTE_SMOKE_OFFSET } from "@/store/config/aboutRoom";
+import { ABOUT_WINDOW, ABOUT_ROOM, ABOUT_LOUNGE, ABOUT_MUSIC } from "@/store/config/aboutRoom";
 import { EnvironmentAudio } from "../worlds/EnvironmentAudio";
 import { useAboutWindowStore } from "@/store/aboutWindow";
 import type { EnvironmentAudioConfig } from "@/types/worldEnvironment";
@@ -63,7 +65,7 @@ function AboutLiveLighting() {
   return <>
     <hemisphereLight args={["#aab9d8", "#252936", .65]} />
     <directionalLight ref={light} position={[5.3, 2.2, -.5]} color="#afc3eb" intensity={.68} />
-    {[.25, 2.75].map(z => <pointLight key={z} position={[-3.52, ABOUT_ROOM.floorY + 3.06, z]} color="#ffd2a0" intensity={.65} distance={3.8} decay={2} />)}
+    {ABOUT_MUSIC.speakerZ.map(z => <pointLight key={z} position={[-3.52, ABOUT_ROOM.floorY + 3.06, z]} color="#ffd2a0" intensity={.65} distance={3.8} decay={2} />)}
     <primitive object={lampTarget} />
     <spotLight position={[ABOUT_LOUNGE.lamp[0] - .08, ABOUT_ROOM.floorY + 2.35, ABOUT_LOUNGE.lamp[2] + .12]}
       target={lampTarget} color="#ffd09b" intensity={2.2} angle={.65} penumbra={.85} distance={4.5} decay={2} />
@@ -230,10 +232,25 @@ void main(){
 }`;
 
 function AboutCigaretteSmoke() {
- const weather=useAboutWeather();
- const uniforms=useMemo(() => ({ uTime: weather.time }), [weather]);
- return <mesh name="about-cigarette-smoke" position={[ABOUT_LOUNGE.table[0]+ABOUT_CIGARETTE_SMOKE_OFFSET[0],ABOUT_LOUNGE.table[1]+ABOUT_CIGARETTE_SMOKE_OFFSET[1]+.19,ABOUT_LOUNGE.table[2]+ABOUT_CIGARETTE_SMOKE_OFFSET[2]]} raycast={() => {}} frustumCulled={false}>
-  <planeGeometry args={[.22,.38]} />
-  <shaderMaterial uniforms={uniforms} vertexShader={smokeVertex} fragmentShader={smokeFragment} transparent depthWrite={false} side={DoubleSide} />
- </mesh>;
+  const weather = useAboutWeather();
+  const { scene } = useGLTF(ABOUT_ROOM_MODEL);
+  const anchor = useMemo(() => {
+    const source = scene.getObjectByName("CigaretteSmokeAnchor");
+    if (!source) throw new Error("About room is missing its cigarette smoke anchor");
+    scene.updateMatrixWorld(true);
+    const point = source.getWorldPosition(new Vector3());
+    point.y += ABOUT_ROOM.floorY;
+    return point;
+  }, [scene]);
+  const geometry = useMemo(() => {
+    const plane = new PlaneGeometry(.22, .38);
+    // Billboard upward from the ember, rather than offsetting its center in world space.
+    plane.translate(0, .19, 0);
+    return plane;
+  }, []);
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  const uniforms = useMemo(() => ({ uTime: weather.time }), [weather]);
+  return <mesh name="about-cigarette-smoke" position={anchor} geometry={geometry} raycast={() => {}} frustumCulled={false}>
+    <shaderMaterial uniforms={uniforms} vertexShader={smokeVertex} fragmentShader={smokeFragment} transparent depthWrite={false} side={DoubleSide} />
+  </mesh>;
 }

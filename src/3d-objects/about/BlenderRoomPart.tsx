@@ -3,17 +3,8 @@ import { useEffect, useLayoutEffect, useMemo } from "react";
 import { AdditiveBlending, DoubleSide, FrontSide, Material, Mesh, MeshBasicMaterial, MeshStandardMaterial, SRGBColorSpace } from "three";
 import { useAboutWeather } from "./AboutWeather";
 
-export const ABOUT_ROOM_MODEL = "/gltf/about-me/about-me-shaded-v3.glb?revision=books-window-photos-20261110-6";
-const LIGHTNING_MAP = "/gltf/about-me/about-room-lightning-bake-v3.png?revision=books-window-photos-20261110-6";
-const WARM_MAP = "/gltf/about-me/about-room-warm-bake-v3.png?revision=books-window-photos-20261110-6";
-const FRONT_LIGHTNING_MAP = "/gltf/about-me/about-front-wall-lightning-v3.png?revision=books-window-photos-20261110-6";
-const FRONT_WARM_MAP = "/gltf/about-me/about-front-wall-warm-v3.png?revision=books-window-photos-20261110-6";
-
-const RUG_LIGHTNING_MAP = "/gltf/about-me/about-rug-lightning-bake-v3.png?revision=books-window-photos-20261110-6";
-const RUG_WARM_MAP = "/gltf/about-me/about-rug-warm-bake-v3.png?revision=books-window-photos-20261110-6";
-
-const SOCIAL_LIGHTNING_MAP = "/gltf/about-me/about-socials-lightning-bake-v3.png?revision=books-window-photos-20261110-6";
-const SOCIAL_WARM_MAP = "/gltf/about-me/about-socials-warm-bake-v3.png?revision=books-window-photos-20261110-6";
+import { ABOUT_ROOM_MODEL, ABOUT_BAKE_MAPS, aboutPartBakeKinds, type AboutBakeKind } from "./aboutRoomAssets";
+export { ABOUT_ROOM_MODEL } from "./aboutRoomAssets";
 
 const reflectionShader = `
 float aboutPane(float p,float a,float b,float blur){return smoothstep(a-blur,a+blur,p)*(1.-smoothstep(b-blur,b+blur,p));}
@@ -39,19 +30,16 @@ export function BlenderRoomPart({ name, local = false, focused }: {
 }) {
   const { scene } = useGLTF(ABOUT_ROOM_MODEL);
   const weather = useAboutWeather();
-  const [lightning, warm, rugLightning, rugWarm] = useTexture(name === "FrontWall"
-    ? [FRONT_LIGHTNING_MAP, FRONT_WARM_MAP]
-    : name.startsWith("Social_") ? [SOCIAL_LIGHTNING_MAP, SOCIAL_WARM_MAP]
-    : name === "RoomShell" ? [LIGHTNING_MAP, WARM_MAP, RUG_LIGHTNING_MAP, RUG_WARM_MAP]
-    : [LIGHTNING_MAP, WARM_MAP]);
+  const bakeKinds = aboutPartBakeKinds(name);
+  const loadedMaps = useTexture(bakeKinds.flatMap(kind => [ABOUT_BAKE_MAPS[kind].lightning, ABOUT_BAKE_MAPS[kind].warm]));
+  const bakedMaps = useMemo(() => Object.fromEntries(bakeKinds.map((kind, i) =>
+    [kind, { lightning: loadedMaps[i * 2], warm: loadedMaps[i * 2 + 1] }])) as Partial<Record<AboutBakeKind, { lightning: typeof loadedMaps[number]; warm: typeof loadedMaps[number] }>>,
+  [bakeKinds, loadedMaps]);
   useLayoutEffect(() => {
-    for (const map of [lightning, warm, rugLightning, rugWarm]) {
-      if (!map) continue;
-      map.flipY = false;
-      map.colorSpace = SRGBColorSpace;
-      map.needsUpdate = true;
+    for (const map of loadedMaps) {
+      map.flipY = false; map.colorSpace = SRGBColorSpace; map.needsUpdate = true;
     }
-  }, [lightning, warm, rugLightning, rugWarm]);
+  }, [loadedMaps]);
   const managesFocus = focused !== undefined;
   const isDisplay = name.startsWith("Record_") || name.startsWith("Photo_");
   const { object, ownedMaterials, displayFocus } = useMemo(() => {
@@ -97,11 +85,14 @@ export function BlenderRoomPart({ name, local = false, focused }: {
         }
         if (clone.name.startsWith("About_Baked_")) {
           const wood = clone.name.endsWith("wood");
-          const rug = clone.name.endsWith("rug");
+          const surface = clone.name.slice("About_Baked_".length);
+          const kind = surface in ABOUT_BAKE_MAPS ? surface as AboutBakeKind : bakeKinds[0];
+          const maps = bakedMaps[kind] ?? bakedMaps[bakeKinds[0]]!;
+          const rug = kind === "rug";
           clone.onBeforeCompile = shader => {
             shader.uniforms.uAboutFlash = weather.flash;
-            shader.uniforms.uAboutLightning = { value: rug ? rugLightning : lightning };
-            shader.uniforms.uAboutWarm = { value: rug ? rugWarm : warm };
+            shader.uniforms.uAboutLightning = { value: maps.lightning };
+            shader.uniforms.uAboutWarm = { value: maps.warm };
             shader.vertexShader = "varying vec3 vAboutWorld;varying vec3 vAboutNormal;\n" + shader.vertexShader;
             shader.vertexShader = shader.vertexShader.replace("#include <worldpos_vertex>", `#include <worldpos_vertex>
               vAboutWorld=(modelMatrix*vec4(transformed,1.)).xyz;
@@ -174,7 +165,7 @@ export function BlenderRoomPart({ name, local = false, focused }: {
       child.material = Array.isArray(child.material) ? child.material.map(copy) : copy(child.material);
     });
     return { object, ownedMaterials, displayFocus };
-  }, [scene, name, local, managesFocus, isDisplay, weather, lightning, warm, rugLightning, rugWarm]);
+  }, [scene, name, local, managesFocus, isDisplay, weather, bakeKinds, bakedMaps]);
 
   useLayoutEffect(() => {
     displayFocus.value = focused ? 1 : 0;
@@ -197,5 +188,4 @@ export function BlenderRoomPart({ name, local = false, focused }: {
 }
 
 useGLTF.preload(ABOUT_ROOM_MODEL);
-useTexture.preload(LIGHTNING_MAP);
-useTexture.preload(WARM_MAP);
+useTexture.preload([ABOUT_BAKE_MAPS.room.lightning, ABOUT_BAKE_MAPS.room.warm]);
