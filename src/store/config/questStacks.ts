@@ -10,7 +10,7 @@ export const questStackDefinitions = {
   },
   about_tour: {
     title: "Talking Stage",
-    description: "Explore the interactive objects in the About room.",
+    description: "Click all four corners in the About room.",
   },
   manual_taps: {
     title: "Manual Tap Milestones",
@@ -22,11 +22,11 @@ export const questStackDefinitions = {
   },
   shop_item_categories: {
     title: "Shop Collector",
-    description: "Buy one item from Bob, Effects, and Worlds.",
+    description: "Buy one hat, skin, accessory, and effect.",
   },
   route_unlocks: {
-    title: "Route Explorer",
-    description: "Unlock new routes to expand your world.",
+    title: "Paywall",
+    description: "Unlock About, Portfolio, and Mini Games.",
   },
   playtime: {
     title: "Playtime Milestones",

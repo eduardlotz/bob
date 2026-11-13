@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
+import { BOB_SKINS, isBobSkinUnlocked } from "@/components/bob/skins/registry";
+import { useQuestStore } from "@/store/core/quests";
+import { useViewStore } from "@/store/viewStore";
 import { useAppStore } from "@/store";
 import { ROUTE_PATHS } from "@/store/config/routes";
 import { useIsHydrated, useMessageStore } from "@/store/messageStore";
@@ -40,7 +43,7 @@ const pickRandomHomeGreeting = () => {
 };
 
 const hasAffordablePurchaseOption = () => {
-  const { taps, bobItems, tapEffects, worlds } = useCoreStore.getState();
+  const { taps, bobItems, tapEffects, worlds, purchasedBobSkinIds } = useCoreStore.getState();
 
   const purchasableItems = [
     ...bobItems.filter((item) => item.unlocked !== false),
@@ -48,7 +51,9 @@ const hasAffordablePurchaseOption = () => {
     ...worlds.filter((item) => item.unlocked !== false),
   ];
 
-  return purchasableItems.some((item) => !item.purchased && item.cost <= taps);
+  return purchasableItems.some((item) => !item.purchased && item.cost > 0 && item.cost <= taps)
+    || BOB_SKINS.some(skin => !!skin.cost && skin.cost <= taps && !purchasedBobSkinIds.includes(skin.id)
+      && isBobSkinUnlocked(skin, useQuestStore.getState().quests));
 };
 
 const shouldShowAffordableShopHint = () => {
@@ -183,7 +188,9 @@ export function useMessageSystem() {
               return;
             }
             const messageState = useMessageStore.getState();
-            if (!messageState.isHydrated || messageState.systemPaused) {
+            const view = useViewStore.getState();
+            if (!messageState.isHydrated || messageState.systemPaused || messageState.activeMessage
+              || useAppStore.getState().showOptions || !["default", "portfolio", "minigames"].includes(view.currentView)) {
               if (retryTimeout !== null) window.clearTimeout(retryTimeout);
               retryTimeout = window.setTimeout(tryStep, 500);
               return;

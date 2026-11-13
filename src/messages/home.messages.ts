@@ -131,7 +131,7 @@ export const homeMessageConfigs = defineMessages<Record<string, MessageConfig>>(
       first_tap_hint: {
         id: "first_tap_hint",
         text: [
-          "Übrigenski: Auf der der Homepage kannst du unten immer ein paar Tap Upgrades kaufen",
+          "Übrigenski: Auf der Homepage kannst du unten immer ein paar Tap Upgrades kaufen",
           "Der Auto-Tapper ist sogar fast geschenkt! ✨",
         ],
         label: "Bob",
@@ -151,7 +151,8 @@ export const homeMessageConfigs = defineMessages<Record<string, MessageConfig>>(
           "Hey hey, I'm Bob 😗✌️",
           "Welcome to Eddie's personal website!",
           "Things are a bit different here than what you're probably used to, but I'll do my best to keep you informed 🤞",
-          "For starters, just tap me 🫵 it's fun, trust me!",
+          "For starters, tap me to collect some taps 🫵!",
+          "You can spend them on cool stuff later, so let’s gooo",
         ],
         label: "Bob",
         options: {
@@ -233,7 +234,7 @@ export const homeMessageConfigs = defineMessages<Record<string, MessageConfig>>(
       },
       return_greeting_7: {
         id: "return_greeting_7",
-        text: ["👁️      👁️\n    👅   "],
+        text: ["👁️   👅   👁️"],
         label: "Bob",
         options: {
           typingSpeedMs: 28,
@@ -257,7 +258,7 @@ export const homeMessageConfigs = defineMessages<Record<string, MessageConfig>>(
         id: "return_shop_affordable",
         text: [
           "Have you already checked out the shop?",
-          "Tap Shop below, you'll probably find something cool to spend all those taps on 🤪",
+          "Look in the Phone below — you’ll find something cool to spend those taps on!",
         ],
         label: "Bob",
         options: {
@@ -272,7 +273,7 @@ export const homeMessageConfigs = defineMessages<Record<string, MessageConfig>>(
         id: "first_tap_hint",
         text: [
           "By the wayski: on the homepage you can always buy a few tap upgrades down below",
-          "The first upgrade is almost for free 🤪",
+          "The Auto Tapper is almost free! ✨",
         ],
         label: "Bob",
         options: {

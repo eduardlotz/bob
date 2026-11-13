@@ -1,7 +1,7 @@
 import { useVinylStore } from "@/store/vinyls";
 import { useViewStore } from "@/store/viewStore";
 import { useKeyPress } from "@/hooks/useKeyPress";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import styled from "styled-components";
 import { playUISound } from "@/utils/soundSystem";
 import {
@@ -14,10 +14,12 @@ import { Magnetic } from "@/layout/Magnetic";
 import { useSocialsStore } from "@/store/socials";
 import { useI18n } from "@/i18n";
 import { viewControlsMessages } from "./ViewControls.messages";
-import { ChevronLeftIcon } from "@/icons/chevron";
+import { floatingActionButtonStyles } from "@/components/FloatingActionButton";
+import { getPanelItemMotion } from "@/styles/panelMotion";
 import { sceneChipStyle } from "@/components/SceneChip";
 
 export function ViewControls() {
+  const reducedMotion = useReducedMotion();
   const {
     currentView,
     isDefaultView,
@@ -94,33 +96,18 @@ export function ViewControls() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95, transition: { duration: 0.1 } }}
               key="view-controls-back-button"
-              initial={{ y: 120, filter: "blur(6px)" }}
-              animate={{
-                y: 0,
-                filter: "blur(0px)",
-              }}
-              exit={{ y: 120, filter: "blur(6px)" }}
-              transition={{ duration: 0.5, ease: "circInOut" }}
+              {...getPanelItemMotion(0, reducedMotion)}
+              $variant="muted"
               data-ui-sound-id="ui-tap-close"
               style={{ borderRadius: "50px" }}
             >
-              <ChevronLeftIcon />
-
               <span>{viewControlsMessages[locale].backLabel}</span>
             </TriggerContainer>
           </Magnetic>
 
           <CurrentViewChip
             key="view-controls-current-view-chip"
-            initial={{ y: 20, scale: 0.9, opacity: 0, filter: "blur(6px)" }}
-            animate={{
-              y: 0,
-              scale: 1,
-              opacity: 1,
-              filter: "blur(0px)",
-            }}
-            exit={{ y: 120, scale: 0.9, opacity: 0, filter: "blur(6px)" }}
-            transition={{ duration: 0.5, ease: "circInOut", delay: 0.15 }}
+            {...getPanelItemMotion(1, reducedMotion)}
           >
             {title}
           </CurrentViewChip>
@@ -156,31 +143,8 @@ const CurrentViewChip = styled(motion.div)`
   z-index: 1000;
 `;
 
-const TriggerContainer = styled(motion.button)`
-  display: inline-flex;
-  width: fit-content;
-  white-space: nowrap;
-  align-items: center;
-  justify-content: center;
-  height: 2.5rem;
-  border: none;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-
-  padding: 0.5rem 14px 0.5rem 8px;
-  border-radius: 50px;
-  background-color: #fff;
-  opacity: 1;
-
-  font-size: 1rem;
-  font-weight: 800;
-  line-height: 1.2;
-
-  color: #212121;
-  margin: 0 auto;
-  overflow: clip;
-  gap: 0.125rem;
-
-  span {
-    max-height: 1.5rem;
-  }
+const TriggerContainer = styled(motion.button)<{ $variant: "muted" }>`
+  ${floatingActionButtonStyles}
+  height: 3rem; padding: 0.5rem 20px; border-radius: 50px;
+  font-size: 1rem; font-weight: 900; letter-spacing: -0.02em; white-space: nowrap;
 `;

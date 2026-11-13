@@ -11,7 +11,6 @@ import {
   HEAD_CAMERA_POSES,
   BOB_CAMERA_POSE,
   LOADING_CAMERA_POSE,
-  PHOTO_CAMERA_POSE,
 } from "@/store/config/camera";
 import { ROUTE_PATHS } from "./config/routes";
 import { useAppStore } from "./core/app";
@@ -21,7 +20,6 @@ import { Vector3 } from "three";
 import { getSelectedBlobForm, getBlobFormType, getBlobFormHalfSize, getBobGroundOffset } from "@/types/blobForms";
 import { useBobEditor } from "./bobEditor";
 import { getBobEditorFraming } from "./config/bobEditorFraming";
-import { getPhotoCameraFraming } from "./config/photoCameraFraming";
 
 export interface CameraView {
   id: string;
@@ -163,13 +161,6 @@ const applyOrbitSettingsToControls = (
 };
 
 const resolveViewPose = (viewConfig?: CameraView) => {
-  if (viewConfig?.id === "phone:photo") {
-    const state = useCoreStore.getState();
-    const selected = getSelectedBlobForm(state.blobForms);
-    return getPhotoCameraFraming(window.innerWidth, window.innerHeight,
-      state.graphicPreferences.fisheyeEnabled,
-      getBobGroundOffset(getBlobFormType(selected.id), selected.parameters));
-  }
   if (viewConfig?.id === "loading") {
     const selected = getSelectedBlobForm(useCoreStore.getState().blobForms);
     const form = getBlobFormType(selected.id);
@@ -353,7 +344,8 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   "phone:photo": {
     id: "phone:photo",
     name: "Photo Camera View",
-    ...PHOTO_CAMERA_POSE,
+    position: [0, CAMERA_HEIGHT, HIDDEN_OPTIONS_CAMERA_ZOOM],
+    target: [0, CAMERA_Y_POSITION, 0],
     orbit: {
       minPolarAngle: 0.35,
       maxPolarAngle: 2.15,
@@ -593,6 +585,7 @@ export const useViewStore = create<ViewStore>()(
         if (!controls) return;
         const currentViewConfig = get().getCurrentViewConfig();
         const focusedImageTitle = get().focusedImageTitle;
+        const truckOnly = !!focusedImageTitle || ["desk", "bookshelf", "socials", "lounge"].includes(get().currentView);
 
         if (mode === "object") {
           const cameraPos = new Vector3();
@@ -604,13 +597,13 @@ export const useViewStore = create<ViewStore>()(
           controls.getTarget(target);
           controls.setTarget(target.x, target.y, target.z, false);
 
-          controls.mouseButtons.left = focusedImageTitle
+          controls.mouseButtons.left = truckOnly
             ? CameraControlsImpl.ACTION.TRUCK
             : CameraControlsImpl.ACTION.ROTATE;
           controls.mouseButtons.middle = CameraControlsImpl.ACTION.DOLLY;
           controls.mouseButtons.right = CameraControlsImpl.ACTION.TRUCK;
           controls.mouseButtons.wheel = CameraControlsImpl.ACTION.DOLLY;
-          controls.touches.one = focusedImageTitle
+          controls.touches.one = truckOnly
             ? CameraControlsImpl.ACTION.TOUCH_TRUCK
             : CameraControlsImpl.ACTION.TOUCH_ROTATE;
           controls.touches.two = CameraControlsImpl.ACTION.TOUCH_DOLLY_TRUCK;
@@ -833,11 +826,19 @@ export const useViewStore = create<ViewStore>()(
           isImageFocused: false,
           focusedImageTitle: null,
           isTransitioning: true,
+          pendingView: null,
         });
 
         get().applyViewModeToControls(
           viewConfig.defaultViewMode ?? get().viewMode,
         );
+
+        const finishReset = () => {
+          if (get().loadingCameraActive) return;
+          const pending = get().pendingView;
+          set({ isTransitioning: false, pendingView: null });
+          if (pending && pending !== get().currentView) void get().transitionToView(pending);
+        };
 
         try {
           const controls = cameraControlsRef.current;
@@ -856,20 +857,20 @@ export const useViewStore = create<ViewStore>()(
               ...resolvedPose.target,
               true,
             );
-            setTimeout(() => set({ isTransitioning: false }), 0);
+            setTimeout(finishReset, 0);
           } else if (resolvedPose) {
             controls.setLookAt(
               ...resolvedPose.position,
               ...resolvedPose.target,
               true,
             );
-            setTimeout(() => set({ isTransitioning: false }), 0);
+            setTimeout(finishReset, 0);
           } else {
-            setTimeout(() => set({ isTransitioning: false }), 0);
+            setTimeout(finishReset, 0);
           }
         } catch (error) {
           console.error("Camera transition failed:", error);
-          setTimeout(() => set({ isTransitioning: false }), 0);
+          setTimeout(finishReset, 0);
         }
       },
       resetToPreviousView: async () => {

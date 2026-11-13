@@ -138,13 +138,12 @@ export const CameraApp = ({ galleryOnly = false }: { galleryOnly?: boolean }) =>
                   else setError("storage-error");
                 }}>{text.delete}</PhotoAction>
               </FocusActions>
-              <FocusClose $variant="white" aria-label={text.gallery.closePhoto} onClick={closePhoto}><CloseIcon /></FocusClose>
             </FocusContent>
           </Lightbox>
         )}
       </AnimatePresence>
 
-      {!galleryOnly && <CornerButton ref={galleryButtonRef} $variant="white" aria-expanded={galleryOpen}
+      {!galleryOnly && <CornerButton ref={galleryButtonRef} $gallery={galleryOpen} aria-expanded={galleryOpen}
         aria-label={galleryOpen ? text.gallery.close : text.gallery.label}
         onClick={() => { if (galleryOpen) closeGallery(); else setGalleryOpen(true); }}
         inert={!!lightboxPhoto} aria-hidden={!!lightboxPhoto} whileTap={{ scale: 0.94 }}>
@@ -184,11 +183,18 @@ const ShutterButton = styled(FloatingActionButton)`
 const ShutterRing = styled.span`
   position: absolute; inset: 1px; border: 3px solid white; border-radius: 17px;
 `;
-const CornerButton = styled(FloatingActionButton)`
+const CornerButton = styled(motion.button)<{ $gallery: boolean }>`
   position: absolute; z-index: 3; left: 12px; bottom: 14px;
-  padding: 0; width: 56px; height: 58px; border-radius: 19px;
-  border-color: #e8e8e8; --floating-button-edge: #e8e8e8;
+  padding: 0; width: 56px; height: 56px; border-radius: 19px;
+  border: 0;
+  &::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.05);
+  }
+  background: ${({ $gallery }) => $gallery ? "#212026" : "transparent"};
+  color: ${({ $gallery }) => $gallery ? "#fff" : "#212026"};
   overflow: hidden;
+  &:focus-visible { outline: 2px solid #4178f7; outline-offset: 3px; }
 `;
 const CornerContent = styled(motion.span)`
   width: 100%; height: 100%; display: grid; place-items: center;
@@ -196,6 +202,7 @@ const CornerContent = styled(motion.span)`
 `;
 const GalleryLayer = styled(motion.div)`
   ${phoneAppSurface}
+  padding: 8px;
   position: absolute; inset: 0;
   display: flex; flex-direction: column; overflow: hidden;
 `;
@@ -204,7 +211,7 @@ const GalleryScroll = styled.div`
   padding: 0 0 76px; overscroll-behavior: contain;
   &::-webkit-scrollbar { display: none; }
 `;
-const PhotoGrid = styled.div`display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px;`;
+const PhotoGrid = styled.div`display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;`;
 const PhotoThumb = styled(motion.button)`
   padding: 0; overflow: hidden; border-radius: 14px; aspect-ratio: 1;
   img { display: block; width: 100%; height: 100%; object-fit: cover; }
@@ -235,10 +242,6 @@ const FocusImage = styled.img`
 `;
 const FocusActions = styled.div`display: flex; justify-content: center; flex-shrink: 0; gap: 16px; width: 100%; padding-bottom: 6px;`;
 const PhotoAction = styled(FloatingActionButton)`padding: 12px 16px; font-size: 0.85rem; border-radius: 24px;`;
-const FocusClose = styled(FloatingActionButton)`
-  position: absolute; top: -8px; right: -8px; width: 32px; height: 32px; padding: 0; border-radius: 13px;
-  svg { width: 16px; height: 16px; }
-`;
 const StorageNotice = styled.p`
   position: absolute; z-index: 5; top: 8px; left: 8px; right: 8px; padding: 8px 12px;
   border-radius: 12px; background: rgba(255,255,255,0.94); color: #212026;

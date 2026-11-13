@@ -23,7 +23,7 @@ export function getBobEditorFraming(width: number, height: number, mobile: boole
   const quarter = tool === "cubeDepth" || tool === "cubeRadius";
   const angle = quarter ? Math.PI / 4 : 0;
   const radius = distance * (quarter ? 0.94 : 1);
-  const targetY = mobile && landscape ? Math.max(0, halfSize[1] - 1) * 1.2 : 0;
+  const targetY = (mobile && landscape ? Math.max(0, halfSize[1] - 1) * 1.2 : 0) + 0.5;
   return {
     offset,
     position: [Math.sin(angle) * radius, targetY + (tool ? radius * (quarter ? 0.28 : 0.025) : mobile ? radius * 0.085 : 0.65), Math.cos(angle) * radius] as [number, number, number],

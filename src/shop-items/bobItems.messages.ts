@@ -15,7 +15,7 @@ export const bobItemMessages = defineMessages({
 
     propellerHat: { name: "Propellermütze", description: "Immer eine Drehung voraus." },
     bobMoustache: { name: "Schnubbi", description: "Ein Schnurrbart wie bei Bob Belcher." },
-    royalCrown: { name: "Krone", description: "Eine Krone für zehn Millionen." },
+    royalCrown: { name: "Krone", description: "Eine Krone für eine Million." },
     wizardHat: { name: "Zauberer", description: "Ein bisschen Magie für Bob." },
     flatCap: { name: "Schiebermütze", description: "Ein Klassiker in Braun." },
     builderHelmet: {
@@ -63,7 +63,7 @@ export const bobItemMessages = defineMessages({
 
     propellerHat: { name: "Propeller Hat", description: "Always one spin ahead." },
     bobMoustache: { name: "Moustache", description: "A moustache like Bob Belcher's." },
-    royalCrown: { name: "Crown", description: "A crown worth ten million." },
+    royalCrown: { name: "Crown", description: "A crown worth one million." },
     wizardHat: { name: "Wizard", description: "A little magic for Bob." },
     flatCap: { name: "Flat Cap", description: "A classic in brown." },
     builderHelmet: {

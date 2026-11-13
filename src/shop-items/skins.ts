@@ -11,6 +11,7 @@ export interface SkinShopItem {
   purchased: boolean;
   enabled: boolean;
   unlocked: boolean;
+  questReward: boolean;
 }
 
 /** Quest rewards retain their gates; paid skins use the player's saved purchases. */
@@ -19,7 +20,7 @@ export function getSkinShopItems(selectedId: SkinId, quests: readonly Pick<Quest
   const activeId = isBobSkinAvailable(selected, quests, purchased) ? selected.id : "white";
   return BOB_SKINS.map(skin => {
     const unlocked = isBobSkinUnlocked(skin, quests);
-    return { id: `skin:${skin.id}`, skinId: skin.id, name: skin.name[locale], type: "skin", cost: skin.cost ?? 0, purchased: isBobSkinAvailable(skin, quests, purchased), enabled: skin.id === activeId, unlocked };
+    return { id: `skin:${skin.id}`, skinId: skin.id, name: skin.name[locale], type: "skin", questReward: !!skin.unlock && !skin.cost, cost: skin.cost ?? 0, purchased: isBobSkinAvailable(skin, quests, purchased), enabled: skin.id === activeId, unlocked };
   });
 }
 

@@ -11,7 +11,7 @@ export function useSocialCorner(viewId: "socials" | "computer" | "lounge" | "boo
     const view = useViewStore.getState();
     if (view.isTransitioning || view.isPhoneView() || useAppStore.getState().showOptions || useVinylStore.getState().selected !== null || useBooksStore.getState().focusedBook) return false;
     if (view.currentView !== viewId) {
-      triggerQuest(viewId === "bookshelf" ? "click_books" : "click_socials", 1);
+      triggerQuest(viewId === "bookshelf" ? "click_books" : viewId === "lounge" ? "click_lounge" : "click_socials", 1);
       playUISound("ui-tap-2");
       view.transitionToView(viewId);
       return false;

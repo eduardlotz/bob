@@ -149,18 +149,6 @@ export const ROUTES = [
     label: ROUTE_CONFIG[ROUTE_PATHS.PORTFOLIO].name,
   },
   {
-    path: ROUTE_PATHS.TECHNICAL,
-    label: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].name,
-  },
-  {
-    path: ROUTE_PATHS.CREATIVE,
-    label: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].name,
-  },
-  {
-    path: ROUTE_PATHS.GUESTBOOK,
-    label: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].name,
-  },
-  {
     path: ROUTE_PATHS.MINIGAMES,
     label: ROUTE_CONFIG[ROUTE_PATHS.MINIGAMES].name,
   },

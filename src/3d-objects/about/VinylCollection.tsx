@@ -39,7 +39,7 @@ export function VinylCollection() {
   }, [selected, navigate]);
   const [x, y] = ABOUT_CORNERS.socials.position;
   return <>
-    {ABOUT_VINYLS.map((album, index) => <RoomDisplayObject key={album.id} id={album.id} title={`${album.artist} · ${album.title}`}
+    {ABOUT_VINYLS.map((album, index) => <RoomDisplayObject key={album.id} id={album.id} title={album.title}
       position={[x + (index - (ABOUT_VINYLS.length - 1) / 2) * 0.94, y + 3.85, -ABOUT_ROOM.depth / 2 + 0.03]}
       rotation={[0, 0, 0]} width={0.84} height={0.84}>
       {focused => <BlenderRoomPart name={`Record_${index}`} local focused={focused} />}

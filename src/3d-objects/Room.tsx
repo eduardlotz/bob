@@ -29,7 +29,7 @@ export function Room() {
     <BlenderRoomPart name="ExteriorTreeSecond" />
     <BlenderRoomPart name="ExteriorBackdrop" />
     <BlenderRoomPart name="ExteriorMoon" />
-    <InteractiveObject questAction="click_socials" mode="view" viewId="lounge">
+    <InteractiveObject questAction="click_lounge" mode="view" viewId="lounge">
       <BlenderRoomPart name="Armchair" />
     </InteractiveObject>
     <BlenderRoomPart name="FloorLamp" />
@@ -38,7 +38,7 @@ export function Room() {
     <group ref={rearWall} position-z={depth / 2}>
       <BlenderRoomPart name="FrontWall" local />
       <SocialPosters wall="front" relativeToFrontWall />
-      <CornerTrigger viewId="lounge" questAction="click_socials" surfaces={[
+      <CornerTrigger viewId="lounge" questAction="click_lounge" surfaces={[
         { position: [3.65, 2.9, -.101], rotation: [0, Math.PI, 0], size: [2.8, 5.15] },
       ]} />
     </group>

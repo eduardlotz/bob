@@ -50,7 +50,7 @@ export function AboutScene() {
     },
     [],
   );
-  const hover = (view: "desk" | "computer" | "socials") => {
+  const hover = (view: "desk" | "bookshelf" | "socials") => {
     if (currentView !== view)
       setHoveredObject({
         title: viewControlsMessages[locale].viewTitles[view],
@@ -84,13 +84,13 @@ export function AboutScene() {
       <AboutBookshelf />
       <SocialPosters wall="right" />
       <InteractiveObject
-        questAction="click_plant"
+        questAction="click_books"
         mode="view"
-        viewId="computer"
+        viewId="bookshelf"
         position={[4.05, ABOUT_ROOM.floorY, -3.5]}
       >
         <group
-          onPointerEnter={() => hover("computer")}
+          onPointerEnter={() => hover("bookshelf")}
           onPointerLeave={() => setHoveredObject(null)}
         >
           <BlenderRoomPart name="Plant" local />
@@ -121,7 +121,7 @@ export function AboutScene() {
         <CylinderCollider args={[0.02, 0.23]} position={[0, 0.045, 0]} />
       </RigidBody>
       <GreenDiamond
-        position={[4.68, ABOUT_ROOM.floorY + 0.18, -4.35]}
+        position={[4.35, ABOUT_ROOM.floorY + 0.4, -4.2]}
         rotation={[0, 0.3, 0.28]}
         scale={[0.75, 0.75, 0.75]}
       />
@@ -146,8 +146,8 @@ export function AboutScene() {
         ]}
       />
       <CornerTrigger
-        viewId="computer"
-        questAction="click_socials"
+        viewId="bookshelf"
+        questAction="click_books"
         surfaces={[
           {
             position: [2.6, ABOUT_ROOM.floorY + 2.6, -4.799],
@@ -167,7 +167,7 @@ export function AboutScene() {
       />
       <CornerTrigger
         viewId="lounge"
-        questAction="click_socials"
+        questAction="click_lounge"
         surfaces={[
           {
             position: [5.199, ABOUT_ROOM.floorY + 2.9, 3.35],

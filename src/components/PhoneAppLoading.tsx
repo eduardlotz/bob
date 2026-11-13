@@ -1,4 +1,5 @@
-import styled, { keyframes } from "styled-components";
+import styled from "styled-components";
+import { motion, useReducedMotion } from "motion/react";
 import { FloatingActionButton } from "./FloatingActionButton";
 import { phoneAppSurface } from "@/styles/phoneAppSurface";
 import { useI18n } from "@/i18n";
@@ -9,12 +10,16 @@ export function PhoneAppLoading({ name, failed, onRetry }: {
   onRetry: () => void;
 }) {
   const { messages } = useI18n();
+  const reducedMotion = useReducedMotion();
   return <LoadingSurface role={failed ? "alert" : "status"} aria-busy={!failed}
     aria-label={failed ? undefined : `${name} · ${messages.loader.loading}`} data-phone-app-loading>
     {failed ? <>
       <p>{messages.phone.appLoadError}</p>
       <RetryButton type="button" $variant="blue" onClick={onRetry}>{messages.main.errorBoundary.retry}</RetryButton>
-    </> : <Eyes aria-hidden="true"><Eye $lean={-12} /><Eye $lean={12} /></Eyes>}
+    </> : <Dots aria-hidden="true" animate={{ rotate: reducedMotion ? 0 : 360 }}
+      transition={{ type: "spring", duration: 0.8, bounce: 0.3, repeat: reducedMotion ? 0 : Infinity }}>
+      <Dot /><Dot />
+    </Dots>}
   </LoadingSurface>;
 }
 
@@ -33,36 +38,11 @@ const LoadingSurface = styled.div`
   p { font-size: 0.85rem; font-weight: 700; text-align: center; line-height: 1.5; }
 `;
 
-const blink = keyframes`
-  0%, 44%, 50%, 100% { transform: scaleY(1); }
-  47% { transform: scaleY(0.08); }
+const Dots = styled(motion.span)`
+  display: flex; align-items: center; gap: 10px; color: #212121;
 `;
-
-const Eyes = styled.span`
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  color: #212121;
-`;
-
-const Eye = styled.span<{ $lean: number }>`
-  display: block;
-  width: 10px;
-  height: 14px;
-  transform: skewX(${({ $lean }) => $lean}deg);
-  &::before {
-    content: "";
-    display: block;
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    background: currentColor;
-    transform-origin: center;
-    animation: ${blink} 2.5s ease-in-out infinite;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    &::before { animation: none; }
-  }
+const Dot = styled.span`
+  display: block; width: 10px; height: 10px; border-radius: 50%; background: currentColor;
 `;
 
 const RetryButton = styled(FloatingActionButton)`

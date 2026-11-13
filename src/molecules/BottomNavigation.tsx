@@ -1,7 +1,7 @@
 import { useShallow } from "zustand/react/shallow";
 import React, { useState } from "react";
 import styled from "styled-components";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import {
   useAppStore,
   ROUTE_PATHS,
@@ -19,10 +19,12 @@ import { MenuButton } from "@/layout/atoms";
 import { BobPhone } from "./BobPhone";
 import { playUISound } from "@/utils/soundSystem";
 import { BackToLobbyButton } from "./BackToLobbyButton";
+import { getPanelItemMotion } from "@/styles/panelMotion";
 import { useI18n } from "@/i18n";
 
 export function BottomNavigation() {
   const { messages } = useI18n();
+  const reducedMotion = useReducedMotion();
   const [showPhone, setShowPhone] = useState(false);
   const {
     currentView,
@@ -125,13 +127,7 @@ export function BottomNavigation() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               $isActive={showOptions}
-              initial={{ opacity: 0, y: 40, filter: "blur(6px)" }}
-              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              exit={{ opacity: 0, y: 40, filter: "blur(6px)" }}
-              transition={{
-                type: "spring" as const,
-                bounce: 0.5,
-              }}
+              {...getPanelItemMotion(0, reducedMotion)}
               layout="position"
             >
               <AnimatePresence mode="popLayout">

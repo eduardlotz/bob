@@ -35,7 +35,7 @@ export const initialWorlds: WorldItem[] = [
     id: "world_forest",
     name: "Wald",
     description: "Ein dichter Bob-Wald mit Wolken und Glühpunkten.",
-    cost: 50_000,
+    cost: 1_000,
     purchased: false,
     enabled: false,
     type: "world",
@@ -73,7 +73,7 @@ export const initialWorlds: WorldItem[] = [
     name: "Stadt",
     description:
       "Eine New Yorker Skyline mit Brownstones, Autos und gelben Taxis.",
-    cost: 100_000,
+    cost: 50_000,
     purchased: false,
     enabled: false,
     type: "world",
@@ -106,7 +106,7 @@ export const initialWorlds: WorldItem[] = [
     id: "world_desert",
     name: "Wüste",
     description: "Warme Dünen, rollende Steppenläufer, Schlangen und ein verwitterter Sandsteinbogen.",
-    cost: 300_000,
+    cost: 100_000,
     purchased: false,
     enabled: false,
     type: "world",
@@ -130,7 +130,7 @@ export const initialWorlds: WorldItem[] = [
   {
     id: "world_island", name: "Einsame Insel",
     description: "Eine winzige Palmeninsel mit türkisblauem Meer und Lagerfeuer unter Sternen.",
-    cost: 1_000_000, purchased: false, enabled: false, type: "world", icon: "🏝️",
+    cost: 500_000, purchased: false, enabled: false, type: "world", icon: "🏝️",
     scene: {
       skyColors: ["#a7e9ff", "#49bdea"], gradientStops: [0, .5, 1],
       gradientColors: ["#55bfe9", "#bdeff5", "#54c8ca"],
@@ -146,7 +146,7 @@ export const initialWorlds: WorldItem[] = [
     id: "world_winter",
     name: "Winter",
     description: "Verschneite Tannen, bunte Weihnachtslichter und große und kleine Schneemänner.",
-    cost: 2_000_000,
+    cost: 1_000_000,
     purchased: false,
     enabled: false,
     type: "world",
@@ -170,7 +170,7 @@ export const initialWorlds: WorldItem[] = [
   {
     id: "world_halloween", name: "Halloween",
     description: "Ein riesiges Spukschloss, leuchtende Kürbisse und tanzende Herbstblätter.",
-    cost: 5_000_000, purchased: false, enabled: false, type: "world", icon: "🎃",
+    cost: 2_000_000, purchased: false, enabled: false, type: "world", icon: "🎃",
     scene: {
       skyColors: ["#b3a2c5", "#665078"], gradientStops: [0, .45, 1],
       gradientColors: ["#655176", "#b8a1be", "#665a73"],
@@ -185,7 +185,7 @@ export const initialWorlds: WorldItem[] = [
   {
     id: "world_underwater", name: "Unter Wasser",
     description: "Tropische Korallen, schimmernde Fischschwärme und Sonnenstrahlen im türkisblauen Wasser.",
-    cost: 10_000_000, purchased: false, enabled: false, type: "world", icon: "🪸",
+    cost: 5_000_000, purchased: false, enabled: false, type: "world", icon: "🪸",
     scene: {
       skyColors: ["#52e5e0", "#167cae"], gradientStops: [0, .45, 1],
       gradientColors: ["#64e5df", "#229ec1", "#116e9e"],
@@ -202,7 +202,7 @@ export const initialWorlds: WorldItem[] = [
     name: "Im All",
     description:
       "Mondkrater, Planeten, Meteoriten und UFOs unter einem weiten Sternenhimmel.",
-    cost: 125_000_000,
+    cost: 10_000_000,
     purchased: false,
     enabled: false,
     type: "world",

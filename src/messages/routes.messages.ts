@@ -10,8 +10,7 @@ export const routeMessageConfigs = defineMessages<
       text: [
         "gemütlich oder? 😊",
         "hier findest du mehr über die Person hinter der Website :) Tap einfach eine Ecke im Raum an, um sie dir näher anzuschauen",
-        "Hinter mir findest du Eddies kleine Schallplattensammlung und im Regal dort seine Büchersammlung. Die Hälfte davon hat er noch garnicht gelesen, aber psst 🤓",
-        "ach und wenn dich der Regen stört, kannst du auch das Fenster schließen ☔️ ich persönlich finds beruhigend ",
+        "ach und wenn dich der Regen stört kannst du das Fenster einfach schließen ☔️ ich persönlich finds aber beruhigend ",
       ],
       label: "Bob",
       options: {
@@ -63,8 +62,7 @@ export const routeMessageConfigs = defineMessages<
       text: [
         "Cozy, isn't it? 😊",
         "Here you can find out more about the person behind the website :) Just tap any corner of the room to take a closer look",
-        "Behind me you'll find Eddie's little record collection, and on that shelf over there, his book collection. He hasn't even read half of them yet, but shh 🤓",
-        "Oh, and if the rain bothers you, you can also close the window ☔️—I personally find it soothing",
+        "oh and if the rain bothers you, you can just close the window ☔️ but i personally find it soothing",
       ],
       label: "Bob",
       options: {
@@ -79,9 +77,8 @@ export const routeMessageConfigs = defineMessages<
     portfolio_welcome: {
       id: "portfolio_welcome_v3",
       text: [
-        "Welcome to the portfolio universe",
-        "Here you can check out Eddie's free-time projects",
-        "Tap an image to show more info",
+        "Welcome to the portfolio universe! Here you’ll find a mix of Eddie’s creative work",
+        "Tap an image to take a closer look",
       ],
       label: "Bob",
       options: {

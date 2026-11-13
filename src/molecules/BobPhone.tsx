@@ -35,14 +35,15 @@ interface BobPhoneProps {
 export const BobPhone = (props: BobPhoneProps) => {
   const panelMotion = usePanelMotion();
   const reducedMotion = useReducedMotion();
-  const containerRef = useRef(null);
-  const triggerRef = useRef(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const { transitionToView, currentView, resetToDefaultView } = useViewStore(useShallow(state => ({
     transitionToView: state.transitionToView,
     currentView: state.currentView,
     resetToDefaultView: state.resetToDefaultView,
   })));
   const showOptions = useAppStore((state) => state.showOptions);
+  const [openCycle, setOpenCycle] = useState(0);
   const [activeApp, setActiveApp] = useState<PhoneAppId | undefined>();
   const [shopPreview, setShopPreview] = useState(false);
   const { snapshot, retry } = usePhoneApp(activeApp, props.isOpen);
@@ -73,6 +74,7 @@ export const BobPhone = (props: BobPhoneProps) => {
       resetToDefaultView();
       props.setIsOpen(false);
     } else {
+      setOpenCycle(cycle => cycle + 1);
       setActiveApp(undefined);
       setShopPreview(false);
       props.setIsOpen(true);
@@ -106,7 +108,7 @@ export const BobPhone = (props: BobPhoneProps) => {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         $isActive={props.isOpen}
-        {...panelMotion}
+        {...getPanelItemMotion(1, reducedMotion)}
         ref={triggerRef}
         layout="position"
       >
@@ -146,12 +148,11 @@ export const BobPhone = (props: BobPhoneProps) => {
 
       {/* The fixed measurement root must not also be the resizing surface:
           Motion intentionally skips layout animations on layoutRoot nodes. */}
-      <PhonePositioner layoutRoot>
+      <PhonePositioner ref={containerRef} layoutRoot>
         <AnimatePresence>
           {props.isOpen && (
             <PhoneShell
-              ref={containerRef}
-              key="bob-phone-body"
+              key={`bob-phone-body-${openCycle}`}
               $preview={activeApp === "shop" && shopPreview}
             >
               <HugColumn

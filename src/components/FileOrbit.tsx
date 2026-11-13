@@ -706,6 +706,7 @@ const PortfolioMetaOverlay = ({
   return (
     <Html
       transform
+      pointerEvents={isActive ? "auto" : "none"}
       position={[overlayOffsetX, overlayOffsetY, depthOffset]}
       style={{
         width: isMobile ? "18rem" : "20rem",
@@ -1080,7 +1081,7 @@ function MediaItem({
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
-    if (isSuspended) return;
+    if (isSuspended || e.delta > 5) return;
     if (distanceRef.current > cull.cullingDistance) return;
 
     if (focusedImageTitle !== title) {
@@ -1172,6 +1173,12 @@ function MediaItem({
           onScaleChange={setMediaScale}
         />
       )}
+
+      {/* Picking uses the full displayed dimensions, independently of texture readiness. */}
+      {!isSuspended && <mesh onClick={handleClick} position-z={0.01} scale={[mediaScale[0], mediaScale[1], 1]}>
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} side={THREE.DoubleSide} />
+      </mesh>}
 
       <PortfolioMetaOverlay
         isActive={isFocused}

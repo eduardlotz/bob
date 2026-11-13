@@ -145,6 +145,9 @@ export const MessageBubble = memo(function MessageBubble({
   const previewMode = useCoreStore(state => state.previewMode);
   const isReady = useCoreStore(state => state.isReady);
   const currentView = useViewStore(state => state.currentView);
+  const showOptions = useAppStore(state => state.showOptions);
+  const messageVisible = activeMessage?.config.repeatRule === "always"
+    || (!showOptions && ["default", "portfolio", "minigames"].includes(currentView));
 
   const [visibleLines, setVisibleLines] = useState<VisibleLine[]>([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -253,10 +256,11 @@ export const MessageBubble = memo(function MessageBubble({
   );
 
   useEffect(() => {
-    if (activeMessage?.hasBeenFullyRevealed) {
+    if (messageVisible && activeMessage?.hasBeenFullyRevealed) {
       scheduleDismiss(activeMessage.config.id, activeMessage.startedAt);
     }
   }, [
+    messageVisible,
     activeMessage?.hasBeenFullyRevealed,
     activeMessage?.startedAt,
     queueLength,
@@ -272,7 +276,7 @@ export const MessageBubble = memo(function MessageBubble({
   }, [previewMode, currentView]);
 
   useEffect(() => {
-    if (!activeMessage || !isReady) {
+    if (!activeMessage || !isReady || !messageVisible) {
       if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
       if (lineTimerRef.current) clearTimeout(lineTimerRef.current);
       shownLinesRef.current = [];
@@ -310,6 +314,7 @@ export const MessageBubble = memo(function MessageBubble({
     activeMessage?.config.id,
     activeMessage?.startedAt,
     isReady,
+    messageVisible,
     processLinesRecursive,
     requestEmotion,
   ]);
@@ -327,7 +332,7 @@ export const MessageBubble = memo(function MessageBubble({
     anchor[2] + offset[2],
   ];
 
-  if (!isReady) return null;
+  if (!isReady || !messageVisible) return null;
 
   return (
     <a.group position={finalPos}>

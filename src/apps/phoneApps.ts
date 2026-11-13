@@ -2,15 +2,7 @@ import type { ComponentType } from "react";
 import { createLazyModule } from "@/utils/lazyModule";
 
 export const PHONE_APP_IDS = [
-  "camera",
-  "photos",
-  // "help",
-  "bob",
-  "quests",
-  "shop",
-  "credits",
-  "settings",
-  "debug",
+  "credits", "settings", "debug", "camera", "shop", "photos", "bob", "quests",
 ] as const;
 export type PhoneAppId = (typeof PHONE_APP_IDS)[number];
 

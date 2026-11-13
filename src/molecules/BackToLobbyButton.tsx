@@ -1,15 +1,16 @@
 import { HugColumn } from "@/layout";
 import { Magnetic } from "@/layout/Magnetic";
 import { exitMiniGame } from "@/utils/miniGameTransitions";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import styled from "styled-components";
-import { SmallArrowLeftIcon } from "@/icons/arrow";
+import { floatingActionButtonStyles } from "@/components/FloatingActionButton";
+import { getPanelItemMotion } from "@/styles/panelMotion";
 import { useI18n } from "@/i18n";
 import { backToLobbyButtonMessages } from "./BackToLobbyButton.messages";
-import { ChevronLeftIcon } from "@/icons/chevron";
 
 export const BackToLobbyButton = ({ show }: { show: boolean }) => {
   const { locale } = useI18n();
+  const reducedMotion = useReducedMotion();
 
   const onTriggerClick = () => {
     exitMiniGame();
@@ -20,14 +21,7 @@ export const BackToLobbyButton = ({ show }: { show: boolean }) => {
       {show && (
         <HugColumn
           key="back-to-lobby-wrapper"
-          style={{ opacity: 0, translateZ: 0 }}
-          initial={{ opacity: 0, y: 40, filter: "blur(6px)" }}
-          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          exit={{ opacity: 0, y: 40, filter: "blur(6px)" }}
-          transition={{
-            type: "spring" as const,
-            bounce: 0.5,
-          }}
+          {...getPanelItemMotion(0, reducedMotion)}
           layout
           $gap={"0.75rem"}
           $align="center"
@@ -35,6 +29,7 @@ export const BackToLobbyButton = ({ show }: { show: boolean }) => {
         >
           <Magnetic>
             <TriggerContainer
+              $variant="muted"
               key="back-to-lobby-trigger"
               onClick={onTriggerClick}
               data-ui-sound-id="ui-tap-close"
@@ -43,17 +38,7 @@ export const BackToLobbyButton = ({ show }: { show: boolean }) => {
               layout
               style={{ borderRadius: "50px" }}
             >
-              <ChevronLeftIcon />
-
-              <motion.span
-                initial={{ filter: "blur(6px)", opacity: 0, y: -20 }}
-                animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
-                exit={{ filter: "blur(6px)", opacity: 0, y: 20 }}
-                transition={{
-                  type: "spring" as const,
-                  bounce: 0.2,
-                }}
-              >
+              <motion.span>
                 {backToLobbyButtonMessages[locale].label}
               </motion.span>
             </TriggerContainer>
@@ -64,29 +49,8 @@ export const BackToLobbyButton = ({ show }: { show: boolean }) => {
   );
 };
 
-const TriggerContainer = styled(motion.button)`
-  display: inline-flex;
-  width: fit-content;
-  white-space: nowrap;
-  align-items: center;
-  justify-content: center;
-  max-height: 2.25rem;
-
-  padding: 0.5rem 0.75rem 0.5rem 0.25rem;
-  border-radius: 50px;
-  background-color: #fff;
-  opacity: 1;
-
-  font-size: 1rem;
-  font-weight: 800;
-  line-height: 1.2;
-
-  color: #212121;
-  margin: 0 auto;
-  overflow: clip;
-  gap: 0.125rem;
-
-  span {
-    max-height: 1.5rem;
-  }
+const TriggerContainer = styled(motion.button)<{ $variant: "muted" }>`
+  ${floatingActionButtonStyles}
+  height: 3rem; padding: 0.5rem 20px; border-radius: 50px;
+  font-size: 1rem; font-weight: 900; letter-spacing: -0.02em; white-space: nowrap;
 `;
