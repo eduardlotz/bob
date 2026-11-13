@@ -1,7 +1,7 @@
 import { HugColumn, ListItemContainer } from "@/layout";
 import { Divider, DividerWithLabel } from "@/layout/atoms";
 import { formatNumber } from "@/utils/formatNumber";
-import { useCameraStore, useCoreStore, useQuestStore } from "@/store";
+import { useCoreStore, useQuestStore } from "@/store";
 import { useMessageStore } from "@/store/messageStore";
 import { ActionButton, SettingsWrapper, ToggleButton } from "./ui";
 import { sileo } from "sileo";
@@ -9,6 +9,7 @@ import { useI18n } from "@/i18n";
 import { createQuestToastIcon } from "@/components/QuestTrophyIcon";
 
 import { WorldEnvironmentControls } from "./WorldEnvironmentControls";
+import { resetDebugEverything, unlockDebugEverything } from "@/utils/debugActions";
 
 export const DebugIcon = () => (
   <img src="/images/app-logos/debug.png" height={80} width={80} />
@@ -16,8 +17,6 @@ export const DebugIcon = () => (
 
 export const DebugApp = () => {
   const { messages } = useI18n();
-  const clearShownFlags = useMessageStore((state) => state.clearShownFlags);
-  const clearAllMessages = useMessageStore((state) => state.clearAllMessages);
   const showMessages = useMessageStore((state) => state.showMessages);
 
   const viewDebuggerVisible = useCoreStore(
@@ -42,12 +41,10 @@ export const DebugApp = () => {
   const toggleLightSettingsOverlay = useCoreStore(
     (state) => state.toggleLightSettingsOverlay,
   );
-  const resetGameStore = useCoreStore((state) => state.resetGame);
   const isPaused = useCoreStore((state) => state.isPaused);
   const pauseGame = useCoreStore((state) => state.pauseGame);
   const resumeGame = useCoreStore((state) => state.resumeGame);
   const addTaps = useCoreStore((state) => state.addTaps);
-  const buyAllUpgrades = useCoreStore((state) => state.buyAllUpgrades);
   const version = useCoreStore((state) => state.version);
   const themes = useCoreStore((state) => state.themes);
   const currentTheme = useCoreStore((state) => state.currentTheme);
@@ -63,27 +60,11 @@ export const DebugApp = () => {
   );
 
   const quests = useQuestStore((state) => state.quests);
-  const resetAllQuests = useQuestStore((state) => state.resetAllQuests);
-  const unlockAllQuests = useQuestStore((state) => state.unlockAllQuests);
   const questsVersion = useQuestStore((state) => state.version);
 
-  const clearAll = useCameraStore((state) => state.clearAll);
-
-  const resetQuestState = () => {
-    resetAllQuests();
-  };
-
-  const unlockEverything = () => {
-    buyAllUpgrades();
-    unlockAllQuests();
-  };
-
   const resetEverything = () => {
-    resetGameStore();
-    clearAll();
-    clearShownFlags();
-    clearAllMessages();
-    resetQuestState();
+    const result = resetDebugEverything();
+    if (!result.photosCleared) sileo.error({ title: "Die gespeicherten Fotos konnten nicht zurückgesetzt werden." });
   };
 
   const toggleGamePaused = () => {
@@ -255,7 +236,7 @@ export const DebugApp = () => {
           <p>[Shop items, routes, upgrades & quests]</p>
         </HugColumn>
 
-        <ActionButton onClick={unlockEverything}>Unlock 💯</ActionButton>
+        <ActionButton onClick={unlockDebugEverything}>Unlock 💯</ActionButton>
       </SettingsWrapper>
 
       <DividerWithLabel>Toggles</DividerWithLabel>
@@ -332,7 +313,7 @@ export const DebugApp = () => {
           onClick={() =>
             confirm(
               "Die Quests App wird zurückgesetzt und geupdated.\nBist du sicher?",
-            ) && resetQuestState()
+            ) && resetDebugQuests()
           }
         >
           Reset

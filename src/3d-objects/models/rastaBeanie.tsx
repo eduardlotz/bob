@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import React, { useEffect, useMemo, useRef } from "react";
-import { Outlines, useGLTF } from "@react-three/drei";
+import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
 import { previewMaterialProps } from "@/shop-items/utils";
@@ -48,13 +48,11 @@ interface Props {
   position: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
-  outlineColor?: string;
   preview: boolean;
 }
 
 export const RastaBeanie = ({
   scale = [1, 1, 1],
-  outlineColor = "#000000",
   ...props
 }: Props) => {
   const group = useRef<THREE.Group>(null!);
@@ -108,15 +106,8 @@ export const RastaBeanie = ({
       >
         <meshToonMaterial color={materials.rasta_beanie.color} map={beanieMap} side={materials.rasta_beanie.side}
           {...(props.preview ? previewMaterialProps : {})} />
-        <Outlines
-          thickness={0.005}
-          color={outlineColor}
-          screenspace
-          {...(props.preview ? previewMaterialProps : {})}
-        />
+
       </mesh>
     </a.group>
   );
 };
-
-useGLTF.preload(PATH);

@@ -8,6 +8,7 @@ export function useScaledGameCamera(sizeFactor: number) {
   const ref = useViewStore((state) => state.cameraControlsRef);
   const limits = useRef<{ controls: CameraControls; min: number; max: number }>();
   useFrame(() => {
+    if (useViewStore.getState().loadingCameraActive) return;
     const controls = ref?.current;
     if (!controls) return;
     if (limits.current?.controls !== controls) {

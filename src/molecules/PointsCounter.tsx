@@ -1,14 +1,13 @@
-import { Html, Outlines, Text3D } from "@react-three/drei";
+import { Html, Text3D } from "@react-three/drei";
 import { useRef, useEffect, useState } from "react";
 import { Vector3, Mesh } from "three";
 import { useSpring, a } from "@react-spring/three";
 
-const FONT_PATH = "/fonts/OpenRundeBold.json";
+const FONT_PATH = "/fonts/OpenRundeBoldCounter.json";
 
 interface PointsCounterProps {
   number: number;
   counterColor?: string;
-  outlineColor?: string;
   statusLabel?: string;
   statusVariant?: "default" | "success";
 }
@@ -16,7 +15,6 @@ interface PointsCounterProps {
 export const PointsCounter = ({
   number,
   counterColor = "white",
-  outlineColor = "black",
   statusLabel,
   statusVariant = "default",
 }: PointsCounterProps) => {
@@ -98,7 +96,6 @@ export const PointsCounter = ({
         >
           {formattedNumber}
           <meshToonMaterial color={counterColor} />
-          <Outlines thickness={0.02} color={outlineColor} screenspace />
         </Text3D>
       </a.group>
     </a.group>

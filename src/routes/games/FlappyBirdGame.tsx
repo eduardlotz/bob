@@ -35,6 +35,8 @@ import { getGameBallPhysics, scaleGameCoordinate } from "@/utils/gameSizing";
 import { CharacterBall } from "@/components/CharacterBall";
 import { useQuestStore } from "@/store/core/quests";
 import { playSound, stopSoundsById } from "@/utils/soundSystem";
+import { useScreenTransition } from "@/store/screenTransition";
+import { useViewStore } from "@/store/viewStore";
 
 const FLAP_FORCE = 5;
 const BIRD_START_X = 1;
@@ -89,28 +91,38 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
   }, [cameraControlsRef, isMobile]);
 
   const flap = useCallback(() => {
-    if (!active.current) {
-      if (performance.now() - lostAt.current < 400) return;
+    if (useScreenTransition.getState().phase !== "idle") return;
+    const applyFlap = () => {
+      const body = birdApi.current;
+      if (!body) return;
+      body.wakeUp();
+      body.setLinvel({ x: 0, y: FLAP_FORCE * sizeFactor, z: 0 }, true);
+      const currentAng = body.angvel();
+      body.setAngvel({ x: 0, y: 0, z: Math.max(currentAng.z, 2.2) }, true);
+      playSound("flappy-flap");
+    };
+    if (active.current) { applyFlap(); return; }
+    if (performance.now() - lostAt.current < 400) return;
+    const prepareRound = () => {
       stopSoundsById("flappy-lose");
       resetScore();
       obstacles.current?.reset();
       birdApi.current?.setTranslation({ x: BIRD_START_X, y: BIRD_START_Y, z: 0 }, true);
       birdApi.current?.setRotation({ x: 0, y: 0, z: 0, w: 1 }, true);
-      birdApi.current?.setEnabled(true);
+      birdApi.current?.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      birdApi.current?.setAngvel({ x: 0, y: 0, z: 0 }, true);
       tilt.current = { angle: 0, velocity: 0 };
+      setPhase("playing");
+    };
+    const beginRound = () => {
+      if (!birdApi.current) return;
+      birdApi.current.setEnabled(true);
       birdApi.current?.setGravityScale(sizeFactor, true);
       active.current = true;
-      setPhase("playing");
-    }
-    const body = birdApi.current;
-    if (!body) return;
-
-    body.wakeUp();
-    body.setLinvel({ x: 0, y: FLAP_FORCE * sizeFactor, z: 0 }, true);
-    const currentAng = body.angvel();
-    body.setAngvel({ x: 0, y: 0, z: Math.max(currentAng.z, 2.2) }, true);
-
-    playSound("flappy-flap");
+      applyFlap();
+    };
+    prepareRound();
+    beginRound();
   }, [resetScore, sizeFactor]);
 
   const reset = useCallback(() => {
@@ -196,7 +208,7 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
       if (!active.current) birdVisual.current.quaternion.identity();
     }
 
-    if (cameraControlsRef?.current) {
+    if (cameraControlsRef?.current && !useViewStore.getState().loadingCameraActive) {
       const targetX = isMobile ? BIRD_START_X + 2 * sizeFactor : BIRD_START_X;
       cameraControlsRef.current.setLookAt(
         scaleGameCoordinate(0, sizeFactor, BIRD_START_X),
@@ -242,7 +254,7 @@ export function FlappyBirdGame({ onExit: _onExit }: { onExit: () => void }) {
 
   return (
     <group>
-      <FlappyAtmosphere score={phase === "over" ? lastScore.current : score} active={active} />
+      <group><FlappyAtmosphere score={phase === "over" ? lastScore.current : score} active={active} /></group>
       <GameOverlay><FlappyOverlay phase={phase}
         score={formatNumber(lastScore.current, { maximumFractionDigits: 0 })}
         highScore={formatNumber(Math.max(highScore, lastScore.current), { maximumFractionDigits: 0 })}

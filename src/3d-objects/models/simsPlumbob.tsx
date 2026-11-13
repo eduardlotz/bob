@@ -1,10 +1,8 @@
 import * as THREE from "three";
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   MeshTransmissionMaterial,
-  Outlines,
   useGLTF,
-  Wireframe,
 } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
@@ -27,25 +25,17 @@ interface Props {
   position: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
-  outlineColor?: string;
   color?: string;
   preview: boolean;
 }
 
 export const SimsPlumbob = ({
   scale = [1, 1, 1],
-  outlineColor = "#8eb221",
   color = "#b7e822",
   ...props
 }: Props) => {
   const group = useRef<THREE.Group>(null!);
   const { nodes } = useGLTF(PATH) as GLTFResult;
-  const wireframeGeometry = useMemo(
-    () => nodes.Plumbob_Material001_0.geometry.toNonIndexed(),
-    [nodes],
-  );
-
-  useEffect(() => () => wireframeGeometry.dispose(), [wireframeGeometry]);
 
   const [spring, api] = useSpring(() => ({
     scale: [0, 0, 0], // start invisible
@@ -74,19 +64,13 @@ export const SimsPlumbob = ({
       rotation={props.rotation}
     >
       <group rotation={[-Math.PI / 2, 0, 0]}>
-        <mesh geometry={wireframeGeometry}>
+        <mesh geometry={nodes.Plumbob_Material001_0.geometry}>
           <meshPhongMaterial
             color={color}
             {...(props.preview ? previewMaterialProps : {})}
           />
-
-          {props.preview && (
-            <Wireframe thickness={0.04} backfaceStroke={outlineColor} />
-          )}
         </mesh>
       </group>
     </a.group>
   );
 };
-
-useGLTF.preload(PATH);

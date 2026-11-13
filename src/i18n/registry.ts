@@ -4,7 +4,6 @@ import { creditsMessages } from "@/apps/credits.messages";
 import { optionsMessages } from "@/apps/options.messages";
 import { questsMessages } from "@/apps/quests.messages";
 import { shopMessages } from "@/apps/shop.messages";
-import { booksMessages } from "@/3d-objects/books/books.messages";
 import { musicMessages } from "@/layout/game-ui/music.messages";
 import { mainMessages } from "@/main.messages";
 import { bobPhoneMessages } from "@/molecules/BobPhone.messages";
@@ -18,7 +17,6 @@ import { defineMessages } from "./defineMessages";
 
 export const i18nRegistry = defineMessages({
   de: {
-    books: booksMessages.de,
     camera: cameraMessages.de,
     chat: chatMessages.de,
     credits: creditsMessages.de,
@@ -36,7 +34,6 @@ export const i18nRegistry = defineMessages({
     ui: commonUiMessages.de,
   },
   en: {
-    books: booksMessages.en,
     camera: cameraMessages.en,
     chat: chatMessages.en,
     credits: creditsMessages.en,

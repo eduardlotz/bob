@@ -44,7 +44,7 @@ export function BobSleepZs({ sleep, head, height, color }: {
           <Text3D
             key={index}
             ref={(mesh) => { letters.current[index] = mesh; }}
-            font="/fonts/OpenRundeBold.json"
+            font="/fonts/OpenRundeBoldCounter.json"
             size={0.25}
             height={0.035}
             curveSegments={4}

@@ -6,9 +6,10 @@ export const viewControlsMessages = defineMessages({
     viewTitles: {
       desk: "Musik & Mixes",
       bookshelf: "Buchsammlung",
-      computer: "Apps & Seiten",
-      cardbox: "Interessen & Hobbies",
-      socials: "Eddies Ecke",
+      computer: "Grün & Bücher",
+      cardbox: "Grüne Ecke",
+      socials: "Vinyls & Erinnerungen",
+      lounge: "Socials",
     },
   },
   en: {
@@ -16,9 +17,10 @@ export const viewControlsMessages = defineMessages({
     viewTitles: {
       desk: "Music & Mixes",
       bookshelf: "Book Collection",
-      computer: "Apps & Sites",
-      cardbox: "Interests & Hobbies",
-      socials: "Eddie's Corner",
+      computer: "Green & Books",
+      cardbox: "Green Corner",
+      socials: "Vinyls & Memories",
+      lounge: "Socials",
     },
   },
 });

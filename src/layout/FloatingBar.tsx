@@ -4,9 +4,13 @@ import {
   motion,
   useMotionValue,
   useSpring,
+  useVelocity,
+  useTransform,
+  useReducedMotion,
 } from "motion/react";
 import React, { useState, useEffect, createContext, useContext } from "react";
 import styled from "styled-components";
+import { sceneChipStyle } from "@/components/SceneChip";
 
 interface FloatingBarContextType {
   hoveredObject: {
@@ -81,17 +85,17 @@ export const FloatingBarUI: React.FC = () => {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
-  const smoothX = useSpring(x, { mass: 0.8, damping: 25 });
-  const smoothY = useSpring(y, { mass: 0.8, damping: 25 });
+  const reducedMotion = useReducedMotion();
+  const smoothX = useSpring(x, { mass: 0.65, damping: 23, stiffness: 190 });
+  const smoothY = useSpring(y, { mass: 0.65, damping: 23, stiffness: 190 });
+  const velocityX = useVelocity(smoothX);
+  const velocityY = useVelocity(smoothY);
+  const momentum = useTransform([velocityX, velocityY], ([vx, vy]: number[]) =>
+    Math.max(-12, Math.min(12, vx * 0.014 + Math.sign(vx) * Math.abs(vy) * 0.004)));
+  const rotation = useSpring(momentum, { stiffness: 220, damping: 19 });
 
   useEffect(() => {
-    if (
-      !hoveredObject ||
-      isMobile ||
-      focusedImageTitle === hoveredObject.title
-    ) {
-      return;
-    }
+    if (isMobile) return;
 
     const move = (e: MouseEvent) => {
       x.set(e.clientX + 24);
@@ -100,7 +104,7 @@ export const FloatingBarUI: React.FC = () => {
 
     window.addEventListener("mousemove", move, { passive: true });
     return () => window.removeEventListener("mousemove", move);
-  }, [focusedImageTitle, hoveredObject, isMobile, x, y]);
+  }, [isMobile, x, y]);
 
   return (
     <AnimatePresence mode="popLayout">
@@ -110,13 +114,13 @@ export const FloatingBarUI: React.FC = () => {
           <motion.div
             style={{
               position: "fixed",
-              left: smoothX,
-              top: smoothY,
+              left: 0,
+              top: 0,
+              x: reducedMotion ? x : smoothX,
+              y: reducedMotion ? y : smoothY,
+              rotate: reducedMotion ? 0 : rotation,
+              transformOrigin: "0 100%",
               pointerEvents: "none",
-              padding: "12px 16px",
-              background: "rgba(0,0,0,0.2)",
-              backdropFilter: "blur(24px)",
-              borderRadius: "50px",
               zIndex: 10000,
             }}
             key={"hover-object-floating-bar"}
@@ -170,9 +174,5 @@ export const FloatingBarUI: React.FC = () => {
 };
 
 const FloatingBarLabel = styled(motion.p)`
-  font-size: 1rem;
-  font-weight: 600;
-  color: "#fff";
-  text-align: center;
-  white-space: nowrap;
+  ${sceneChipStyle}
 `;

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef } from "react";
-import { Outlines } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { a, useSpring } from "@react-spring/three";
 import * as T from "three";
@@ -230,13 +229,11 @@ export function ToonHat({
   position,
   scale,
   preview,
-  outlineColor = "#000000",
 }: {
   kind: keyof typeof hatBuilders;
   position: Vec3;
   scale: Vec3;
   preview: boolean;
-  outlineColor?: string;
 }) {
   const geometry = useMemo(hatBuilders[kind], [kind]);
   const rotorGeometry = useMemo(
@@ -266,7 +263,7 @@ export function ToonHat({
             opacity={preview ? 0.5 : 1}
             depthWrite={!preview}
           />
-          {/* <Outlines thickness={0.005} color={outlineColor} screenspace transparent={preview} opacity={preview ? 0.5 : 1} /> */}
+
         </mesh>
         {rotorGeometry && (
           <mesh
@@ -282,7 +279,7 @@ export function ToonHat({
               opacity={preview ? 0.5 : 1}
               depthWrite={!preview}
             />
-            {/* <Outlines thickness={0.005} color={outlineColor} screenspace transparent={preview} opacity={preview ? 0.5 : 1} /> */}
+
           </mesh>
         )}
       </a.group>

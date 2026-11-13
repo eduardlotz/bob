@@ -62,6 +62,8 @@ export interface SoundSystemHook {
 
 export function useSoundSystem(): SoundSystemHook {
   const soundSystem = useCoreStore((state) => state.soundSystem);
+  const isHydrated = useCoreStore((state) => state.isHydrated);
+  const isReady = useCoreStore((state) => state.isReady);
   const worldSoundIds = useCoreStore(
     (state) => state.audioSelections?.worldSoundIds ?? [],
   );
@@ -115,8 +117,10 @@ export function useSoundSystem(): SoundSystemHook {
       );
       const previousIds = syncedWorldIdsGlobal;
       const canPlayWorldLayers =
+        state.isReady &&
         state.soundSystem.enabled &&
         state.soundSystem.masterVolume > 0 &&
+        state.soundSystem.worldVolume > 0 &&
         state.soundSystem.worldEnabled !== false &&
         !state.isPaused &&
         isHomeRoute;
@@ -170,7 +174,8 @@ export function useSoundSystem(): SoundSystemHook {
   );
 
   useEffect(() => {
-    if (initPerformed) return;
+    // IndexedDB restores the saved mix asynchronously; do not initialize defaults first.
+    if (!isHydrated || initPerformed) return;
 
     try {
       engineSetMasterVolume(soundSystem.masterVolume);
@@ -190,6 +195,7 @@ export function useSoundSystem(): SoundSystemHook {
 
     initPerformed = true;
   }, [
+    isHydrated,
     soundSystem.enabled,
     soundSystem.masterVolume,
     soundSystem.tapVolume,
@@ -209,9 +215,11 @@ export function useSoundSystem(): SoundSystemHook {
     syncSelectedWorldLayers(forceRestart);
   }, [
     isHomeRoute,
+    isReady,
     isPaused,
     soundSystem.enabled,
     soundSystem.masterVolume,
+    soundSystem.worldVolume,
     soundSystem.worldEnabled,
     syncSelectedWorldLayers,
     worldSoundIds,

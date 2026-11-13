@@ -1,3 +1,4 @@
+import { aboutCornerPose, ABOUT_CORNER_ORBIT, ABOUT_ROOM, ABOUT_MUSIC } from "./config/aboutRoom";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import type { CameraControls } from "@react-three/drei";
@@ -9,14 +10,15 @@ import {
   VISIBLE_OPTIONS_CAMERA_ZOOM,
   HEAD_CAMERA_POSES,
   BOB_CAMERA_POSE,
+  LOADING_CAMERA_POSE,
 } from "@/store/config/camera";
 import { ROUTE_PATHS } from "./config/routes";
 import { useAppStore } from "./core/app";
 import { useCoreStore } from "./core/store";
 import { connectNavigationMenu } from "./core/navigationMenuController";
-import { useMiniGameStore } from "@/store/minigames";
 import { Vector3 } from "three";
-import { getSelectedBlobForm, getBlobFormType, getBlobFormHalfSize } from "@/types/blobForms";
+import { getSelectedBlobForm, getBlobFormType, getBlobFormHalfSize, getBobGroundOffset } from "@/types/blobForms";
+import { useBobEditor } from "./bobEditor";
 import { getBobEditorFraming } from "./config/bobEditorFraming";
 
 export interface CameraView {
@@ -58,11 +60,11 @@ export interface FocusTarget {
 
 export type CameraViewId =
   | "default"
+  | "loading"
   | "upgrades"
   | "about"
   | "portfolio"
   | "minigames"
-  | "minigames:slot_machine"
   | "navigation"
   | "phone:home"
   | "phone:bob"
@@ -71,18 +73,17 @@ export type CameraViewId =
   | "phone:quests"
   | "phone:options"
   | "phone:camera"
+  | "phone:photo"
   | "desk"
   | "bookshelf"
   | "computer"
-  | "cardbox";
+  | "socials"
+  | "lounge"
+  | "cardbox"
+;
 
 const resolveRouteViewId = (route: string): CameraViewId => {
   if (route === ROUTE_PATHS.PORTFOLIO) return "portfolio";
-  if (route === ROUTE_PATHS.MINIGAMES) {
-    const activeGame = useMiniGameStore.getState().activeGame;
-    if (activeGame === "SLOT_MACHINE") return "minigames:slot_machine";
-    return "default";
-  }
   return "default";
 };
 
@@ -160,6 +161,19 @@ const applyOrbitSettingsToControls = (
 };
 
 const resolveViewPose = (viewConfig?: CameraView) => {
+  if (viewConfig?.id === "loading") {
+    const selected = getSelectedBlobForm(useCoreStore.getState().blobForms);
+    const form = getBlobFormType(selected.id);
+    const halfSize = getBlobFormHalfSize(form, selected.parameters);
+    const y = getBobGroundOffset(form, selected.parameters);
+    const distance = Math.max(LOADING_CAMERA_POSE.position[2], Math.max(...halfSize) * 4);
+    const height = y + LOADING_CAMERA_POSE.position[1];
+    const slope = (LOADING_CAMERA_POSE.position[1] - LOADING_CAMERA_POSE.target[1]) / LOADING_CAMERA_POSE.position[2];
+    return {
+      position: [0, height, distance] as [number, number, number],
+      target: [0, height - distance * slope, 0] as [number, number, number],
+    };
+  }
   if (viewConfig?.id === "phone:bob") {
     const mobile = window.innerWidth <= 1000 || window.innerHeight <= 600;
     const selected = getSelectedBlobForm(useCoreStore.getState().blobForms);
@@ -212,6 +226,13 @@ const resolveViewPose = (viewConfig?: CameraView) => {
 
 // camera settings for different object views
 export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
+  loading: {
+    id: "loading",
+    name: "Loading View",
+    ...LOADING_CAMERA_POSE,
+    orbit: { minDistance: 0.1, maxDistance: 1000 },
+    defaultViewMode: "fixed",
+  },
   default: {
     id: "default",
     name: "Default View",
@@ -250,7 +271,7 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
       duration: 1000,
       easing: "easeInOutCubic",
     },
-    defaultViewMode: "fixed",
+    defaultViewMode: "object",
   },
   "shop:preview": {
     id: "shop:preview",
@@ -303,19 +324,6 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
     target: [0, CAMERA_Y_POSITION, 0],
     defaultViewMode: "fixed",
   },
-  "minigames:slot_machine": {
-    id: "minigames:slot_machine",
-    name: "Slot Machine View",
-    position: [0, CAMERA_HEIGHT + 1.1, HIDDEN_OPTIONS_CAMERA_ZOOM - 0.4],
-    target: [0, CAMERA_Y_POSITION + 1.2, 0],
-    defaultViewMode: "fixed",
-    cursorFollow: {
-      strength: 2.3,
-      yScale: 0.4,
-      swayX: 0.03,
-      swayY: 0.02,
-    },
-  },
   "phone:home": {
     id: "phone:home",
     name: "Phone View",
@@ -332,6 +340,19 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
     id: "phone:quests",
     name: "Quests View",
     defaultViewMode: "fixed",
+  },
+  "phone:photo": {
+    id: "phone:photo",
+    name: "Photo Camera View",
+    position: [0, CAMERA_HEIGHT, HIDDEN_OPTIONS_CAMERA_ZOOM],
+    target: [0, CAMERA_Y_POSITION, 0],
+    orbit: {
+      minPolarAngle: 0.35,
+      maxPolarAngle: 2.15,
+      minDistance: 2,
+      maxDistance: 75,
+    },
+    defaultViewMode: "object",
   },
   "phone:camera": {
     id: "phone:camera",
@@ -357,8 +378,7 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   desk: {
     id: "desk",
     name: "Desk View",
-    position: [-2.5, 0.5, 1.5],
-    target: [-3.5, 0, 1.5],
+    ...ABOUT_MUSIC.camera,
     transition: {
       duration: 800,
       easing: "easeInOutCubic",
@@ -368,8 +388,9 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   bookshelf: {
     id: "bookshelf",
     name: "Bookshelf View",
-    position: [2, 1, -3],
-    target: [2, 0, -4],
+    orbit: { ...ABOUT_CORNER_ORBIT, defaultDistance: 2.8 },
+    position: [2.75, ABOUT_ROOM.floorY + 2.65, -1.6],
+    target: [2.75, ABOUT_ROOM.floorY + 2.15, -4.35],
     transition: {
       duration: 550,
       easing: "easeInOutCubic",
@@ -378,20 +399,35 @@ export const CAMERA_VIEWS: Record<CameraViewId, CameraView> = {
   },
   computer: {
     id: "computer",
-    name: "Computer View",
-    position: [4, 0, 2],
-    target: [4, 0, 2],
+    name: "Green & Art Corner View",
+    ...aboutCornerPose("green", [-.9, 3.2, 3.7], [.05, 3.15, -.3]),
+    orbit: { ...ABOUT_CORNER_ORBIT, defaultDistance: 3.1 },
     transition: {
       duration: 1200,
       easing: "easeInOutCubic",
     },
     defaultViewMode: "object",
   },
+  socials: {
+    id: "socials", name: "Vinyl & Memories Corner View",
+    ...aboutCornerPose("socials", [0, 3.0, 3.6], [0, 2.95, 0.05]),
+    orbit: ABOUT_CORNER_ORBIT,
+    transition: { duration: 700, easing: "easeInOutCubic" },
+    defaultViewMode: "object",
+  },
+  lounge: {
+    id: "lounge", name: "Socials Corner View",
+    position: [1.75, ABOUT_ROOM.floorY + 3.25, 1],
+    target: [4, ABOUT_ROOM.floorY + 3.05, 3.8],
+    orbit: { ...ABOUT_CORNER_ORBIT, defaultDistance: 3.6 },
+    transition: { duration: 1000, easing: "easeInOutCubic" },
+    defaultViewMode: "object",
+  },
   cardbox: {
     id: "cardbox",
-    name: "Cardbox View",
-    position: [3, CAMERA_HEIGHT, 2],
-    target: [4.5, -1.5, 2],
+    name: "Plant Corner View",
+    position: [1.65, 0.8, 4.3],
+    target: [3.8, -0.7, 2],
     transition: {
       duration: 1200,
       easing: "easeInOutCubic",
@@ -426,6 +462,11 @@ interface ViewStore {
   >;
 
   cameraControlsRef: React.RefObject<CameraControls> | null;
+  loadingCameraActive: boolean;
+  loadingCameraView: "default" | "loading";
+  beginLoadingCamera: (animate?: boolean, options?: { initial?: boolean }) => Promise<void>;
+  holdLoadingCamera: () => void;
+  finishLoadingCamera: (route: string) => void;
 
   applyViewModeToControls: (mode: ViewMode) => void;
 
@@ -475,6 +516,8 @@ interface ViewStore {
   clearImageFocus: () => void;
 }
 
+let loadingCameraSettings: { controls: CameraControls; smoothTime: number } | null = null;
+
 export const useViewStore = create<ViewStore>()(
   devtools(
     (set, get) => ({
@@ -489,15 +532,62 @@ export const useViewStore = create<ViewStore>()(
       runtimeCursorFollowOverride: null,
       runtimeOrbitOverrides: {},
       cameraControlsRef: null,
+      loadingCameraActive: false,
+      loadingCameraView: "loading",
       lastFocusPosition: null,
+
+      beginLoadingCamera: async (animate = true, { initial = false } = {}) => {
+        if (get().loadingCameraActive) return;
+        const controls = get().cameraControlsRef?.current;
+        if (controls) loadingCameraSettings = { controls, smoothTime: controls.smoothTime };
+        const loadingCameraView = initial ? "default" : "loading";
+        set({
+          loadingCameraActive: true, loadingCameraView, currentView: loadingCameraView, viewMode: "fixed",
+          isTransitioning: false, pendingView: null,
+          runtimeViewModeOverride: null, runtimeCursorFollowOverride: null,
+          runtimeOrbitOverrides: {}, isImageFocused: false, focusedImageTitle: null,
+        });
+        useBobEditor.setState({ screenOffset: { x: 0, y: 0 } });
+        if (!controls) return;
+        controls.cancel();
+        if (!initial) controls.smoothTime = 0.12;
+        get().applyViewModeToControls("fixed");
+        controls.setFocalOffset(0, 0, 0, animate);
+        const pose = resolveViewPose(CAMERA_VIEWS[loadingCameraView])!;
+        const ready = controls.setLookAt(...pose.position, ...pose.target, animate);
+        if (!animate) controls.update(0);
+        await ready;
+      },
+      holdLoadingCamera: () => {
+        if (!get().loadingCameraActive || get().loadingCameraView === "default") return;
+        const controls = get().cameraControlsRef?.current;
+        if (!controls) return;
+        get().applyViewModeToControls("fixed");
+        controls.setFocalOffset(0, 0, 0, false);
+        const pose = resolveViewPose(CAMERA_VIEWS[get().loadingCameraView])!;
+        controls.setLookAt(...pose.position, ...pose.target, false);
+        controls.update(0);
+      },
+      finishLoadingCamera: (route) => {
+        if (!get().loadingCameraActive) return;
+        const initial = get().loadingCameraView === "default";
+        const destination = resolveRouteViewId(route);
+        if (loadingCameraSettings) loadingCameraSettings.controls.smoothTime = loadingCameraSettings.smoothTime;
+        loadingCameraSettings = null;
+        set({ loadingCameraActive: false, loadingCameraView: "loading", isTransitioning: false, pendingView: null });
+        // Initial follow is already running at the default view. Reapplying its
+        // neutral pose here would interrupt the cursor target on the last frame.
+        if (!initial || get().currentView !== destination) void get().transitionToView(destination);
+      },
 
       applyViewModeToControls: (mode: ViewMode) => {
         const controls = get().cameraControlsRef?.current;
         if (!controls) return;
         const currentViewConfig = get().getCurrentViewConfig();
         const focusedImageTitle = get().focusedImageTitle;
+        const truckOnly = !!focusedImageTitle || ["desk", "bookshelf", "socials", "lounge"].includes(get().currentView);
 
-        if (mode === "object" && get().currentView !== "phone:bob") {
+        if (mode === "object") {
           const cameraPos = new Vector3();
           controls.getPosition(cameraPos); // current camera world position
           set({ lastFocusPosition: cameraPos.clone() }); // store for later restore
@@ -507,13 +597,13 @@ export const useViewStore = create<ViewStore>()(
           controls.getTarget(target);
           controls.setTarget(target.x, target.y, target.z, false);
 
-          controls.mouseButtons.left = focusedImageTitle
+          controls.mouseButtons.left = truckOnly
             ? CameraControlsImpl.ACTION.TRUCK
             : CameraControlsImpl.ACTION.ROTATE;
           controls.mouseButtons.middle = CameraControlsImpl.ACTION.DOLLY;
           controls.mouseButtons.right = CameraControlsImpl.ACTION.TRUCK;
           controls.mouseButtons.wheel = CameraControlsImpl.ACTION.DOLLY;
-          controls.touches.one = focusedImageTitle
+          controls.touches.one = truckOnly
             ? CameraControlsImpl.ACTION.TOUCH_TRUCK
             : CameraControlsImpl.ACTION.TOUCH_ROTATE;
           controls.touches.two = CameraControlsImpl.ACTION.TOUCH_DOLLY_TRUCK;
@@ -532,8 +622,9 @@ export const useViewStore = create<ViewStore>()(
       setDefaultViewMode: (mode: ViewMode) =>
         set({ defaultViewMode: mode, viewMode: mode, previousViewMode: mode }),
 
-      setCurrentView: (viewId) => set({ currentView: viewId }),
+      setCurrentView: (viewId) => get().loadingCameraActive ? set({ pendingView: viewId }) : set({ currentView: viewId }),
       setViewMode: (mode) => {
+        if (get().loadingCameraActive) return;
         set({ viewMode: mode });
         get().applyViewModeToControls(mode);
       },
@@ -577,6 +668,7 @@ export const useViewStore = create<ViewStore>()(
       },
       syncViewToRoute: (route) => {
         const viewId = resolveRouteViewId(route);
+        if (get().loadingCameraActive) { set({ pendingView: viewId }); return; }
         const viewConfig = CAMERA_VIEWS[viewId];
         if (!viewConfig) return;
 
@@ -620,6 +712,7 @@ export const useViewStore = create<ViewStore>()(
       },
 
       transitionToView: async (nextView: CameraViewId) => {
+        if (get().loadingCameraActive) { set({ pendingView: nextView }); return; }
         const { cameraControlsRef, isTransitioning } = get();
 
         // Keep the latest requested view when a panel changes during a zoom.
@@ -656,6 +749,7 @@ export const useViewStore = create<ViewStore>()(
         );
 
         const finishTransition = () => {
+          if (get().loadingCameraActive) return;
           set({ isTransitioning: false });
           const pendingView = get().pendingView;
           if (pendingView && pendingView !== get().currentView) {
@@ -698,6 +792,7 @@ export const useViewStore = create<ViewStore>()(
       },
 
       resetToDefaultView: async () => {
+        if (get().loadingCameraActive) return;
         const {
           isTransitioning,
           cameraControlsRef,
@@ -716,7 +811,6 @@ export const useViewStore = create<ViewStore>()(
         const currentRoute = appStore.currentRoute;
 
         // viewMode is set to fixed without transition
-        // TODO: fix edge case when going from portfolio -> any other
         const targetView: CameraViewId = resolveRouteViewId(
           currentRoute ?? window.location.pathname,
         );
@@ -732,11 +826,19 @@ export const useViewStore = create<ViewStore>()(
           isImageFocused: false,
           focusedImageTitle: null,
           isTransitioning: true,
+          pendingView: null,
         });
 
         get().applyViewModeToControls(
           viewConfig.defaultViewMode ?? get().viewMode,
         );
+
+        const finishReset = () => {
+          if (get().loadingCameraActive) return;
+          const pending = get().pendingView;
+          set({ isTransitioning: false, pendingView: null });
+          if (pending && pending !== get().currentView) void get().transitionToView(pending);
+        };
 
         try {
           const controls = cameraControlsRef.current;
@@ -755,23 +857,24 @@ export const useViewStore = create<ViewStore>()(
               ...resolvedPose.target,
               true,
             );
-            setTimeout(() => set({ isTransitioning: false }), 0);
+            setTimeout(finishReset, 0);
           } else if (resolvedPose) {
             controls.setLookAt(
               ...resolvedPose.position,
               ...resolvedPose.target,
               true,
             );
-            setTimeout(() => set({ isTransitioning: false }), 0);
+            setTimeout(finishReset, 0);
           } else {
-            setTimeout(() => set({ isTransitioning: false }), 0);
+            setTimeout(finishReset, 0);
           }
         } catch (error) {
           console.error("Camera transition failed:", error);
-          setTimeout(() => set({ isTransitioning: false }), 0);
+          setTimeout(finishReset, 0);
         }
       },
       resetToPreviousView: async () => {
+        if (get().loadingCameraActive) return;
         const { isTransitioning, previousView, previousViewMode } = get();
 
         if (isTransitioning || !previousView) {

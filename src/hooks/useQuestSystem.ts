@@ -57,6 +57,7 @@ export const useQuestSystem = () => {
     (state) => state.getTotalTapMultiplier,
   );
   const bobItems = useCoreStore((state) => state.bobItems);
+  const purchasedBobSkinIds = useCoreStore(state => state.purchasedBobSkinIds);
   const tapEffects = useCoreStore((state) => state.tapEffects);
   const worlds = useCoreStore((state) => state.worlds);
   const routes = useCoreStore((state) => state.routes);
@@ -102,7 +103,7 @@ export const useQuestSystem = () => {
   );
 
   const purchasedBobItems = useMemo(
-    () => bobItems.filter((item) => item.purchased && item.cost > 0).length,
+    () => bobItems.filter((item) => item.type === "hat" && item.purchased && item.cost > 0).length,
     [bobItems],
   );
 
@@ -120,7 +121,7 @@ export const useQuestSystem = () => {
     () =>
       routes.filter(
         (route) =>
-          route.id !== "route_home" && route.purchased && !route.isLocked,
+          ["route_about", "route_portfolio", "route_minigames"].includes(route.id) && route.purchased && !route.isLocked,
       ).length,
     [routes],
   );
@@ -163,13 +164,19 @@ export const useQuestSystem = () => {
 
   useEffect(() => {
     if (!gameStoreHydrated || !questStoreHydrated) return;
-    syncQuestProgressFromMetric("shop_buy_bob_item", purchasedBobItems);
+    syncQuestProgressFromMetric("shop_buy_hat", purchasedBobItems);
   }, [
     gameStoreHydrated,
     purchasedBobItems,
     questStoreHydrated,
     syncQuestProgressFromMetric,
   ]);
+
+  useEffect(() => {
+    if (!gameStoreHydrated || !questStoreHydrated) return;
+    syncQuestProgressFromMetric("shop_buy_skin", purchasedBobSkinIds.length);
+    syncQuestProgressFromMetric("shop_buy_accessory", bobItems.filter(item => item.type === "accessory" && item.purchased && item.cost > 0).length);
+  }, [gameStoreHydrated, questStoreHydrated, purchasedBobSkinIds, bobItems, syncQuestProgressFromMetric]);
 
   useEffect(() => {
     if (!gameStoreHydrated || !questStoreHydrated) return;

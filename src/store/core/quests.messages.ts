@@ -42,19 +42,19 @@ const enQuestMessageOverrides: Record<string, QuestCopy> = {
   },
   about_books_shelf_3: {
     title: "Bookworm",
-    description: "Inspect several books in the collection",
+    description: "Explore the books corner",
   },
   about_socials_1: {
     title: "Social Butterfly",
-    description: "Open the socials globe in the About area",
+    description: "Explore the photo and record corner",
   },
   about_desk_1: {
     title: "Desk Check",
     description: "Interact with the desk in the About area",
   },
   about_box_1: {
-    title: "Box Hunter",
-    description: "Interact with the box in the About area",
+    title: "Make Yourself Comfortable",
+    description: "Explore the armchair and socials corner",
   },
   manual_taps_50: {
     title: "Warmup Fingers",
@@ -76,6 +76,10 @@ const enQuestMessageOverrides: Record<string, QuestCopy> = {
     title: "Five Digits",
     description: "Reach 10,000 total taps",
   },
+  total_taps_100000: {
+    title: "Six Digits",
+    description: "Reach 100,000 total taps",
+  },
   total_taps_1000000: {
     title: "Millionaire",
     description: "Reach 1,000,000 total taps",
@@ -90,12 +94,14 @@ const enQuestMessageOverrides: Record<string, QuestCopy> = {
   },
   shop_buy_bob_item_1: {
     title: "Fresh Fit",
-    description: "Buy one Bob item in the shop",
+    description: "Buy one hat in the shop",
   },
   shop_buy_tap_effect_1: {
     title: "Special Effects",
     description: "Buy one tap effect in the shop",
   },
+  shop_buy_skin_1: { title: "New Skin", description: "Buy one skin in the shop" },
+  shop_buy_accessory_1: { title: "Finishing Touch", description: "Buy one accessory in the shop" },
   shop_buy_world_1: {
     title: "World Explorer",
     description: "Buy one world in the shop",
@@ -152,10 +158,6 @@ const enQuestMessageOverrides: Record<string, QuestCopy> = {
     title: "Flappy Bobbie",
     description: "Score 10 points in the Flappy Bird minigame",
   },
-  minigames_slot_wins_5: {
-    title: "Won It Back",
-    description: "Win on the slot machine",
-  },
   minigames_flappy_points_50: {
     title: "Astrobob",
     description: "Score 50 points in one round of Flappy Bird",
@@ -165,8 +167,8 @@ const enQuestMessageOverrides: Record<string, QuestCopy> = {
     description: "Unlock your first additional route",
   },
   routes_purchased_3: {
-    title: "Map Master",
-    description: "Unlock three additional routes",
+    title: "Paywall",
+    description: "Unlock About, Portfolio, and Mini Games",
   },
 };
 
@@ -228,15 +230,15 @@ const deStackMessageOverrides: Record<string, QuestCopy> = {
   },
   about_tour: {
     title: "Kennlernphase",
-    description: "Erkunde die interaktiven Objekte im Über Mich-Raum.",
+    description: "Klicke alle vier Ecken im Über Mich-Raum an.",
   },
   route_unlocks: {
-    title: "Routen-Explorer",
-    description: "Schalte neue Routen frei und erweitere deine Welt.",
+    title: "Paywall",
+    description: "Schalte About, Portfolio und Mini Games frei.",
   },
   shop_item_categories: {
     title: "Shop-Sammler",
-    description: "Kaufe je ein Item aus Bob, Effekte und Welten.",
+    description: "Kaufe je einen Hut, Skin, ein Accessoire und einen Effekt.",
   },
 };
 

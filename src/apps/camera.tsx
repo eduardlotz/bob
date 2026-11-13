@@ -1,745 +1,249 @@
-import { CameraViewId, CapturedPhoto, useViewStore } from "@/store";
-
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/react";
 import styled from "styled-components";
-import {
-  AnimatePresence,
-  motion,
-  useAnimationFrame,
-  useIsPresent,
-} from "motion/react";
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import { useCameraStore } from "@/store";
-import { useGLBridge } from "@/store/core/gl";
-import { createPortal } from "react-dom";
-import { AppInfo } from "./ui";
-import { FillColumn, FillRow } from "@/layout";
+import { useViewStore } from "@/store";
+import { useCameraStore, isCameraFull, MAX_CAMERA_PHOTOS, type CapturedPhoto, type PhotoSaveResult } from "@/store/core/camera";
+import { CameraPortal } from "@/components/CameraPortal";
+import { FloatingActionButton } from "@/components/FloatingActionButton";
 import { useI18n } from "@/i18n";
-import { AnimatedSegmentedControl } from "@/components/AnimatedSegmentedControl";
+import { phoneAppSurface } from "@/styles/phoneAppSurface";
+import { PHOTO_VIEWFINDER } from "@/store/config/camera";
 
-export const CameraIcon = () => (
-  <img src={"/images/app-logos/camera.png"} height={80} width={80} />
-);
-
-const FINDER_GAP = 60; // gap between phone body top and viewfinder bottom
-const FINDER_ASPECT = 5 / 4; // portrait aspect ratio (w:h = 3:4)
-
-interface FinderRect {
-  left: number;
-  top: number;
-  right: number;
-  bottom: number;
-  width: number;
-  height: number;
-}
-
-type AppView = "camera" | "gallery";
-
-interface OverlayProps {
-  phoneBodyRef: React.RefObject<HTMLDivElement>;
-  flash: boolean;
-  onFinderRect: (rect: FinderRect | null) => void;
-}
-
-function ViewfinderOverlay({
-  phoneBodyRef,
-  flash,
-  onFinderRect,
-}: OverlayProps) {
-  const [finder, setFinder] = useState<FinderRect | null>(null);
-  const lastRectRef = useRef<FinderRect | null>(null);
-  const isPresent = useIsPresent();
-
-  const computeFinderRect = useCallback(() => {
-    if (!isPresent) return;
-    const body = phoneBodyRef.current;
-    if (!body) {
-      if (lastRectRef.current) {
-        lastRectRef.current = null;
-        setFinder(null);
-        onFinderRect(null);
-      }
-      return;
-    }
-
-    const bodyRect = (body.closest("[data-phone-body]") ?? body).getBoundingClientRect();
-    // Keep the portrait crop inside the viewport, even on short screens.
-    const width = Math.min(bodyRect.width, Math.max(1, (bodyRect.top - FINDER_GAP - 16) / FINDER_ASPECT));
-    const height = width * FINDER_ASPECT;
-    const left = bodyRect.left + (bodyRect.width - width) / 2;
-
-    const nextRect: FinderRect = {
-      left,
-      top: bodyRect.top - FINDER_GAP - height,
-      right: left + width,
-      bottom: bodyRect.top - FINDER_GAP,
-      width,
-      height,
-    };
-
-    const previousRect = lastRectRef.current;
-    const EPSILON = 0.35;
-    const isUnchanged =
-      previousRect &&
-      Math.abs(previousRect.left - nextRect.left) < EPSILON &&
-      Math.abs(previousRect.top - nextRect.top) < EPSILON &&
-      Math.abs(previousRect.width - nextRect.width) < EPSILON &&
-      Math.abs(previousRect.height - nextRect.height) < EPSILON;
-
-    if (isUnchanged) return;
-
-    lastRectRef.current = nextRect;
-    setFinder(nextRect);
-    onFinderRect(nextRect);
-  }, [onFinderRect, phoneBodyRef, isPresent]);
-
-  useEffect(() => {
-    const body = phoneBodyRef.current;
-    const resizeObserver =
-      typeof ResizeObserver !== "undefined" && body
-        ? new ResizeObserver(computeFinderRect)
-        : null;
-
-    computeFinderRect();
-    window.addEventListener("resize", computeFinderRect);
-    if (body) resizeObserver?.observe(body);
-
-    return () => {
-      window.removeEventListener("resize", computeFinderRect);
-      resizeObserver?.disconnect();
-      // A cancelled exit can reuse this overlay. Publish its rect again on re-entry.
-      lastRectRef.current = null;
-      onFinderRect(null);
-    };
-  }, [computeFinderRect, onFinderRect, phoneBodyRef]);
-
-  useAnimationFrame(() => {
-    computeFinderRect();
-  });
-
-  if (!finder) return null;
-
-  const { left, top, right, bottom, width, height } = finder;
-  const br = 14; // border-radius of the viewfinder window
-
-  // Even-odd fill rule punches the viewfinder out cleanly
-  const cutoutPath = `
-    M 0 0 L ${window.innerWidth} 0 L ${window.innerWidth} ${window.innerHeight} L 0 ${window.innerHeight} Z
-    M ${left + br} ${top}
-    Q ${left} ${top} ${left} ${top + br}
-    L ${left} ${bottom - br}
-    Q ${left} ${bottom} ${left + br} ${bottom}
-    L ${right - br} ${bottom}
-    Q ${right} ${bottom} ${right} ${bottom - br}
-    L ${right} ${top + br}
-    Q ${right} ${top} ${right - br} ${top}
-    Z
-  `;
-
-  return createPortal(
-    <OverlayRoot
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
-    >
-      {/* Dim mask with SVG cutout — clean, no polygon artifacts */}
-      <DimSvg
-        style={{
-          position: "absolute",
-          inset: 0,
-          width: "100%",
-          height: "100%",
-        }}
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path d={cutoutPath} fill="rgba(0,0,0,0.65)" fillRule="evenodd" />
-      </DimSvg>
-
-      {/* Viewfinder border */}
-      <ViewfinderBorder
-        style={{
-          left,
-          top,
-          width,
-          height,
-          borderRadius: br,
-        }}
-      />
-
-      {/* Shutter flash */}
-      <AnimatePresence>
-        {flash && (
-          <motion.div
-            key="flash"
-            style={{
-              position: "absolute",
-              inset: 0,
-              background: "white",
-              zIndex: 10,
-              borderRadius: br,
-              left,
-              top,
-              width,
-              height,
-            }}
-            initial={{ opacity: 0.85 }}
-            animate={{ opacity: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-          />
-        )}
-      </AnimatePresence>
-    </OverlayRoot>,
-    document.body,
-  );
-}
-
-// ─── Download helper ───────────────────────────────────────────────────────────
+export const CameraIcon = () => <img src="/images/app-logos/camera.png" height={80} width={80} alt="" />;
 
 function downloadPhoto(photo: CapturedPhoto) {
-  const a = document.createElement("a");
-  a.href = photo.dataUrl;
-  a.download = `photo-${photo.id}.png`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  const link = document.createElement("a");
+  link.href = photo.dataUrl;
+  link.download = `photo-${photo.id}.png`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 }
 
-// ─── Main CameraApp ────────────────────────────────────────────────────────────
-
-const APP_ID: CameraViewId = "phone:camera";
-
-export const CameraApp = () => {
+export const CameraApp = ({ galleryOnly = false }: { galleryOnly?: boolean }) => {
   const isPresent = useIsPresent();
+  const reducedMotion = useReducedMotion();
   const { messages } = useI18n();
-  const gl = useGLBridge((s) => s.gl);
+  const text = messages.camera;
   const { currentView, transitionToView } = useViewStore();
-  const { addPhoto, photos, deletePhoto } = useCameraStore();
-
-  const phoneBodyRef = useRef<HTMLDivElement>(null);
-  const finderRectRef = useRef<FinderRect | null>(null);
-  const flashTimer = useRef<ReturnType<typeof setTimeout>>();
-
-  const [flash, setFlash] = useState(false);
-  const [view, setView] = useState<AppView>("camera");
+  const { photos, addPhoto, deletePhoto } = useCameraStore();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const galleryButtonRef = useRef<HTMLButtonElement>(null);
+  const photoButtons = useRef(new Map<string, HTMLButtonElement>());
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [galleryOpen, setGalleryOpen] = useState(galleryOnly);
   const [lightboxId, setLightboxId] = useState<string | null>(null);
-  const isViewActive = currentView === APP_ID;
+  const [flash, setFlash] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState<Exclude<PhotoSaveResult, "saved"> | null>(null);
+  const active = isPresent && (galleryOnly || currentView === "phone:photo");
+  const full = isCameraFull(photos);
+  const captureBlocked = full || error === "full";
+  const lightboxPhoto = photos.find(photo => photo.id === lightboxId);
+  const entrance = { opacity: 0, scale: reducedMotion ? 1 : 0.96 };
+  const transition = { duration: reducedMotion ? 0 : 0.22, ease: "easeOut" as const };
 
   useEffect(() => {
-    // AnimatePresence can restore an exiting screen without mounting it again.
-    if (isPresent) transitionToView(APP_ID);
-  }, [isPresent, transitionToView]);
+    if (!isPresent || galleryOnly) return;
+    const framePhoto = () => { void transitionToView("phone:photo"); };
+    framePhoto();
+    window.addEventListener("resize", framePhoto);
+    return () => window.removeEventListener("resize", framePhoto);
+  }, [isPresent, galleryOnly, transitionToView]);
+  useEffect(() => () => clearTimeout(flashTimer.current), []);
 
-  useEffect(() => {
-    return () => clearTimeout(flashTimer.current);
-  }, []);
-
-  const handleFinderRect = useCallback((rect: FinderRect | null) => {
-    finderRectRef.current = rect;
-  }, []);
-
-  // ── Capture: crop the WebGL canvas to the viewfinder rect ─────────────────
-  const handleCapture = useCallback(() => {
-    if (!gl) return;
-    const finder = finderRectRef.current;
-    if (!finder) return;
-
-    setFlash(true);
-    clearTimeout(flashTimer.current);
-    flashTimer.current = setTimeout(() => setFlash(false), 400);
-
-    const glCanvas = gl.domElement;
-    const canvasRect = glCanvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-
-    // Map finder viewport coords → GL canvas pixel coords
-    const scaleX = glCanvas.width / canvasRect.width;
-    const scaleY = glCanvas.height / canvasRect.height;
-    const sx = (finder.left - canvasRect.left) * scaleX;
-    const sy = (finder.top - canvasRect.top) * scaleY;
-    const sw = finder.width * scaleX;
-    const sh = finder.height * scaleY;
-
-    const tmp = document.createElement("canvas");
-    tmp.width = finder.width * dpr;
-    tmp.height = finder.height * dpr;
-    const ctx = tmp.getContext("2d");
-    if (!ctx) return;
-    ctx.drawImage(glCanvas, sx, sy, sw, sh, 0, 0, tmp.width, tmp.height);
-
-    addPhoto(tmp.toDataURL("image/png"));
-  }, [gl, addPhoto]);
-
-  // ── Lightbox helpers ───────────────────────────────────────────────────────
-  const openLightbox = (id: string) => {
-    setLightboxId(id);
-  };
-
-  const closeLightbox = () => {
+  const closePhoto = useCallback(() => {
+    if (lightboxId) photoButtons.current.get(lightboxId)?.focus();
     setLightboxId(null);
+  }, [lightboxId]);
+
+  const closeGallery = useCallback(() => {
+    setLightboxId(null);
+    setGalleryOpen(false);
+    galleryButtonRef.current?.focus();
+  }, []);
+
+  const capture = () => {
+    if (!ready || !active || galleryOpen || !canvasRef.current || captureBlocked) return;
+    try {
+      const result = addPhoto(canvasRef.current.toDataURL("image/png"));
+      if (result !== "saved") { setError(result); return; }
+      setError(null);
+      setFlash(true);
+      clearTimeout(flashTimer.current);
+      flashTimer.current = setTimeout(() => setFlash(false), 300);
+    } catch { setError("storage-error"); }
   };
-
-  const handleDelete = useCallback(
-    (id: string) => {
-      deletePhoto(id);
-      // If deleted photo was open in lightbox, close it
-      if (lightboxId === id) setLightboxId(null);
-    },
-    [deletePhoto, lightboxId],
-  );
-
-  const lightboxPhoto = lightboxId
-    ? photos.find((p) => p.id === lightboxId)
-    : null;
-  const isLightboxOpen = lightboxPhoto != null;
 
   return (
-    <>
-      {/* Viewfinder overlay — only shown in camera mode */}
+    <CameraRoot $gallery={galleryOpen} data-camera-app onKeyUpCapture={event => {
+      if (event.key !== "Escape" || !galleryOpen || !active) return;
+      if (lightboxId) { event.stopPropagation(); closePhoto(); }
+      else if (!galleryOnly) { event.stopPropagation(); closeGallery(); }
+    }}>
+      {!galleryOnly && <PreviewLayer initial={entrance}
+        animate={{ opacity: galleryOpen ? 0 : 1, scale: galleryOpen && !reducedMotion ? 0.96 : 1 }}
+        transition={transition} aria-hidden={galleryOpen} inert={galleryOpen || !active}>
+        <CameraPortal canvasRef={canvasRef} active={active && !galleryOpen} onReady={setReady} />
+        <AnimatePresence>
+          {flash && <Flash key="flash" initial={{ opacity: 0.85 }} animate={{ opacity: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} />}
+        </AnimatePresence>
+        <ShutterButton $variant="red" onClick={capture} disabled={!ready || captureBlocked}
+          aria-label={text.capture} title={full ? text.gallery.full : text.capture}
+          whileTap={{ scale: 0.94 }}>
+          <ShutterRing />
+        </ShutterButton>
+      </PreviewLayer>}
+
       <AnimatePresence>
-        {isPresent && isViewActive && view === "camera" && (
-          <ViewfinderOverlay
-            key="camera-viewfinder"
-            phoneBodyRef={phoneBodyRef}
-            flash={flash}
-            onFinderRect={handleFinderRect}
-          />
+        {galleryOpen && (
+          <GalleryLayer key="gallery" initial={entrance} animate={{ opacity: 1, scale: 1 }} exit={entrance}
+            transition={transition} aria-label={text.gallery.label}>
+            <GalleryScroll inert={!!lightboxPhoto} aria-hidden={!!lightboxPhoto}>
+              {photos.length ? <PhotoGrid>
+                <AnimatePresence initial={false}>
+                  {photos.map((photo, index) => <PhotoThumb key={photo.id} layout
+                    ref={element => { if (element) photoButtons.current.set(photo.id, element); else photoButtons.current.delete(photo.id); }}
+                    aria-label={`${text.gallery.photo} ${index + 1}`} onClick={() => setLightboxId(photo.id)}
+                    initial={entrance} animate={{ opacity: 1, scale: 1 }} exit={entrance}>
+                    <img src={photo.dataUrl} alt="" loading="lazy" />
+                  </PhotoThumb>)}
+                </AnimatePresence>
+              </PhotoGrid> : <EmptyGallery>{text.gallery.empty}</EmptyGallery>}
+            </GalleryScroll>
+            <GalleryFade />
+            <PhotoCount>{photos.length} / {MAX_CAMERA_PHOTOS}</PhotoCount>
+          </GalleryLayer>
         )}
       </AnimatePresence>
 
-      <CameraRoot ref={phoneBodyRef}>
-        {/* ══ CAMERA VIEW ══════════════════════════════════════════════════ */}
-        {view === "camera" && (
-          <ControlRow>
-            {/* Last photo thumbnail — opens gallery */}
-            <GalleryThumb
-              onClick={() => setView("gallery")}
-              disabled={photos.length === 0}
-            >
-              {photos[0] ? (
-                <img
-                  src={photos[0].dataUrl}
-                  alt=""
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    borderRadius: 8,
-                  }}
-                />
-              ) : (
-                <GalleryTabIcon />
-              )}
-            </GalleryThumb>
-            <FillRow $align="center" $justify="center">
-              <ShutterButton
-                onClick={handleCapture}
-                whileTap={{ scale: 0.95 }}
-                transition={{ type: "spring", bounce: 0.6, duration: 0.2 }}
-              >
-                <ShutterInner />
-              </ShutterButton>
-            </FillRow>
-          </ControlRow>
+      <AnimatePresence>
+        {lightboxPhoto && galleryOpen && (
+          <Lightbox key="photo-focus" role="dialog" aria-modal="true" aria-label={text.gallery.focus}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={transition}
+            onClick={closePhoto}
+            onKeyDown={event => {
+              if (event.key !== "Tab") return;
+              const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>("button"));
+              const next = buttons.indexOf(document.activeElement as HTMLButtonElement) + (event.shiftKey ? -1 : 1);
+              event.preventDefault();
+              buttons[(next + buttons.length) % buttons.length]?.focus();
+            }}>
+            <FocusContent initial={entrance} animate={{ opacity: 1, scale: 1 }} exit={entrance} transition={transition}>
+              <FocusImage src={lightboxPhoto.dataUrl} alt={text.gallery.focus} />
+              <FocusActions onClick={event => event.stopPropagation()}>
+                <PhotoAction $variant="blue" autoFocus onClick={() => downloadPhoto(lightboxPhoto)}>{text.download}</PhotoAction>
+                <PhotoAction $variant="red" onClick={() => {
+                  if (deletePhoto(lightboxPhoto.id)) { setError(null); setLightboxId(null); galleryButtonRef.current?.focus(); }
+                  else setError("storage-error");
+                }}>{text.delete}</PhotoAction>
+              </FocusActions>
+            </FocusContent>
+          </Lightbox>
         )}
+      </AnimatePresence>
 
-        {/* ══ GALLERY VIEW ═════════════════════════════════════════════════ */}
-        {view === "gallery" && (
-          <FillColumn
-            style={{
-              maxWidth: "300px",
-              height: "420px",
-              minHeight: "100px",
-              overflow: "auto",
-              // height: isLightboxOpen ? "340px" : "auto",
-            }}
-          >
-            {photos.length > 0 ? (
-              <PhotoGrid>
-                <AnimatePresence mode="popLayout">
-                  {photos.map((photo) => (
-                    <PhotoThumb
-                      key={photo.id}
-                      layoutId={`photo-${photo.id}`}
-                      onClick={() => openLightbox(photo.id)}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      <img
-                        src={photo.dataUrl}
-                        alt=""
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                          display: "block",
-                        }}
-                      />
-                    </PhotoThumb>
-                  ))}
-                </AnimatePresence>
-              </PhotoGrid>
-            ) : (
-              <FillColumn $justify="center" $align="center" style={{ flex: 1 }}>
-                <AppInfo
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                >
-                  {messages.camera.gallery.empty}
-                </AppInfo>
-              </FillColumn>
-            )}
-
-            {/* ── Lightbox ──────────────────────────────────────────────── */}
-            <AnimatePresence>
-              {isLightboxOpen && lightboxPhoto && (
-                <LightboxOverlay
-                  key="lightbox-overlay"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.18 }}
-                  onClick={closeLightbox}
-                >
-                  <motion.div
-                    onClick={(e) => e.stopPropagation()}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 8,
-                      width: "100%",
-                      alignItems: "center",
-                    }}
-                  >
-                    <LightboxImageWrap
-                      layoutId={`photo-${lightboxPhoto.id}`}
-                      transition={{
-                        type: "spring",
-                        bounce: 0.25,
-                        visualDuration: 0.28,
-                      }}
-                      onClick={closeLightbox}
-                    >
-                      <img
-                        src={lightboxPhoto.dataUrl}
-                        alt=""
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                          display: "block",
-                        }}
-                      />
-                    </LightboxImageWrap>
-
-                    <FillColumn $gap={"8px"} $padding="0 1rem">
-                      <IconAction
-                        $variant="download"
-                        onClick={() => downloadPhoto(lightboxPhoto)}
-                        title="Download"
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        Download
-                      </IconAction>
-                      <IconAction
-                        $variant="delete"
-                        onClick={() => handleDelete(lightboxPhoto.id)}
-                        title="Delete"
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        Löschen
-                      </IconAction>
-                    </FillColumn>
-                  </motion.div>
-                </LightboxOverlay>
-              )}
-            </AnimatePresence>
-          </FillColumn>
-        )}
-
-        <AnimatedSegmentedControl
-          options={[
-            { value: "camera" as AppView, label: "Kamera" },
-            { value: "gallery" as AppView, label: "Fotos" },
-          ]}
-          value={view}
-          onChange={setView}
-          layoutId="camera-view-segmented"
-          fullWidth
-        />
-      </CameraRoot>
-    </>
+      {!galleryOnly && <CornerButton ref={galleryButtonRef} $gallery={galleryOpen} aria-expanded={galleryOpen}
+        aria-label={galleryOpen ? text.gallery.close : text.gallery.label}
+        onClick={() => { if (galleryOpen) closeGallery(); else setGalleryOpen(true); }}
+        inert={!!lightboxPhoto} aria-hidden={!!lightboxPhoto} whileTap={{ scale: 0.94 }}>
+        <AnimatePresence mode="wait" initial={false}>
+          <CornerContent key={galleryOpen ? "close" : "thumb"} initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={transition}>
+            {galleryOpen ? <CloseIcon /> : photos[0] ? <img src={photos[0].dataUrl} alt="" /> : <GalleryIcon />}
+          </CornerContent>
+        </AnimatePresence>
+      </CornerButton>}
+      {(full || error) && <StorageNotice role="status">{error === "storage-error" ? text.gallery.storageError : text.gallery.full}</StorageNotice>}
+    </CameraRoot>
   );
 };
 
-const GalleryTabIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <rect x="3" y="3" width="18" height="18" rx="2" />
-    <circle cx="8.5" cy="8.5" r="1.5" />
-    <polyline points="21 15 16 10 5 21" />
-  </svg>
-);
+const CloseIcon = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="m6 6 12 12M18 6 6 18" /></svg>;
+const GalleryIcon = () => <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="4" /><circle cx="8" cy="8" r="1" /><path d="m3 17 6-6 4 4 3-3 5 5" /></svg>;
 
-const CloseIcon = () => (
-  <svg
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2.5"
-    strokeLinecap="round"
-  >
-    <line x1="18" y1="6" x2="6" y2="18" />
-    <line x1="6" y1="6" x2="18" y2="18" />
-  </svg>
-);
-
-const TrashIcon = () => (
-  <svg
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2.2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <polyline points="3 6 5 6 21 6" />
-    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-  </svg>
-);
-
-const DownloadIcon = () => (
-  <svg
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2.2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-    <polyline points="7 10 12 15 17 10" />
-    <line x1="12" y1="15" x2="12" y2="3" />
-  </svg>
-);
-
-// ─── Styled components ─────────────────────────────────────────────────────────
-
-const OverlayRoot = styled(motion.div)`
-  position: fixed;
-  inset: 0;
-  z-index: 998;
-  pointer-events: none;
-`;
-
-const DimSvg = styled.svg`
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-`;
-
-const ViewfinderBorder = styled.div`
-  position: absolute;
-  border: 1.5px solid rgba(255, 255, 255, 0.25);
-  box-shadow:
-    inset 0 0 0 1px rgba(0, 0, 0, 0.15),
-    0 0 0 1px rgba(0, 0, 0, 0.1);
-  pointer-events: none;
-`;
-
-const CameraRoot = styled(motion.div)`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-`;
-
-const ControlRow = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 4px 4px;
+const CameraRoot = styled.div<{ $gallery: boolean }>`
   position: relative;
-`;
-
-const GalleryThumb = styled.button`
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  margin: auto 0;
-
-  border: 1.5px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.08);
-  cursor: pointer;
-  color: rgba(255, 255, 255, 0.55);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: min(${PHOTO_VIEWFINDER.maxWidth}px, calc(100vw - ${PHOTO_VIEWFINDER.viewportPadding}px), calc((100dvh - ${PHOTO_VIEWFINDER.reservedHeight}px) * 0.75));
+  height: min(${PHOTO_VIEWFINDER.maxHeight}px, calc((100vw - ${PHOTO_VIEWFINDER.viewportPadding}px) / 0.75), calc(100dvh - ${PHOTO_VIEWFINDER.reservedHeight}px));
+  min-height: 120px;
+  margin: 0 auto;
   overflow: hidden;
-  flex-shrink: 0;
-  padding: 0;
-  transition:
-    border-color 0.15s,
-    opacity 0.15s;
-  &:disabled {
-    opacity: 0.3;
-    cursor: default;
-  }
-  &:not(:disabled):hover {
-    border-color: rgba(255, 255, 255, 0.4);
-  }
+  border-radius: 18px;
+  isolation: isolate;
+  background: ${({ $gallery }) => $gallery ? "transparent" : "#b9b3c9"};
+  border-radius: ${({ $gallery }) => $gallery ? "20px" : "18px"};
 `;
-
-const ShutterButton = styled(motion.button)`
-  width: 58px;
-  height: 58px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.06);
-  border: 3px solid rgba(0, 0, 0, 0.75);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-
-  &:hover {
-    > div {
-      transform: scale(1.05);
-    }
+const PreviewLayer = styled(motion.div)`position: absolute; inset: 0;`;
+const Flash = styled(motion.div)`position: absolute; inset: 0; background: white; pointer-events: none;`;
+const ShutterButton = styled(FloatingActionButton)`
+  position: absolute; bottom: 16px; left: 50%; margin-left: -27px;
+  width: 54px; height: 54px; border-radius: 22px; padding: 0;
+`;
+const ShutterRing = styled.span`
+  position: absolute; inset: 1px; border: 3px solid white; border-radius: 17px;
+`;
+const CornerButton = styled(motion.button)<{ $gallery: boolean }>`
+  position: absolute; z-index: 3; left: 12px; bottom: 14px;
+  padding: 0; width: 56px; height: 56px; border-radius: 19px;
+  border: 0;
+  &::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.05);
   }
-`;
-
-const ShutterInner = styled.div`
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #000000;
-  transition: transform 0.1s ease-out;
-`;
-
-// Gallery
-const PhotoGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
-  width: 100%;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-`;
-
-const PhotoThumb = styled(motion.div)`
-  aspect-ratio: 1;
-  border-radius: 4px;
+  background: ${({ $gallery }) => $gallery ? "#212026" : "transparent"};
+  color: ${({ $gallery }) => $gallery ? "#fff" : "#212026"};
   overflow: hidden;
-  cursor: pointer;
-  background: rgba(255, 255, 255, 0.05);
-
-  &:hover {
-    img {
-      transform: scale(1.15);
-    }
-  }
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    transition: transform 0.15s ease-out;
-  }
+  &:focus-visible { outline: 2px solid #4178f7; outline-offset: 3px; }
 `;
-// Lightbox
-const LightboxOverlay = styled(motion.div)`
-  position: absolute;
-  inset: 0;
-  z-index: 10;
-  background: rgba(33, 33, 33, 0.8);
-  backdrop-filter: blur(8px);
-  border-radius: 24px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+const CornerContent = styled(motion.span)`
+  width: 100%; height: 100%; display: grid; place-items: center;
+  img { width: 100%; height: 100%; object-fit: cover; }
+`;
+const GalleryLayer = styled(motion.div)`
+  ${phoneAppSurface}
   padding: 8px;
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; overflow: hidden;
 `;
-
-const LightboxImageWrap = styled(motion.div)`
-  position: relative;
-  width: 100%;
-  aspect-ratio: 3/4;
-  max-height: 80%;
-  padding: 16px;
-
-  & img {
-    border-radius: 10px;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
+const GalleryScroll = styled.div`
+  position: relative; flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none;
+  padding: 0 0 76px; overscroll-behavior: contain;
+  &::-webkit-scrollbar { display: none; }
 `;
-
-const IconAction = styled(motion.button)<{ $variant?: "delete" | "download" }>`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 36px;
-  width: 100%;
-  padding: 0 16px;
-  border-radius: 50px;
-  background: ${({ $variant }) =>
-    $variant === "delete"
-      ? "#FF0000"
-      : $variant === "download"
-        ? "#4178F7"
-        : "rgba(33,33,33,0.15)"};
-  color: ${({ $variant }) =>
-    $variant === "delete"
-      ? "#ffffff"
-      : $variant === "download"
-        ? "#ffffff"
-        : "rgba(33,33,33,1)"};
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
-  flex: 1;
-  transition: background 0.15s;
-  &:hover {
-    background: ${({ $variant }) =>
-      $variant === "delete"
-        ? "#ff0000e1"
-        : $variant === "download"
-          ? "#4178f7d4"
-          : "rgba(33,33,33,0.08)"};
-  }
+const PhotoGrid = styled.div`display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;`;
+const PhotoThumb = styled(motion.button)`
+  padding: 0; overflow: hidden; border-radius: 14px; aspect-ratio: 1;
+  img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  &:focus-visible { outline: 3px solid #4178f7; outline-offset: -3px; }
+`;
+const EmptyGallery = styled.p`
+  display: grid; place-items: center; height: 100%; color: #78758d; font-size: 0.9rem; font-weight: 700;
+`;
+const GalleryFade = styled.div`
+  position: absolute; inset: auto 0 0; height: 90px; pointer-events: none;
+  background: linear-gradient(transparent, var(--phone-app-fade-color) 80%);
+`;
+const PhotoCount = styled.span`
+  position: absolute; right: 16px; bottom: 25px; color: #78758d; font-size: 0.75rem; font-weight: 800;
+`;
+const Lightbox = styled(motion.div)`
+  position: absolute; inset: 0; z-index: 4; padding: 16px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(242,242,243,0.6); backdrop-filter: blur(6px);
+`;
+const FocusContent = styled(motion.div)`
+  position: relative; width: 100%; height: 100%; min-height: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+`;
+const FocusImage = styled.img`
+  display: block; min-height: 0; max-height: calc(100% - 64px); max-width: 100%;
+  width: auto; height: auto; object-fit: contain; border-radius: 16px;
+`;
+const FocusActions = styled.div`display: flex; justify-content: center; flex-shrink: 0; gap: 16px; width: 100%; padding-bottom: 6px;`;
+const PhotoAction = styled(FloatingActionButton)`padding: 12px 16px; font-size: 0.85rem; border-radius: 24px;`;
+const StorageNotice = styled.p`
+  position: absolute; z-index: 5; top: 8px; left: 8px; right: 8px; padding: 8px 12px;
+  border-radius: 12px; background: rgba(255,255,255,0.94); color: #212026;
+  text-align: center; font-size: 0.7rem; line-height: 1.3; font-weight: 700; pointer-events: none;
 `;

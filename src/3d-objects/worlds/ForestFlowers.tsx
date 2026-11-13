@@ -5,7 +5,7 @@ import { assemble, type Part } from "./InstancedModels";
 import { seededRandom, useWorldQuality } from "./quality";
 import { useWorldEnvironment } from "./WorldEnvironment";
 
-function flowerGeometry(color: string, form: 0 | 1) {
+export function createForestFlowerGeometry(color: string, form: 0 | 1) {
   const parts: Part[] = [
     [new T.CylinderGeometry(0.022, 0.035, 0.85, 3), "#53823b", [0, 0.425, 0]],
   ];
@@ -32,7 +32,7 @@ function FlowerBand({ palette, form, count, radius, rootOffset }: {
 }) {
   const mesh = useRef<T.InstancedMesh>(null);
   const environment = useWorldEnvironment();
-  const geometry = useMemo(() => flowerGeometry(palette === 0 ? "#e74736" : "#f4cc38", form), [palette, form]);
+  const geometry = useMemo(() => createForestFlowerGeometry(palette === 0 ? "#e74736" : "#f4cc38", form), [palette, form]);
   const material = useMemo(() => new T.ShaderMaterial({
     vertexColors: true,
     side: T.DoubleSide,
@@ -101,7 +101,7 @@ function FlowerBand({ palette, form, count, radius, rootOffset }: {
 
 export function ForestFlowers({ radius, rootOffset }: { radius: number; rootOffset: number }) {
   const quality = useWorldQuality();
-  const count = { low: 60, medium: 120, high: 180 }[quality];
+  const count = { low: 120, medium: 240, high: 360 }[quality];
   return <>{([0, 1] as const).flatMap((palette) => ([0, 1] as const).map((form) =>
     <FlowerBand key={`${palette}-${form}`} palette={palette} form={form} count={count / 2} radius={radius} rootOffset={rootOffset} />
   ))}</>;

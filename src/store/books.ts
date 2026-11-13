@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 
@@ -9,12 +10,15 @@ export interface Book {
   tags?: JSX.Element[];
   review?: string;
   related?: number[]; // ids
+  pages?: number;
+  publishYear?: number;
+  genres?: string[];
 
   url: string;
   fallbackBackgroundColor: string;
   fallbackTextColor: string;
   isbn: string;
-  status: "have-read" | "currently-reading" | "will-read" | "wanna-buy";
+  status: "have-read" | "currently-reading" | "will-read";
 }
 
 function t(...tags: string[]): JSX.Element[] {
@@ -32,6 +36,9 @@ export const BOOKS: Book[] = [
     fallbackTextColor: "#dde9fa",
     isbn: "9783423209694",
     url: "",
+    pages: 128,
+    publishYear: 2003,
+    genres: ["fiction", "self-inquiry"],
     related: [2, 3, 4, 7],
   },
   {
@@ -44,6 +51,9 @@ export const BOOKS: Book[] = [
     fallbackTextColor: "#d4e6f8",
     isbn: "9783423348966",
     url: "",
+    pages: 256,
+    publishYear: 2005,
+    genres: ["fiction"],
     related: [1, 3, 4, 7],
   },
   {
@@ -56,6 +66,9 @@ export const BOOKS: Book[] = [
     fallbackTextColor: "#cde0f5",
     isbn: "3423349646",
     url: "",
+    pages: 176,
+    publishYear: 2007,
+    genres: ["fiction"],
     related: [1, 2, 4, 7],
   },
   {
@@ -68,6 +81,9 @@ export const BOOKS: Book[] = [
     fallbackTextColor: "#e0ecff",
     isbn: "9783423345286",
     url: "",
+    pages: 272,
+    publishYear: 2009,
+    genres: ["fable", "life"],
     related: [1, 2, 3, 7],
   },
   {
@@ -79,17 +95,6 @@ export const BOOKS: Book[] = [
     fallbackBackgroundColor: "#2a2520",
     fallbackTextColor: "#f5e6c8",
     isbn: "9783630876108",
-    url: "",
-  },
-  {
-    id: 6,
-    title: "Rich Dad Poor Dad",
-    author: "Robert T. Kiyosaki",
-    rating: 3,
-    status: "have-read",
-    fallbackBackgroundColor: "#163d2b",
-    fallbackTextColor: "#c8f0d8",
-    isbn: "1612681131",
     url: "",
   },
   {
@@ -105,26 +110,15 @@ export const BOOKS: Book[] = [
     related: [1, 2, 3, 4],
   },
   {
-    id: 8,
-    title: "Der Konfuzianismus",
-    author: "Volker Zotz",
-    rating: 3,
-    status: "have-read",
-    fallbackBackgroundColor: "#7a3500",
-    fallbackTextColor: "#fff0cc",
-    isbn: "3737409757",
-    url: "",
-  },
-  {
     id: 9,
     title: "Erleuchtung finden in einer lauten Welt",
     author: "Jack Kornfield",
-    rating: 3,
     status: "have-read",
-    fallbackBackgroundColor: "#8c4200",
-    fallbackTextColor: "#fff5d8",
-    isbn: "344234123X",
+    fallbackBackgroundColor: "#FFF9EA",
+    fallbackTextColor: "#212121",
+    isbn: "9783442341238",
     url: "",
+    genres: ["buddhism"],
   },
   {
     id: 10,
@@ -149,17 +143,6 @@ export const BOOKS: Book[] = [
     url: "",
   },
   {
-    id: 12,
-    title: "Der kleine Taschenphilosoph",
-    author: "Brigitte Hellmann",
-    rating: 3,
-    status: "have-read",
-    fallbackBackgroundColor: "#2a2d42",
-    fallbackTextColor: "#d8daf0",
-    isbn: "3423340991",
-    url: "",
-  },
-  {
     id: 13,
     title: "4321",
     author: "Paul Auster",
@@ -168,6 +151,9 @@ export const BOOKS: Book[] = [
     fallbackTextColor: "#ede7f6",
     isbn: "9783498000974",
     url: "",
+    pages: 1264,
+    publishYear: 2017,
+    genres: ["novel"],
   },
   {
     id: 14,
@@ -184,7 +170,7 @@ export const BOOKS: Book[] = [
     id: 15,
     title: "Man's Search for Meaning",
     author: "Viktor Frankl",
-    rating: 5,
+    rating: 4,
     status: "have-read",
     fallbackBackgroundColor: "#4a3010",
     fallbackTextColor: "#f5e8c8",
@@ -234,12 +220,13 @@ export const BOOKS: Book[] = [
     fallbackTextColor: "#212121",
     isbn: "0615467350",
     url: "",
+    pages: 61,
   },
   {
     id: 20,
     title: "Atomic Habits",
     author: "James Clear",
-    rating: 5,
+    rating: 4,
     status: "have-read",
     fallbackBackgroundColor: "#014c7a",
     fallbackTextColor: "#c0e0f8",
@@ -247,32 +234,20 @@ export const BOOKS: Book[] = [
     url: "",
   },
   {
-    id: 21,
-    title: "Think and Grow Rich",
-    author: "Napoleon Hill",
-    rating: 3,
-    status: "have-read",
-    fallbackBackgroundColor: "#1a3020",
-    fallbackTextColor: "#c0e8d0",
-    isbn: "9780449214923",
-    url: "",
-  },
-  {
     id: 22,
     title: "Über die Psychologie des Geldes",
     author: "Morgan Housel",
-    rating: 3,
     status: "have-read",
-    fallbackBackgroundColor: "#1e4530",
-    fallbackTextColor: "#cceedd",
-    isbn: "",
+    fallbackBackgroundColor: "#818181",
+    fallbackTextColor: "#ffffff",
+    isbn: "9783959724432",
     url: "",
   },
   {
     id: 23,
     title: "Dinge geregelt kriegen ohne einen Funken Selbstdisziplin",
     author: "Kathrin Passig, Sascha Lobo",
-    rating: 5,
+    rating: 4,
     status: "have-read",
     fallbackBackgroundColor: "#384080",
     fallbackTextColor: "#d8e0ff",
@@ -311,6 +286,9 @@ export const BOOKS: Book[] = [
     fallbackTextColor: "#d5d0f0",
     isbn: "",
     url: "",
+    pages: 352,
+    publishYear: 1966,
+    genres: ["philosophy"],
   },
   {
     id: 27,
@@ -336,17 +314,6 @@ export const BOOKS: Book[] = [
     related: [25, 35, 43],
   },
   {
-    id: 29,
-    title: "Das Wunder der Wertschätzung",
-    author: "Reinhard Haller",
-    rating: 3,
-    status: "have-read",
-    fallbackBackgroundColor: "#304878",
-    fallbackTextColor: "#d8e8ff",
-    isbn: "",
-    url: "",
-  },
-  {
     id: 30,
     title: "Die Tiny Habits Methode",
     author: "Dr. BJ Fogg",
@@ -366,7 +333,10 @@ export const BOOKS: Book[] = [
     fallbackTextColor: "#d8d8f0",
     isbn: "",
     url: "",
-    related: [53, 60],
+    pages: 368,
+    publishYear: 1883,
+    genres: ["philosophy", "literature"],
+    related: [53],
   },
   {
     id: 32,
@@ -445,7 +415,7 @@ export const BOOKS: Book[] = [
     fallbackTextColor: "#d0f0d8",
     isbn: "",
     url: "",
-    related: [61],
+    related: [],
   },
   {
     id: 39,
@@ -503,13 +473,12 @@ export const BOOKS: Book[] = [
   },
   {
     id: 46,
-    title: "Sapiens",
+    title: "Sapiens - Eine kurze Geschichte der Menschheit",
     author: "Yuval Noah Harari",
-    rating: 3,
     status: "have-read",
-    fallbackBackgroundColor: "#1a3a1a",
-    fallbackTextColor: "#c8ecc8",
-    isbn: "9780062316097",
+    fallbackBackgroundColor: "#313131",
+    fallbackTextColor: "#fefefe",
+    isbn: "0062316095",
     url: "",
   },
   {
@@ -521,7 +490,7 @@ export const BOOKS: Book[] = [
     fallbackTextColor: "#d8d5e8",
     isbn: "",
     url: "",
-    related: [62],
+    related: [],
   },
   {
     id: 48,
@@ -540,7 +509,7 @@ export const BOOKS: Book[] = [
     status: "will-read",
     fallbackBackgroundColor: "#2a1a30",
     fallbackTextColor: "#e0d0e8",
-    isbn: "",
+    isbn: "9783499170522",
     url: "",
     related: [67, 68, 73],
   },
@@ -563,6 +532,9 @@ export const BOOKS: Book[] = [
     fallbackTextColor: "#f0f0f0",
     isbn: "",
     url: "",
+    pages: 184,
+    publishYear: 2023,
+    genres: ["design", "critique"],
   },
   {
     id: 52,
@@ -583,7 +555,7 @@ export const BOOKS: Book[] = [
     fallbackTextColor: "#f0d5d5",
     isbn: "",
     url: "",
-    related: [31, 60],
+    related: [31],
   },
   {
     id: 54,
@@ -626,70 +598,6 @@ export const BOOKS: Book[] = [
     url: "",
   },
   {
-    id: 58,
-    title: "Wieviel Erde braucht der Mensch?",
-    author: "Leo Tolstoi",
-    status: "wanna-buy",
-    fallbackBackgroundColor: "#1a2e10",
-    fallbackTextColor: "#d5eacc",
-    isbn: "",
-    url: "",
-  },
-  {
-    id: 59,
-    title: "Der Spieler",
-    author: "Fjodor Dostojewski",
-    status: "wanna-buy",
-    fallbackBackgroundColor: "#2a0a30",
-    fallbackTextColor: "#e8c8f5",
-    isbn: "",
-    url: "",
-    related: [65],
-  },
-  {
-    id: 60,
-    title: "Der Antichrist",
-    author: "Friedrich Nietzsche",
-    status: "wanna-buy",
-    fallbackBackgroundColor: "#380a0a",
-    fallbackTextColor: "#f5c8c8",
-    isbn: "",
-    url: "",
-    related: [31, 53],
-  },
-  {
-    id: 61,
-    title: "The Art of Happiness",
-    author: "Epicurus",
-    status: "wanna-buy",
-    fallbackBackgroundColor: "#484000",
-    fallbackTextColor: "#f8f0cc",
-    isbn: "",
-    url: "",
-    related: [38],
-  },
-  {
-    id: 62,
-    title: "Die Kunst, Recht zu behalten",
-    author: "Arthur Schopenhauer",
-    status: "wanna-buy",
-    fallbackBackgroundColor: "#1e1818",
-    fallbackTextColor: "#e8d8d0",
-    isbn: "",
-    url: "",
-    related: [47],
-  },
-  {
-    id: 63,
-    title: "The Art of Doing Science and Engineering",
-    author: "Richard Hamming",
-    status: "wanna-buy",
-    fallbackBackgroundColor: "#0a1e3a",
-    fallbackTextColor: "#c0d0e8",
-    isbn: "",
-    url: "",
-  },
-  {
     id: 64,
     title: "The Creative Act: A Way of Being",
     author: "Rick Rubin",
@@ -698,28 +606,23 @@ export const BOOKS: Book[] = [
     fallbackTextColor: "#f0d0e8",
     isbn: "9781838858636",
     url: "",
+    pages: 432,
+    publishYear: 2023,
+    genres: ["creativity", "practice"],
   },
   {
     id: 65,
     title: "Schuld und Sühne",
     author: "Fjodor Dostojewski",
-    status: "currently-reading",
+    status: "will-read",
     fallbackBackgroundColor: "#2e1a10",
     fallbackTextColor: "#ead5c0",
     isbn: "",
     url: "",
-    related: [59],
-  },
-  {
-    id: 66,
-    title: "Massenpsychologie und Ich-Analyse",
-    author: "Sigmund Freud",
-    status: "wanna-buy",
-    fallbackBackgroundColor: "#1a1040",
-    fallbackTextColor: "#d0c8f0",
-    isbn: "",
-    url: "",
-    related: [71],
+    pages: 704,
+    publishYear: 1866,
+    genres: ["novel", "philosophy"],
+    related: [],
   },
   {
     id: 67,
@@ -749,17 +652,19 @@ export const BOOKS: Book[] = [
     id: 69,
     title: "1984",
     author: "George Orwell",
-    status: "wanna-buy",
-    fallbackBackgroundColor: "#0a1e3c",
-    fallbackTextColor: "#b8ccee",
-    isbn: "9780451524935",
+    status: "will-read",
+    fallbackBackgroundColor: "#000000",
+    fallbackTextColor: "#ffffff",
+    isbn: "9783548234106",
     url: "",
+    pages: 384,
+    publishYear: 1994,
   },
   {
     id: 70,
     title: "Der Steppenwolf",
     author: "Hermann Hesse",
-    status: "will-read",
+    status: "have-read",
     fallbackBackgroundColor: "#465162",
     fallbackTextColor: "#172133",
     isbn: "9783518366752",
@@ -775,13 +680,13 @@ export const BOOKS: Book[] = [
     fallbackTextColor: "#000001",
     isbn: "9783150189542",
     url: "",
-    related: [66],
+    related: [],
   },
   {
     id: 72,
     title: "Der Mythos des Sisyphos",
     author: "Albert Camus",
-    status: "will-read",
+    status: "have-read",
     fallbackBackgroundColor: "#f2f2f2",
     fallbackTextColor: "#000001",
     isbn: "9783499227653",
@@ -796,7 +701,92 @@ export const BOOKS: Book[] = [
     fallbackTextColor: "#01571e",
     isbn: "9783423340076",
     url: "",
+    pages: 320,
+    publishYear: 1955,
+    genres: ["social-psychology"],
     related: [49, 67, 68],
+  },
+  {
+    id: 74,
+    title: "Apocalypse Ready: The Manual of Manuals",
+    author: "Taras Young",
+    status: "will-read",
+    fallbackBackgroundColor: "#e5dfc6",
+    fallbackTextColor: "#215a3c",
+    isbn: "9780500024317",
+    url: "https://www.thamesandhudson.com/products/apocalypse-ready",
+  },
+  {
+    id: 75,
+    title: "Agonie des Eros",
+    author: "Byung-Chul Han",
+    status: "will-read",
+    fallbackBackgroundColor: "#ede8db",
+    fallbackTextColor: "#171714",
+    isbn: "9783957572776",
+    url: "https://www.matthes-seitz-berlin.de/buch/agonie-des-eros-12259.html",
+  },
+  {
+    id: 76,
+    title: "The Art of Uncertainty",
+    author: "David Spiegelhalter",
+    status: "will-read",
+    fallbackBackgroundColor: "#80b5bb",
+    fallbackTextColor: "#142326",
+    isbn: "9780241658635",
+    url: "https://www.penguin.co.uk/books/458199/the-art-of-uncertainty-by-spiegelhalter-david/9780241658635",
+  },
+  {
+    id: 77,
+    title: "Der Fremde",
+    author: "Albert Camus",
+    status: "will-read",
+    fallbackBackgroundColor: "#f3efea",
+    fallbackTextColor: "#191816",
+    isbn: "9783499221897",
+    url: "https://www.rowohlt.de/buch/albert-camus-der-fremde-9783499221897",
+    related: [72],
+  },
+  {
+    id: 78,
+    title: "Hyperfocus",
+    author: "Chris Bailey",
+    status: "will-read",
+    fallbackBackgroundColor: "#f2d94d",
+    fallbackTextColor: "#171713",
+    isbn: "9781037401947",
+    url: "https://www.panmacmillan.com/authors/chris-bailey/hyperfocus/9781037401947",
+  },
+  {
+    id: 79,
+    title: "Die Zukunft des Lesens",
+    author: "Christoph Engemann",
+    status: "will-read",
+    fallbackBackgroundColor: "#e6d951",
+    fallbackTextColor: "#bd5074",
+    isbn: "9783751830416",
+    url: "https://www.matthes-seitz-berlin.de/buch/die-zukunft-des-lesens.html",
+  },
+  {
+    id: 80,
+    title: "Surrounded by Psychopaths",
+    author: "Thomas Erikson",
+    status: "will-read",
+    fallbackBackgroundColor: "#191918",
+    fallbackTextColor: "#f0e9df",
+    isbn: "9781250786036",
+    url: "https://us.macmillan.com/books/9781250786036/surroundedbypsychopaths",
+    related: [40],
+  },
+  {
+    id: 81,
+    title: "Die Religion der Gesellschaft",
+    author: "Niklas Luhmann",
+    status: "will-read",
+    fallbackBackgroundColor: "#29241f",
+    fallbackTextColor: "#e3ce77",
+    isbn: "9783518291818",
+    url: "https://www.suhrkamp.de/buch/niklas-luhmann-die-religion-der-gesellschaft-t-9783518291818",
   },
 ];
 
@@ -808,71 +798,18 @@ export const BOOK_BY_ID = new Map<number, Book>(BOOKS.map((b) => [b.id, b]));
 
 interface BooksStore {
   focusedBook: Book | null;
-  focusedIdx: number | null;
-  hoveredBook: Book | null;
-
-  // Actions
-  setFocused: (idx: number) => void;
   clearFocus: () => void;
-  navigateNext: () => void;
-  navigatePrev: () => void;
   navigateToBookId: (id: number) => void;
-  setHoveredBook: (book: Book | null) => void;
-
-  // Selectors
-  canNavigateNext: () => boolean;
-  canNavigatePrev: () => boolean;
 }
 
 export const useBooksStore = create<BooksStore>()(
   devtools(
-    (set, get) => ({
+    set => ({
       focusedBook: null,
-      focusedIdx: null,
-      hoveredBook: null,
-
-      setFocused: (idx) =>
-        set({
-          focusedIdx: idx,
-          focusedBook: BOOKS[idx] ?? null,
-        }),
-
-      clearFocus: () =>
-        set({
-          focusedBook: null,
-          focusedIdx: null,
-        }),
-
-      navigateNext: () => {
-        const { focusedIdx } = get();
-        if (focusedIdx === null) return;
-        const next = focusedIdx + 1;
-        if (next < BOOKS.length)
-          set({ focusedIdx: next, focusedBook: BOOKS[next] });
-      },
-
-      navigatePrev: () => {
-        const { focusedIdx } = get();
-        if (focusedIdx === null) return;
-        const prev = focusedIdx - 1;
-        if (prev >= 0) set({ focusedIdx: prev, focusedBook: BOOKS[prev] });
-      },
-
-      navigateToBookId: (id) => {
-        const idx = BOOKS.findIndex((b) => b.id === id);
-        if (idx !== -1) set({ focusedIdx: idx, focusedBook: BOOKS[idx] });
-      },
-
-      setHoveredBook: (book) => set({ hoveredBook: book }),
-
-      canNavigateNext: () => {
-        const { focusedIdx } = get();
-        return focusedIdx !== null && focusedIdx < BOOKS.length - 1;
-      },
-
-      canNavigatePrev: () => {
-        const { focusedIdx } = get();
-        return focusedIdx !== null && focusedIdx > 0;
+      clearFocus: () => set({ focusedBook: null }),
+      navigateToBookId: id => {
+        const book = BOOK_BY_ID.get(id);
+        if (book) set({ focusedBook: book });
       },
     }),
     { name: "books-store" },

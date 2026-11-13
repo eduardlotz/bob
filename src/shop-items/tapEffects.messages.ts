@@ -4,6 +4,9 @@ import type { Locale } from "@/i18n/types";
 
 export const tapEffectMessages = defineMessages({
   de: {
+    tap_effect_autumn: { name: "Blätter", description: "Grüne Blätter spritzen bei jedem Tippen auseinander." },
+    tap_effect_paint: { name: "Farbkleckse", description: "Bunte Farbspritzer bei jedem Tippen." },
+    tap_effect_sparkles: { name: "Glitzern", description: "Lichtpunkte funkeln um Bob, während Sterne und Glanzpunkte bei jedem Tippen nach außen sprühen." },
     tap_effect_comic: { name: "Comic", description: "POP! BAM! Kleine Comic-Explosionen." },
     tap_effect_flowers: { name: "Flower Power", description: "Bunte Blumen wirbeln durch die Luft." },
     tap_effect_ducks: { name: "Quietscheenten", description: "Kleine gelbe Enten hüpfen davon." },
@@ -43,6 +46,9 @@ export const tapEffectMessages = defineMessages({
     },
   },
   en: {
+    tap_effect_autumn: { name: "Leaves", description: "Green leaves burst outward with every tap." },
+    tap_effect_paint: { name: "Paint Splashes", description: "Colorful splashes of paint with every tap." },
+    tap_effect_sparkles: { name: "Sparkles", description: "Lights twinkle around Bob as stars and glowing dots burst outward with every tap." },
     tap_effect_comic: { name: "Comic Bursts", description: "POP! BAM! Little comic explosions." },
     tap_effect_flowers: { name: "Flower Power", description: "Colorful flowers spin through the air." },
     tap_effect_ducks: { name: "Rubber Ducks", description: "Little yellow ducks bounce away." },

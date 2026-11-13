@@ -1,132 +1,46 @@
-import { forwardRef, useRef } from "react";
-import { TextureLoader, Mesh } from "three";
-import { useLoader, extend, useFrame } from "@react-three/fiber";
-import { Decal } from "@react-three/drei";
-import { FLOOR_Y_POSITION } from "@/molecules/Scene";
-import { GridToonMaterial } from "./GridToonMaterial";
-import { WoodToonMaterial } from "./WoodToonMaterial";
-import * as THREE from "three";
-import { useAppStore } from "@/store";
-import { a, useSpring } from "@react-spring/three";
+import { useMemo, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
+import { Group, Vector3 } from "three";
+import { ABOUT_ROOM } from "@/store/config/aboutRoom";
+import { HIDDEN_OPTIONS_CAMERA_ZOOM } from "@/store/config/camera";
+import { AboutWindow } from "./about/AboutWindow";
+import { SocialPosters } from "./about/SocialPosters";
+import { CornerTrigger } from "./about/CornerTrigger";
+import { InteractiveObject } from "@/molecules/InteractiveObject";
+import { BlenderRoomPart } from "./about/BlenderRoomPart";
 
-extend({ GridToonMaterial, WoodToonMaterial });
-
-const ROOM_SIZE = 20;
-
-export const Room = forwardRef(
-  ({ posterUrls = [] }: { posterUrls?: string[] }, ref) => {
-    const { showOptions } = useAppStore();
-    const [spring, api] = useSpring(() => ({
-      position: [0, FLOOR_Y_POSITION + 1.5, 10],
-      config: { tension: 120, friction: 14, bounce: 0.5 },
-    }));
-
-    const wallRef = useRef<Mesh>(null);
-
-    const handlePosterClick = () => {
-      // nothing
-    };
-
-    useFrame(() => {
-      if (showOptions) {
-        api.start({
-          position: [0, 0, 10],
-        });
-      } else {
-        api.start({
-          position: [0, 0, 5],
-        });
-      }
-    });
-
-    return (
-      <group ref={ref}>
-        {/* FLOOR */}
-        <mesh
-          rotation={[-Math.PI / 2, 0, 0]}
-          position={[0, FLOOR_Y_POSITION - 0.55, 0]}
-        >
-          <planeGeometry args={[ROOM_SIZE, ROOM_SIZE]} />
-          <woodToonMaterial
-            uGridDensity={8}
-            uGridColor1="#e1a87f"
-            uGridColor2="#b37143"
-            uGapThickness={0}
-          />
-        </mesh>
-
-        {/* CEILING */}
-        <mesh
-          rotation={[Math.PI / 2, 0, 0]}
-          position={[0, FLOOR_Y_POSITION + 7, 0]}
-        >
-          <planeGeometry args={[ROOM_SIZE, ROOM_SIZE]} />
-          <gridToonMaterial
-            uGridDensity={12}
-            uGridColor1={new THREE.Color("#c4cdd3")}
-            uGridColor2={new THREE.Color("#a9b6bd")}
-          />
-        </mesh>
-
-        {/* FRONT WALL */}
-        <mesh ref={wallRef} position={[0, FLOOR_Y_POSITION + 1.5, -5]}>
-          <planeGeometry args={[ROOM_SIZE, ROOM_SIZE]} />
-          <gridToonMaterial
-            uGridDensity={12}
-            uGridColor1={new THREE.Color("#d8e1e7")}
-            uGridColor2={new THREE.Color("#c1cdd4")}
-          />
-
-          {posterUrls.map((url, i) => (
-            <Decal
-              key={i}
-              mesh={wallRef.current!} // link decal to mesh
-              position={[i * 0.8 - 2.5, FLOOR_Y_POSITION + 3.5, 0.01]} // relative to mesh
-              rotation={[0, 0, 0]}
-              scale={1.5}
-              map={useLoader(TextureLoader, url)}
-              onClick={() => handlePosterClick(url)}
-            />
-          ))}
-        </mesh>
-
-        <a.mesh rotation={[0, -Math.PI, 0]} position={spring.position as any}>
-          <planeGeometry args={[ROOM_SIZE, ROOM_SIZE]} />
-          <gridToonMaterial
-            uGridDensity={12}
-            uGridColor1={new THREE.Color("#d8e1e7")}
-            uGridColor2={new THREE.Color("#c1cdd4")}
-          />
-        </a.mesh>
-
-        {/* RIGHT WALL */}
-        <mesh
-          rotation={[0, -Math.PI / 2, 0]}
-          position={[5, FLOOR_Y_POSITION + 1.5, 0]}
-        >
-          <planeGeometry args={[ROOM_SIZE, ROOM_SIZE]} />
-          <gridToonMaterial
-            uGridDensity={12}
-            uGridColor1={new THREE.Color("#d8e1e7")}
-            uGridColor2={new THREE.Color("#c1cdd4")}
-          />
-        </mesh>
-
-        {/* LEFT WALL */}
-        <mesh
-          rotation={[0, Math.PI / 2, 0]}
-          position={[-5, FLOOR_Y_POSITION + 1.5, 0]}
-        >
-          <planeGeometry args={[ROOM_SIZE, ROOM_SIZE]} />
-          <gridToonMaterial
-            uGridDensity={12}
-            uGridColor1={new THREE.Color("#d8e1e7")}
-            uGridColor2={new THREE.Color("#c1cdd4")}
-          />
-        </mesh>
-      </group>
-    );
-  },
-);
-
-Room.displayName = "Room";
+export function Room() {
+  const { depth, floorY } = ABOUT_ROOM;
+  const rearWall = useRef<Group>(null);
+  const cameraPosition = useMemo(() => new Vector3(), []);
+  const clearance = depth / 2 - HIDDEN_OPTIONS_CAMERA_ZOOM;
+  useFrame(({ camera }) => {
+    if (!rearWall.current) return;
+    camera.getWorldPosition(cameraPosition);
+    // Use the resolved camera movement, including its easing and interrupted exits.
+    rearWall.current.position.z = Math.max(depth / 2, cameraPosition.z + clearance);
+  });
+  return <group position-y={floorY}>
+    <BlenderRoomPart name="RoomShell" />
+    <BlenderRoomPart name="Window" />
+    <AboutWindow />
+    <BlenderRoomPart name="Exterior" />
+    <BlenderRoomPart name="ExteriorTree" />
+    <BlenderRoomPart name="ExteriorTreeSecond" />
+    <BlenderRoomPart name="ExteriorBackdrop" />
+    <BlenderRoomPart name="ExteriorMoon" />
+    <InteractiveObject questAction="click_lounge" mode="view" viewId="lounge">
+      <BlenderRoomPart name="Armchair" />
+    </InteractiveObject>
+    <BlenderRoomPart name="FloorLamp" />
+    <BlenderRoomPart name="CoffeeTable" />
+    <BlenderRoomPart name="ShelfLights" />
+    <group ref={rearWall} position-z={depth / 2}>
+      <BlenderRoomPart name="FrontWall" local />
+      <SocialPosters wall="front" relativeToFrontWall />
+      <CornerTrigger viewId="lounge" questAction="click_lounge" surfaces={[
+        { position: [3.65, 2.9, -.101], rotation: [0, Math.PI, 0], size: [2.8, 5.15] },
+      ]} />
+    </group>
+  </group>;
+}

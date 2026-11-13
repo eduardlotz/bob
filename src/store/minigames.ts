@@ -6,8 +6,7 @@ export type MiniGameType =
   | "LOBBY"
   | "FOOTBALL"
   | "PING_PONG"
-  | "FLAPPY_BIRD"
-  | "SLOT_MACHINE";
+  | "FLAPPY_BIRD";
 
 interface MiniGameState {
   activeGame: MiniGameType;
@@ -30,7 +29,6 @@ const DEFAULT_HIGH_SCORES: Record<MiniGameType, number> = {
   FOOTBALL: 0,
   PING_PONG: 0,
   FLAPPY_BIRD: 0,
-  SLOT_MACHINE: 0,
 };
 
 const sanitizeScore = (value: unknown) => {
@@ -110,7 +108,6 @@ export const useMiniGameStore = create<MiniGameState>()(
 
         return {
           ...currentState,
-          ...(persistedState as Partial<MiniGameState>),
           highScores: mergedHighScores,
         };
       },

@@ -171,9 +171,9 @@ export const MenuButton = styled(motion.button)<{ $isActive?: boolean }>`
   width: 4.625rem;
   gap: 0.125rem;
 
-  background: #78758d;
-  box-shadow: 0 6px 0 #555363;
-  border: 3px solid #555363;
+  background: #4178f7;
+  box-shadow: 0 6px 0 #2a5ee2;
+  border: 3px solid #2a5ee2;
   color: var(--text-color);
 
   /* background-color: rgba(0, 0, 0, 0.25);

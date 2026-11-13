@@ -10,7 +10,7 @@ import { useCoreStore, useViewStore } from "@/store";
 import { useI18n } from "@/i18n";
 
 export const BobIcon = () => (
-  <img src="/images/app-logos/shop.png" alt="" height={80} width={80} />
+  <img src="/images/app-logos/bob.png" alt="" height={80} width={80} />
 );
 
 export function BobResetButton() {

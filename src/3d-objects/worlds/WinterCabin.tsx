@@ -9,7 +9,7 @@ import { useWorldEnvironment } from "./WorldEnvironment";
 // Keep this footprint clear when arranging the winter trees.
 export const WINTER_CABIN_POSITION: [number, number, number] = [5.7, -1.36, -14];
 
-function cabinGeometry() {
+export function cabinGeometry({ roofColor = "#f0f8ff", porchColor = "#e3eff7", sillColor = "#e9f4fc" } = {}) {
   const parts: Part[] = [];
   for (let row = 0; row < 11; row++) {
     const y = .22 + row * .3;
@@ -23,14 +23,14 @@ function cabinGeometry() {
   parts.push([new T.ExtrudeGeometry(gable, { depth: 5.3, bevelEnabled: false }), "#805b43", [0, 0, -2.65]]);
   const slope = Math.atan2(2.35, 3.25);
   for (const side of [-1, 1]) {
-    parts.push([new T.BoxGeometry(4.17, .2, 5.65), "#f0f8ff", [side * 1.625, 4.53, 0], [1, 1, 1], [0, 0, -side * slope]]);
+    parts.push([new T.BoxGeometry(4.17, .2, 5.65), roofColor, [side * 1.625, 4.53, 0], [1, 1, 1], [0, 0, -side * slope]]);
     parts.push([new T.BoxGeometry(4.2, .19, .18), "#49352c", [side * 1.625, 4.37, 2.82], [1, 1, 1], [0, 0, -side * slope]]);
   }
   parts.push([new T.BoxGeometry(1.25, 2.45, .14), "#44322b", [-1.02, 1.3, 2.42]]);
   for (let i = 0; i < 4; i++) parts.push([new T.BoxGeometry(.025, 2.3, .035), "#6a4d36", [-1.47 + i * .3, 1.3, 2.51]]);
   parts.push([new T.SphereGeometry(.065, 6, 4), "#b18e50", [-.62, 1.3, 2.56]]);
   parts.push([new T.BoxGeometry(2, .2, 1.2), "#86674e", [-1, .1, 2.9]]);
-  parts.push([new T.BoxGeometry(2.15, .1, 1.3), "#e3eff7", [-1, .23, 2.9]]);
+  parts.push([new T.BoxGeometry(2.15, .1, 1.3), porchColor, [-1, .23, 2.9]]);
   // A high window stays visible above the counter in the home camera.
   for (const side of [-1, 1]) {
     parts.push([new T.BoxGeometry(.13, 1.48, .2), "#443028", [side * .83, 4.22, 2.8]]);
@@ -38,12 +38,12 @@ function cabinGeometry() {
   }
   parts.push([new T.BoxGeometry(.07, 1.27, .12), "#51392b", [0, 4.22, 2.91]]);
   parts.push([new T.BoxGeometry(1.55, .07, .12), "#51392b", [0, 4.22, 2.91]]);
-  parts.push([new T.BoxGeometry(1.95, .1, .4), "#e9f4fc", [0, 3.5, 2.85]]);
+  parts.push([new T.BoxGeometry(1.95, .1, .4), sillColor, [0, 3.5, 2.85]]);
   return assemble(parts);
 }
 
 export function WinterCabin() {
-  const geometry = useMemo(cabinGeometry, []);
+  const geometry = useMemo(() => cabinGeometry(), []);
   const light = useRef<T.PointLight>(null);
   const environment = useWorldEnvironment();
   useEffect(() => () => geometry.dispose(), [geometry]);

@@ -1,11 +1,10 @@
 import * as THREE from "three";
-import React, { useEffect, useRef } from "react";
-import { MeshTransmissionMaterial, useGLTF } from "@react-three/drei";
+import { useRef } from "react";
+import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
-import { a, useSpring } from "@react-spring/three";
 import { useFrame } from "@react-three/fiber";
-import { RapierRigidBody, RigidBody } from "@react-three/rapier";
-import { Grabbable } from "@/physics/Grabbable";
+import { useCursorStore } from "@/store/core/cursor";
+import { useAppStore, useViewStore } from "@/store";
 import { useCoreStore } from "@/store";
 import { previewMaterialProps } from "@/shop-items/utils";
 import { useFloatingBar } from "@/layout/FloatingBar";
@@ -28,18 +27,22 @@ interface Props {
   position: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
-  outlineColor?: string;
   color?: string;
 }
 
 export const GreenDiamond = ({
-  outlineColor = "#000000",
   color = "#b7e822",
   ...props
 }: Props) => {
-  const api = useRef<RapierRigidBody>(null);
-  const { nodes } = useGLTF(PATH) as GLTFResult;
-  const { previewMode } = useCoreStore();
+  const wiggle = useRef<THREE.Group>(null);
+  const elapsed = useRef(1);
+  useFrame((_, delta) => {
+    elapsed.current += delta;
+    if (wiggle.current) wiggle.current.rotation.z = elapsed.current < 0.55
+      ? Math.sin(elapsed.current * 35) * 0.055 * Math.exp(-elapsed.current * 7) : 0;
+  });
+  const { nodes } = useGLTF(PATH) as unknown as GLTFResult;
+  const previewMode = useCoreStore(state => state.previewMode);
 
   const { setHoveredObject } = useFloatingBar();
   const { locale } = useI18n();
@@ -48,6 +51,7 @@ export const GreenDiamond = ({
   const handlePointerEnter = (e: any) => {
     e.stopPropagation();
 
+    useCursorStore.getState().setHoveringClickable(true);
     setHoveredObject({
       title: greenDiamondMessages[locale].floatingLabel,
     });
@@ -55,21 +59,17 @@ export const GreenDiamond = ({
 
   const handlePointerLeave = () => {
     setHoveredObject(null);
+    useCursorStore.getState().setHoveringClickable(false);
   };
 
   return (
-    <Grabbable
-      rigidBodyRef={api}
-      mode="spring"
-      onClick={() => triggerQuest("click_plumbob", 1)}
-    >
-      <RigidBody
-        {...props}
-        ref={api}
-        colliders="hull"
-        restitution={0.5}
-        friction={0.4}
-      >
+    <group {...props} onClick={event => {
+      event.stopPropagation();
+      if (event.delta > 5 || useAppStore.getState().showOptions || useViewStore.getState().isPhoneView()) return;
+      triggerQuest("click_plumbob", 1);
+      elapsed.current = 0;
+    }}>
+      <group ref={wiggle}>
         <group rotation={[-Math.PI / 2, 0, 0]} scale={0.24}>
           <mesh
             geometry={nodes.Plumbob_Material001_0.geometry}
@@ -77,13 +77,13 @@ export const GreenDiamond = ({
             onPointerLeave={handlePointerLeave}
           >
             <meshPhongMaterial
-              color="#b7e822"
+              color={color}
               {...(previewMode === "decoration" ? previewMaterialProps : {})}
             />
           </mesh>
         </group>
-      </RigidBody>
-    </Grabbable>
+      </group>
+    </group>
   );
 };
 

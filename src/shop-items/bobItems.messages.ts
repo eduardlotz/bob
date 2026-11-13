@@ -4,6 +4,9 @@ import type { Locale } from "@/i18n/types";
 
 export const bobItemMessages = defineMessages({
   de: {
+    cigar: { name: "Zigarre", description: "Glühende Spitze und kleine Rauchwölkchen." },
+    bigSmile: { name: "Grinsebacke", description: "Ein breites Lächeln mit großen weißen Zähnen." },
+    sleepingHat: { name: "Schlafmütze", description: "Eine weiche blaue Mütze mit Bommel." },
     topHat: { name: "Zylinder", description: "Black Tie für Bob." },
     toonSunglasses: { name: "Sonnenbrille", description: "Cool bleiben, auch im Schatten." },
     dimmadomeHat: { name: "Dimmadome", description: "Dieser Hut nimmt kein Ende." },
@@ -12,7 +15,7 @@ export const bobItemMessages = defineMessages({
 
     propellerHat: { name: "Propellermütze", description: "Immer eine Drehung voraus." },
     bobMoustache: { name: "Schnubbi", description: "Ein Schnurrbart wie bei Bob Belcher." },
-    royalCrown: { name: "Krone", description: "Eine Krone für zehn Millionen." },
+    royalCrown: { name: "Krone", description: "Eine Krone für eine Million." },
     wizardHat: { name: "Zauberer", description: "Ein bisschen Magie für Bob." },
     flatCap: { name: "Schiebermütze", description: "Ein Klassiker in Braun." },
     builderHelmet: {
@@ -49,6 +52,9 @@ export const bobItemMessages = defineMessages({
     },
   },
   en: {
+    cigar: { name: "Cigar", description: "A glowing ember and little wisps of smoke." },
+    bigSmile: { name: "Big Smile", description: "A broad grin with big white teeth." },
+    sleepingHat: { name: "Sleeping Hat", description: "A soft blue cap with a pom-pom." },
     topHat: { name: "Top Hat", description: "Black tie for Bob." },
     toonSunglasses: { name: "Sunglasses", description: "Stay cool, even in the shade." },
     dimmadomeHat: { name: "Dimmadome", description: "This hat never ends." },
@@ -57,7 +63,7 @@ export const bobItemMessages = defineMessages({
 
     propellerHat: { name: "Propeller Hat", description: "Always one spin ahead." },
     bobMoustache: { name: "Moustache", description: "A moustache like Bob Belcher's." },
-    royalCrown: { name: "Crown", description: "A crown worth ten million." },
+    royalCrown: { name: "Crown", description: "A crown worth one million." },
     wizardHat: { name: "Wizard", description: "A little magic for Bob." },
     flatCap: { name: "Flat Cap", description: "A classic in brown." },
     builderHelmet: {

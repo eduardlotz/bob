@@ -3,12 +3,13 @@ import { defineMessages } from "@/i18n/defineMessages";
 export const optionsMessages = defineMessages({
   de: {
     sections: {
-      bobShape: "Bobs Form (Experimentell)",
+      bobShape: "Bobs Form",
       effects: "Effekte",
-      filter: "Filter",
+      camera: "Kamera",
       audio: "Audio",
     },
     bobShape: {
+      form: "Form", round: "Rund", square: "Eckig", scaleEqually: "Gleichmäßig skalieren", skin: "Skin", lockedSkin: "Gesperrt · geheime Quest", previousSkins: "Vorherige Skins", nextSkins: "Weitere Skins",
       reset: "Form zurücksetzen",
       resetShort: "Zurücksetzen",
       resetValue: "Wert zurücksetzen",
@@ -47,12 +48,6 @@ export const optionsMessages = defineMessages({
         "Auto-Taps werden weiterhin gesammelt, auch ohne Animation",
       tapParticles: "Tap-Partikel",
       fisheye: "Fisheye",
-      sceneFilter: "Bildfilter",
-      filterNone: "Keiner",
-      pixelation: "Pixel",
-      dithering: "Dithering",
-      ditheringDescription: "Retro-Pixellook für die 3D-Welt",
-      ditheringPixelSize: "Pixelgröße",
       master: "Master",
       music: "Musik",
       effects: "Tap",
@@ -71,12 +66,13 @@ export const optionsMessages = defineMessages({
   },
   en: {
     sections: {
-      bobShape: "Bob shape (experimental)",
+      bobShape: "Bob shape",
       effects: "Effects",
-      filter: "Filter",
+      camera: "Camera",
       audio: "Audio",
     },
     bobShape: {
+      form: "Form", round: "Round", square: "Square", scaleEqually: "Scale equally", skin: "Skin", lockedSkin: "Locked · hidden quest", previousSkins: "Previous skins", nextSkins: "More skins",
       reset: "Reset shape",
       resetShort: "Reset",
       resetValue: "Reset value",
@@ -115,12 +111,6 @@ export const optionsMessages = defineMessages({
         "Auto-taps are still collected, even without animation",
       tapParticles: "Tap Particles",
       fisheye: "Fisheye",
-      sceneFilter: "Image filter",
-      filterNone: "None",
-      pixelation: "Pixel",
-      dithering: "Dithering",
-      ditheringDescription: "Retro pixel look for the 3D world",
-      ditheringPixelSize: "Pixel size",
       master: "Master",
       music: "Music",
       effects: "Tap",

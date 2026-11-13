@@ -25,7 +25,7 @@ export interface WorldSoundExcerpt {
 export interface EnvironmentSoundLayer {
   soundId: string;
   volume: number;
-  mode: "loop" | "random";
+  mode: "loop" | "random" | "event";
   /** Seconds between accent opportunities; active clips never overlap themselves. */
   intervalSeconds?: [number, number];
   condition?: WorldSoundCondition;

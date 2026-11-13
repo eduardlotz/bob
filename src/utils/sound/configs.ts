@@ -19,17 +19,6 @@ import {
 const defineSound = (config: SoundConfig): SoundConfig => config;
 
 export const DEFAULT_SOUND_CONFIGS: SoundConfig[] = [
-  ...["slot-spin", "slot-stop", "slot-win"].map(
-    (id): SoundConfig => ({
-      id,
-      filePath: `/audio/${id}.wav`,
-      type: "ui",
-      category: "effect",
-      volume: id === "slot-spin" ? 0.22 : 0.4,
-      loop: id === "slot-spin",
-      playback: { overlap: "restart", maxConcurrent: 1 },
-    }),
-  ),
   ...[
     { id: "flappy-flap", synthesis: pageEnter },
     { id: "flappy-point", synthesis: copy },

@@ -246,6 +246,9 @@ const getOrCreateHowl = (config: NormalizedSoundConfig): Howl => {
     // Every new or pooled voice starts silent until its user/mix gain is applied.
     volume: 0,
     onloaderror: (_, error) => {
+      // Howler also reports a decode error when an in-flight sound was unloaded.
+      // Route exits and visibility changes dispose these instances intentionally.
+      if (howls.get(config.id) !== howl) return;
       console.error(`Failed to load sound "${config.id}"`, error);
     },
     onplayerror: async () => {
@@ -257,21 +260,6 @@ const getOrCreateHowl = (config: NormalizedSoundConfig): Howl => {
 
   howls.set(config.id, howl);
   return howl;
-};
-
-const preloadHowl = async (soundId: string): Promise<void> => {
-  const config = configs.get(soundId);
-  if (!config || config.synthesis) return;
-
-  const howl = getOrCreateHowl(config);
-  if (howl.state() === "loaded") return;
-
-  await new Promise<void>((resolve) => {
-    const finish = () => resolve();
-    howl.once("load", finish);
-    howl.once("loaderror", finish);
-    howl.load();
-  });
 };
 
 const ensureDefaultConfigs = () => {
@@ -591,6 +579,7 @@ export const playSound = (soundId: string, options?: Partial<SoundConfig>): void
   }
 
   const howl = getOrCreateHowl(config);
+  if (howl.state() === "unloaded") howl.load();
   const howlId = howl.play(config.spriteName);
   if (typeof howlId !== "number") return;
 
@@ -771,10 +760,10 @@ export const updateWorldSoundVolumes = (isMenuOpen: boolean): void => {
 
 export const initializeSoundSystem = async () => {
   ensureDefaultConfigs();
-  // Creating Howls sets up their context synchronously. Resume both backends
-  // before awaiting any downloads, while the Enter gesture is still active.
-  const loads = DEFAULT_SOUND_CONFIGS.map((config) => preloadHowl(config.id));
-  await Promise.all([resumeAudioContext(), ...loads]);
+  // Unlock audio in the Start gesture. Howler loads each clip on first play.
+  // Initialize its context without constructing or downloading unused clips.
+  Howler.volume();
+  await resumeAudioContext();
   if (DEBUG_LOGS) {
     console.log("Howler sound system initialized", Array.from(configs.keys()));
   }

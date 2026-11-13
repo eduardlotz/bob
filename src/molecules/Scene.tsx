@@ -1,9 +1,4 @@
-import {
-  NightMaterialFill,
-  Fireplace,
-  StreetLightPools,
-  CityCornerLights,
-} from "@/3d-objects/worlds/NightLighting";
+import { useShallow } from "zustand/react/shallow";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   CameraControls,
@@ -18,6 +13,8 @@ import { Physics } from "@react-three/rapier";
 import { Perf } from "r3f-perf";
 import {
   Suspense,
+  lazy,
+  memo,
   useRef,
   useState,
   useEffect,
@@ -36,7 +33,11 @@ import {
 import { useViewStore } from "../store/viewStore";
 import { ROUTE_IDS, ROUTE_PATHS } from "../store/config/routes";
 import { SceneLens } from "@/components/SceneLens";
-import { BobEditorScene, BobEditorCounterFade } from "@/components/bob/BobEditorScene";
+import { LoadingCamera } from "@/components/LoadingCamera";
+import {
+  BobEditorScene,
+  BobEditorCounterFade,
+} from "@/components/bob/BobEditorScene";
 import { useBobEditor } from "@/store/bobEditor";
 import {
   attachListenerToCamera,
@@ -44,17 +45,14 @@ import {
   setSoundMix,
   stopSoundsById,
 } from "@/utils/soundSystem";
-import { PortfolioScene } from "@/routes/PortfolioScene";
-import { AboutScene } from "../routes/AboutScene";
+import { SceneReady } from "@/components/SceneReady";
 
 import { HeadNavigation } from "./HeadNavigation";
 import { TapCounter } from "./TapCounter";
+import { AutoTapController } from "./AutoTapController";
 import { MessageBubble } from "@/molecules/MessageBubble";
 
-import { BackgroundPlanet } from "../3d-objects/BackgroundPlanet";
 import { TapEffects } from "../3d-objects/ParticleEffects";
-import { SceneDecorations } from "@/3d-objects/Decorations";
-import { MiniGamesScene } from "@/routes/MiniGamesScene";
 import {
   DEFAULT_PINK_NOISE,
   DEFAULT_WORLD_MUSIC,
@@ -74,15 +72,33 @@ import {
   useWorldEnvironment,
 } from "@/3d-objects/worlds/WorldEnvironment";
 import { WorldAudio } from "@/3d-objects/worlds/WorldAudio";
-import { worldDayPhase, type WorldEnvironmentConfig } from "@/types/worldEnvironment";
+import {
+  worldDayPhase,
+  type WorldEnvironmentConfig,
+} from "@/types/worldEnvironment";
+
+const HomeScene = lazy(() => import("@/routes/HomeScene"));
+const PortfolioScene = lazy(() =>
+  import("@/routes/PortfolioScene").then((module) => ({
+    default: module.PortfolioScene,
+  })),
+);
+const AboutScene = lazy(() =>
+  import("@/routes/AboutScene").then((module) => ({
+    default: module.AboutScene,
+  })),
+);
+const MiniGamesScene = lazy(() =>
+  import("@/routes/MiniGamesScene").then((module) => ({
+    default: module.MiniGamesScene,
+  })),
+);
 
 const Debug = () => {
   const { width } = useThree((s) => s.size);
   return <Perf minimal={width < 712} matrixUpdate deepAnalyze overClock />;
 };
 
-// TODO: make proper constant file
-export const FLOOR_Y_POSITION = -1.5;
 const SPACE_WORLD_ID = "world_space";
 const HOME_LIGHT_RADIUS = 6.7;
 const HOME_LIGHT_TARGET: [number, number, number] = [0, 0.7, 0];
@@ -129,7 +145,7 @@ const HOME_WORLD_ENVIRONMENT_PRESETS: Partial<
 };
 
 const ROUTE_ENVIRONMENT_PRESETS: Partial<Record<string, EnvironmentPreset>> = {
-  [ROUTE_PATHS.ABOUT]: "city",
+  [ROUTE_PATHS.ABOUT]: null,
   [ROUTE_PATHS.PORTFOLIO]: null,
   [ROUTE_PATHS.MINIGAMES]: "sunset",
 };
@@ -264,14 +280,16 @@ function WorldAmbientLight({
   intensity,
   color,
   config,
+  nightTint = "#839ec6",
 }: {
   intensity: number;
   color: Color;
   config?: WorldEnvironmentConfig;
+  nightTint?: string;
 }) {
   const ref = useRef<THREE.AmbientLight>(null);
   const environment = useWorldEnvironment();
-  const nightColor = useMemo(() => new Color("#839ec6"), []);
+  const nightColor = useMemo(() => new Color(nightTint), [nightTint]);
   const scene = useThree((s) => s.scene);
   useLayoutEffect(() => {
     scene.environmentIntensity = 1;
@@ -335,10 +353,12 @@ function WorldAmbientLight({
 }
 
 const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
-  const bobEditing = useBobEditor(state => state.open);
-  const bobCameraLocked = useViewStore(state => state.currentView === "phone:bob");
+  const bobEditing = useBobEditor((state) => state.open);
+  const bobControlDragging = useBobEditor((state) => !!state.dragging);
   const cameraControlsRef = useRef<CameraControls>(null!);
-  const { setCameraControlsRef } = useViewStore();
+  const setCameraControlsRef = useViewStore(
+    (state) => state.setCameraControlsRef,
+  );
   const {
     statisticsVisible,
     physicsDebugEnabled,
@@ -350,17 +370,29 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
     isPaused,
     isReady,
     graphicPreferences,
-  } = useCoreStore();
+  } = useCoreStore(
+    useShallow((state) => ({
+      statisticsVisible: state.statisticsVisible,
+      physicsDebugEnabled: state.physicsDebugEnabled,
+      worlds: state.worlds,
+      previewMode: state.previewMode,
+      debugCameraSettings: state.debugCameraSettings,
+      debugLightSettings: state.debugLightSettings,
+      soundSystem: state.soundSystem,
+      isPaused: state.isPaused,
+      isReady: state.isReady,
+      graphicPreferences: state.graphicPreferences,
+    })),
+  );
   const { activeGame } = useMiniGameStore();
   const activeRouteMusicRef = useRef<string | null>(null);
   const location = useLocation();
   const routePath = location.pathname;
 
-  const { currentRoute } = useAppStore();
+  const currentRoute = useAppStore((state) => state.currentRoute);
 
   // shop items are only visible on home route
   const isHome = currentRoute === ROUTE_PATHS.HOME;
-  const showBackground = currentRoute === ROUTE_PATHS.ABOUT;
   const sceneWorld = useMemo(() => {
     if (previewMode === "world") {
       return (
@@ -372,6 +404,7 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
 
     return worlds.find((world) => world.enabled) ?? null;
   }, [previewMode, worlds]);
+  const environmentConfig = isHome ? sceneWorld?.scene.environment : undefined;
   const activeLightingWorld = isHome ? sceneWorld : null;
   const worldLighting = useMemo(
     () => getEffectiveWorldLighting(activeLightingWorld),
@@ -435,8 +468,10 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
   }, [activeGame, routePath]);
 
   const canPlayRouteMusic =
+    isReady &&
     soundSystem.enabled &&
     soundSystem.masterVolume > 0 &&
+    soundSystem.worldVolume > 0 &&
     soundSystem.worldEnabled !== false &&
     !isPaused;
 
@@ -487,55 +522,44 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
     <>
       <FullScreenCanvas>
         <AudioListenerBinder />
-        <WorldEnvironment
-          config={isHome ? sceneWorld?.scene.environment : undefined}
-        >
+        <WorldEnvironment config={environmentConfig}>
+          <AutoTapController />
           {isHome && (
             <WorldAudio config={sceneWorld?.scene.audio} authorized={isReady} />
           )}
           <SceneLens>
+            <LoadingCamera />
             <CursorFollowCamera />
             <CameraControls
               ref={handleCameraControlsRef}
-              enabled={!bobCameraLocked}
+              enabled={!bobControlDragging}
               truckSpeed={debugCameraSettings.truckSpeed}
               azimuthRotateSpeed={debugCameraSettings.azimuthRotateSpeed}
             />
             <WorldAmbientLight
-              intensity={resolvedAmbientIntensity}
+              intensity={
+                currentRoute === ROUTE_PATHS.ABOUT
+                  ? 0.18
+                  : resolvedAmbientIntensity
+              }
               color={worldLightColors.ambientColor}
-              config={isHome ? sceneWorld?.scene.environment : undefined}
+              config={environmentConfig}
             />
-            {isHome && sceneWorld?.scene.environment?.nightLight && (
-              <>
-                {sceneWorld.scene.environment.nightLight !== "street" && (
-                  <NightMaterialFill
-                    key={sceneWorld.id}
-                    kind={sceneWorld.scene.environment.nightLight}
-                  />
-                )}
-                {sceneWorld.scene.environment.nightLight === "fire" && (
-                  <Fireplace />
-                )}
-                {sceneWorld.scene.environment.nightLight === "street" && (
-                  <>
-                    <StreetLightPools />
-                    <CityCornerLights />
-                  </>
-                )}
-              </>
-            )}
             <PerspectiveCamera makeDefault position={[0, 0, 3]} />
             {isHome ? (
               <HomeDirectionalLight
                 rig={homeSunRig}
                 intensity={resolvedDirectionalIntensity}
                 color={worldLightColors.directionalColor}
-                environmentConfig={sceneWorld?.scene.environment}
+                environmentConfig={environmentConfig}
               />
             ) : (
               <directionalLight
-                intensity={ROUTE_LIGHT_INTENSITY}
+                intensity={
+                  currentRoute === ROUTE_PATHS.ABOUT
+                    ? 0
+                    : ROUTE_LIGHT_INTENSITY
+                }
                 color={worldLightColors.directionalColor}
                 position={rotateLightPosition(
                   ROUTE_LIGHT_POSITION,
@@ -543,15 +567,6 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
                 )}
               />
             )}
-            <Suspense fallback={null}>
-              {envLightPreset && (
-                <WorldEnvironmentMap
-                  key={`${sceneWorld?.id}:${envLightPreset}`}
-                  preset={envLightPreset}
-                />
-              )}
-            </Suspense>
-            {showBackground && <BackgroundPlanet />}
             {statisticsVisible && <Debug />}
 
             <Physics gravity={[0, -9.81, 0]} debug={physicsDebugEnabled}>
@@ -564,15 +579,17 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
 
               <MessageBubble anchor={[0, 2.4, 0]} />
 
-              <a.group visible={isHome} scale={spring.scale}>
-                <BobEditorCounterFade><TapCounter /></BobEditorCounterFade>
-                {graphicPreferences.effectsEnabled && !bobEditing && <TapEffects />}
-              </a.group>
+              {isHome && (
+                <a.group scale={spring.scale}>
+                  <BobEditorCounterFade>
+                    <TapCounter />
+                  </BobEditorCounterFade>
+                  {graphicPreferences.effectsEnabled && !bobEditing && (
+                    <TapEffects />
+                  )}
+                </a.group>
+              )}
               <BobEditorScene />
-
-              <Suspense fallback={null}>
-                {isHome && <SceneDecorations />}
-              </Suspense>
 
               {/* bottom fake shadow */}
               {showHomeShadow && (
@@ -591,13 +608,27 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
                 </mesh>
               )}
 
-              <Suspense fallback={null}>
+              <Suspense key={currentRoute} fallback={null}>
+                {envLightPreset && (
+                  <WorldEnvironmentMap
+                    key={`${sceneWorld?.id}:${envLightPreset}`}
+                    preset={envLightPreset}
+                  />
+                )}
                 {match(currentRoute)
+                  .with(ROUTE_PATHS.HOME, () => (
+                    <HomeScene
+                      worldId={sceneWorld?.id}
+                      nightLight={environmentConfig?.nightLight}
+                    />
+                  ))
                   .with(ROUTE_PATHS.ABOUT, () => <AboutScene />)
                   .with(ROUTE_PATHS.PORTFOLIO, () => <PortfolioScene />)
                   .with(ROUTE_PATHS.MINIGAMES, () => <MiniGamesScene />)
                   .otherwise(() => null)}
+                <SceneReady route={currentRoute} />
               </Suspense>
+              <SceneReady route="shared" part="shell" />
             </Physics>
           </SceneLens>
         </WorldEnvironment>
@@ -606,7 +637,8 @@ const Scene = ({ permissionGranted }: { permissionGranted: boolean }) => {
   );
 };
 
-export default Scene;
+// Counter/quest updates in the UI must not rerender the 3D scene.
+export default memo(Scene);
 
 const CursorFollowCamera = () => {
   const { isMobile } = useAppStore();
@@ -615,12 +647,13 @@ const CursorFollowCamera = () => {
   const cursor = useCursor({ condition: () => !isMobile, positionFactor: 1 });
 
   useFrame(({ clock }) => {
+    const view = useViewStore.getState();
+    if (view.loadingCameraActive && view.loadingCameraView === "loading")
+      return;
     if (isMobile) return;
     if (viewMode !== "fixed" || isTransitioning) return;
 
     const viewConfig = getCurrentViewConfig();
-    // The slot game combines this follow behavior with responsive cabinet framing.
-    if (viewConfig?.id === "minigames:slot_machine") return;
     if (!viewConfig?.cursorFollow || !viewConfig.position || !viewConfig.target)
       return;
 
@@ -722,7 +755,7 @@ const FullScreenCanvas = ({ children, ...props }: FullScreenCanvasProps) => {
       style={{
         width: "100vw",
         height: "100dvh",
-        position: "absolute",
+        position: "fixed",
         top: 0,
         left: 0,
         zIndex: 0,

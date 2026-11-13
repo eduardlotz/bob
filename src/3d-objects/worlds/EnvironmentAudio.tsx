@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useCoreStore } from "@/store";
 import { addSoundConfig, getSoundConfig, playSound, removeSoundConfig, setSoundMix, stopSoundsById } from "@/utils/soundSystem";
@@ -7,12 +7,24 @@ import { worldSoundGain, type EnvironmentAudioConfig, type EnvironmentSoundLayer
 import { useWorldEnvironment } from "./WorldEnvironment";
 import { worldAudioTransition, WORLD_AMBIENCE_EXIT_MS } from "@/utils/sound/worldAudioTransition";
 
-type ActiveLayer = { id: string; layer: EnvironmentSoundLayer; nextAt: number };
+export type EnvironmentAudioMix = { gain: number; lowpassHz?: number };
+
+type ActiveLayer = { id: string; layer: EnvironmentSoundLayer; nextAt: number; started: boolean };
 const randomInterval = (range: [number, number] = [15, 40]) => Math.max(1, range[0] + Math.random() * Math.max(0, range[1] - range[0]));
 
 /** Shared lifecycle for world beds and object-owned loops/excerpts. Each mount owns its voices. */
-export function EnvironmentAudio({ config, authorized, owner = "world" }: { config?: EnvironmentAudioConfig; authorized: boolean; owner?: "world" | "object" }) {
+export function EnvironmentAudio({ config, authorized, owner = "world", mix, cues }: {
+  config?: EnvironmentAudioConfig;
+  authorized: boolean;
+  owner?: "world" | "object";
+  /** Applied only to this owner’s environmental layers, independently of selected music. */
+  mix?: EnvironmentAudioMix;
+  /** Scene-authored cues, such as thunder following a visible lightning strike. */
+  cues?: RefObject<string[]>;
+}) {
   const environment = useWorldEnvironment();
+  const latestMix = useRef(mix);
+  latestMix.current = mix;
   const [visible, setVisible] = useState(() => !document.hidden);
   useEffect(() => {
     const onVisibility = () => setVisible(!document.hidden);
@@ -55,9 +67,11 @@ export function EnvironmentAudio({ config, authorized, owner = "world" }: { conf
           distanceAttenuation: true,
           playback: { group: id, overlap: "ignore", maxConcurrent: 1, limitBehavior: "skip-new" },
         });
-        setSoundMix(id, { gain: worldSoundGain(layer.condition, environment.current) });
-        if (layer.mode === "loop") playSound(id);
-        active.push({ id, layer, nextAt: elapsed.current + randomInterval(layer.intervalSeconds) });
+        const gain = worldSoundGain(layer.condition, environment.current) * (latestMix.current?.gain ?? 1);
+        setSoundMix(id, { gain, lowpassHz: latestMix.current?.lowpassHz });
+        const started = layer.mode === "loop" && gain > 0;
+        if (started) playSound(id);
+        active.push({ id, layer, started, nextAt: elapsed.current + randomInterval(layer.intervalSeconds) });
       });
       layers.current = active;
     };
@@ -78,14 +92,23 @@ export function EnvironmentAudio({ config, authorized, owner = "world" }: { conf
   }, [config, enabled, visible, useFallbackMusic, environment, owner]);
 
   useFrame((_, delta) => {
-    if (!enabled || document.hidden) return;
+    if (!enabled || document.hidden) { if (cues) cues.current.length = 0; return; }
+    const pendingCues = cues?.current.splice(0) ?? [];
+    for (const soundId of pendingCues) {
+      const active = layers.current.find(entry => entry.layer.soundId === soundId && entry.layer.mode === "event");
+      if (active) playSound(active.id);
+    }
     elapsed.current += Math.min(delta, 0.1);
     if (elapsed.current < sampleAt.current) return;
     sampleAt.current = elapsed.current + 0.1;
     layers.current.forEach((active) => {
-      const target = worldSoundGain(active.layer.condition, environment.current);
+      const target = worldSoundGain(active.layer.condition, environment.current) * (latestMix.current?.gain ?? 1);
       // Weather and day/night use a separate native gain; the voice owns one entry/exit fade.
-      setSoundMix(active.id, { gain: target }, 110);
+      setSoundMix(active.id, { gain: target, lowpassHz: latestMix.current?.lowpassHz }, 350);
+      if (active.layer.mode === "loop" && !active.started && target > 0) {
+        active.started = true;
+        playSound(active.id);
+      }
       if (active.layer.mode === "random" && elapsed.current >= active.nextAt) {
         const clips = active.layer.excerpts;
         const index = clips?.length ? Math.floor(Math.random() * clips.length) : -1;

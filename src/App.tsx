@@ -1,5 +1,5 @@
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { lazy, useEffect, useRef, useState, type CSSProperties } from "react";
 import { FullScreen, ContentWidth, FillColumn } from "@/layout";
 import MainLayout from "@/layout/MainLayout";
 import { GlobalStyle } from "@/styles/global";
@@ -14,18 +14,21 @@ import {
 } from "@/store";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { DebugSceneTuningOverlays } from "@/components/DebugSceneTuningOverlays";
+import { RouteScreenTransitions } from "@/components/RouteScreenTransitions";
+import { RouteLoadingBoundary } from "@/components/RouteLoadingBoundary";
 
-import Home from "./routes/Home";
-import About from "./routes/About";
 import { AnimatePresence, motion } from "motion/react";
 import { useMessageSystem } from "@/hooks/useMessageSystem";
 import { useQuestSystem } from "@/hooks/useQuestSystem";
 import { FloatingBarProvider, FloatingBarUI } from "./layout/FloatingBar";
 import { CursorInputBridge } from "./bridges/CursorInputBridge";
 import { ClickableBridge } from "./bridges/ClickableBridge";
-import MiniGames from "./routes/MiniGames";
-import Portfolio from "./routes/Portfolio";
 import { useI18n } from "@/i18n";
+
+const Home = lazy(() => import("./routes/Home"));
+const About = lazy(() => import("./routes/About"));
+const Portfolio = lazy(() => import("./routes/Portfolio"));
+const MiniGames = lazy(() => import("./routes/MiniGames"));
 
 const SILEO_TOAST_DURATION_MS = 6000;
 
@@ -45,20 +48,10 @@ const ToastTopLights = () => (
 
 export default function App() {
   const location = useLocation();
-  const { setCurrentRoute } = useAppStore();
+  const setCurrentRoute = useAppStore((state) => state.setCurrentRoute);
   const unlockRouteFromUrl = useCoreStore((state) => state.unlockRouteFromUrl);
-  const {
-    currentView,
-    isImageFocused,
-    isTransitioning,
-    cameraControlsRef,
-    previousView,
-    viewMode,
-    previousViewMode,
-    defaultViewMode,
-    lastFocusPosition,
-    syncViewToRoute,
-  } = useViewStore();
+  const gameHydrated = useCoreStore((state) => state.isHydrated);
+  const syncViewToRoute = useViewStore((state) => state.syncViewToRoute);
   const viewDebuggerVisible = useCoreStore(
     (state) => state.viewDebuggerVisible,
   );
@@ -69,16 +62,11 @@ export default function App() {
   const routeChipTimeoutRef = useRef<number | null>(null);
   const { locale } = useI18n();
 
-  // init message system globally
-  // not a real hook (TODO: change name)
-  useMessageSystem();
-  useQuestSystem();
-
   useEffect(() => {
     const nextPath = location.pathname;
     const previousPath = previousPathRef.current;
 
-    unlockRouteFromUrl(nextPath, location.search);
+    if (gameHydrated) unlockRouteFromUrl(nextPath, location.search);
     setCurrentRoute(nextPath);
     syncViewToRoute(nextPath);
 
@@ -102,6 +90,7 @@ export default function App() {
     setCurrentRoute,
     syncViewToRoute,
     unlockRouteFromUrl,
+    gameHydrated,
   ]);
 
   useEffect(() => {
@@ -120,6 +109,7 @@ export default function App() {
   return (
     <ThemeProvider>
       <FloatingBarProvider>
+        <AppSystems />
         <GlobalStyle />
 
         <Toaster
@@ -153,100 +143,27 @@ export default function App() {
 
         <FullScreen>
           {viewDebuggerVisible && (
-            <ViewDebug layout>
-              <p>
-                CameraControls:{" "}
-                <DebugValueChip>
-                  {cameraControlsRef?.current?.active ? "active" : "-"}
-                </DebugValueChip>
-              </p>
-              <p>
-                LastFocusPoint: x:
-                <DebugValueChip>
-                  {lastFocusPosition?.x.toFixed(0)}
-                </DebugValueChip>{" "}
-                y:
-                <DebugValueChip>
-                  {lastFocusPosition?.y.toFixed(0)}
-                </DebugValueChip>{" "}
-                z:
-                <DebugValueChip>
-                  {lastFocusPosition?.z.toFixed(0)}
-                </DebugValueChip>
-              </p>
-              <p>
-                Distance:{" "}
-                <DebugValueChip>
-                  {cameraControlsRef?.current?.distance.toFixed(2)}
-                </DebugValueChip>
-              </p>
-              <p>
-                Polar Angle:{" "}
-                <DebugValueChip>
-                  {cameraControlsRef?.current?.polarAngle.toFixed(2)}
-                </DebugValueChip>
-              </p>
-              <p>
-                Polar min:{" "}
-                <DebugValueChip>
-                  {cameraControlsRef?.current?.minPolarAngle.toFixed(2)}
-                </DebugValueChip>
-              </p>
-              <p>
-                Polar max:{" "}
-                <DebugValueChip>
-                  {cameraControlsRef?.current?.minPolarAngle.toFixed(2)}
-                </DebugValueChip>
-              </p>
-              <p>
-                Azimuth Angle:{" "}
-                <DebugValueChip>
-                  {cameraControlsRef?.current?.azimuthAngle.toFixed(2)}
-                </DebugValueChip>
-              </p>
-              <hr />
-              <p>
-                transitioning?{" "}
-                <DebugValueChip>
-                  {isTransitioning ? "yes" : "no"}
-                </DebugValueChip>
-              </p>
-              <p>
-                Current View: <DebugValueChip>{currentView}</DebugValueChip>
-              </p>
-              <p>
-                Previous View: <DebugValueChip>{previousView}</DebugValueChip>
-              </p>
-              <hr />
-              <p>
-                Default ViewMode:{" "}
-                <DebugValueChip>{defaultViewMode}</DebugValueChip>
-              </p>
-              <p>
-                Current ViewMode: <DebugValueChip>{viewMode}</DebugValueChip>
-              </p>
-              <p>
-                Previous ViewMode:{" "}
-                <DebugValueChip>{previousViewMode}</DebugValueChip>
-              </p>
-            </ViewDebug>
+            <ViewDebugger />
           )}
 
           <DebugSceneTuningOverlays />
 
+          <RouteScreenTransitions />
           <MainLayout>
             <ContentWrapper>
               <ContentWidth>
-                <Routes>
-                  <Route path={ROUTE_PATHS.HOME} element={<Home />} />
-                  <Route path={ROUTE_PATHS.ABOUT} element={<About />} />
-                  <Route path={ROUTE_PATHS.PORTFOLIO} element={<Portfolio />} />
-                  <Route path={ROUTE_PATHS.MINIGAMES} element={<MiniGames />} />
-                  <Route
-                    path="*"
-                    element={<Navigate to={ROUTE_PATHS.HOME} replace />}
-                  />
-                </Routes>
+                <RouteLoadingBoundary route={location.pathname}>
+                  <Routes>
+                    <Route path={ROUTE_PATHS.HOME} element={<Home />} />
+                    <Route path={ROUTE_PATHS.ABOUT} element={<About />} />
+                    <Route path={ROUTE_PATHS.PORTFOLIO} element={<Portfolio />} />
+                    <Route path={ROUTE_PATHS.MINIGAMES} element={<MiniGames />} />
+                    <Route
+                      path="*"
+                      element={<Navigate to={ROUTE_PATHS.HOME} replace />}
+                    />
+                  </Routes>
+                </RouteLoadingBoundary>
               </ContentWidth>
             </ContentWrapper>
           </MainLayout>
@@ -257,6 +174,105 @@ export default function App() {
         </FullScreen>
       </FloatingBarProvider>
     </ThemeProvider>
+  );
+}
+
+// Keep progress subscriptions in a leaf so auto taps do not render the app shell.
+function AppSystems() {
+  useMessageSystem();
+  useQuestSystem();
+  return null;
+}
+
+function ViewDebugger() {
+  const {
+    currentView,
+    isTransitioning,
+    cameraControlsRef,
+    previousView,
+    viewMode,
+    previousViewMode,
+    defaultViewMode,
+    lastFocusPosition,
+  } = useViewStore();
+  return (
+    <ViewDebug layout>
+      <p>
+        CameraControls:{" "}
+        <DebugValueChip>
+          {cameraControlsRef?.current?.active ? "active" : "-"}
+        </DebugValueChip>
+      </p>
+      <p>
+        LastFocusPoint: x:
+        <DebugValueChip>
+          {lastFocusPosition?.x.toFixed(0)}
+        </DebugValueChip>{" "}
+        y:
+        <DebugValueChip>
+          {lastFocusPosition?.y.toFixed(0)}
+        </DebugValueChip>{" "}
+        z:
+        <DebugValueChip>
+          {lastFocusPosition?.z.toFixed(0)}
+        </DebugValueChip>
+      </p>
+      <p>
+        Distance:{" "}
+        <DebugValueChip>
+          {cameraControlsRef?.current?.distance.toFixed(2)}
+        </DebugValueChip>
+      </p>
+      <p>
+        Polar Angle:{" "}
+        <DebugValueChip>
+          {cameraControlsRef?.current?.polarAngle.toFixed(2)}
+        </DebugValueChip>
+      </p>
+      <p>
+        Polar min:{" "}
+        <DebugValueChip>
+          {cameraControlsRef?.current?.minPolarAngle.toFixed(2)}
+        </DebugValueChip>
+      </p>
+      <p>
+        Polar max:{" "}
+        <DebugValueChip>
+          {cameraControlsRef?.current?.minPolarAngle.toFixed(2)}
+        </DebugValueChip>
+      </p>
+      <p>
+        Azimuth Angle:{" "}
+        <DebugValueChip>
+          {cameraControlsRef?.current?.azimuthAngle.toFixed(2)}
+        </DebugValueChip>
+      </p>
+      <hr />
+      <p>
+        transitioning?{" "}
+        <DebugValueChip>
+          {isTransitioning ? "yes" : "no"}
+        </DebugValueChip>
+      </p>
+      <p>
+        Current View: <DebugValueChip>{currentView}</DebugValueChip>
+      </p>
+      <p>
+        Previous View: <DebugValueChip>{previousView}</DebugValueChip>
+      </p>
+      <hr />
+      <p>
+        Default ViewMode:{" "}
+        <DebugValueChip>{defaultViewMode}</DebugValueChip>
+      </p>
+      <p>
+        Current ViewMode: <DebugValueChip>{viewMode}</DebugValueChip>
+      </p>
+      <p>
+        Previous ViewMode:{" "}
+        <DebugValueChip>{previousViewMode}</DebugValueChip>
+      </p>
+    </ViewDebug>
   );
 }
 

@@ -3,10 +3,14 @@ import { defineMessages } from "@/i18n/defineMessages";
 export const bobPhoneMessages = defineMessages({
   de: {
     phoneLabel: "Phone",
+    soundLabel: "Sound",
+    appLoadError: "Die App konnte nicht geladen werden.",
     apps: {
       bob: "Bob",
-      options: "Optionen",
-      chat: "Chat",
+      settings: "Optionen",
+      help: "Hilfe",
+      photos: "Fotos",
+      shop: "Shop",
       quests: "Quests",
       credits: "Credits",
       debug: "Debug",
@@ -15,10 +19,14 @@ export const bobPhoneMessages = defineMessages({
   },
   en: {
     phoneLabel: "Phone",
+    soundLabel: "Sound",
+    appLoadError: "The app could not be loaded.",
     apps: {
       bob: "Bob",
-      options: "Options",
-      chat: "Chat",
+      settings: "Options",
+      help: "Help",
+      photos: "Photos",
+      shop: "Shop",
       quests: "Quests",
       credits: "Credits",
       debug: "Debug",

@@ -6,7 +6,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAppStore } from "@/store";
 import { useSocialsStore } from "@/store/socials";
 import { CloseIcon } from "@/icons/close";
-import { OVERLAY_ROOT_ID } from "@/3d-objects/books/overlay";
 import { useI18n } from "@/i18n";
 
 import { SocialsOverlayContent } from "./content";
@@ -253,7 +252,7 @@ export const SocialsPortalOverlay = () => {
 
   const root =
     typeof document !== "undefined"
-      ? document.getElementById(OVERLAY_ROOT_ID)
+      ? document.getElementById("motion-root")
       : null;
 
   if (!root) return null;

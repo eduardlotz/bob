@@ -15,7 +15,6 @@ export function MiniGameHighscoreOverlay() {
   const showChip =
     location.pathname === ROUTE_PATHS.MINIGAMES &&
     activeGame !== "LOBBY" &&
-    activeGame !== "SLOT_MACHINE" &&
     activeGame !== "FLAPPY_BIRD" &&
     activeGame !== "PING_PONG";
 

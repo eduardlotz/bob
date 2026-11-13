@@ -231,9 +231,9 @@ function Option({
   const optionRef = useRef<THREE.Group>(null!);
   const navigate = useNavigate();
   const { locale } = useI18n();
-  const { currentRoute } = useAppStore();
-  const { canAfford, purchaseRoute } = useCoreStore();
-  const { showMessage } = useMessageStore();
+  const currentRoute = useAppStore(state => state.currentRoute);
+  const purchaseRoute = useCoreStore(state => state.purchaseRoute);
+  const showMessage = useMessageStore(state => state.showMessage);
   const variants = useMemo(
     () => ({
       hidden: MotionVariants.OptionButton.initial,
@@ -257,7 +257,7 @@ function Option({
   };
 
   const handleOptionClick = () => {
-    match({ ...route, canPurchase: canAfford(route.cost) })
+    match({ ...route, canPurchase: useCoreStore.getState().canAfford(route.cost) })
       .with({ isLocked: false, purchased: false, canPurchase: true }, () => {
         purchaseRoute(route.id);
         resetCamAndNavigate();
@@ -289,14 +289,15 @@ function Option({
           $active={isActive}
           $locked={!route.isLocked}
           exit="closed"
-          whileHover={MotionVariants.OptionButton.hover({
+          whileHover={isClosing ? undefined : MotionVariants.OptionButton.hover({
             isDisabled: !route.purchased,
             isLocked: route.isLocked,
           })}
-          whileTap={MotionVariants.OptionButton.tap}
+          whileTap={isClosing ? undefined : MotionVariants.OptionButton.tap}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={handleOptionClick}
           data-ui-sound-id="ui-tap-close"
+          data-menu-route={route.path}
         >
           {!route.purchased && <PriceChip>{route.cost} 🫵</PriceChip>}
           {route.isLocked && (
@@ -304,8 +305,8 @@ function Option({
               <LockIcon />
             </PriceChip>
           )}
-          <RouteName>{getRouteCopyByPath(route.path, locale).name}</RouteName>
-          <BackgroundColor $active={isActive} />
+          <RouteName data-menu-route-label>{getRouteCopyByPath(route.path, locale).name}</RouteName>
+          <BackgroundColor $active={isActive} data-menu-bubble-fill />
         </NavigationBubble>
       </Html>
     </group>

@@ -37,3 +37,6 @@ next-env.d.ts
 node_modules
 .env
 .yarn/install-state.gz
+
+# Local artwork previews awaiting public-use permission
+/.local-art/

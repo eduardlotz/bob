@@ -129,7 +129,7 @@ export const ROUTE_CONFIG = {
     id: ROUTE_IDS.MINIGAMES,
     name: routeMessages.de.byPath[ROUTE_PATHS.MINIGAMES].name,
     description: routeMessages.de.byPath[ROUTE_PATHS.MINIGAMES].description,
-    cost: 200,
+    cost: 1000,
     icon: "🎮",
     isLocked: false,
   },
@@ -147,18 +147,6 @@ export const ROUTES = [
   {
     path: ROUTE_PATHS.PORTFOLIO,
     label: ROUTE_CONFIG[ROUTE_PATHS.PORTFOLIO].name,
-  },
-  {
-    path: ROUTE_PATHS.TECHNICAL,
-    label: ROUTE_CONFIG[ROUTE_PATHS.TECHNICAL].name,
-  },
-  {
-    path: ROUTE_PATHS.CREATIVE,
-    label: ROUTE_CONFIG[ROUTE_PATHS.CREATIVE].name,
-  },
-  {
-    path: ROUTE_PATHS.GUESTBOOK,
-    label: ROUTE_CONFIG[ROUTE_PATHS.GUESTBOOK].name,
   },
   {
     path: ROUTE_PATHS.MINIGAMES,

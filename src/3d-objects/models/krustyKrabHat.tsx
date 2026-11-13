@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import React, { useEffect, useMemo, useRef } from "react";
-import { useGLTF, Wireframe } from "@react-three/drei";
+import React, { useEffect, useRef } from "react";
+import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { a, useSpring } from "@react-spring/three";
 import { useCoreStore } from "@/store";
@@ -25,35 +25,15 @@ interface Props {
   position: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
-  outlineColor?: string;
   preview: boolean;
 }
 
 export const KrustyKrabHat = ({
   scale = [1, 1, 1],
-  outlineColor = "#000000",
   ...props
 }: Props) => {
   const group = useRef<THREE.Group>(null!);
   const { nodes, materials } = useGLTF(PATH) as GLTFResult;
-  const wireframeGeometries = useMemo(
-    () => ({
-      hat: nodes["Cylinder001_02_-_Default_0"].geometry.toNonIndexed(),
-      brim: nodes["Cylinder001_01_-_Default_0"].geometry.toNonIndexed(),
-      band: nodes["Cylinder001_03_-_Default_0"].geometry.toNonIndexed(),
-    }),
-    [nodes],
-  );
-
-  useEffect(
-    () => () => {
-      wireframeGeometries.hat.dispose();
-      wireframeGeometries.brim.dispose();
-      wireframeGeometries.band.dispose();
-    },
-    [wireframeGeometries],
-  );
-
   const [spring, api] = useSpring(() => ({
     scale: [0, 0, 0], // start invisible
     config: { tension: 200, friction: 15 },
@@ -84,48 +64,37 @@ export const KrustyKrabHat = ({
           <mesh
           castShadow
           receiveShadow
-          geometry={wireframeGeometries.hat}
+          geometry={nodes["Cylinder001_02_-_Default_0"].geometry}
           material={materials["02_-_Default"]}
         >
           <meshToonMaterial
             color={"#191919"}
             {...(props.preview ? previewMaterialProps : {})}
           />
-          {props.preview && (
-            <Wireframe thickness={0.04} backfaceStroke={outlineColor} />
-          )}
         </mesh>
           <mesh
           castShadow
           receiveShadow
-          geometry={wireframeGeometries.brim}
+          geometry={nodes["Cylinder001_01_-_Default_0"].geometry}
           material={materials["01_-_Default"]}
         >
           <meshToonMaterial
             color={"white"}
             {...(props.preview ? previewMaterialProps : {})}
           />
-          {props.preview && (
-            <Wireframe thickness={0.04} backfaceStroke={outlineColor} />
-          )}
         </mesh>
           <mesh
           castShadow
           receiveShadow
-          geometry={wireframeGeometries.band}
+          geometry={nodes["Cylinder001_03_-_Default_0"].geometry}
           material={materials["03_-_Default"]}
         >
           <meshToonMaterial
             color="#75d1f0"
             {...(props.preview ? previewMaterialProps : {})}
           />
-          {props.preview && (
-            <Wireframe thickness={0.04} backfaceStroke={outlineColor} />
-          )}
         </mesh>
       </group>
     </a.group>
   );
 };
-
-useGLTF.preload(PATH);

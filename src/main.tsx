@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { ErrorBoundary } from "react-error-boundary";
 
 import App from "./App";
@@ -26,9 +26,10 @@ function ErrorFallback({
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <BrowserRouter>
+const router = createBrowserRouter([
+  {
+    path: "*",
+    element: (
       <ErrorBoundary
         fallbackRender={({ error, resetErrorBoundary }) => (
           <ErrorFallback
@@ -39,6 +40,12 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       >
         <App />
       </ErrorBoundary>
-    </BrowserRouter>
+    ),
+  },
+]);
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <RouterProvider router={router} />
   </React.StrictMode>
 );

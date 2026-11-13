@@ -18,6 +18,7 @@ import {
 const cloneInitialQuests = () => initialQuests.map((quest) => ({ ...quest }));
 
 const getResetQuestState = () => ({
+  version: QUESTS_STORE_VERSION.LATEST,
   quests: cloneInitialQuests(),
   activeQuests: [],
   notifiedCompletionKeys: [],

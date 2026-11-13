@@ -32,6 +32,9 @@ export const getShopItemCopy = (
 };
 
 const getBobItemCopyMap = {
+  cigar: true,
+  bigSmile: true,
+  sleepingHat: true,
   topHat: true,
   toonSunglasses: true,
   dimmadomeHat: true,
@@ -52,6 +55,9 @@ const getBobItemCopyMap = {
 } as const;
 
 const getTapEffectCopyMap = {
+  tap_effect_autumn: true,
+  tap_effect_paint: true,
+  tap_effect_sparkles: true,
   tap_effect_comic: true,
   tap_effect_flowers: true,
   tap_effect_ducks: true,

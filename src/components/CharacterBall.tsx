@@ -1,8 +1,11 @@
-import { forwardRef, Suspense, useMemo } from "react";
+import { useBobSkin } from "@/hooks/useBobSkin";
+import { BobTransitionTarget } from "./BobTransitionTarget";
+import type { BobSkin } from "./bob/skins/registry";
+import { forwardRef, Suspense, useMemo, useEffect } from "react";
 import { RigidBody, BallCollider } from "@react-three/rapier";
 import { BlobForm } from "./BlobForm";
 import { BobWearables } from "./BobWearables";
-import { getBobEyePosition, getBobFaceScale } from "@/types/blobForms";
+import { getBobEyePosition, getBobFaceScale, DEFAULT_FORM_PARAMETERS, type BlobFormType, type BlobFormParameters } from "@/types/blobForms";
 import { useActiveBobShape } from "@/hooks/useActiveBobShape";
 import { getGameBallPhysics } from "@/utils/gameSizing";
 import { useCoreStore } from "@/store";
@@ -22,21 +25,12 @@ type Props = Omit<
 
 // TODO: add emotions like blink and dizzy on hit
 export const CharacterBall = forwardRef((props: Props, ref: any) => {
-  const currentTheme = useCoreStore((state) => state.currentTheme);
+  const skin = useBobSkin();
   const bobItems = useCoreStore((state) => state.bobItems);
-  const ditheringEnabled = useCoreStore(
-    (state) => state.graphicPreferences.ditheringEnabled,
-  );
   const { formType, parameters, sizeFactor } = useActiveBobShape();
 
-  const blobColor = currentTheme?.blobColor;
-  const eyeColor = currentTheme?.eyeColor;
-  const outlineColor = currentTheme?.outlineColor;
-
-  const eyeGeoms = useMemo(() => {
-    const sphere = new SphereGeometry(0.12, 16, 16);
-    return sphere.clone();
-  }, []);
+  const blobColor = skin.body;
+  const eyeColor = skin.eyes;
 
   const {
     position,
@@ -66,35 +60,40 @@ export const CharacterBall = forwardRef((props: Props, ref: any) => {
     >
       <BallCollider args={[physics.radius]} mass={physics.mass} />
 
-      <group ref={visualRef} scale={scale}>
-        <BlobForm
-          formType={formType}
-          parameters={parameters}
-          blobColor={blobColor || "#ffffff"}
-          // outlineColor={ditheringEnabled ? outlineColor : undefined}
-          outlineColor={outlineColor}
-        />
-
-        <group
-          position={getBobEyePosition([0, 0.2, 0.85], formType, parameters)}
-          scale={getBobFaceScale(formType, parameters)}
-        >
-          <mesh geometry={eyeGeoms} position={[-0.45, 0, 0]}>
-            <meshToonMaterial color={eyeColor || "#000000"} />
-          </mesh>
-          <mesh geometry={eyeGeoms} position={[0.45, 0, 0]}>
-            <meshToonMaterial color={eyeColor || "#000000"} />
-          </mesh>
-        </group>
+      <CharacterBallModel ref={visualRef} scale={scale} formType={formType} parameters={parameters} transitionTarget
+        blobColor={blobColor} eyeColor={eyeColor} skin={skin}>
         <Suspense fallback={null}>
           <BobWearables
             items={bobItems.filter((item) => item.enabled)}
             blobFormType={formType}
             parameters={parameters}
-            outlineColor={outlineColor}
           />
         </Suspense>
-      </group>
+      </CharacterBallModel>
     </RigidBody>
   );
+});
+
+/** Shared game model: skins follow Bob everywhere; shape/physics remain opt-in. */
+export const CharacterBallModel = forwardRef<Group, {
+  scale?: number | [number, number, number]; formType?: BlobFormType; parameters?: BlobFormParameters;
+  skin?: BobSkin; blobColor?: string; eyeColor?: string; children?: React.ReactNode; transitionTarget?: boolean;
+}>(function CharacterBallModel({ scale = 1, formType = "sphere", parameters = DEFAULT_FORM_PARAMETERS.sphere,
+  blobColor, eyeColor, skin: skinOverride, children, transitionTarget = false }, ref) {
+  const selectedSkin = useBobSkin();
+  const skin = skinOverride ?? selectedSkin;
+  blobColor ??= skin.body;
+  eyeColor ??= skin.eyes;
+  const eyes = useMemo(() => new SphereGeometry(.12, 16, 16), []);
+  useEffect(() => () => eyes.dispose(), [eyes]);
+  return <group ref={ref} scale={scale}>
+    <BobTransitionTarget enabled={transitionTarget}>
+      <BlobForm formType={formType} parameters={parameters} blobColor={blobColor} skin={skin} />
+      <group position={getBobEyePosition([0, .2, .85], formType, parameters)} scale={getBobFaceScale(formType, parameters)}>
+        <mesh geometry={eyes} position={[-.45, 0, 0]}><meshToonMaterial color={eyeColor} /></mesh>
+        <mesh geometry={eyes} position={[.45, 0, 0]}><meshToonMaterial color={eyeColor} /></mesh>
+      </group>
+    </BobTransitionTarget>
+    {children}
+  </group>;
 });

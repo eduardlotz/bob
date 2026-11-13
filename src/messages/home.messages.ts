@@ -10,7 +10,8 @@ export const homeMessageConfigs = defineMessages<Record<string, MessageConfig>>(
           "Hey hey, ich bin der Bob 😗✌️",
           "Willkommen auf Eddies persönlicher Website!",
           "hier ist alles ein wenig anders als du es wahrscheinlich gewohnt bist, aber ich geb mein Bestes, dich mit Infos zu versorgen 🤞",
-          "zum Start kannst du mich ja erstmal antippen 🫵 das macht spaß, vertrau mir!",
+          "zum Start kannst du mich ja erstmal antippen und ein paar Taps 🫵 sammeln!",
+          "Damit kannst du dir später ein paar tolle Sachen kaufen, also let's gooo",
         ],
         label: "Bob",
         options: {
@@ -92,7 +93,7 @@ export const homeMessageConfigs = defineMessages<Record<string, MessageConfig>>(
       },
       return_greeting_7: {
         id: "return_greeting_7",
-        text: ["👁️      👁️\n    👅   "],
+        text: ["👁️   👅   👁️"],
         label: "Bob",
         options: {
           typingSpeedMs: 28,
@@ -115,8 +116,8 @@ export const homeMessageConfigs = defineMessages<Record<string, MessageConfig>>(
       return_shop_affordable: {
         id: "return_shop_affordable",
         text: [
-          "Hast du eigentlich schon den shop gesehen? ",
-          "Tippe unten auf Shop, da wirst du bestimmt was Cooles finden, um die ganzen Taps wieder auszugeben 🤪",
+          "Hast du dir schon den Shop angesehen? ",
+          "Schau mal unten im Phone, du wirst bestimmt was Cooles finden, um die ganzen Taps wieder auszugeben!",
         ],
         label: "Bob",
         options: {
@@ -130,8 +131,8 @@ export const homeMessageConfigs = defineMessages<Record<string, MessageConfig>>(
       first_tap_hint: {
         id: "first_tap_hint",
         text: [
-          "Übrigenski: Auf der der Homepage kannst du unten immer ein paar Tap Upgrades kaufen",
-          "Das erste Upgrade ist sogar fast geschenkt 🤪",
+          "Übrigenski: Auf der Homepage kannst du unten immer ein paar Tap Upgrades kaufen",
+          "Der Auto-Tapper ist sogar fast geschenkt! ✨",
         ],
         label: "Bob",
         options: {
@@ -150,7 +151,8 @@ export const homeMessageConfigs = defineMessages<Record<string, MessageConfig>>(
           "Hey hey, I'm Bob 😗✌️",
           "Welcome to Eddie's personal website!",
           "Things are a bit different here than what you're probably used to, but I'll do my best to keep you informed 🤞",
-          "For starters, just tap me 🫵 it's fun, trust me!",
+          "For starters, tap me to collect some taps 🫵!",
+          "You can spend them on cool stuff later, so let’s gooo",
         ],
         label: "Bob",
         options: {
@@ -232,7 +234,7 @@ export const homeMessageConfigs = defineMessages<Record<string, MessageConfig>>(
       },
       return_greeting_7: {
         id: "return_greeting_7",
-        text: ["👁️      👁️\n    👅   "],
+        text: ["👁️   👅   👁️"],
         label: "Bob",
         options: {
           typingSpeedMs: 28,
@@ -256,7 +258,7 @@ export const homeMessageConfigs = defineMessages<Record<string, MessageConfig>>(
         id: "return_shop_affordable",
         text: [
           "Have you already checked out the shop?",
-          "Tap Shop below, you'll probably find something cool to spend all those taps on 🤪",
+          "Look in the Phone below — you’ll find something cool to spend those taps on!",
         ],
         label: "Bob",
         options: {
@@ -271,7 +273,7 @@ export const homeMessageConfigs = defineMessages<Record<string, MessageConfig>>(
         id: "first_tap_hint",
         text: [
           "By the wayski: on the homepage you can always buy a few tap upgrades down below",
-          "The first upgrade is almost for free 🤪",
+          "The Auto Tapper is almost free! ✨",
         ],
         label: "Bob",
         options: {

@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { memo, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { GradientTexture, Grid, Sparkles } from "@react-three/drei";
 import { BackSide } from "three";
@@ -28,7 +28,7 @@ import { WorldFog } from "./worlds/WorldFog";
 import { Nebula } from "./worlds/Nebula";
 import { WeatherParticles } from "./worlds/WeatherParticles";
 import { seededRandom, useWorldQuality } from "./worlds/quality";
-import { GrassField } from "./worlds/DenseGrassField";
+import { GrassField, type GrassExclusion } from "./worlds/DenseGrassField";
 import { CloudEffect, ForestRainEffect, SnowEffect } from "./ParticleEffects";
 
 import { IslandWorld, UnderwaterWorld, UnderwaterSky } from "./worlds/TropicalWorlds";
@@ -36,6 +36,7 @@ import { WinterSnowmen } from "./worlds/ChristmasDecorations";
 import { HalloweenWorld } from "./worlds/HalloweenWorld";
 
 const FLOOR_Y = -1.36;
+const forestGrassClearings: GrassExclusion[] = [{ center: [0, 2 / 1.28], radius: .7 }];
 const SPACE_WORLD_EFFECT_IDS = new Set([
   "world_space",
   "space_void",
@@ -313,7 +314,7 @@ function WorldModel({
           scale={[1.28, 1, 1.28]}
           radius={72}
           height={0.65}
-          exclusions={[{ center: [0, 2 / 1.28], radius: .7 }]}
+          exclusions={forestGrassClearings}
           flowers
         />
       );
@@ -488,7 +489,7 @@ export function SceneDecorations() {
 }
 
 /** World composition is independent of shop selection and can be rendered in isolated previews. */
-export function WorldScenery({ config, preview = false }: { config: WorldSceneConfig; preview?: boolean }) {
+export const WorldScenery = memo(function WorldScenery({ config, preview = false }: { config: WorldSceneConfig; preview?: boolean }) {
   const quality = useWorldQuality();
   const scene = useMemo(() => normalizeWorldScene(config), [config]);
 
@@ -516,4 +517,4 @@ export function WorldScenery({ config, preview = false }: { config: WorldSceneCo
       ))}
     </group>
   );
-}
+});

@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useShallow } from "zustand/react/shallow";
+import React, { useState, useRef } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence, useIsPresent, useReducedMotion } from "motion/react";
 import { CloseIcon } from "@/icons/close";
@@ -7,22 +8,14 @@ import { FillColumn, FillRow, HugColumn } from "@/layout";
 import { TimeChip } from "@/components/StatusChips";
 
 import { PhoneMenuIcon } from "@/icons/phoneMenu";
-import { useCoreStore, useViewStore } from "@/store";
-import { useSoundSystem } from "@/hooks/useSoundSystem";
-import { SpeakerIcon } from "@/icons/speaker";
-import { BobApp, BobIcon, BobResetButton } from "@/apps/bob";
+import { useViewStore } from "@/store";
+import { PhoneSoundToggle } from "@/components/PhoneSoundToggle";
 import { useKeyPress } from "@/hooks/useKeyPress";
-import { DebugApp, DebugIcon } from "@/apps/debug";
 import { useClickOutside } from "@/hooks/useClickOutside";
-import { QuestsApp, QuestsCompletionChip, QuestsIcon } from "@/apps/quests";
-import { OptionsApp, OptionsIcon } from "@/apps/options";
 import { playUISound } from "@/utils/soundSystem";
-import { ChatApp, ChatIcon } from "@/apps/chat";
-import { CreditsApp, CreditsIcon } from "@/apps/credits";
-import { StatusPillButton } from "@/apps/ui";
-
-import { CameraApp, CameraIcon } from "@/apps/camera";
-import { usePhoneBodyClip } from "@/hooks/usePhoneClip";
+import { PHONE_APP_IDS, PHONE_APP_MODULES, type PhoneAppId } from "@/apps/phoneApps";
+import { usePhoneApp } from "@/apps/usePhoneApp";
+import { PhoneAppLoading } from "@/components/PhoneAppLoading";
 import { useI18n } from "@/i18n";
 import { useAppStore } from "@/store";
 
@@ -34,106 +27,45 @@ import {
   usePanelMotion,
 } from "@/styles/panelMotion";
 
-type AppId =
-  | "bob"
-  | "options"
-  | "chat"
-  | "quests"
-  | "credits"
-  | "debug"
-  | "camera";
-
-interface BobAppData {
-  id: AppId;
-  icon: any; // fix type, jsx not working
-  view: React.JSX.Element;
-  bottomAction?: React.JSX.Element;
-  hideStatusBar?: boolean;
-}
-
-const BOB_APPS: Array<BobAppData> = [
-  {
-    id: "credits",
-    icon: CreditsIcon,
-    view: <CreditsApp />,
-  },
-  {
-    id: "options",
-    icon: OptionsIcon,
-    view: <OptionsApp />,
-    // bottomAction: <AppInfo style={{ marginRight: "0.5rem" }}>Beta</AppInfo>,
-    hideStatusBar: true,
-  },
-  {
-    id: "debug",
-    icon: DebugIcon,
-    view: <DebugApp />,
-  },
-  {
-    id: "chat",
-    icon: ChatIcon,
-    view: <ChatApp />,
-  },
-  {
-    id: "bob",
-    icon: BobIcon,
-    view: <BobApp />,
-    bottomAction: <BobResetButton />,
-    hideStatusBar: true,
-  },
-  {
-    id: "quests",
-    icon: QuestsIcon,
-    view: <QuestsApp />,
-    bottomAction: <QuestsCompletionChip />,
-  },
-  {
-    id: "camera",
-    icon: CameraIcon,
-    view: <CameraApp />,
-    hideStatusBar: true,
-  },
-];
-
 interface BobPhoneProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
 }
 
-// MAYDO: check ref error
 export const BobPhone = (props: BobPhoneProps) => {
   const panelMotion = usePanelMotion();
   const reducedMotion = useReducedMotion();
-  const containerRef = useRef(null);
-  const triggerRef = useRef(null);
-  const { transitionToView, currentView, resetToDefaultView } = useViewStore();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const { transitionToView, currentView, resetToDefaultView } = useViewStore(useShallow(state => ({
+    transitionToView: state.transitionToView,
+    currentView: state.currentView,
+    resetToDefaultView: state.resetToDefaultView,
+  })));
   const showOptions = useAppStore((state) => state.showOptions);
-  const [activeApp, setActiveApp] = useState<AppId | undefined>();
+  const [openCycle, setOpenCycle] = useState(0);
+  const [activeApp, setActiveApp] = useState<PhoneAppId | undefined>();
+  const [shopPreview, setShopPreview] = useState(false);
+  const { snapshot, retry } = usePhoneApp(activeApp, props.isOpen);
+  const loadedApp = snapshot.status === "ready" ? snapshot.value : undefined;
+  const ActiveView = loadedApp?.View;
+  const ActiveAction = loadedApp?.Action;
 
-  const clipStyle = usePhoneBodyClip();
   const { messages } = useI18n();
-  const appNameMap: Record<AppId, string> = messages.phone.apps;
+  const appNameMap: Record<PhoneAppId, string> = messages.phone.apps;
 
-  const openApp = (appName: AppId) => {
+  const openApp = (appName: PhoneAppId) => {
+    // Start downloading on selection, before the next render/effect.
+    void PHONE_APP_MODULES[appName].load().catch(() => { /* The app screen offers retry. */ });
     setActiveApp(appName);
+    if (!["bob", "settings", "camera", "shop"].includes(appName)) transitionToView("phone:home");
   };
 
-  const { toggle, isMuted, isEnabled } = useSoundSystem();
-  const { setSoundEnabled, resetPreview } = useCoreStore();
-
-  const activeAppView = () => BOB_APPS.find((a) => a.id === activeApp)?.view;
-  const hideStatusBar = BOB_APPS.find((a) => a.id === activeApp)?.hideStatusBar;
-  const activeAppBottomAction = () =>
-    BOB_APPS.find((a) => a.id === activeApp)?.bottomAction;
   const activeAppName = activeApp ? appNameMap[activeApp] : "";
-
-  const handleAudioButtonClick = () => {
-    toggle();
-    setSoundEnabled(isEnabled);
-  };
 
   const goToHomeScreen = () => {
     setActiveApp(undefined);
+    setShopPreview(false);
     transitionToView("phone:home");
   };
 
@@ -142,7 +74,9 @@ export const BobPhone = (props: BobPhoneProps) => {
       resetToDefaultView();
       props.setIsOpen(false);
     } else {
+      setOpenCycle(cycle => cycle + 1);
       setActiveApp(undefined);
+      setShopPreview(false);
       props.setIsOpen(true);
       transitionToView("phone:home");
     }
@@ -165,16 +99,6 @@ export const BobPhone = (props: BobPhoneProps) => {
     }
   });
 
-  useEffect(() => {
-    if (currentView.startsWith("phone:") && currentView !== "phone:bob") {
-      // setIsOpen(true);
-      resetPreview();
-    }
-    //  else {
-    //   setIsOpen(false);
-    // }
-  }, [currentView]);
-
   return (
     <>
       <NavButton
@@ -184,7 +108,7 @@ export const BobPhone = (props: BobPhoneProps) => {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         $isActive={props.isOpen}
-        {...panelMotion}
+        {...getPanelItemMotion(1, reducedMotion)}
         ref={triggerRef}
         layout="position"
       >
@@ -224,13 +148,12 @@ export const BobPhone = (props: BobPhoneProps) => {
 
       {/* The fixed measurement root must not also be the resizing surface:
           Motion intentionally skips layout animations on layoutRoot nodes. */}
-      <PhonePositioner layoutRoot>
+      <PhonePositioner ref={containerRef} layoutRoot>
         <AnimatePresence>
           {props.isOpen && (
             <PhoneShell
-              ref={containerRef}
-              clipStyle={clipStyle}
-              key="bob-phone-body"
+              key={`bob-phone-body-${openCycle}`}
+              $preview={activeApp === "shop" && shopPreview}
             >
               <HugColumn
                 $gap={activeApp ? "4px" : "0"}
@@ -239,8 +162,8 @@ export const BobPhone = (props: BobPhoneProps) => {
                 $align="center"
               >
                 {/* Keep the contents mounted while the whole phone exits. */}
-                <AnimatePresence mode="popLayout" initial={false}>
-                  {activeApp ? (
+                <AnimatePresence mode="popLayout" initial={false} propagate>
+                  {activeApp && !shopPreview ? (
                     <AppBottomActions
                       key="app_bottom_actions"
                       initial={{ filter: "blur(4px)", opacity: 0 }}
@@ -259,10 +182,10 @@ export const BobPhone = (props: BobPhoneProps) => {
                         <AppName>{activeAppName}</AppName>
                       </BackHomeButton>
 
-                      <AppAction>{activeAppBottomAction()}</AppAction>
+                      <AppAction>{ActiveAction && <ActiveAction />}</AppAction>
                     </AppBottomActions>
-                  ) : (
-                    <FillRow
+                  ) : !shopPreview ? (
+                    <PhoneStatusBar
                       key={"bob-phone-statusbar"}
                       initial={{ filter: "blur(4px)", opacity: 0 }}
                       animate={{ filter: "blur(0px)", opacity: 1 }}
@@ -273,27 +196,9 @@ export const BobPhone = (props: BobPhoneProps) => {
                     >
                       <TimeChip />
 
-                      <StatusPillButton
-                        $active={!isMuted}
-                        onClick={handleAudioButtonClick}
-                        layout="position"
-                      >
-                        <motion.div
-                          key={!isMuted ? "on" : "off"}
-                          initial={{ scale: 0, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          exit={{ scale: 0, opacity: 0 }}
-                          transition={{
-                            duration: 0.2,
-                            type: "spring",
-                            bounce: 0.7,
-                          }}
-                        >
-                          <SpeakerIcon muted={isMuted} />
-                        </motion.div>
-                      </StatusPillButton>
-                    </FillRow>
-                  )}
+                      <PhoneSoundToggle />
+                    </PhoneStatusBar>
+                  ) : null}
                 </AnimatePresence>
                 <PhoneContent
                   $gap={activeApp ? "4px" : "0"}
@@ -302,14 +207,16 @@ export const BobPhone = (props: BobPhoneProps) => {
                   transition={{ layout: PANEL_LAYOUT_SPRING }}
                   layout="position"
                 >
-                  <AnimatePresence mode="popLayout">
+                  <AnimatePresence mode="popLayout" propagate>
                     {activeApp ? (
                       <AppViewStage
                         key={activeApp}
                         layout="position"
                         {...panelMotion}
                       >
-                        {activeAppView()}
+                        {ActiveView
+                          ? <ActiveView onPreviewChange={setShopPreview} galleryOnly={activeApp === "photos"} />
+                          : <PhoneAppLoading name={activeAppName} failed={snapshot.status === "error"} onRetry={retry} />}
                       </AppViewStage>
                     ) : (
                       <AppGrid
@@ -323,14 +230,16 @@ export const BobPhone = (props: BobPhoneProps) => {
                           layout: PANEL_LAYOUT_SPRING,
                         }}
                       >
-                        {BOB_APPS.map((app, index) => (
+                        {PHONE_APP_IDS.map((app, index) => (
                           <AppContainer
-                            key={app.id}
+                            key={app}
                             {...getPanelItemMotion(index, reducedMotion)}
-                            onClick={() => openApp(app.id)}
+                            onClick={() => openApp(app)}
+                            type="button"
+                            data-ui-sound-id="ui-tap"
                           >
-                            {app.icon()}
-                            <AppLabel>{appNameMap[app.id]}</AppLabel>
+                            <img src={`/images/app-logos/${app === "photos" ? "gallery" : app}.png`} alt="" width={80} height={85} draggable={false} />
+                            <AppLabel>{appNameMap[app]}</AppLabel>
                           </AppContainer>
                         ))}
                       </AppGrid>
@@ -348,10 +257,8 @@ export const BobPhone = (props: BobPhoneProps) => {
 
 const PhoneShell = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<typeof BobPhoneBody> & {
-    clipStyle: React.CSSProperties;
-  }
->(({ clipStyle, style, ...props }, ref) => {
+  React.ComponentProps<typeof BobPhoneBody>
+>(({ style, ...props }, ref) => {
   const isPresent = useIsPresent();
   const panelMotion = usePanelMotion();
 
@@ -364,7 +271,6 @@ const PhoneShell = React.forwardRef<
       inert={!isPresent}
       style={{
         ...panelMotion.style,
-        ...clipStyle,
         ...style,
         borderRadius: "24px",
         pointerEvents: isPresent ? "auto" : "none",
@@ -385,6 +291,11 @@ const PhoneActionRow = React.forwardRef<
   const isPresent = useIsPresent();
   return <FillRow {...props} ref={ref} aria-hidden={!isPresent} inert={!isPresent} />;
 });
+
+const PhoneStatusBar = styled(PhoneActionRow)`
+  padding: 2px;
+  > :first-child { height: 40px; font-size: 1.125rem; }
+`;
 
 const AppBottomActions = styled(PhoneActionRow)`
   position: relative;
@@ -464,7 +375,7 @@ const PhonePositioner = styled(motion.div)`
   z-index: 999;
 `;
 
-const BobPhoneBody = styled(motion.div)`
+const BobPhoneBody = styled(motion.div)<{ $preview?: boolean }>`
   position: fixed;
   bottom: 94px;
   left: 0;
@@ -479,7 +390,8 @@ const BobPhoneBody = styled(motion.div)`
   width: fit-content;
   max-width: calc(100vw - 40px);
   /* background: var(--primary-color); */
-  background: #f2f2f3;
+  background: ${({ $preview }) => $preview ? "transparent" : "#f2f2f3"};
+  transition: background-color 0.2s ease-out;
   padding: 4px;
   border-radius: 24px;
   z-index: 999;
@@ -495,24 +407,29 @@ const BobPhoneBody = styled(motion.div)`
 const AppGrid = styled(PhoneScreen)`
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-gap: 0.5rem 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem 1rem;
   padding: 8px;
-  place-items: center;
-  width: 18rem;
+  place-items: start center;
+  width: min(18rem, calc(100vw - 48px));
+  max-height: calc(100dvh - 152px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
 `;
 
 const AppContainer = styled(motion.button)`
   position: relative;
   align-items: center;
-  width: fit-content;
+  width: 100%;
   background: none;
   border-radius: 24px;
   padding: 0px;
-  padding-bottom: 8px;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 8px;
+  padding-bottom: 8px;
   position: relative;
 
   &::before {
@@ -533,6 +450,11 @@ const AppContainer = styled(motion.button)`
   img {
     position: relative;
     z-index: 1;
+    width: 100%;
+    max-width: 80px;
+    height: auto;
+    aspect-ratio: 100 / 106;
+    object-fit: contain;
     transition: transform 0.1s ease-out;
     pointer-events: none;
   }
@@ -553,10 +475,11 @@ const AppContainer = styled(motion.button)`
 
 const AppLabel = styled.span`
   font-size: 0.75rem;
+  max-width: calc(100% + 12px);
   color: #212121;
   background-color: rgba(33, 33, 33, 0.1);
-  font-weight: 700;
-  letter-spacing: -1%;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   line-height: 1.2;
   padding: 0.25rem 0.5rem;
   border-radius: 0.625rem;

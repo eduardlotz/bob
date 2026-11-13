@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import React, { forwardRef, useRef } from "react";
-import { Outlines, useGLTF } from "@react-three/drei";
+import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { RapierRigidBody, RigidBody } from "@react-three/rapier";
 import { Grabbable } from "@/physics/Grabbable";
@@ -24,7 +24,6 @@ interface Props {
   position?: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
-  outlineColor?: string;
   enablePhysics?: boolean;
 }
 
@@ -33,7 +32,6 @@ export const PingPongPaddle = forwardRef(
     {
       scale = [1, 1, 1],
       position = [0, 0, 0],
-      outlineColor = "#4a1919",
       enablePhysics = false,
       ...props
     }: Props,
@@ -58,7 +56,7 @@ export const PingPongPaddle = forwardRef(
           geometry={nodes.Table_Tennis_Paddle_Cube033_1.geometry}
           material={materials.DD9944}
         >
-          {/* <Outlines thickness={0.02} color={"#000000"} screenspace /> */}
+
         </mesh>
         <mesh
           castShadow
@@ -66,7 +64,7 @@ export const PingPongPaddle = forwardRef(
           geometry={nodes.Table_Tennis_Paddle_Cube033_1_1.geometry}
           material={materials["1A1A1A"]}
         >
-          {/* <Outlines thickness={0.02} color={"#000000"} screenspace /> */}
+
         </mesh>
         <mesh
           castShadow
@@ -74,7 +72,7 @@ export const PingPongPaddle = forwardRef(
           geometry={nodes.Table_Tennis_Paddle_Cube033_1_2.geometry}
           material={materials.F44336}
         >
-          {/* <Outlines thickness={0.02} color={"#000000"} screenspace /> */}
+
         </mesh>
       </group>
     );

@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
+import React, { useState } from "react";
 import styled from "styled-components";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import {
   useAppStore,
   ROUTE_PATHS,
@@ -18,16 +19,13 @@ import { MenuButton } from "@/layout/atoms";
 import { BobPhone } from "./BobPhone";
 import { playUISound } from "@/utils/soundSystem";
 import { BackToLobbyButton } from "./BackToLobbyButton";
+import { getPanelItemMotion } from "@/styles/panelMotion";
 import { useI18n } from "@/i18n";
-import { ShopOverlay } from "@/apps/shop";
-import { CartIcon } from "@/icons/cart";
-import { usePanelMotion } from "@/styles/panelMotion";
 
 export function BottomNavigation() {
-  const panelMotion = usePanelMotion();
   const { messages } = useI18n();
+  const reducedMotion = useReducedMotion();
   const [showPhone, setShowPhone] = useState(false);
-  const [showShop, setShowShop] = useState(false);
   const {
     currentView,
     resetToDefaultView,
@@ -35,7 +33,14 @@ export function BottomNavigation() {
     transitionToView,
     isImageFocused,
     isObjectView,
-  } = useViewStore();
+  } = useViewStore(useShallow(state => ({
+    currentView: state.currentView,
+    resetToDefaultView: state.resetToDefaultView,
+    isPhoneView: state.isPhoneView,
+    transitionToView: state.transitionToView,
+    isImageFocused: state.isImageFocused,
+    isObjectView: state.isObjectView,
+  })));
 
   const {
     currentRoute,
@@ -43,19 +48,21 @@ export function BottomNavigation() {
     isOptionsClosing,
     openOptions,
     closeOptionsWithAnimation,
-  } = useAppStore();
+  } = useAppStore(useShallow(state => ({
+    currentRoute: state.currentRoute,
+    showOptions: state.showOptions,
+    isOptionsClosing: state.isOptionsClosing,
+    openOptions: state.openOptions,
+    closeOptionsWithAnimation: state.closeOptionsWithAnimation,
+  })));
 
-  const { focusedBook } = useBooksStore();
+  const focusedBook = useBooksStore(state => state.focusedBook);
 
-  const { activeGame } = useMiniGameStore();
+  const activeGame = useMiniGameStore(state => state.activeGame);
 
   useKeyPress("Escape", () => {
     if (showPhone) return;
-    if (showShop) {
-      setShowShop(false);
-      playUISound("ui-tap-close");
-      return;
-    }
+    if (focusedBook) { useBooksStore.getState().clearFocus(); return; }
     if (showOptions) closeOptionsWithAnimation();
     else resetToDefaultView();
     playUISound("ui-tap-close");
@@ -67,7 +74,6 @@ export function BottomNavigation() {
     showOptions || showPhone ? "ui-tap-close" : "ui-tap";
 
   const handleMenuButtonClick = () => {
-    setShowShop(false);
     if (showOptions && !isOptionsClosing) {
       closeOptionsWithAnimation();
     } else {
@@ -78,30 +84,11 @@ export function BottomNavigation() {
   };
 
   const handlePhoneClick = (open: boolean) => {
-    if (open) setShowShop(false);
+    if (open) closeOptionsWithAnimation();
     setShowPhone(open);
   };
 
-  useEffect(() => {
-    setShowShop(false);
-  }, [currentRoute, activeGame]);
-
-  useEffect(() => {
-    if (showOptions) setShowShop(false);
-  }, [showOptions]);
-
-  const handleShopClick = () => {
-    if (showShop) {
-      setShowShop(false);
-    } else {
-      setShowPhone(false);
-      closeOptionsWithAnimation();
-      resetToDefaultView();
-      setShowShop(true);
-    }
-  };
-
-  const showTapUpgrades = !showShop && !showOptions && isHomeRoute && !isPhoneView();
+  const showTapUpgrades = !showPhone && !showOptions && isHomeRoute && !isPhoneView();
 
   const showBackToLobby = activeGame !== "LOBBY";
 
@@ -128,7 +115,6 @@ export function BottomNavigation() {
             : undefined,
       }}
     >
-      <AnimatePresence>{showShop && <ShopOverlay key="shop-overlay" />}</AnimatePresence>
       <TapUpgrades show={showTapUpgrades} />
       <BackToLobbyButton show={showBackToLobby} />
       <HugRow data-bob-navigation $gap={"8px"} style={{ height: showBackToLobby ? 0 : "auto" }}>
@@ -141,13 +127,7 @@ export function BottomNavigation() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               $isActive={showOptions}
-              initial={{ opacity: 0, y: 40, filter: "blur(6px)" }}
-              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              exit={{ opacity: 0, y: 40, filter: "blur(6px)" }}
-              transition={{
-                type: "spring" as const,
-                bounce: 0.5,
-              }}
+              {...getPanelItemMotion(0, reducedMotion)}
               layout="position"
             >
               <AnimatePresence mode="popLayout">
@@ -190,22 +170,6 @@ export function BottomNavigation() {
               <BobPhone isOpen={showPhone} setIsOpen={handlePhoneClick} />
             </motion.div>
           )}
-          {!showBackToLobby && !hideNavigation && (
-            <ShopNavButton
-              key="shop-button"
-              onClick={handleShopClick}
-              data-ui-sound-id={showShop ? "ui-tap-close" : "ui-tap"}
-              aria-expanded={showShop}
-              $isActive={showShop}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              {...panelMotion}
-              layout="position"
-            >
-              <span>{showShop ? <CloseIcon /> : <CartIcon />}</span>
-              <span>{messages.navigation.shopLabel}</span>
-            </ShopNavButton>
-          )}
         </AnimatePresence>
       </HugRow>
     </HugColumn>
@@ -246,11 +210,4 @@ export const NavButton = styled(motion.button)<{ $isActive?: boolean }>`
     font-size: 0.75rem;
     font-weight: 900;
   }
-`;
-
-const ShopNavButton = styled(MenuButton)`
-  background: #4178f7;
-  border-color: #2a5ee2;
-  box-shadow: 0 6px 0 #2a5ee2;
-  outline-offset: 1px;
 `;

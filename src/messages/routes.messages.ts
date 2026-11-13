@@ -8,8 +8,9 @@ export const routeMessageConfigs = defineMessages<
     about_welcome: {
       id: "about_welcome_v3",
       text: [
-        "Hier findest du mehr über Eddie und seine Interessen :)",
-        "Tap dich einfach durch und lern ein paar (neue) Dinge über die Person hinter Website ✨",
+        "gemütlich oder? 😊",
+        "hier findest du mehr über die Person hinter der Website :) Tap einfach eine Ecke im Raum an, um sie dir näher anzuschauen",
+        "ach und wenn dich der Regen stört kannst du das Fenster einfach schließen ☔️ ich persönlich finds aber beruhigend ",
       ],
       label: "Bob",
       options: {
@@ -24,8 +25,8 @@ export const routeMessageConfigs = defineMessages<
     portfolio_welcome: {
       id: "portfolio_welcome_v3",
       text: [
-        "Willkommen im Portfolio-Universum",
-        "Tap ein Bild an, um mehr Infos anzuzeigen",
+        "Willkommen im Portfolio-Universum! Hier findest du einen Mix aus kreativen Arbeiten von Eddie",
+        "Tap einfach ein Bild an, um mehr es dir genauer anzusehen",
       ],
       label: "Bob",
       options: {
@@ -59,9 +60,9 @@ export const routeMessageConfigs = defineMessages<
     about_welcome: {
       id: "about_welcome_v3",
       text: [
-        "Here you'll find more about Eddie and his interests :)",
-        "The room isn't fully finished yet, but there's already plenty to discover",
-        "Just tap your way through and learn a few (new) things about the person behind this website ✨",
+        "Cozy, isn't it? 😊",
+        "Here you can find out more about the person behind the website :) Just tap any corner of the room to take a closer look",
+        "oh and if the rain bothers you, you can just close the window ☔️ but i personally find it soothing",
       ],
       label: "Bob",
       options: {
@@ -76,9 +77,8 @@ export const routeMessageConfigs = defineMessages<
     portfolio_welcome: {
       id: "portfolio_welcome_v3",
       text: [
-        "Welcome to the portfolio universe",
-        "Here you can check out Eddie's free-time projects",
-        "Tap an image to show more info",
+        "Welcome to the portfolio universe! Here you’ll find a mix of Eddie’s creative work",
+        "Tap an image to take a closer look",
       ],
       label: "Bob",
       options: {

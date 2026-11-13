@@ -1,5 +1,5 @@
 import { useFloatingBar } from "@/layout/FloatingBar";
-import { FLOOR_Y_POSITION } from "@/molecules/Scene";
+import { FLOOR_Y_POSITION } from "@/store/config/scene";
 import { BasketBox } from "@/physics/BasketBox";
 import {
   ROUTE_PATHS,
@@ -9,36 +9,40 @@ import {
 } from "@/store";
 import type { MiniGameType } from "@/store/minigames";
 import { GradientTexture, Grid } from "@react-three/drei";
+import { useThree } from "@react-three/fiber";
 import { CuboidCollider } from "@react-three/rapier";
 import {
   type ComponentType,
   type ReactNode,
   useCallback,
   useEffect,
+  useRef,
 } from "react";
 import { useNavigate } from "react-router-dom";
 import { BackSide } from "three";
 
 import { PingPongPaddle } from "@/3d-objects/models/pingPongPaddle";
 import { PointsCounter } from "@/molecules/PointsCounter";
-import { stopAllWorldSounds } from "@/utils/soundSystem";
+import { exitMiniGame } from "@/utils/miniGameTransitions";
 import { FlappyBirdGame, FlappyBirdRingPreview } from "./games/FlappyBirdGame";
 import { MiniGameThrone } from "./games/MiniGameThrone";
-import {
-  MiniGameItem,
-  type SupportedMiniGameType,
-} from "./games/withMiniGameItem";
+import { type SupportedMiniGameType } from "./games/withMiniGameItem";
 import { PingPongGame } from "./games/PingPongGame";
-import { SlotMachineArcade, SlotMachineGame } from "./games/SlotMachineGame";
 import { useI18n } from "@/i18n";
 import { miniGamesSceneMessages } from "./MiniGamesScene.messages";
+import { transitionScreen } from "@/store/screenTransition";
+import { getGameTransition } from "@/styles/screenTransitions";
 
 const DEFAULT_MINIGAMES_VIEW = "default";
 const getMiniGameThroneY = () => FLOOR_Y_POSITION + 0.18;
 
-// TODO: refactor minigames view to be included as static view configs like slotmachine
-type MiniGamesView = typeof DEFAULT_MINIGAMES_VIEW | "minigames:slot_machine";
+type MiniGamesView = typeof DEFAULT_MINIGAMES_VIEW;
 type MiniGameComponent = ComponentType<{ onExit: () => void }>;
+
+interface LobbyPlacement {
+  position: [number, number, number];
+  scale: number;
+}
 
 interface MiniGameDefinition {
   cameraView: MiniGamesView;
@@ -46,34 +50,23 @@ interface MiniGameDefinition {
   renderLobbyItem: (
     label: string,
     onSelect: (game: SupportedMiniGameType) => void,
+    placement: LobbyPlacement,
   ) => ReactNode;
 }
 
-const MINI_GAME_ORDER: SupportedMiniGameType[] = [
-  "SLOT_MACHINE",
-  "PING_PONG",
-  "FLAPPY_BIRD",
-];
+const MINI_GAME_ORDER: SupportedMiniGameType[] = ["PING_PONG", "FLAPPY_BIRD"];
 
 const MINI_GAME_DEFINITIONS: Record<SupportedMiniGameType, MiniGameDefinition> =
   {
-    SLOT_MACHINE: {
-      cameraView: "minigames:slot_machine",
-      GameComponent: SlotMachineGame,
-      renderLobbyItem: (label, onSelect) => (
-        <MiniGameItem game="SLOT_MACHINE" label={label} onSelect={onSelect}>
-          <SlotMachineArcade position={[0, 0, -2]} scale={[1, 1, 1]} />
-        </MiniGameItem>
-      ),
-    },
     PING_PONG: {
       cameraView: DEFAULT_MINIGAMES_VIEW,
       GameComponent: PingPongGame,
-      renderLobbyItem: (label, onSelect) => (
+      renderLobbyItem: (label, onSelect, placement) => (
         <MiniGameThrone
           label={label}
           onClick={() => onSelect("PING_PONG")}
-          position={[-2, getMiniGameThroneY(), 0]}
+          position={placement.position}
+          scale={placement.scale}
           objectOffset={[0, 2.22, 0]}
           objectScale={0.58}
         >
@@ -84,11 +77,12 @@ const MINI_GAME_DEFINITIONS: Record<SupportedMiniGameType, MiniGameDefinition> =
     FLAPPY_BIRD: {
       cameraView: DEFAULT_MINIGAMES_VIEW,
       GameComponent: FlappyBirdGame,
-      renderLobbyItem: (label, onSelect) => (
+      renderLobbyItem: (label, onSelect, placement) => (
         <MiniGameThrone
           label={label}
           onClick={() => onSelect("FLAPPY_BIRD")}
-          position={[2, getMiniGameThroneY(), 0]}
+          position={placement.position}
+          scale={placement.scale}
           objectOffset={[0, 3, 0]}
           objectScale={0.46}
         >
@@ -111,10 +105,11 @@ function MiniGamesLobby({
   onSelect: (game: SupportedMiniGameType) => void;
 }) {
   const { locale } = useI18n();
+  const compact = useThree((state) => state.size.width < 600);
 
   return (
     <group>
-      {MINI_GAME_ORDER.map((game) => {
+      {MINI_GAME_ORDER.map((game, index) => {
         const definition = MINI_GAME_DEFINITIONS[game];
 
         return (
@@ -122,12 +117,22 @@ function MiniGamesLobby({
             {definition.renderLobbyItem(
               miniGamesSceneMessages[locale][game].label,
               onSelect,
+              {
+                position: [
+                  (index % 2 ? 1 : -1) * (compact ? 1.85 : 2.25),
+                  getMiniGameThroneY(),
+                  index < 2 ? 1.8 : compact ? 0.85 : 1.3,
+                ],
+                scale: compact ? 0.62 : 0.78,
+              },
             )}
           </group>
         );
       })}
 
-      <MiniGamesLobbyBounds />
+      <group>
+        <MiniGamesLobbyBounds />
+      </group>
     </group>
   );
 }
@@ -182,7 +187,11 @@ function MiniGamesContent({
 
   const ActiveGame = activeDefinition.GameComponent;
 
-  return <ActiveGame onExit={onExit} />;
+  return (
+    <group>
+      <ActiveGame onExit={onExit} />
+    </group>
+  );
 }
 
 function MiniGamesBackdrop() {
@@ -219,16 +228,29 @@ export function MiniGamesScene() {
   const activeGame = useMiniGameStore((state) => state.activeGame);
   const score = useMiniGameStore((state) => state.session.score);
   const setActiveGame = useMiniGameStore((state) => state.setActiveGame);
-  const finishGame = useMiniGameStore((state) => state.finishGame);
   const transitionToView = useViewStore((state) => state.transitionToView);
   const cameraControlsRef = useViewStore((state) => state.cameraControlsRef);
+  const pendingGameReady = useRef<(() => void) | null>(null);
 
   const isAllowedToAccess = checkUnlockedRoutes(ROUTE_PATHS.MINIGAMES);
   const activeDefinition = getMiniGameDefinition(activeGame);
+  const handleSelect = useCallback(
+    (game: SupportedMiniGameType) => {
+      transitionScreen(
+        () =>
+          new Promise<void>((resolve) => {
+            pendingGameReady.current = resolve;
+            setActiveGame(game);
+          }),
+        undefined,
+        { appearance: getGameTransition(game) },
+      );
+    },
+    [setActiveGame],
+  );
   const handleExit = useCallback(() => {
-    stopAllWorldSounds();
-    finishGame();
-  }, [finishGame]);
+    exitMiniGame();
+  }, []);
 
   useEffect(() => {
     if (!isAllowedToAccess) {
@@ -240,6 +262,9 @@ export function MiniGamesScene() {
   useEffect(() => {
     if (activeGame !== "LOBBY") {
       setHoveredObject(null);
+      // This effect commits after a lazy game's suspended subtree mounts.
+      pendingGameReady.current?.();
+      pendingGameReady.current = null;
     }
   }, [activeGame, setHoveredObject]);
 
@@ -251,11 +276,13 @@ export function MiniGamesScene() {
 
   return (
     <>
-      <MiniGamesContent
-        activeGame={activeGame}
-        onSelect={setActiveGame}
-        onExit={handleExit}
-      />
+      <group>
+        <MiniGamesContent
+          activeGame={activeGame}
+          onSelect={handleSelect}
+          onExit={handleExit}
+        />
+      </group>
       {activeGame === "LOBBY" ? (
         <MiniGamesBackdrop />
       ) : activeGame !== "FLAPPY_BIRD" && activeGame !== "PING_PONG" ? (

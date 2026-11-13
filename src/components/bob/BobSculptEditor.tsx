@@ -80,7 +80,8 @@ export function BobSculptEditor() {
   };
   const position = (key: BobParameter): CSSProperties => {
     if (mobile) return { width: viewport.phoneWidth, height: 160 * compactScale };
-    return getBobControlPosition(key, guide, formType);
+    const position = getBobControlPosition(key, guide, formType);
+    return { ...position, top: position.top - 32 };
   };
   return <>
     <FocusStyle $focused={isPresent && !!dragging} />

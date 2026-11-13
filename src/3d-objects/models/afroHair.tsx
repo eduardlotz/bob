@@ -34,7 +34,6 @@ interface Props {
   position: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
-  outlineColor?: string;
   preview: boolean;
   rainbow?: boolean;
 }
@@ -42,7 +41,6 @@ interface Props {
 export const AfroHair = ({
   scale = [1, 1, 1],
   rainbow = false,
-  outlineColor: _outlineColor,
   ...props
 }: Props) => {
   const group = useRef<THREE.Group>(null!);
@@ -110,5 +108,3 @@ export const AfroHair = ({
     </a.group>
   );
 };
-
-useGLTF.preload(PATH);

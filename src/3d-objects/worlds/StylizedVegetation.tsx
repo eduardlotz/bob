@@ -5,7 +5,7 @@ import { assemble, ModelInstances, type Part, type Placement, type Vec3 } from "
 import { seededRandom, useWorldQuality } from "./quality";
 import { useWorldEnvironment } from "./WorldEnvironment";
 
-type Canopy = { center: Vec3; size: Vec3; scale: number };
+export type Canopy = { center: Vec3; size: Vec3; scale: number };
 const treeCrowns: [Vec3, Vec3][] = [
   [[0, 3.6, 0], [1.7, 1.6, 1.5]],
   [[-1.05, 2.85, .3], [1.3, 1, 1.2]],
@@ -27,11 +27,14 @@ function trunkGeometry() {
 }
 
 /** Camera-facing, alpha-cut leaf silhouettes with canopy-surface normals for soft volume. */
-function LeafCanopies({ canopies, seed, bush }: { canopies: Canopy[]; seed: number; bush: boolean }) {
+export function LeafCanopies({ canopies, seed, bush, faceOpening = false, surface }: {
+  canopies: Canopy[]; seed: number; bush: boolean; faceOpening?: boolean;
+  surface?: (normal: Vec3) => Vec3;
+}) {
   const quality = useWorldQuality();
   const environment = useWorldEnvironment();
   const material = useRef<T.ShaderMaterial>(null);
-  const perCanopy = { low: 52, medium: 100, high: 150 }[quality];
+  const perCanopy = (faceOpening ? { low: 180, medium: 240, high: 320 } : { low: 52, medium: 100, high: 150 })[quality] * (faceOpening && surface ? 2 : 1);
   const geometry = useMemo(() => {
     const plane = new T.PlaneGeometry(1, 1);
     const geometry = new T.InstancedBufferGeometry();
@@ -44,8 +47,11 @@ function LeafCanopies({ canopies, seed, bush }: { canopies: Canopy[]; seed: numb
       for (let i = 0; i < perCanopy; i++) {
         const y = random() * 2 - 1, angle = random() * Math.PI * 2;
         const r = Math.sqrt(1 - y * y), x = Math.cos(angle) * r, z = Math.sin(angle) * r;
-        const shell = .65 + random() * .35;
-        centers.push(center[0] + x * size[0] * shell, center[1] + y * size[1] * shell, center[2] + z * size[2] * shell);
+        const shell = faceOpening ? .97 + random() * .06 : .65 + random() * .35;
+        // Bob's face stays clear while using the world's exact leaf renderer.
+        if (faceOpening && z > .45 && Math.min(Math.hypot(x - .45, y - .2), Math.hypot(x + .45, y - .2)) < .32) continue;
+        const point = surface ? surface([x, y, z]) : [x, y, z];
+        centers.push(center[0] + point[0] * size[0] * shell, center[1] + point[1] * size[1] * shell, center[2] + point[2] * size[2] * shell);
         normals.push(x, y, z);
         const leafSize = (bush ? .48 : .65) * scale * (.8 + random() * .5) * (quality === "low" ? 1.35 : 1);
         shapes.push(leafSize, random() * Math.PI * 2, random(), random());
@@ -57,7 +63,7 @@ function LeafCanopies({ canopies, seed, bush }: { canopies: Canopy[]; seed: numb
     geometry.instanceCount = centers.length / 3;
     plane.dispose();
     return geometry;
-  }, [canopies, seed, bush, perCanopy, quality]);
+  }, [canopies, seed, bush, faceOpening, surface, perCanopy, quality]);
   useEffect(() => () => geometry.dispose(), [geometry]);
   const uniforms = useMemo(() => ({
     ...T.UniformsUtils.clone(T.UniformsLib.fog),

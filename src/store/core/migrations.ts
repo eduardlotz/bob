@@ -46,7 +46,7 @@ export const normalizeWorlds = (worlds: any[] = []) => {
   });
 };
 
-const normalizeTapEffects = (tapEffects: any[] = []) => {
+export const normalizeTapEffects = (tapEffects: any[] = []) => {
   const previousTapEffects = new Map(
     tapEffects.map((item: any) => [item.id, item]),
   );
@@ -72,7 +72,7 @@ const normalizeTapEffects = (tapEffects: any[] = []) => {
   });
 };
 
-const normalizeBobItems = (bobItems: any[] = []) => {
+export const normalizeBobItems = (bobItems: any[] = []) => {
   const previousBobItems = new Map(
     bobItems.map((item: any) => [item.id, item]),
   );
@@ -139,6 +139,14 @@ export const normalizeBlobForms = (forms: any[] = []) => {
   }));
 };
 
+export const reconcileRoutes = (routes: any[] = []) => {
+  const previous = new Map(routes.map((route) => [route.id, route]));
+  return initialRoutes.map((route) => {
+    const saved = previous.get(route.id);
+    return { ...route, purchased: saved?.purchased ?? route.purchased, unlocked: saved?.unlocked ?? route.unlocked };
+  });
+};
+
 export function migrateCoreStore(persisted: any, fromVersion: number) {
   if (!persisted || typeof persisted !== "object") {
     return initialGameState;
@@ -155,10 +163,13 @@ export function migrateCoreStore(persisted: any, fromVersion: number) {
     fromVersion === GAME_STORE_VERSION.V13 ||
     fromVersion === GAME_STORE_VERSION.V14 ||
     fromVersion === GAME_STORE_VERSION.V15 ||
-    fromVersion === GAME_STORE_VERSION.V16
+    fromVersion === GAME_STORE_VERSION.V16 ||
+    fromVersion === GAME_STORE_VERSION.V17 ||
+    fromVersion === GAME_STORE_VERSION.V18
   ) {
     return {
       ...state,
+      routes: reconcileRoutes(state.routes),
       worlds: normalizeWorlds(state.worlds),
       bobItems: normalizeBobItems(state.bobItems),
       tapEffects: normalizeTapEffects(state.tapEffects),
@@ -237,6 +248,7 @@ export function migrateCoreStore(persisted: any, fromVersion: number) {
 
   return {
     ...state,
+    routes: reconcileRoutes(state.routes),
     worlds: normalizeWorlds(state.worlds),
     bobItems: normalizeBobItems(state.bobItems),
     tapEffects: normalizeTapEffects(state.tapEffects),

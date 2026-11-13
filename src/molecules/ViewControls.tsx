@@ -1,8 +1,8 @@
-import { CameraViewId, useViewStore } from "@/store/viewStore";
+import { useVinylStore } from "@/store/vinyls";
+import { useViewStore } from "@/store/viewStore";
 import { useKeyPress } from "@/hooks/useKeyPress";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import styled from "styled-components";
-import { SmallArrowLeftIcon } from "@/icons/arrow";
 import { playUISound } from "@/utils/soundSystem";
 import {
   ROUTE_PATHS,
@@ -14,13 +14,15 @@ import { Magnetic } from "@/layout/Magnetic";
 import { useSocialsStore } from "@/store/socials";
 import { useI18n } from "@/i18n";
 import { viewControlsMessages } from "./ViewControls.messages";
-import { ChevronLeftIcon } from "@/icons/chevron";
+import { floatingActionButtonStyles } from "@/components/FloatingActionButton";
+import { getPanelItemMotion } from "@/styles/panelMotion";
+import { sceneChipStyle } from "@/components/SceneChip";
 
 export function ViewControls() {
+  const reducedMotion = useReducedMotion();
   const {
     currentView,
     isDefaultView,
-    isAboutView,
     isCreativeView,
     isPhoneView,
     isImageFocused,
@@ -33,8 +35,8 @@ export function ViewControls() {
   const currentRoute = useAppStore((s) => s.currentRoute);
   const { focusedBook } = useBooksStore();
   const { focusedThrone } = useSocialsStore();
+  const vinyl = useVinylStore(state => state.selected);
   const { locale } = useI18n();
-
   const activeGame = useMiniGameStore((s) => s.activeGame);
   const viewTitles = viewControlsMessages[locale].viewTitles;
 
@@ -47,10 +49,12 @@ export function ViewControls() {
 
   const isShopPreview = currentView === "shop:preview";
   const shouldHide =
+    currentView === "loading" ||
     isShopPreview ||
     isGameActive ||
     isMinigamesRoute ||
     isTransitioning ||
+    vinyl !== null ||
     focusedBook ||
     focusedThrone;
   const isViewEligible = !isDefault && !isPhone && !isCreative && !isNavigation;
@@ -74,7 +78,7 @@ export function ViewControls() {
 
   const handleBackClick = () => {
     if (isTransitioning) return;
-
+    if (vinyl !== null) { useVinylStore.getState().select(null); return; }
     resetToDefaultView();
   };
 
@@ -86,56 +90,24 @@ export function ViewControls() {
     <AnimatePresence>
       {showControls && (
         <ViewControlsWrapper>
-          {/* <BackButton
-            onClick={handleBackClick}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            key="view-controls-back-button"
-            initial={{ y: 120, filter: "blur(6px)" }}
-            animate={{
-              y: 0,
-              filter: "blur(0px)",
-            }}
-            exit={{ y: 120, filter: "blur(6px)" }}
-            transition={{ duration: 0.5, ease: "circInOut" }}
-            data-ui-sound-id="ui-tap-close"
-          >
-            <ArrowLeftIcon />
-          </BackButton> */}
-
           <Magnetic>
             <TriggerContainer
               onClick={handleBackClick}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95, transition: { duration: 0.1 } }}
               key="view-controls-back-button"
-              initial={{ y: 120, filter: "blur(6px)" }}
-              animate={{
-                y: 0,
-                filter: "blur(0px)",
-              }}
-              exit={{ y: 120, filter: "blur(6px)" }}
-              transition={{ duration: 0.5, ease: "circInOut" }}
+              {...getPanelItemMotion(0, reducedMotion)}
+              $variant="muted"
               data-ui-sound-id="ui-tap-close"
               style={{ borderRadius: "50px" }}
             >
-              <ChevronLeftIcon />
-
               <span>{viewControlsMessages[locale].backLabel}</span>
             </TriggerContainer>
           </Magnetic>
 
           <CurrentViewChip
             key="view-controls-current-view-chip"
-            initial={{ y: 20, scale: 0.9, opacity: 0, filter: "blur(6px)" }}
-            animate={{
-              y: 0,
-              scale: 1,
-              opacity: 1,
-              filter: "blur(0px)",
-            }}
-            exit={{ y: 120, scale: 0.9, opacity: 0, filter: "blur(6px)" }}
-            transition={{ duration: 0.5, ease: "circInOut", delay: 0.15 }}
+            {...getPanelItemMotion(1, reducedMotion)}
           >
             {title}
           </CurrentViewChip>
@@ -161,47 +133,18 @@ const ViewControlsWrapper = styled(motion.div)`
 `;
 
 const CurrentViewChip = styled(motion.div)`
+  ${sceneChipStyle}
+  position: relative;
   min-width: fit-content;
   width: fit-content;
   max-width: calc(100vw - 32px);
   word-wrap: nowrap;
 
-  color: #ffffff;
-  padding: 12px 16px;
-  border-radius: 24px;
-  background-color: rgba(0, 0, 0, 0.2);
-  -webkit-backdrop-filter: blur(32px);
-  backdrop-filter: blur(32px);
-  border-radius: 50px;
-  font-size: 16px;
-  letter-spacing: -2%;
-  font-weight: 600;
   z-index: 1000;
 `;
 
-const TriggerContainer = styled(motion.button)`
-  display: inline-flex;
-  width: fit-content;
-  white-space: nowrap;
-  align-items: center;
-  justify-content: center;
-  max-height: 2.25rem;
-
-  padding: 0.5rem 0.75rem 0.5rem 0.25rem;
-  border-radius: 50px;
-  background-color: #fff;
-  opacity: 1;
-
-  font-size: 1rem;
-  font-weight: 800;
-  line-height: 1.2;
-
-  color: #212121;
-  margin: 0 auto;
-  overflow: clip;
-  gap: 0.125rem;
-
-  span {
-    max-height: 1.5rem;
-  }
+const TriggerContainer = styled(motion.button)<{ $variant: "muted" }>`
+  ${floatingActionButtonStyles}
+  height: 3rem; padding: 0.5rem 20px; border-radius: 50px;
+  font-size: 1rem; font-weight: 900; letter-spacing: -0.02em; white-space: nowrap;
 `;
