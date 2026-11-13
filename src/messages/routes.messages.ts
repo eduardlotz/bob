@@ -8,8 +8,10 @@ export const routeMessageConfigs = defineMessages<
     about_welcome: {
       id: "about_welcome_v3",
       text: [
-        "Hier findest du mehr über Eddie und seine Interessen :)",
-        "Tap dich einfach durch und lern ein paar (neue) Dinge über die Person hinter Website ✨",
+        "gemütlich oder? 😊",
+        "hier findest du mehr über die Person hinter der Website :) Tap einfach eine Ecke im Raum an, um sie dir näher anzuschauen",
+        "Hinter mir findest du Eddies kleine Schallplattensammlung und im Regal dort seine Büchersammlung. Die Hälfte davon hat er noch garnicht gelesen, aber psst 🤓",
+        "ach und wenn dich der Regen stört, kannst du auch das Fenster schließen ☔️ ich persönlich finds beruhigend ",
       ],
       label: "Bob",
       options: {
@@ -24,8 +26,8 @@ export const routeMessageConfigs = defineMessages<
     portfolio_welcome: {
       id: "portfolio_welcome_v3",
       text: [
-        "Willkommen im Portfolio-Universum",
-        "Tap ein Bild an, um mehr Infos anzuzeigen",
+        "Willkommen im Portfolio-Universum! Hier findest du einen Mix aus kreativen Arbeiten von Eddie",
+        "Tap einfach ein Bild an, um mehr es dir genauer anzusehen",
       ],
       label: "Bob",
       options: {
@@ -59,9 +61,10 @@ export const routeMessageConfigs = defineMessages<
     about_welcome: {
       id: "about_welcome_v3",
       text: [
-        "Here you'll find more about Eddie and his interests :)",
-        "The room isn't fully finished yet, but there's already plenty to discover",
-        "Just tap your way through and learn a few (new) things about the person behind this website ✨",
+        "Cozy, isn't it? 😊",
+        "Here you can find out more about the person behind the website :) Just tap any corner of the room to take a closer look",
+        "Behind me you'll find Eddie's little record collection, and on that shelf over there, his book collection. He hasn't even read half of them yet, but shh 🤓",
+        "Oh, and if the rain bothers you, you can also close the window ☔️—I personally find it soothing",
       ],
       label: "Bob",
       options: {
